@@ -1,5 +1,7 @@
-.PHONY: up down logs test lint seed migrate
-up:
+.PHONY: up down logs test lint seed migrate ensure-env
+ensure-env:
+	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example — set JWT_SECRET_KEY before production")
+up: ensure-env
 	docker compose up --build
 down:
 	docker compose down
