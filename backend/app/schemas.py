@@ -1,0 +1,553 @@
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+
+class ORMSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class Login(BaseModel):
+    email: EmailStr
+    password: str
+    tenant_id: str
+    totp_code: str | None = None
+
+
+class TwoFactorConfirm(BaseModel):
+    code: str
+
+
+class TwoFactorVerify(BaseModel):
+    challenge_token: str
+    code: str
+
+
+class TwoFactorDisable(BaseModel):
+    password: str
+    code: str
+
+
+class WebAuthnRegisterVerify(BaseModel):
+    credential: dict
+    name: str | None = None
+
+
+class WebAuthnLoginOptions(BaseModel):
+    challenge_token: str
+
+
+class WebAuthnLoginVerify(BaseModel):
+    challenge_token: str
+    credential: dict
+
+
+class EmailTestRequest(BaseModel):
+    to: EmailStr | None = None
+
+
+class SmsTestRequest(BaseModel):
+    to: str | None = None
+
+
+class ProfileUpdate(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class TenantCreate(BaseModel):
+    company_name: str
+    slug: str
+    industry: str = "retail"
+    currency: str = "GHS"
+    admin_email: EmailStr
+    admin_password: str
+
+
+class TenantProfileUpdate(BaseModel):
+    company_name: str | None = None
+    industry: str | None = None
+    currency: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    website: str | None = None
+    address: str | None = None
+    timezone: str | None = None
+    fiscal_year_start: str | None = None
+    tax_jurisdiction: str | None = None
+    tax_registration_number: str | None = None
+    tax_filing_period: str | None = None
+
+
+class TenantSuspendRequest(BaseModel):
+    reason: str | None = None
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    full_name: str
+    password: str
+    role: str = "cashier"
+    phone: str | None = None
+
+
+class ProductCreate(BaseModel):
+    name: str
+    sku: str
+    barcode: str | None = None
+    category: str = "General"
+    category_id: str | None = None
+    brand_id: str | None = None
+    unit_id: str | None = None
+    cost_price: float = 0
+    selling_price: float = 0
+    stock_qty: float = 0
+    reorder_level: float = 0
+    tax_rate_id: str | None = None
+    tax_exempt: bool = False
+    tracks_batches: bool = False
+
+
+class ProductCategoryCreate(BaseModel):
+    code: str
+    name: str
+    parent_id: str | None = None
+
+
+class BrandCreate(BaseModel):
+    code: str
+    name: str
+    description: str | None = None
+
+
+class UnitOfMeasureCreate(BaseModel):
+    code: str
+    name: str
+
+
+class ProductVariantCreate(BaseModel):
+    name: str
+    sku: str
+    barcode: str | None = None
+    size: str | None = None
+    color: str | None = None
+    flavor: str | None = None
+    cost_price: float | None = None
+    selling_price: float | None = None
+
+
+class PartyCreate(BaseModel):
+    name: str
+    email: EmailStr | None = None
+    phone: str | None = None
+    credit_limit: float = 0
+
+
+class LineItem(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    variant_id: str | None = None
+    unit_price: float | None = None
+
+
+class TransactionCreate(BaseModel):
+    party_id: str | None = None
+    subtotal: float = 0
+    tax: float = 0
+    total: float = 0
+    status: str = "completed"
+    payload: dict = Field(default_factory=dict)
+    items: list[LineItem] = Field(default_factory=list)
+
+
+class StockAdjust(BaseModel):
+    quantity: float
+    notes: str | None = None
+    reason: str = "adjustment"
+
+
+class StockMove(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    notes: str | None = None
+    warehouse_id: str | None = None
+    variant_id: str | None = None
+    batch_id: str | None = None
+    batch_number: str | None = None
+    manufacturing_date: datetime | None = None
+    expiry_date: datetime | None = None
+
+
+class ExpenseCreate(BaseModel):
+    category: str | None = None
+    category_id: str | None = None
+    description: str = ""
+    amount: float = Field(gt=0)
+    payment_method: str = "cash"
+    liquid_account_id: str | None = None
+    reference: str | None = None
+    payee: str | None = None
+    store_id: str | None = None
+    expense_date: datetime | None = None
+
+
+class ExpenseUpdate(BaseModel):
+    category: str | None = None
+    category_id: str | None = None
+    description: str | None = None
+    amount: float | None = Field(default=None, gt=0)
+    payment_method: str | None = None
+    reference: str | None = None
+    payee: str | None = None
+    expense_date: datetime | None = None
+
+
+class ExpenseCategoryCreate(BaseModel):
+    code: str
+    name: str
+    budget_amount: float = Field(default=0, ge=0)
+
+
+class ExpenseDecision(BaseModel):
+    comment: str | None = None
+    reason: str | None = None
+
+
+class RecurringExpenseCreate(BaseModel):
+    category: str | None = None
+    category_id: str | None = None
+    description: str = ""
+    amount: float = Field(gt=0)
+    frequency: str = "monthly"
+    payment_method: str = "bank_transfer"
+    payee: str | None = None
+
+
+class ApprovalLevelUpdate(BaseModel):
+    min_amount: float = Field(gt=0)
+    roles: list[str] = Field(min_length=1)
+    label: str | None = None
+    step: int | None = None
+
+
+class ExpenseThresholdUpdate(BaseModel):
+    expense_approval_threshold: float | None = Field(default=None, gt=0)
+    expense_l2_threshold: float | None = Field(default=None, gt=0)
+    levels: list[ApprovalLevelUpdate] | None = None
+
+
+class StoreCreate(BaseModel):
+    name: str
+    code: str
+    address: str | None = None
+    phone: str | None = None
+    manager_id: str | None = None
+
+
+class StoreReorderPolicyUpdate(BaseModel):
+    product_id: str
+    reorder_level: float = Field(ge=0)
+    reorder_qty: float = Field(default=0, ge=0)
+
+
+class InventoryFefoSettingsUpdate(BaseModel):
+    fefo_strict_warehouse: bool
+
+
+class WarehouseCreate(BaseModel):
+    name: str
+    code: str
+    store_id: str | None = None
+
+
+class StockTransferItemCreate(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+
+
+class StockTransferCreate(BaseModel):
+    from_store_id: str
+    to_store_id: str
+    notes: str | None = None
+    submit: bool = False
+    items: list[StockTransferItemCreate] = Field(min_length=1)
+
+
+class TaxCreate(BaseModel):
+    name: str
+    rate: float = Field(ge=0)
+    tax_type: str = "vat"
+    pricing_mode: str = "exclusive"
+    components: list[dict] | None = None
+    is_reverse_charge: bool = False
+    is_default: bool = False
+    is_active: bool = True
+
+
+class TaxCalculateRequest(BaseModel):
+    amount: float = Field(gt=0)
+    rate: float | None = None
+    tax_rate_id: str | None = None
+    pricing_mode: str | None = None
+    components: list[dict] | None = None
+    is_reverse_charge: bool | None = None
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    tenant_id: str
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+
+class EmailVerifyConfirm(BaseModel):
+    token: str
+
+
+class PurchaseOrderItemCreate(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    unit_price: float = Field(ge=0)
+    tax_rate: float = Field(default=0, ge=0)
+
+
+class PurchaseOrderCreate(BaseModel):
+    supplier_id: str
+    warehouse_id: str | None = None
+    notes: str | None = None
+    items: list[PurchaseOrderItemCreate] = Field(min_length=1)
+
+
+class GrnItemCreate(BaseModel):
+    po_item_id: str
+    received_qty: float = Field(gt=0)
+    accepted_qty: float | None = None
+    rejected_qty: float = Field(default=0, ge=0)
+    rejection_reason: str | None = None
+
+
+class GrnCreate(BaseModel):
+    purchase_order_id: str
+    warehouse_id: str | None = None
+    notes: str | None = None
+    items: list[GrnItemCreate] = Field(min_length=1)
+
+
+class PurchaseReturnItemCreate(BaseModel):
+    goods_receipt_item_id: str
+    quantity: float = Field(gt=0)
+
+
+class PurchaseReturnCreate(BaseModel):
+    goods_receipt_id: str
+    reason: str = "other"
+    notes: str | None = None
+    items: list[PurchaseReturnItemCreate] = Field(min_length=1)
+
+
+class PurchaseInvoiceItemCreate(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    unit_price: float | None = None
+    tax_rate: float = Field(default=0, ge=0)
+    discount: float = Field(default=0, ge=0)
+
+
+class PurchaseInvoiceCreate(BaseModel):
+    supplier_id: str | None = None
+    goods_receipt_id: str | None = None
+    purchase_order_id: str | None = None
+    supplier_invoice_number: str | None = None
+    discount_amount: float = Field(default=0, ge=0)
+    attachment_url: str | None = None
+    notes: str | None = None
+    # Buyer self-assesses VAT (excluded from AP); posts Dr Input Tax / Cr Tax Payable on approve.
+    is_reverse_charge: bool = False
+    currency: str | None = None
+    exchange_rate: float | None = Field(default=None, gt=0)
+    items: list[PurchaseInvoiceItemCreate] | None = None
+
+
+class PurchaseInvoiceUpdate(BaseModel):
+    supplier_invoice_number: str | None = None
+    notes: str | None = None
+    invoice_date: datetime | None = None
+    due_date: datetime | None = None
+
+
+class SalesInvoiceItemCreate(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    unit_price: float | None = None
+    tax_rate: float | None = None
+    discount: float = Field(default=0, ge=0)
+    variant_id: str | None = None
+
+
+class SalesInvoiceCreate(BaseModel):
+    customer_id: str
+    discount_amount: float = Field(default=0, ge=0)
+    notes: str | None = None
+    store_id: str | None = None
+    currency: str | None = None
+    exchange_rate: float | None = Field(default=None, gt=0)
+    items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+
+
+class SalesQuotationCreate(BaseModel):
+    customer_id: str
+    discount_amount: float = Field(default=0, ge=0)
+    notes: str | None = None
+    valid_days: int = Field(default=14, ge=1, le=365)
+    items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+
+
+class SalesOrderCreate(BaseModel):
+    customer_id: str
+    quotation_id: str | None = None
+    discount_amount: float = Field(default=0, ge=0)
+    notes: str | None = None
+    items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+
+
+class SalesReturnItemCreate(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    condition: str | None = None
+    variant_id: str | None = None
+
+
+class SalesReturnCreate(BaseModel):
+    sales_invoice_id: str
+    reason: str = "other"
+    restock: bool = True
+    notes: str | None = None
+    items: list[SalesReturnItemCreate] = Field(min_length=1)
+
+
+class CustomerPaymentCreate(BaseModel):
+    customer_id: str
+    amount: float = Field(gt=0)
+    sales_invoice_id: str | None = None
+    payment_method: str = "cash"
+    reference: str | None = None
+    notes: str | None = None
+    cheque_number: str | None = None
+    bank_name: str | None = None
+    cheque_date: datetime | None = None
+    apply_early_discount: bool | None = None
+    liquid_account_id: str | None = None
+    currency: str | None = None
+    exchange_rate: float | None = Field(default=None, gt=0)
+
+
+class EarlyPaySettingsUpdate(BaseModel):
+    early_pay_discount_pct: float = Field(ge=0, le=100)
+    early_pay_discount_days: int = Field(ge=0, le=365)
+
+
+class ExchangeRateUpsert(BaseModel):
+    currency_code: str
+    rate_to_base: float = Field(gt=0)
+
+
+class ExchangeRateRefresh(BaseModel):
+    currencies: list[str] | None = None
+
+
+class FxAutoRefreshUpdate(BaseModel):
+    fx_auto_refresh: bool
+
+
+class BankConnectionCreate(BaseModel):
+    account_id: str
+    provider: str = "mock"
+    display_name: str | None = None
+    external_account_id: str | None = None
+    feed_url: str | None = None
+    access_token: str | None = None
+    auto_sync: bool = True
+    auto_match_after_sync: bool = True
+    sync_lookback_days: int = Field(default=30, ge=1, le=365)
+
+
+class BankConnectionUpdate(BaseModel):
+    provider: str | None = None
+    display_name: str | None = None
+    external_account_id: str | None = None
+    feed_url: str | None = None
+    access_token: str | None = None
+    clear_credentials: bool | None = None
+    auto_sync: bool | None = None
+    auto_match_after_sync: bool | None = None
+    sync_lookback_days: int | None = Field(default=None, ge=1, le=365)
+    is_active: bool | None = None
+
+
+class SupplierPaymentCreate(BaseModel):
+    supplier_id: str
+    amount: float = Field(gt=0)
+    purchase_order_id: str | None = None
+    purchase_invoice_id: str | None = None
+    payment_method: str = "bank_transfer"
+    reference: str | None = None
+    notes: str | None = None
+    cheque_number: str | None = None
+    bank_name: str | None = None
+    cheque_date: datetime | None = None
+    apply_early_discount: bool | None = None
+    liquid_account_id: str | None = None
+    currency: str | None = None
+    exchange_rate: float | None = Field(default=None, gt=0)
+
+
+class CreditLimitUpdate(BaseModel):
+    credit_limit: float = Field(ge=0)
+
+
+class NotificationPreferencesUpdate(BaseModel):
+    preferences: dict
+
+
+class JournalLineCreate(BaseModel):
+    account_id: str | None = None
+    account_code: str | None = None
+    debit: float = Field(default=0, ge=0)
+    credit: float = Field(default=0, ge=0)
+    description: str | None = None
+
+
+class JournalCreate(BaseModel):
+    description: str
+    reference: str | None = None
+    lines: list[JournalLineCreate] = Field(min_length=2)
+
+
+class PosSessionOpen(BaseModel):
+    store_id: str | None = None
+    opening_cash: float = Field(default=0, ge=0)
+
+
+class PosSessionClose(BaseModel):
+    actual_cash: float = Field(ge=0)
+    closing_cash: float | None = None
+    notes: str | None = None
+
+
+class PosSaleCreate(BaseModel):
+    session_id: str | None = None
+    party_id: str | None = None
+    subtotal: float = 0
+    tax: float = 0
+    total: float = 0
+    status: str = "completed"
+    payment_method: str = "cash"
+    payload: dict = Field(default_factory=dict)
+    items: list[LineItem] = Field(min_length=1)
