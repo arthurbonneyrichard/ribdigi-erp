@@ -84,3 +84,8 @@ Desktop.ini
 
 # --- Docker / local overrides ---
 docker-compose.override.yml
+
+# --- Celery local state ---
+celerybeat-schedule
+celerybeat-schedule.*
+**/celerybeat-schedule
