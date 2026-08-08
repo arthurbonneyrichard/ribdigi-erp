@@ -127,8 +127,10 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     )
     db.add_all([p1, p2])
 
+    party1 = m.Party(tenant_id=t1.id, name="Alpha Customer", kind="customer", credit_limit=100)
     party2 = m.Party(tenant_id=t2.id, name="Beta Customer", kind="customer", credit_limit=0)
-    db.add(party2)
+    supplier2 = m.Party(tenant_id=t2.id, name="Beta Supplier", kind="supplier", credit_limit=0)
+    db.add_all([party1, party2, supplier2])
     await db.flush()
 
     inv2 = m.SalesInvoice(
@@ -154,6 +156,9 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
         "super_totp_secret": secret,
         "p1": p1,
         "p2": p2,
+        "party1": party1,
+        "party2": party2,
+        "supplier2": supplier2,
         "inv2": inv2,
     }
 

@@ -18,7 +18,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 - [x] Schema-per-tenant strategy implemented as specified, or architecture documents formally revised to an approved equivalent.
   - Approved equivalent: shared-schema + `tenant_id` (see `docs/ADR_001_TENANCY.md`). Schema-per-tenant remains post-MVP.
 - [ ] Cross-tenant isolation integration tests pass for every tenant-owned resource.
-  - Partial: SQLite integration suite covers product list scoping, foreign invoice 404, mismatched `X-Tenant-ID`, suspend/activate login block; not every module endpoint is enumerated yet.
+  - Partial: SQLite suite covers product list scoping, foreign sales invoice 404, mismatched `X-Tenant-ID` (products + credit aging), suspend/activate login block, plus matrix coverage for customers/suppliers lists, credit statement/limit, product image, expenses get/list, purchase invoices, tax rates, store inventory, POS sessions/drawer, notifications, backups, and accounting accounts/journals. Remaining: exhaustive enumeration of every tenant-owned route (audit cold paths, bank connections, report schedules, media keys, AI) and record-level RBAC.
 - [ ] Tenant provisioning, suspension, activation and lifecycle management complete.
   - Partial: register + defaults, company profile GET/PATCH, suspend (revokes sessions) / activate, super_admin cross-tenant lifecycle, trial `trial_ends_at` (default 14d) + 7/3/1 reminders + grace read-only (`status=grace`) then auto-suspend, company logo upload/serve/delete via `STORAGE_BACKEND=local|s3` (MinIO/S3-compatible object store; keys remain tenant-scoped). Remaining: none for media offload on this gate.
 
