@@ -76,6 +76,10 @@ class Settings(BaseSettings):
     BANK_FEED_SYNC_ENABLED: bool = True
     BANK_FEED_TIMEOUT_SECONDS: float = 30.0
     CELERY_BANK_FEED_INTERVAL_MINUTES: int = 360
+    # POS cash drawer (store-level mode; fallback when shift has no store)
+    POS_DRAWER_FALLBACK_MODE: str = "mock"  # none|mock|network|browser_bridge
+    POS_DRAWER_DEFAULT_PORT: int = 9100
+    POS_DRAWER_TIMEOUT_SECONDS: float = 3.0
     TRIAL_DAYS: int = 14
     TRIAL_GRACE_DAYS: int = 7
 

@@ -251,27 +251,41 @@ async def fetch_provider_transactions(
 
 
 def _mock_transactions(row: m.BankAccountConnection, *, since: datetime) -> list[dict]:
-    """Deterministic sample feed for tests and local development."""
+    """Deterministic sample feed for tests and local development.
+
+    Emits one deposit + one withdrawal per day from max(since, today-7) through today
+    so re-syncs share stable external_ref values and dedupe correctly.
+    """
     seed = (row.external_account_id or row.account_id or "acct")[:32]
-    day = since.date() if hasattr(since, "date") else since
-    # Two stable lines keyed by seed+day so re-syncs dedupe cleanly
-    stamp = day.isoformat() if hasattr(day, "isoformat") else str(day)
-    h = hashlib.sha256(f"{seed}:{stamp}".encode()).hexdigest()[:10]
-    base_amt = (int(h[:2], 16) % 90) + 10
-    return [
-        {
-            "txn_date": stamp,
-            "amount": float(base_amt),
-            "description": f"Mock deposit {h}",
-            "external_ref": f"mock-{seed}-{stamp}-in",
-        },
-        {
-            "txn_date": stamp,
-            "amount": -float((base_amt // 2) or 5),
-            "description": f"Mock withdrawal {h}",
-            "external_ref": f"mock-{seed}-{stamp}-out",
-        },
-    ]
+    today = datetime.utcnow().date()
+    start = since.date() if hasattr(since, "date") else since
+    if not hasattr(start, "isoformat"):
+        start = today
+    window_start = max(start, today - timedelta(days=7))
+    lines: list[dict] = []
+    day = window_start
+    while day <= today:
+        stamp = day.isoformat()
+        h = hashlib.sha256(f"{seed}:{stamp}".encode()).hexdigest()[:10]
+        base_amt = (int(h[:2], 16) % 90) + 10
+        lines.append(
+            {
+                "txn_date": stamp,
+                "amount": float(base_amt),
+                "description": f"Mock deposit {h}",
+                "external_ref": f"mock-{seed}-{stamp}-in",
+            }
+        )
+        lines.append(
+            {
+                "txn_date": stamp,
+                "amount": -float((base_amt // 2) or 5),
+                "description": f"Mock withdrawal {h}",
+                "external_ref": f"mock-{seed}-{stamp}-out",
+            }
+        )
+        day = day + timedelta(days=1)
+    return lines
 
 
 async def _fetch_http_json(

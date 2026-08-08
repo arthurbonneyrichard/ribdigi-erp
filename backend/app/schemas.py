@@ -248,6 +248,17 @@ class StoreCreate(BaseModel):
     manager_id: str | None = None
 
 
+class StoreDrawerSettingsUpdate(BaseModel):
+    drawer_mode: str | None = None
+    drawer_host: str | None = None
+    drawer_port: int | None = Field(default=None, ge=1, le=65535)
+    drawer_open_on_cash: bool | None = None
+
+
+class PosDrawerOpen(BaseModel):
+    reason: str = "manual"
+
+
 class StoreReorderPolicyUpdate(BaseModel):
     product_id: str
     reorder_level: float = Field(ge=0)

@@ -4,7 +4,17 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Store = { id: string; code: string; name: string; address?: string; is_active?: boolean };
+type Store = {
+  id: string;
+  code: string;
+  name: string;
+  address?: string;
+  is_active?: boolean;
+  drawer_mode?: string;
+  drawer_host?: string | null;
+  drawer_port?: number;
+  drawer_open_on_cash?: boolean;
+};
 type Product = { id: string; name: string; sku: string; stock_qty: number };
 type Transfer = {
   id: string;
@@ -32,6 +42,11 @@ export default function Page() {
   const [reorderLevel, setReorderLevel] = useState('5');
   const [reorderQty, setReorderQty] = useState('20');
   const [fefoStrict, setFefoStrict] = useState(false);
+  const [drawerStoreId, setDrawerStoreId] = useState('');
+  const [drawerMode, setDrawerMode] = useState('mock');
+  const [drawerHost, setDrawerHost] = useState('');
+  const [drawerPort, setDrawerPort] = useState('9100');
+  const [drawerOnCash, setDrawerOnCash] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -50,6 +65,13 @@ export default function Page() {
     if (!toStore && s.data?.length > 1) setToStore(s.data[1].id);
     if (!productId && p.data?.length) setProductId(p.data[0].id);
     if (!reorderProductId && p.data?.length) setReorderProductId(p.data[0].id);
+    if (!drawerStoreId && s.data?.length) {
+      setDrawerStoreId(s.data[0].id);
+      setDrawerMode(s.data[0].drawer_mode || 'none');
+      setDrawerHost(s.data[0].drawer_host || '');
+      setDrawerPort(String(s.data[0].drawer_port || 9100));
+      setDrawerOnCash(s.data[0].drawer_open_on_cash !== false);
+    }
   }
 
   useEffect(() => {
@@ -67,6 +89,27 @@ export default function Page() {
       setName('');
       setAddress('');
       setMessage('Store created');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveDrawerSettings() {
+    if (!drawerStoreId) return;
+    setError('');
+    setMessage('');
+    try {
+      await api(`/stores/${drawerStoreId}/drawer`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          drawer_mode: drawerMode,
+          drawer_host: drawerHost || null,
+          drawer_port: Number(drawerPort) || 9100,
+          drawer_open_on_cash: drawerOnCash,
+        }),
+      });
+      setMessage('Cash drawer settings saved');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -206,6 +249,62 @@ export default function Page() {
             </select>
             <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Qty" />
             <button onClick={createTransfer}>Create & request</button>
+          </div>
+        </div>
+        <div className="card">
+          <h3>Cash drawer</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <select
+              value={drawerStoreId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setDrawerStoreId(id);
+                const s = stores.find((x) => x.id === id);
+                if (s) {
+                  setDrawerMode(s.drawer_mode || 'none');
+                  setDrawerHost(s.drawer_host || '');
+                  setDrawerPort(String(s.drawer_port || 9100));
+                  setDrawerOnCash(s.drawer_open_on_cash !== false);
+                }
+              }}
+            >
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.drawer_mode || 'none'})
+                </option>
+              ))}
+            </select>
+            <select value={drawerMode} onChange={(e) => setDrawerMode(e.target.value)}>
+              <option value="none">none (disabled)</option>
+              <option value="mock">mock (log pulse)</option>
+              <option value="network">network (ESC/POS TCP)</option>
+              <option value="browser_bridge">browser_bridge (return kick bytes)</option>
+            </select>
+            {drawerMode === 'network' && (
+              <>
+                <input
+                  value={drawerHost}
+                  onChange={(e) => setDrawerHost(e.target.value)}
+                  placeholder="Printer/drawer host"
+                />
+                <input
+                  value={drawerPort}
+                  onChange={(e) => setDrawerPort(e.target.value)}
+                  placeholder="Port (9100)"
+                />
+              </>
+            )}
+            <label>
+              <input
+                type="checkbox"
+                checked={drawerOnCash}
+                onChange={(e) => setDrawerOnCash(e.target.checked)}
+              />{' '}
+              Open on cash POS sales
+            </label>
+            <button onClick={saveDrawerSettings} disabled={!drawerStoreId}>
+              Save drawer settings
+            </button>
           </div>
         </div>
       </div>

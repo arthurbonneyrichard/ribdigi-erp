@@ -126,6 +126,11 @@ class Store(Base):
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Cash drawer: none|mock|network|browser_bridge
+    drawer_mode: Mapped[str] = mapped_column(String(30), default="none")
+    drawer_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    drawer_port: Mapped[int] = mapped_column(Integer, default=9100)
+    drawer_open_on_cash: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class Warehouse(Base):

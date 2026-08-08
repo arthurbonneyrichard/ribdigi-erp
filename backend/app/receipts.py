@@ -145,6 +145,13 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     return "\n".join(lines)
 
 
+def escpos_drawer_kick() -> bytes:
+    """Raw ESC/POS cash-drawer pulse (pin 0)."""
+    from app.cash_drawer import kick_bytes
+
+    return kick_bytes()
+
+
 def to_thermal_pdf(receipt: dict[str, Any], *, paper: str = "80mm") -> bytes:
     """Narrow receipt PDF suitable for 58/80mm thermal printers (or browser print)."""
     text = render_thermal_text(receipt, paper=paper)

@@ -57,6 +57,7 @@ from app.schemas import (
     PosSaleCreate,
     PosSessionClose,
     PosSessionOpen,
+    PosDrawerOpen,
     ProductCategoryCreate,
     ProductCreate,
     ProductVariantCreate,
@@ -77,6 +78,7 @@ from app.schemas import (
     StockMove,
     StockTransferCreate,
     StoreCreate,
+    StoreDrawerSettingsUpdate,
     StoreReorderPolicyUpdate,
     InventoryFefoSettingsUpdate,
     SupplierPaymentCreate,
@@ -2728,8 +2730,53 @@ async def pos_session_drawer(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import cash_drawer as cash_drawer_svc
+
     session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
-    return env(await pos_svc.drawer_summary(session))
+    summary = await pos_svc.drawer_summary(session)
+    cfg = await cash_drawer_svc.resolve_config(
+        db, tenant_id=claims["tenant_id"], store_id=session.store_id
+    )
+    return env({**summary, "hardware": cfg, "kick_base64": cash_drawer_svc.kick_base64()})
+
+
+@api.post("/pos/sessions/{session_id}/drawer/open")
+async def pos_open_cash_drawer(
+    session_id: str,
+    payload: PosDrawerOpen,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_drawer as cash_drawer_svc
+
+    session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    if session.status != "open":
+        raise HTTPException(status_code=400, detail="POS session is not open")
+    if session.user_id != claims["sub"] and claims.get("role") not in {
+        "company_admin",
+        "super_admin",
+        "store_manager",
+    }:
+        raise HTTPException(status_code=403, detail="Not your POS session")
+    result = await cash_drawer_svc.open_drawer(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=session.store_id,
+        reason=payload.reason or "manual",
+        user_id=claims.get("sub"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="pos",
+        action="drawer_open",
+        entity="pos_session",
+        entity_id=session.id,
+        details={"reason": payload.reason, "result": result},
+    )
+    await db.commit()
+    return env(result, result.get("message") or "Drawer command issued")
 
 
 @api.get("/pos/sessions/{session_id}/report")
@@ -2860,18 +2907,30 @@ async def pos_sale(
         tx=tx,
         payment_method=payment_method,
     )
-    await db.commit()
-    return env(
-        {
-            "id": tx.id,
-            "reference": ref,
-            "session_id": session.id,
-            "subtotal": float(tx.subtotal),
-            "tax": float(tx.tax),
-            "total": float(tx.total),
-        },
-        "POS sale recorded",
+
+    from app import cash_drawer as cash_drawer_svc
+
+    drawer = await cash_drawer_svc.maybe_open_on_cash_sale(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=session.store_id,
+        payment_method=payment_method,
+        sale_id=tx.id,
+        user_id=claims.get("sub"),
     )
+    await db.commit()
+    payload_out = {
+        "id": tx.id,
+        "reference": ref,
+        "session_id": session.id,
+        "subtotal": float(tx.subtotal),
+        "tax": float(tx.tax),
+        "total": float(tx.total),
+        "payment_method": payment_method,
+    }
+    if drawer is not None:
+        payload_out["drawer"] = drawer
+    return env(payload_out, "POS sale recorded")
 
 
 @api.get("/pos/products/search")
@@ -2957,6 +3016,10 @@ async def pos_receipt(
     if fmt == "json":
         receipt["paper"] = paper
         receipt["text"] = receipts_svc.render_thermal_text(receipt, paper=paper)
+        from app import cash_drawer as cash_drawer_svc
+
+        receipt["drawer_kick_base64"] = cash_drawer_svc.kick_base64()
+        receipt["drawer_kick_hex"] = cash_drawer_svc.kick_hex()
         return env(receipt)
     if fmt == "text":
         text = receipts_svc.render_thermal_text(receipt, paper=paper)
@@ -4932,6 +4995,8 @@ async def taxes_alias(claims=Depends(require_permission("tax", "read")), db: Asy
 
 @api.get("/stores")
 async def stores(claims=Depends(require_permission("stores", "read")), db: AsyncSession = Depends(get_db)):
+    from app import cash_drawer as cash_drawer_svc
+
     rows = (
         await db.execute(select(m.Store).where(m.Store.tenant_id == claims["tenant_id"]))
     ).scalars().all()
@@ -4945,6 +5010,7 @@ async def stores(claims=Depends(require_permission("stores", "read")), db: Async
                 "phone": s.phone,
                 "manager_id": s.manager_id,
                 "is_active": s.is_active,
+                **{k: v for k, v in cash_drawer_svc.serialize_drawer_settings(s).items() if k != "source"},
             }
             for s in rows
         ]
@@ -4968,6 +5034,47 @@ async def add_store(
     )
     await db.commit()
     return env({"id": store.id, "code": store.code}, "Store created with warehouse")
+
+
+@api.patch("/stores/{store_id}/drawer")
+async def update_store_drawer(
+    store_id: str,
+    payload: StoreDrawerSettingsUpdate,
+    claims=Depends(require_permission("stores", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_drawer as cash_drawer_svc
+
+    store = await stores_svc.get_store(db, claims["tenant_id"], store_id)
+    data = payload.model_dump(exclude_unset=True)
+    if "drawer_mode" in data and data["drawer_mode"] is not None:
+        store.drawer_mode = cash_drawer_svc.normalize_mode(data["drawer_mode"])
+    if "drawer_host" in data:
+        store.drawer_host = (data["drawer_host"] or "").strip() or None
+    if "drawer_port" in data and data["drawer_port"] is not None:
+        store.drawer_port = int(data["drawer_port"])
+    if "drawer_open_on_cash" in data and data["drawer_open_on_cash"] is not None:
+        store.drawer_open_on_cash = bool(data["drawer_open_on_cash"])
+    if store.drawer_mode == "network" and not store.drawer_host:
+        raise HTTPException(status_code=400, detail="drawer_host is required for network mode")
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="stores",
+        action="drawer_settings_update",
+        entity="store",
+        entity_id=store.id,
+        details=cash_drawer_svc.serialize_drawer_settings(store),
+    )
+    await db.commit()
+    return env(
+        {
+            "id": store.id,
+            **{k: v for k, v in cash_drawer_svc.serialize_drawer_settings(store).items() if k != "source"},
+        },
+        "Cash drawer settings updated",
+    )
 
 
 @api.get("/stores/{store_id}/inventory")

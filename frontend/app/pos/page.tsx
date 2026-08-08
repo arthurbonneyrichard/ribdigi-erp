@@ -177,7 +177,15 @@ export default function Page() {
       });
       const receiptRes = await api(`/pos/sales/${r.data.id}/receipt?paper=${paper}`);
       setReceipt(receiptRes.data);
-      setMessage(`Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0})`);
+      const drawerNote =
+        r.data?.drawer?.ok === true
+          ? ` · drawer ${r.data.drawer.mode}`
+          : r.data?.drawer?.skipped
+            ? ''
+            : r.data?.drawer?.error
+              ? ` · drawer warn: ${r.data.drawer.error}`
+              : '';
+      setMessage(`Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0})${drawerNote}`);
       setCart([]);
       await refreshSession();
     } catch (err: any) {
@@ -221,6 +229,23 @@ export default function Page() {
                 style={{ padding: 10, width: 220 }}
               />
               <button onClick={closeShift}>Close shift</button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setError('');
+                  try {
+                    const r = await api(`/pos/sessions/${session.session_id}/drawer/open`, {
+                      method: 'POST',
+                      body: JSON.stringify({ reason: 'manual' }),
+                    });
+                    setMessage(r.data?.message || r.message || 'Drawer opened');
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                Open cash drawer
+              </button>
             </div>
           </div>
         )}
