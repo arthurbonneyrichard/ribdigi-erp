@@ -1,0 +1,13 @@
+---
+description: Next.js / React conventions for RIBDIGI frontend
+globs: frontend/**/*
+alwaysApply: false
+---
+
+# Frontend conventions
+
+- App Router under `frontend/app/`; shared `Shell` and `lib/api`
+- Call real backend APIs; never fake module success in the UI
+- No pre-filled production logins or demo credentials in client code
+- Preserve existing ERP screen patterns unless the task redesigns a surface
+- Surface API errors clearly; do not swallow failures as silent success

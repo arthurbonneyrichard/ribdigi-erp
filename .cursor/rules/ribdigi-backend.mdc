@@ -1,0 +1,24 @@
+---
+description: FastAPI / SQLAlchemy / Alembic conventions for RIBDIGI backend
+globs: backend/**/*
+alwaysApply: false
+---
+
+# Backend conventions
+
+- Services in `backend/app/*.py`; routes in `api.py` with `require_permission`
+- Models in `models.py`; Pydantic schemas in `schemas.py`
+- New tables/columns → Alembic revision under `backend/alembic/versions/`
+- Async SQLAlchemy sessions; always filter by `tenant_id` on tenant-owned rows
+- Side effects (stock, ledger, tax, credit, audit) must stay transactionally correct
+- Tests in `backend/tests/`; prefer Docker pytest command used in the repo
+
+```python
+# ❌ BAD — success without doing the work
+return env({"ok": True}, "Backup completed")
+
+# ✅ GOOD — only return success after real work + commit
+await backup_svc.run(...)
+await db.commit()
+return env(serialize(job), "Backup completed")
+```

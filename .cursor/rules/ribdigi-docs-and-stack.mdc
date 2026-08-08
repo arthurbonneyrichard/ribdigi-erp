@@ -1,0 +1,33 @@
+---
+description: Authoritative docs and technology stack for RIBDIGI ERP
+alwaysApply: true
+---
+
+# Docs and technology
+
+## Authoritative documentation
+
+Treat `/docs` as the product specification. Prefer these over ad-hoc assumptions:
+
+- `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`
+- `docs/ARCHITECTURE_DOCUMENTS.md`
+- `docs/DATABASE_DOCUMENTATION.md`
+- `docs/API_DOCUMENTATION.md`
+- `docs/SECURITY_GUIDE.md`
+- `docs/DEVELOPMENT_ROADMAP.md`
+
+Also honor `PRODUCTION_READINESS.md` and `docs/ADR_001_TENANCY.md` (shared-schema + `tenant_id` for MVP).
+
+## Technology stack
+
+| Layer | Choice |
+|-------|--------|
+| Backend | FastAPI |
+| ORM | SQLAlchemy 2.x |
+| Database | PostgreSQL |
+| Frontend | Next.js / React |
+| Cache | Redis |
+| Tasks | Celery / RabbitMQ |
+| Containers | Docker |
+
+Schema changes require versioned **Alembic** migrations. Never manually alter production schemas.

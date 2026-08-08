@@ -1,0 +1,27 @@
+---
+description: Implementation order and anti-duplication process for RIBDIGI
+alwaysApply: true
+---
+
+# Development process
+
+Before implementing functionality:
+
+1. Read applicable requirements in `/docs` and `PRODUCTION_READINESS.md`
+2. Search the existing implementation (models, APIs, services, UI)
+3. Identify dependencies
+4. Create an implementation plan
+5. Implement database changes (Alembic)
+6. Implement domain/business logic
+7. Implement APIs
+8. Implement authorization
+9. Implement frontend
+10. Add validation
+11. Add error handling
+12. Add automated tests
+13. Run tests
+14. Verify acceptance criteria
+
+Never duplicate existing models, APIs, services, or components without checking the repository first.
+
+Prefer extending proven patterns (e.g. FX provider → bank connectors; TOTP → WebAuthn) over parallel stacks.

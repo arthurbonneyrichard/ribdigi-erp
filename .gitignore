@@ -1,9 +1,86 @@
+# --- Secrets & local env (keep .env.example tracked) ---
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+!*example*.key
+credentials.json
+**/secrets/
+**/credentials/
+
+# --- Python ---
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
 .venv/
+venv/
+ENV/
+env/
+.virtualenv/
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# --- Test / coverage / type caches ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+.tox/
+.nox/
+.hypothesis/
+.cache/
+
+# --- Node / Next.js ---
 node_modules/
 .next/
-coverage/
-.pytest_cache/
+out/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Logs & temp ---
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# --- Local databases & data volumes ---
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+/data/
+backend/data/
+
+# --- Backups / media (local runtime) ---
+*.ribbak
+/data/backups/
+/data/media/
+
+# --- OS / IDE ---
 .DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.code-workspace
+
+# --- Docker / local overrides ---
+docker-compose.override.yml

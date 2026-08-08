@@ -1,0 +1,30 @@
+---
+description: Auth, tenant isolation, and RBAC requirements for RIBDIGI
+alwaysApply: true
+---
+
+# Security and tenancy
+
+Every protected operation must verify:
+
+1. **Authentication** — valid session/token
+2. **Tenant** — `tenant_id` isolation; no cross-tenant leakage
+3. **RBAC** — module/action permission for the role
+4. **Record ownership** — where applicable (record-level scope)
+5. **Input validation** — schemas / typed payloads
+
+Never weaken security to make something work.
+
+## Patterns
+
+```python
+# ✅ GOOD — permission + tenant-scoped query
+claims = Depends(require_permission("accounting", "write"))
+row = await db.execute(
+    select(Model).where(Model.id == id, Model.tenant_id == claims["tenant_id"])
+)
+
+# ❌ BAD — trust client tenant alone or skip RBAC
+```
+
+No hard-coded production secrets. Use env/config; keep `.env` out of commits.

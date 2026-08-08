@@ -1,0 +1,24 @@
+---
+description: RIBDIGI commercial MVP product identity — no demos or fake data
+alwaysApply: true
+---
+
+# RIBDIGI BUSINESS ERP — Commercial MVP
+
+Product: **RIBDIGI BUSINESS ERP**  
+Release target: **Commercial MVP v1.0**
+
+RIBDIGI is a commercial SaaS ERP built first as an MVP. **MVP is not a demo.**
+
+## Prohibited in production code
+
+- Demo tenants/companies; fake customers, suppliers, products, inventory
+- Fake sales, purchases, accounting transactions, backups, or AI results
+- Pre-filled login credentials; hard-coded passwords or production secrets
+- Fake success responses; placeholder business logic presented as complete
+
+Dev/test fixtures may exist only in clearly isolated development/test environments and must never become production data.
+
+## Completion standard
+
+A feature is **COMPLETE** only when documented MVP acceptance criteria work end-to-end and appropriate automated tests pass. Until then, describe unfinished work as `PARTIAL`, `MISSING`, or `BROKEN` — never as production-ready.
