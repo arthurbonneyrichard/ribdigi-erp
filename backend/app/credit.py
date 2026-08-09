@@ -21,6 +21,30 @@ def early_pay_settings(tenant: m.Tenant) -> dict:
         "early_pay_discount_pct": pct,
         "early_pay_discount_days": days,
         "enabled": pct > 0 and days > 0,
+        "source": "tenant",
+    }
+
+
+def resolve_early_pay_settings(tenant: m.Tenant, party: m.Party | None = None) -> dict:
+    """Prefer party early-pay override when either field is set; otherwise tenant defaults."""
+    tenant_ep = early_pay_settings(tenant)
+    if party is None:
+        return tenant_ep
+    pct_raw = getattr(party, "early_pay_discount_pct", None)
+    days_raw = getattr(party, "early_pay_discount_days", None)
+    if pct_raw is None and days_raw is None:
+        return tenant_ep
+    pct = float(pct_raw or 0)
+    days = int(days_raw or 0)
+    if pct < 0 or pct > 100:
+        raise HTTPException(status_code=400, detail="early_pay_discount_pct must be between 0 and 100")
+    if days < 0 or days > 365:
+        raise HTTPException(status_code=400, detail="early_pay_discount_days must be between 0 and 365")
+    return {
+        "early_pay_discount_pct": pct,
+        "early_pay_discount_days": days,
+        "enabled": pct > 0 and days > 0,
+        "source": "supplier" if party.kind == "supplier" else "party",
     }
 
 

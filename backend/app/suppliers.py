@@ -25,6 +25,8 @@ def serialize_contact(row: m.PartyContact) -> dict:
 
 
 def serialize_supplier(row: m.Party, contacts: list[m.PartyContact] | None = None) -> dict:
+    pct = getattr(row, "early_pay_discount_pct", None)
+    days = getattr(row, "early_pay_discount_days", None)
     return {
         "id": row.id,
         "kind": row.kind,
@@ -38,12 +40,29 @@ def serialize_supplier(row: m.Party, contacts: list[m.PartyContact] | None = Non
         "address": row.address,
         "notes": row.notes,
         "payment_terms_days": int(row.payment_terms_days or 0),
+        "early_pay_discount_pct": None if pct is None else float(pct),
+        "early_pay_discount_days": None if days is None else int(days),
         "credit_limit": float(row.credit_limit or 0),
         "balance": float(row.balance or 0),
         "created_at": row.created_at,
         "updated_at": row.updated_at,
         "contacts": [serialize_contact(c) for c in (contacts or [])],
     }
+
+
+def _coerce_early_pay_override(
+    pct: float | None, days: int | None
+) -> tuple[float | None, int | None]:
+    """None/None means inherit tenant; otherwise store concrete override values."""
+    if pct is None and days is None:
+        return None, None
+    out_pct = float(pct or 0)
+    out_days = int(days or 0)
+    if out_pct < 0 or out_pct > 100:
+        raise HTTPException(status_code=400, detail="early_pay_discount_pct must be between 0 and 100")
+    if out_days < 0 or out_days > 365:
+        raise HTTPException(status_code=400, detail="early_pay_discount_days must be between 0 and 365")
+    return out_pct, out_days
 
 
 async def get_supplier(db: AsyncSession, tenant_id: str, supplier_id: str) -> m.Party:
@@ -115,6 +134,8 @@ async def create_supplier(
     address: str | None = None,
     notes: str | None = None,
     payment_terms_days: int = 0,
+    early_pay_discount_pct: float | None = None,
+    early_pay_discount_days: int | None = None,
     credit_limit: float = 0,
     contacts: list[dict] | None = None,
 ) -> m.Party:
@@ -122,6 +143,7 @@ async def create_supplier(
     if not name:
         raise HTTPException(status_code=400, detail="name is required")
     code = await assert_supplier_code_available(db, tenant_id=tenant_id, code=code)
+    ep_pct, ep_days = _coerce_early_pay_override(early_pay_discount_pct, early_pay_discount_days)
     now = datetime.utcnow()
     row = m.Party(
         tenant_id=tenant_id,
@@ -136,6 +158,8 @@ async def create_supplier(
         address=(address or "").strip() or None,
         notes=(notes or "").strip() or None,
         payment_terms_days=max(0, int(payment_terms_days or 0)),
+        early_pay_discount_pct=ep_pct,
+        early_pay_discount_days=ep_days,
         credit_limit=float(credit_limit or 0),
         balance=0,
         created_at=now,
@@ -184,6 +208,20 @@ async def update_supplier(
                 setattr(row, key, str(value).strip() if key != "email" else str(value).strip())
     if "payment_terms_days" in fields and fields["payment_terms_days"] is not None:
         row.payment_terms_days = max(0, int(fields["payment_terms_days"]))
+    if "early_pay_discount_pct" in fields or "early_pay_discount_days" in fields:
+        pct = (
+            fields["early_pay_discount_pct"]
+            if "early_pay_discount_pct" in fields
+            else getattr(row, "early_pay_discount_pct", None)
+        )
+        days = (
+            fields["early_pay_discount_days"]
+            if "early_pay_discount_days" in fields
+            else getattr(row, "early_pay_discount_days", None)
+        )
+        ep_pct, ep_days = _coerce_early_pay_override(pct, days)
+        row.early_pay_discount_pct = ep_pct
+        row.early_pay_discount_days = ep_days
     if "credit_limit" in fields and fields["credit_limit"] is not None:
         row.credit_limit = float(fields["credit_limit"])
     if "status" in fields and fields["status"] is not None:

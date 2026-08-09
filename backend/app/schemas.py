@@ -370,6 +370,8 @@ class SupplierCreate(BaseModel):
     address: str | None = None
     notes: str | None = None
     payment_terms_days: int = 0
+    early_pay_discount_pct: float | None = Field(default=None, ge=0, le=100)
+    early_pay_discount_days: int | None = Field(default=None, ge=0, le=365)
     credit_limit: float = 0
     contacts: list[SupplierContactCreate] = Field(default_factory=list)
 
@@ -384,6 +386,8 @@ class SupplierUpdate(BaseModel):
     address: str | None = None
     notes: str | None = None
     payment_terms_days: int | None = None
+    early_pay_discount_pct: float | None = Field(default=None, ge=0, le=100)
+    early_pay_discount_days: int | None = Field(default=None, ge=0, le=365)
     credit_limit: float | None = None
     status: str | None = None
 

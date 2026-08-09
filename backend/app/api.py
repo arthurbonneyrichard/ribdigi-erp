@@ -3563,6 +3563,8 @@ async def add_supplier(
         address=data.get("address"),
         notes=data.get("notes"),
         payment_terms_days=int(data.get("payment_terms_days") or 0),
+        early_pay_discount_pct=data.get("early_pay_discount_pct"),
+        early_pay_discount_days=data.get("early_pay_discount_days"),
         credit_limit=float(data.get("credit_limit") or 0),
         contacts=contacts,
     )
@@ -6993,14 +6995,22 @@ async def purchase_invoice_early_discount_quote(
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    ep = credit_svc.early_pay_settings(tenant)
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], inv.supplier_id)
+    ep = credit_svc.resolve_early_pay_settings(tenant, supplier)
     quote = credit_svc.purchase_invoice_early_discount(
         inv,
         pct=ep["early_pay_discount_pct"],
         days=ep["early_pay_discount_days"],
     )
-    return env({"invoice_id": inv.id, "invoice_number": inv.invoice_number, **quote})
+    return env(
+        {
+            "invoice_id": inv.id,
+            "invoice_number": inv.invoice_number,
+            "source": ep["source"],
+            **quote,
+        }
+    )
 
 
 @api.get("/credit/customers/{customer_id}/statement")

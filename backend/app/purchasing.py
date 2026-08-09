@@ -1510,9 +1510,9 @@ async def record_supplier_payment(
         raise HTTPException(status_code=404, detail="Supplier not found")
 
     tenant = (await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))).scalar_one()
-    from app.credit import early_pay_settings, purchase_invoice_early_discount
+    from app.credit import resolve_early_pay_settings, purchase_invoice_early_discount
 
-    ep = early_pay_settings(tenant)
+    ep = resolve_early_pay_settings(tenant, supplier)
     use_discount = ep["enabled"] if apply_early_discount is None else bool(apply_early_discount)
     if use_discount and not ep["enabled"]:
         use_discount = False

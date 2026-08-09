@@ -390,6 +390,9 @@ class Party(Base):
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     payment_terms_days: Mapped[int] = mapped_column(Integer, default=0)
+    # Nullable = inherit tenant early-pay terms; set values override (0/0 disables for this party).
+    early_pay_discount_pct: Mapped[float | None] = mapped_column(Numeric(7, 4), nullable=True)
+    early_pay_discount_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     credit_limit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

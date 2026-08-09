@@ -25,6 +25,8 @@ type Supplier = {
   address?: string | null;
   notes?: string | null;
   payment_terms_days?: number;
+  early_pay_discount_pct?: number | null;
+  early_pay_discount_days?: number | null;
   credit_limit?: number;
   contacts?: SupplierContact[];
 };
@@ -145,6 +147,8 @@ export default function Page() {
   const [supplierAddress, setSupplierAddress] = useState('');
   const [supplierNotes, setSupplierNotes] = useState('');
   const [supplierTerms, setSupplierTerms] = useState('0');
+  const [supplierEarlyPayPct, setSupplierEarlyPayPct] = useState('');
+  const [supplierEarlyPayDays, setSupplierEarlyPayDays] = useState('');
   const [supplierCredit, setSupplierCredit] = useState('0');
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [supplierHistory, setSupplierHistory] = useState<SupplierHistory | null>(null);
@@ -271,6 +275,8 @@ export default function Page() {
     setSupplierAddress('');
     setSupplierNotes('');
     setSupplierTerms('0');
+    setSupplierEarlyPayPct('');
+    setSupplierEarlyPayDays('');
     setSupplierCredit('0');
   }
 
@@ -286,7 +292,25 @@ export default function Page() {
     setSupplierAddress(s.address || '');
     setSupplierNotes(s.notes || '');
     setSupplierTerms(String(s.payment_terms_days ?? 0));
+    setSupplierEarlyPayPct(
+      s.early_pay_discount_pct == null ? '' : String(s.early_pay_discount_pct)
+    );
+    setSupplierEarlyPayDays(
+      s.early_pay_discount_days == null ? '' : String(s.early_pay_discount_days)
+    );
     setSupplierCredit(String(s.credit_limit ?? 0));
+  }
+
+  function supplierEarlyPayPayload() {
+    const pctEmpty = supplierEarlyPayPct.trim() === '';
+    const daysEmpty = supplierEarlyPayDays.trim() === '';
+    if (pctEmpty && daysEmpty) {
+      return { early_pay_discount_pct: null, early_pay_discount_days: null };
+    }
+    return {
+      early_pay_discount_pct: Number(supplierEarlyPayPct) || 0,
+      early_pay_discount_days: Number(supplierEarlyPayDays) || 0,
+    };
   }
 
   async function createSupplier() {
@@ -304,6 +328,7 @@ export default function Page() {
           address: supplierAddress || undefined,
           notes: supplierNotes || undefined,
           payment_terms_days: Number(supplierTerms) || 0,
+          ...supplierEarlyPayPayload(),
           credit_limit: Number(supplierCredit) || 0,
         }),
       });
@@ -336,6 +361,7 @@ export default function Page() {
           address: supplierAddress || null,
           notes: supplierNotes || null,
           payment_terms_days: Number(supplierTerms) || 0,
+          ...supplierEarlyPayPayload(),
           credit_limit: Number(supplierCredit) || 0,
         }),
       });
@@ -949,6 +975,16 @@ export default function Page() {
             <textarea value={supplierAddress} onChange={(e) => setSupplierAddress(e.target.value)} placeholder="Address" rows={2} />
             <textarea value={supplierNotes} onChange={(e) => setSupplierNotes(e.target.value)} placeholder="Notes" rows={2} />
             <input value={supplierTerms} onChange={(e) => setSupplierTerms(e.target.value)} placeholder="Payment terms (days)" />
+            <input
+              value={supplierEarlyPayPct}
+              onChange={(e) => setSupplierEarlyPayPct(e.target.value)}
+              placeholder="Early pay discount % (blank = tenant default)"
+            />
+            <input
+              value={supplierEarlyPayDays}
+              onChange={(e) => setSupplierEarlyPayDays(e.target.value)}
+              placeholder="Early pay window days (blank = tenant default)"
+            />
             <input value={supplierCredit} onChange={(e) => setSupplierCredit(e.target.value)} placeholder="Credit limit" />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {!selectedSupplierId ? (
