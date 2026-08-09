@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
@@ -127,6 +127,7 @@ from app.schemas import (
     WarehouseStockTransferCreate,
     LowStockReorderPoCreate,
     StoreCreate,
+    StoreUpdate,
     StoreDrawerSettingsUpdate,
     StoreReorderPolicyUpdate,
     InventoryFefoSettingsUpdate,
@@ -157,6 +158,7 @@ from app.schemas import (
     StockCountCreate,
     StockCountItemsUpdate,
     WarehouseCreate,
+    WarehouseUpdate,
 )
 from app.security import (
     create_access_token,
@@ -358,6 +360,18 @@ async def tenant_me_update(
             else None
         ),
         invoice_print_template=payload.invoice_print_template,
+        plan_code=payload.plan_code,
+        legal_name=payload.legal_name,
+        registration_number=payload.registration_number,
+        billing_address=payload.billing_address,
+        shipping_address=payload.shipping_address,
+        warehouse_address=payload.warehouse_address,
+        contact_person_name=payload.contact_person_name,
+        contact_person_email=(
+            str(payload.contact_person_email) if payload.contact_person_email is not None else None
+        ),
+        contact_person_phone=payload.contact_person_phone,
+        inactivity_timeout_minutes=payload.inactivity_timeout_minutes,
     )
     await audit_svc.record_event(
         db,
@@ -1365,6 +1379,7 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
         perms = permissions_for_role(user.role)
     else:
         perms = await roles_svc.permissions_for_assignment(db, user.tenant_id, user.role)
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
     return env(
         {
             "id": user.id,
@@ -1376,6 +1391,11 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "email_verified": user.email_verified,
             "permissions": perms,
             "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
+            "inactivity_timeout_minutes": int(
+                getattr(tenant, "inactivity_timeout_minutes", None) or 30
+            )
+            if tenant
+            else 30,
             **totp_svc.status_payload(user),
         }
     )
@@ -1622,6 +1642,9 @@ async def create_branch(
         code=payload.code,
         name=payload.name,
         address=payload.address,
+        phone=payload.phone,
+        email=str(payload.email) if payload.email is not None else None,
+        manager_id=payload.manager_id,
     )
     await audit_svc.record_event(
         db,
@@ -1651,6 +1674,10 @@ async def update_branch(
         branch_id=branch_id,
         name=payload.name,
         address=payload.address,
+        phone=payload.phone,
+        email=str(payload.email) if payload.email is not None else None,
+        manager_id=payload.manager_id,
+        clear_manager=payload.clear_manager,
         is_active=payload.is_active,
     )
     await db.commit()
@@ -1683,6 +1710,7 @@ async def create_department(
         code=payload.code,
         name=payload.name,
         branch_id=payload.branch_id,
+        head_user_id=payload.head_user_id,
     )
     await audit_svc.record_event(
         db,
@@ -1713,6 +1741,8 @@ async def update_department(
         name=payload.name,
         branch_id=payload.branch_id,
         clear_branch=payload.clear_branch,
+        head_user_id=payload.head_user_id,
+        clear_head=payload.clear_head,
         is_active=payload.is_active,
     )
     await db.commit()
@@ -1957,6 +1987,11 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     now = datetime.utcnow()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if month_start.month == 1:
+        prior_month_start = month_start.replace(year=month_start.year - 1, month=12)
+    else:
+        prior_month_start = month_start.replace(month=month_start.month - 1)
+    expiry_horizon = now + timedelta(days=30)
 
     async def scalar(stmt):
         return (await db.execute(stmt)).scalar() or 0
@@ -1994,6 +2029,21 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             m.Product.stock_qty <= m.Product.reorder_level,
         )
     )
+    out_of_stock = await scalar(
+        select(func.count(m.Product.id)).where(
+            m.Product.tenant_id == tid,
+            m.Product.stock_qty <= 0,
+        )
+    )
+    expiring_batches = await scalar(
+        select(func.count(m.ProductBatch.id)).where(
+            m.ProductBatch.tenant_id == tid,
+            m.ProductBatch.expiry_date.is_not(None),
+            m.ProductBatch.expiry_date >= now,
+            m.ProductBatch.expiry_date <= expiry_horizon,
+            m.ProductBatch.quantity > 0,
+        )
+    )
     customers = await scalar(
         select(func.count(m.Party.id)).where(m.Party.tenant_id == tid, m.Party.kind == "customer")
     )
@@ -2014,6 +2064,14 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             m.Transaction.created_at >= month_start,
         )
     )
+    prior_month_revenue = await scalar(
+        select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+            m.Transaction.tenant_id == tid,
+            m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+            m.Transaction.created_at >= prior_month_start,
+            m.Transaction.created_at < month_start,
+        )
+    )
     # Also include posted invoice totals for the day/month when POS txs alone understate sales.
     inv_daily = await scalar(
         select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
@@ -2029,8 +2087,20 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             m.SalesInvoice.posted_at >= month_start,
         )
     )
+    inv_prior = await scalar(
+        select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+            m.SalesInvoice.tenant_id == tid,
+            m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+            m.SalesInvoice.posted_at >= prior_month_start,
+            m.SalesInvoice.posted_at < month_start,
+        )
+    )
     daily_revenue = float(daily_revenue) + float(inv_daily)
     monthly_revenue = float(monthly_revenue) + float(inv_monthly)
+    prior_month_revenue = float(prior_month_revenue) + float(inv_prior)
+    mom_change_pct = None
+    if prior_month_revenue > 0:
+        mom_change_pct = round(((monthly_revenue - prior_month_revenue) / prior_month_revenue) * 100, 2)
 
     recent_sales = (
         await db.execute(
@@ -2123,10 +2193,14 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "total_expenses": float(expenses),
             "products": products,
             "low_stock": low,
+            "out_of_stock": out_of_stock,
+            "expiring_batches": expiring_batches,
             "customers": customers,
             "suppliers": suppliers,
             "daily_revenue": daily_revenue,
             "monthly_revenue": monthly_revenue,
+            "prior_month_revenue": prior_month_revenue,
+            "mom_change_pct": mom_change_pct,
             "recent_sales": recent,
             "top_products": top_products,
         }
@@ -7859,14 +7933,7 @@ async def stores(claims=Depends(require_permission("stores", "read")), db: Async
     return env(
         [
             {
-                "id": s.id,
-                "name": s.name,
-                "code": s.code,
-                "address": s.address,
-                "phone": s.phone,
-                "manager_id": s.manager_id,
-                "branch_id": s.branch_id,
-                "is_active": s.is_active,
+                **stores_svc.serialize_store(s),
                 **{k: v for k, v in cash_drawer_svc.serialize_drawer_settings(s).items() if k != "source"},
             }
             for s in rows
@@ -7897,12 +7964,57 @@ async def add_store(
         phone=payload.phone,
         manager_id=payload.manager_id,
         branch_id=branch_id,
+        operating_hours=payload.operating_hours,
     )
     await db.commit()
     return env(
-        {"id": store.id, "code": store.code, "branch_id": store.branch_id},
+        stores_svc.serialize_store(store),
         "Store created with warehouse",
     )
+
+
+@api.patch("/stores/{store_id}")
+async def update_store(
+    store_id: str,
+    payload: StoreUpdate,
+    claims=Depends(require_permission("stores", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    branch_id = payload.branch_id
+    if payload.branch_id:
+        branch_id, _ = await org_units_svc.assert_user_org_assignment(
+            db,
+            claims["tenant_id"],
+            branch_id=payload.branch_id,
+            department_id=None,
+        )
+    store = await stores_svc.update_store(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=store_id,
+        name=payload.name,
+        address=payload.address,
+        phone=payload.phone,
+        manager_id=payload.manager_id,
+        clear_manager=payload.clear_manager,
+        branch_id=branch_id,
+        clear_branch=payload.clear_branch,
+        operating_hours=payload.operating_hours,
+        is_active=payload.is_active,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="stores",
+        action="store_updated",
+        entity="store",
+        entity_id=store.id,
+        details={"code": store.code},
+    )
+    await db.commit()
+    return env(stores_svc.serialize_store(store), "Store updated")
 
 
 @api.patch("/stores/{store_id}/drawer")
@@ -8111,7 +8223,7 @@ async def warehouses(claims=Depends(require_permission("inventory", "read")), db
     rows = (
         await db.execute(select(m.Warehouse).where(m.Warehouse.tenant_id == claims["tenant_id"]))
     ).scalars().all()
-    return env(rows)
+    return env([stores_svc.serialize_warehouse(r) for r in rows])
 
 
 @api.post("/warehouses")
@@ -8120,10 +8232,69 @@ async def add_warehouse(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    warehouse = m.Warehouse(tenant_id=claims["tenant_id"], **payload.model_dump())
+    tenants_svc.assert_writable(claims)
+    data = payload.model_dump()
+    if data.get("store_id"):
+        await stores_svc.get_store(db, claims["tenant_id"], data["store_id"])
+    if data.get("manager_id"):
+        manager = (
+            await db.execute(
+                select(m.User).where(
+                    m.User.id == data["manager_id"],
+                    m.User.tenant_id == claims["tenant_id"],
+                )
+            )
+        ).scalar_one_or_none()
+        if not manager:
+            raise HTTPException(status_code=404, detail="Manager user not found")
+    wtype = (data.get("warehouse_type") or "retail").strip().lower()
+    if wtype not in {"retail", "main", "cold", "bulk", "transit"}:
+        raise HTTPException(
+            status_code=400,
+            detail="warehouse_type must be one of: retail, main, cold, bulk, transit",
+        )
+    data["warehouse_type"] = wtype
+    data["code"] = str(data["code"]).strip().upper()
+    exists = (
+        await db.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == claims["tenant_id"],
+                m.Warehouse.code == data["code"],
+            )
+        )
+    ).scalar_one_or_none()
+    if exists:
+        raise HTTPException(status_code=409, detail="Warehouse code already exists")
+    warehouse = m.Warehouse(tenant_id=claims["tenant_id"], is_active=True, **data)
     db.add(warehouse)
     await db.commit()
-    return env({"id": warehouse.id})
+    return env(stores_svc.serialize_warehouse(warehouse), "Warehouse created")
+
+
+@api.patch("/warehouses/{warehouse_id}")
+async def update_warehouse(
+    warehouse_id: str,
+    payload: WarehouseUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    warehouse = await stores_svc.update_warehouse(
+        db,
+        tenant_id=claims["tenant_id"],
+        warehouse_id=warehouse_id,
+        name=payload.name,
+        store_id=payload.store_id,
+        clear_store=payload.clear_store,
+        warehouse_type=payload.warehouse_type,
+        manager_id=payload.manager_id,
+        clear_manager=payload.clear_manager,
+        address=payload.address,
+        capacity=payload.capacity,
+        is_active=payload.is_active,
+    )
+    await db.commit()
+    return env(stores_svc.serialize_warehouse(warehouse), "Warehouse updated")
 
 
 @api.get("/inventory/stock-transfers")

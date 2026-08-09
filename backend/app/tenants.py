@@ -13,6 +13,7 @@ from app.config import settings
 from app.document_numbering import normalize_document_numbering, preview_document_numbering, merge_document_numbering
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
+VALID_PLAN_CODES = frozenset({"trial", "starter", "growth", "enterprise"})
 VALID_INDUSTRIES = frozenset(
     {"retail", "pharmacy", "restaurant", "bakery", "wholesale", "manufacturing", "mart"}
 )
@@ -53,10 +54,20 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "tax_registration_number": getattr(tenant, "tax_registration_number", None),
         "tax_filing_period": getattr(tenant, "tax_filing_period", None) or "monthly",
         "status": tenant.status,
+        "plan_code": getattr(tenant, "plan_code", None) or "trial",
+        "legal_name": getattr(tenant, "legal_name", None),
+        "registration_number": getattr(tenant, "registration_number", None),
         "phone": tenant.phone,
         "email": tenant.email,
         "website": tenant.website,
         "address": tenant.address,
+        "billing_address": getattr(tenant, "billing_address", None),
+        "shipping_address": getattr(tenant, "shipping_address", None),
+        "warehouse_address": getattr(tenant, "warehouse_address", None),
+        "contact_person_name": getattr(tenant, "contact_person_name", None),
+        "contact_person_email": getattr(tenant, "contact_person_email", None),
+        "contact_person_phone": getattr(tenant, "contact_person_phone", None),
+        "inactivity_timeout_minutes": int(getattr(tenant, "inactivity_timeout_minutes", None) or 30),
         "timezone": tenant.timezone or "Africa/Accra",
         "fiscal_year_start": tenant.fiscal_year_start or "01-01",
         "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
@@ -294,6 +305,16 @@ async def update_profile(
     tax_filing_period: str | None = None,
     document_numbering: dict | None = None,
     invoice_print_template: str | None = None,
+    plan_code: str | None = None,
+    legal_name: str | None = None,
+    registration_number: str | None = None,
+    billing_address: str | None = None,
+    shipping_address: str | None = None,
+    warehouse_address: str | None = None,
+    contact_person_name: str | None = None,
+    contact_person_email: str | None = None,
+    contact_person_phone: str | None = None,
+    inactivity_timeout_minutes: int | None = None,
 ) -> m.Tenant:
     if company_name is not None:
         name = company_name.strip()
@@ -358,6 +379,38 @@ async def update_profile(
                 detail=f"invoice_print_template must be one of: {sorted(INVOICE_PRINT_TEMPLATES)}",
             )
         tenant.invoice_print_template = tpl
+    if plan_code is not None:
+        plan = plan_code.strip().lower()
+        if plan not in VALID_PLAN_CODES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"plan_code must be one of: {sorted(VALID_PLAN_CODES)}",
+            )
+        tenant.plan_code = plan
+    if legal_name is not None:
+        tenant.legal_name = legal_name.strip() or None
+    if registration_number is not None:
+        tenant.registration_number = registration_number.strip() or None
+    if billing_address is not None:
+        tenant.billing_address = billing_address.strip() or None
+    if shipping_address is not None:
+        tenant.shipping_address = shipping_address.strip() or None
+    if warehouse_address is not None:
+        tenant.warehouse_address = warehouse_address.strip() or None
+    if contact_person_name is not None:
+        tenant.contact_person_name = contact_person_name.strip() or None
+    if contact_person_email is not None:
+        tenant.contact_person_email = contact_person_email.strip() or None
+    if contact_person_phone is not None:
+        tenant.contact_person_phone = contact_person_phone.strip() or None
+    if inactivity_timeout_minutes is not None:
+        minutes = int(inactivity_timeout_minutes)
+        if minutes < 5 or minutes > 480:
+            raise HTTPException(
+                status_code=400,
+                detail="inactivity_timeout_minutes must be between 5 and 480",
+            )
+        tenant.inactivity_timeout_minutes = minutes
     await db.flush()
     return tenant
 

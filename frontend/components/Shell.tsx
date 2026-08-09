@@ -35,6 +35,7 @@ function canReadModule(permissions: Record<string, string[]> | null | undefined,
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
+  const [idleMinutes, setIdleMinutes] = useState(30);
 
   useEffect(() => {
     let active = true;
@@ -47,6 +48,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         if (!active) return;
         setUnread(countRes.data?.count || 0);
         setPermissions(meRes.data?.permissions || {});
+        setIdleMinutes(Number(meRes.data?.inactivity_timeout_minutes) || 30);
       } catch {
         if (active) {
           setUnread(0);
@@ -61,6 +63,29 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       clearInterval(id);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const timeoutMs = Math.max(5, idleMinutes) * 60 * 1000;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const reset = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/';
+      }, timeoutMs);
+    };
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'] as const;
+    events.forEach((ev) => window.addEventListener(ev, reset, { passive: true }));
+    reset();
+    return () => {
+      if (timer) clearTimeout(timer);
+      events.forEach((ev) => window.removeEventListener(ev, reset));
+    };
+  }, [idleMinutes]);
 
   const visible = items.filter(([, , module]) => canReadModule(permissions, module));
 

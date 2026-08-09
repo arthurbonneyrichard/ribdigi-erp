@@ -329,5 +329,115 @@ async def test_dashboard_includes_stage1_kpis(client):
         "monthly_revenue",
         "recent_sales",
         "top_products",
+        "out_of_stock",
+        "expiring_batches",
+        "prior_month_revenue",
+        "mom_change_pct",
     ):
         assert key in data
+
+
+@pytest.mark.asyncio
+async def test_org_admin_fields_store_warehouse_and_plan(client):
+    ac, seed = client
+    headers = await _admin_headers(ac, seed)
+
+    branch = await ac.post(
+        "/api/v1/branches",
+        headers=headers,
+        json={
+            "code": "EAST",
+            "name": "East Branch",
+            "phone": "+233200000001",
+            "email": "east@alpha.example.com",
+        },
+    )
+    assert branch.status_code == 200, branch.text
+    assert branch.json()["data"]["phone"] == "+233200000001"
+    branch_id = branch.json()["data"]["id"]
+
+    patched_branch = await ac.patch(
+        f"/api/v1/branches/{branch_id}",
+        headers=headers,
+        json={"phone": "+233200000099"},
+    )
+    assert patched_branch.status_code == 200, patched_branch.text
+    assert patched_branch.json()["data"]["phone"] == "+233200000099"
+
+    store = await ac.post(
+        "/api/v1/stores",
+        headers=headers,
+        json={
+            "code": "ST-EAST",
+            "name": "East Store",
+            "phone": "+233200000010",
+            "branch_id": branch_id,
+            "operating_hours": {"mon": "08:00-18:00"},
+        },
+    )
+    assert store.status_code == 200, store.text
+    store_id = store.json()["data"]["id"]
+    assert store.json()["data"]["operating_hours"]["mon"] == "08:00-18:00"
+
+    store_upd = await ac.patch(
+        f"/api/v1/stores/{store_id}",
+        headers=headers,
+        json={"phone": "+233200000011", "operating_hours": {"tue": "09:00-17:00"}},
+    )
+    assert store_upd.status_code == 200, store_upd.text
+    assert store_upd.json()["data"]["phone"] == "+233200000011"
+    assert store_upd.json()["data"]["operating_hours"]["tue"] == "09:00-17:00"
+
+    wh = await ac.post(
+        "/api/v1/warehouses",
+        headers=headers,
+        json={
+            "code": "WH-COLD",
+            "name": "Cold Room",
+            "warehouse_type": "cold",
+            "address": "Dock 2",
+            "capacity": 1000,
+            "store_id": store_id,
+        },
+    )
+    assert wh.status_code == 200, wh.text
+    assert wh.json()["data"]["warehouse_type"] == "cold"
+    wh_id = wh.json()["data"]["id"]
+
+    wh_upd = await ac.patch(
+        f"/api/v1/warehouses/{wh_id}",
+        headers=headers,
+        json={"capacity": 1500, "is_active": True},
+    )
+    assert wh_upd.status_code == 200, wh_upd.text
+    assert float(wh_upd.json()["data"]["capacity"]) == 1500
+
+    listed = await ac.get("/api/v1/warehouses", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert all(isinstance(row, dict) and "warehouse_type" in row for row in listed.json()["data"])
+
+    profile = await ac.patch(
+        "/api/v1/tenants/me",
+        headers=headers,
+        json={
+            "plan_code": "growth",
+            "legal_name": "Alpha Retail Ltd",
+            "registration_number": "CS123456",
+            "billing_address": "Billing Rd 1",
+            "shipping_address": "Ship Rd 2",
+            "warehouse_address": "Wh Rd 3",
+            "contact_person_name": "Ada Admin",
+            "contact_person_email": "ada@alpha.example.com",
+            "contact_person_phone": "+233200000020",
+            "inactivity_timeout_minutes": 45,
+        },
+    )
+    assert profile.status_code == 200, profile.text
+    pdata = profile.json()["data"]
+    assert pdata["plan_code"] == "growth"
+    assert pdata["legal_name"] == "Alpha Retail Ltd"
+    assert pdata["inactivity_timeout_minutes"] == 45
+
+    me = await ac.get("/api/v1/me", headers=headers)
+    assert me.status_code == 200, me.text
+    assert me.json()["data"]["inactivity_timeout_minutes"] == 45

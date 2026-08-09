@@ -35,10 +35,20 @@ class Tenant(Base):
     tax_registration_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
     tax_filing_period: Mapped[str] = mapped_column(String(20), default="monthly")
     status: Mapped[str] = mapped_column(String(20), default="trial")
+    plan_code: Mapped[str] = mapped_column(String(40), default="trial")
+    legal_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    registration_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     website: Mapped[str | None] = mapped_column(String(255), nullable=True)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    billing_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    shipping_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    warehouse_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    contact_person_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    contact_person_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    contact_person_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    inactivity_timeout_minutes: Mapped[int] = mapped_column(Integer, default=30)
     timezone: Mapped[str] = mapped_column(String(64), default="Africa/Accra")
     fiscal_year_start: Mapped[str] = mapped_column(String(5), default="01-01")
     expense_approval_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=100)
@@ -78,6 +88,9 @@ class Branch(Base):
     code: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(150))
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -93,6 +106,7 @@ class Department(Base):
     branch_id: Mapped[str | None] = mapped_column(ForeignKey("branches.id"), nullable=True, index=True)
     code: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(150))
+    head_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -182,6 +196,7 @@ class Store(Base):
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    operating_hours: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # Cash drawer: none|mock|network|browser_bridge
     drawer_mode: Mapped[str] = mapped_column(String(30), default="none")
@@ -199,6 +214,11 @@ class Warehouse(Base):
     store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
     name: Mapped[str] = mapped_column(String(150))
     code: Mapped[str] = mapped_column(String(50))
+    warehouse_type: Mapped[str] = mapped_column(String(40), default="retail")
+    manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    capacity: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class WarehouseStock(Base):

@@ -9,7 +9,10 @@ type Store = {
   code: string;
   name: string;
   address?: string;
+  phone?: string | null;
+  manager_id?: string | null;
   branch_id?: string | null;
+  operating_hours?: Record<string, string> | null;
   is_active?: boolean;
   drawer_mode?: string;
   drawer_host?: string | null;
@@ -35,7 +38,12 @@ export default function Page() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [hoursNote, setHoursNote] = useState('');
   const [branchId, setBranchId] = useState('');
+  const [editStoreId, setEditStoreId] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editHours, setEditHours] = useState('');
   const [fromStore, setFromStore] = useState('');
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
@@ -92,14 +100,37 @@ export default function Page() {
           code,
           name,
           address: address || undefined,
+          phone: phone || undefined,
           branch_id: branchId || null,
+          operating_hours: hoursNote ? { note: hoursNote } : undefined,
         }),
       });
       setCode('');
       setName('');
       setAddress('');
+      setPhone('');
+      setHoursNote('');
       setBranchId('');
       setMessage('Store created');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveStoreDetails() {
+    if (!editStoreId) return;
+    setError('');
+    setMessage('');
+    try {
+      await api(`/stores/${editStoreId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          phone: editPhone || null,
+          operating_hours: editHours ? { note: editHours } : {},
+        }),
+      });
+      setMessage('Store details updated');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -231,6 +262,12 @@ export default function Page() {
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code" />
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
+            <input
+              value={hoursNote}
+              onChange={(e) => setHoursNote(e.target.value)}
+              placeholder="Operating hours (e.g. Mon–Sat 8–18)"
+            />
             <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
               <option value="">No branch</option>
               {branches.map((b) => (
@@ -240,6 +277,37 @@ export default function Page() {
               ))}
             </select>
             <button onClick={createStore}>Create store</button>
+          </div>
+        </div>
+        <div className="card">
+          <h3>Edit store</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <select
+              value={editStoreId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setEditStoreId(id);
+                const s = stores.find((x) => x.id === id);
+                setEditPhone(s?.phone || '');
+                setEditHours(s?.operating_hours?.note || '');
+              }}
+            >
+              <option value="">Select store</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone" />
+            <input
+              value={editHours}
+              onChange={(e) => setEditHours(e.target.value)}
+              placeholder="Operating hours note"
+            />
+            <button onClick={saveStoreDetails} disabled={!editStoreId}>
+              Save store details
+            </button>
           </div>
         </div>
         <div className="card">
@@ -335,6 +403,7 @@ export default function Page() {
             <th>Code</th>
             <th>Name</th>
             <th>Branch</th>
+            <th>Phone</th>
             <th>Address</th>
             <th></th>
           </tr>
@@ -347,6 +416,7 @@ export default function Page() {
               <td>
                 {branches.find((b) => b.id === s.branch_id)?.code || s.branch_id || '—'}
               </td>
+              <td>{s.phone || '—'}</td>
               <td>{s.address || '—'}</td>
               <td>
                 <button onClick={() => loadInventory(s.id)}>Inventory / reorder</button>

@@ -10,10 +10,14 @@ type Dash = {
   total_expenses?: number;
   products?: number;
   low_stock?: number;
+  out_of_stock?: number;
+  expiring_batches?: number;
   customers?: number;
   suppliers?: number;
   daily_revenue?: number;
   monthly_revenue?: number;
+  prior_month_revenue?: number;
+  mom_change_pct?: number | null;
   recent_sales?: { source: string; reference: string; total: number; at?: string }[];
   top_products?: { name: string; sku: string; quantity: number; revenue: number }[];
 };
@@ -49,8 +53,15 @@ export default function Page() {
     ['Suppliers', d.suppliers ?? 0],
     ['Products', d.products ?? 0],
     ['Low Stock', d.low_stock ?? 0],
+    ['Out of Stock', d.out_of_stock ?? 0],
+    ['Expiring (30d)', d.expiring_batches ?? 0],
     ['Today Revenue', d.daily_revenue ?? 0],
     ['Month Revenue', d.monthly_revenue ?? 0],
+    ['Prior Month', d.prior_month_revenue ?? 0],
+    [
+      'MoM %',
+      d.mom_change_pct == null ? '—' : `${Number(d.mom_change_pct).toLocaleString()}%`,
+    ],
   ];
 
   const maxTop = Math.max(1, ...(d.top_products || []).map((p) => Number(p.revenue) || 0));

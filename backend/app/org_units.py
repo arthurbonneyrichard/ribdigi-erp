@@ -24,12 +24,28 @@ def _clean_code(code: str) -> str:
     return value
 
 
+async def _assert_tenant_user(db: AsyncSession, tenant_id: str, user_id: str | None) -> str | None:
+    if not user_id:
+        return None
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found in tenant")
+    return user.id
+
+
 def serialize_branch(row: m.Branch) -> dict:
     return {
         "id": row.id,
         "code": row.code,
         "name": row.name,
         "address": row.address,
+        "phone": getattr(row, "phone", None),
+        "email": getattr(row, "email", None),
+        "manager_id": getattr(row, "manager_id", None),
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
@@ -41,6 +57,7 @@ def serialize_department(row: m.Department) -> dict:
         "code": row.code,
         "name": row.name,
         "branch_id": row.branch_id,
+        "head_user_id": getattr(row, "head_user_id", None),
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
@@ -100,11 +117,15 @@ async def create_branch(
     code: str,
     name: str,
     address: str | None = None,
+    phone: str | None = None,
+    email: str | None = None,
+    manager_id: str | None = None,
 ) -> m.Branch:
     code = _clean_code(code)
     name_clean = (name or "").strip()
     if len(name_clean) < 2:
         raise HTTPException(status_code=400, detail="name must be at least 2 characters")
+    manager_id = await _assert_tenant_user(db, tenant_id, manager_id)
     exists = (
         await db.execute(
             select(m.Branch).where(m.Branch.tenant_id == tenant_id, m.Branch.code == code)
@@ -117,6 +138,9 @@ async def create_branch(
         code=code,
         name=name_clean,
         address=(address or "").strip() or None,
+        phone=(phone or "").strip() or None,
+        email=(email or "").strip() or None,
+        manager_id=manager_id,
         is_active=True,
     )
     db.add(row)
@@ -131,6 +155,10 @@ async def update_branch(
     branch_id: str,
     name: str | None = None,
     address: str | None = None,
+    phone: str | None = None,
+    email: str | None = None,
+    manager_id: str | None = None,
+    clear_manager: bool = False,
     is_active: bool | None = None,
 ) -> m.Branch:
     row = await get_branch(db, tenant_id, branch_id)
@@ -141,6 +169,14 @@ async def update_branch(
         row.name = name_clean
     if address is not None:
         row.address = address.strip() or None
+    if phone is not None:
+        row.phone = phone.strip() or None
+    if email is not None:
+        row.email = email.strip() or None
+    if clear_manager:
+        row.manager_id = None
+    elif manager_id is not None:
+        row.manager_id = await _assert_tenant_user(db, tenant_id, manager_id)
     if is_active is not None:
         row.is_active = bool(is_active)
     await db.flush()
@@ -154,6 +190,7 @@ async def create_department(
     code: str,
     name: str,
     branch_id: str | None = None,
+    head_user_id: str | None = None,
 ) -> m.Department:
     code = _clean_code(code)
     name_clean = (name or "").strip()
@@ -161,6 +198,7 @@ async def create_department(
         raise HTTPException(status_code=400, detail="name must be at least 2 characters")
     if branch_id:
         await get_branch(db, tenant_id, branch_id)
+    head_user_id = await _assert_tenant_user(db, tenant_id, head_user_id)
     exists = (
         await db.execute(
             select(m.Department).where(m.Department.tenant_id == tenant_id, m.Department.code == code)
@@ -173,6 +211,7 @@ async def create_department(
         branch_id=branch_id,
         code=code,
         name=name_clean,
+        head_user_id=head_user_id,
         is_active=True,
     )
     db.add(row)
@@ -188,6 +227,8 @@ async def update_department(
     name: str | None = None,
     branch_id: str | None = None,
     clear_branch: bool = False,
+    head_user_id: str | None = None,
+    clear_head: bool = False,
     is_active: bool | None = None,
 ) -> m.Department:
     row = await get_department(db, tenant_id, department_id)
@@ -201,6 +242,10 @@ async def update_department(
     elif branch_id is not None:
         await get_branch(db, tenant_id, branch_id)
         row.branch_id = branch_id
+    if clear_head:
+        row.head_user_id = None
+    elif head_user_id is not None:
+        row.head_user_id = await _assert_tenant_user(db, tenant_id, head_user_id)
     if is_active is not None:
         row.is_active = bool(is_active)
     await db.flush()

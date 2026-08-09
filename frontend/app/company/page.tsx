@@ -13,7 +13,13 @@ export default function Page() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
-  const [branchForm, setBranchForm] = useState({ code: '', name: '', address: '' });
+  const [branchForm, setBranchForm] = useState({
+    code: '',
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+  });
   const [deptForm, setDeptForm] = useState({ code: '', name: '', branch_id: '' });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -89,6 +95,16 @@ export default function Page() {
           tax_filing_period: tenant.tax_filing_period,
           document_numbering: tenant.document_numbering || undefined,
           invoice_print_template: tenant.invoice_print_template || undefined,
+          plan_code: tenant.plan_code || undefined,
+          legal_name: tenant.legal_name || undefined,
+          registration_number: tenant.registration_number || undefined,
+          billing_address: tenant.billing_address || undefined,
+          shipping_address: tenant.shipping_address || undefined,
+          warehouse_address: tenant.warehouse_address || undefined,
+          contact_person_name: tenant.contact_person_name || undefined,
+          contact_person_email: tenant.contact_person_email || undefined,
+          contact_person_phone: tenant.contact_person_phone || undefined,
+          inactivity_timeout_minutes: tenant.inactivity_timeout_minutes || undefined,
         }),
       });
       setTenant(r.data);
@@ -140,7 +156,7 @@ export default function Page() {
     <Shell>
       <h1>Company</h1>
       <p className="muted">
-        Status: {tenant.status} · Slug: {tenant.slug}
+        Status: {tenant.status} · Plan: {tenant.plan_code || 'trial'} · Slug: {tenant.slug}
         {tenant.days_remaining != null && tenant.status === 'trial'
           ? ` · Trial days left: ${tenant.days_remaining}`
           : ''}
@@ -235,6 +251,26 @@ export default function Page() {
           onChange={(e) => setTenant({ ...tenant, company_name: e.target.value })}
           placeholder="Company name"
         />
+        <input
+          value={tenant.legal_name || ''}
+          onChange={(e) => setTenant({ ...tenant, legal_name: e.target.value })}
+          placeholder="Legal name"
+        />
+        <input
+          value={tenant.registration_number || ''}
+          onChange={(e) => setTenant({ ...tenant, registration_number: e.target.value })}
+          placeholder="Registration number"
+        />
+        <select
+          value={tenant.plan_code || 'trial'}
+          onChange={(e) => setTenant({ ...tenant, plan_code: e.target.value })}
+        >
+          {['trial', 'starter', 'growth', 'enterprise'].map((p) => (
+            <option key={p} value={p}>
+              Plan: {p}
+            </option>
+          ))}
+        </select>
         <select
           value={tenant.industry || 'retail'}
           onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}
@@ -268,7 +304,47 @@ export default function Page() {
         <textarea
           value={tenant.address || ''}
           onChange={(e) => setTenant({ ...tenant, address: e.target.value })}
-          placeholder="Address"
+          placeholder="Primary address"
+        />
+        <textarea
+          value={tenant.billing_address || ''}
+          onChange={(e) => setTenant({ ...tenant, billing_address: e.target.value })}
+          placeholder="Billing address"
+        />
+        <textarea
+          value={tenant.shipping_address || ''}
+          onChange={(e) => setTenant({ ...tenant, shipping_address: e.target.value })}
+          placeholder="Shipping address"
+        />
+        <textarea
+          value={tenant.warehouse_address || ''}
+          onChange={(e) => setTenant({ ...tenant, warehouse_address: e.target.value })}
+          placeholder="Warehouse address"
+        />
+        <input
+          value={tenant.contact_person_name || ''}
+          onChange={(e) => setTenant({ ...tenant, contact_person_name: e.target.value })}
+          placeholder="Contact person name"
+        />
+        <input
+          value={tenant.contact_person_email || ''}
+          onChange={(e) => setTenant({ ...tenant, contact_person_email: e.target.value })}
+          placeholder="Contact person email"
+        />
+        <input
+          value={tenant.contact_person_phone || ''}
+          onChange={(e) => setTenant({ ...tenant, contact_person_phone: e.target.value })}
+          placeholder="Contact person phone"
+        />
+        <input
+          type="number"
+          min={5}
+          max={480}
+          value={tenant.inactivity_timeout_minutes ?? 30}
+          onChange={(e) =>
+            setTenant({ ...tenant, inactivity_timeout_minutes: Number(e.target.value) || 30 })
+          }
+          placeholder="Inactivity timeout (minutes)"
         />
         <input
           value={tenant.timezone || ''}
@@ -539,7 +615,7 @@ export default function Page() {
                 method: 'POST',
                 body: JSON.stringify(branchForm),
               });
-              setBranchForm({ code: '', name: '', address: '' });
+              setBranchForm({ code: '', name: '', address: '', phone: '', email: '' });
               setMessage('Branch created');
               await refresh();
             } catch (err: any) {
@@ -566,12 +642,24 @@ export default function Page() {
             onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
             placeholder="Address (optional)"
           />
+          <input
+            value={branchForm.phone}
+            onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })}
+            placeholder="Phone (optional)"
+          />
+          <input
+            value={branchForm.email}
+            onChange={(e) => setBranchForm({ ...branchForm, email: e.target.value })}
+            placeholder="Email (optional)"
+          />
           <button type="submit">Add branch</button>
         </form>
         <ul>
           {branches.map((b) => (
             <li key={b.id}>
-              {b.code} — {b.name} {b.is_active ? '' : '(inactive)'}
+              {b.code} — {b.name}
+              {b.phone ? ` · ${b.phone}` : ''}
+              {b.is_active ? '' : ' (inactive)'}
             </li>
           ))}
           {!branches.length && <li className="muted">No branches yet</li>}

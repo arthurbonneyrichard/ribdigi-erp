@@ -71,6 +71,7 @@ async def create_store(
     phone: str | None = None,
     manager_id: str | None = None,
     branch_id: str | None = None,
+    operating_hours: dict | None = None,
 ) -> m.Store:
     if manager_id:
         manager = (
@@ -88,6 +89,7 @@ async def create_store(
         phone=phone,
         manager_id=manager_id,
         branch_id=branch_id,
+        operating_hours=operating_hours,
         is_active=True,
     )
     db.add(store)
@@ -98,10 +100,156 @@ async def create_store(
             store_id=store.id,
             name=f"{store.name} Warehouse",
             code=f"WH-{store.code}",
+            warehouse_type="retail",
+            is_active=True,
         )
     )
     await db.flush()
     return store
+
+
+def serialize_store(store: m.Store) -> dict:
+    return {
+        "id": store.id,
+        "name": store.name,
+        "code": store.code,
+        "address": store.address,
+        "phone": store.phone,
+        "manager_id": store.manager_id,
+        "branch_id": store.branch_id,
+        "operating_hours": getattr(store, "operating_hours", None),
+        "is_active": bool(store.is_active),
+    }
+
+
+async def update_store(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str,
+    name: str | None = None,
+    address: str | None = None,
+    phone: str | None = None,
+    manager_id: str | None = None,
+    clear_manager: bool = False,
+    branch_id: str | None = None,
+    clear_branch: bool = False,
+    operating_hours: dict | None = None,
+    is_active: bool | None = None,
+) -> m.Store:
+    store = await get_store(db, tenant_id, store_id)
+    if name is not None:
+        clean = name.strip()
+        if len(clean) < 2:
+            raise HTTPException(status_code=400, detail="name must be at least 2 characters")
+        store.name = clean
+    if address is not None:
+        store.address = address.strip() or None
+    if phone is not None:
+        store.phone = phone.strip() or None
+    if clear_manager:
+        store.manager_id = None
+    elif manager_id is not None:
+        manager = (
+            await db.execute(
+                select(m.User).where(m.User.id == manager_id, m.User.tenant_id == tenant_id)
+            )
+        ).scalar_one_or_none()
+        if not manager:
+            raise HTTPException(status_code=404, detail="Manager user not found")
+        store.manager_id = manager_id
+    if clear_branch:
+        store.branch_id = None
+    elif branch_id is not None:
+        store.branch_id = branch_id
+    if operating_hours is not None:
+        if operating_hours and not isinstance(operating_hours, dict):
+            raise HTTPException(status_code=400, detail="operating_hours must be an object")
+        store.operating_hours = operating_hours or None
+    if is_active is not None:
+        store.is_active = bool(is_active)
+    await db.flush()
+    return store
+
+
+def serialize_warehouse(row: m.Warehouse) -> dict:
+    return {
+        "id": row.id,
+        "store_id": row.store_id,
+        "name": row.name,
+        "code": row.code,
+        "warehouse_type": getattr(row, "warehouse_type", None) or "retail",
+        "manager_id": getattr(row, "manager_id", None),
+        "address": getattr(row, "address", None),
+        "capacity": float(row.capacity) if getattr(row, "capacity", None) is not None else None,
+        "is_active": bool(getattr(row, "is_active", True)),
+    }
+
+
+async def update_warehouse(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    warehouse_id: str,
+    name: str | None = None,
+    store_id: str | None = None,
+    clear_store: bool = False,
+    warehouse_type: str | None = None,
+    manager_id: str | None = None,
+    clear_manager: bool = False,
+    address: str | None = None,
+    capacity: float | None = None,
+    is_active: bool | None = None,
+) -> m.Warehouse:
+    row = (
+        await db.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.id == warehouse_id,
+                m.Warehouse.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+    if name is not None:
+        clean = name.strip()
+        if len(clean) < 2:
+            raise HTTPException(status_code=400, detail="name must be at least 2 characters")
+        row.name = clean
+    if clear_store:
+        row.store_id = None
+    elif store_id is not None:
+        await get_store(db, tenant_id, store_id)
+        row.store_id = store_id
+    if warehouse_type is not None:
+        wtype = warehouse_type.strip().lower()
+        if wtype not in {"retail", "main", "cold", "bulk", "transit"}:
+            raise HTTPException(
+                status_code=400,
+                detail="warehouse_type must be one of: retail, main, cold, bulk, transit",
+            )
+        row.warehouse_type = wtype
+    if clear_manager:
+        row.manager_id = None
+    elif manager_id is not None:
+        manager = (
+            await db.execute(
+                select(m.User).where(m.User.id == manager_id, m.User.tenant_id == tenant_id)
+            )
+        ).scalar_one_or_none()
+        if not manager:
+            raise HTTPException(status_code=404, detail="Manager user not found")
+        row.manager_id = manager_id
+    if address is not None:
+        row.address = address.strip() or None
+    if capacity is not None:
+        if float(capacity) < 0:
+            raise HTTPException(status_code=400, detail="capacity must be >= 0")
+        row.capacity = float(capacity)
+    if is_active is not None:
+        row.is_active = bool(is_active)
+    await db.flush()
+    return row
 
 
 async def store_inventory(

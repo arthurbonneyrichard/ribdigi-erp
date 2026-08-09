@@ -106,6 +106,16 @@ class TenantProfileUpdate(BaseModel):
     tax_filing_period: str | None = None
     document_numbering: DocumentNumberingUpdate | None = None
     invoice_print_template: str | None = None
+    plan_code: str | None = None
+    legal_name: str | None = None
+    registration_number: str | None = None
+    billing_address: str | None = None
+    shipping_address: str | None = None
+    warehouse_address: str | None = None
+    contact_person_name: str | None = None
+    contact_person_email: EmailStr | None = None
+    contact_person_phone: str | None = None
+    inactivity_timeout_minutes: int | None = Field(default=None, ge=5, le=480)
 
 
 class InvoiceSendRequest(BaseModel):
@@ -145,11 +155,18 @@ class BranchCreate(BaseModel):
     code: str
     name: str
     address: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    manager_id: str | None = None
 
 
 class BranchUpdate(BaseModel):
     name: str | None = None
     address: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    manager_id: str | None = None
+    clear_manager: bool = False
     is_active: bool | None = None
 
 
@@ -157,12 +174,15 @@ class DepartmentCreate(BaseModel):
     code: str
     name: str
     branch_id: str | None = None
+    head_user_id: str | None = None
 
 
 class DepartmentUpdate(BaseModel):
     name: str | None = None
     branch_id: str | None = None
     clear_branch: bool = False
+    head_user_id: str | None = None
+    clear_head: bool = False
     is_active: bool | None = None
 
 
@@ -535,6 +555,19 @@ class StoreCreate(BaseModel):
     phone: str | None = None
     manager_id: str | None = None
     branch_id: str | None = None
+    operating_hours: dict | None = None
+
+
+class StoreUpdate(BaseModel):
+    name: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    manager_id: str | None = None
+    clear_manager: bool = False
+    branch_id: str | None = None
+    clear_branch: bool = False
+    operating_hours: dict | None = None
+    is_active: bool | None = None
 
 
 class StoreDrawerSettingsUpdate(BaseModel):
@@ -562,6 +595,22 @@ class WarehouseCreate(BaseModel):
     name: str
     code: str
     store_id: str | None = None
+    warehouse_type: str | None = "retail"
+    manager_id: str | None = None
+    address: str | None = None
+    capacity: float | None = Field(default=None, ge=0)
+
+
+class WarehouseUpdate(BaseModel):
+    name: str | None = None
+    store_id: str | None = None
+    clear_store: bool = False
+    warehouse_type: str | None = None
+    manager_id: str | None = None
+    clear_manager: bool = False
+    address: str | None = None
+    capacity: float | None = Field(default=None, ge=0)
+    is_active: bool | None = None
 
 
 class StockTransferItemCreate(BaseModel):
