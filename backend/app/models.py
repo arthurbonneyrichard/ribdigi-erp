@@ -849,6 +849,39 @@ class StockTransferItem(Base):
     received_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
 
 
+class StockCount(Base):
+    """Physical inventory count session for a warehouse."""
+
+    __tablename__ = "stock_counts"
+    __table_args__ = (UniqueConstraint("tenant_id", "count_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
+    count_number: Mapped[str] = mapped_column(String(50), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    completed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class StockCountItem(Base):
+    __tablename__ = "stock_count_items"
+    __table_args__ = (UniqueConstraint("tenant_id", "stock_count_id", "product_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    stock_count_id: Mapped[str] = mapped_column(ForeignKey("stock_counts.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    expected_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    counted_qty: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+
 class BackupJob(Base):
     __tablename__ = "backup_jobs"
 

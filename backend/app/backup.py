@@ -68,6 +68,8 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("stock_movements", m.StockMovement),
     ("stock_transfers", m.StockTransfer),
     ("stock_transfer_items", m.StockTransferItem),
+    ("stock_counts", m.StockCount),
+    ("stock_count_items", m.StockCountItem),
     ("notification_preferences", m.NotificationPreference),
     ("report_schedules", m.ReportSchedule),
 ]

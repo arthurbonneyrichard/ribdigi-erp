@@ -122,6 +122,39 @@ class ProductCreate(BaseModel):
     tracks_batches: bool = False
 
 
+class ProductUpdate(BaseModel):
+    name: str | None = None
+    sku: str | None = None
+    barcode: str | None = None
+    category: str | None = None
+    category_id: str | None = None
+    brand_id: str | None = None
+    unit_id: str | None = None
+    cost_price: float | None = None
+    selling_price: float | None = None
+    reorder_level: float | None = None
+    tax_rate_id: str | None = None
+    tax_exempt: bool | None = None
+    tracks_batches: bool | None = None
+    is_active: bool | None = None
+
+
+class StockCountCreate(BaseModel):
+    warehouse_id: str
+    notes: str | None = None
+    product_ids: list[str] | None = None
+
+
+class StockCountItemUpdate(BaseModel):
+    product_id: str
+    counted_qty: float
+    notes: str | None = None
+
+
+class StockCountItemsUpdate(BaseModel):
+    items: list[StockCountItemUpdate]
+
+
 class ProductCategoryCreate(BaseModel):
     code: str
     name: str

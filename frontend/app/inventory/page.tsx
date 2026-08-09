@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'products' | 'catalog' | 'variants' | 'batches' | 'expiry';
+type Tab = 'products' | 'catalog' | 'variants' | 'batches' | 'expiry' | 'counts';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -14,10 +14,15 @@ export default function Page() {
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [variants, setVariants] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
   const [expiring, setExpiring] = useState<any[]>([]);
+  const [counts, setCounts] = useState<any[]>([]);
+  const [activeCount, setActiveCount] = useState<any | null>(null);
+  const [countWarehouseId, setCountWarehouseId] = useState('');
+  const [countQtys, setCountQtys] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -27,6 +32,8 @@ export default function Page() {
   const [productCategoryId, setProductCategoryId] = useState('');
   const [productBrandId, setProductBrandId] = useState('');
   const [productUnitId, setProductUnitId] = useState('');
+  const [editReorder, setEditReorder] = useState('0');
+  const [editPrice, setEditPrice] = useState('0');
 
   const [catCode, setCatCode] = useState('');
   const [catName, setCatName] = useState('');
@@ -44,19 +51,24 @@ export default function Page() {
   const [stockQty, setStockQty] = useState('10');
 
   async function refresh() {
-    const [p, e, c, b, u] = await Promise.all([
+    const [p, e, c, b, u, w, sc] = await Promise.all([
       api('/products'),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
       api('/catalog/brands'),
       api('/catalog/units'),
+      api('/warehouses'),
+      api('/inventory/stock-counts'),
     ]);
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
     setCategories(c.data || []);
     setBrands(b.data || []);
     setUnits(u.data || []);
+    setWarehouses(w.data || []);
+    setCounts(sc.data || []);
     if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
+    if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
   }
 
   async function refreshSelected(id: string) {
@@ -74,8 +86,103 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (selectedId) refreshSelected(selectedId).catch((err) => setError(err.message));
-  }, [selectedId]);
+    if (selectedId) {
+      refreshSelected(selectedId).catch((err) => setError(err.message));
+      const p = products.find((x) => x.id === selectedId);
+      if (p) {
+        setEditReorder(String(p.reorder_level ?? 0));
+        setEditPrice(String(p.selling_price ?? 0));
+      }
+    }
+  }, [selectedId, products]);
+
+  async function saveProductEdits() {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          reorder_level: Number(editReorder) || 0,
+          selling_price: Number(editPrice) || 0,
+        }),
+      });
+      setMessage('Product updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function startStockCount() {
+    setError('');
+    try {
+      const r = await api('/inventory/stock-counts', {
+        method: 'POST',
+        body: JSON.stringify({ warehouse_id: countWarehouseId }),
+      });
+      setActiveCount(r.data);
+      const qtys: Record<string, string> = {};
+      for (const item of r.data.items || []) {
+        qtys[item.product_id] = String(item.expected_qty ?? 0);
+      }
+      setCountQtys(qtys);
+      setMessage(`Count ${r.data.count_number} created`);
+      setTab('counts');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function openCount(id: string) {
+    setError('');
+    try {
+      const r = await api(`/inventory/stock-counts/${id}`);
+      setActiveCount(r.data);
+      const qtys: Record<string, string> = {};
+      for (const item of r.data.items || []) {
+        qtys[item.product_id] =
+          item.counted_qty == null ? String(item.expected_qty ?? 0) : String(item.counted_qty);
+      }
+      setCountQtys(qtys);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveCountLines() {
+    if (!activeCount) return;
+    setError('');
+    try {
+      const items = (activeCount.items || []).map((item: any) => ({
+        product_id: item.product_id,
+        counted_qty: Number(countQtys[item.product_id] ?? item.expected_qty ?? 0),
+      }));
+      const r = await api(`/inventory/stock-counts/${activeCount.id}/items`, {
+        method: 'PATCH',
+        body: JSON.stringify({ items }),
+      });
+      setActiveCount(r.data);
+      setMessage('Count lines saved');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function completeActiveCount() {
+    if (!activeCount) return;
+    setError('');
+    try {
+      await saveCountLines();
+      const r = await api(`/inventory/stock-counts/${activeCount.id}/complete`, { method: 'POST' });
+      setActiveCount(r.data);
+      setMessage(`Count ${r.data.count_number} completed`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
 
   async function createProduct() {
     setError('');
@@ -177,7 +284,7 @@ export default function Page() {
   return (
     <Shell>
       <h1>Inventory</h1>
-      <p className="muted">Products, catalog, variants, batches &amp; expiry</p>
+      <p className="muted">Products, catalog, variants, batches, expiry &amp; stock counts</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -189,6 +296,7 @@ export default function Page() {
             ['variants', 'Variants'],
             ['batches', 'Batches'],
             ['expiry', 'Expiring'],
+            ['counts', 'Stock counts'],
           ] as const
         ).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
@@ -218,6 +326,17 @@ export default function Page() {
             e.target.value = '';
           }}
         />
+        {selectedId && (
+          <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+            <label className="muted">Reorder level</label>
+            <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
+            <label className="muted">Selling price</label>
+            <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
+            <button type="button" onClick={saveProductEdits}>
+              Save product
+            </button>
+          </div>
+        )}
       </div>
 
       {tab === 'products' && (
@@ -497,6 +616,106 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+      )}
+
+      {tab === 'counts' && (
+        <>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 520 }}>
+            <h3>Start stock count</h3>
+            <select value={countWarehouseId} onChange={(e) => setCountWarehouseId(e.target.value)}>
+              <option value="">Warehouse</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.code})
+                </option>
+              ))}
+            </select>
+            <button type="button" onClick={startStockCount} disabled={!countWarehouseId}>
+              Create draft count
+            </button>
+          </div>
+
+          <table className="table" style={{ marginBottom: 16 }}>
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Status</th>
+                <th>Items</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {counts.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.count_number}</td>
+                  <td>{c.status}</td>
+                  <td>
+                    {c.counted_item_count}/{c.item_count}
+                  </td>
+                  <td>
+                    <button type="button" onClick={() => openCount(c.id)}>
+                      Open
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {activeCount && (
+            <div className="card" style={{ display: 'grid', gap: 12 }}>
+              <h3>
+                {activeCount.count_number} — {activeCount.status}
+              </h3>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Expected</th>
+                    <th>Counted</th>
+                    <th>Variance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(activeCount.items || []).map((item: any) => {
+                    const counted = Number(countQtys[item.product_id] ?? item.expected_qty ?? 0);
+                    const variance = counted - Number(item.expected_qty || 0);
+                    return (
+                      <tr key={item.id}>
+                        <td>
+                          {item.product_sku || item.product_id}
+                          <div className="muted">{item.product_name}</div>
+                        </td>
+                        <td>{item.expected_qty}</td>
+                        <td>
+                          <input
+                            value={countQtys[item.product_id] ?? ''}
+                            disabled={activeCount.status !== 'draft'}
+                            onChange={(e) =>
+                              setCountQtys({ ...countQtys, [item.product_id]: e.target.value })
+                            }
+                            style={{ width: 90 }}
+                          />
+                        </td>
+                        <td>{Number.isFinite(variance) ? variance : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {activeCount.status === 'draft' && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={saveCountLines}>
+                    Save counts
+                  </button>
+                  <button type="button" onClick={completeActiveCount}>
+                    Complete &amp; post variances
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </Shell>
   );

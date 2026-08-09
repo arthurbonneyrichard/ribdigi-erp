@@ -39,6 +39,7 @@ from app import backup as backup_svc
 from app import tenants as tenants_svc
 from app import storage as storage_svc
 from app import cheques as cheques_svc
+from app import stock_counts as stock_counts_svc
 from app import catalog_meta as catalog_meta_svc
 from app.config import settings
 from app.schemas import (
@@ -107,6 +108,9 @@ from app.schemas import (
     WebAuthnRegisterVerify,
     UserCreate,
     UserUpdate,
+    ProductUpdate,
+    StockCountCreate,
+    StockCountItemsUpdate,
     WarehouseCreate,
 )
 from app.security import (
@@ -1651,6 +1655,115 @@ async def add_product(
     return env(catalog_meta_svc.serialize_product(product), "Product created")
 
 
+@api.get("/products/{product_id}")
+async def get_product(
+    product_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return env(catalog_meta_svc.serialize_product(product))
+
+
+@api.patch("/products/{product_id}")
+async def patch_product(
+    product_id: str,
+    payload: ProductUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    data = payload.model_dump(exclude_unset=True)
+    if not data:
+        return env(catalog_meta_svc.serialize_product(product), "No changes")
+
+    if any(k in data for k in ("category_id", "brand_id", "unit_id", "category")):
+        category_id, brand_id, unit_id, category_label = await catalog_meta_svc.resolve_product_refs(
+            db,
+            claims["tenant_id"],
+            category_id=data.get("category_id", product.category_id),
+            brand_id=data.get("brand_id", product.brand_id),
+            unit_id=data.get("unit_id", product.unit_id),
+            category_name=data.get("category", product.category),
+        )
+        product.category_id = category_id
+        product.brand_id = brand_id
+        product.unit_id = unit_id
+        product.category = category_label
+        data.pop("category_id", None)
+        data.pop("brand_id", None)
+        data.pop("unit_id", None)
+        data.pop("category", None)
+
+    if "sku" in data and data["sku"]:
+        sku = str(data["sku"]).strip()
+        clash = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == claims["tenant_id"],
+                    m.Product.sku == sku,
+                    m.Product.id != product.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if clash:
+            raise HTTPException(status_code=409, detail="SKU already exists")
+        product.sku = sku
+        data.pop("sku")
+
+    for key, value in data.items():
+        if key == "name" and value is not None:
+            name = str(value).strip()
+            if len(name) < 1:
+                raise HTTPException(status_code=400, detail="name is required")
+            product.name = name
+        elif key == "barcode":
+            product.barcode = (str(value).strip() if value else None) or None
+        elif key in {"cost_price", "selling_price", "reorder_level"} and value is not None:
+            setattr(product, key, float(value))
+        elif key == "tax_rate_id":
+            product.tax_rate_id = value
+        elif key == "tax_exempt" and value is not None:
+            product.tax_exempt = bool(value)
+        elif key == "tracks_batches" and value is not None:
+            product.tracks_batches = bool(value)
+        elif key == "is_active" and value is not None:
+            product.is_active = bool(value)
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="product_update",
+        entity="product",
+        entity_id=product.id,
+        details={"sku": product.sku, "fields": sorted(payload.model_dump(exclude_unset=True).keys())},
+    )
+    await db.commit()
+    await db.refresh(product)
+    return env(catalog_meta_svc.serialize_product(product), "Product updated")
+
+
 @api.get("/catalog/categories")
 async def catalog_categories(
     claims=Depends(require_permission("inventory", "read")),
@@ -1816,16 +1929,132 @@ async def lowstock(claims=Depends(require_permission("inventory", "read")), db: 
 
 
 @api.get("/inventory/movements")
-async def movements(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
+async def movements(
+    product_id: str | None = None,
+    warehouse_id: str | None = None,
+    movement_type: str | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == claims["tenant_id"])
+    if product_id:
+        stmt = stmt.where(m.StockMovement.product_id == product_id)
+    if warehouse_id:
+        stmt = stmt.where(m.StockMovement.warehouse_id == warehouse_id)
+    if movement_type:
+        stmt = stmt.where(m.StockMovement.movement_type == movement_type)
     rows = (
-        await db.execute(
-            select(m.StockMovement)
-            .where(m.StockMovement.tenant_id == claims["tenant_id"])
-            .order_by(m.StockMovement.created_at.desc())
-            .limit(200)
-        )
+        await db.execute(stmt.order_by(m.StockMovement.created_at.desc()).limit(200))
     ).scalars().all()
     return env(rows)
+
+
+@api.get("/inventory/stock-counts")
+async def list_stock_counts(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await stock_counts_svc.list_counts(db, claims["tenant_id"])
+    out = []
+    for row in rows:
+        data = await stock_counts_svc.serialize_count(db, row)
+        data.pop("items", None)
+        out.append(data)
+    return env(out)
+
+
+@api.post("/inventory/stock-counts")
+async def create_stock_count(
+    payload: StockCountCreate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await stock_counts_svc.create_count(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=payload.warehouse_id,
+        notes=payload.notes,
+        product_ids=payload.product_ids,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="stock_count_create",
+        entity="stock_count",
+        entity_id=count.id,
+        details={"warehouse_id": count.warehouse_id, "count_number": count.count_number},
+    )
+    await db.commit()
+    return env(await stock_counts_svc.serialize_count(db, count), "Stock count created")
+
+
+@api.get("/inventory/stock-counts/{count_id}")
+async def get_stock_count(
+    count_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await stock_counts_svc.get_count(db, claims["tenant_id"], count_id)
+    return env(await stock_counts_svc.serialize_count(db, count))
+
+
+@api.patch("/inventory/stock-counts/{count_id}/items")
+async def patch_stock_count_items(
+    count_id: str,
+    payload: StockCountItemsUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await stock_counts_svc.update_count_items(
+        db,
+        tenant_id=claims["tenant_id"],
+        count_id=count_id,
+        items=[i.model_dump() for i in payload.items],
+    )
+    await db.commit()
+    return env(await stock_counts_svc.serialize_count(db, count), "Count lines updated")
+
+
+@api.post("/inventory/stock-counts/{count_id}/complete")
+async def complete_stock_count(
+    count_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await stock_counts_svc.complete_count(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        count_id=count_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="stock_count_complete",
+        entity="stock_count",
+        entity_id=count.id,
+        details={"count_number": count.count_number, "warehouse_id": count.warehouse_id},
+    )
+    await db.commit()
+    return env(await stock_counts_svc.serialize_count(db, count), "Stock count completed")
+
+
+@api.post("/inventory/stock-counts/{count_id}/cancel")
+async def cancel_stock_count(
+    count_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await stock_counts_svc.cancel_count(
+        db, tenant_id=claims["tenant_id"], count_id=count_id
+    )
+    await db.commit()
+    return env(await stock_counts_svc.serialize_count(db, count), "Stock count cancelled")
 
 
 @api.post("/inventory/adjust/{product_id}")
