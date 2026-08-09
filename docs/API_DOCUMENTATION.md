@@ -761,32 +761,25 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 ### 8.2 POS Sale
 **Create Sale:** `POST /pos/sales`
 
+Single tender: set `payment_method` (`cash`|`card`|`wallet`|`credit`|`other`).  
+Split tender: set `payments[]` with `{ "payment_method", "amount", "reference?", "liquid_account_id?" }` summing to the computed sale total (`PAYMENT_TOTAL_MISMATCH` if not). Response includes `payments` rows and `payment_method` (`split` when multiple). Credit portion only increases customer AR balance.
+
 ```json
 {
   "session_id": "sess_001",
-  "customer_id": "cust_001",
+  "party_id": "cust_001",
+  "discount_amount": 1.00,
   "items": [
     {
       "product_id": "prod_001",
       "quantity": 2,
-      "unit_price": 12.99,
       "discount": 0.50
     }
   ],
   "payments": [
-    {
-      "method": "cash",
-      "amount": 20.00
-    },
-    {
-      "method": "card",
-      "amount": 5.48
-    }
-  ],
-  "discount_total": 1.00,
-  "tax_total": 2.49,
-  "grand_total": 25.48,
-  "notes": ""
+    { "payment_method": "cash", "amount": 20.00 },
+    { "payment_method": "card", "amount": 5.48 }
+  ]
 }
 ```
 
