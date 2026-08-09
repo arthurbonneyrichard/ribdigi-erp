@@ -4524,6 +4524,7 @@ async def create_purchase_order(
         user_id=claims["sub"],
         supplier_id=payload.supplier_id,
         warehouse_id=payload.warehouse_id,
+        delivery_address=payload.delivery_address,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
     )
@@ -4559,6 +4560,11 @@ async def patch_purchase_order(
         po_id=po_id,
         items=[i for i in (data.get("items") or [])] if "items" in data else None,
         warehouse_id=data.get("warehouse_id") if "warehouse_id" in data else None,
+        delivery_address=(
+            data.get("delivery_address")
+            if "delivery_address" in data
+            else purchasing_svc._UNSET
+        ),
         notes=data.get("notes") if "notes" in data else None,
         reason=data.get("reason"),
         track_amendment=False if data.get("reason") is None else None,
@@ -4585,6 +4591,11 @@ async def amend_purchase_order(
         reason=payload.reason,
         items=data.get("items"),
         warehouse_id=data.get("warehouse_id") if "warehouse_id" in data else None,
+        delivery_address=(
+            data.get("delivery_address")
+            if "delivery_address" in data
+            else purchasing_svc._UNSET
+        ),
         notes=data.get("notes") if "notes" in data else None,
     )
     await db.commit()

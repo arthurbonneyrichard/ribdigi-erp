@@ -754,6 +754,7 @@ class PurchaseOrder(Base):
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     paid_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     purchase_request_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -775,6 +776,7 @@ class PurchaseOrderItem(Base):
     received_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 

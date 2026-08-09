@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import catalog as catalog_svc
 from app.inventory import apply_stock_change
-from app.tax import compute_line_total
+from app.tax import compute_line_total, compute_tax_amounts
 from app.credit import default_due_date
 
 PO_EDITABLE = {"draft"}
@@ -23,6 +23,27 @@ PR_APPROVABLE = {"pending"}
 PR_CONVERTIBLE = {"approved"}
 PR_CANCELLABLE = {"draft", "pending", "approved"}
 PURCHASE_RETURN_REASONS = frozenset({"damaged", "wrong_item", "expiry", "quality", "other"})
+_UNSET = object()
+
+
+def _calc_po_line_amounts(
+    quantity: float,
+    unit_price: float,
+    tax_rate: float = 0,
+    discount: float = 0,
+) -> tuple[float, float, float, float]:
+    """Return (line_sub, line_tax, line_total, discount) with tax on net after discount."""
+    qty = float(quantity or 0)
+    price = float(unit_price or 0)
+    rate = float(tax_rate or 0)
+    disc = round(float(discount or 0), 2)
+    if disc < 0:
+        raise HTTPException(status_code=400, detail="Line discount must be >= 0")
+    gross_before = round(qty * price, 2)
+    if disc > gross_before + 1e-9:
+        raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
+    net, tax, gross = compute_tax_amounts(gross_before - disc, rate, "exclusive")
+    return float(net), float(tax), float(gross), disc
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
 
 # BR-6.2: Inventory Officer creates → Store Manager → (high value) Company Admin
@@ -238,6 +259,7 @@ def _po_line_snapshot(item: m.PurchaseOrderItem) -> dict:
         "received_qty": float(item.received_qty or 0),
         "unit_price": float(item.unit_price or 0),
         "tax_rate": float(item.tax_rate or 0),
+        "discount": float(getattr(item, "discount", 0) or 0),
         "line_total": float(item.line_total or 0),
     }
 
@@ -245,6 +267,7 @@ def _po_line_snapshot(item: m.PurchaseOrderItem) -> dict:
 def _po_header_snapshot(po: m.PurchaseOrder) -> dict:
     return {
         "warehouse_id": po.warehouse_id,
+        "delivery_address": getattr(po, "delivery_address", None),
         "notes": po.notes,
         "subtotal": float(po.subtotal or 0),
         "tax_amount": float(po.tax_amount or 0),
@@ -300,6 +323,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "paid_amount": float(po.paid_amount or 0),
         "balance_due": max(float(po.total_amount) - float(po.paid_amount or 0), 0),
         "due_date": po.due_date,
+        "delivery_address": getattr(po, "delivery_address", None),
         "notes": po.notes,
         "purchase_request_id": po.purchase_request_id,
         "sent_at": po.sent_at,
@@ -316,6 +340,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
                 "received_qty": float(i.received_qty),
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
+                "discount": float(getattr(i, "discount", 0) or 0),
                 "line_total": float(i.line_total),
                 "outstanding_qty": max(float(i.quantity) - float(i.received_qty or 0), 0),
             }
@@ -364,7 +389,10 @@ async def _prepare_po_lines(
                 )
         unit_price = float(item.get("unit_price") if item.get("unit_price") is not None else 0)
         tax_rate = float(item.get("tax_rate") or 0)
-        line_sub, line_tax, line_total = compute_line_total(qty, unit_price, tax_rate)
+        discount = float(item.get("discount") or 0)
+        line_sub, line_tax, line_total, discount = _calc_po_line_amounts(
+            qty, unit_price, tax_rate, discount
+        )
         prepared.append(
             {
                 "id": str(line_id) if line_id else None,
@@ -373,6 +401,7 @@ async def _prepare_po_lines(
                 "received_qty": received,
                 "unit_price": unit_price,
                 "tax_rate": tax_rate,
+                "discount": discount,
                 "line_total": line_total,
                 "line_sub": line_sub,
                 "line_tax": line_tax,
@@ -389,6 +418,7 @@ async def update_purchase_order(
     po_id: str,
     items: list[dict] | None = None,
     warehouse_id: str | None = None,
+    delivery_address=_UNSET,
     notes: str | None = None,
     reason: str | None = None,
     track_amendment: bool | None = None,
@@ -415,6 +445,11 @@ async def update_purchase_order(
 
     if warehouse_id is not None:
         po.warehouse_id = warehouse_id or None
+    if delivery_address is not _UNSET:
+        po.delivery_address = (delivery_address or None)
+        if isinstance(po.delivery_address, str):
+            cleaned = po.delivery_address.strip()
+            po.delivery_address = cleaned or None
     if notes is not None:
         po.notes = notes
 
@@ -444,6 +479,7 @@ async def update_purchase_order(
                 row.quantity = prep["quantity"]
                 row.unit_price = prep["unit_price"]
                 row.tax_rate = prep["tax_rate"]
+                row.discount = prep["discount"]
                 row.line_total = prep["line_total"]
             else:
                 db.add(
@@ -455,6 +491,7 @@ async def update_purchase_order(
                         received_qty=0,
                         unit_price=prep["unit_price"],
                         tax_rate=prep["tax_rate"],
+                        discount=prep["discount"],
                         line_total=prep["line_total"],
                     )
                 )
@@ -529,33 +566,26 @@ async def amend_purchase_order(
     reason: str,
     items: list[dict] | None = None,
     warehouse_id: str | None = None,
+    delivery_address=_UNSET,
     notes: str | None = None,
 ) -> m.PurchaseOrder:
     po = await get_po(db, tenant_id, po_id)
-    if po.status == "draft":
-        # Draft amends still track when explicitly requested via /amend
-        return await update_purchase_order(
-            db,
-            tenant_id=tenant_id,
-            user_id=user_id,
-            po_id=po_id,
-            items=items,
-            warehouse_id=warehouse_id,
-            notes=notes,
-            reason=reason,
-            track_amendment=True,
-        )
-    return await update_purchase_order(
-        db,
+    kwargs = dict(
+        db=db,
         tenant_id=tenant_id,
         user_id=user_id,
         po_id=po_id,
         items=items,
         warehouse_id=warehouse_id,
+        delivery_address=delivery_address,
         notes=notes,
         reason=reason,
         track_amendment=True,
     )
+    if po.status == "draft":
+        # Draft amends still track when explicitly requested via /amend
+        return await update_purchase_order(**kwargs)
+    return await update_purchase_order(**kwargs)
 
 
 async def get_purchase_request(
@@ -1014,6 +1044,7 @@ async def create_purchase_order(
     supplier_id: str,
     items: list[dict],
     warehouse_id: str | None = None,
+    delivery_address: str | None = None,
     notes: str | None = None,
     purchase_request_id: str | None = None,
 ) -> m.PurchaseOrder:
@@ -1021,26 +1052,10 @@ async def create_purchase_order(
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
     await get_supplier(db, tenant_id, supplier_id)
 
-    subtotal = 0.0
-    tax_total = 0.0
-    prepared: list[tuple[dict, float]] = []
-    for item in items:
-        product = (
-            await db.execute(
-                select(m.Product).where(
-                    m.Product.id == item["product_id"],
-                    m.Product.tenant_id == tenant_id,
-                )
-            )
-        ).scalar_one_or_none()
-        if not product:
-            raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
-        line_sub, line_tax, line_total = compute_line_total(
-            item["quantity"], item.get("unit_price", 0), item.get("tax_rate", 0)
-        )
-        subtotal += line_sub
-        tax_total += line_tax
-        prepared.append((item, line_total))
+    prepared = await _prepare_po_lines(db, tenant_id=tenant_id, items=items)
+    subtotal = sum(p["line_sub"] for p in prepared)
+    tax_total = sum(p["line_tax"] for p in prepared)
+    address = (delivery_address or "").strip() or None
 
     from app.document_numbering import allocate_document_number
 
@@ -1053,6 +1068,7 @@ async def create_purchase_order(
         subtotal=subtotal,
         tax_amount=tax_total,
         total_amount=subtotal + tax_total,
+        delivery_address=address,
         notes=notes,
         purchase_request_id=purchase_request_id,
         revision=1,
@@ -1061,17 +1077,18 @@ async def create_purchase_order(
     db.add(po)
     await db.flush()
 
-    for item, line_total in prepared:
+    for prep in prepared:
         db.add(
             m.PurchaseOrderItem(
                 tenant_id=tenant_id,
                 purchase_order_id=po.id,
-                product_id=item["product_id"],
-                quantity=item["quantity"],
+                product_id=prep["product_id"],
+                quantity=prep["quantity"],
                 received_qty=0,
-                unit_price=item.get("unit_price", 0),
-                tax_rate=item.get("tax_rate", 0),
-                line_total=line_total,
+                unit_price=prep["unit_price"],
+                tax_rate=prep["tax_rate"],
+                discount=prep["discount"],
+                line_total=prep["line_total"],
             )
         )
 
@@ -1095,14 +1112,21 @@ def render_po_text(po_data: dict, *, supplier_name: str, company_name: str) -> s
         f"Purchase Order {po_data.get('po_number')}",
         f"Supplier: {supplier_name}",
         f"Status: {po_data.get('status')}",
-        "",
-        f"{'Product':<36} {'Qty':>10} {'Price':>12} {'Total':>12}",
-        "-" * 72,
     ]
+    if po_data.get("delivery_address"):
+        lines.append(f"Deliver to: {po_data['delivery_address']}")
+    lines.extend(
+        [
+            "",
+            f"{'Product':<28} {'Qty':>8} {'Price':>10} {'Disc':>8} {'Total':>10}",
+            "-" * 72,
+        ]
+    )
     for item in po_data.get("items") or []:
         lines.append(
-            f"{str(item.get('product_id')):<36} {float(item.get('quantity') or 0):>10.3f} "
-            f"{float(item.get('unit_price') or 0):>12.2f} {float(item.get('line_total') or 0):>12.2f}"
+            f"{str(item.get('product_id')):<28} {float(item.get('quantity') or 0):>8.3f} "
+            f"{float(item.get('unit_price') or 0):>10.2f} {float(item.get('discount') or 0):>8.2f} "
+            f"{float(item.get('line_total') or 0):>10.2f}"
         )
     lines.extend(
         [

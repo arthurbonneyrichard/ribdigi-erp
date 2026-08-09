@@ -41,6 +41,9 @@ type PoItem = {
   quantity: number;
   received_qty: number;
   unit_price: number;
+  tax_rate?: number;
+  discount?: number;
+  line_total?: number;
   outstanding_qty: number;
 };
 type PurchaseOrder = {
@@ -49,9 +52,12 @@ type PurchaseOrder = {
   supplier_id: string;
   status: string;
   total_amount: number;
+  subtotal?: number;
+  tax_amount?: number;
   purchase_request_id?: string | null;
   revision?: number;
   amendment_count?: number;
+  delivery_address?: string | null;
   notes?: string | null;
   items: PoItem[];
 };
@@ -150,10 +156,16 @@ export default function Page() {
   const [amendReason, setAmendReason] = useState('');
   const [amendQty, setAmendQty] = useState('');
   const [amendPrice, setAmendPrice] = useState('');
+  const [amendTaxRate, setAmendTaxRate] = useState('');
+  const [amendDiscount, setAmendDiscount] = useState('');
+  const [amendDeliveryAddress, setAmendDeliveryAddress] = useState('');
   const [amendments, setAmendments] = useState<PoAmendment[]>([]);
   const [productId, setProductId] = useState('');
   const [qty, setQty] = useState('10');
   const [unitPrice, setUnitPrice] = useState('0');
+  const [poTaxRate, setPoTaxRate] = useState('0');
+  const [poDiscount, setPoDiscount] = useState('0');
+  const [poDeliveryAddress, setPoDeliveryAddress] = useState('');
   const [prDepartment, setPrDepartment] = useState('');
   const [prRequiredDate, setPrRequiredDate] = useState('');
   const [rejectReason, setRejectReason] = useState('');
@@ -519,12 +531,14 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           supplier_id: supplierId,
+          delivery_address: poDeliveryAddress || null,
           items: [
             {
               product_id: productId,
               quantity: Number(qty),
               unit_price: Number(unitPrice),
-              tax_rate: 0,
+              tax_rate: Number(poTaxRate) || 0,
+              discount: Number(poDiscount) || 0,
             },
           ],
         }),
@@ -563,7 +577,8 @@ export default function Page() {
               product_id: line.product_id,
               quantity: Number(amendQty || line.quantity),
               unit_price: Number(amendPrice || line.unit_price),
-              tax_rate: 0,
+              tax_rate: Number(amendTaxRate || line.tax_rate || 0),
+              discount: Number(amendDiscount || line.discount || 0),
             },
           ]
         : undefined;
@@ -571,12 +586,14 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           reason: amendReason,
+          delivery_address: amendDeliveryAddress,
           items,
         }),
       });
       setMessage(`Amended ${r.data.po_number} to revision ${r.data.revision}`);
       setAmendReason('');
       setSelected(r.data);
+      setAmendDeliveryAddress(r.data.delivery_address || '');
       await loadAmendments(r.data.id);
       await refresh();
     } catch (err: any) {
@@ -1124,6 +1141,14 @@ export default function Page() {
           </select>
           <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Quantity" />
           <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit price" />
+          <input value={poTaxRate} onChange={(e) => setPoTaxRate(e.target.value)} placeholder="Tax rate %" />
+          <input value={poDiscount} onChange={(e) => setPoDiscount(e.target.value)} placeholder="Line discount" />
+          <textarea
+            value={poDeliveryAddress}
+            onChange={(e) => setPoDeliveryAddress(e.target.value)}
+            placeholder="Delivery address"
+            rows={2}
+          />
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input type="checkbox" checked={emailOnSend} onChange={(e) => setEmailOnSend(e.target.checked)} />
             Email supplier when sending PO
@@ -1308,6 +1333,9 @@ export default function Page() {
                         setSelected(o);
                         setAmendQty(String(o.items[0]?.quantity ?? ''));
                         setAmendPrice(String(o.items[0]?.unit_price ?? ''));
+                        setAmendTaxRate(String(o.items[0]?.tax_rate ?? 0));
+                        setAmendDiscount(String(o.items[0]?.discount ?? 0));
+                        setAmendDeliveryAddress(o.delivery_address || '');
                         loadAmendments(o.id);
                       }}
                       style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
@@ -1330,6 +1358,9 @@ export default function Page() {
                           setSelected(o);
                           setAmendQty(String(o.items[0]?.quantity ?? ''));
                           setAmendPrice(String(o.items[0]?.unit_price ?? ''));
+                          setAmendTaxRate(String(o.items[0]?.tax_rate ?? 0));
+                          setAmendDiscount(String(o.items[0]?.discount ?? 0));
+                          setAmendDeliveryAddress(o.delivery_address || '');
                           loadAmendments(o.id);
                         }}
                       >
@@ -1464,6 +1495,22 @@ export default function Page() {
                     value={amendPrice}
                     onChange={(e) => setAmendPrice(e.target.value)}
                     placeholder="Unit price (first line)"
+                  />
+                  <input
+                    value={amendTaxRate}
+                    onChange={(e) => setAmendTaxRate(e.target.value)}
+                    placeholder="Tax rate % (first line)"
+                  />
+                  <input
+                    value={amendDiscount}
+                    onChange={(e) => setAmendDiscount(e.target.value)}
+                    placeholder="Line discount (first line)"
+                  />
+                  <textarea
+                    value={amendDeliveryAddress}
+                    onChange={(e) => setAmendDeliveryAddress(e.target.value)}
+                    placeholder="Delivery address"
+                    rows={2}
                   />
                   <button type="button" onClick={amendSelectedPo} disabled={!amendReason.trim()}>
                     Save amendment

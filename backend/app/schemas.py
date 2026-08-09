@@ -586,11 +586,13 @@ class PurchaseOrderItemCreate(BaseModel):
     quantity: float = Field(gt=0)
     unit_price: float = Field(ge=0)
     tax_rate: float = Field(default=0, ge=0)
+    discount: float = Field(default=0, ge=0)
 
 
 class PurchaseOrderCreate(BaseModel):
     supplier_id: str
     warehouse_id: str | None = None
+    delivery_address: str | None = None
     notes: str | None = None
     items: list[PurchaseOrderItemCreate] = Field(min_length=1)
 
@@ -614,10 +616,12 @@ class PurchaseOrderItemUpdate(BaseModel):
     quantity: float = Field(gt=0)
     unit_price: float = Field(ge=0)
     tax_rate: float = Field(default=0, ge=0)
+    discount: float = Field(default=0, ge=0)
 
 
 class PurchaseOrderUpdate(BaseModel):
     warehouse_id: str | None = None
+    delivery_address: str | None = None
     notes: str | None = None
     items: list[PurchaseOrderItemUpdate] | None = None
     reason: str | None = None
@@ -626,6 +630,7 @@ class PurchaseOrderUpdate(BaseModel):
 class PurchaseOrderAmend(BaseModel):
     reason: str = Field(min_length=1)
     warehouse_id: str | None = None
+    delivery_address: str | None = None
     notes: str | None = None
     items: list[PurchaseOrderItemUpdate] | None = None
 
