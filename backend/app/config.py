@@ -78,6 +78,7 @@ class Settings(BaseSettings):
     BANK_FEED_TIMEOUT_SECONDS: float = 30.0
     CELERY_BANK_FEED_INTERVAL_MINUTES: int = 360
     CELERY_AI_PREDICTION_INTERVAL_MINUTES: int = 360
+    CELERY_AI_INSIGHTS_INTERVAL_MINUTES: int = 1440
     # POS cash drawer (store-level mode; fallback when shift has no store)
     POS_DRAWER_FALLBACK_MODE: str = "mock"  # none|mock|network|browser_bridge
     POS_DRAWER_DEFAULT_PORT: int = 9100

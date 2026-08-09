@@ -11,6 +11,8 @@ def test_default_preferences_cover_core_types():
     assert DEFAULT_PREFERENCES["recurring_expense"]["dashboard"] is True
     assert DEFAULT_PREFERENCES["expense_approval"]["email"] is True
     assert DEFAULT_PREFERENCES["expense_approval"]["dashboard"] is True
+    assert DEFAULT_PREFERENCES["ai_insight"]["email"] is True
+    assert DEFAULT_PREFERENCES["ai_insight"]["dashboard"] is True
 
 
 def test_merge_preferences_overrides_channels():
@@ -25,3 +27,4 @@ def test_valid_categories():
     assert "expense_approval" in VALID_CATEGORIES
     assert "quotation_expiry" in VALID_CATEGORIES
     assert "recurring_expense" in VALID_CATEGORIES
+    assert "ai_insight" in VALID_CATEGORIES

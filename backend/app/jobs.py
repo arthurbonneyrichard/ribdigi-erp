@@ -184,6 +184,15 @@ async def job_generate_ai_low_stock_predictions() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_generate_ai_insights() -> dict:
+    from app import ai_insights as ai_insights_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await ai_insights_svc.publish_insights(db, tenant_id)
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
@@ -195,6 +204,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "refresh_fx_rates": job_refresh_fx_rates,
     "sync_bank_feeds": job_sync_bank_feeds,
     "generate_ai_low_stock_predictions": job_generate_ai_low_stock_predictions,
+    "generate_ai_insights": job_generate_ai_insights,
 }
 
 

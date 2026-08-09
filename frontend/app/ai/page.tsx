@@ -28,6 +28,9 @@ export default function Page() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [atRiskCount, setAtRiskCount] = useState(0);
   const [method, setMethod] = useState('');
+  const [insightCards, setInsightCards] = useState<
+    { id: string; kind: string; severity: string; title: string; summary: string; action?: string }[]
+  >([]);
 
   async function loadPredictions() {
     setError('');
@@ -45,8 +48,19 @@ export default function Page() {
     }
   }
 
+  async function loadInsightCards() {
+    try {
+      const r = await api('/ai/insights');
+      setInsightCards(r.data?.cards || []);
+      setA((r.data?.insights || []).join('\n'));
+    } catch (err: any) {
+      setError(err.message || 'Unable to load insights');
+    }
+  }
+
   useEffect(() => {
     loadPredictions().catch(() => undefined);
+    loadInsightCards().catch(() => undefined);
   }, []);
 
   async function go() {
@@ -63,8 +77,7 @@ export default function Page() {
   async function loadInsights() {
     setError('');
     try {
-      const r = await api('/ai/insights');
-      setA((r.data?.insights || []).join('\n'));
+      await loadInsightCards();
     } catch (err: any) {
       setError(err.message || 'Unable to load insights');
     }
@@ -79,6 +92,29 @@ export default function Page() {
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Dashboard insights</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Sales spikes/drops, expense anomalies, and restock suggestions.
+        </p>
+        <button type="button" onClick={loadInsights} style={{ marginBottom: 12 }}>
+          Refresh insights
+        </button>
+        {insightCards.length === 0 && <p className="muted">No insight cards yet</p>}
+        {insightCards.map((c) => (
+          <div key={c.id} style={{ marginBottom: 12, borderTop: '1px solid #e5e7eb', paddingTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+              <strong>{c.title}</strong>
+              <span className="muted">
+                {c.kind} · {c.severity}
+              </span>
+            </div>
+            <p>{c.summary}</p>
+            {c.action && <p className="muted">{c.action}</p>}
+          </div>
+        ))}
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Low stock prediction</h3>

@@ -79,5 +79,11 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_AI_PREDICTION_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "generate-ai-insights": {
+            "task": "app.tasks.generate_ai_insights",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_AI_INSIGHTS_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
     },
 )

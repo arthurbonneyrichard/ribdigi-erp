@@ -18,14 +18,27 @@ type Dash = {
   top_products?: { name: string; sku: string; quantity: number; revenue: number }[];
 };
 
+type InsightCard = {
+  id: string;
+  kind: string;
+  severity: string;
+  title: string;
+  summary: string;
+  action?: string | null;
+};
+
 export default function Page() {
   const [d, setD] = useState<Dash>({});
+  const [insightCards, setInsightCards] = useState<InsightCard[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     api('/dashboard')
       .then((r) => setD(r.data || {}))
       .catch((err) => setError(err.message));
+    api('/ai/insights')
+      .then((r) => setInsightCards(r.data?.cards || []))
+      .catch(() => undefined);
   }, []);
 
   const cards: [string, number | string][] = [
@@ -55,6 +68,27 @@ export default function Page() {
           </div>
         ))}
       </div>
+
+      {insightCards.length > 0 && (
+        <div className="card" style={{ marginTop: 20 }}>
+          <h3>AI insights</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Rule-based anomalies and restock suggestions from your sales, expenses, and stock.
+          </p>
+          <div className="grid">
+            {insightCards.slice(0, 6).map((c) => (
+              <div key={c.id} style={{ borderTop: '1px solid #e5e7eb', paddingTop: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                  <strong>{c.title}</strong>
+                  <span className="muted">{c.severity}</span>
+                </div>
+                <p style={{ margin: '6px 0' }}>{c.summary}</p>
+                {c.action && <p className="muted">{c.action}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid" style={{ marginTop: 20 }}>
         <div className="card">

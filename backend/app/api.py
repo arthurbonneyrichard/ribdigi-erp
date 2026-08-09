@@ -8374,6 +8374,7 @@ async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin")
                 "run_due_backups_minutes": app_settings.CELERY_BACKUP_INTERVAL_MINUTES,
                 "run_due_report_emails_minutes": app_settings.CELERY_REPORT_EMAIL_INTERVAL_MINUTES,
                 "generate_ai_low_stock_predictions_minutes": app_settings.CELERY_AI_PREDICTION_INTERVAL_MINUTES,
+                "generate_ai_insights_minutes": app_settings.CELERY_AI_INSIGHTS_INTERVAL_MINUTES,
             },
         }
     )
@@ -8669,34 +8670,17 @@ async def ai_chat(payload: dict, claims=Depends(require_permission("ai", "write"
 
 @api.get("/ai/insights")
 async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSession = Depends(get_db)):
-    dash = (await dashboard(claims, db))["data"]
-    notes = []
-    if dash["low_stock"] > 0:
-        notes.append(f"{dash['low_stock']} product(s) are at or below reorder level.")
-    if dash["total_expenses"] > dash["total_sales"] and dash["total_sales"] > 0:
-        notes.append("Expenses currently exceed recorded sales.")
-    from app import ai_inventory as ai_inventory_svc
+    from app import ai_insights as ai_insights_svc
 
-    pred = await ai_inventory_svc.predict_low_stock(
-        db, claims["tenant_id"], at_risk_only=True, horizon_days=14
-    )
-    if pred["at_risk_count"]:
-        top = pred["predictions"][:3]
-        names = ", ".join(
-            f"{p['name']} (~{p['days_to_stockout']}d)" for p in top if p.get("days_to_stockout") is not None
-        )
-        notes.append(
-            f"{pred['at_risk_count']} product(s) predicted to stock out within 14 days"
-            + (f": {names}." if names else ".")
-        )
+    data = await ai_insights_svc.generate_insights(db, claims["tenant_id"])
     return env(
         {
-            "insights": notes
-            or ["No urgent anomaly detected from the currently configured business rules."],
-            "low_stock_predictions": {
-                "at_risk_count": pred["at_risk_count"],
-                "method": pred["method"],
-            },
+            "insights": data["summaries"],
+            "cards": data["insights"],
+            "generated_at": data["generated_at"],
+            "method": data["method"],
+            "count": data["count"],
+            "low_stock_predictions": data["low_stock_predictions"],
         }
     )
 
