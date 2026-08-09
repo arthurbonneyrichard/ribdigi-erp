@@ -7671,6 +7671,27 @@ async def list_journals(
     return env([await accounting_svc.serialize_journal(db, e) for e in rows])
 
 
+@api.get("/accounting/journal-entries/{entry_id}")
+async def get_journal(
+    entry_id: str,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    entry = (
+        await db.execute(
+            select(m.JournalEntry).where(
+                m.JournalEntry.id == entry_id,
+                m.JournalEntry.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Journal entry not found")
+    return env(await accounting_svc.serialize_journal(db, entry))
+
+
 @api.post("/accounting/journal-entries")
 async def create_journal(
     payload: JournalCreate,
@@ -7689,6 +7710,24 @@ async def create_journal(
     )
     await db.commit()
     return env(await accounting_svc.serialize_journal(db, entry), "Journal entry posted")
+
+
+@api.post("/accounting/journal-entries/{entry_id}/unpost")
+async def unpost_journal(
+    entry_id: str,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    entry = await accounting_svc.unpost_journal_entry(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        entry_id=entry_id,
+    )
+    await db.commit()
+    return env(await accounting_svc.serialize_journal(db, entry), "Journal entry unposted")
 
 
 @api.get("/accounting/trial-balance")

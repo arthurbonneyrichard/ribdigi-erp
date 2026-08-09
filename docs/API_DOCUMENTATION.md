@@ -862,7 +862,10 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 ### 10.2 Journal Entries
 **List:** `GET /accounting/journal-entries`  
 **Create:** `POST /accounting/journal-entries`  
-**Get:** `GET /accounting/journal-entries/{entry_id}`
+**Get:** `GET /accounting/journal-entries/{entry_id}`  
+**Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost`  
+
+Unpost reverses account balances and sets status `unposted`. Allowed only when `entry_date` is in the tenant’s open fiscal year (`fiscal_year_start` MM-DD). Returns `409` with `FISCAL_PERIOD_CLOSED`, `JOURNAL_NOT_POSTED`, or `JOURNAL_RECONCILED` when blocked.
 
 **Create Journal Entry:**
 ```json

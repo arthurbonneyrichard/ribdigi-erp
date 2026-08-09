@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -345,6 +345,182 @@ def _signed_balance_delta(account_type: str, debit: float, credit: float) -> flo
     if account_type in {"asset", "expense"}:
         return debit - credit
     return credit - debit
+
+
+def _parse_fiscal_mm_dd(fiscal_year_start: str) -> tuple[int, int]:
+    raw = (fiscal_year_start or "01-01").strip()
+    parts = raw.split("-")
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
+    try:
+        month, day = int(parts[0]), int(parts[1])
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD") from exc
+    if month < 1 or month > 12 or day < 1 or day > 31:
+        raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
+    return month, day
+
+
+def _safe_date(year: int, month: int, day: int) -> date:
+    """Clamp day for short months (e.g. Feb 29 → Feb 28 on non-leap years)."""
+    from calendar import monthrange
+
+    last = monthrange(year, month)[1]
+    return date(year, month, min(day, last))
+
+
+def fiscal_year_bounds(
+    fiscal_year_start: str,
+    *,
+    as_of: date | datetime | None = None,
+) -> tuple[date, date]:
+    """Return [start, end) for the open fiscal year containing as_of."""
+    if as_of is None:
+        as_of_d = datetime.utcnow().date()
+    elif isinstance(as_of, datetime):
+        as_of_d = as_of.date()
+    else:
+        as_of_d = as_of
+    month, day = _parse_fiscal_mm_dd(fiscal_year_start)
+    start = _safe_date(as_of_d.year, month, day)
+    if as_of_d < start:
+        start = _safe_date(as_of_d.year - 1, month, day)
+    end = _safe_date(start.year + 1, month, day)
+    return start, end
+
+
+def entry_in_open_fiscal_period(
+    entry_date: date | datetime,
+    fiscal_year_start: str,
+    *,
+    as_of: date | datetime | None = None,
+) -> bool:
+    start, end = fiscal_year_bounds(fiscal_year_start, as_of=as_of)
+    ed = entry_date.date() if isinstance(entry_date, datetime) else entry_date
+    return start <= ed < end
+
+
+async def unpost_journal_entry(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    entry_id: str,
+) -> m.JournalEntry:
+    """Reverse a posted journal within the open fiscal period (BR-10.2)."""
+    entry = (
+        await db.execute(
+            select(m.JournalEntry).where(
+                m.JournalEntry.id == entry_id,
+                m.JournalEntry.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Journal entry not found")
+    if (entry.status or "").lower() != "posted":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "JOURNAL_NOT_POSTED",
+                "message": f"Only posted journals can be unposted (status={entry.status})",
+            },
+        )
+
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
+    ).scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    fys = tenant.fiscal_year_start or "01-01"
+    if not entry_in_open_fiscal_period(entry.entry_date, fys):
+        start, end = fiscal_year_bounds(fys)
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "FISCAL_PERIOD_CLOSED",
+                "message": "Unpost is only allowed within the open fiscal period",
+                "open_period_start": start.isoformat(),
+                "open_period_end_exclusive": end.isoformat(),
+            },
+        )
+
+    lines = (
+        await db.execute(
+            select(m.JournalEntryLine).where(
+                m.JournalEntryLine.tenant_id == tenant_id,
+                m.JournalEntryLine.journal_entry_id == entry.id,
+            )
+        )
+    ).scalars().all()
+    if not lines:
+        raise HTTPException(status_code=400, detail="Journal entry has no lines")
+
+    line_ids = [ln.id for ln in lines]
+    matched = (
+        await db.execute(
+            select(m.BankStatementLine.id)
+            .where(
+                m.BankStatementLine.tenant_id == tenant_id,
+                m.BankStatementLine.matched_journal_line_id.in_(line_ids),
+            )
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    clearing_link = (
+        await db.execute(
+            select(m.BankClearingBookLink.id)
+            .where(
+                m.BankClearingBookLink.tenant_id == tenant_id,
+                m.BankClearingBookLink.journal_line_id.in_(line_ids),
+            )
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if matched or clearing_link:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "JOURNAL_RECONCILED",
+                "message": "Cannot unpost a journal with bank-reconciled lines; unmatch first",
+            },
+        )
+
+    for line in lines:
+        account = (
+            await db.execute(
+                select(m.Account).where(
+                    m.Account.id == line.account_id,
+                    m.Account.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found")
+        account.balance = float(account.balance or 0) - _signed_balance_delta(
+            account.account_type, float(line.debit or 0), float(line.credit or 0)
+        )
+
+    entry.status = "unposted"
+
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="journal_unposted",
+        entity="journal_entry",
+        entity_id=entry.id,
+        details={
+            "entry_number": entry.entry_number,
+            "total_debit": float(entry.total_debit or 0),
+            "source_type": entry.source_type,
+            "source_id": entry.source_id,
+        },
+        module="accounting",
+    )
+    return entry
 
 
 async def post_journal_entry(

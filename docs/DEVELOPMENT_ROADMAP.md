@@ -80,7 +80,9 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 2 open (2026-08-09):** Inventory & Supply Chain hardening track approved — `docs/ADR_009_STAGE2_OPEN.md` + `docs/STAGE_2_PLAN.md`.
 
-**Stage 2 exit (2026-08-09):** I1–I6 met — `docs/STAGE_2_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_010_STAGE2_FREEZE.md` (no new Stage 2 feature scope; do not open Stage 3 until explicit sign-off).
+**Stage 2 exit (2026-08-09):** I1–I6 met — `docs/STAGE_2_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_010_STAGE2_FREEZE.md` (no new Stage 2 feature scope; amended when Stage 3 opened).
+
+**Stage 3 open (2026-08-09):** Sales, POS & Financials hardening track approved — `docs/ADR_011_STAGE3_OPEN.md` + `docs/STAGE_3_PLAN.md`.
 
 ### 2.2 Features
 
@@ -207,7 +209,7 @@ Acceptance Criteria:
 
 Build the complete inventory management and purchasing system. This includes product catalog management, stock tracking, warehouse operations, supplier management, and the full purchase order lifecycle. This is the operational heart of the ERP.
 
-**Active delivery plan:** `docs/STAGE_2_PLAN.md` (hardening remaining BR ACs on top of existing engines).
+**Stage 2 delivery plan (frozen):** `docs/STAGE_2_PLAN.md` — exit `docs/STAGE_2_EXIT_CRITERIA.md` / ADR-010.
 
 ### 3.2 Features
 
@@ -341,6 +343,8 @@ Acceptance Criteria:
 ### 4.1 Objective
 
 Build the revenue-generating side of the platform: customer management, sales pipeline (quotation → order → invoice), Point of Sale (POS), expense tracking, basic accounting, tax management, and credit control. This phase makes the ERP commercially usable.
+
+**Active delivery plan:** `docs/STAGE_3_PLAN.md` (hardening remaining BR ACs on top of existing sales/POS/accounting engines).
 
 ### 4.2 Features
 

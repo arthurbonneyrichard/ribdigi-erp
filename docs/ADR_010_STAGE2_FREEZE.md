@@ -19,3 +19,7 @@ Stage 2 Inventory & Supply Chain hardening (I1–I6) delivered opening stock, op
 
 - Agents treat Stage 2 I1–I6 as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
+
+## Amendment (2026-08-09)
+
+Stage 3 delivery track was **explicitly approved** and opened under [ADR-011](ADR_011_STAGE3_OPEN.md) / `docs/STAGE_3_PLAN.md`. Stage 2 freeze above still applies to Inventory & Supply Chain I1–I6 scope.

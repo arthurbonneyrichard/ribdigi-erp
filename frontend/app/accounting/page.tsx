@@ -96,6 +96,18 @@ export default function Page() {
     }
   }
 
+  async function unpostJournal(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/journal-entries/${id}/unpost`, { method: 'POST' });
+      setMessage('Journal unposted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function createLiquidAccount() {
     setError('');
     setMessage('');
@@ -586,8 +598,10 @@ export default function Page() {
                 <th>Entry</th>
                 <th>Description</th>
                 <th>Source</th>
+                <th>Status</th>
                 <th>Debit</th>
                 <th>Credit</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -596,8 +610,16 @@ export default function Page() {
                   <td>{j.entry_number}</td>
                   <td>{j.description}</td>
                   <td>{j.source_type || 'manual'}</td>
+                  <td>{j.status || 'posted'}</td>
                   <td>{j.total_debit}</td>
                   <td>{j.total_credit}</td>
+                  <td>
+                    {(j.status || 'posted') === 'posted' ? (
+                      <button type="button" onClick={() => unpostJournal(j.id)}>
+                        Unpost
+                      </button>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>
