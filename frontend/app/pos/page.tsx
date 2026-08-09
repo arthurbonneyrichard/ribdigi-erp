@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
@@ -10,6 +11,7 @@ type Product = {
   variant_id?: string | null;
   name: string;
   sku: string;
+  barcode?: string | null;
   selling_price: number;
   stock_qty: number;
   kind?: string;
@@ -68,6 +70,7 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<any>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   async function refreshSession() {
     const r = await api('/pos/sessions/current');
@@ -114,14 +117,47 @@ export default function Page() {
     }
   }
 
-  async function search() {
+  function pickExactMatch(list: Product[], code: string): Product | null {
+    const exact = list.filter((p) => p.sku === code || p.barcode === code);
+    if (exact.length === 1) return exact[0];
+    if (exact.length === 0 && list.length === 1) return list[0];
+    return null;
+  }
+
+  async function searchProducts(query: string, { autoAdd = false }: { autoAdd?: boolean } = {}) {
     setError('');
     try {
-      const r = await api('/pos/products/search?q=' + encodeURIComponent(q));
-      setRows(r.data || []);
+      const params = new URLSearchParams();
+      params.set('q', query);
+      params.set('barcode', query);
+      const r = await api('/pos/products/search?' + params.toString());
+      const list: Product[] = r.data || [];
+      setRows(list);
+      if (autoAdd) {
+        const match = pickExactMatch(list, query.trim());
+        if (match) {
+          addToCart(match);
+          setMessage(`Scanned: ${match.name}`);
+          setQ('');
+        } else if (!list.length) {
+          setError(`No product for barcode ${query}`);
+        }
+      }
     } catch (err: any) {
       setError(err.message);
     }
+  }
+
+  async function search() {
+    await searchProducts(q, { autoAdd: false });
+  }
+
+  async function applyScan(code: string) {
+    const value = code.trim();
+    if (!value) return;
+    setQ(value);
+    setScannerOpen(false);
+    await searchProducts(value, { autoAdd: true });
   }
 
   function addToCart(product: Product) {
@@ -251,18 +287,35 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card">
+      <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search product or scan barcode"
-          style={{ padding: 12, width: '70%' }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              applyScan(q);
+            }
+          }}
+          placeholder="Search product or scan barcode (USB/Bluetooth or camera)"
+          style={{ padding: 12, flex: '1 1 220px' }}
           disabled={!session}
+          autoFocus
         />
         <button onClick={search} style={{ padding: 12 }} disabled={!session}>
           Search
         </button>
+        <button type="button" onClick={() => setScannerOpen(true)} style={{ padding: 12 }} disabled={!session}>
+          Camera scan
+        </button>
       </div>
+
+      <BarcodeCameraScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={applyScan}
+        title="POS barcode scan"
+      />
 
       <div className="grid" style={{ marginTop: 16 }}>
         {rows.map((r) => (

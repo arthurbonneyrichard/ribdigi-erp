@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
@@ -24,6 +25,8 @@ export default function Page() {
   const [activeCount, setActiveCount] = useState<any | null>(null);
   const [countWarehouseId, setCountWarehouseId] = useState('');
   const [countQtys, setCountQtys] = useState<Record<string, string>>({});
+  const [countScan, setCountScan] = useState('');
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -195,6 +198,41 @@ export default function Page() {
       setActiveCount(r.data);
       setMessage(`Count ${r.data.count_number} completed`);
       await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function applyCountScan(code: string) {
+    const value = code.trim();
+    if (!value || !activeCount || activeCount.status !== 'draft') return;
+    setError('');
+    setCountScan(value);
+    setScannerOpen(false);
+    try {
+      const params = new URLSearchParams({ q: value, barcode: value });
+      const r = await api('/inventory/products/lookup?' + params.toString());
+      const rows: any[] = r.data || [];
+      const exact =
+        rows.find((row) => row.barcode === value || row.sku === value) || (rows.length === 1 ? rows[0] : null);
+      if (!exact) {
+        setError(`No product for barcode ${value}`);
+        return;
+      }
+      const productId = exact.product_id || exact.id;
+      const item = (activeCount.items || []).find((i: any) => i.product_id === productId);
+      if (!item) {
+        setError(`${exact.name || exact.sku} is not on this count sheet`);
+        return;
+      }
+      let next = '1';
+      setCountQtys((prev) => {
+        const current = Number(prev[productId] ?? item.counted_qty ?? item.expected_qty ?? 0);
+        next = String(current + 1);
+        return { ...prev, [productId]: next };
+      });
+      setMessage(`Counted ${exact.name || exact.sku}: ${next}`);
+      setCountScan('');
     } catch (err: any) {
       setError(err.message);
     }
@@ -1149,6 +1187,28 @@ export default function Page() {
               <h3>
                 {activeCount.count_number} — {activeCount.status}
               </h3>
+              {activeCount.status === 'draft' && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <input
+                    value={countScan}
+                    onChange={(e) => setCountScan(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        applyCountScan(countScan);
+                      }
+                    }}
+                    placeholder="Scan barcode to count +1 (USB/Bluetooth or camera)"
+                    style={{ padding: 10, flex: '1 1 240px' }}
+                  />
+                  <button type="button" onClick={() => applyCountScan(countScan)} disabled={!countScan.trim()}>
+                    Apply scan
+                  </button>
+                  <button type="button" onClick={() => setScannerOpen(true)}>
+                    Camera scan
+                  </button>
+                </div>
+              )}
               <table className="table">
                 <thead>
                   <tr>
@@ -1199,6 +1259,13 @@ export default function Page() {
           )}
         </>
       )}
+
+      <BarcodeCameraScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={applyCountScan}
+        title="Stock count barcode scan"
+      />
     </Shell>
   );
 }

@@ -44,6 +44,7 @@ from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
 from app import barcodes as barcode_svc
 from app import product_import as product_import_svc
+from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
 from app import suppliers as suppliers_svc
@@ -1633,6 +1634,20 @@ async def products(claims=Depends(require_permission("inventory", "read")), db: 
         )
     ).scalars().all()
     return env([catalog_meta_svc.serialize_product(p) for p in rows])
+
+
+@api.get("/inventory/products/lookup")
+async def inventory_products_lookup(
+    q: str = "",
+    barcode: str | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Resolve SKU/barcode scans for inventory stock ops and counts (no POS permission required)."""
+    rows = await product_lookup_svc.lookup_products(
+        db, tenant_id=claims["tenant_id"], q=q, barcode=barcode
+    )
+    return env(rows)
 
 
 @api.get("/products/import/template")
@@ -4254,74 +4269,10 @@ async def pos_search(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    scan = barcode_svc.normalize_barcode(barcode) or (
-        q.strip() if barcode_svc.looks_like_barcode_scan(q) else None
+    out = await product_lookup_svc.lookup_products(
+        db, tenant_id=claims["tenant_id"], q=q, barcode=barcode
     )
-    stmt = select(m.Product).where(
-        m.Product.tenant_id == claims["tenant_id"],
-        m.Product.is_active == True,  # noqa: E712
-    )
-    if scan:
-        stmt = stmt.where(
-            (m.Product.barcode == scan) | (m.Product.sku == scan) | (m.Product.name.ilike(f"%{q}%"))
-        )
-    elif q:
-        stmt = stmt.where(
-            m.Product.name.ilike(f"%{q}%")
-            | m.Product.sku.ilike(f"%{q}%")
-            | m.Product.barcode.ilike(f"%{q}%")
-        )
-    products = (await db.execute(stmt.limit(30))).scalars().all()
-    out = [
-        {
-            "id": p.id,
-            "product_id": p.id,
-            "variant_id": None,
-            "name": p.name,
-            "sku": p.sku,
-            "barcode": p.barcode,
-            "selling_price": float(p.selling_price or 0),
-            "stock_qty": float(p.stock_qty or 0),
-            "kind": "product",
-        }
-        for p in products
-    ]
-    # Also surface matching variants for barcode/SKU search
-    vstmt = select(m.ProductVariant).where(
-        m.ProductVariant.tenant_id == claims["tenant_id"],
-        m.ProductVariant.is_active == True,  # noqa: E712
-    )
-    if scan:
-        vstmt = vstmt.where(
-            (m.ProductVariant.barcode == scan)
-            | (m.ProductVariant.sku == scan)
-            | (m.ProductVariant.name.ilike(f"%{q}%"))
-        )
-    elif q:
-        vstmt = vstmt.where(
-            m.ProductVariant.name.ilike(f"%{q}%")
-            | m.ProductVariant.sku.ilike(f"%{q}%")
-            | m.ProductVariant.barcode.ilike(f"%{q}%")
-        )
-    else:
-        vstmt = None
-    if vstmt is not None:
-        variants = (await db.execute(vstmt.limit(20))).scalars().all()
-        for v in variants:
-            out.append(
-                {
-                    "id": v.id,
-                    "product_id": v.product_id,
-                    "variant_id": v.id,
-                    "name": v.name,
-                    "sku": v.sku,
-                    "barcode": v.barcode,
-                    "selling_price": float(v.selling_price or 0),
-                    "stock_qty": float(v.stock_qty or 0),
-                    "kind": "variant",
-                }
-            )
-    return env(out[:40])
+    return env(out)
 
 
 @api.get("/pos/sales/{sale_id}/receipt")

@@ -68,6 +68,7 @@ def serialize_item(item: m.StockCountItem, *, product: m.Product | None = None) 
         "product_id": item.product_id,
         "product_name": product.name if product else None,
         "product_sku": product.sku if product else None,
+        "product_barcode": product.barcode if product else None,
         "expected_qty": expected,
         "counted_qty": counted,
         "variance": variance,
