@@ -41,6 +41,8 @@ export default function Page() {
   const [returnReason, setReturnReason] = useState('other');
   const [restock, setRestock] = useState(true);
   const [payAmount, setPayAmount] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -123,6 +125,8 @@ export default function Page() {
   const linePayload = {
     customer_id: customerId,
     store_id: storeId || null,
+    delivery_date: deliveryDate ? `${deliveryDate}T00:00:00` : null,
+    delivery_address: deliveryAddress.trim() || null,
     items: [
       {
         product_id: productId,
@@ -504,6 +508,20 @@ export default function Page() {
           </p>
         )}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            type="date"
+            value={deliveryDate}
+            onChange={(e) => setDeliveryDate(e.target.value)}
+            title="Expected delivery date"
+          />
+          <input
+            value={deliveryAddress}
+            onChange={(e) => setDeliveryAddress(e.target.value)}
+            placeholder="Delivery address (orders)"
+            style={{ minWidth: 240, flex: 1 }}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={createQuotation}>Create quotation</button>
           <button onClick={createOrder}>Create order</button>
           <button onClick={createInvoice}>Create invoice</button>
@@ -584,6 +602,7 @@ export default function Page() {
             <tr>
               <th>Number</th>
               <th>Status</th>
+              <th>Delivery</th>
               <th>Store</th>
               <th>Reserved</th>
               <th>Total</th>
@@ -595,6 +614,14 @@ export default function Page() {
               <tr key={o.id}>
                 <td>{o.order_number}</td>
                 <td>{o.status}</td>
+                <td>
+                  {o.delivery_date ? String(o.delivery_date).slice(0, 10) : '—'}
+                  {o.delivery_address ? (
+                    <div className="muted" style={{ maxWidth: 180 }}>
+                      {o.delivery_address}
+                    </div>
+                  ) : null}
+                </td>
                 <td>
                   {stores.find((s) => s.id === o.store_id)?.name ||
                     (o.store_id ? o.store_id.slice(0, 8) : '—')}
@@ -608,11 +635,20 @@ export default function Page() {
                       Confirm (reserve)
                     </button>
                   )}
-                  {['draft', 'confirmed'].includes(o.status) && (
-                    <>
-                      <button onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}>→ Invoice</button>
-                      <button onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>Cancel</button>
-                    </>
+                  {o.status === 'confirmed' && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/process`, 'Processing')}>Process</button>
+                  )}
+                  {o.status === 'processing' && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/ship`, 'Shipped')}>Ship</button>
+                  )}
+                  {o.status === 'shipped' && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/deliver`, 'Delivered')}>Deliver</button>
+                  )}
+                  {['draft', 'confirmed', 'processing', 'shipped', 'delivered'].includes(o.status) && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}>→ Invoice</button>
+                  )}
+                  {['draft', 'confirmed', 'processing'].includes(o.status) && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>Cancel</button>
                   )}
                 </td>
               </tr>

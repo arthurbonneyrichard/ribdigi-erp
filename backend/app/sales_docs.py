@@ -307,8 +307,13 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "discount_amount": float(order.discount_amount),
         "total_amount": float(order.total_amount),
         "notes": order.notes,
+        "delivery_date": order.delivery_date,
+        "delivery_address": order.delivery_address,
         "converted_invoice_id": order.converted_invoice_id,
         "confirmed_at": order.confirmed_at,
+        "processing_at": order.processing_at,
+        "shipped_at": order.shipped_at,
+        "delivered_at": order.delivered_at,
         "created_at": order.created_at,
         "reserved_qty_total": sum(reserved_by_item.values()),
         "items": [
@@ -418,8 +423,10 @@ async def create_order(
     quotation_id: str | None = None,
     store_id: str | None = None,
     warehouse_id: str | None = None,
+    delivery_date: datetime | None = None,
+    delivery_address: str | None = None,
 ) -> m.SalesOrder:
-    await get_customer(db, tenant_id, customer_id)
+    customer = await get_customer(db, tenant_id, customer_id)
     if quotation_id:
         quote = await get_quotation(db, tenant_id, quotation_id)
         if quote.customer_id != customer_id:
@@ -430,6 +437,7 @@ async def create_order(
     subtotal, tax_total, prepared = await _prepare_lines(db, tenant_id, items)
     discount_amount = float(discount_amount or 0)
     total = round(subtotal + tax_total - discount_amount, 2)
+    address = (delivery_address or "").strip() or (customer.address or None)
     order = m.SalesOrder(
         tenant_id=tenant_id,
         order_number=_stamp("SO"),
@@ -443,12 +451,113 @@ async def create_order(
         discount_amount=discount_amount,
         total_amount=total,
         notes=notes,
+        delivery_date=delivery_date,
+        delivery_address=address,
         created_by=user_id,
     )
     db.add(order)
     await db.flush()
     for line, _ in prepared:
         db.add(m.SalesOrderItem(tenant_id=tenant_id, sales_order_id=order.id, **line))
+    await db.flush()
+    return order
+
+
+async def update_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    order_id: str,
+    notes: str | None = None,
+    delivery_date: datetime | None = None,
+    delivery_address: str | None = None,
+    store_id: str | None = None,
+    warehouse_id: str | None = None,
+    clear_delivery_date: bool = False,
+) -> m.SalesOrder:
+    order = await get_order(db, tenant_id, order_id)
+    if order.status not in {"draft", "confirmed", "processing"}:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot update order in status {order.status}",
+        )
+    if notes is not None:
+        order.notes = notes
+    if clear_delivery_date:
+        order.delivery_date = None
+    elif delivery_date is not None:
+        order.delivery_date = delivery_date
+    if delivery_address is not None:
+        order.delivery_address = delivery_address.strip() or None
+    if store_id is not None or warehouse_id is not None:
+        if order.status != "draft":
+            raise HTTPException(
+                status_code=409,
+                detail="Store/warehouse can only be changed while the order is draft",
+            )
+        resolved_store, resolved_wh = await _resolve_order_warehouse(
+            db,
+            tenant_id=tenant_id,
+            store_id=store_id if store_id is not None else order.store_id,
+            warehouse_id=warehouse_id if warehouse_id is not None else order.warehouse_id,
+        )
+        order.store_id = resolved_store
+        order.warehouse_id = resolved_wh
+    order.updated_at = datetime.utcnow()
+    await db.flush()
+    return order
+
+
+ORDER_LOGISTICS_TRANSITIONS = {
+    "processing": {"from": {"confirmed"}, "ts_field": "processing_at"},
+    "shipped": {"from": {"processing"}, "ts_field": "shipped_at"},
+    "delivered": {"from": {"shipped"}, "ts_field": "delivered_at"},
+}
+
+
+async def advance_order_status(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    order_id: str,
+    target_status: str,
+    user_id: str | None = None,
+) -> m.SalesOrder:
+    meta = ORDER_LOGISTICS_TRANSITIONS.get(target_status)
+    if not meta:
+        raise HTTPException(status_code=400, detail=f"Unsupported status transition to {target_status}")
+    order = await get_order(db, tenant_id, order_id)
+    if order.status not in meta["from"]:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot mark order {target_status} from status {order.status}",
+        )
+    now = datetime.utcnow()
+    order.status = target_status
+    setattr(order, meta["ts_field"], now)
+    order.updated_at = now
+    from app import audit as audit_svc
+    from app.notifications import create_notification
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="sales",
+        action=f"order_{target_status}",
+        entity="sales_order",
+        entity_id=order.id,
+        details={"order_number": order.order_number, "status": target_status},
+    )
+    await create_notification(
+        db,
+        tenant_id=tenant_id,
+        category="system",
+        title=f"Sales order {target_status}",
+        message=f"Order {order.order_number} marked {target_status}.",
+        entity_type="sales_order",
+        entity_id=order.id,
+    )
     await db.flush()
     return order
 
@@ -532,7 +641,7 @@ async def cancel_order(
     user_id: str | None = None,
 ) -> m.SalesOrder:
     order = await get_order(db, tenant_id, order_id)
-    if order.status not in {"draft", "confirmed"}:
+    if order.status not in {"draft", "confirmed", "processing"}:
         raise HTTPException(status_code=409, detail=f"Cannot cancel order in status {order.status}")
     from app.inventory import release_reservations_for_order
 
@@ -553,7 +662,7 @@ async def convert_order_to_invoice(
     order_id: str,
 ) -> m.SalesInvoice:
     order = await get_order(db, tenant_id, order_id)
-    if order.status not in {"draft", "confirmed"}:
+    if order.status not in {"draft", "confirmed", "processing", "shipped", "delivered"}:
         raise HTTPException(status_code=409, detail=f"Cannot invoice order in status {order.status}")
     if order.status == "draft":
         await reserve_order_stock(db, tenant_id=tenant_id, order=order, user_id=user_id)
