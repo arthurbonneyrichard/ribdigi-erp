@@ -85,6 +85,13 @@ class Settings(BaseSettings):
     POS_DRAWER_TIMEOUT_SECONDS: float = 3.0
     TRIAL_DAYS: int = 14
     TRIAL_GRACE_DAYS: int = 7
+    # Stage 1 G19 — catch-all hash-chained audit for mutating /api/v1 writes
+    AUDIT_HTTP_MIDDLEWARE_ENABLED: bool = True
+    # Stage 1 G20 — BR-17.2 retention / cold archive
+    AUDIT_RETENTION_YEARS: int = 7
+    # Logs older than this many days are eligible for cold-archive copy (rows are never deleted).
+    AUDIT_COLD_ARCHIVE_AFTER_DAYS: int = 365
+    CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES: int = 1440
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 

@@ -177,10 +177,13 @@ async def client(db_engine, seeded, _disable_rate_limit):
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
+    previous_factory = getattr(app.state, "session_factory", None)
+    app.state.session_factory = session_factory
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac, seeded
     app.dependency_overrides.clear()
+    app.state.session_factory = previous_factory
 
 
 async def auth_headers(client: AsyncClient, *, email: str, tenant_slug: str, totp_code: str | None = None):
