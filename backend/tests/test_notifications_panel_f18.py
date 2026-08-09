@@ -13,6 +13,7 @@ from tests.conftest import auth_headers
 
 def test_category_groups_cover_br44_buckets():
     assert category_group("low_stock") == "stock"
+    assert category_group("new_order") == "orders"
     assert category_group("purchase_received") == "orders"
     assert category_group("payment_due") == "payments"
     assert category_group("security") == "system"

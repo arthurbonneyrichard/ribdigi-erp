@@ -15,6 +15,7 @@ DEFAULT_PREFERENCES = {
     "expense_approval": {"dashboard": True, "email": True, "sms": False},
     "shift_variance": {"dashboard": True, "email": False, "sms": False},
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
+    "new_order": {"dashboard": True, "email": False, "sms": False},
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
     "payment_due": {"dashboard": True, "email": True, "sms": False},
     "quotation_expiry": {"dashboard": True, "email": True, "sms": False},
@@ -32,7 +33,13 @@ VALID_CATEGORIES = set(DEFAULT_PREFERENCES.keys())
 CATEGORY_GROUPS: dict[str, frozenset[str]] = {
     "stock": frozenset({"low_stock", "transfer"}),
     "orders": frozenset(
-        {"purchase_received", "quotation_expiry", "expense_approval", "recurring_expense"}
+        {
+            "new_order",
+            "purchase_received",
+            "quotation_expiry",
+            "expense_approval",
+            "recurring_expense",
+        }
     ),
     "payments": frozenset({"payment_due", "credit_limit", "billing", "shift_variance"}),
     "system": frozenset({"system", "security", "ai_insight"}),
