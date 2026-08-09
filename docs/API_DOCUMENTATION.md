@@ -564,11 +564,11 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 ```
 
 ### 6.2 Purchase Request
-**List:** `GET /purchases/requests`  
-**Create:** `POST /purchases/requests`  
-**Get:** `GET /purchases/requests/{request_id}`  
-**Approve:** `POST /purchases/requests/{request_id}/approve`  
-**Reject:** `POST /purchases/requests/{request_id}/reject`
+**List:** `GET /purchasing/requests`  
+**Create:** `POST /purchasing/requests`  
+**Get:** `GET /purchasing/requests/{request_id}`  
+**Approve:** `POST /purchasing/requests/{request_id}/approve`  
+**Reject:** `POST /purchasing/requests/{request_id}/reject`
 
 **Create Request:**
 ```json
@@ -588,10 +588,11 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 ```
 
 ### 6.3 Purchase Order
-**List:** `GET /purchases/orders`  
-**Create:** `POST /purchases/orders`  
-**Get:** `GET /purchases/orders/{order_id}`  
-**Update Status:** `PATCH /purchases/orders/{order_id}/status`
+**List:** `GET /purchasing/orders`  
+**Create:** `POST /purchasing/orders`  
+**Get:** `GET /purchasing/orders/{order_id}`  
+**Send:** `POST /purchasing/orders/{order_id}/send`  
+**Cancel:** `POST /purchasing/orders/{order_id}/cancel`
 
 **Create PO:**
 ```json
@@ -617,9 +618,9 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 **Status Flow:** `draft` → `sent` → `partially_received` → `received` → `cancelled`
 
 ### 6.4 Goods Received Note (GRN)
-**List:** `GET /purchases/grn`  
-**Create:** `POST /purchases/grn`  
-**Get:** `GET /purchases/grn/{grn_id}`
+**List:** `GET /purchasing/grn`  
+**Create:** `POST /purchasing/grn`  
+**Get:** `GET /purchasing/grn/{grn_id}`
 
 **Create GRN:**
 ```json
@@ -641,15 +642,17 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 ```
 
 ### 6.5 Purchase Invoice
-**List:** `GET /purchases/invoices`  
-**Create:** `POST /purchases/invoices`  
-**Get:** `GET /purchases/invoices/{invoice_id}`  
-**Pay:** `POST /purchases/invoices/{invoice_id}/payments`
+**List:** `GET /purchasing/invoices`  
+**Create:** `POST /purchasing/invoices`  
+**Get:** `GET /purchasing/invoices/{invoice_id}`  
+
+Supplier payments: `POST /suppliers/{id}/payments` (credit module). Attachment: `POST/GET/DELETE /purchasing/invoices/{invoice_id}/attachment`.
 
 ### 6.6 Purchase Return
-**List:** `GET /purchases/returns`  
-**Create:** `POST /purchases/returns`  
-**Get:** `GET /purchases/returns/{return_id}`
+**List:** `GET /purchasing/returns`  
+**Create:** `POST /purchasing/returns`  
+**Get:** `GET /purchasing/returns/{return_id}`  
+**Post:** `POST /purchasing/returns/{return_id}/post`
 
 ---
 
@@ -1112,10 +1115,11 @@ Export type `sales_customers` is available on `/reports/export`. Product export 
 ### 14.2 Inventory Reports
 **Stock Balance:** `GET /reports/inventory/balance?warehouse_id=`  
 **Stock Movement:** `GET /reports/inventory/movements?product_id=&from_date=&to_date=`  
-**Low Stock:** `GET /reports/inventory/low-stock`  
+**Low Stock:** `GET /reports/inventory/low-stock?store_id=&warehouse_id=`  
+**Expiry:** `GET /reports/inventory/expiry?days=30`  
 **Stock Valuation (Stage 9 R2):** `GET /reports/inventory/valuation?warehouse_id=&store_id=`  
 
-Valuation uses **standard cost** only: `value = quantity × product.cost_price`. Response includes `costing_method`, `costing_method_note`, line items, `by_warehouse` totals, and overall `total_value`. FIFO/LIFO/weighted average are not implemented. Export type: `inventory_valuation`. Requires `reports:read`.
+Valuation uses **standard cost** only: `value = quantity × product.cost_price`. Response includes `costing_method` (`standard_cost`), `costing_method_note`, line items, `by_warehouse` totals, and overall `total_value`. FIFO/LIFO/weighted average are **not** implemented. Export type: `inventory_valuation`. Requires `reports:read`. See also `docs/STAGE_9_FIDELITY.md`.
 
 ### 14.3 Purchase Reports
 **Purchase Summary:** `GET /reports/purchases/summary?from_date=&to_date=`  

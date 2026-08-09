@@ -21,7 +21,7 @@ Stage 9 closes commercial-MVP holes for journal supporting documents, purchase/s
 | **J1** | Journal supporting documents (upload/download/delete + Ledger UI) | P0 | COMPLETE |
 | **R1** | Purchase report depth: pending POs + purchase-return summary | P1 | COMPLETE |
 | **R2** | Stock valuation report (qty × cost_price; no FIFO/LIFO) | P1 | COMPLETE |
-| **D1** | Spec / API / User Manual fidelity sync | P2 | PENDING |
+| **D1** | Spec / API / User Manual fidelity sync | P2 | COMPLETE |
 | **H9x** | Stage 9 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -56,8 +56,9 @@ Stage 9 closes commercial-MVP holes for journal supporting documents, purchase/s
 
 ## D1 acceptance criteria
 
-- [ ] BR / API / User Manual / DATABASE docs updated for Stage 9 delivered behavior.
-- [ ] Checkbox / status language matches implementation (no false COMPLETE).
+- [x] BR / API / User Manual / DATABASE docs updated for Stage 9 delivered behavior.
+- [x] Checkbox / status language matches implementation (no false COMPLETE).
+- [x] Fidelity note `docs/STAGE_9_FIDELITY.md` + guard `backend/tests/test_stage9_fidelity_d1.py`.
 
 ## H9x acceptance criteria
 

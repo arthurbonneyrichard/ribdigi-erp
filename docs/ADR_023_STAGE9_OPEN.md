@@ -21,3 +21,7 @@ Remaining commercial-MVP gaps include journal supporting documents (BR-10.2), pu
 
 - Agents may implement Stage 9 plan items without reopening Stage 1–8 feature scope.
 - Stage 9 exit requires `docs/STAGE_9_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Amendment (2026-08-09)
+
+D1 documentation fidelity sync recorded in `docs/STAGE_9_FIDELITY.md`. J1, R1, R2, and D1 are COMPLETE on the Stage 9 plan; remaining Stage 9 work is **H9x** exit + freeze.

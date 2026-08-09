@@ -958,12 +958,15 @@ CREATE TABLE journal_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     entry_number VARCHAR(50) NOT NULL,
-    entry_date DATE NOT NULL,
+    entry_date DATE NOT NULL,  -- implemented as TIMESTAMPTZ/DateTime in ORM
     reference VARCHAR(100),
     description TEXT,
+    source_type VARCHAR(50),   -- e.g. manual, opening_balance, grn, expense
+    source_id UUID,
     total_debit DECIMAL(15,4) NOT NULL,
     total_credit DECIMAL(15,4) NOT NULL,
-    is_balanced BOOLEAN GENERATED ALWAYS AS (total_debit = total_credit) STORED,
+    status VARCHAR(20) NOT NULL DEFAULT 'posted',  -- posted | unposted
+    -- is_balanced is computed in API serialize (balanced flag); not all DBs keep generated column
     attachment_url TEXT,  -- Stage 9 J1: storage key or external URL for supporting document
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),

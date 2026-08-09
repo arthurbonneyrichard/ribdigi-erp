@@ -603,11 +603,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Manual accounting transactions.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Double-entry journal with debit and credit lines
-  - [ ] Auto-balancing validation
-  - [ ] Journal number auto-generation
+  - [x] Double-entry journal with debit and credit lines
+  - [x] Auto-balancing validation
+  - [x] Journal number auto-generation
   - [x] Attach supporting documents (Stage 9 J1)
-  - [ ] Post/unpost capability (unpost only within same fiscal period)
+  - [x] Post/unpost capability (unpost only within same fiscal period; Stage 3 A1)
 
 #### BR-10.3 Cash & Bank Accounts
 - **Description:** Track liquid assets.
@@ -747,11 +747,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Stock visibility and analysis.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Stock Balance:** Current stock per product per warehouse
-  - [ ] **Low Stock:** Products below reorder level
-  - [ ] **Stock Movement:** All in/out/adjustment/transfer transactions
+  - [x] **Stock Balance:** Current stock per product per warehouse (`GET /reports/inventory/balance`)
+  - [x] **Low Stock:** Products below reorder level (`GET /reports/inventory/low-stock`)
+  - [x] **Stock Movement:** All in/out/adjustment/transfer transactions (`GET /reports/inventory/movements`)
   - [x] **Stock Valuation:** quantity × product `cost_price` (standard cost; Stage 9 R2). FIFO/LIFO/WA deferred.
-  - [ ] **Expiry Report:** Products nearing expiry (pharmacy/food)
+  - [x] **Expiry Report:** Products nearing expiry (`GET /reports/inventory/expiry`)
 
 #### BR-14.3 Purchase Reports
 - **Description:** Procurement analysis.

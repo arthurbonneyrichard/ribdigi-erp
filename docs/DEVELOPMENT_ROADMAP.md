@@ -681,7 +681,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 9 open (ADR-023) — J1 → R1 → R2 → D1 → H9x. Stage 8 remains frozen (ADR-022).
+**Active delivery plan:** Stage 9 open (ADR-023) — J1/R1/R2/D1 COMPLETE; remaining **H9x** exit + freeze. Fidelity: `docs/STAGE_9_FIDELITY.md`. Stage 8 remains frozen (ADR-022).
 
 ### 6.2 Features
 

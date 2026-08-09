@@ -199,7 +199,7 @@ Click the **🔔 bell icon** to see:
 3. Click the **Actions (⋮)** menu → **Edit**
 4. Update fields and click **Save**
 
-> **Note:** Changing cost price does not affect existing stock valuation. New stock will use the updated cost.
+> **Note:** Stock valuation (Reports → Inventory) uses **standard cost**: quantity × the product’s current cost price. Changing cost price updates valuation immediately. FIFO/LIFO/weighted-average layers are not used.
 
 #### Managing Categories & Brands
 - **Categories:** Go to **Inventory → Categories** to create a hierarchical tree (e.g., Electronics → Mobile Phones → Smartphones)
@@ -715,15 +715,11 @@ The COA is the backbone of your accounting. RIBDIGI comes pre-loaded with an ind
 
 For adjustments, accruals, and corrections:
 
-1. Go to **Accounting → Journal Entries → + New Entry**
-2. Enter **Date** and **Reference**
-3. Add lines:
-   - Select **Account**
-   - Enter **Debit** or **Credit** amount
-   - Add description per line
-4. Ensure **Total Debits = Total Credits** (system validates)
-5. Click **Post**
-6. On **Accounting → Ledger → Recent journals**, use **Upload** to attach a supporting document (PDF/image). Use **Download** / **Remove** to manage it later.
+1. Go to **Accounting → Ledger**
+2. Under **Manual journal**, enter description and debit/credit account codes + amount
+3. Ensure the entry balances (system validates totals)
+4. Click **Post**
+5. In **Recent journals**, use **Upload** to attach a supporting document (PDF/image). Use **Download** / **Remove** to manage it later. Use **Unpost** only while the fiscal period is open.
 
 > **Important:** Once posted, journal entries can only be unposted within the same fiscal period. After period close, they are immutable.
 
