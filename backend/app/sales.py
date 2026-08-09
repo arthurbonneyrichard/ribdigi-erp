@@ -331,8 +331,6 @@ def render_invoice_pdf(
     item_labels: dict[str, str] | None = None,
 ) -> bytes:
     """Branded invoice PDF: A4 letter page or narrow thermal page."""
-    from app.report_export import _pdf_escape
-
     tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
     text = render_invoice_text(
         invoice_data,
@@ -347,8 +345,26 @@ def render_invoice_pdf(
         customer_address=customer_address,
         item_labels=item_labels,
     )
-    lines = text.splitlines() or [""]
+    title = f"INVOICE {invoice_data.get('invoice_number') or ''}"
+    return render_branded_lines_pdf(
+        text.splitlines() or [""],
+        template=tpl,
+        company_name=company_name,
+        title=title,
+    )
 
+
+def render_branded_lines_pdf(
+    lines: list[str],
+    *,
+    template: str = "a4",
+    company_name: str,
+    title: str,
+) -> bytes:
+    """Build a simple branded multi-line PDF (A4 or thermal)."""
+    from app.report_export import _pdf_escape
+
+    tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
     if tpl.startswith("thermal"):
         page_width = 226 if tpl == "thermal_80" else 164
         line_height = 11
@@ -363,22 +379,20 @@ def render_invoice_pdf(
             if y < bottom:
                 break
         stream = "\n".join(content).encode("latin-1", errors="replace")
-        font = b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n"
         media = f"[0 0 {page_width} {page_height}]"
     else:
         page_width, page_height = 612, 792
         content = []
         y = 760
-        # Title block
         content.append(
             f"BT /F2 18 Tf 50 {y} Td ({_pdf_escape(company_name[:60])}) Tj ET"
         )
         y -= 22
         content.append(
-            f"BT /F2 14 Tf 50 {y} Td ({_pdf_escape('INVOICE ' + str(invoice_data.get('invoice_number') or '')[:40])}) Tj ET"
+            f"BT /F2 14 Tf 50 {y} Td ({_pdf_escape(str(title)[:50])}) Tj ET"
         )
         y -= 28
-        for line in lines[1:]:  # company already as title
+        for line in lines[1:]:
             if y < 48:
                 content.append(
                     f"BT /F1 9 Tf 50 {y} Td ({_pdf_escape('… continued on request …')}) Tj ET"
@@ -387,10 +401,6 @@ def render_invoice_pdf(
             content.append(f"BT /F1 10 Tf 50 {y} Td ({_pdf_escape(line[:95])}) Tj ET")
             y -= 13
         stream = "\n".join(content).encode("latin-1", errors="replace")
-        font = (
-            b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n"
-            b"6 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>endobj\n"
-        )
         media = f"[0 0 {page_width} {page_height}]"
 
     objects: list[bytes] = []
@@ -416,7 +426,7 @@ def render_invoice_pdf(
         + b"\nendstream\nendobj\n"
     )
     if tpl.startswith("thermal"):
-        objects.append(font)
+        objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n")
     else:
         objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n")
         objects.append(b"6 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>endobj\n")

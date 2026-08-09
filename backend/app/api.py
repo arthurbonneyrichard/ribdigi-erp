@@ -4072,6 +4072,86 @@ async def get_quotation(
     return env(await sales_docs_svc.serialize_quotation(db, quote))
 
 
+@api.get("/sales/quotations/{quotation_id}/print")
+async def print_sales_quotation(
+    quotation_id: str,
+    template: str | None = None,
+    format: str = "text",
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
+    assert_record_access(claims, quote.created_by)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    customer = await sales_svc.get_customer(db, claims["tenant_id"], quote.customer_id)
+    tpl = (template or getattr(tenant, "invoice_print_template", None) or "a4").strip().lower()
+    if tpl not in sales_docs_svc.QUOTATION_PRINT_TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"template must be one of: {sorted(sales_docs_svc.QUOTATION_PRINT_TEMPLATES)}",
+        )
+    fmt = (format or "text").strip().lower()
+    if fmt not in sales_docs_svc.QUOTATION_PRINT_FORMATS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"format must be one of: {sorted(sales_docs_svc.QUOTATION_PRINT_FORMATS)}",
+        )
+    data = await sales_docs_svc.serialize_quotation(db, quote)
+    currency = tenant.currency or "GHS"
+    product_ids = [
+        str(i.get("product_id")) for i in (data.get("items") or []) if i.get("product_id")
+    ]
+    item_labels: dict[str, str] = {}
+    if product_ids:
+        products = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == claims["tenant_id"],
+                    m.Product.id.in_(product_ids),
+                )
+            )
+        ).scalars().all()
+        item_labels = {p.id: p.name for p in products}
+    brand = dict(
+        company_name=tenant.company_name,
+        customer_name=customer.name,
+        template=tpl,
+        currency=currency,
+        company_address=getattr(tenant, "address", None),
+        company_phone=getattr(tenant, "phone", None),
+        company_email=str(getattr(tenant, "email", None) or "") or None,
+        tax_registration_number=getattr(tenant, "tax_registration_number", None),
+        customer_address=getattr(customer, "address", None),
+        item_labels=item_labels,
+    )
+    await db.commit()
+    if fmt == "pdf":
+        pdf = sales_docs_svc.render_quotation_pdf(data, **brand)
+        filename = f"quotation_{(data.get('quotation_number') or quotation_id)}.pdf".replace(
+            "/", "-"
+        )
+        return Response(
+            content=pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        )
+    if fmt == "html":
+        return HTMLResponse(sales_docs_svc.render_quotation_html(data, **brand))
+    text = sales_docs_svc.render_quotation_text(data, **brand)
+    return env(
+        {
+            "quotation": data,
+            "text": text,
+            "template": tpl,
+            "format": fmt,
+            "customer_name": customer.name,
+            "company_name": tenant.company_name,
+        }
+    )
+
+
 @api.post("/sales/quotations/{quotation_id}/send")
 async def send_quotation(
     quotation_id: str,

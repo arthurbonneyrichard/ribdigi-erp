@@ -394,14 +394,28 @@ export default function Page() {
   }
 
   async function printInvoice(invId: string, template?: string, format: 'text' | 'pdf' | 'html' = 'html') {
+    return printSalesDoc('invoices', invId, template, format);
+  }
+
+  async function printQuotation(quoteId: string, template?: string, format: 'text' | 'pdf' | 'html' = 'html') {
+    return printSalesDoc('quotations', quoteId, template, format);
+  }
+
+  async function printSalesDoc(
+    kind: 'invoices' | 'quotations',
+    docId: string,
+    template?: string,
+    format: 'text' | 'pdf' | 'html' = 'html',
+  ) {
     setError('');
     try {
       const params = new URLSearchParams();
       if (template) params.set('template', template);
       params.set('format', format);
       const qs = `?${params.toString()}`;
+      const path = `/sales/${kind}/${docId}/print${qs}`;
       if (format === 'text') {
-        const r = await api(`/sales/invoices/${invId}/print${qs}`);
+        const r = await api(path);
         const text = r.data?.text || '';
         const win = window.open('', '_blank', 'noopener,noreferrer,width=720,height=800');
         if (win) {
@@ -411,15 +425,13 @@ export default function Page() {
           win.document.close();
           win.focus();
         }
-        setMessage(
-          `Print (${r.data?.template || 'a4'}) ready for ${r.data?.invoice?.invoice_number || 'invoice'}`
-        );
-        if (r.data?.invoice) setSelected(r.data.invoice);
+        const label = kind === 'quotations' ? 'Quotation' : 'Invoice';
+        setMessage(`${label} print (${r.data?.template || 'a4'}) ready`);
         return;
       }
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/sales/invoices/${invId}/print${qs}`, {
+      const res = await fetch(`${apiBase}${path}`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
@@ -427,26 +439,26 @@ export default function Page() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || body.message || 'Invoice print failed');
+        throw new Error(body.detail || body.message || 'Print failed');
       }
       if (format === 'html') {
         const html = await res.text();
         const win = window.open('', '_blank', 'noopener,noreferrer,width=820,height=900');
-        if (!win) throw new Error('Pop-up blocked; allow pop-ups to print invoices');
+        if (!win) throw new Error('Pop-up blocked; allow pop-ups to print');
         win.document.write(html);
         win.document.close();
         win.focus();
-        setMessage('Branded invoice print view ready');
+        setMessage(kind === 'quotations' ? 'Quotation print view ready' : 'Branded invoice print view ready');
         return;
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `invoice-${invId.slice(0, 8)}.pdf`;
+      a.download = `${kind === 'quotations' ? 'quotation' : 'invoice'}-${docId.slice(0, 8)}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-      setMessage('Invoice PDF downloaded');
+      setMessage(kind === 'quotations' ? 'Quotation PDF downloaded' : 'Invoice PDF downloaded');
     } catch (err: any) {
       setError(err.message);
     }
@@ -802,6 +814,12 @@ export default function Page() {
                 <td>{q.valid_until ? String(q.valid_until).slice(0, 10) : '—'}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(q)}>View</button>
+                  <button onClick={() => printQuotation(q.id, printTemplate || undefined, 'html')}>
+                    Print
+                  </button>
+                  <button onClick={() => printQuotation(q.id, printTemplate || undefined, 'pdf')}>
+                    PDF
+                  </button>
                   {q.status === 'draft' && (
                     <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}>
                       Email
