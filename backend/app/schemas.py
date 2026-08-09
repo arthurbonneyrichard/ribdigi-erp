@@ -385,6 +385,7 @@ class StockAdjust(BaseModel):
     quantity: float
     notes: str | None = None
     reason: str = "adjustment"
+    warehouse_id: str | None = None
 
 
 class StockMove(BaseModel):
@@ -501,6 +502,14 @@ class StockTransferItemCreate(BaseModel):
 class StockTransferCreate(BaseModel):
     from_store_id: str
     to_store_id: str
+    notes: str | None = None
+    submit: bool = False
+    items: list[StockTransferItemCreate] = Field(min_length=1)
+
+
+class WarehouseStockTransferCreate(BaseModel):
+    from_warehouse_id: str
+    to_warehouse_id: str
     notes: str | None = None
     submit: bool = False
     items: list[StockTransferItemCreate] = Field(min_length=1)

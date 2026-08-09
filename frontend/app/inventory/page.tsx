@@ -5,7 +5,15 @@ import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'products' | 'catalog' | 'variants' | 'batches' | 'expiry' | 'counts';
+type Tab =
+  | 'products'
+  | 'catalog'
+  | 'variants'
+  | 'batches'
+  | 'expiry'
+  | 'counts'
+  | 'transfers'
+  | 'ops';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -22,6 +30,7 @@ export default function Page() {
   const [batches, setBatches] = useState<any[]>([]);
   const [expiring, setExpiring] = useState<any[]>([]);
   const [counts, setCounts] = useState<any[]>([]);
+  const [transfers, setTransfers] = useState<any[]>([]);
   const [activeCount, setActiveCount] = useState<any | null>(null);
   const [countWarehouseId, setCountWarehouseId] = useState('');
   const [countQtys, setCountQtys] = useState<Record<string, string>>({});
@@ -30,9 +39,17 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  const [fromWarehouseId, setFromWarehouseId] = useState('');
+  const [toWarehouseId, setToWarehouseId] = useState('');
+  const [transferQty, setTransferQty] = useState('1');
+  const [opsWarehouseId, setOpsWarehouseId] = useState('');
+  const [opsQty, setOpsQty] = useState('1');
+  const [opsNotes, setOpsNotes] = useState('');
+
   const [productName, setProductName] = useState('');
   const [productSku, setProductSku] = useState('');
   const [productPrice, setProductPrice] = useState('0');
+  const [productOpeningStock, setProductOpeningStock] = useState('0');
   const [productCategoryId, setProductCategoryId] = useState('');
   const [productBrandId, setProductBrandId] = useState('');
   const [productUnitId, setProductUnitId] = useState('');
@@ -64,7 +81,7 @@ export default function Page() {
   const [stockQty, setStockQty] = useState('10');
 
   async function refresh() {
-    const [p, e, c, tree, b, u, w, sc] = await Promise.all([
+    const [p, e, c, tree, b, u, w, sc, tr] = await Promise.all([
       api('/products'),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
@@ -73,6 +90,7 @@ export default function Page() {
       api('/catalog/units'),
       api('/warehouses'),
       api('/inventory/stock-counts'),
+      api('/inventory/stock-transfers').catch(() => ({ data: [] })),
     ]);
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
@@ -82,8 +100,12 @@ export default function Page() {
     setUnits(u.data || []);
     setWarehouses(w.data || []);
     setCounts(sc.data || []);
+    setTransfers(tr.data || []);
     if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
+    if (!fromWarehouseId && w.data?.length) setFromWarehouseId(w.data[0].id);
+    if (!toWarehouseId && w.data?.length > 1) setToWarehouseId(w.data[1].id);
+    if (!opsWarehouseId && w.data?.length) setOpsWarehouseId(w.data[0].id);
   }
 
   async function refreshSelected(id: string) {
@@ -247,6 +269,7 @@ export default function Page() {
           name: productName,
           sku: productSku,
           selling_price: Number(productPrice) || 0,
+          stock_qty: Number(productOpeningStock) || 0,
           barcode: productBarcode || null,
           category_id: productCategoryId || null,
           brand_id: productBrandId || null,
@@ -257,10 +280,84 @@ export default function Page() {
       setProductName('');
       setProductSku('');
       setProductPrice('0');
+      setProductOpeningStock('0');
       setProductBarcode('');
       await refresh();
       setSelectedId(r.data.id);
       setTab('products');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createWarehouseTransfer() {
+    if (!fromWarehouseId || !toWarehouseId || !selectedId) return;
+    setError('');
+    try {
+      await api('/inventory/stock-transfers', {
+        method: 'POST',
+        body: JSON.stringify({
+          from_warehouse_id: fromWarehouseId,
+          to_warehouse_id: toWarehouseId,
+          submit: true,
+          items: [{ product_id: selectedId, quantity: Number(transferQty) || 1 }],
+        }),
+      });
+      setMessage('Warehouse transfer created');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function transferAction(id: string, action: 'ship' | 'receive' | 'cancel') {
+    setError('');
+    try {
+      await api(`/inventory/stock-transfers/${id}/${action}`, { method: 'POST' });
+      setMessage(`Transfer ${action} completed`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function stockOp(kind: 'in' | 'out' | 'adjust') {
+    if (!selectedId) return;
+    setError('');
+    try {
+      const qty = Number(opsQty) || 0;
+      if (kind === 'adjust') {
+        await api(`/inventory/adjust/${selectedId}`, {
+          method: 'POST',
+          body: JSON.stringify({
+            quantity: qty,
+            reason: opsNotes || 'adjustment',
+            warehouse_id: opsWarehouseId || null,
+          }),
+        });
+      } else if (kind === 'in') {
+        await api('/inventory/stock-in', {
+          method: 'POST',
+          body: JSON.stringify({
+            product_id: selectedId,
+            quantity: Math.abs(qty),
+            warehouse_id: opsWarehouseId || null,
+            notes: opsNotes || undefined,
+          }),
+        });
+      } else {
+        await api('/inventory/stock-out', {
+          method: 'POST',
+          body: JSON.stringify({
+            product_id: selectedId,
+            quantity: Math.abs(qty),
+            warehouse_id: opsWarehouseId || null,
+            notes: opsNotes || undefined,
+          }),
+        });
+      }
+      setMessage(`Stock ${kind} recorded`);
+      await refresh();
     } catch (err: any) {
       setError(err.message);
     }
@@ -603,7 +700,9 @@ export default function Page() {
   return (
     <Shell>
       <h1>Inventory</h1>
-      <p className="muted">Products, catalog, variants, batches, expiry &amp; stock counts</p>
+      <p className="muted">
+        Products, catalog, stock ops, warehouse transfers, batches, expiry &amp; counts
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -611,6 +710,8 @@ export default function Page() {
         {(
           [
             ['products', 'Products'],
+            ['ops', 'Stock ops'],
+            ['transfers', 'Transfers'],
             ['catalog', 'Catalog'],
             ['variants', 'Variants'],
             ['batches', 'Batches'],
@@ -714,6 +815,11 @@ export default function Page() {
             <input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Name" />
             <input value={productSku} onChange={(e) => setProductSku(e.target.value)} placeholder="SKU" />
             <input value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="Selling price" />
+            <input
+              value={productOpeningStock}
+              onChange={(e) => setProductOpeningStock(e.target.value)}
+              placeholder="Opening stock"
+            />
             <input value={productBarcode} onChange={(e) => setProductBarcode(e.target.value)} placeholder="Barcode (optional)" />
             <select value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}>
               <option value="">Category</option>
@@ -1257,6 +1363,118 @@ export default function Page() {
               )}
             </div>
           )}
+        </>
+      )}
+
+      {tab === 'ops' && (
+        <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+          <h3>Stock in / out / adjust</h3>
+          <p className="muted">Uses the selected product above. Optional warehouse for located stock.</p>
+          <select value={opsWarehouseId} onChange={(e) => setOpsWarehouseId(e.target.value)}>
+            <option value="">No warehouse (consolidated only)</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.code} — {w.name}
+              </option>
+            ))}
+          </select>
+          <input value={opsQty} onChange={(e) => setOpsQty(e.target.value)} placeholder="Quantity" />
+          <input value={opsNotes} onChange={(e) => setOpsNotes(e.target.value)} placeholder="Notes / reason" />
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => stockOp('in')} disabled={!selectedId}>
+              Stock in
+            </button>
+            <button type="button" onClick={() => stockOp('out')} disabled={!selectedId}>
+              Stock out
+            </button>
+            <button type="button" onClick={() => stockOp('adjust')} disabled={!selectedId}>
+              Adjust (+/−)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {tab === 'transfers' && (
+        <>
+          <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
+            <h3>Inter-warehouse transfer</h3>
+            <p className="muted">Moves located stock between warehouses without changing consolidated qty.</p>
+            <select value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)}>
+              <option value="">From warehouse</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.code} — {w.name}
+                </option>
+              ))}
+            </select>
+            <select value={toWarehouseId} onChange={(e) => setToWarehouseId(e.target.value)}>
+              <option value="">To warehouse</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.code} — {w.name}
+                </option>
+              ))}
+            </select>
+            <input value={transferQty} onChange={(e) => setTransferQty(e.target.value)} placeholder="Qty" />
+            <button
+              type="button"
+              onClick={createWarehouseTransfer}
+              disabled={!selectedId || !fromWarehouseId || !toWarehouseId}
+            >
+              Create &amp; request transfer
+            </button>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Status</th>
+                <th>From → To</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((t) => {
+                const fromName =
+                  warehouses.find((w) => w.id === t.from_warehouse_id)?.code || t.from_warehouse_id;
+                const toName =
+                  warehouses.find((w) => w.id === t.to_warehouse_id)?.code || t.to_warehouse_id;
+                return (
+                  <tr key={t.id}>
+                    <td>{t.transfer_number}</td>
+                    <td>{t.status}</td>
+                    <td>
+                      {fromName} → {toName}
+                    </td>
+                    <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {(t.status === 'requested' || t.status === 'draft') && (
+                        <button type="button" onClick={() => transferAction(t.id, 'ship')}>
+                          Ship
+                        </button>
+                      )}
+                      {t.status === 'in_transit' && (
+                        <button type="button" onClick={() => transferAction(t.id, 'receive')}>
+                          Receive
+                        </button>
+                      )}
+                      {['draft', 'requested', 'in_transit'].includes(t.status) && (
+                        <button type="button" onClick={() => transferAction(t.id, 'cancel')}>
+                          Cancel
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {!transfers.length && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No warehouse transfers yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </>
       )}
 

@@ -246,6 +246,32 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
     }
 
 
+async def _add_transfer_items(
+    db: AsyncSession, *, tenant_id: str, transfer_id: str, items: list[dict]
+) -> None:
+    for item in items:
+        product_id = item["product_id"]
+        qty = float(item["quantity"])
+        if qty <= 0:
+            raise HTTPException(status_code=400, detail="Transfer quantities must be positive")
+        product = (
+            await db.execute(
+                select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
+            )
+        ).scalar_one_or_none()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
+        db.add(
+            m.StockTransferItem(
+                tenant_id=tenant_id,
+                transfer_id=transfer_id,
+                product_id=product_id,
+                quantity=qty,
+            )
+        )
+    await db.flush()
+
+
 async def create_transfer(
     db: AsyncSession,
     *,
@@ -280,28 +306,46 @@ async def create_transfer(
     )
     db.add(transfer)
     await db.flush()
+    await _add_transfer_items(db, tenant_id=tenant_id, transfer_id=transfer.id, items=items)
+    return transfer
 
-    for item in items:
-        product_id = item["product_id"]
-        qty = float(item["quantity"])
-        if qty <= 0:
-            raise HTTPException(status_code=400, detail="Transfer quantities must be positive")
-        product = (
-            await db.execute(
-                select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
-            )
-        ).scalar_one_or_none()
-        if not product:
-            raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
-        db.add(
-            m.StockTransferItem(
-                tenant_id=tenant_id,
-                transfer_id=transfer.id,
-                product_id=product_id,
-                quantity=qty,
-            )
-        )
+
+async def create_warehouse_transfer(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    from_warehouse_id: str,
+    to_warehouse_id: str,
+    items: list[dict],
+    notes: str | None = None,
+    submit: bool = False,
+) -> m.StockTransfer:
+    """Inter-warehouse transfer (Stage 2); stores optional/null."""
+    from app.inventory import get_warehouse
+
+    if from_warehouse_id == to_warehouse_id:
+        raise HTTPException(status_code=400, detail="Source and destination warehouse must differ")
+    if not items:
+        raise HTTPException(status_code=400, detail="Transfer requires at least one item")
+
+    from_wh = await get_warehouse(db, tenant_id, from_warehouse_id)
+    to_wh = await get_warehouse(db, tenant_id, to_warehouse_id)
+
+    transfer = m.StockTransfer(
+        tenant_id=tenant_id,
+        transfer_number=await next_transfer_number(db, tenant_id),
+        from_store_id=from_wh.store_id,
+        to_store_id=to_wh.store_id,
+        from_warehouse_id=from_wh.id,
+        to_warehouse_id=to_wh.id,
+        status="requested" if submit else "draft",
+        notes=notes,
+        created_by=user_id,
+    )
+    db.add(transfer)
     await db.flush()
+    await _add_transfer_items(db, tenant_id=tenant_id, transfer_id=transfer.id, items=items)
     return transfer
 
 

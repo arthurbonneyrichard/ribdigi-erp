@@ -114,6 +114,7 @@ from app.schemas import (
     StockAdjust,
     StockMove,
     StockTransferCreate,
+    WarehouseStockTransferCreate,
     StoreCreate,
     StoreDrawerSettingsUpdate,
     StoreReorderPolicyUpdate,
@@ -2896,6 +2897,7 @@ async def adjust(
         movement_type="adjustment",
         user_id=claims["sub"],
         notes=payload.notes or payload.reason,
+        warehouse_id=payload.warehouse_id,
         allow_negative=True,
     )
     await db.commit()
@@ -7290,6 +7292,108 @@ async def add_warehouse(
     db.add(warehouse)
     await db.commit()
     return env({"id": warehouse.id})
+
+
+@api.get("/inventory/stock-transfers")
+async def list_inventory_stock_transfers(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = (
+        await db.execute(
+            select(m.StockTransfer)
+            .where(m.StockTransfer.tenant_id == claims["tenant_id"])
+            .order_by(m.StockTransfer.created_at.desc())
+        )
+    ).scalars().all()
+    return env([await stores_svc.serialize_transfer(db, row) for row in rows])
+
+
+@api.post("/inventory/stock-transfers")
+async def create_inventory_stock_transfer(
+    payload: WarehouseStockTransferCreate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    transfer = await stores_svc.create_warehouse_transfer(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        from_warehouse_id=payload.from_warehouse_id,
+        to_warehouse_id=payload.to_warehouse_id,
+        items=[i.model_dump() for i in payload.items],
+        notes=payload.notes,
+        submit=payload.submit,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="warehouse_transfer_created",
+        entity="stock_transfer",
+        entity_id=transfer.id,
+        details={
+            "transfer_number": transfer.transfer_number,
+            "from_warehouse_id": transfer.from_warehouse_id,
+            "to_warehouse_id": transfer.to_warehouse_id,
+            "status": transfer.status,
+        },
+    )
+    await db.commit()
+    return env(await stores_svc.serialize_transfer(db, transfer), "Warehouse transfer created")
+
+
+@api.post("/inventory/stock-transfers/{transfer_id}/submit")
+async def submit_inventory_stock_transfer(
+    transfer_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    transfer = await stores_svc.submit_transfer(
+        db, tenant_id=claims["tenant_id"], transfer_id=transfer_id
+    )
+    await db.commit()
+    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer submitted")
+
+
+@api.post("/inventory/stock-transfers/{transfer_id}/ship")
+async def ship_inventory_stock_transfer(
+    transfer_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    transfer = await stores_svc.ship_transfer(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+    )
+    await db.commit()
+    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer shipped")
+
+
+@api.post("/inventory/stock-transfers/{transfer_id}/receive")
+async def receive_inventory_stock_transfer(
+    transfer_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    transfer = await stores_svc.receive_transfer(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+    )
+    await db.commit()
+    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer received")
+
+
+@api.post("/inventory/stock-transfers/{transfer_id}/cancel")
+async def cancel_inventory_stock_transfer(
+    transfer_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    transfer = await stores_svc.cancel_transfer(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+    )
+    await db.commit()
+    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")
 
 
 @api.get("/reports/summary")
