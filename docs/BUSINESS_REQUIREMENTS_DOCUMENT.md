@@ -917,7 +917,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Pagination for list endpoints
   - [ ] Versioning (/api/v1/)
   - [ ] OpenAPI/Swagger documentation auto-generated
-  - [ ] Webhook support for event subscriptions
+  - [x] Webhook support for event subscriptions (Stage 6 W1: HMAC-signed outbound webhooks)
 
 ---
 

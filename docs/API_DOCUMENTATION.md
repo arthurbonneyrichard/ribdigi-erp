@@ -1255,6 +1255,9 @@ RIBDIGI ERP supports webhook subscriptions for real-time event notifications.
 }
 ```
 
+### 17.4 Signature verification (Stage 6 W1)
+Each delivery includes header `X-Ribdigi-Signature` with value `t=<unix_ts>,v1=<hex>` where `v1` is HMAC-SHA256 of `{t}.{raw_body}` using the webhook signing secret (`whsec_…`, shown once on create). Reject if timestamp skew exceeds 5 minutes. Test ping: `POST /webhooks/{id}/test` (`webhook.test` event). Invoice post emits `sale.created`.
+
 ---
 
 ## 18. Rate Limits

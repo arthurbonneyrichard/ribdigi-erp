@@ -87,6 +87,10 @@ export default function Page() {
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [apiKeyName, setApiKeyName] = useState('Integration key');
   const [newApiKeySecret, setNewApiKeySecret] = useState('');
+  const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [webhookUrl, setWebhookUrl] = useState('https://');
+  const [webhookEvents, setWebhookEvents] = useState('sale.created,webhook.test');
+  const [newWebhookSecret, setNewWebhookSecret] = useState('');
   const [role, setRole] = useState('');
 
   async function refresh() {
@@ -111,8 +115,15 @@ export default function Page() {
       } catch {
         setApiKeys([]);
       }
+      try {
+        const hooks = await api('/webhooks');
+        setWebhooks(hooks.data || []);
+      } catch {
+        setWebhooks([]);
+      }
     } else {
       setApiKeys([]);
+      setWebhooks([]);
     }
   }
 
@@ -138,6 +149,49 @@ export default function Page() {
     try {
       await api(`/api-keys/${id}`, { method: 'DELETE' });
       setMessage('API key revoked');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createWebhook() {
+    setError('');
+    setMessage('');
+    setNewWebhookSecret('');
+    try {
+      const events = webhookEvents
+        .split(',')
+        .map((e) => e.trim())
+        .filter(Boolean);
+      const r = await api('/webhooks', {
+        method: 'POST',
+        body: JSON.stringify({ url: webhookUrl, events }),
+      });
+      setNewWebhookSecret(r.data?.secret || '');
+      setMessage(r.message || 'Webhook created — copy the signing secret now');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function testWebhook(id: string) {
+    setError('');
+    try {
+      const r = await api(`/webhooks/${id}/test`, { method: 'POST', body: '{}' });
+      setMessage(`Webhook test: ${r.data?.status || 'attempted'}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function deleteWebhook(id: string) {
+    setError('');
+    try {
+      await api(`/webhooks/${id}`, { method: 'DELETE' });
+      setMessage('Webhook deleted');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -419,6 +473,73 @@ export default function Page() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {(role === 'company_admin' || role === 'super_admin') && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Webhooks</h2>
+          <p className="muted">
+            Outbound signed events use header <code>X-Ribdigi-Signature</code> (<code>t=…,v1=…</code> HMAC-SHA256).
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <input
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://your-app.com/webhooks/ribdigi"
+              style={{ minWidth: 280 }}
+            />
+            <input
+              value={webhookEvents}
+              onChange={(e) => setWebhookEvents(e.target.value)}
+              placeholder="sale.created,webhook.test"
+              style={{ minWidth: 200 }}
+            />
+            <button type="button" onClick={createWebhook}>
+              Create webhook
+            </button>
+          </div>
+          {newWebhookSecret && (
+            <p>
+              Signing secret (copy now): <code>{newWebhookSecret}</code>
+            </p>
+          )}
+          <table className="table">
+            <thead>
+              <tr>
+                <th>URL</th>
+                <th>Events</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {webhooks.map((w) => (
+                <tr key={w.id}>
+                  <td className="muted" style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {w.url}
+                  </td>
+                  <td>{(w.events || []).join(', ')}</td>
+                  <td>{w.is_active ? 'active' : 'paused'}</td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <button type="button" onClick={() => testWebhook(w.id)}>
+                      Test
+                    </button>
+                    <button type="button" onClick={() => deleteWebhook(w.id)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!webhooks.length && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No webhooks yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 

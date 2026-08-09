@@ -18,7 +18,7 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **K1** | Tenant API keys (BR-18.1) | P0 | COMPLETE |
-| **W1** | Webhooks + HMAC signing (API docs §17) | P0 | PENDING |
+| **W1** | Webhooks + HMAC signing (API docs §17) | P0 | COMPLETE |
 | **N2** | Tenant onboarding checklist (API + Shell) | P0 | PENDING |
 | **P2** | Redis app-data cache for dashboard/catalog | P0 | PENDING |
 | **H6x** | Stage 6 exit criteria + freeze ADR | Exit | PENDING |
@@ -40,6 +40,14 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 - [x] Auth via `X-API-Key` or `Authorization: Bearer rdk_…` with scoped permissions + tenant checks.
 - [x] Audit `api_key_create` / `api_key_revoke`; Security UI list/create/revoke.
 - [x] Automated tests in `backend/tests/test_api_keys_k1.py`.
+
+## W1 acceptance criteria
+
+- [x] `webhook_endpoints` + `webhook_deliveries` (Alembic `0079`); signing secret encrypted (`whsec_…`).
+- [x] Admin CRUD + `POST /webhooks/{id}/test`; HTTPS required (localhost http allowed).
+- [x] HMAC-SHA256 header `X-Ribdigi-Signature: t=…,v1=…`; delivery log status.
+- [x] Fan-out `emit_event` wired for `sale.created` on invoice post; Security UI manage/test.
+- [x] Automated tests in `backend/tests/test_webhooks_w1.py`.
 
 ## Sign-off
 

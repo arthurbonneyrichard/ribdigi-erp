@@ -54,6 +54,7 @@ from app import customers as customers_svc
 from app import ai_chat as ai_chat_svc
 from app import ai_guard as ai_guard_svc
 from app import api_keys as api_keys_svc
+from app import webhooks as webhooks_svc
 from app.config import settings
 from app.schemas import (
     BarcodeLabelPrintRequest,
@@ -4838,6 +4839,18 @@ async def post_sales_invoice(
         permissions=perms,
         credit_limit_override=bool(payload.credit_limit_override),
         credit_override_reason=payload.credit_override_reason,
+    )
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        event="sale.created",
+        data={
+            "invoice_id": invoice.id,
+            "invoice_number": invoice.invoice_number,
+            "amount": float(invoice.total_amount or 0),
+            "customer_id": invoice.customer_id,
+            "status": invoice.status,
+        },
     )
     await db.commit()
     return env(await sales_svc.serialize_invoice(db, invoice), "Invoice posted; stock and AR updated")
@@ -9898,6 +9911,160 @@ async def api_keys_revoke(
     )
     await db.commit()
     return env(api_keys_svc.serialize_key(row), "API key revoked")
+
+
+@api.get("/webhooks")
+async def webhooks_list(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 6 W1 — list webhook subscriptions."""
+    rows = await webhooks_svc.list_endpoints(db, claims["tenant_id"])
+    return env([webhooks_svc.serialize_endpoint(r) for r in rows])
+
+
+@api.post("/webhooks")
+async def webhooks_create(
+    request: Request,
+    payload: dict | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    body = payload or {}
+    row, secret = await webhooks_svc.create_endpoint(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        url=str(body.get("url") or ""),
+        events=body.get("events"),
+        secret=body.get("secret"),
+        description=body.get("description"),
+        is_active=bool(body.get("is_active", True)),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="security",
+        action="webhook_create",
+        entity="webhook",
+        entity_id=row.id,
+        details={"url": row.url, "events": row.events},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(
+        webhooks_svc.serialize_endpoint(row, include_secret=secret),
+        "Webhook created — store the signing secret now",
+    )
+
+
+@api.get("/webhooks/{webhook_id}")
+async def webhooks_get(
+    webhook_id: str,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await webhooks_svc.get_endpoint(db, claims["tenant_id"], webhook_id)
+    return env(webhooks_svc.serialize_endpoint(row))
+
+
+@api.patch("/webhooks/{webhook_id}")
+async def webhooks_patch(
+    webhook_id: str,
+    request: Request,
+    payload: dict | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    body = payload or {}
+    row, new_secret = await webhooks_svc.update_endpoint(
+        db,
+        claims["tenant_id"],
+        webhook_id,
+        url=body.get("url"),
+        events=body.get("events"),
+        description=body.get("description"),
+        is_active=body.get("is_active"),
+        rotate_secret=bool(body.get("rotate_secret")),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="security",
+        action="webhook_update",
+        entity="webhook",
+        entity_id=row.id,
+        details={"url": row.url, "events": row.events, "rotated_secret": bool(new_secret)},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(
+        webhooks_svc.serialize_endpoint(row, include_secret=new_secret),
+        "Webhook updated",
+    )
+
+
+@api.delete("/webhooks/{webhook_id}")
+async def webhooks_delete(
+    webhook_id: str,
+    request: Request,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    await webhooks_svc.delete_endpoint(db, claims["tenant_id"], webhook_id)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="security",
+        action="webhook_delete",
+        entity="webhook",
+        entity_id=webhook_id,
+        details={},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env({"id": webhook_id}, "Webhook deleted")
+
+
+@api.post("/webhooks/{webhook_id}/test")
+async def webhooks_test_delivery(
+    webhook_id: str,
+    request: Request,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a signed webhook.test event to the endpoint (delivery proof)."""
+    tenants_svc.assert_writable(claims)
+    endpoint = await webhooks_svc.get_endpoint(db, claims["tenant_id"], webhook_id)
+    delivery = await webhooks_svc.deliver_to_endpoint(
+        db,
+        endpoint,
+        event="webhook.test",
+        data={"message": "RIBDIGI webhook test ping"},
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="security",
+        action="webhook_test",
+        entity="webhook",
+        entity_id=webhook_id,
+        details={"delivery_id": delivery.id, "status": delivery.status},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(webhooks_svc.serialize_delivery(delivery), "Webhook test attempted")
 
 
 @api.get("/backup/settings")
