@@ -1056,6 +1056,30 @@ class JournalCreate(BaseModel):
     lines: list[JournalLineCreate] = Field(min_length=2)
 
 
+class CoaAccountCreate(BaseModel):
+    """Create a non-system chart-of-accounts entry (BR-10.1)."""
+
+    code: str = Field(min_length=1, max_length=30)
+    name: str = Field(min_length=1, max_length=150)
+    account_type: str = Field(description="asset|liability|equity|income|expense")
+    parent_id: str | None = None
+
+
+class CoaAccountUpdate(BaseModel):
+    code: str | None = Field(default=None, min_length=1, max_length=30)
+    name: str | None = Field(default=None, min_length=1, max_length=150)
+    account_type: str | None = None
+    parent_id: str | None = None
+    is_active: bool | None = None
+
+
+class OpeningBalanceCreate(BaseModel):
+    """Natural-side opening balance amount (positive = natural balance)."""
+
+    amount: float
+    description: str | None = None
+
+
 class LiquidAccountCreate(BaseModel):
     """Create a cash or bank GL account (BR-10.3)."""
 

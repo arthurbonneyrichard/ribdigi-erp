@@ -75,6 +75,9 @@ from app.schemas import (
     ExpenseUpdate,
     GrnCreate,
     JournalCreate,
+    CoaAccountCreate,
+    CoaAccountUpdate,
+    OpeningBalanceCreate,
     LiquidAccountCreate,
     LiquidAccountUpdate,
     LiquidTransferCreate,
@@ -7022,18 +7025,116 @@ async def delete_expense(
 
 
 @api.get("/accounting/accounts")
-async def accounts(claims=Depends(require_permission("accounting", "read")), db: AsyncSession = Depends(get_db)):
-    from app.accounting import ensure_default_accounts
-    from app import bank_recon as bank_recon_svc
+async def accounts(
+    tree: bool = False,
+    active_only: bool = True,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
 
-    await ensure_default_accounts(db, claims["tenant_id"])
+    await accounting_svc.ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
-    rows = (
-        await db.execute(
-            select(m.Account).where(m.Account.tenant_id == claims["tenant_id"]).order_by(m.Account.code)
-        )
-    ).scalars().all()
-    return env([bank_recon_svc.serialize_account(r) for r in rows])
+    q = select(m.Account).where(m.Account.tenant_id == claims["tenant_id"])
+    if active_only:
+        q = q.where(m.Account.is_active.is_(True))
+    rows = list((await db.execute(q.order_by(m.Account.code))).scalars().all())
+    if tree:
+        return env(accounting_svc.build_account_tree(rows))
+    return env([accounting_svc.serialize_coa_account(r) for r in rows])
+
+
+@api.get("/accounting/accounts/{account_id}")
+async def get_account(
+    account_id: str,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    row = await accounting_svc.get_tenant_account(db, claims["tenant_id"], account_id)
+    return env(accounting_svc.serialize_coa_account(row))
+
+
+@api.post("/accounting/accounts")
+async def create_coa_account(
+    payload: CoaAccountCreate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+    from app import audit as audit_svc
+
+    row = await accounting_svc.create_coa_account(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        account_type=payload.account_type,
+        parent_id=payload.parent_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="accounting",
+        action="coa_account_create",
+        entity="account",
+        entity_id=row.id,
+        details={"code": row.code, "account_type": row.account_type, "parent_id": row.parent_id},
+    )
+    await db.commit()
+    return env(accounting_svc.serialize_coa_account(row), "Account created")
+
+
+@api.patch("/accounting/accounts/{account_id}")
+async def patch_coa_account(
+    account_id: str,
+    payload: CoaAccountUpdate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    data = payload.model_dump(exclude_unset=True)
+    clear_parent = "parent_id" in data and data["parent_id"] is None
+    row = await accounting_svc.update_coa_account(
+        db,
+        tenant_id=claims["tenant_id"],
+        account_id=account_id,
+        code=data.get("code"),
+        name=data.get("name"),
+        account_type=data.get("account_type"),
+        parent_id=data.get("parent_id"),
+        is_active=data.get("is_active"),
+        clear_parent=clear_parent,
+    )
+    await db.commit()
+    return env(accounting_svc.serialize_coa_account(row), "Account updated")
+
+
+@api.post("/accounting/accounts/{account_id}/opening-balance")
+async def post_opening_balance(
+    account_id: str,
+    payload: OpeningBalanceCreate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    entry = await accounting_svc.post_account_opening_balance(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        account_id=account_id,
+        amount=payload.amount,
+        description=payload.description,
+    )
+    await db.commit()
+    return env(
+        await accounting_svc.serialize_journal(db, entry),
+        "Opening balance posted",
+    )
 
 
 @api.get("/accounting/liquid-accounts")

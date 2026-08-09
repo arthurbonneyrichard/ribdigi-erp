@@ -20,6 +20,8 @@ DEFAULT_ACCOUNTS = [
     ("2000", "Accounts Payable", "liability", False, False),
     ("2015", "Cheques Payable", "liability", False, False),
     ("2100", "Tax Payable", "liability", False, False),
+    ("3000", "Owner Equity", "equity", False, False),
+    ("3900", "Opening Balances Equity", "equity", False, False),
     ("4000", "Sales Revenue", "income", False, False),
     ("4100", "Sales Discounts", "expense", False, False),
     ("4200", "Purchase Discounts Taken", "income", False, False),
@@ -27,6 +29,10 @@ DEFAULT_ACCOUNTS = [
     ("5000", "Cost of Goods Sold", "expense", False, False),
     ("6000", "Operating Expenses", "expense", False, False),
 ]
+
+ACCOUNT_TYPES = frozenset({"asset", "liability", "equity", "income", "expense"})
+OPENING_BALANCE_EQUITY_CODE = "3900"
+SYSTEM_ACCOUNT_CODES = frozenset(code for code, *_ in DEFAULT_ACCOUNTS)
 
 
 def lines_are_balanced(lines: list[dict], tolerance: float = 0.01) -> bool:
@@ -166,16 +172,348 @@ async def ensure_default_accounts(db: AsyncSession, tenant_id: str) -> None:
                     balance=0,
                     is_cash_account=is_cash,
                     is_bank_account=is_bank,
+                    is_system=True,
+                    is_active=True,
                 )
             )
         else:
             row = existing[code]
+            row.is_system = True
             # Keep flags aligned for seeded liquid accounts without clobbering custom flags on others
             if code == "1000":
                 row.is_cash_account = True
             if code == "1010":
                 row.is_bank_account = True
     await db.flush()
+
+
+def serialize_coa_account(account: m.Account) -> dict:
+    return {
+        "id": account.id,
+        "code": account.code,
+        "name": account.name,
+        "account_type": account.account_type,
+        "parent_id": account.parent_id,
+        "balance": float(account.balance or 0),
+        "is_cash_account": bool(account.is_cash_account),
+        "is_bank_account": bool(account.is_bank_account),
+        "is_system": bool(getattr(account, "is_system", False)),
+        "is_active": bool(getattr(account, "is_active", True)),
+        "bank_name": account.bank_name,
+        "account_number": account.account_number,
+        "bank_branch": getattr(account, "bank_branch", None),
+    }
+
+
+def build_account_tree(rows: list[m.Account]) -> list[dict]:
+    """Nest accounts by parent_id; orphans with missing parents become roots."""
+    by_id = {r.id: {**serialize_coa_account(r), "children": []} for r in rows}
+    roots: list[dict] = []
+    for r in rows:
+        node = by_id[r.id]
+        parent_id = r.parent_id
+        if parent_id and parent_id in by_id:
+            by_id[parent_id]["children"].append(node)
+        else:
+            roots.append(node)
+
+    def sort_rec(nodes: list[dict]) -> None:
+        nodes.sort(key=lambda n: n["code"])
+        for n in nodes:
+            sort_rec(n["children"])
+
+    sort_rec(roots)
+    return roots
+
+
+async def get_tenant_account(
+    db: AsyncSession, tenant_id: str, account_id: str
+) -> m.Account:
+    row = (
+        await db.execute(
+            select(m.Account).where(
+                m.Account.id == account_id,
+                m.Account.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Account not found")
+    return row
+
+
+async def _validate_parent(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    account_type: str,
+    parent_id: str | None,
+    self_id: str | None = None,
+) -> None:
+    if not parent_id:
+        return
+    if self_id and parent_id == self_id:
+        raise HTTPException(status_code=400, detail="Account cannot be its own parent")
+    parent = await get_tenant_account(db, tenant_id, parent_id)
+    if parent.account_type != account_type:
+        raise HTTPException(
+            status_code=400,
+            detail="Parent account must have the same account_type",
+        )
+    if self_id:
+        cursor = parent
+        seen = {self_id}
+        while cursor is not None:
+            if cursor.id in seen:
+                raise HTTPException(
+                    status_code=400, detail="Account parent would create a cycle"
+                )
+            seen.add(cursor.id)
+            if not cursor.parent_id:
+                break
+            cursor = (
+                await db.execute(
+                    select(m.Account).where(
+                        m.Account.id == cursor.parent_id,
+                        m.Account.tenant_id == tenant_id,
+                    )
+                )
+            ).scalar_one_or_none()
+
+
+async def create_coa_account(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    code: str,
+    name: str,
+    account_type: str,
+    parent_id: str | None = None,
+) -> m.Account:
+    await ensure_default_accounts(db, tenant_id)
+    type_norm = (account_type or "").strip().lower()
+    if type_norm not in ACCOUNT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"account_type must be one of {sorted(ACCOUNT_TYPES)}",
+        )
+    code_norm = (code or "").strip()
+    name_norm = (name or "").strip()
+    if not code_norm or not name_norm:
+        raise HTTPException(status_code=400, detail="code and name are required")
+
+    existing = (
+        await db.execute(
+            select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code_norm)
+        )
+    ).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
+
+    await _validate_parent(
+        db, tenant_id=tenant_id, account_type=type_norm, parent_id=parent_id
+    )
+
+    row = m.Account(
+        tenant_id=tenant_id,
+        code=code_norm,
+        name=name_norm,
+        account_type=type_norm,
+        parent_id=parent_id,
+        balance=0,
+        is_system=False,
+        is_active=True,
+    )
+    db.add(row)
+    await db.flush()
+    return row
+
+
+async def update_coa_account(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    account_id: str,
+    code: str | None = None,
+    name: str | None = None,
+    account_type: str | None = None,
+    parent_id: str | None = None,
+    is_active: bool | None = None,
+    clear_parent: bool = False,
+) -> m.Account:
+    row = await get_tenant_account(db, tenant_id, account_id)
+    if row.is_system and (code is not None or account_type is not None or name is not None):
+        # System accounts: only parent/active structural fields may change via dedicated paths.
+        # Name/code/type edits are reserved for non-system accounts (BR-10.1).
+        if code is not None or account_type is not None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "SYSTEM_ACCOUNT",
+                    "message": "Cannot change code or type of a system account",
+                },
+            )
+        if name is not None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "SYSTEM_ACCOUNT",
+                    "message": "Cannot edit name of a system account",
+                },
+            )
+
+    if code is not None:
+        code_norm = code.strip()
+        if not code_norm:
+            raise HTTPException(status_code=400, detail="code cannot be empty")
+        dup = (
+            await db.execute(
+                select(m.Account).where(
+                    m.Account.tenant_id == tenant_id,
+                    m.Account.code == code_norm,
+                    m.Account.id != row.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if dup:
+            raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
+        row.code = code_norm
+
+    if name is not None:
+        name_norm = name.strip()
+        if not name_norm:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        row.name = name_norm
+
+    if account_type is not None:
+        type_norm = account_type.strip().lower()
+        if type_norm not in ACCOUNT_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"account_type must be one of {sorted(ACCOUNT_TYPES)}",
+            )
+        row.account_type = type_norm
+
+    if clear_parent:
+        row.parent_id = None
+    elif parent_id is not None:
+        await _validate_parent(
+            db,
+            tenant_id=tenant_id,
+            account_type=row.account_type,
+            parent_id=parent_id,
+            self_id=row.id,
+        )
+        row.parent_id = parent_id
+
+    if is_active is not None:
+        if row.is_system and not is_active:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "SYSTEM_ACCOUNT",
+                    "message": "Cannot deactivate a system account",
+                },
+            )
+        row.is_active = bool(is_active)
+
+    await db.flush()
+    return row
+
+
+async def post_account_opening_balance(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    account_id: str,
+    amount: float,
+    description: str | None = None,
+) -> m.JournalEntry:
+    """Post a balanced opening-balance journal for one account (BR-10.1)."""
+    await ensure_default_accounts(db, tenant_id)
+    account = await get_tenant_account(db, tenant_id, account_id)
+    if not account.is_active:
+        raise HTTPException(status_code=400, detail="Account is inactive")
+    if account.code == OPENING_BALANCE_EQUITY_CODE:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot set an opening balance on the Opening Balances Equity account",
+        )
+
+    amt = round(float(amount), 2)
+    if amt == 0:
+        raise HTTPException(status_code=400, detail="amount must be non-zero")
+
+    prior = (
+        await db.execute(
+            select(m.JournalEntry).where(
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.source_type == "opening_balance",
+                m.JournalEntry.source_id == account.id,
+                m.JournalEntry.status == "posted",
+            )
+        )
+    ).scalar_one_or_none()
+    if prior:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "OPENING_BALANCE_EXISTS",
+                "message": "Posted opening balance already exists for this account; unpost it first",
+                "journal_entry_id": prior.id,
+            },
+        )
+
+    equity = await get_account_by_code(db, tenant_id, OPENING_BALANCE_EQUITY_CODE)
+    abs_amt = abs(amt)
+    # Natural side: assets/expenses debit-positive; liability/equity/income credit-positive.
+    # Negative amount flips the side (e.g. credit balance on an asset).
+    natural_debit = account.account_type in {"asset", "expense"}
+    account_debit = natural_debit if amt > 0 else not natural_debit
+
+    if account_debit:
+        lines = [
+            {
+                "account_id": account.id,
+                "debit": abs_amt,
+                "credit": 0,
+                "description": "Opening balance",
+            },
+            {
+                "account_id": equity.id,
+                "debit": 0,
+                "credit": abs_amt,
+                "description": f"Opening balance offset {account.code}",
+            },
+        ]
+    else:
+        lines = [
+            {
+                "account_id": equity.id,
+                "debit": abs_amt,
+                "credit": 0,
+                "description": f"Opening balance offset {account.code}",
+            },
+            {
+                "account_id": account.id,
+                "debit": 0,
+                "credit": abs_amt,
+                "description": "Opening balance",
+            },
+        ]
+
+    desc = (description or "").strip() or f"Opening balance {account.code} {account.name}"
+    return await post_journal_entry(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=desc,
+        reference=f"OB-{account.code}",
+        source_type="opening_balance",
+        source_id=account.id,
+        lines=lines,
+    )
 
 
 def _infer_liquid_move_kind(from_acct: m.Account, to_acct: m.Account) -> str:
@@ -227,6 +565,8 @@ async def create_liquid_account(
         balance=0,
         is_cash_account=is_cash,
         is_bank_account=is_bank,
+        is_system=False,
+        is_active=True,
         bank_name=((bank_name or "").strip() or None) if is_bank else None,
         account_number=((account_number or "").strip() or None) if is_bank else None,
         bank_branch=((bank_branch or "").strip() or None) if is_bank else None,

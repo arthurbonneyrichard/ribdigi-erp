@@ -18,7 +18,7 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **A1** | Journal unpost + open fiscal-period gate (BR-10.2) | P0 | COMPLETE |
-| **A2** | COA CRUD / hierarchy / opening balances (BR-10.1) | P0 | PENDING |
+| **A2** | COA CRUD / hierarchy / opening balances (BR-10.1) | P0 | COMPLETE |
 | **A3** | Financial report depth (P&L date range; cash-flow O/I/F) | P0 | PENDING |
 | **P1** | POS split tender (`pos_payments`) | P0 | PENDING |
 | **C1** | Credit-limit override with audit | P0 | PENDING |
@@ -42,9 +42,14 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 - [x] Accounting Ledger UI: Unpost action for eligible posted journals.
 - [x] Tenant + RBAC (`accounting` write); automated tests in `backend/tests/test_journal_unpost_a1.py`.
 
-## A2 acceptance criteria (preview)
+## A2 acceptance criteria
 
-- Non-system account create/edit; hierarchy via `parent_id`; opening balance entry that posts a balanced journal.
+- [x] Non-system account create/edit (`POST/PATCH /accounting/accounts`); system accounts blocked for name/code/type.
+- [x] Hierarchy via `parent_id` (same `account_type`, cycle-safe); `GET .../accounts?tree=true`.
+- [x] Opening balance `POST /accounting/accounts/{id}/opening-balance` posts balanced journal vs 3900 Opening Balances Equity.
+- [x] Seeded equity accounts 3000/3900; `is_system` / `is_active` (Alembic `0075`).
+- [x] Accounting Ledger UI: create account + opening balance + indented COA.
+- [x] Tenant + RBAC (`accounting` write); automated tests in `backend/tests/test_coa_crud_a2.py`.
 
 ## A3 acceptance criteria (preview)
 

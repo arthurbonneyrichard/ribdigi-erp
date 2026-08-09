@@ -853,11 +853,17 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 ## 10. Accounting
 
 ### 10.1 Chart of Accounts
-**List:** `GET /accounting/accounts`  
+**List:** `GET /accounting/accounts` (`tree=true` for nested children; `active_only` default true)  
 **Create:** `POST /accounting/accounts`  
-**Get:** `GET /accounting/accounts/{account_id}`
+**Get:** `GET /accounting/accounts/{account_id}`  
+**Update:** `PATCH /accounting/accounts/{account_id}`  
+**Opening balance:** `POST /accounting/accounts/{account_id}/opening-balance`
 
 **Account Types:** `asset`, `liability`, `equity`, `income`, `expense`
+
+**Create body:** `{ "code", "name", "account_type", "parent_id?" }` — non-system accounts only. Parent must share `account_type`; cycles rejected.
+
+**Opening balance body:** `{ "amount", "description?" }` — natural-side amount (assets/expenses debit; liability/equity/income credit). Posts balanced journal against system account `3900` Opening Balances Equity (`source_type=opening_balance`). Duplicate posted opening balance → `409 OPENING_BALANCE_EXISTS`.
 
 ### 10.2 Journal Entries
 **List:** `GET /accounting/journal-entries`  

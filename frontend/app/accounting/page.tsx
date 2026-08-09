@@ -45,6 +45,24 @@ export default function Page() {
   const [xferTo, setXferTo] = useState('');
   const [xferAmount, setXferAmount] = useState('50');
   const [xferDesc, setXferDesc] = useState('');
+  const [coaCode, setCoaCode] = useState('1050');
+  const [coaName, setCoaName] = useState('Petty Cash Drawer');
+  const [coaType, setCoaType] = useState('asset');
+  const [coaParentId, setCoaParentId] = useState('');
+  const [obAccountId, setObAccountId] = useState('');
+  const [obAmount, setObAmount] = useState('100');
+
+  function accountDepth(row: any, byId: Record<string, any>): number {
+    let depth = 0;
+    let cursor = row.parent_id ? byId[row.parent_id] : null;
+    const seen = new Set<string>();
+    while (cursor && !seen.has(cursor.id)) {
+      seen.add(cursor.id);
+      depth += 1;
+      cursor = cursor.parent_id ? byId[cursor.parent_id] : null;
+    }
+    return depth;
+  }
 
   async function refresh() {
     const [a, j, t, p, liq, stmts, chq, conns] = await Promise.all([
@@ -68,6 +86,10 @@ export default function Page() {
     if (!reconAccountId && liq.data?.length) setReconAccountId(liq.data[0].id);
     if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
     if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
+    if (!obAccountId && a.data?.length) {
+      const cash = a.data.find((r: any) => r.code === '1000') || a.data[0];
+      setObAccountId(cash.id);
+    }
   }
 
   useEffect(() => {
@@ -145,6 +167,41 @@ export default function Page() {
       });
       setMessage(`Posted ${r.data?.source_type || 'liquid transfer'}`);
       setXferDesc('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createCoaAccount() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/accounting/accounts', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: coaCode,
+          name: coaName,
+          account_type: coaType,
+          parent_id: coaParentId || undefined,
+        }),
+      });
+      setMessage('Account created');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function postOpeningBalance() {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/accounts/${obAccountId}/opening-balance`, {
+        method: 'POST',
+        body: JSON.stringify({ amount: Number(obAmount) }),
+      });
+      setMessage('Opening balance posted');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -552,29 +609,85 @@ export default function Page() {
             </div>
           </div>
 
-          <h3>Chart of accounts</h3>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Liquid</th>
-                <th>Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.code}</td>
-                  <td>{r.name}</td>
-                  <td>{r.account_type}</td>
-                  <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
-                  <td>{r.balance}</td>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3>Chart of accounts</h3>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Add non-system accounts with optional parent (same type). Opening balances post a
+              balanced journal against Opening Balances Equity (3900).
+            </p>
+            <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
+              <input value={coaCode} onChange={(e) => setCoaCode(e.target.value)} placeholder="Code" />
+              <input value={coaName} onChange={(e) => setCoaName(e.target.value)} placeholder="Name" />
+              <select value={coaType} onChange={(e) => setCoaType(e.target.value)}>
+                <option value="asset">Asset</option>
+                <option value="liability">Liability</option>
+                <option value="equity">Equity</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+              <select value={coaParentId} onChange={(e) => setCoaParentId(e.target.value)}>
+                <option value="">No parent</option>
+                {accounts
+                  .filter((a) => a.account_type === coaType)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.code} — {a.name}
+                    </option>
+                  ))}
+              </select>
+              <button type="button" onClick={createCoaAccount}>
+                Create account
+              </button>
+            </div>
+            <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
+              <h4 style={{ margin: 0 }}>Opening balance</h4>
+              <select value={obAccountId} onChange={(e) => setObAccountId(e.target.value)}>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.code} — {a.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={obAmount}
+                onChange={(e) => setObAmount(e.target.value)}
+                placeholder="Amount (natural side)"
+              />
+              <button type="button" onClick={postOpeningBalance}>
+                Post opening balance
+              </button>
+            </div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>System</th>
+                  <th>Liquid</th>
+                  <th>Balance</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(() => {
+                  const byId = Object.fromEntries(accounts.map((a) => [a.id, a]));
+                  return accounts.map((r) => {
+                    const depth = accountDepth(r, byId);
+                    return (
+                      <tr key={r.id}>
+                        <td style={{ paddingLeft: 8 + depth * 16 }}>{r.code}</td>
+                        <td>{r.name}</td>
+                        <td>{r.account_type}</td>
+                        <td>{r.is_system ? 'yes' : '—'}</td>
+                        <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
+                        <td>{r.balance}</td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
+          </div>
 
           <div className="grid" style={{ marginTop: 16 }}>
             <div className="card">

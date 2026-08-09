@@ -12,18 +12,9 @@ from app import models as m
 
 
 def serialize_account(account: m.Account) -> dict:
-    return {
-        "id": account.id,
-        "code": account.code,
-        "name": account.name,
-        "account_type": account.account_type,
-        "balance": float(account.balance or 0),
-        "is_cash_account": bool(account.is_cash_account),
-        "is_bank_account": bool(account.is_bank_account),
-        "bank_name": account.bank_name,
-        "account_number": account.account_number,
-        "bank_branch": getattr(account, "bank_branch", None),
-    }
+    from app.accounting import serialize_coa_account
+
+    return serialize_coa_account(account)
 
 
 def serialize_line(line: m.BankStatementLine) -> dict:
