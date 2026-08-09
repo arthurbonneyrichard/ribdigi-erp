@@ -242,6 +242,102 @@ async def get_tenant_account(
     return row
 
 
+def _natural_side_delta(account_type: str, debit: float, credit: float) -> float:
+    """Signed movement on the account's natural balance side."""
+    if account_type in {"asset", "expense"}:
+        return float(debit) - float(credit)
+    return float(credit) - float(debit)
+
+
+async def account_transactions(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    include_unposted: bool = False,
+) -> dict:
+    """Ledger drill-down for one COA account (Stage 8 A1)."""
+    account = await get_tenant_account(db, tenant_id, account_id)
+    stmt = (
+        select(m.JournalEntryLine, m.JournalEntry)
+        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntryLine.account_id == account_id,
+        )
+    )
+    if not include_unposted:
+        stmt = stmt.where(m.JournalEntry.status == "posted")
+    stmt = stmt.order_by(
+        m.JournalEntry.entry_date.asc(),
+        m.JournalEntry.entry_number.asc(),
+        m.JournalEntryLine.id.asc(),
+    )
+    rows = (await db.execute(stmt)).all()
+
+    opening = 0.0
+    period_rows: list[tuple[m.JournalEntryLine, m.JournalEntry]] = []
+    for line, entry in rows:
+        entry_dt = entry.entry_date or entry.created_at or datetime.utcnow()
+        if from_date and entry_dt < from_date:
+            opening = round(
+                opening
+                + _natural_side_delta(
+                    account.account_type, float(line.debit or 0), float(line.credit or 0)
+                ),
+                2,
+            )
+            continue
+        if to_date and entry_dt > to_date:
+            continue
+        period_rows.append((line, entry))
+
+    running = opening
+    transactions: list[dict] = []
+    total_debit = 0.0
+    total_credit = 0.0
+    for line, entry in period_rows:
+        debit = float(line.debit or 0)
+        credit = float(line.credit or 0)
+        total_debit = round(total_debit + debit, 2)
+        total_credit = round(total_credit + credit, 2)
+        running = round(
+            running + _natural_side_delta(account.account_type, debit, credit), 2
+        )
+        transactions.append(
+            {
+                "line_id": line.id,
+                "journal_entry_id": entry.id,
+                "entry_number": entry.entry_number,
+                "entry_date": entry.entry_date,
+                "reference": entry.reference,
+                "description": line.description or entry.description,
+                "source_type": entry.source_type,
+                "source_id": entry.source_id,
+                "status": entry.status,
+                "debit": debit,
+                "credit": credit,
+                "balance": running,
+            }
+        )
+
+    return {
+        "account": serialize_coa_account(account),
+        "from_date": from_date.date().isoformat() if from_date else None,
+        "to_date": to_date.date().isoformat() if to_date else None,
+        "include_unposted": bool(include_unposted),
+        "opening_balance": opening,
+        "closing_balance": running,
+        "total_debit": total_debit,
+        "total_credit": total_credit,
+        "transaction_count": len(transactions),
+        "transactions": transactions,
+    }
+
+
 async def _validate_parent(
     db: AsyncSession,
     *,

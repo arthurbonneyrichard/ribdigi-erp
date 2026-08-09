@@ -976,6 +976,10 @@ Liquid (cash/bank) movements classified as `operating` / `investing` / `financin
 }
 ```
 
+**Get Outstanding Bills (Stage 8 S2):** `GET /customers/{customer_id}/outstanding`
+
+Returns open AR invoices (`posted` / `partial` / `sent` / `overdue` with balance > 0): `{ invoice_id, invoice_number, amount, due_date, status, document_type: "sales_invoice" }`. Requires `credit:read`; 404 if customer missing.
+
 **Record Payment:** `POST /customers/{customer_id}/payments`
 
 ```json
@@ -987,11 +991,6 @@ Liquid (cash/bank) movements classified as `operating` / `investing` / `financin
   "notes": "Partial payment for INV-001"
 }
 ```
-
-### 11.1 Customer Credit (outstanding)
-**Get Outstanding Bills (Stage 8 S2):** `GET /customers/{customer_id}/outstanding`
-
-Returns open AR invoices (`posted` / `partial` / `sent` / `overdue` with balance > 0): `{ invoice_id, invoice_number, amount, due_date, status, document_type: "sales_invoice" }`. Requires `credit:read`; 404 if customer missing.
 
 ### 11.2 Supplier Credit
 **Get Outstanding Bills (Stage 8 S2):** `GET /suppliers/{supplier_id}/outstanding`

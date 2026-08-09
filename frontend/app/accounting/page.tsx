@@ -53,6 +53,9 @@ export default function Page() {
   const [obAmount, setObAmount] = useState('100');
   const [pnlFrom, setPnlFrom] = useState('');
   const [pnlTo, setPnlTo] = useState('');
+  const [accountTx, setAccountTx] = useState<any | null>(null);
+  const [txFrom, setTxFrom] = useState('');
+  const [txTo, setTxTo] = useState('');
 
   function accountDepth(row: any, byId: Record<string, any>): number {
     let depth = 0;
@@ -196,6 +199,22 @@ export default function Page() {
       });
       setMessage('Account created');
       await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadAccountTransactions(accountId: string) {
+    if (!accountId) return;
+    setError('');
+    try {
+      const qs = new URLSearchParams();
+      if (txFrom) qs.set('from_date', txFrom);
+      if (txTo) qs.set('to_date', txTo);
+      const suffix = qs.toString() ? `?${qs}` : '';
+      const r = await api(`/accounting/accounts/${accountId}/transactions${suffix}`);
+      setAccountTx(r.data);
+      setObAccountId(accountId);
     } catch (err: any) {
       setError(err.message);
     }
@@ -665,6 +684,16 @@ export default function Page() {
                 Post opening balance
               </button>
             </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+              <span className="muted">Ledger date filter</span>
+              <input type="date" value={txFrom} onChange={(e) => setTxFrom(e.target.value)} />
+              <input type="date" value={txTo} onChange={(e) => setTxTo(e.target.value)} />
+              {obAccountId && (
+                <button type="button" onClick={() => loadAccountTransactions(obAccountId)}>
+                  Refresh ledger
+                </button>
+              )}
+            </div>
             <table className="table">
               <thead>
                 <tr>
@@ -674,6 +703,7 @@ export default function Page() {
                   <th>System</th>
                   <th>Liquid</th>
                   <th>Balance</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -689,12 +719,67 @@ export default function Page() {
                         <td>{r.is_system ? 'yes' : '—'}</td>
                         <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
                         <td>{r.balance}</td>
+                        <td>
+                          <button type="button" onClick={() => loadAccountTransactions(r.id)}>
+                            Ledger
+                          </button>
+                        </td>
                       </tr>
                     );
                   });
                 })()}
               </tbody>
             </table>
+            {accountTx && (
+              <div style={{ marginTop: 16 }}>
+                <h4 style={{ margin: '0 0 8px' }}>
+                  Account ledger — {accountTx.account?.code} {accountTx.account?.name}{' '}
+                  <span className="muted">
+                    (open {accountTx.opening_balance} → close {accountTx.closing_balance} ·{' '}
+                    {accountTx.transaction_count} lines)
+                  </span>
+                </h4>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Entry</th>
+                      <th>Reference</th>
+                      <th>Description</th>
+                      <th>Debit</th>
+                      <th>Credit</th>
+                      <th>Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(accountTx.transactions || []).map((t: any) => (
+                      <tr key={t.line_id}>
+                        <td>
+                          {t.entry_date
+                            ? String(t.entry_date).replace('T', ' ').slice(0, 10)
+                            : '—'}
+                        </td>
+                        <td>
+                          <code>{t.entry_number}</code>
+                        </td>
+                        <td>{t.reference || '—'}</td>
+                        <td>{t.description || '—'}</td>
+                        <td>{t.debit}</td>
+                        <td>{t.credit}</td>
+                        <td>{t.balance}</td>
+                      </tr>
+                    ))}
+                    {!accountTx.transactions?.length && (
+                      <tr>
+                        <td colSpan={7} className="muted">
+                          No posted lines in this range
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <div className="grid" style={{ marginTop: 16 }}>

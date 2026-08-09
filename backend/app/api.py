@@ -7235,6 +7235,30 @@ async def get_account(
     return env(accounting_svc.serialize_coa_account(row))
 
 
+@api.get("/accounting/accounts/{account_id}/transactions")
+async def account_transactions(
+    account_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    include_unposted: bool = False,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 8 A1 — ledger lines and running balance for one COA account."""
+    from app import accounting as accounting_svc
+
+    return env(
+        await accounting_svc.account_transactions(
+            db,
+            claims["tenant_id"],
+            account_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            include_unposted=include_unposted,
+        )
+    )
+
+
 @api.post("/accounting/accounts")
 async def create_coa_account(
     payload: CoaAccountCreate,
