@@ -40,6 +40,8 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("exchange_rates", m.ExchangeRate),
     ("accounts", m.Account),
     ("expense_categories", m.ExpenseCategory),
+    ("purchase_requests", m.PurchaseRequest),
+    ("purchase_request_items", m.PurchaseRequestItem),
     ("purchase_orders", m.PurchaseOrder),
     ("purchase_order_items", m.PurchaseOrderItem),
     ("goods_receipts", m.GoodsReceipt),

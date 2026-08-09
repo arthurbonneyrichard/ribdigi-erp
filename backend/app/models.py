@@ -579,6 +579,46 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class PurchaseRequest(Base):
+    """Internal requisition; approved requests convert to draft purchase orders."""
+
+    __tablename__ = "purchase_requests"
+    __table_args__ = (UniqueConstraint("tenant_id", "request_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    request_number: Mapped[str] = mapped_column(String(50), index=True)
+    supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True)
+    # draft -> pending -> approved | rejected | cancelled; approved -> converted
+    status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
+    department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    required_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    purchase_order_id: Mapped[str | None] = mapped_column(
+        ForeignKey("purchase_orders.id"), nullable=True, index=True
+    )
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PurchaseRequestItem(Base):
+    __tablename__ = "purchase_request_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    purchase_request_id: Mapped[str] = mapped_column(ForeignKey("purchase_requests.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
 class PurchaseOrder(Base):
     __tablename__ = "purchase_orders"
     __table_args__ = (UniqueConstraint("tenant_id", "po_number"),)
@@ -596,6 +636,7 @@ class PurchaseOrder(Base):
     paid_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    purchase_request_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

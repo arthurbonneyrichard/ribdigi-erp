@@ -10,7 +10,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "inventory": ["read", "write"],
         "sales": ["read", "write"],
         "pos": ["read", "write"],
-        "purchasing": ["read"],
+        "purchasing": ["read", "write", "approve"],
         "expenses": ["read", "write", "approve"],
         "accounting": ["read"],
         "credit": ["read", "write"],

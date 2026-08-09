@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'orders' | 'grn' | 'invoices' | 'returns';
+type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
 type Supplier = { id: string; name: string };
 type Product = { id: string; name: string; sku: string; cost_price: number };
 type PoItem = {
@@ -21,7 +21,19 @@ type PurchaseOrder = {
   supplier_id: string;
   status: string;
   total_amount: number;
+  purchase_request_id?: string | null;
   items: PoItem[];
+};
+type PurchaseRequest = {
+  id: string;
+  request_number: string;
+  supplier_id: string;
+  status: string;
+  department?: string | null;
+  required_date?: string | null;
+  purchase_order_id?: string | null;
+  rejection_reason?: string | null;
+  items: { id: string; product_id: string; quantity: number; unit_price: number }[];
 };
 type GrnItem = {
   id: string;
@@ -64,7 +76,8 @@ type PurchaseInvoice = {
 };
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('orders');
+  const [tab, setTab] = useState<Tab>('requests');
+  const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [grns, setGrns] = useState<Grn[]>([]);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
@@ -77,6 +90,9 @@ export default function Page() {
   const [productId, setProductId] = useState('');
   const [qty, setQty] = useState('10');
   const [unitPrice, setUnitPrice] = useState('0');
+  const [prDepartment, setPrDepartment] = useState('');
+  const [prRequiredDate, setPrRequiredDate] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
   const [grnId, setGrnId] = useState('');
   const [grnItemId, setGrnItemId] = useState('');
   const [returnQty, setReturnQty] = useState('1');
@@ -100,7 +116,8 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [poRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
+    const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
+      api('/purchasing/requests'),
       api('/purchasing/orders'),
       api('/suppliers'),
       api('/products'),
@@ -108,6 +125,7 @@ export default function Page() {
       api('/purchasing/invoices'),
       api('/purchasing/returns'),
     ]);
+    setRequests(prRes.data || []);
     setOrders(poRes.data || []);
     setSuppliers(supRes.data || []);
     setProducts(prodRes.data || []);
@@ -151,6 +169,84 @@ export default function Page() {
       setSupplierName('');
       await refresh();
       setMessage('Supplier created');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createPr() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/purchasing/requests', {
+        method: 'POST',
+        body: JSON.stringify({
+          supplier_id: supplierId,
+          department: prDepartment || undefined,
+          required_date: prRequiredDate ? new Date(prRequiredDate).toISOString() : undefined,
+          items: [
+            {
+              product_id: productId,
+              quantity: Number(qty),
+              unit_price: Number(unitPrice),
+              tax_rate: 0,
+            },
+          ],
+        }),
+      });
+      setMessage(`Created ${r.data.request_number}`);
+      setTab('requests');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function submitPr(id: string) {
+    setError('');
+    try {
+      const r = await api(`/purchasing/requests/${id}/submit`, { method: 'POST' });
+      setMessage(`Submitted ${r.data.request_number}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function approvePr(id: string) {
+    setError('');
+    try {
+      const r = await api(`/purchasing/requests/${id}/approve`, { method: 'POST' });
+      setMessage(`Approved ${r.data.request_number}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function rejectPr(id: string) {
+    setError('');
+    try {
+      const r = await api(`/purchasing/requests/${id}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: rejectReason || undefined }),
+      });
+      setMessage(`Rejected ${r.data.request_number}`);
+      setRejectReason('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function convertPr(id: string) {
+    setError('');
+    try {
+      const r = await api(`/purchasing/requests/${id}/convert`, { method: 'POST' });
+      setMessage(`Converted to ${r.data.purchase_order.po_number}`);
+      setSelected(r.data.purchase_order);
+      setTab('orders');
+      await refresh();
     } catch (err: any) {
       setError(err.message);
     }
@@ -421,13 +517,14 @@ export default function Page() {
   return (
     <Shell>
       <h1>Purchasing</h1>
-      <p className="muted">Purchase orders → GRN → invoices → returns</p>
+      <p className="muted">Requests → purchase orders → GRN → invoices → returns</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {(
           [
+            ['requests', 'Requests'],
             ['orders', 'Orders'],
             ['grn', 'GRNs'],
             ['invoices', 'Invoices'],
@@ -450,6 +547,38 @@ export default function Page() {
         </div>
       </div>
 
+      {tab === 'requests' && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>Create purchase request</h3>
+          <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+              <option value="">Preferred supplier</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+              <option value="">Product</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.sku})
+                </option>
+              ))}
+            </select>
+            <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Quantity" />
+            <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Est. unit price" />
+            <input value={prDepartment} onChange={(e) => setPrDepartment(e.target.value)} placeholder="Department (optional)" />
+            <input type="date" value={prRequiredDate} onChange={(e) => setPrRequiredDate(e.target.value)} />
+            <button onClick={createPr} disabled={!supplierId || !productId}>
+              Create request
+            </button>
+          </div>
+        </div>
+      )}
+
+      {tab === 'orders' && (
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase order</h3>
         <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
@@ -476,6 +605,7 @@ export default function Page() {
           </button>
         </div>
       </div>
+      )}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase invoice from GRN</h3>
@@ -572,6 +702,47 @@ export default function Page() {
           </button>
         </div>
       </div>
+
+      {tab === 'requests' && (
+        <>
+          <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
+            <label className="muted">Rejection reason (optional)</label>
+            <input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Reason" />
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Request</th>
+                <th>Status</th>
+                <th>Department</th>
+                <th>PO</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.request_number}</td>
+                  <td>{r.status}</td>
+                  <td>{r.department || '—'}</td>
+                  <td>{r.purchase_order_id ? r.purchase_order_id.slice(0, 8) : '—'}</td>
+                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {r.status === 'draft' && <button onClick={() => submitPr(r.id)}>Submit</button>}
+                    {r.status === 'pending' && (
+                      <>
+                        <button onClick={() => approvePr(r.id)}>Approve</button>
+                        <button onClick={() => rejectPr(r.id)}>Reject</button>
+                      </>
+                    )}
+                    {r.status === 'approved' && <button onClick={() => convertPr(r.id)}>Convert to PO</button>}
+                    {r.rejection_reason && <span className="muted">{r.rejection_reason}</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
 
       {tab === 'orders' && (
         <>

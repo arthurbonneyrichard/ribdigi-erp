@@ -15,6 +15,11 @@ from app.credit import default_due_date
 
 PO_EDITABLE = {"draft"}
 PO_RECEIVABLE = {"sent", "partially_received"}
+PR_EDITABLE = {"draft"}
+PR_SUBMITTABLE = {"draft"}
+PR_APPROVABLE = {"pending"}
+PR_CONVERTIBLE = {"approved"}
+PR_CANCELLABLE = {"draft", "pending", "approved"}
 PURCHASE_RETURN_REASONS = frozenset({"damaged", "wrong_item", "expiry", "quality", "other"})
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
 
@@ -95,6 +100,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "balance_due": max(float(po.total_amount) - float(po.paid_amount or 0), 0),
         "due_date": po.due_date,
         "notes": po.notes,
+        "purchase_request_id": po.purchase_request_id,
         "created_at": po.created_at,
         "items": [
             {
@@ -112,6 +118,303 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
     }
 
 
+async def get_purchase_request(
+    db: AsyncSession, tenant_id: str, request_id: str
+) -> m.PurchaseRequest:
+    row = (
+        await db.execute(
+            select(m.PurchaseRequest).where(
+                m.PurchaseRequest.id == request_id,
+                m.PurchaseRequest.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Purchase request not found")
+    return row
+
+
+async def list_pr_items(
+    db: AsyncSession, tenant_id: str, request_id: str
+) -> list[m.PurchaseRequestItem]:
+    return list(
+        (
+            await db.execute(
+                select(m.PurchaseRequestItem).where(
+                    m.PurchaseRequestItem.tenant_id == tenant_id,
+                    m.PurchaseRequestItem.purchase_request_id == request_id,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+async def serialize_pr(db: AsyncSession, pr: m.PurchaseRequest) -> dict:
+    items = await list_pr_items(db, pr.tenant_id, pr.id)
+    return {
+        "id": pr.id,
+        "request_number": pr.request_number,
+        "supplier_id": pr.supplier_id,
+        "warehouse_id": pr.warehouse_id,
+        "status": pr.status,
+        "department": pr.department,
+        "required_date": pr.required_date,
+        "notes": pr.notes,
+        "rejection_reason": pr.rejection_reason,
+        "purchase_order_id": pr.purchase_order_id,
+        "created_by": pr.created_by,
+        "approved_by": pr.approved_by,
+        "approved_at": pr.approved_at,
+        "created_at": pr.created_at,
+        "updated_at": pr.updated_at,
+        "items": [
+            {
+                "id": i.id,
+                "product_id": i.product_id,
+                "quantity": float(i.quantity),
+                "unit_price": float(i.unit_price or 0),
+                "tax_rate": float(i.tax_rate or 0),
+                "notes": i.notes,
+            }
+            for i in items
+        ],
+    }
+
+
+async def create_purchase_request(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    supplier_id: str,
+    items: list[dict],
+    warehouse_id: str | None = None,
+    department: str | None = None,
+    required_date: datetime | None = None,
+    notes: str | None = None,
+) -> m.PurchaseRequest:
+    if not items:
+        raise HTTPException(status_code=400, detail="Purchase request requires at least one line item")
+    await get_supplier(db, tenant_id, supplier_id)
+    prepared: list[dict] = []
+    for item in items:
+        product = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.id == item["product_id"],
+                    m.Product.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+        qty = float(item["quantity"])
+        if qty <= 0:
+            raise HTTPException(status_code=400, detail="Line quantity must be greater than zero")
+        unit_price = float(
+            item["unit_price"] if item.get("unit_price") is not None else product.cost_price or 0
+        )
+        prepared.append(
+            {
+                "product_id": product.id,
+                "quantity": qty,
+                "unit_price": unit_price,
+                "tax_rate": float(item.get("tax_rate") or 0),
+                "notes": item.get("notes"),
+            }
+        )
+
+    pr = m.PurchaseRequest(
+        tenant_id=tenant_id,
+        request_number=f"PR-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        supplier_id=supplier_id,
+        warehouse_id=warehouse_id,
+        status="draft",
+        department=(department or "").strip() or None,
+        required_date=required_date,
+        notes=notes,
+        created_by=user_id,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.add(pr)
+    await db.flush()
+    for item in prepared:
+        db.add(
+            m.PurchaseRequestItem(
+                tenant_id=tenant_id,
+                purchase_request_id=pr.id,
+                product_id=item["product_id"],
+                quantity=item["quantity"],
+                unit_price=item["unit_price"],
+                tax_rate=item["tax_rate"],
+                notes=item["notes"],
+            )
+        )
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_created",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={"request_number": pr.request_number},
+        )
+    )
+    await db.flush()
+    return pr
+
+
+async def submit_purchase_request(
+    db: AsyncSession, *, tenant_id: str, user_id: str, request_id: str
+) -> m.PurchaseRequest:
+    pr = await get_purchase_request(db, tenant_id, request_id)
+    if pr.status not in PR_SUBMITTABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot submit PR in status {pr.status}")
+    items = await list_pr_items(db, tenant_id, pr.id)
+    if not items:
+        raise HTTPException(status_code=400, detail="Cannot submit empty purchase request")
+    pr.status = "pending"
+    pr.updated_at = datetime.utcnow()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_submitted",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={"request_number": pr.request_number},
+        )
+    )
+    await db.flush()
+    return pr
+
+
+async def approve_purchase_request(
+    db: AsyncSession, *, tenant_id: str, user_id: str, request_id: str
+) -> m.PurchaseRequest:
+    pr = await get_purchase_request(db, tenant_id, request_id)
+    if pr.status not in PR_APPROVABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot approve PR in status {pr.status}")
+    if pr.created_by and pr.created_by == user_id:
+        raise HTTPException(status_code=403, detail="Cannot approve your own purchase request")
+    pr.status = "approved"
+    pr.approved_by = user_id
+    pr.approved_at = datetime.utcnow()
+    pr.rejection_reason = None
+    pr.updated_at = datetime.utcnow()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_approved",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={"request_number": pr.request_number},
+        )
+    )
+    await db.flush()
+    return pr
+
+
+async def reject_purchase_request(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    request_id: str,
+    reason: str | None = None,
+) -> m.PurchaseRequest:
+    pr = await get_purchase_request(db, tenant_id, request_id)
+    if pr.status not in PR_APPROVABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot reject PR in status {pr.status}")
+    if pr.created_by and pr.created_by == user_id:
+        raise HTTPException(status_code=403, detail="Cannot reject your own purchase request")
+    pr.status = "rejected"
+    pr.rejection_reason = (reason or "").strip() or None
+    pr.updated_at = datetime.utcnow()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_rejected",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={"request_number": pr.request_number, "reason": pr.rejection_reason},
+        )
+    )
+    await db.flush()
+    return pr
+
+
+async def cancel_purchase_request(
+    db: AsyncSession, *, tenant_id: str, user_id: str, request_id: str
+) -> m.PurchaseRequest:
+    pr = await get_purchase_request(db, tenant_id, request_id)
+    if pr.status not in PR_CANCELLABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot cancel PR in status {pr.status}")
+    pr.status = "cancelled"
+    pr.updated_at = datetime.utcnow()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_cancelled",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={"request_number": pr.request_number},
+        )
+    )
+    await db.flush()
+    return pr
+
+
+async def convert_purchase_request_to_po(
+    db: AsyncSession, *, tenant_id: str, user_id: str, request_id: str
+) -> tuple[m.PurchaseRequest, m.PurchaseOrder]:
+    pr = await get_purchase_request(db, tenant_id, request_id)
+    if pr.status not in PR_CONVERTIBLE:
+        raise HTTPException(status_code=409, detail=f"Cannot convert PR in status {pr.status}")
+    items = await list_pr_items(db, tenant_id, pr.id)
+    if not items:
+        raise HTTPException(status_code=400, detail="Cannot convert empty purchase request")
+    po = await create_purchase_order(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        supplier_id=pr.supplier_id,
+        warehouse_id=pr.warehouse_id,
+        notes=pr.notes or f"Converted from {pr.request_number}",
+        items=[
+            {
+                "product_id": i.product_id,
+                "quantity": float(i.quantity),
+                "unit_price": float(i.unit_price or 0),
+                "tax_rate": float(i.tax_rate or 0),
+            }
+            for i in items
+        ],
+        purchase_request_id=pr.id,
+    )
+    pr.status = "converted"
+    pr.purchase_order_id = po.id
+    pr.updated_at = datetime.utcnow()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_converted",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={"request_number": pr.request_number, "po_id": po.id, "po_number": po.po_number},
+        )
+    )
+    await db.flush()
+    return pr, po
+
+
 async def create_purchase_order(
     db: AsyncSession,
     *,
@@ -121,6 +424,7 @@ async def create_purchase_order(
     items: list[dict],
     warehouse_id: str | None = None,
     notes: str | None = None,
+    purchase_request_id: str | None = None,
 ) -> m.PurchaseOrder:
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
@@ -157,6 +461,7 @@ async def create_purchase_order(
         tax_amount=tax_total,
         total_amount=subtotal + tax_total,
         notes=notes,
+        purchase_request_id=purchase_request_id,
         created_by=user_id,
     )
     db.add(po)
