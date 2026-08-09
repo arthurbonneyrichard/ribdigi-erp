@@ -451,6 +451,19 @@ class PurchaseOrderCreate(BaseModel):
     items: list[PurchaseOrderItemCreate] = Field(min_length=1)
 
 
+class BarcodeLabelItem(BaseModel):
+    product_id: str
+    variant_id: str | None = None
+    copies: int = Field(default=1, ge=1, le=50)
+
+
+class BarcodeLabelPrintRequest(BaseModel):
+    items: list[BarcodeLabelItem] = Field(min_length=1, max_length=100)
+    format: str = "html"
+    include_price: bool = True
+    columns: int = Field(default=3, ge=1, le=4)
+
+
 class PurchaseOrderItemUpdate(BaseModel):
     id: str | None = None
     product_id: str

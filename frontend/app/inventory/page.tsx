@@ -42,6 +42,7 @@ export default function Page() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [stockImportReport, setStockImportReport] = useState<any | null>(null);
   const [stockImportFile, setStockImportFile] = useState<File | null>(null);
+  const [labelCopies, setLabelCopies] = useState('1');
   const [variantBarcode, setVariantBarcode] = useState('');
 
   const [catCode, setCatCode] = useState('');
@@ -328,6 +329,48 @@ export default function Page() {
     }
   }
 
+  async function printProductLabels(format: 'html' | 'pdf' | 'png' = 'html') {
+    if (!selectedId) return;
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const copies = Math.max(1, Math.min(50, Number(labelCopies) || 1));
+      const res = await fetch(
+        `${apiBase}/products/${selectedId}/labels?format=${format}&copies=${copies}`,
+        {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+          },
+        },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Label print failed');
+      }
+      if (format === 'html') {
+        const html = await res.text();
+        const win = window.open('', '_blank', 'noopener,noreferrer');
+        if (!win) throw new Error('Pop-up blocked; allow pop-ups to print labels');
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+      } else {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = format === 'pdf' ? 'barcode_labels.pdf' : 'barcode_labels.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      setMessage(`Labels ready (${copies} cop${copies === 1 ? 'y' : 'ies'})`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function generateVariantBarcode(variantId: string) {
     if (!selectedId) return;
     setError('');
@@ -602,6 +645,24 @@ export default function Page() {
               </button>
               <button type="button" onClick={() => generateProductBarcode('ean13')}>
                 Generate EAN-13
+              </button>
+            </div>
+            <label className="muted">Label copies</label>
+            <input
+              value={labelCopies}
+              onChange={(e) => setLabelCopies(e.target.value)}
+              placeholder="Copies"
+              style={{ maxWidth: 120 }}
+            />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => printProductLabels('html')} disabled={!editBarcode}>
+                Print labels
+              </button>
+              <button type="button" onClick={() => printProductLabels('pdf')} disabled={!editBarcode}>
+                Download PDF
+              </button>
+              <button type="button" onClick={() => printProductLabels('png')} disabled={!editBarcode}>
+                Download PNG
               </button>
             </div>
           </div>

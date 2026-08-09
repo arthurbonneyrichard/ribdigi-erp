@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from fastapi.responses import PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,9 +45,11 @@ from app import product_images as product_images_svc
 from app import barcodes as barcode_svc
 from app import product_import as product_import_svc
 from app import stock_import as stock_import_svc
+from app import barcode_labels as barcode_labels_svc
 from app import suppliers as suppliers_svc
 from app.config import settings
 from app.schemas import (
+    BarcodeLabelPrintRequest,
     BrandCreate,
     BrandUpdate,
     CreditLimitUpdate,
@@ -2476,6 +2478,87 @@ async def generate_product_barcode(
     await db.commit()
     await db.refresh(product)
     return env(catalog_meta_svc.serialize_product(product), "Barcode assigned")
+
+
+@api.get("/products/{product_id}/labels")
+async def product_barcode_labels(
+    product_id: str,
+    format: str = "html",
+    copies: int = 1,
+    include_price: bool = True,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    labels = await barcode_labels_svc.resolve_label_targets(
+        db,
+        tenant_id=claims["tenant_id"],
+        items=[{"product_id": product_id, "copies": copies}],
+    )
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    currency = tenant.currency or "GHS"
+    if not include_price:
+        for label in labels:
+            label["price"] = None
+    fmt = (format or "html").strip().lower()
+    if fmt == "html":
+        return HTMLResponse(barcode_labels_svc.build_labels_html(labels, currency=currency))
+    if fmt == "png":
+        png = barcode_labels_svc.build_labels_sheet_png(labels, currency=currency)
+        return Response(
+            content=png,
+            media_type="image/png",
+            headers={"Content-Disposition": 'inline; filename="barcode_labels.png"'},
+        )
+    if fmt == "pdf":
+        pdf = barcode_labels_svc.build_labels_pdf(labels, currency=currency)
+        return Response(
+            content=pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": 'inline; filename="barcode_labels.pdf"'},
+        )
+    raise HTTPException(status_code=400, detail="format must be html, png, or pdf")
+
+
+@api.post("/inventory/labels")
+async def print_barcode_labels(
+    payload: BarcodeLabelPrintRequest,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    labels = await barcode_labels_svc.resolve_label_targets(
+        db,
+        tenant_id=claims["tenant_id"],
+        items=[i.model_dump() for i in payload.items],
+    )
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    currency = tenant.currency or "GHS"
+    if not payload.include_price:
+        for label in labels:
+            label["price"] = None
+    fmt = (payload.format or "html").strip().lower()
+    if fmt == "html":
+        return HTMLResponse(barcode_labels_svc.build_labels_html(labels, currency=currency))
+    if fmt == "png":
+        png = barcode_labels_svc.build_labels_sheet_png(
+            labels, currency=currency, cols=payload.columns
+        )
+        return Response(
+            content=png,
+            media_type="image/png",
+            headers={"Content-Disposition": 'inline; filename="barcode_labels.png"'},
+        )
+    if fmt == "pdf":
+        pdf = barcode_labels_svc.build_labels_pdf(labels, currency=currency)
+        return Response(
+            content=pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": 'inline; filename="barcode_labels.pdf"'},
+        )
+    raise HTTPException(status_code=400, detail="format must be html, png, or pdf")
 
 
 @api.post("/products/{product_id}/variants")
