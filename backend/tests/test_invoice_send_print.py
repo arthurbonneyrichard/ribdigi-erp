@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from app import models as m
 from app.emailer import clear_dev_outbox, get_dev_outbox
-from app.sales import render_invoice_text
+from app.sales import render_invoice_html, render_invoice_pdf, render_invoice_text
 from tests.conftest import auth_headers
 
 
@@ -34,7 +34,14 @@ def test_render_invoice_text_templates():
         "balance_due": 10,
         "items": [{"product_id": "p1", "quantity": 2, "line_total": 10}],
     }
-    a4 = render_invoice_text(data, company_name="Alpha Co", customer_name="Buyer", template="a4")
+    a4 = render_invoice_text(
+        data,
+        company_name="Alpha Co",
+        customer_name="Buyer",
+        template="a4",
+        company_address="1 Market St",
+        item_labels={"p1": "Widget"},
+    )
     t80 = render_invoice_text(
         data, company_name="Alpha Co", customer_name="Buyer", template="thermal_80"
     )
@@ -42,8 +49,45 @@ def test_render_invoice_text_templates():
         data, company_name="Alpha Co", customer_name="Buyer", template="thermal_58"
     )
     assert "INV-34535" in a4 and "Alpha Co" in a4 and "TOTAL:" in a4
+    assert "1 Market St" in a4 and "Widget" in a4
     assert "Thank you!" in t80 and "Thank you!" in t58
     assert len(t58.splitlines()[0]) <= 32 or t58.splitlines()[0] == "Alpha Co"
+
+
+def test_render_invoice_pdf_and_html_branded():
+    data = {
+        "invoice_number": "INV-9",
+        "status": "sent",
+        "subtotal": 20,
+        "tax_amount": 0,
+        "discount_amount": 0,
+        "total_amount": 20,
+        "paid_amount": 0,
+        "balance_due": 20,
+        "items": [{"product_id": "p1", "quantity": 1, "unit_price": 20, "line_total": 20}],
+    }
+    pdf = render_invoice_pdf(
+        data,
+        company_name="Alpha Co",
+        customer_name="Buyer",
+        template="a4",
+        company_address="Accra",
+        item_labels={"p1": "Alpha Widget"},
+    )
+    assert pdf.startswith(b"%PDF")
+    html = render_invoice_html(
+        data,
+        company_name="Alpha Co",
+        customer_name="Buyer",
+        template="a4",
+        company_address="Accra",
+        item_labels={"p1": "Alpha Widget"},
+    )
+    assert "Alpha Co" in html and "Alpha Widget" in html and "INV-9" in html
+    thermal = render_invoice_pdf(
+        data, company_name="Alpha Co", customer_name="Buyer", template="thermal_58"
+    )
+    assert thermal.startswith(b"%PDF")
 
 
 @pytest.mark.asyncio
@@ -105,6 +149,7 @@ async def test_invoice_print_send_overdue_and_no_repost(client, db_session, monk
     assert printed_default.status_code == 200, printed_default.text
     body = printed_default.json()["data"]
     assert body["template"] == "thermal_80"
+    assert body.get("format") == "text"
     assert invoice_number in body["text"]
     assert "Alpha Co" in body["text"]
     assert "Invoice Mail Buyer" in body["text"]
@@ -117,12 +162,49 @@ async def test_invoice_print_send_overdue_and_no_repost(client, db_session, monk
     assert printed_a4.status_code == 200, printed_a4.text
     assert printed_a4.json()["data"]["template"] == "a4"
 
+    printed_html = await ac.get(
+        f"/api/v1/sales/invoices/{invoice_id}/print",
+        headers=headers,
+        params={"format": "html", "template": "a4"},
+    )
+    assert printed_html.status_code == 200, printed_html.text
+    assert "text/html" in printed_html.headers.get("content-type", "")
+    assert "Alpha Co" in printed_html.text
+    assert invoice_number in printed_html.text
+    assert "Bill to" in printed_html.text
+
+    printed_pdf = await ac.get(
+        f"/api/v1/sales/invoices/{invoice_id}/print",
+        headers=headers,
+        params={"format": "pdf", "template": "a4"},
+    )
+    assert printed_pdf.status_code == 200
+    assert printed_pdf.headers.get("content-type", "").startswith("application/pdf")
+    assert printed_pdf.content[:4] == b"%PDF"
+    assert "filename=" in printed_pdf.headers.get("content-disposition", "")
+
+    printed_pdf_thermal = await ac.get(
+        f"/api/v1/sales/invoices/{invoice_id}/print",
+        headers=headers,
+        params={"format": "pdf", "template": "thermal_58"},
+    )
+    assert printed_pdf_thermal.status_code == 200
+    assert printed_pdf_thermal.content[:4] == b"%PDF"
+
     bad_tpl = await ac.get(
         f"/api/v1/sales/invoices/{invoice_id}/print",
         headers=headers,
         params={"template": "poster"},
     )
     assert bad_tpl.status_code == 400
+
+    bad_fmt = await ac.get(
+        f"/api/v1/sales/invoices/{invoice_id}/print",
+        headers=headers,
+        params={"format": "docx"},
+    )
+    assert bad_fmt.status_code == 400
+    assert "format" in bad_fmt.json()["detail"].lower()
 
     sent = await ac.post(f"/api/v1/sales/invoices/{invoice_id}/send", headers=headers)
     assert sent.status_code == 200, sent.text

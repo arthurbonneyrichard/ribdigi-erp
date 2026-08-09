@@ -3799,6 +3799,7 @@ async def get_sales_invoice(
 async def print_sales_invoice(
     invoice_id: str,
     template: str | None = None,
+    format: str = "text",
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3814,21 +3815,56 @@ async def print_sales_invoice(
             status_code=400,
             detail=f"template must be one of: {sorted(sales_svc.INVOICE_PRINT_TEMPLATES)}",
         )
+    fmt = (format or "text").strip().lower()
+    if fmt not in sales_svc.INVOICE_PRINT_FORMATS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"format must be one of: {sorted(sales_svc.INVOICE_PRINT_FORMATS)}",
+        )
     data = await sales_svc.serialize_invoice(db, invoice)
     currency = data.get("currency") or tenant.currency or "GHS"
-    text = sales_svc.render_invoice_text(
-        data,
+    product_ids = [str(i.get("product_id")) for i in (data.get("items") or []) if i.get("product_id")]
+    item_labels: dict[str, str] = {}
+    if product_ids:
+        products = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == claims["tenant_id"],
+                    m.Product.id.in_(product_ids),
+                )
+            )
+        ).scalars().all()
+        item_labels = {p.id: p.name for p in products}
+    brand = dict(
         company_name=tenant.company_name,
         customer_name=customer.name,
         template=tpl,
         currency=currency,
+        company_address=getattr(tenant, "address", None),
+        company_phone=getattr(tenant, "phone", None),
+        company_email=str(getattr(tenant, "email", None) or "") or None,
+        tax_registration_number=getattr(tenant, "tax_registration_number", None),
+        customer_address=getattr(customer, "address", None),
+        item_labels=item_labels,
     )
     await db.commit()
+    if fmt == "pdf":
+        pdf = sales_svc.render_invoice_pdf(data, **brand)
+        filename = f"invoice_{(data.get('invoice_number') or invoice_id)}.pdf".replace("/", "-")
+        return Response(
+            content=pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        )
+    if fmt == "html":
+        return HTMLResponse(sales_svc.render_invoice_html(data, **brand))
+    text = sales_svc.render_invoice_text(data, **brand)
     return env(
         {
             "invoice": data,
             "text": text,
             "template": tpl,
+            "format": fmt,
             "customer_name": customer.name,
             "company_name": tenant.company_name,
         }

@@ -15,6 +15,7 @@ from app.catalog import resolve_sale_line, stock_out_with_batch
 
 
 INVOICE_PRINT_TEMPLATES = frozenset({"a4", "thermal_80", "thermal_58"})
+INVOICE_PRINT_FORMATS = frozenset({"text", "pdf", "html"})
 
 
 def invoice_payment_status(total: float, paid: float, *, previous_status: str | None = None) -> str:
@@ -152,21 +153,44 @@ def render_invoice_text(
     customer_name: str,
     template: str = "a4",
     currency: str = "GHS",
+    company_address: str | None = None,
+    company_phone: str | None = None,
+    company_email: str | None = None,
+    tax_registration_number: str | None = None,
+    customer_address: str | None = None,
+    item_labels: dict[str, str] | None = None,
 ) -> str:
     tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
     width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
     cur = currency or invoice_data.get("currency") or "GHS"
+    labels = item_labels or {}
     lines = [
         company_name[:width],
-        f"INVOICE {invoice_data.get('invoice_number')}"[:width],
-        f"Customer: {customer_name}"[:width],
-        f"Status: {invoice_data.get('status')}"[:width],
     ]
+    if company_address:
+        lines.append(str(company_address)[:width])
+    if company_phone:
+        lines.append(f"Tel: {company_phone}"[:width])
+    if company_email:
+        lines.append(str(company_email)[:width])
+    if tax_registration_number:
+        lines.append(f"Tax #: {tax_registration_number}"[:width])
+    lines.extend(
+        [
+            "",
+            f"INVOICE {invoice_data.get('invoice_number')}"[:width],
+            f"Customer: {customer_name}"[:width],
+        ]
+    )
+    if customer_address:
+        lines.append(str(customer_address)[:width])
+    lines.append(f"Status: {invoice_data.get('status')}"[:width])
     if invoice_data.get("due_date"):
         lines.append(f"Due: {str(invoice_data['due_date'])[:10]}"[:width])
     lines.extend(["", f"{'Item':<{max(width - 28, 8)}} {'Qty':>6} {'Total':>10}"[:width], "-" * width])
     for item in invoice_data.get("items") or []:
-        desc = str(item.get("product_id") or "Item")[: max(width - 28, 8)]
+        pid = str(item.get("product_id") or "")
+        desc = str(labels.get(pid) or pid or "Item")[: max(width - 28, 8)]
         lines.append(
             f"{desc:<{max(width - 28, 8)}} {float(item.get('quantity') or 0):>6.2f} "
             f"{float(item.get('line_total') or 0):>10.2f}"[:width]
@@ -187,6 +211,232 @@ def render_invoice_text(
     if tpl.startswith("thermal"):
         lines.extend(["", "Thank you!"[:width]])
     return "\n".join(lines)
+
+
+def render_invoice_html(
+    invoice_data: dict,
+    *,
+    company_name: str,
+    customer_name: str,
+    template: str = "a4",
+    currency: str = "GHS",
+    company_address: str | None = None,
+    company_phone: str | None = None,
+    company_email: str | None = None,
+    tax_registration_number: str | None = None,
+    customer_address: str | None = None,
+    item_labels: dict[str, str] | None = None,
+) -> str:
+    from html import escape
+
+    tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
+    cur = escape(currency or invoice_data.get("currency") or "GHS")
+    labels = item_labels or {}
+    max_width = "80mm" if tpl == "thermal_80" else "58mm" if tpl == "thermal_58" else "720px"
+    font = "12px/1.4 monospace" if tpl.startswith("thermal") else "15px/1.45 Georgia, 'Times New Roman', serif"
+    rows = []
+    for item in invoice_data.get("items") or []:
+        pid = str(item.get("product_id") or "")
+        desc = escape(str(labels.get(pid) or pid or "Item"))
+        rows.append(
+            "<tr>"
+            f"<td>{desc}</td>"
+            f"<td style='text-align:right'>{float(item.get('quantity') or 0):.2f}</td>"
+            f"<td style='text-align:right'>{float(item.get('unit_price') or 0):.2f}</td>"
+            f"<td style='text-align:right'>{float(item.get('line_total') or 0):.2f}</td>"
+            "</tr>"
+        )
+    meta = []
+    if company_address:
+        meta.append(escape(str(company_address)))
+    if company_phone:
+        meta.append(f"Tel: {escape(str(company_phone))}")
+    if company_email:
+        meta.append(escape(str(company_email)))
+    if tax_registration_number:
+        meta.append(f"Tax #: {escape(str(tax_registration_number))}")
+    due = str(invoice_data.get("due_date") or "")[:10]
+    due_line = f" · Due {escape(due)}" if due else ""
+    customer_addr_html = f"<br>{escape(str(customer_address))}" if customer_address else ""
+    notes_html = (
+        f"<p class='muted'>Notes: {escape(str(invoice_data.get('notes')))}</p>"
+        if invoice_data.get("notes")
+        else ""
+    )
+    thanks_html = (
+        "<p>Thank you for your business.</p>"
+        if tpl.startswith("thermal")
+        else "<p class='muted' style='margin-top:28px'>Thank you for your business.</p>"
+    )
+    meta_html = "<br>".join(meta)
+    rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
+    inv_no = escape(str(invoice_data.get("invoice_number") or ""))
+    status = escape(str(invoice_data.get("status") or ""))
+    return f"""<!doctype html>
+<html><head><meta charset="utf-8"><title>Invoice {inv_no}</title>
+<style>
+  body {{ margin:0; background:#f3f0ea; color:#1c1917; font:{font}; }}
+  .sheet {{ max-width:{max_width}; margin:0 auto; min-height:100vh; padding:28px 32px 40px;
+    background:linear-gradient(180deg,#fffdf8 0%,#f7f1e8 100%); }}
+  h1 {{ font-size:1.8rem; letter-spacing:.04em; margin:0 0 6px; font-weight:700; }}
+  h2 {{ font-size:1.15rem; margin:24px 0 8px; font-weight:600; }}
+  .muted {{ color:#57534e; }}
+  .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
+  table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
+  th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
+  th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
+  .totals {{ margin-top:18px; width:100%; max-width:280px; margin-left:auto; }}
+  .totals div {{ display:flex; justify-content:space-between; padding:4px 0; }}
+  .totals .grand {{ font-weight:700; border-top:2px solid #292524; margin-top:6px; padding-top:8px; }}
+  .toolbar {{ position:sticky; top:0; background:#fffdf8cc; padding:8px 0 12px; }}
+  @media print {{ body {{ background:#fff; }} .toolbar {{ display:none; }} .sheet {{ max-width:none; background:#fff; }} }}
+</style></head><body><div class="sheet">
+  <div class="toolbar"><button onclick="window.print()">Print</button></div>
+  <div class="brand">
+    <h1>{escape(company_name)}</h1>
+    <div class="muted">{meta_html}</div>
+  </div>
+  <h2>Invoice {inv_no}</h2>
+  <div class="muted">Status: {status}{due_line}</div>
+  <p><strong>Bill to</strong><br>{escape(customer_name)}{customer_addr_html}</p>
+  <table>
+    <thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
+    <tbody>{rows_html}</tbody>
+  </table>
+  <div class="totals">
+    <div><span>Subtotal</span><span>{cur} {float(invoice_data.get("subtotal") or 0):.2f}</span></div>
+    <div><span>Tax</span><span>{cur} {float(invoice_data.get("tax_amount") or 0):.2f}</span></div>
+    <div><span>Discount</span><span>{cur} {float(invoice_data.get("discount_amount") or 0):.2f}</span></div>
+    <div class="grand"><span>Total</span><span>{cur} {float(invoice_data.get("total_amount") or 0):.2f}</span></div>
+    <div><span>Paid</span><span>{cur} {float(invoice_data.get("paid_amount") or 0):.2f}</span></div>
+    <div><span>Balance</span><span>{cur} {float(invoice_data.get("balance_due") or 0):.2f}</span></div>
+  </div>
+  {notes_html}
+  {thanks_html}
+</div></body></html>"""
+
+
+def render_invoice_pdf(
+    invoice_data: dict,
+    *,
+    company_name: str,
+    customer_name: str,
+    template: str = "a4",
+    currency: str = "GHS",
+    company_address: str | None = None,
+    company_phone: str | None = None,
+    company_email: str | None = None,
+    tax_registration_number: str | None = None,
+    customer_address: str | None = None,
+    item_labels: dict[str, str] | None = None,
+) -> bytes:
+    """Branded invoice PDF: A4 letter page or narrow thermal page."""
+    from app.report_export import _pdf_escape
+
+    tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
+    text = render_invoice_text(
+        invoice_data,
+        company_name=company_name,
+        customer_name=customer_name,
+        template=tpl,
+        currency=currency,
+        company_address=company_address,
+        company_phone=company_phone,
+        company_email=company_email,
+        tax_registration_number=tax_registration_number,
+        customer_address=customer_address,
+        item_labels=item_labels,
+    )
+    lines = text.splitlines() or [""]
+
+    if tpl.startswith("thermal"):
+        page_width = 226 if tpl == "thermal_80" else 164
+        line_height = 11
+        top = 20
+        bottom = 20
+        page_height = max(top + bottom + line_height * (len(lines) + 2), 200)
+        content: list[str] = []
+        y = page_height - top
+        for line in lines:
+            content.append(f"BT /F1 8 Tf 8 {y} Td ({_pdf_escape(line[:80])}) Tj ET")
+            y -= line_height
+            if y < bottom:
+                break
+        stream = "\n".join(content).encode("latin-1", errors="replace")
+        font = b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n"
+        media = f"[0 0 {page_width} {page_height}]"
+    else:
+        page_width, page_height = 612, 792
+        content = []
+        y = 760
+        # Title block
+        content.append(
+            f"BT /F2 18 Tf 50 {y} Td ({_pdf_escape(company_name[:60])}) Tj ET"
+        )
+        y -= 22
+        content.append(
+            f"BT /F2 14 Tf 50 {y} Td ({_pdf_escape('INVOICE ' + str(invoice_data.get('invoice_number') or '')[:40])}) Tj ET"
+        )
+        y -= 28
+        for line in lines[1:]:  # company already as title
+            if y < 48:
+                content.append(
+                    f"BT /F1 9 Tf 50 {y} Td ({_pdf_escape('… continued on request …')}) Tj ET"
+                )
+                break
+            content.append(f"BT /F1 10 Tf 50 {y} Td ({_pdf_escape(line[:95])}) Tj ET")
+            y -= 13
+        stream = "\n".join(content).encode("latin-1", errors="replace")
+        font = (
+            b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n"
+            b"6 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>endobj\n"
+        )
+        media = f"[0 0 {page_width} {page_height}]"
+
+    objects: list[bytes] = []
+    objects.append(b"1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n")
+    objects.append(b"2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n")
+    if tpl.startswith("thermal"):
+        objects.append(
+            (
+                f"3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox {media} "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>endobj\n"
+            ).encode("ascii")
+        )
+    else:
+        objects.append(
+            (
+                f"3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox {media} "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>endobj\n"
+            ).encode("ascii")
+        )
+    objects.append(
+        f"4 0 obj<< /Length {len(stream)} >>stream\n".encode("ascii")
+        + stream
+        + b"\nendstream\nendobj\n"
+    )
+    if tpl.startswith("thermal"):
+        objects.append(font)
+    else:
+        objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n")
+        objects.append(b"6 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>endobj\n")
+
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for obj in objects:
+        offsets.append(len(out))
+        out.extend(obj)
+    xref_pos = len(out)
+    out.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    out.extend(b"0000000000 65535 f \n")
+    for off in offsets[1:]:
+        out.extend(f"{off:010d} 00000 n \n".encode("ascii"))
+    out.extend(
+        f"trailer<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode(
+            "ascii"
+        )
+    )
+    return bytes(out)
 
 
 async def send_sales_invoice(

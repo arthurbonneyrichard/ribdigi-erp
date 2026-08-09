@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 type Tab = 'invoices' | 'quotations' | 'orders' | 'returns' | 'customers';
 
 export default function Page() {
@@ -316,24 +318,60 @@ export default function Page() {
     }
   }
 
-  async function printInvoice(invId: string, template?: string) {
+  async function printInvoice(invId: string, template?: string, format: 'text' | 'pdf' | 'html' = 'html') {
     setError('');
     try {
-      const q = template ? `?template=${encodeURIComponent(template)}` : '';
-      const r = await api(`/sales/invoices/${invId}/print${q}`);
-      const text = r.data?.text || '';
-      const win = window.open('', '_blank', 'noopener,noreferrer,width=720,height=800');
-      if (win) {
-        win.document.write(
-          `<pre style="font:14px/1.4 monospace;padding:16px">${text.replace(/</g, '&lt;')}</pre>`
+      const params = new URLSearchParams();
+      if (template) params.set('template', template);
+      params.set('format', format);
+      const qs = `?${params.toString()}`;
+      if (format === 'text') {
+        const r = await api(`/sales/invoices/${invId}/print${qs}`);
+        const text = r.data?.text || '';
+        const win = window.open('', '_blank', 'noopener,noreferrer,width=720,height=800');
+        if (win) {
+          win.document.write(
+            `<pre style="font:14px/1.4 monospace;padding:16px">${text.replace(/</g, '&lt;')}</pre>`
+          );
+          win.document.close();
+          win.focus();
+        }
+        setMessage(
+          `Print (${r.data?.template || 'a4'}) ready for ${r.data?.invoice?.invoice_number || 'invoice'}`
         );
+        if (r.data?.invoice) setSelected(r.data.invoice);
+        return;
+      }
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/sales/invoices/${invId}/print${qs}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Invoice print failed');
+      }
+      if (format === 'html') {
+        const html = await res.text();
+        const win = window.open('', '_blank', 'noopener,noreferrer,width=820,height=900');
+        if (!win) throw new Error('Pop-up blocked; allow pop-ups to print invoices');
+        win.document.write(html);
         win.document.close();
         win.focus();
+        setMessage('Branded invoice print view ready');
+        return;
       }
-      setMessage(
-        `Print (${r.data?.template || 'a4'}) ready for ${r.data?.invoice?.invoice_number || 'invoice'}`
-      );
-      if (r.data?.invoice) setSelected(r.data.invoice);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invId.slice(0, 8)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Invoice PDF downloaded');
     } catch (err: any) {
       setError(err.message);
     }
@@ -724,7 +762,14 @@ export default function Page() {
                   <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     <button onClick={() => setSelected(inv)}>View</button>
                     {inv.status !== 'draft' && inv.status !== 'cancelled' && (
-                      <button onClick={() => printInvoice(inv.id, printTemplate || undefined)}>Print</button>
+                      <>
+                        <button onClick={() => printInvoice(inv.id, printTemplate || undefined, 'html')}>
+                          Print
+                        </button>
+                        <button onClick={() => printInvoice(inv.id, printTemplate || undefined, 'pdf')}>
+                          PDF
+                        </button>
+                      </>
                     )}
                     {inv.status === 'draft' && (
                       <>
