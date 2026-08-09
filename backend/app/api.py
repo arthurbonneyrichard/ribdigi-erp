@@ -10,7 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.db import get_db
 from app.inventory import apply_line_items_stock, apply_stock_change
-from app.rbac import VALID_ROLES, permissions_for_role
+from app.rbac import (
+    RECORD_SCOPE_KEY,
+    VALID_ROLES,
+    apply_created_by_scope,
+    assert_record_access,
+    list_role_catalog,
+    normalize_record_scope,
+    permissions_for_role,
+    record_scope_from_permissions,
+    serialize_user,
+)
 from app import purchasing as purchasing_svc
 from app import sales as sales_svc
 from app import sales_docs as sales_docs_svc
@@ -96,6 +106,7 @@ from app.schemas import (
     WebAuthnLoginVerify,
     WebAuthnRegisterVerify,
     UserCreate,
+    UserUpdate,
     WarehouseCreate,
 )
 from app.security import (
@@ -1240,6 +1251,7 @@ async def verify_email(payload: EmailVerifyConfirm, db: AsyncSession = Depends(g
 @api.get("/me")
 async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     user = await db.get(m.User, claims["sub"])
+    perms = user.permissions or permissions_for_role(user.role)
     return env(
         {
             "id": user.id,
@@ -1249,7 +1261,8 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "role": user.role,
             "tenant_id": user.tenant_id,
             "email_verified": user.email_verified,
-            "permissions": user.permissions or permissions_for_role(user.role),
+            "permissions": perms,
+            "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
             **totp_svc.status_payload(user),
         }
     )
@@ -1293,12 +1306,66 @@ async def update_me(
     )
 
 
+async def _get_tenant_user(db: AsyncSession, tenant_id: str, user_id: str) -> m.User:
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+async def _revoke_user_sessions(db: AsyncSession, *, tenant_id: str, user_id: str) -> int:
+    now = datetime.utcnow()
+    sessions = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.tenant_id == tenant_id,
+                m.AuthSession.user_id == user_id,
+                m.AuthSession.revoked_at.is_(None),
+            )
+        )
+    ).scalars().all()
+    for session in sessions:
+        session.revoked_at = now
+    return len(sessions)
+
+
+@api.get("/roles")
+async def roles_catalog(claims=Depends(require_permission("users", "read"))):
+    return env(list_role_catalog())
+
+
+@api.get("/roles/{role}")
+async def role_detail(role: str, claims=Depends(require_permission("users", "read"))):
+    if role not in VALID_ROLES:
+        raise HTTPException(status_code=404, detail="Role not found")
+    catalog = {row["role"]: row for row in list_role_catalog()}
+    return env(catalog[role])
+
+
 @api.get("/users")
 async def users(claims=Depends(require_permission("users", "read")), db: AsyncSession = Depends(get_db)):
     rows = (
-        await db.execute(select(m.User).where(m.User.tenant_id == claims["tenant_id"]))
+        await db.execute(
+            select(m.User)
+            .where(m.User.tenant_id == claims["tenant_id"])
+            .order_by(m.User.full_name.asc())
+        )
     ).scalars().all()
-    return env(rows)
+    return env([serialize_user(u) for u in rows])
+
+
+@api.get("/users/{user_id}")
+async def get_user(
+    user_id: str,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    return env(serialize_user(user))
 
 
 @api.post("/users")
@@ -1309,6 +1376,8 @@ async def add_user(
 ):
     if payload.role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail=f"Invalid role. Allowed: {sorted(VALID_ROLES)}")
+    if payload.role == "super_admin" and claims.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super_admin can create super_admin users")
     validate_password_strength(payload.password)
     exists = (
         await db.execute(
@@ -1329,6 +1398,7 @@ async def add_user(
         role=payload.role,
         permissions=permissions_for_role(payload.role),
         email_verified=False,
+        is_active=True,
     )
     db.add(user)
     await db.flush()
@@ -1356,10 +1426,124 @@ async def add_user(
 
     email_result = await emailer.send_verification_email(to=user.email, token=raw)
     await db.commit()
-    data = {"id": user.id, "email": {"sent": email_result.sent, "mode": email_result.mode}}
+    data = {
+        "id": user.id,
+        "user": serialize_user(user),
+        "email": {"sent": email_result.sent, "mode": email_result.mode},
+    }
     if settings.DEBUG or settings.APP_ENV.lower() != "production":
         data["email_verification_token"] = raw
     return env(data, "User created; verification email dispatched")
+
+
+@api.patch("/users/{user_id}")
+async def update_user(
+    user_id: str,
+    payload: UserUpdate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    changes: dict = {}
+
+    if payload.full_name is not None:
+        name = payload.full_name.strip()
+        if len(name) < 2:
+            raise HTTPException(status_code=400, detail="full_name must be at least 2 characters")
+        user.full_name = name
+        changes["full_name"] = name
+
+    if payload.phone is not None:
+        user.phone = payload.phone.strip() or None
+        changes["phone"] = user.phone
+
+    if payload.role is not None:
+        if payload.role not in VALID_ROLES:
+            raise HTTPException(status_code=400, detail=f"Invalid role. Allowed: {sorted(VALID_ROLES)}")
+        if payload.role == "super_admin" and claims.get("role") != "super_admin":
+            raise HTTPException(status_code=403, detail="Only super_admin can assign super_admin")
+        if user.id == claims["sub"] and payload.role != user.role:
+            raise HTTPException(status_code=400, detail="Cannot change your own role")
+        if user.role != payload.role:
+            changes["role"] = {"from": user.role, "to": payload.role}
+            prev_scope = None
+            if isinstance(user.permissions, dict):
+                prev_scope = user.permissions.get(RECORD_SCOPE_KEY)
+            user.role = payload.role
+            perms = permissions_for_role(payload.role)
+            if prev_scope is not None:
+                perms[RECORD_SCOPE_KEY] = prev_scope
+            user.permissions = perms
+
+    if payload.password is not None:
+        validate_password_strength(payload.password)
+        user.password_hash = hash_password(payload.password)
+        changes["password_reset"] = True
+        await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
+
+    if payload.is_active is not None:
+        if user.id == claims["sub"] and payload.is_active is False:
+            raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+        if bool(user.is_active) != bool(payload.is_active):
+            user.is_active = bool(payload.is_active)
+            changes["is_active"] = user.is_active
+            if not user.is_active:
+                await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
+
+    if payload.record_scope is not None:
+        try:
+            scope = normalize_record_scope(payload.record_scope)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        perms = dict(user.permissions or permissions_for_role(user.role))
+        if perms.get(RECORD_SCOPE_KEY) != scope:
+            perms[RECORD_SCOPE_KEY] = scope
+            user.permissions = perms
+            changes["record_scope"] = scope
+
+    if not changes:
+        return env(serialize_user(user), "No changes")
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="user_updated",
+        entity="user",
+        entity_id=user.id,
+        details=changes,
+    )
+    await db.commit()
+    return env(serialize_user(user), "User updated")
+
+
+@api.delete("/users/{user_id}")
+async def deactivate_user(
+    user_id: str,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Soft-delete: deactivate the user and revoke sessions (no hard delete)."""
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    if user.id == claims["sub"]:
+        raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+    if not user.is_active:
+        return env(serialize_user(user), "User already inactive")
+    user.is_active = False
+    revoked = await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="user_deactivated",
+        entity="user",
+        entity_id=user.id,
+        details={"email": user.email, "sessions_revoked": revoked},
+    )
+    await db.commit()
+    return env(serialize_user(user), "User deactivated")
 
 
 @api.get("/dashboard")
@@ -1894,13 +2078,13 @@ async def list_sales_invoices(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.SalesInvoice)
-            .where(m.SalesInvoice.tenant_id == claims["tenant_id"])
-            .order_by(m.SalesInvoice.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.SalesInvoice)
+        .where(m.SalesInvoice.tenant_id == claims["tenant_id"])
+        .order_by(m.SalesInvoice.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_svc.serialize_invoice(db, inv) for inv in rows])
 
 
@@ -1933,6 +2117,7 @@ async def get_sales_invoice(
     db: AsyncSession = Depends(get_db),
 ):
     invoice = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, invoice.created_by)
     return env(await sales_svc.serialize_invoice(db, invoice))
 
 
@@ -1942,6 +2127,8 @@ async def post_sales_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
     invoice = await sales_svc.post_sales_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
@@ -1955,6 +2142,8 @@ async def cancel_sales_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
     invoice = await sales_svc.cancel_sales_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
@@ -3264,13 +3453,13 @@ async def generate_recurring_expenses(
 
 @api.get("/expenses")
 async def expenses(claims=Depends(require_permission("expenses", "read")), db: AsyncSession = Depends(get_db)):
-    rows = (
-        await db.execute(
-            select(m.Expense)
-            .where(m.Expense.tenant_id == claims["tenant_id"])
-            .order_by(m.Expense.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.Expense)
+        .where(m.Expense.tenant_id == claims["tenant_id"])
+        .order_by(m.Expense.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.Expense, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await expenses_svc.serialize_expense_full(db, e) for e in rows])
 
 
@@ -3306,6 +3495,7 @@ async def get_expense(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    assert_record_access(claims, expense.created_by)
     return env(await expenses_svc.serialize_expense_full(db, expense))
 
 
@@ -3316,6 +3506,8 @@ async def patch_expense(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    assert_record_access(claims, existing.created_by)
     expense = await expenses_svc.update_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -3352,6 +3544,8 @@ async def expense_ocr_suggest(
 ):
     from app import expense_ocr as ocr_svc
 
+    expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    assert_record_access(claims, expense.created_by)
     result = await ocr_svc.suggest_for_expense(
         db, tenant_id=claims["tenant_id"], expense_id=expense_id
     )
@@ -3366,6 +3560,7 @@ async def upload_expense_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    assert_record_access(claims, expense.created_by)
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="expenses",
@@ -3404,6 +3599,7 @@ async def download_expense_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    assert_record_access(claims, expense.created_by)
     if not expense.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     if "://" in expense.attachment_url:
@@ -3423,6 +3619,7 @@ async def delete_expense_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    assert_record_access(claims, expense.created_by)
     if not expense.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     if "://" not in expense.attachment_url:
@@ -3487,6 +3684,7 @@ async def delete_expense(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    assert_record_access(claims, expense.created_by)
     if expense.status == "approved":
         raise HTTPException(status_code=409, detail="Approved expenses cannot be deleted")
     if expense.attachment_url and "://" not in expense.attachment_url:
@@ -5180,6 +5378,7 @@ async def get_transfer(
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    # Transfers are operationally shared (ship/receive); record scope is not applied.
     transfer = await stores_svc.get_transfer(db, claims["tenant_id"], transfer_id)
     return env(await stores_svc.serialize_transfer(db, transfer))
 

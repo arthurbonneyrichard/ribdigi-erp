@@ -18,7 +18,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 - [x] Schema-per-tenant strategy implemented as specified, or architecture documents formally revised to an approved equivalent.
   - Approved equivalent: shared-schema + `tenant_id` (see `docs/ADR_001_TENANCY.md`). Schema-per-tenant remains post-MVP.
 - [ ] Cross-tenant isolation integration tests pass for every tenant-owned resource.
-  - Partial: SQLite suite covers product list scoping, foreign sales invoice 404, mismatched `X-Tenant-ID` (products + credit aging), suspend/activate login block, plus matrix coverage for customers/suppliers lists, credit statement/limit, product image, expenses get/list, purchase invoices, tax rates, store inventory, POS sessions/drawer, notifications, backups, and accounting accounts/journals. Remaining: exhaustive enumeration of every tenant-owned route (audit cold paths, bank connections, report schedules, media keys, AI) and record-level RBAC.
+  - Partial: SQLite suite covers product list scoping, foreign sales invoice 404, mismatched `X-Tenant-ID` (products, credit aging, users), suspend/activate login block, plus matrix coverage for customers/suppliers, credit statement/limit, product image, expenses, purchase invoices, tax rates, store inventory, POS sessions/drawer, notifications, backups, accounting accounts/journals, audit logs, bank connections, report schedules, cheques, stock transfers, media-key tenant mismatch, and tenant-scoped AI insights (chat remains 503 until provider). Remaining: exhaustive route enumeration of remaining document/attachment paths.
 - [ ] Tenant provisioning, suspension, activation and lifecycle management complete.
   - Partial: register + defaults, company profile GET/PATCH, suspend (revokes sessions) / activate, super_admin cross-tenant lifecycle, trial `trial_ends_at` (default 14d) + 7/3/1 reminders + grace read-only (`status=grace`) then auto-suspend, company logo upload/serve/delete via `STORAGE_BACKEND=local|s3` (MinIO/S3-compatible object store; keys remain tenant-scoped). Remaining: none for media offload on this gate.
 
@@ -30,10 +30,11 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
   - Complete: TOTP setup/QR/confirm, backup codes, encrypted secrets, company_admin/super_admin enrollment gate; WebAuthn/passkeys (register/list/delete + login challenge with `methods`); MFA satisfied by TOTP and/or passkeys.
 - [x] Session listing and revocation complete.
 - [x] Granular module/menu/record RBAC complete.
-  - Module+action RBAC enforced on routes; record-level scope still pending.
+  - Module+action RBAC enforced on routes; `GET /roles` catalog (includes default `record_scope`); user create/patch/deactivate + `record_scope` override; Shell menu filtered from `/me` permissions; record scope `own`|`all` enforced on expenses and sales invoices (`department` reserved / treated as `all` until org units exist). Approvals intentionally bypass own-scope. Remaining: extend own-scope to more `created_by` documents, department/branch scopes, and custom roles.
 - [ ] Rate limiting, security headers and production CORS complete.
-  - Partial: Redis sliding-window rate limits (`RATE_LIMIT_BACKEND=auto|redis|memory`) with memory fallback, auth vs API caps, remaining/backend headers, security headers + CORS; production can set `RATE_LIMIT_REQUIRE_REDIS=true`. Celery/RabbitMQ scheduled workloads wired separately under Reliability.
+  - Partial: Redis sliding-window rate limits (`RATE_LIMIT_BACKEND=auto|redis|memory`) with memory fallback, auth vs API caps, Remaining/Backend headers exposed via CORS, security headers including CSP (`default-src 'none'`), production CORS whitelist; production can set `RATE_LIMIT_REQUIRE_REDIS=true`. Celery/RabbitMQ scheduled workloads wired separately under Reliability.
 - [ ] OWASP/security tests completed.
+  - Partial: smoke coverage for CSP headers, login lockout after failed attempts, injection-style tenant slug rejection, and secret-field leakage on `/users`. Full OWASP Top 10 / ZAP suite still pending.
 
 ### ERP operations
 - [ ] Inventory catalog, variants, batches/expiry, stock movements and adjustments complete.

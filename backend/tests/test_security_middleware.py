@@ -81,6 +81,7 @@ def test_security_headers_on_root():
     assert response.status_code == 200
     assert response.headers.get("X-Content-Type-Options") == "nosniff"
     assert response.headers.get("X-Frame-Options") == "DENY"
+    assert "default-src 'none'" in response.headers.get("Content-Security-Policy", "")
     assert "X-RateLimit-Limit" in response.headers
     assert "X-RateLimit-Backend" in response.headers
 

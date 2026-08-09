@@ -31,6 +31,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "geolocation=(), microphone=(), camera=()",
         )
         response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        # API responses are JSON; deny active content and framing by default.
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+        )
         if settings.APP_ENV.lower() == "production":
             response.headers.setdefault(
                 "Strict-Transport-Security",
