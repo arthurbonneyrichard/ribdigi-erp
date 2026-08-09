@@ -76,6 +76,8 @@ Phase 1 (Foundation)
 
 Establish the technical foundation of the platform: multi-tenant architecture, authentication, user management, company setup, and the executive dashboard. This phase delivers the "shell" that all subsequent features inhabit.
 
+**Stage 1 exit (2026-08-09):** Foundation workstreams A–H are recorded as met in `docs/STAGE_1_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_008_STAGE1_FREEZE.md` (no new Stage 1 feature scope; do not open Stage 2 until explicit sign-off).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
