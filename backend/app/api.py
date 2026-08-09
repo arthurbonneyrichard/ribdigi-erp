@@ -42,6 +42,8 @@ from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
 from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
+from app import barcodes as barcode_svc
+from app import product_import as product_import_svc
 from app.config import settings
 from app.schemas import (
     BrandCreate,
@@ -1620,6 +1622,63 @@ async def products(claims=Depends(require_permission("inventory", "read")), db: 
     return env([catalog_meta_svc.serialize_product(p) for p in rows])
 
 
+@api.get("/products/import/template")
+async def products_import_template(
+    claims=Depends(require_permission("inventory", "read")),
+):
+    text = product_import_svc.template_csv()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="product_import_template.csv"'},
+    )
+
+
+@api.post("/products/import")
+async def products_import(
+    file: UploadFile = File(...),
+    dry_run: bool = True,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    try:
+        content = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        content = raw.decode("latin-1")
+    result = await product_import_svc.import_products_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        content=content,
+        dry_run=dry_run,
+    )
+    if not dry_run and result["valid_rows"]:
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="inventory",
+            action="product_import",
+            entity="product",
+            entity_id=None,
+            details={
+                "created": result["valid_rows"],
+                "errors": result["error_rows"],
+                "filename": file.filename,
+            },
+        )
+        await db.commit()
+    elif not dry_run:
+        await db.commit()
+    return env(
+        result,
+        "Dry-run complete" if dry_run else f"Imported {result['valid_rows']} products",
+    )
+
+
 @api.post("/products")
 async def add_product(
     payload: ProductCreate,
@@ -1639,6 +1698,9 @@ async def add_product(
     data["category_id"] = category_id
     data["brand_id"] = brand_id
     data["unit_id"] = unit_id
+    data["barcode"] = await barcode_svc.assert_barcode_available(
+        db, tenant_id=claims["tenant_id"], barcode=data.get("barcode")
+    )
     product = m.Product(tenant_id=claims["tenant_id"], **data)
     db.add(product)
     await db.flush()
@@ -1743,7 +1805,12 @@ async def patch_product(
                 raise HTTPException(status_code=400, detail="name is required")
             product.name = name
         elif key == "barcode":
-            product.barcode = (str(value).strip() if value else None) or None
+            product.barcode = await barcode_svc.assert_barcode_available(
+                db,
+                tenant_id=claims["tenant_id"],
+                barcode=value,
+                exclude_product_id=product.id,
+            )
         elif key in {"cost_price", "selling_price", "reorder_level"} and value is not None:
             setattr(product, key, float(value))
         elif key == "tax_rate_id":
@@ -1772,11 +1839,14 @@ async def patch_product(
 
 @api.get("/catalog/categories")
 async def catalog_categories(
+    tree: bool = False,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
     rows = await catalog_meta_svc.list_categories(db, claims["tenant_id"])
+    if tree:
+        return env(catalog_meta_svc.build_category_tree(rows))
     return env([catalog_meta_svc.serialize_category(r) for r in rows])
 
 
@@ -2309,6 +2379,36 @@ async def list_product_variants(
     return env([catalog_svc.serialize_variant(v) for v in rows])
 
 
+@api.post("/products/{product_id}/barcode/generate")
+async def generate_product_barcode(
+    product_id: str,
+    format: str = "code128",
+    force: bool = False,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    product = await barcode_svc.assign_product_barcode(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        format=format,
+        force=force,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="barcode_generate",
+        entity="product",
+        entity_id=product.id,
+        details={"barcode": product.barcode, "format": format, "force": force},
+    )
+    await db.commit()
+    await db.refresh(product)
+    return env(catalog_meta_svc.serialize_product(product), "Barcode assigned")
+
+
 @api.post("/products/{product_id}/variants")
 async def create_product_variant(
     product_id: str,
@@ -2316,11 +2416,15 @@ async def create_product_variant(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    data = payload.model_dump()
+    data["barcode"] = await barcode_svc.assert_barcode_available(
+        db, tenant_id=claims["tenant_id"], barcode=data.get("barcode")
+    )
     variant = await catalog_svc.create_variant(
         db,
         tenant_id=claims["tenant_id"],
         product_id=product_id,
-        **payload.model_dump(),
+        **data,
     )
     await db.commit()
     return env(catalog_svc.serialize_variant(variant), "Variant created")
@@ -2335,6 +2439,13 @@ async def patch_product_variant(
     db: AsyncSession = Depends(get_db),
 ):
     data = payload.model_dump(exclude_unset=True)
+    if "barcode" in data and data["barcode"] is not None:
+        data["barcode"] = await barcode_svc.assert_barcode_available(
+            db,
+            tenant_id=claims["tenant_id"],
+            barcode=data["barcode"],
+            exclude_variant_id=variant_id,
+        )
     variant = await catalog_svc.update_variant(
         db,
         tenant_id=claims["tenant_id"],
@@ -2356,6 +2467,38 @@ async def patch_product_variant(
     )
     await db.commit()
     return env(catalog_svc.serialize_variant(variant), "Variant updated")
+
+
+@api.post("/products/{product_id}/variants/{variant_id}/barcode/generate")
+async def generate_variant_barcode(
+    product_id: str,
+    variant_id: str,
+    format: str = "code128",
+    force: bool = False,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    variant = await barcode_svc.assign_variant_barcode(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        variant_id=variant_id,
+        format=format,
+        force=force,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="barcode_generate",
+        entity="product_variant",
+        entity_id=variant.id,
+        details={"barcode": variant.barcode, "format": format, "force": force},
+    )
+    await db.commit()
+    await db.refresh(variant)
+    return env(catalog_svc.serialize_variant(variant), "Barcode assigned")
 
 
 @api.delete("/products/{product_id}/variants/{variant_id}")
@@ -3584,14 +3727,23 @@ async def pos_search(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    scan = barcode_svc.normalize_barcode(barcode) or (
+        q.strip() if barcode_svc.looks_like_barcode_scan(q) else None
+    )
     stmt = select(m.Product).where(
         m.Product.tenant_id == claims["tenant_id"],
         m.Product.is_active == True,  # noqa: E712
     )
-    if barcode:
-        stmt = stmt.where(m.Product.barcode == barcode)
+    if scan:
+        stmt = stmt.where(
+            (m.Product.barcode == scan) | (m.Product.sku == scan) | (m.Product.name.ilike(f"%{q}%"))
+        )
     elif q:
-        stmt = stmt.where(m.Product.name.ilike(f"%{q}%") | m.Product.sku.ilike(f"%{q}%"))
+        stmt = stmt.where(
+            m.Product.name.ilike(f"%{q}%")
+            | m.Product.sku.ilike(f"%{q}%")
+            | m.Product.barcode.ilike(f"%{q}%")
+        )
     products = (await db.execute(stmt.limit(30))).scalars().all()
     out = [
         {
@@ -3612,11 +3764,17 @@ async def pos_search(
         m.ProductVariant.tenant_id == claims["tenant_id"],
         m.ProductVariant.is_active == True,  # noqa: E712
     )
-    if barcode:
-        vstmt = vstmt.where(m.ProductVariant.barcode == barcode)
+    if scan:
+        vstmt = vstmt.where(
+            (m.ProductVariant.barcode == scan)
+            | (m.ProductVariant.sku == scan)
+            | (m.ProductVariant.name.ilike(f"%{q}%"))
+        )
     elif q:
         vstmt = vstmt.where(
-            m.ProductVariant.name.ilike(f"%{q}%") | m.ProductVariant.sku.ilike(f"%{q}%")
+            m.ProductVariant.name.ilike(f"%{q}%")
+            | m.ProductVariant.sku.ilike(f"%{q}%")
+            | m.ProductVariant.barcode.ilike(f"%{q}%")
         )
     else:
         vstmt = None

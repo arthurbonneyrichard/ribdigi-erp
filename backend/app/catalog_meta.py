@@ -34,6 +34,35 @@ def serialize_category(row: m.ProductCategory) -> dict:
     }
 
 
+def build_category_tree(rows: list[m.ProductCategory]) -> list[dict]:
+    """Nest categories by parent_id; orphans with missing parents become roots."""
+    nodes = {row.id: {**serialize_category(row), "children": []} for row in rows}
+    roots: list[dict] = []
+    for row in rows:
+        node = nodes[row.id]
+        parent_id = row.parent_id
+        if parent_id and parent_id in nodes and parent_id != row.id:
+            nodes[parent_id]["children"].append(node)
+        else:
+            roots.append(node)
+
+    def sort_rec(items: list[dict]) -> None:
+        items.sort(key=lambda x: (x.get("name") or "").lower())
+        for item in items:
+            sort_rec(item["children"])
+
+    sort_rec(roots)
+    return roots
+
+
+def flatten_category_tree(tree: list[dict], *, depth: int = 0) -> list[dict]:
+    out: list[dict] = []
+    for node in tree:
+        out.append({**{k: v for k, v in node.items() if k != "children"}, "depth": depth})
+        out.extend(flatten_category_tree(node.get("children") or [], depth=depth + 1))
+    return out
+
+
 def serialize_brand(row: m.Brand) -> dict:
     return {
         "id": row.id,
@@ -200,6 +229,18 @@ async def update_category(
         parent = await db.get(m.ProductCategory, parent_id)
         if not parent or parent.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Parent category not found")
+        # Prevent cycles: walk ancestors of the new parent
+        cursor = parent
+        seen = {row.id}
+        while cursor is not None:
+            if cursor.id in seen:
+                raise HTTPException(status_code=400, detail="Category parent would create a cycle")
+            seen.add(cursor.id)
+            if not cursor.parent_id:
+                break
+            cursor = await db.get(m.ProductCategory, cursor.parent_id)
+            if cursor is None or cursor.tenant_id != tenant_id:
+                break
         row.parent_id = parent_id
     if is_active is not None:
         row.is_active = bool(is_active)

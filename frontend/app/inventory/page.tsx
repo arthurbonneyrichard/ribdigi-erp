@@ -33,8 +33,14 @@ export default function Page() {
   const [productCategoryId, setProductCategoryId] = useState('');
   const [productBrandId, setProductBrandId] = useState('');
   const [productUnitId, setProductUnitId] = useState('');
+  const [productBarcode, setProductBarcode] = useState('');
   const [editReorder, setEditReorder] = useState('0');
   const [editPrice, setEditPrice] = useState('0');
+  const [editBarcode, setEditBarcode] = useState('');
+  const [categoryTree, setCategoryTree] = useState<any[]>([]);
+  const [importReport, setImportReport] = useState<any | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [variantBarcode, setVariantBarcode] = useState('');
 
   const [catCode, setCatCode] = useState('');
   const [catName, setCatName] = useState('');
@@ -52,10 +58,11 @@ export default function Page() {
   const [stockQty, setStockQty] = useState('10');
 
   async function refresh() {
-    const [p, e, c, b, u, w, sc] = await Promise.all([
+    const [p, e, c, tree, b, u, w, sc] = await Promise.all([
       api('/products'),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
+      api('/catalog/categories?tree=true'),
       api('/catalog/brands'),
       api('/catalog/units'),
       api('/warehouses'),
@@ -64,6 +71,7 @@ export default function Page() {
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
     setCategories(c.data || []);
+    setCategoryTree(tree.data || []);
     setBrands(b.data || []);
     setUnits(u.data || []);
     setWarehouses(w.data || []);
@@ -95,6 +103,7 @@ export default function Page() {
       if (p) {
         setEditReorder(String(p.reorder_level ?? 0));
         setEditPrice(String(p.selling_price ?? 0));
+        setEditBarcode(p.barcode || '');
       }
     }
   }, [selectedId, products]);
@@ -108,6 +117,7 @@ export default function Page() {
         body: JSON.stringify({
           reorder_level: Number(editReorder) || 0,
           selling_price: Number(editPrice) || 0,
+          barcode: editBarcode || null,
         }),
       });
       setMessage('Product updated');
@@ -196,6 +206,7 @@ export default function Page() {
           name: productName,
           sku: productSku,
           selling_price: Number(productPrice) || 0,
+          barcode: productBarcode || null,
           category_id: productCategoryId || null,
           brand_id: productBrandId || null,
           unit_id: productUnitId || null,
@@ -205,6 +216,7 @@ export default function Page() {
       setProductName('');
       setProductSku('');
       setProductPrice('0');
+      setProductBarcode('');
       await refresh();
       setSelectedId(r.data.id);
       setTab('products');
@@ -299,6 +311,115 @@ export default function Page() {
     }
   }
 
+  async function generateProductBarcode(fmt: string = 'code128') {
+    if (!selectedId) return;
+    setError('');
+    try {
+      const r = await api(`/products/${selectedId}/barcode/generate?format=${fmt}&force=false`, {
+        method: 'POST',
+      });
+      setMessage(`Barcode ${r.data.barcode}`);
+      setEditBarcode(r.data.barcode || '');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function generateVariantBarcode(variantId: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      const r = await api(
+        `/products/${selectedId}/variants/${variantId}/barcode/generate?format=code128`,
+        { method: 'POST' },
+      );
+      setMessage(`Variant barcode ${r.data.barcode}`);
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function downloadImportTemplate() {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/products/import/template`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Template download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'product_import_template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function importProductsCsv(file: File, dryRun: boolean) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${apiBase}/products/import?dry_run=${dryRun}`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+        body: form,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || body.message || 'Import failed');
+      setImportReport(body.data);
+      setMessage(body.message || (dryRun ? 'Dry-run complete' : 'Import complete'));
+      if (!dryRun) await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function renderCategoryNodes(nodes: any[], depth = 0): any {
+    return nodes.map((node) => (
+      <li key={node.id} style={{ marginLeft: depth * 16 }}>
+        <span>
+          {node.code} — {node.name}
+          {!node.is_active ? ' [inactive]' : ''}
+        </span>
+        {node.is_active && (
+          <button
+            type="button"
+            style={{ marginLeft: 8 }}
+            onClick={async () => {
+              setError('');
+              try {
+                await api(`/catalog/categories/${node.id}`, { method: 'DELETE' });
+                setMessage('Category deactivated');
+                await refresh();
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Deactivate
+          </button>
+        )}
+        {node.children?.length ? <ul className="muted">{renderCategoryNodes(node.children, depth + 1)}</ul> : null}
+      </li>
+    ));
+  }
+
   async function addVariant() {
     setError('');
     try {
@@ -308,12 +429,14 @@ export default function Page() {
           name: variantName,
           sku: variantSku,
           size: variantSize || undefined,
+          barcode: variantBarcode || undefined,
         }),
       });
       setMessage(`Variant ${r.data.sku} created`);
       setVariantName('');
       setVariantSku('');
       setVariantSize('');
+      setVariantBarcode('');
       await refreshSelected(selectedId);
       setTab('variants');
     } catch (err: any) {
@@ -417,9 +540,19 @@ export default function Page() {
             <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
             <label className="muted">Selling price</label>
             <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
-            <button type="button" onClick={saveProductEdits}>
-              Save product
-            </button>
+            <label className="muted">Barcode</label>
+            <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} placeholder="EAN/UPC/Code128" />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={saveProductEdits}>
+                Save product
+              </button>
+              <button type="button" onClick={() => generateProductBarcode('code128')}>
+                Generate Code128
+              </button>
+              <button type="button" onClick={() => generateProductBarcode('ean13')}>
+                Generate EAN-13
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -431,6 +564,7 @@ export default function Page() {
             <input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Name" />
             <input value={productSku} onChange={(e) => setProductSku(e.target.value)} placeholder="SKU" />
             <input value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="Selling price" />
+            <input value={productBarcode} onChange={(e) => setProductBarcode(e.target.value)} placeholder="Barcode (optional)" />
             <select value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}>
               <option value="">Category</option>
               {categories.map((c) => (
@@ -459,11 +593,53 @@ export default function Page() {
               Create product
             </button>
           </div>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 520 }}>
+            <h3>Import products (CSV)</h3>
+            <p className="muted">Download the template, fill rows, dry-run validate, then import.</p>
+            <button type="button" onClick={downloadImportTemplate}>
+              Download template
+            </button>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setImportFile(file);
+                  await importProductsCsv(file, true);
+                }
+                e.target.value = '';
+              }}
+            />
+            {importReport && (
+              <div className="muted">
+                <p>
+                  Rows {importReport.total_rows}: {importReport.valid_rows} valid, {importReport.error_rows} errors
+                  {importReport.dry_run ? ' (dry-run)' : ''}
+                </p>
+                {importReport.errors?.length > 0 && (
+                  <ul>
+                    {importReport.errors.slice(0, 8).map((err: any) => (
+                      <li key={`${err.row}-${err.sku}`}>
+                        Row {err.row} {err.sku || ''}: {(err.errors || []).join('; ')}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {importReport.dry_run && importReport.valid_rows > 0 && importFile && (
+                  <button type="button" onClick={() => importProductsCsv(importFile, false)}>
+                    Import valid rows
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <table className="table">
             <thead>
               <tr>
                 <th>Name</th>
                 <th>SKU</th>
+                <th>Barcode</th>
                 <th>Category</th>
                 <th>Stock</th>
                 <th>Batches?</th>
@@ -483,6 +659,7 @@ export default function Page() {
                     </button>
                   </td>
                   <td>{p.sku}</td>
+                  <td>{p.barcode || '—'}</td>
                   <td>{p.category}</td>
                   <td>{p.stock_qty}</td>
                   <td>{p.tracks_batches ? 'yes' : 'no'}</td>
@@ -534,34 +711,7 @@ export default function Page() {
             >
               Add category
             </button>
-            <ul className="muted">
-              {categories.map((c) => (
-                <li key={c.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span>
-                    {c.code} — {c.name}
-                    {c.parent_id ? ' (child)' : ''}
-                    {!c.is_active ? ' [inactive]' : ''}
-                  </span>
-                  {c.is_active && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setError('');
-                        try {
-                          await api(`/catalog/categories/${c.id}`, { method: 'DELETE' });
-                          setMessage('Category deactivated');
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message);
-                        }
-                      }}
-                    >
-                      Deactivate
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <ul className="muted">{renderCategoryNodes(categoryTree)}</ul>
           </div>
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Brand</h3>
@@ -677,6 +827,7 @@ export default function Page() {
             <input value={variantName} onChange={(e) => setVariantName(e.target.value)} placeholder="Name" />
             <input value={variantSku} onChange={(e) => setVariantSku(e.target.value)} placeholder="SKU" />
             <input value={variantSize} onChange={(e) => setVariantSize(e.target.value)} placeholder="Size (optional)" />
+            <input value={variantBarcode} onChange={(e) => setVariantBarcode(e.target.value)} placeholder="Barcode (optional)" />
             <button onClick={addVariant} disabled={!selectedId || !variantName || !variantSku}>
               Create variant
             </button>
@@ -686,6 +837,7 @@ export default function Page() {
               <tr>
                 <th>Name</th>
                 <th>SKU</th>
+                <th>Barcode</th>
                 <th>Size</th>
                 <th>Stock</th>
                 <th>Price</th>
@@ -698,6 +850,14 @@ export default function Page() {
                 <tr key={v.id}>
                   <td>{v.name}</td>
                   <td>{v.sku}</td>
+                  <td>
+                    {v.barcode || '—'}{' '}
+                    {!v.barcode && v.is_active && (
+                      <button type="button" onClick={() => generateVariantBarcode(v.id)}>
+                        Generate
+                      </button>
+                    )}
+                  </td>
                   <td>{v.size || '—'}</td>
                   <td>{v.stock_qty}</td>
                   <td>
