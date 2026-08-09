@@ -22,7 +22,7 @@ Stage 5 here is **not** a rewrite of auth, audit, or backup. Core engines alread
 | **A1** | AI audit + prompt/data protections | P0 | COMPLETE |
 | **B1** | Logical backup restore proof + DR drill runbook | P0 | COMPLETE |
 | **H5** | Deep `/health` (+ optional Prometheus `/metrics`) | P0 | COMPLETE |
-| **L1** | Load-test baseline scripts | P0 | PENDING |
+| **L1** | Load-test baseline scripts | P0 | COMPLETE |
 | **H5x** | Stage 5 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -75,6 +75,15 @@ Stage 5 here is **not** a rewrite of auth, audit, or backup. Core engines alread
 - [x] Optional Prometheus text `GET /metrics` (`METRICS_ENABLED`, request counters via middleware).
 - [x] Automated tests in `backend/tests/test_health_metrics_h5.py`.
 - [x] Full Prometheus/Grafana/PagerDuty stack remains deferred (ADR-015).
+
+## L1 acceptance criteria
+
+- [x] Documented baseline targets + runbook (`docs/LOAD_TEST_BASELINE.md`).
+- [x] httpx harness with scenarios: health, login, products, dashboard (`backend/loadtest/`).
+- [x] CLI `python -m loadtest.run_baseline` (+ `--smoke`) and Makefile `loadtest-smoke`.
+- [x] Optional Locust file for staging capacity runs (Locust not a prod dependency).
+- [x] Automated ASGI smoke in `backend/tests/test_loadtest_baseline_l1.py`.
+- [x] Full 1000-VU production certification remains an operator staging drill (not CI).
 
 ## Sign-off
 

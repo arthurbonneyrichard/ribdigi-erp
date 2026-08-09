@@ -73,6 +73,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
   - Partial (Stage 5 H5): deep `/api/v1/health?deep=true` + `/health/ready` (database / Redis / Celery broker checks, 503 on hard failure); Prometheus-text `/api/v1/metrics` with request counters (`METRICS_ENABLED`). Remaining: full Prometheus/Grafana/PagerDuty stack, structured log shipping, alerting rules.
 - [ ] Kubernetes production deployment reviewed.
 - [ ] Load/performance tests meet documented targets.
+  - Partial (Stage 5 L1): baseline scripts + targets in `docs/LOAD_TEST_BASELINE.md`; httpx harness (`backend/loadtest/`, `python -m loadtest.run_baseline --smoke`); optional Locust staging file; ASGI smoke tests. Remaining: operator staging capacity run at ~1000 VU / p95 under 500ms recorded for launch sign-off; Redis app cache / PgBouncer still parked.
 - [ ] Disaster recovery drill passes.
 
 ### AI
