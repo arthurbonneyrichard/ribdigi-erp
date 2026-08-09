@@ -23,7 +23,7 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 | **I4** | Stock count variance report export (CSV/PDF) | P0 | COMPLETE |
 | **I5** | Movement history audit UX + integrity/concurrency tests | P1 | COMPLETE |
 | **I6** | Catalog harden: UoM conversion, brand logo, weight/dimensions | P1 | COMPLETE |
-| **P1** | Purchase return multi-line UI | P1 | DEFERRED |
+| **P1** | Purchase return multi-line UI | P1 | COMPLETE (delivered under Stage 8) |
 | **P2** | PO Kanban board (optional polish) | P2 | DEFERRED |
 | **M1** | Multi-bin locations | Multi-store | OUT OF SCOPE (this pass) |
 | **H2** | Stage 2 exit criteria + freeze ADR | Exit | COMPLETE |

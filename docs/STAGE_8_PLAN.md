@@ -20,7 +20,7 @@ Stage 8 closes commercial-MVP AP/credit holes that are documented but unfinished
 | **S1** | Supplier payment schedule (API + Credit UI) | P0 | COMPLETE |
 | **S2** | Outstanding bills UI (AP + AR) | P1 | COMPLETE |
 | **A1** | Account ledger transactions (`GET …/accounts/{id}/transactions`) | P1 | COMPLETE |
-| **P1** | Purchase return multi-line UI | P1 | PENDING |
+| **P1** | Purchase return multi-line UI | P1 | COMPLETE |
 | **H8x** | Stage 8 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -55,6 +55,12 @@ Stage 8 closes commercial-MVP AP/credit holes that are documented but unfinished
 - [x] Tenant-scoped + `accounting:read`; 404 for missing account.
 - [x] Accounting Ledger UI: Ledger button + date filter + transaction table.
 - [x] Automated tests in `backend/tests/test_account_transactions_a1.py`.
+
+## P1 acceptance criteria
+
+- [x] Purchasing UI creates returns with **multiple** GRN lines (qty per line; at least one required).
+- [x] API `POST /purchasing/returns` multi-line payload unchanged; returns list shows line count.
+- [x] Automated tests in `backend/tests/test_purchase_return_multiline_p1.py`.
 
 ## Sign-off
 

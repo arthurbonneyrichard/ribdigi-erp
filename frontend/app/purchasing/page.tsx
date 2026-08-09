@@ -111,6 +111,7 @@ type PurchaseReturn = {
   status: string;
   reason: string;
   total_amount: number;
+  items?: { id: string; product_id: string; quantity: number; line_total: number }[];
 };
 type PurchaseInvoice = {
   id: string;
@@ -183,8 +184,7 @@ export default function Page() {
     >
   >({});
   const [grnId, setGrnId] = useState('');
-  const [grnItemId, setGrnItemId] = useState('');
-  const [returnQty, setReturnQty] = useState('1');
+  const [returnLines, setReturnLines] = useState<Record<string, string>>({});
   const [returnReason, setReturnReason] = useState('other');
   const [invoiceGrnId, setInvoiceGrnId] = useState('');
   const [supplierInvoiceNo, setSupplierInvoiceNo] = useState('');
@@ -260,10 +260,13 @@ export default function Page() {
   useEffect(() => {
     const grn = grns.find((g) => g.id === grnId);
     if (grn?.items?.length) {
-      setGrnItemId(grn.items[0].id);
-      setReturnQty(String(grn.items[0].accepted_qty || 1));
+      const next: Record<string, string> = {};
+      for (const item of grn.items) {
+        next[item.id] = '';
+      }
+      setReturnLines(next);
     } else {
-      setGrnItemId('');
+      setReturnLines({});
     }
   }, [grnId, grns]);
 
@@ -742,17 +745,37 @@ export default function Page() {
 
   async function createReturn() {
     setError('');
+    const items = Object.entries(returnLines)
+      .map(([goods_receipt_item_id, qty]) => ({
+        goods_receipt_item_id,
+        quantity: Number(qty),
+      }))
+      .filter((row) => Number.isFinite(row.quantity) && row.quantity > 0);
+    if (!grnId) {
+      setError('Select a GRN');
+      return;
+    }
+    if (!items.length) {
+      setError('Enter a return quantity on at least one GRN line');
+      return;
+    }
     try {
       const r = await api('/purchasing/returns', {
         method: 'POST',
         body: JSON.stringify({
           goods_receipt_id: grnId,
           reason: returnReason,
-          items: [{ goods_receipt_item_id: grnItemId, quantity: Number(returnQty) }],
+          items,
         }),
       });
-      setMessage(`Return ${r.data.return_number} drafted`);
+      setMessage(
+        `Return ${r.data.return_number} drafted (${r.data.items?.length || items.length} line${
+          (r.data.items?.length || items.length) === 1 ? '' : 's'
+        })`
+      );
       setTab('returns');
+      setGrnId('');
+      setReturnLines({});
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1284,20 +1307,15 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase return</h3>
-        <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Select a posted GRN and enter quantities on one or more lines (Stage 8 P1).
+        </p>
+        <div style={{ display: 'grid', gap: 8, maxWidth: 720 }}>
           <select value={grnId} onChange={(e) => setGrnId(e.target.value)}>
             <option value="">Select GRN</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.grn_number}
-              </option>
-            ))}
-          </select>
-          <select value={grnItemId} onChange={(e) => setGrnItemId(e.target.value)} disabled={!selectedGrn}>
-            <option value="">Select GRN line</option>
-            {(selectedGrn?.items || []).map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.product_id} (accepted {i.accepted_qty})
+                {g.grn_number} ({g.status})
               </option>
             ))}
           </select>
@@ -1308,8 +1326,48 @@ export default function Page() {
             <option value="quality">Quality</option>
             <option value="other">Other</option>
           </select>
-          <input value={returnQty} onChange={(e) => setReturnQty(e.target.value)} placeholder="Return qty" />
-          <button onClick={createReturn} disabled={!grnId || !grnItemId}>
+          {selectedGrn ? (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Accepted</th>
+                  <th>Return qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(selectedGrn.items || []).map((i) => {
+                  const product = products.find((p) => p.id === i.product_id);
+                  return (
+                    <tr key={i.id}>
+                      <td>{product?.name || i.product_id}</td>
+                      <td>{i.accepted_qty}</td>
+                      <td>
+                        <input
+                          value={returnLines[i.id] ?? ''}
+                          onChange={(e) =>
+                            setReturnLines((prev) => ({ ...prev, [i.id]: e.target.value }))
+                          }
+                          placeholder="0"
+                          style={{ width: 100 }}
+                          inputMode="decimal"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <p className="muted">Choose a GRN to edit return lines</p>
+          )}
+          <button
+            onClick={createReturn}
+            disabled={
+              !grnId ||
+              !Object.values(returnLines).some((q) => Number(q) > 0)
+            }
+          >
             Draft return
           </button>
         </div>
@@ -1740,6 +1798,7 @@ export default function Page() {
             <tr>
               <th>Return</th>
               <th>Debit note</th>
+              <th>Lines</th>
               <th>Reason</th>
               <th>Status</th>
               <th>Total</th>
@@ -1751,6 +1810,7 @@ export default function Page() {
               <tr key={r.id}>
                 <td>{r.return_number}</td>
                 <td>{r.debit_note_number || '—'}</td>
+                <td>{r.items?.length ?? '—'}</td>
                 <td>{r.reason}</td>
                 <td>{r.status}</td>
                 <td>{r.total_amount}</td>
