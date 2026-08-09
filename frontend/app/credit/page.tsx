@@ -11,6 +11,7 @@ export default function Page() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [partyId, setPartyId] = useState('');
   const [statement, setStatement] = useState<any>(null);
+  const [paymentSchedule, setPaymentSchedule] = useState<any>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
   const [liquidAccountId, setLiquidAccountId] = useState('');
@@ -68,6 +69,18 @@ export default function Page() {
           : `/credit/suppliers/${partyId}/statement`;
       const r = await api(path);
       setStatement(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadPaymentSchedule() {
+    if (!partyId || kind !== 'payable') return;
+    setError('');
+    try {
+      const r = await api(`/suppliers/${partyId}/payment-schedule`);
+      setPaymentSchedule(r.data);
+      setStatement(null);
     } catch (err: any) {
       setError(err.message);
     }
@@ -215,7 +228,9 @@ export default function Page() {
   return (
     <Shell>
       <h1>Credit & Aging</h1>
-      <p className="muted">AR/AP aging, statements, payments, and early-payment discounts</p>
+      <p className="muted">
+        AR/AP aging, statements, supplier payment schedule, payments, and early-payment discounts
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -314,6 +329,11 @@ export default function Page() {
           </select>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
             <button onClick={loadStatement}>Statement</button>
+            {kind === 'payable' && (
+              <button type="button" onClick={loadPaymentSchedule}>
+                Payment schedule
+              </button>
+            )}
             <input
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
@@ -405,6 +425,71 @@ export default function Page() {
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
             {JSON.stringify(statement, null, 2)}
           </pre>
+        </div>
+      )}
+
+      {kind === 'payable' && paymentSchedule && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3>
+            Payment schedule — {paymentSchedule.supplier_name}{' '}
+            <span className="muted">
+              (as of {paymentSchedule.as_of} · due {paymentSchedule.total_due} · overdue{' '}
+              {paymentSchedule.overdue_total})
+            </span>
+          </h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Due</th>
+                <th>Amount</th>
+                <th>Bucket</th>
+                <th>Early discount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(paymentSchedule.items || []).map((item: any, idx: number) => (
+                <tr key={`${item.document_type}-${item.purchase_invoice_id || item.purchase_order_id}-${idx}`}>
+                  <td>
+                    {item.document_type === 'purchase_invoice'
+                      ? item.invoice_number
+                      : item.po_number}{' '}
+                    <span className="muted">({item.document_type})</span>
+                  </td>
+                  <td>
+                    {item.due_date
+                      ? String(item.due_date).replace('T', ' ').slice(0, 10)
+                      : '—'}
+                    {item.days_until_due != null ? (
+                      <span className="muted">
+                        {' '}
+                        ({item.days_until_due < 0
+                          ? `${Math.abs(item.days_until_due)}d overdue`
+                          : item.days_until_due === 0
+                            ? 'today'
+                            : `in ${item.days_until_due}d`}
+                        )
+                      </span>
+                    ) : null}
+                  </td>
+                  <td>{item.amount}</td>
+                  <td>{item.schedule_bucket}</td>
+                  <td>
+                    {item.early_discount?.eligible
+                      ? `${item.early_discount.discount_amount} → pay ${item.early_discount.cash_to_settle}`
+                      : '—'}
+                  </td>
+                </tr>
+              ))}
+              {!paymentSchedule.items?.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No open bills on the schedule
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </Shell>

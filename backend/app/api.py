@@ -8720,58 +8720,39 @@ async def supplier_outstanding(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    orders = (
-        await db.execute(
-            select(m.PurchaseOrder).where(
-                m.PurchaseOrder.tenant_id == claims["tenant_id"],
-                m.PurchaseOrder.supplier_id == supplier_id,
-                m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
-            )
-        )
-    ).scalars().all()
-    invoices = (
-        await db.execute(
-            select(m.PurchaseInvoice).where(
-                m.PurchaseInvoice.tenant_id == claims["tenant_id"],
-                m.PurchaseInvoice.supplier_id == supplier_id,
-                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
-            )
-        )
-    ).scalars().all()
+    schedule = await credit_svc.supplier_payment_schedule(
+        db, claims["tenant_id"], supplier_id
+    )
+    # Flat list kept for existing clients; schedule adds buckets/early-pay.
     out = []
-    for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
-        if due <= 0:
-            continue
-        out.append(
-            {
-                "purchase_invoice_id": inv.id,
-                "invoice_number": inv.invoice_number,
-                "purchase_order_id": inv.purchase_order_id,
-                "amount": due,
-                "due_date": inv.due_date,
-                "status": inv.status,
-                "document_type": "purchase_invoice",
-            }
-        )
-    invoiced_pos = {i.purchase_order_id for i in invoices if i.purchase_order_id}
-    for po in orders:
-        if po.id in invoiced_pos:
-            continue
-        due = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
-        if due <= 0:
-            continue
-        out.append(
-            {
-                "purchase_order_id": po.id,
-                "po_number": po.po_number,
-                "amount": due,
-                "due_date": po.due_date,
-                "status": po.status,
-                "document_type": "purchase_order",
-            }
-        )
+    for item in schedule["items"]:
+        row = {
+            "amount": item["amount"],
+            "due_date": item["due_date"],
+            "status": item["status"],
+            "document_type": item["document_type"],
+        }
+        if item["document_type"] == "purchase_invoice":
+            row["purchase_invoice_id"] = item.get("purchase_invoice_id")
+            row["invoice_number"] = item.get("invoice_number")
+            row["purchase_order_id"] = item.get("purchase_order_id")
+        else:
+            row["purchase_order_id"] = item.get("purchase_order_id")
+            row["po_number"] = item.get("po_number")
+        out.append(row)
     return env(out)
+
+
+@api.get("/suppliers/{supplier_id}/payment-schedule")
+async def supplier_payment_schedule(
+    supplier_id: str,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 8 S1 / BR-11.2 — upcoming and overdue AP payment schedule."""
+    return env(
+        await credit_svc.supplier_payment_schedule(db, claims["tenant_id"], supplier_id)
+    )
 
 
 @api.post("/suppliers/{supplier_id}/payments")

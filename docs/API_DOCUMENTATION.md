@@ -991,7 +991,9 @@ Liquid (cash/bank) movements classified as `operating` / `investing` / `financin
 ### 11.2 Supplier Credit
 **Get Outstanding Bills:** `GET /suppliers/{supplier_id}/outstanding`
 
-**Payment Schedule:** `GET /suppliers/{supplier_id}/payment-schedule`
+**Payment Schedule (Stage 8 S1 / BR-11.2):** `GET /suppliers/{supplier_id}/payment-schedule`
+
+Returns `{ supplier_id, supplier_name, as_of, total_due, overdue_total, upcoming_total, early_pay, items[] }`. Each item includes `document_type` (`purchase_invoice` | `purchase_order`), amount, `due_date`, `days_until_due`, `schedule_bucket` (`overdue` | `due_today` | `upcoming` | `unscheduled`), and `early_discount` quote for open purchase invoices. Sorted overdue → due today → upcoming. Requires `credit:read`.
 
 **Record Payment:** `POST /suppliers/{supplier_id}/payments`
 

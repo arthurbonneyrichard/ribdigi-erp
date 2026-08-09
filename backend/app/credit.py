@@ -474,6 +474,165 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
     }
 
 
+async def supplier_payment_schedule(
+    db: AsyncSession,
+    tenant_id: str,
+    supplier_id: str,
+    *,
+    as_of: datetime | None = None,
+) -> dict:
+    """Upcoming/overdue AP schedule for a supplier (Stage 8 S1 / BR-11.2)."""
+    as_of = as_of or datetime.utcnow()
+    supplier = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == supplier_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "supplier",
+            )
+        )
+    ).scalar_one_or_none()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    ep = resolve_early_pay_settings(tenant, supplier)
+
+    invoices = (
+        await db.execute(
+            select(m.PurchaseInvoice).where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.supplier_id == supplier_id,
+                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+            )
+        )
+    ).scalars().all()
+    orders = (
+        await db.execute(
+            select(m.PurchaseOrder).where(
+                m.PurchaseOrder.tenant_id == tenant_id,
+                m.PurchaseOrder.supplier_id == supplier_id,
+                m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
+            )
+        )
+    ).scalars().all()
+
+    items: list[dict] = []
+    for inv in invoices:
+        due_amt = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        if due_amt <= 0:
+            continue
+        due_dt = inv.due_date
+        if due_dt is None:
+            days_until = None
+            is_overdue = False
+            bucket = "unscheduled"
+        else:
+            days_until = (due_dt.date() - as_of.date()).days
+            is_overdue = days_until < 0
+            if is_overdue:
+                bucket = "overdue"
+            elif days_until == 0:
+                bucket = "due_today"
+            else:
+                bucket = "upcoming"
+        quote = purchase_invoice_early_discount(
+            inv,
+            pct=ep["early_pay_discount_pct"],
+            days=ep["early_pay_discount_days"],
+            as_of=as_of,
+        )
+        items.append(
+            {
+                "document_type": "purchase_invoice",
+                "purchase_invoice_id": inv.id,
+                "invoice_number": inv.invoice_number,
+                "purchase_order_id": inv.purchase_order_id,
+                "amount": round(due_amt, 2),
+                "due_date": due_dt,
+                "status": inv.status,
+                "days_until_due": days_until,
+                "is_overdue": is_overdue,
+                "schedule_bucket": bucket,
+                "early_discount": quote,
+            }
+        )
+
+    invoiced_pos = {i.purchase_order_id for i in invoices if i.purchase_order_id}
+    for po in orders:
+        if po.id in invoiced_pos:
+            continue
+        due_amt = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        if due_amt <= 0:
+            continue
+        due_dt = po.due_date
+        if due_dt is None:
+            days_until = None
+            is_overdue = False
+            bucket = "unscheduled"
+        else:
+            days_until = (due_dt.date() - as_of.date()).days
+            is_overdue = days_until < 0
+            if is_overdue:
+                bucket = "overdue"
+            elif days_until == 0:
+                bucket = "due_today"
+            else:
+                bucket = "upcoming"
+        items.append(
+            {
+                "document_type": "purchase_order",
+                "purchase_order_id": po.id,
+                "po_number": po.po_number,
+                "amount": round(due_amt, 2),
+                "due_date": due_dt,
+                "status": po.status,
+                "days_until_due": days_until,
+                "is_overdue": is_overdue,
+                "schedule_bucket": bucket,
+                "early_discount": None,
+            }
+        )
+
+    def _sort_key(row: dict):
+        due = row.get("due_date")
+        # Overdue first (most overdue), then due today, then upcoming, unscheduled last
+        if due is None:
+            return (3, datetime.max, -float(row["amount"]))
+        days = row.get("days_until_due")
+        if days is not None and days < 0:
+            return (0, due, -float(row["amount"]))
+        if days == 0:
+            return (1, due, -float(row["amount"]))
+        return (2, due, -float(row["amount"]))
+
+    items.sort(key=_sort_key)
+    total_due = round(sum(float(i["amount"]) for i in items), 2)
+    overdue_total = round(
+        sum(float(i["amount"]) for i in items if i["schedule_bucket"] == "overdue"), 2
+    )
+    upcoming_total = round(
+        sum(
+            float(i["amount"])
+            for i in items
+            if i["schedule_bucket"] in {"due_today", "upcoming"}
+        ),
+        2,
+    )
+    return {
+        "supplier_id": supplier.id,
+        "supplier_name": supplier.name,
+        "as_of": as_of.date().isoformat(),
+        "total_due": total_due,
+        "overdue_total": overdue_total,
+        "upcoming_total": upcoming_total,
+        "early_pay": ep,
+        "items": items,
+    }
+
+
 def default_due_date(from_dt: datetime | None = None, terms_days: int = DEFAULT_PAYMENT_TERMS_DAYS) -> datetime:
     return (from_dt or datetime.utcnow()) + timedelta(days=terms_days)
 

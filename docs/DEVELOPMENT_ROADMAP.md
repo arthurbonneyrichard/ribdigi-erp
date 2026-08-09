@@ -102,6 +102,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 7 exit (2026-08-09):** W2, C2, K2, L7x met — `docs/STAGE_7_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_020_STAGE7_FREEZE.md`. Launch checklist: `docs/LAUNCH_CHECKLIST.md`.
 
+**Stage 8 open (2026-08-09):** Credit Fidelity & AP Cash Closeout track approved — `docs/ADR_021_STAGE8_OPEN.md` + `docs/STAGE_8_PLAN.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -672,7 +674,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 7 closed (ADR-020). Next track requires CONTINUE after freeze. Operator go-live list: `docs/LAUNCH_CHECKLIST.md`.
+**Active delivery plan:** `docs/STAGE_8_PLAN.md` (supplier payment schedule, outstanding UI, account transactions, return multi-line UI).
 
 ### 6.2 Features
 

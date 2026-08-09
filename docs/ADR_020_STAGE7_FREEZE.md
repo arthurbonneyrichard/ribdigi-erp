@@ -21,3 +21,7 @@ Stage 7 Launch Reliability Closeout (W2, C2, K2, L7x) delivered webhook delivery
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–6 freezes (ADR-008, ADR-010, ADR-012, ADR-014, ADR-016, ADR-018) remain in force for their scopes.
 - `docs/LAUNCH_CHECKLIST.md` is the authoritative MVP go-live hygiene list; operator sign-off is environmental, not a code change.
+
+## Amendment (2026-08-09)
+
+Stage 8 delivery track was **explicitly approved** and opened under [ADR-021](ADR_021_STAGE8_OPEN.md) / `docs/STAGE_8_PLAN.md`. Stage 7 freeze above still applies to Launch Reliability Closeout scope.

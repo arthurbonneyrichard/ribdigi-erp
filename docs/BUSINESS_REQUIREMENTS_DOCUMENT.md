@@ -667,10 +667,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Manage supplier payable tracking.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Track outstanding bills per supplier
-  - [ ] Payment schedule view (upcoming due dates)
-  - [ ] Early payment discount calculation
-  - [ ] Supplier statement generation
+  - [x] Track outstanding bills per supplier
+  - [x] Payment schedule view (upcoming due dates) — Stage 8 S1: `GET /suppliers/{id}/payment-schedule` + Credit UI
+  - [x] Early payment discount calculation
+  - [x] Supplier statement generation
 
 ---
 
