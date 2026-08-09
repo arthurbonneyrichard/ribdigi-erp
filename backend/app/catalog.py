@@ -332,6 +332,8 @@ async def stock_in_with_batch(
     batch_number: str | None = None,
     manufacturing_date: datetime | None = None,
     expiry_date: datetime | None = None,
+    reference_type: str | None = None,
+    reference_id: str | None = None,
 ) -> dict:
     quantity = float(quantity)
     if quantity <= 0:
@@ -390,6 +392,8 @@ async def stock_in_with_batch(
         warehouse_id=warehouse_id,
         variant_id=variant.id if variant else None,
         batch_id=batch.id if batch else None,
+        reference_type=reference_type,
+        reference_id=reference_id,
     )
     if variant:
         variant.stock_qty = float(variant.stock_qty or 0) + quantity
@@ -397,6 +401,7 @@ async def stock_in_with_batch(
     return {
         "product_id": product.id,
         "stock_qty": float(product.stock_qty),
+        "batch_id": batch.id if batch else None,
         "variant": serialize_variant(variant) if variant else None,
         "batch": serialize_batch(batch) if batch else None,
     }

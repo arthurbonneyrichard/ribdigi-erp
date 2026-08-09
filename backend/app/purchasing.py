@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import catalog as catalog_svc
 from app.inventory import apply_stock_change
 from app.tax import compute_line_total
 from app.credit import default_due_date
@@ -600,6 +601,63 @@ async def create_grn(
                 },
             )
 
+        batch_number = (raw.get("batch_number") or "").strip() or None
+        manufacturing_date = raw.get("manufacturing_date")
+        expiry_date = raw.get("expiry_date")
+        product = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.id == po_item.product_id,
+                    m.Product.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if product is None:
+            raise HTTPException(status_code=404, detail=f"Product not found: {po_item.product_id}")
+        if accepted_qty > 0 and product.tracks_batches and not batch_number:
+            raise HTTPException(
+                status_code=400,
+                detail=f"batch_number required for batch-tracked product {product.sku}",
+            )
+        if rejected_qty > 0 and not (raw.get("rejection_reason") or "").strip():
+            raise HTTPException(status_code=400, detail="rejection_reason required when rejected_qty > 0")
+
+        batch_id = None
+        if accepted_qty > 0:
+            if batch_number:
+                stock_result = await catalog_svc.stock_in_with_batch(
+                    db,
+                    tenant_id=tenant_id,
+                    user_id=user_id,
+                    product_id=po_item.product_id,
+                    quantity=accepted_qty,
+                    notes=f"GRN {grn.grn_number}",
+                    warehouse_id=grn.warehouse_id,
+                    batch_number=batch_number,
+                    manufacturing_date=manufacturing_date,
+                    expiry_date=expiry_date,
+                    reference_type="grn",
+                    reference_id=grn.id,
+                )
+                batch_id = stock_result.get("batch_id")
+            else:
+                await apply_stock_change(
+                    db,
+                    tenant_id=tenant_id,
+                    product_id=po_item.product_id,
+                    quantity_delta=accepted_qty,
+                    movement_type="stock_in",
+                    user_id=user_id,
+                    reference_type="grn",
+                    reference_id=grn.id,
+                    warehouse_id=grn.warehouse_id,
+                    notes=f"GRN {grn.grn_number}",
+                )
+            po_item.received_qty = float(po_item.received_qty or 0) + accepted_qty
+            accepted_value += accepted_qty * float(po_item.unit_price) * (
+                1 + float(po_item.tax_rate or 0) / 100.0
+            )
+
         db.add(
             m.GoodsReceiptItem(
                 tenant_id=tenant_id,
@@ -610,24 +668,12 @@ async def create_grn(
                 accepted_qty=accepted_qty,
                 rejected_qty=rejected_qty,
                 rejection_reason=raw.get("rejection_reason"),
+                batch_id=batch_id,
+                batch_number=batch_number,
+                manufacturing_date=manufacturing_date,
+                expiry_date=expiry_date,
             )
         )
-
-        if accepted_qty > 0:
-            await apply_stock_change(
-                db,
-                tenant_id=tenant_id,
-                product_id=po_item.product_id,
-                quantity_delta=accepted_qty,
-                movement_type="stock_in",
-                user_id=user_id,
-                reference_type="grn",
-                reference_id=grn.id,
-                warehouse_id=grn.warehouse_id,
-                notes=f"GRN {grn.grn_number}",
-            )
-            po_item.received_qty = float(po_item.received_qty or 0) + accepted_qty
-            accepted_value += accepted_qty * float(po_item.unit_price) * (1 + float(po_item.tax_rate or 0) / 100.0)
 
     updated_items = await list_po_items(db, tenant_id, po.id)
     po.status = derive_po_status(updated_items)
@@ -703,6 +749,10 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
                 "accepted_qty": float(i.accepted_qty),
                 "rejected_qty": float(i.rejected_qty),
                 "rejection_reason": i.rejection_reason,
+                "batch_id": i.batch_id,
+                "batch_number": i.batch_number,
+                "manufacturing_date": i.manufacturing_date,
+                "expiry_date": i.expiry_date,
             }
             for i in items
         ],

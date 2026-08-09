@@ -684,6 +684,10 @@ class GoodsReceiptItem(Base):
     accepted_qty: Mapped[float] = mapped_column(Numeric(14, 3))
     rejected_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    batch_id: Mapped[str | None] = mapped_column(ForeignKey("product_batches.id"), nullable=True, index=True)
+    batch_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    manufacturing_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expiry_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class SalesInvoice(Base):

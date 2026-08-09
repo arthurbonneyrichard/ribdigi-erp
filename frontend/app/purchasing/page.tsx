@@ -93,6 +93,12 @@ export default function Page() {
   const [prDepartment, setPrDepartment] = useState('');
   const [prRequiredDate, setPrRequiredDate] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [receiveLines, setReceiveLines] = useState<
+    Record<
+      string,
+      { accepted: string; rejected: string; reason: string; batch: string; expiry: string }
+    >
+  >({});
   const [grnId, setGrnId] = useState('');
   const [grnItemId, setGrnItemId] = useState('');
   const [returnQty, setReturnQty] = useState('1');
@@ -142,6 +148,24 @@ export default function Page() {
     const product = products.find((p) => p.id === productId);
     if (product) setUnitPrice(String(product.cost_price ?? 0));
   }, [productId, products]);
+
+  useEffect(() => {
+    if (!selected) {
+      setReceiveLines({});
+      return;
+    }
+    const next: typeof receiveLines = {};
+    for (const item of selected.items) {
+      next[item.id] = {
+        accepted: String(item.outstanding_qty ?? 0),
+        rejected: '0',
+        reason: '',
+        batch: '',
+        expiry: '',
+      };
+    }
+    setReceiveLines(next);
+  }, [selected?.id]);
 
   useEffect(() => {
     const product = products.find((p) => p.id === manualInvProductId);
@@ -291,30 +315,58 @@ export default function Page() {
     }
   }
 
-  async function receiveAll(po: PurchaseOrder) {
+  async function receiveSelectedPo() {
+    if (!selected) return;
     setError('');
     try {
-      const items = po.items
+      const items = selected.items
         .filter((i) => i.outstanding_qty > 0)
-        .map((i) => ({
-          po_item_id: i.id,
-          received_qty: i.outstanding_qty,
-          accepted_qty: i.outstanding_qty,
-          rejected_qty: 0,
-        }));
+        .map((i) => {
+          const line = receiveLines[i.id] || {
+            accepted: '0',
+            rejected: '0',
+            reason: '',
+            batch: '',
+            expiry: '',
+          };
+          const accepted = Number(line.accepted) || 0;
+          const rejected = Number(line.rejected) || 0;
+          return {
+            po_item_id: i.id,
+            received_qty: accepted + rejected,
+            accepted_qty: accepted,
+            rejected_qty: rejected,
+            rejection_reason: rejected > 0 ? line.reason || undefined : undefined,
+            batch_number: line.batch || undefined,
+            expiry_date: line.expiry ? new Date(line.expiry).toISOString() : undefined,
+          };
+        })
+        .filter((i) => i.received_qty > 0);
       if (!items.length) {
-        setError('Nothing left to receive');
+        setError('Enter accepted and/or rejected quantities to receive');
         return;
       }
       const r = await api('/purchasing/grn', {
         method: 'POST',
-        body: JSON.stringify({ purchase_order_id: po.id, items }),
+        body: JSON.stringify({ purchase_order_id: selected.id, items }),
       });
       setMessage(`Posted ${r.data.grn_number}`);
       await refresh();
-      const updated = await api(`/purchasing/orders/${po.id}`);
+      const updated = await api(`/purchasing/orders/${selected.id}`);
       setSelected(updated.data);
       setTab('grn');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function cancelPo(poId: string) {
+    setError('');
+    try {
+      const r = await api(`/purchasing/orders/${poId}/cancel`, { method: 'POST' });
+      setMessage(`Cancelled ${r.data.po_number}`);
+      await refresh();
+      setSelected(r.data);
     } catch (err: any) {
       setError(err.message);
     }
@@ -768,10 +820,13 @@ export default function Page() {
                   </td>
                   <td>{o.status}</td>
                   <td>{o.total_amount}</td>
-                  <td style={{ display: 'flex', gap: 8 }}>
+                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {o.status === 'draft' && <button onClick={() => sendPo(o.id)}>Send</button>}
+                    {(o.status === 'draft' || o.status === 'sent') && (
+                      <button onClick={() => cancelPo(o.id)}>Cancel</button>
+                    )}
                     {(o.status === 'sent' || o.status === 'partially_received') && (
-                      <button onClick={() => receiveAll(o)}>Receive all</button>
+                      <button onClick={() => setSelected(o)}>Receive…</button>
                     )}
                   </td>
                 </tr>
@@ -790,21 +845,105 @@ export default function Page() {
                     <th>Ordered</th>
                     <th>Received</th>
                     <th>Outstanding</th>
-                    <th>Unit price</th>
+                    <th>Accept</th>
+                    <th>Reject</th>
+                    <th>Reject reason</th>
+                    <th>Batch</th>
+                    <th>Expiry</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {selected.items.map((i) => (
-                    <tr key={i.id}>
-                      <td>{i.product_id}</td>
-                      <td>{i.quantity}</td>
-                      <td>{i.received_qty}</td>
-                      <td>{i.outstanding_qty}</td>
-                      <td>{i.unit_price}</td>
-                    </tr>
-                  ))}
+                  {selected.items.map((i) => {
+                    const line = receiveLines[i.id] || {
+                      accepted: '0',
+                      rejected: '0',
+                      reason: '',
+                      batch: '',
+                      expiry: '',
+                    };
+                    const editable = i.outstanding_qty > 0 && (selected.status === 'sent' || selected.status === 'partially_received');
+                    return (
+                      <tr key={i.id}>
+                        <td>{products.find((p) => p.id === i.product_id)?.name || i.product_id}</td>
+                        <td>{i.quantity}</td>
+                        <td>{i.received_qty}</td>
+                        <td>{i.outstanding_qty}</td>
+                        <td>
+                          <input
+                            style={{ width: 72 }}
+                            disabled={!editable}
+                            value={line.accepted}
+                            onChange={(e) =>
+                              setReceiveLines((prev) => ({
+                                ...prev,
+                                [i.id]: { ...line, accepted: e.target.value },
+                              }))
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            style={{ width: 72 }}
+                            disabled={!editable}
+                            value={line.rejected}
+                            onChange={(e) =>
+                              setReceiveLines((prev) => ({
+                                ...prev,
+                                [i.id]: { ...line, rejected: e.target.value },
+                              }))
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            style={{ width: 120 }}
+                            disabled={!editable}
+                            value={line.reason}
+                            onChange={(e) =>
+                              setReceiveLines((prev) => ({
+                                ...prev,
+                                [i.id]: { ...line, reason: e.target.value },
+                              }))
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            style={{ width: 100 }}
+                            disabled={!editable}
+                            value={line.batch}
+                            placeholder="Batch #"
+                            onChange={(e) =>
+                              setReceiveLines((prev) => ({
+                                ...prev,
+                                [i.id]: { ...line, batch: e.target.value },
+                              }))
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="date"
+                            disabled={!editable}
+                            value={line.expiry}
+                            onChange={(e) =>
+                              setReceiveLines((prev) => ({
+                                ...prev,
+                                [i.id]: { ...line, expiry: e.target.value },
+                              }))
+                            }
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+              {(selected.status === 'sent' || selected.status === 'partially_received') && (
+                <button type="button" style={{ marginTop: 12 }} onClick={receiveSelectedPo}>
+                  Post GRN
+                </button>
+              )}
             </div>
           )}
         </>

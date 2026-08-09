@@ -442,6 +442,9 @@ class GrnItemCreate(BaseModel):
     accepted_qty: float | None = None
     rejected_qty: float = Field(default=0, ge=0)
     rejection_reason: str | None = None
+    batch_number: str | None = None
+    manufacturing_date: datetime | None = None
+    expiry_date: datetime | None = None
 
 
 class GrnCreate(BaseModel):
