@@ -70,6 +70,8 @@ const REPORT_TYPES = [
   'tax',
   'tax_filing',
   'tax_filing_gh',
+  'tax_filing_ke',
+  'tax_filing_ng',
 ];
 
 export default function Page() {

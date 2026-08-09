@@ -6,10 +6,11 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from . import gh_vat, ng_vat
+from . import gh_vat, ke_vat, ng_vat
 
 SUPPORTED = {
     "GH": gh_vat,
+    "KE": ke_vat,
     "NG": ng_vat,
 }
 
