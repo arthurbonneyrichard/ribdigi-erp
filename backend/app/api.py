@@ -8334,15 +8334,18 @@ async def stores(claims=Depends(require_permission("stores", "read")), db: Async
     rows = (
         await db.execute(select(m.Store).where(m.Store.tenant_id == claims["tenant_id"]))
     ).scalars().all()
-    return env(
-        [
+    out = []
+    for s in rows:
+        detail = await stores_svc.serialize_store_detail(db, s)
+        detail.update(
             {
-                **stores_svc.serialize_store(s),
-                **{k: v for k, v in cash_drawer_svc.serialize_drawer_settings(s).items() if k != "source"},
+                k: v
+                for k, v in cash_drawer_svc.serialize_drawer_settings(s).items()
+                if k != "source"
             }
-            for s in rows
-        ]
-    )
+        )
+        out.append(detail)
+    return env(out)
 
 
 @api.post("/stores")
@@ -8372,7 +8375,7 @@ async def add_store(
     )
     await db.commit()
     return env(
-        stores_svc.serialize_store(store),
+        await stores_svc.serialize_store_detail(db, store),
         "Store created with warehouse",
     )
 
@@ -8418,7 +8421,7 @@ async def update_store(
         details={"code": store.code},
     )
     await db.commit()
-    return env(stores_svc.serialize_store(store), "Store updated")
+    return env(await stores_svc.serialize_store_detail(db, store), "Store updated")
 
 
 @api.patch("/stores/{store_id}/drawer")

@@ -12,6 +12,9 @@ type Store = {
   phone?: string | null;
   manager_id?: string | null;
   branch_id?: string | null;
+  warehouse_id?: string | null;
+  warehouse_code?: string | null;
+  warehouse_name?: string | null;
   operating_hours?: Record<string, string> | null;
   is_active?: boolean;
   drawer_mode?: string;
@@ -29,9 +32,44 @@ type Transfer = {
   items: { product_id: string; quantity: number }[];
 };
 
+const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const WEEKDAY_LABELS: Record<(typeof WEEKDAYS)[number], string> = {
+  mon: 'Mon',
+  tue: 'Tue',
+  wed: 'Wed',
+  thu: 'Thu',
+  fri: 'Fri',
+  sat: 'Sat',
+  sun: 'Sun',
+};
+
+function emptyHours(): Record<(typeof WEEKDAYS)[number], string> {
+  return { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '' };
+}
+
+function hoursFromStore(hours?: Record<string, string> | null) {
+  const next = emptyHours();
+  if (!hours) return next;
+  for (const day of WEEKDAYS) {
+    if (hours[day]) next[day] = hours[day];
+  }
+  return next;
+}
+
+function hoursPayload(hours: Record<(typeof WEEKDAYS)[number], string>, note: string) {
+  const out: Record<string, string> = {};
+  for (const day of WEEKDAYS) {
+    const v = (hours[day] || '').trim();
+    if (v) out[day] = v;
+  }
+  if (note.trim()) out.note = note.trim();
+  return out;
+}
+
 export default function Page() {
   const [stores, setStores] = useState<Store[]>([]);
   const [branches, setBranches] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string; full_name?: string; email?: string }[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -39,11 +77,19 @@ export default function Page() {
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
+  const [managerId, setManagerId] = useState('');
   const [hoursNote, setHoursNote] = useState('');
+  const [createHours, setCreateHours] = useState(emptyHours());
   const [branchId, setBranchId] = useState('');
   const [editStoreId, setEditStoreId] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editAddress, setEditAddress] = useState('');
   const [editPhone, setEditPhone] = useState('');
-  const [editHours, setEditHours] = useState('');
+  const [editManagerId, setEditManagerId] = useState('');
+  const [editBranchId, setEditBranchId] = useState('');
+  const [editActive, setEditActive] = useState(true);
+  const [editHoursNote, setEditHoursNote] = useState('');
+  const [editHours, setEditHours] = useState(emptyHours());
   const [fromStore, setFromStore] = useState('');
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
@@ -62,17 +108,19 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [s, p, t, settings, b] = await Promise.all([
+    const [s, p, t, settings, b, u] = await Promise.all([
       api('/stores'),
       api('/products'),
       api('/stores/transfers'),
       api('/inventory/settings').catch(() => ({ data: { fefo_strict_warehouse: false } })),
       api('/branches').catch(() => ({ data: [] })),
+      api('/users').catch(() => ({ data: [] })),
     ]);
     setStores(s.data || []);
     setProducts(p.data || []);
     setTransfers(t.data || []);
     setBranches(b.data || []);
+    setUsers(u.data || []);
     setFefoStrict(!!settings.data?.fefo_strict_warehouse);
     if (!fromStore && s.data?.length) setFromStore(s.data[0].id);
     if (!toStore && s.data?.length > 1) setToStore(s.data[1].id);
@@ -101,15 +149,18 @@ export default function Page() {
           name,
           address: address || undefined,
           phone: phone || undefined,
+          manager_id: managerId || null,
           branch_id: branchId || null,
-          operating_hours: hoursNote ? { note: hoursNote } : undefined,
+          operating_hours: hoursPayload(createHours, hoursNote),
         }),
       });
       setCode('');
       setName('');
       setAddress('');
       setPhone('');
+      setManagerId('');
       setHoursNote('');
+      setCreateHours(emptyHours());
       setBranchId('');
       setMessage('Store created');
       await refresh();
@@ -126,8 +177,15 @@ export default function Page() {
       await api(`/stores/${editStoreId}`, {
         method: 'PATCH',
         body: JSON.stringify({
+          name: editName || undefined,
+          address: editAddress || null,
           phone: editPhone || null,
-          operating_hours: editHours ? { note: editHours } : {},
+          manager_id: editManagerId || null,
+          clear_manager: !editManagerId,
+          branch_id: editBranchId || null,
+          clear_branch: !editBranchId,
+          is_active: editActive,
+          operating_hours: hoursPayload(editHours, editHoursNote),
         }),
       });
       setMessage('Store details updated');
@@ -263,11 +321,14 @@ export default function Page() {
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
             <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
-            <input
-              value={hoursNote}
-              onChange={(e) => setHoursNote(e.target.value)}
-              placeholder="Operating hours (e.g. Mon–Sat 8–18)"
-            />
+            <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+              <option value="">No manager</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.email}
+                </option>
+              ))}
+            </select>
             <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
               <option value="">No branch</option>
               {branches.map((b) => (
@@ -276,6 +337,20 @@ export default function Page() {
                 </option>
               ))}
             </select>
+            <strong className="muted">Operating hours</strong>
+            {WEEKDAYS.map((day) => (
+              <input
+                key={day}
+                value={createHours[day]}
+                onChange={(e) => setCreateHours({ ...createHours, [day]: e.target.value })}
+                placeholder={`${WEEKDAY_LABELS[day]} e.g. 08:00-18:00`}
+              />
+            ))}
+            <input
+              value={hoursNote}
+              onChange={(e) => setHoursNote(e.target.value)}
+              placeholder="Hours note (optional)"
+            />
             <button onClick={createStore}>Create store</button>
           </div>
         </div>
@@ -288,22 +363,78 @@ export default function Page() {
                 const id = e.target.value;
                 setEditStoreId(id);
                 const s = stores.find((x) => x.id === id);
+                setEditName(s?.name || '');
+                setEditAddress(s?.address || '');
                 setEditPhone(s?.phone || '');
-                setEditHours(s?.operating_hours?.note || '');
+                setEditManagerId(s?.manager_id || '');
+                setEditBranchId(s?.branch_id || '');
+                setEditActive(s?.is_active !== false);
+                setEditHours(hoursFromStore(s?.operating_hours));
+                setEditHoursNote(s?.operating_hours?.note || '');
               }}
             >
               <option value="">Select store</option>
               {stores.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
+                  {s.is_active === false ? ' (inactive)' : ''}
                 </option>
               ))}
             </select>
-            <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone" />
+            {editStoreId && (
+              <p className="muted" style={{ margin: 0 }}>
+                Linked warehouse:{' '}
+                {stores.find((s) => s.id === editStoreId)?.warehouse_code
+                  ? `${stores.find((s) => s.id === editStoreId)?.warehouse_code} — ${
+                      stores.find((s) => s.id === editStoreId)?.warehouse_name
+                    }`
+                  : 'none'}
+              </p>
+            )}
+            <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" />
             <input
-              value={editHours}
-              onChange={(e) => setEditHours(e.target.value)}
-              placeholder="Operating hours note"
+              value={editAddress}
+              onChange={(e) => setEditAddress(e.target.value)}
+              placeholder="Address"
+            />
+            <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone" />
+            <select value={editManagerId} onChange={(e) => setEditManagerId(e.target.value)}>
+              <option value="">No manager</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.email}
+                </option>
+              ))}
+            </select>
+            <select value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)}>
+              <option value="">No branch</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.code} — {b.name}
+                </option>
+              ))}
+            </select>
+            <label className="muted">
+              <input
+                type="checkbox"
+                checked={editActive}
+                onChange={(e) => setEditActive(e.target.checked)}
+              />{' '}
+              Active
+            </label>
+            <strong className="muted">Operating hours</strong>
+            {WEEKDAYS.map((day) => (
+              <input
+                key={day}
+                value={editHours[day]}
+                onChange={(e) => setEditHours({ ...editHours, [day]: e.target.value })}
+                placeholder={`${WEEKDAY_LABELS[day]} e.g. 08:00-18:00`}
+              />
+            ))}
+            <input
+              value={editHoursNote}
+              onChange={(e) => setEditHoursNote(e.target.value)}
+              placeholder="Hours note (optional)"
             />
             <button onClick={saveStoreDetails} disabled={!editStoreId}>
               Save store details

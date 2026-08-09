@@ -122,6 +122,23 @@ def serialize_store(store: m.Store) -> dict:
     }
 
 
+async def serialize_store_detail(db: AsyncSession, store: m.Store) -> dict:
+    """Store payload including linked warehouse (created with the store)."""
+    data = serialize_store(store)
+    wh = (
+        await db.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == store.tenant_id,
+                m.Warehouse.store_id == store.id,
+            )
+        )
+    ).scalar_one_or_none()
+    data["warehouse_id"] = wh.id if wh else None
+    data["warehouse_code"] = wh.code if wh else None
+    data["warehouse_name"] = wh.name if wh else None
+    return data
+
+
 async def update_store(
     db: AsyncSession,
     *,
