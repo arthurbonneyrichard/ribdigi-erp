@@ -67,7 +67,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 - [ ] Immutable audit logging for sensitive operations complete.
   - Partial: append-only APIs, hash-chained integrity verify, filtered query + CSV export; login/logout/login_failed/2FA/WebAuthn, user CRUD, custom-role permission changes, password_reset_request/password_reset, session revoke, bank-statement create/import, stock in/out/adjust (hash-chained via stock engine), bank connections, stock import/counts, backup/restore, and purchasing/sales/accounting sensitive writes (PR/PO/GRN/purchase invoice/return, sales invoice create/post/cancel, customer payment, journal post, sales-return discard) audited via `audit.record_event`. Remaining: full middleware auto-coverage and 7-year cold archive.
 - [ ] Redis/Celery/RabbitMQ used for intended production workloads.
-  - Partial: Redis for distributed API/auth rate limiting; Celery worker + beat on RabbitMQ broker (Redis results) for low-stock scan, payment-due scan, quotation-expiry scan, recurring expenses, due backups, report emails, FX rate refresh, and bank feed sync (`sync_bank_feeds`); admin `GET /jobs` + `POST /jobs/{name}/run`; AI nightly jobs still pending.
+  - Partial: Redis for distributed API/auth rate limiting; Celery worker + beat on RabbitMQ broker (Redis results) for low-stock scan, payment-due scan, quotation-expiry scan, recurring expenses, due backups, report emails, FX rate refresh, and bank feed sync (`sync_bank_feeds`); admin `GET /jobs` + `POST /jobs/{name}/run`; AI low-stock prediction job `generate_ai_low_stock_predictions` (Celery beat); broader AI nightly insight digests still pending.
 - [ ] Monitoring, metrics, logging and alerting complete.
 - [ ] Kubernetes production deployment reviewed.
 - [ ] Load/performance tests meet documented targets.
@@ -75,8 +75,11 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 
 ### AI
 - [ ] AI provider configured securely.
+  - Partial: chat remains blocked (503) until an approved provider is configured; deterministic inventory prediction needs no external provider.
 - [ ] Tenant-safe data access enforced.
+  - Partial: AI routes use `require_permission("ai", …)` and tenant-scoped queries; insights + low-stock prediction isolation covered in tests.
 - [ ] AI functions use real tenant data and satisfy documented acceptance criteria.
+  - Partial (Phase 4 start / BR-21.4): sales-velocity low-stock prediction `GET /ai/inventory/low-stock-prediction` (+ `/ai/inventory/predictions` alias) with confidence, 7–14 day horizon, seasonality factor, suggested order qty; Celery `generate_ai_low_stock_predictions` notifies predicted stockouts; AI page predictions table; insights include at-risk summary. Remaining: chat (BR-21.1), richer dashboard insights digest (BR-21.2), Prophet/full demand forecast (BR-21.3), sales/expense AI analysis, NL report generator, security monitor.
 - [ ] AI audit logging and prompt/data protections complete.
 
 ## Current repository rule

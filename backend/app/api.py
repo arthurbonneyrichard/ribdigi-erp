@@ -8373,6 +8373,7 @@ async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin")
                 "generate_recurring_expenses_minutes": app_settings.CELERY_RECURRING_INTERVAL_MINUTES,
                 "run_due_backups_minutes": app_settings.CELERY_BACKUP_INTERVAL_MINUTES,
                 "run_due_report_emails_minutes": app_settings.CELERY_REPORT_EMAIL_INTERVAL_MINUTES,
+                "generate_ai_low_stock_predictions_minutes": app_settings.CELERY_AI_PREDICTION_INTERVAL_MINUTES,
             },
         }
     )
@@ -8674,9 +8675,68 @@ async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSe
         notes.append(f"{dash['low_stock']} product(s) are at or below reorder level.")
     if dash["total_expenses"] > dash["total_sales"] and dash["total_sales"] > 0:
         notes.append("Expenses currently exceed recorded sales.")
+    from app import ai_inventory as ai_inventory_svc
+
+    pred = await ai_inventory_svc.predict_low_stock(
+        db, claims["tenant_id"], at_risk_only=True, horizon_days=14
+    )
+    if pred["at_risk_count"]:
+        top = pred["predictions"][:3]
+        names = ", ".join(
+            f"{p['name']} (~{p['days_to_stockout']}d)" for p in top if p.get("days_to_stockout") is not None
+        )
+        notes.append(
+            f"{pred['at_risk_count']} product(s) predicted to stock out within 14 days"
+            + (f": {names}." if names else ".")
+        )
     return env(
         {
             "insights": notes
-            or ["No urgent anomaly detected from the currently configured business rules."]
+            or ["No urgent anomaly detected from the currently configured business rules."],
+            "low_stock_predictions": {
+                "at_risk_count": pred["at_risk_count"],
+                "method": pred["method"],
+            },
         }
+    )
+
+
+@api.get("/ai/inventory/low-stock-prediction")
+async def ai_low_stock_prediction(
+    lookback_days: int = 30,
+    horizon_days: int = 14,
+    lead_time_days: int = 7,
+    at_risk_only: bool = False,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import ai_inventory as ai_inventory_svc
+
+    data = await ai_inventory_svc.predict_low_stock(
+        db,
+        claims["tenant_id"],
+        lookback_days=lookback_days,
+        horizon_days=horizon_days,
+        lead_time_days=lead_time_days,
+        at_risk_only=at_risk_only,
+    )
+    return env(data)
+
+
+@api.get("/ai/inventory/predictions")
+async def ai_inventory_predictions(
+    lookback_days: int = 30,
+    horizon_days: int = 14,
+    lead_time_days: int = 7,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Alias of low-stock prediction for Phase 4 API catalog compatibility."""
+    return await ai_low_stock_prediction(
+        lookback_days=lookback_days,
+        horizon_days=horizon_days,
+        lead_time_days=lead_time_days,
+        at_risk_only=False,
+        claims=claims,
+        db=db,
     )

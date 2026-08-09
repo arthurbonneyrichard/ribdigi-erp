@@ -70,6 +70,13 @@ def sync_bank_feeds() -> dict:
     return jobs_svc.run_async(jobs_svc.job_sync_bank_feeds())
 
 
+@celery.task(name="app.tasks.generate_ai_low_stock_predictions")
+def generate_ai_low_stock_predictions() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_generate_ai_low_stock_predictions())
+
+
 @celery.task(name="app.tasks.run_named_job")
 def run_named_job(name: str) -> dict:
     if not settings.CELERY_ENABLED:

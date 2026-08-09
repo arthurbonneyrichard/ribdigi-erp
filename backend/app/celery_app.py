@@ -73,5 +73,11 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_BANK_FEED_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "generate-ai-low-stock-predictions": {
+            "task": "app.tasks.generate_ai_low_stock_predictions",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_AI_PREDICTION_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
     },
 )

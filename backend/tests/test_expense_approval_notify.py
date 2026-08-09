@@ -55,9 +55,15 @@ async def test_pending_expense_notifies_approvers_by_role(db_session, seeded, mo
     assert all(n.user_id for n in notes)
 
     outbox = emailer.get_dev_outbox()
-    assert any(o.get("to") == seeded["mgr1"].email or seeded["mgr1"].email in str(o) for o in outbox) or any(
-        seeded["mgr1"].email in str(o.values()) for o in outbox
-    )
+    emailed = []
+    for o in outbox:
+        to = o.get("to") or []
+        if isinstance(to, str):
+            emailed.append(to)
+        else:
+            emailed.extend(to)
+    assert seeded["mgr1"].email in emailed
+    assert "Expense Approval Required" in (outbox[0].get("subject") or "")
 
 
 @pytest.mark.asyncio
