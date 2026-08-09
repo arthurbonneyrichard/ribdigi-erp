@@ -208,15 +208,16 @@ async def create_sales_invoice(
             )
         )
 
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="invoice_created",
-            entity="sales_invoice",
-            entity_id=invoice.id,
-            details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="invoice_created",
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
+        module='sales',
     )
     return invoice
 
@@ -327,15 +328,16 @@ async def post_sales_invoice(
         entity_type="sales_invoice",
         entity_id=invoice.id,
     )
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="invoice_posted",
-            entity="sales_invoice",
-            entity_id=invoice.id,
-            details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="invoice_posted",
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
+        module='sales',
     )
     return invoice
 
@@ -352,15 +354,16 @@ async def cancel_sales_invoice(
         raise HTTPException(status_code=409, detail="Only draft invoices can be cancelled")
     invoice.status = "cancelled"
     invoice.updated_at = datetime.utcnow()
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="invoice_cancelled",
-            entity="sales_invoice",
-            entity_id=invoice.id,
-            details={"invoice_number": invoice.invoice_number},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="invoice_cancelled",
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        details={"invoice_number": invoice.invoice_number},
+        module='sales',
     )
     return invoice
 
@@ -571,26 +574,27 @@ async def record_customer_payment(
         cheque_date=cheque_date,
     )
 
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="customer_payment",
-            entity="customer_payment",
-            entity_id=payment.id,
-            details={
-                "amount": amount,
-                "early_payment_discount": total_discount,
-                "currency": pay_cur,
-                "exchange_rate": pay_rate,
-                "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
-                "customer_id": customer_id,
-                "invoice_id": sales_invoice_id,
-                "allocations": [
-                    {"invoice_id": inv.id, "amount": amt, "discount": disc}
-                    for inv, amt, disc in allocations
-                ],
-            },
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="customer_payment",
+        entity="customer_payment",
+        entity_id=payment.id,
+        details={
+        "amount": amount,
+        "early_payment_discount": total_discount,
+        "currency": pay_cur,
+        "exchange_rate": pay_rate,
+        "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+        "customer_id": customer_id,
+        "invoice_id": sales_invoice_id,
+        "allocations": [
+        {"invoice_id": inv.id, "amount": amt, "discount": disc}
+        for inv, amt, disc in allocations
+        ],
+        },
+        module='sales',
     )
     return payment

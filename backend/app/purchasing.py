@@ -500,20 +500,21 @@ async def update_purchase_order(
         action = "po_updated"
         new_revision = int(getattr(po, "revision", 1) or 1)
 
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action=action,
-            entity="purchase_order",
-            entity_id=po.id,
-            details={
-                "po_number": po.po_number,
-                "revision": new_revision,
-                "reason": reason_clean if should_track else None,
-                "total": float(po.total_amount or 0),
-            },
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action=action,
+        entity="purchase_order",
+        entity_id=po.id,
+        details={
+        "po_number": po.po_number,
+        "revision": new_revision,
+        "reason": reason_clean if should_track else None,
+        "total": float(po.total_amount or 0),
+        },
+        module='purchasing',
     )
     await db.flush()
     return po
@@ -707,15 +708,16 @@ async def create_purchase_request(
                 notes=item["notes"],
             )
         )
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="pr_created",
-            entity="purchase_request",
-            entity_id=pr.id,
-            details={"request_number": pr.request_number},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="pr_created",
+        entity="purchase_request",
+        entity_id=pr.id,
+        details={"request_number": pr.request_number},
+        module='purchasing',
     )
     await db.flush()
     return pr
@@ -758,15 +760,16 @@ async def submit_purchase_request(
             actor_id=user_id,
             comment="Below approval matrix thresholds",
         )
-        db.add(
-            m.AuditLog(
-                tenant_id=tenant_id,
-                user_id=user_id,
-                action="pr_auto_approved",
-                entity="purchase_request",
-                entity_id=pr.id,
-                details={"request_number": pr.request_number, "estimated_total": total},
-            )
+        from app import audit as audit_svc
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_auto_approved",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={"request_number": pr.request_number, "estimated_total": total},
+            module='purchasing',
         )
     else:
         pr.status = "pending"
@@ -774,19 +777,20 @@ async def submit_purchase_request(
         pr.approval_steps_required = steps
         pr.approved_by = None
         pr.approved_at = None
-        db.add(
-            m.AuditLog(
-                tenant_id=tenant_id,
-                user_id=user_id,
-                action="pr_submitted",
-                entity="purchase_request",
-                entity_id=pr.id,
-                details={
-                    "request_number": pr.request_number,
-                    "estimated_total": total,
-                    "approval_steps_required": steps,
-                },
-            )
+        from app import audit as audit_svc
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_submitted",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={
+            "request_number": pr.request_number,
+            "estimated_total": total,
+            "approval_steps_required": steps,
+            },
+            module='purchasing',
         )
     await db.flush()
     return pr
@@ -847,19 +851,20 @@ async def approve_purchase_request(
             entity_type="purchase_request",
             entity_id=pr.id,
         )
-        db.add(
-            m.AuditLog(
-                tenant_id=tenant_id,
-                user_id=user_id,
-                action="pr_level_approved",
-                entity="purchase_request",
-                entity_id=pr.id,
-                details={
-                    "request_number": pr.request_number,
-                    "step": step,
-                    "next_step": step + 1,
-                },
-            )
+        from app import audit as audit_svc
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_level_approved",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={
+            "request_number": pr.request_number,
+            "step": step,
+            "next_step": step + 1,
+            },
+            module='purchasing',
         )
         await db.flush()
         return pr
@@ -870,15 +875,16 @@ async def approve_purchase_request(
     pr.rejection_reason = None
     pr.approval_step = required
     pr.updated_at = datetime.utcnow()
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="pr_approved",
-            entity="purchase_request",
-            entity_id=pr.id,
-            details={"request_number": pr.request_number, "steps": required},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="pr_approved",
+        entity="purchase_request",
+        entity_id=pr.id,
+        details={"request_number": pr.request_number, "steps": required},
+        module='purchasing',
     )
     await db.flush()
     return pr
@@ -917,15 +923,16 @@ async def reject_purchase_request(
     pr.status = "rejected"
     pr.rejection_reason = (reason or "").strip() or None
     pr.updated_at = datetime.utcnow()
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="pr_rejected",
-            entity="purchase_request",
-            entity_id=pr.id,
-            details={"request_number": pr.request_number, "reason": pr.rejection_reason, "step": step},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="pr_rejected",
+        entity="purchase_request",
+        entity_id=pr.id,
+        details={"request_number": pr.request_number, "reason": pr.rejection_reason, "step": step},
+        module='purchasing',
     )
     await db.flush()
     return pr
@@ -939,15 +946,16 @@ async def cancel_purchase_request(
         raise HTTPException(status_code=409, detail=f"Cannot cancel PR in status {pr.status}")
     pr.status = "cancelled"
     pr.updated_at = datetime.utcnow()
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="pr_cancelled",
-            entity="purchase_request",
-            entity_id=pr.id,
-            details={"request_number": pr.request_number},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="pr_cancelled",
+        entity="purchase_request",
+        entity_id=pr.id,
+        details={"request_number": pr.request_number},
+        module='purchasing',
     )
     await db.flush()
     return pr
@@ -983,15 +991,16 @@ async def convert_purchase_request_to_po(
     pr.status = "converted"
     pr.purchase_order_id = po.id
     pr.updated_at = datetime.utcnow()
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="pr_converted",
-            entity="purchase_request",
-            entity_id=pr.id,
-            details={"request_number": pr.request_number, "po_id": po.id, "po_number": po.po_number},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="pr_converted",
+        entity="purchase_request",
+        entity_id=pr.id,
+        details={"request_number": pr.request_number, "po_id": po.id, "po_number": po.po_number},
+        module='purchasing',
     )
     await db.flush()
     return pr, po
@@ -1064,15 +1073,16 @@ async def create_purchase_order(
             )
         )
 
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="po_created",
-            entity="purchase_order",
-            entity_id=po.id,
-            details={"po_number": po.po_number, "total": float(po.total_amount)},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="po_created",
+        entity="purchase_order",
+        entity_id=po.id,
+        details={"po_number": po.po_number, "total": float(po.total_amount)},
+        module='purchasing',
     )
     return po
 
@@ -1166,15 +1176,16 @@ async def send_purchase_order(
             raise HTTPException(status_code=502, detail=f"Failed to email PO: {result.error}")
         po.emailed_to = recipient
 
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="po_sent",
-            entity="purchase_order",
-            entity_id=po.id,
-            details={"po_number": po.po_number, "delivery": delivery},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="po_sent",
+        entity="purchase_order",
+        entity_id=po.id,
+        details={"po_number": po.po_number, "delivery": delivery},
+        module='purchasing',
     )
     await db.flush()
     return po, delivery
@@ -1189,15 +1200,16 @@ async def cancel_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: st
         raise HTTPException(status_code=409, detail="Cannot cancel PO after goods have been received")
     po.status = "cancelled"
     po.updated_at = datetime.utcnow()
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="po_cancelled",
-            entity="purchase_order",
-            entity_id=po.id,
-            details={"po_number": po.po_number},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="po_cancelled",
+        entity="purchase_order",
+        entity_id=po.id,
+        details={"po_number": po.po_number},
+        module='purchasing',
     )
     return po
 
@@ -1366,20 +1378,21 @@ async def create_grn(
         entity_type="goods_receipt",
         entity_id=grn.id,
     )
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="grn_posted",
-            entity="goods_receipt",
-            entity_id=grn.id,
-            details={
-                "grn_number": grn.grn_number,
-                "po_id": po.id,
-                "po_status": po.status,
-                "accepted_value": accepted_value,
-            },
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="grn_posted",
+        entity="goods_receipt",
+        entity_id=grn.id,
+        details={
+        "grn_number": grn.grn_number,
+        "po_id": po.id,
+        "po_status": po.status,
+        "accepted_value": accepted_value,
+        },
+        module='purchasing',
     )
     return grn
 
@@ -2027,20 +2040,21 @@ async def post_purchase_return(
         entity_type="purchase_return",
         entity_id=ret.id,
     )
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="purchase_return_posted",
-            entity="purchase_return",
-            entity_id=ret.id,
-            details={
-                "return_number": ret.return_number,
-                "debit_note_number": ret.debit_note_number,
-                "total_amount": credit,
-                "reason": ret.reason,
-            },
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="purchase_return_posted",
+        entity="purchase_return",
+        entity_id=ret.id,
+        details={
+        "return_number": ret.return_number,
+        "debit_note_number": ret.debit_note_number,
+        "total_amount": credit,
+        "reason": ret.reason,
+        },
+        module='purchasing',
     )
     await db.flush()
     return ret
@@ -2330,22 +2344,23 @@ async def approve_purchase_invoice(
         entity_type="purchase_invoice",
         entity_id=inv.id,
     )
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="purchase_invoice_approved",
-            entity="purchase_invoice",
-            entity_id=inv.id,
-            details={
-                "invoice_number": inv.invoice_number,
-                "total": float(inv.total_amount),
-                "ap_posted": inv.ap_posted,
-                "goods_receipt_id": inv.goods_receipt_id,
-                "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
-                "reverse_charge_tax": float(getattr(inv, "reverse_charge_tax", 0) or 0),
-            },
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="purchase_invoice_approved",
+        entity="purchase_invoice",
+        entity_id=inv.id,
+        details={
+        "invoice_number": inv.invoice_number,
+        "total": float(inv.total_amount),
+        "ap_posted": inv.ap_posted,
+        "goods_receipt_id": inv.goods_receipt_id,
+        "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
+        "reverse_charge_tax": float(getattr(inv, "reverse_charge_tax", 0) or 0),
+        },
+        module='purchasing',
     )
     await db.flush()
     return inv

@@ -648,19 +648,20 @@ async def post_return(
                 variant.stock_qty = float(variant.stock_qty or 0) + qty
         else:
             # Discarded: still log movement as adjust out of sold goods without increasing sellable stock
-            db.add(
-                m.AuditLog(
-                    tenant_id=tenant_id,
-                    user_id=user_id,
-                    action="return_discarded",
-                    entity="sales_return_item",
-                    entity_id=item.id,
-                    details={
-                        "product_id": item.product_id,
-                        "variant_id": item.variant_id,
-                        "quantity": float(item.quantity),
-                    },
-                )
+            from app import audit as audit_svc
+            await audit_svc.record_event(
+                db,
+                tenant_id=tenant_id,
+                user_id=user_id,
+                action="return_discarded",
+                entity="sales_return_item",
+                entity_id=item.id,
+                details={
+                "product_id": item.product_id,
+                "variant_id": item.variant_id,
+                "quantity": float(item.quantity),
+                },
+                module='sales',
             )
 
     customer = await get_customer(db, tenant_id, ret.customer_id)

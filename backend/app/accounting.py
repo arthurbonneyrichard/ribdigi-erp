@@ -264,20 +264,21 @@ async def post_journal_entry(
             account.account_type, line["debit"], line["credit"]
         )
 
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="journal_posted",
-            entity="journal_entry",
-            entity_id=entry.id,
-            details={
-                "entry_number": entry.entry_number,
-                "total_debit": total_debit,
-                "source_type": source_type,
-                "source_id": source_id,
-            },
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="journal_posted",
+        entity="journal_entry",
+        entity_id=entry.id,
+        details={
+        "entry_number": entry.entry_number,
+        "total_debit": total_debit,
+        "source_type": source_type,
+        "source_id": source_id,
+        },
+        module='accounting',
     )
     return entry
 
