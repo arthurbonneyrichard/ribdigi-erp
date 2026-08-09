@@ -293,6 +293,7 @@ class ProductCategoryCreate(BaseModel):
     code: str
     name: str
     parent_id: str | None = None
+    tax_rate_id: str | None = None
 
 
 class ProductCategoryUpdate(BaseModel):
@@ -300,6 +301,7 @@ class ProductCategoryUpdate(BaseModel):
     name: str | None = None
     parent_id: str | None = None
     is_active: bool | None = None
+    tax_rate_id: str | None = None
 
 
 class BrandCreate(BaseModel):

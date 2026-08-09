@@ -20,3 +20,7 @@ Stage 9 Report Fidelity & Document Attachments Closeout (J1, R1, R2, D1, H9x) de
 - Agents treat Stage 9 J1, R1, R2, D1, H9x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–8 freezes (ADR-008, ADR-010, ADR-012, ADR-014, ADR-016, ADR-018, ADR-020, ADR-022) remain in force for their scopes.
+
+## Amendment (2026-08-09)
+
+Product owner approved opening Stage 10 via CONTINUE after Stage 9 freeze. Stage 10 track is open under [ADR-025](ADR_025_STAGE10_OPEN.md) + [STAGE_10_PLAN.md](STAGE_10_PLAN.md). Stage 9 feature scope remains frozen (bugfixes / security / tests / docs only).

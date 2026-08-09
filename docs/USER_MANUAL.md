@@ -202,8 +202,8 @@ Click the **🔔 bell icon** to see:
 > **Note:** Stock valuation (Reports → Inventory) uses **standard cost**: quantity × the product’s current cost price. Changing cost price updates valuation immediately. FIFO/LIFO/weighted-average layers are not used.
 
 #### Managing Categories & Brands
-- **Categories:** Go to **Inventory → Categories** to create a hierarchical tree (e.g., Electronics → Mobile Phones → Smartphones)
-- **Brands:** Go to **Inventory → Brands** to add manufacturer brands with logos
+- **Categories:** Go to **Inventory → Catalog** to create a hierarchical tree (e.g., Electronics → Mobile Phones → Smartphones). Optionally assign a **tax rate** to a category; products in that category (or child categories without their own rate) inherit it unless the product has its own tax rate or is tax-exempt.
+- **Brands:** Go to **Inventory → Catalog** to add manufacturer brands with logos
 
 ### 3.2 Stock Operations
 
@@ -848,6 +848,8 @@ For adjustments, accruals, and corrections:
 4. Set as **Default** if applicable
 
 ### 10.2 Tax on Transactions
+
+Resolution order for a product line: **tax-exempt** → **line override** → **product tax rate** → **category tax rate** (walks parent categories) → **tenant default**.
 
 Tax is automatically calculated on:
 - Sales invoices

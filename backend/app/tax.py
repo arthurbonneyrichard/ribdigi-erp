@@ -295,13 +295,43 @@ def tax_spec_from_rate(rate: m.TaxRate) -> TaxSpec:
     )
 
 
+async def _resolve_category_tax_rate(
+    db: AsyncSession, tenant_id: str, category_id: str | None
+) -> m.TaxRate | None:
+    """Walk category → parent for the first active tax_rate_id (Stage 10 T1)."""
+    cursor_id = category_id
+    seen: set[str] = set()
+    while cursor_id and cursor_id not in seen:
+        seen.add(cursor_id)
+        category = (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.id == cursor_id,
+                    m.ProductCategory.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not category:
+            return None
+        if category.tax_rate_id:
+            rate = await get_tax_rate(db, tenant_id, category.tax_rate_id)
+            if rate.is_active:
+                return rate
+        cursor_id = category.parent_id
+    return None
+
+
 async def resolve_product_tax(
     db: AsyncSession,
     tenant_id: str,
     product: m.Product,
     explicit_rate: float | None = None,
 ) -> TaxSpec:
-    """Resolve full tax spec for a product line."""
+    """Resolve full tax spec for a product line.
+
+    Precedence: exempt → explicit line rate → product.tax_rate_id →
+    category tax (walk parents) → tenant default → zero.
+    """
     if product.tax_exempt:
         return TaxSpec(
             rate_pct=0.0,
@@ -322,6 +352,11 @@ async def resolve_product_tax(
         rate = await get_tax_rate(db, tenant_id, product.tax_rate_id)
         if rate.is_active:
             return tax_spec_from_rate(rate)
+    category_rate = await _resolve_category_tax_rate(
+        db, tenant_id, getattr(product, "category_id", None)
+    )
+    if category_rate:
+        return tax_spec_from_rate(category_rate)
     default = await get_default_tax_rate(db, tenant_id)
     if default:
         return tax_spec_from_rate(default)

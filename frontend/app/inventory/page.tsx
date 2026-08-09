@@ -112,6 +112,8 @@ export default function Page() {
   const [catCode, setCatCode] = useState('');
   const [catName, setCatName] = useState('');
   const [catParentId, setCatParentId] = useState('');
+  const [catTaxRateId, setCatTaxRateId] = useState('');
+  const [taxRates, setTaxRates] = useState<any[]>([]);
   const [brandCode, setBrandCode] = useState('');
   const [brandName, setBrandName] = useState('');
   const [unitCode, setUnitCode] = useState('');
@@ -131,7 +133,7 @@ export default function Page() {
   const [stockQty, setStockQty] = useState('10');
 
   async function refresh() {
-    const [p, e, c, tree, b, u, w, sc, tr, ls, sup] = await Promise.all([
+    const [p, e, c, tree, b, u, w, sc, tr, ls, sup, tax] = await Promise.all([
       api('/products'),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
@@ -143,10 +145,12 @@ export default function Page() {
       api('/inventory/stock-transfers').catch(() => ({ data: [] })),
       api('/inventory/low-stock').catch(() => ({ data: [] })),
       api('/suppliers').catch(() => ({ data: [] })),
+      api('/tax/rates').catch(() => ({ data: [] })),
     ]);
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
     setCategories(c.data || []);
+    setTaxRates(tax.data || []);
     setCategoryTree(tree.data || []);
     setBrands(b.data || []);
     setUnits(u.data || []);
@@ -843,33 +847,39 @@ export default function Page() {
   }
 
   function renderCategoryNodes(nodes: any[], depth = 0): any {
-    return nodes.map((node) => (
-      <li key={node.id} style={{ marginLeft: depth * 16 }}>
-        <span>
-          {node.code} — {node.name}
-          {!node.is_active ? ' [inactive]' : ''}
-        </span>
-        {node.is_active && (
-          <button
-            type="button"
-            style={{ marginLeft: 8 }}
-            onClick={async () => {
-              setError('');
-              try {
-                await api(`/catalog/categories/${node.id}`, { method: 'DELETE' });
-                setMessage('Category deactivated');
-                await refresh();
-              } catch (err: any) {
-                setError(err.message);
-              }
-            }}
-          >
-            Deactivate
-          </button>
-        )}
-        {node.children?.length ? <ul className="muted">{renderCategoryNodes(node.children, depth + 1)}</ul> : null}
-      </li>
-    ));
+    return nodes.map((node) => {
+      const rate = taxRates.find((r) => r.id === node.tax_rate_id);
+      return (
+        <li key={node.id} style={{ marginLeft: depth * 16 }}>
+          <span>
+            {node.code} — {node.name}
+            {rate ? ` · tax ${rate.name} (${rate.rate}%)` : ''}
+            {!node.is_active ? ' [inactive]' : ''}
+          </span>
+          {node.is_active && (
+            <button
+              type="button"
+              style={{ marginLeft: 8 }}
+              onClick={async () => {
+                setError('');
+                try {
+                  await api(`/catalog/categories/${node.id}`, { method: 'DELETE' });
+                  setMessage('Category deactivated');
+                  await refresh();
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Deactivate
+            </button>
+          )}
+          {node.children?.length ? (
+            <ul className="muted">{renderCategoryNodes(node.children, depth + 1)}</ul>
+          ) : null}
+        </li>
+      );
+    });
   }
 
   async function addVariant() {
@@ -1228,6 +1238,20 @@ export default function Page() {
                 </option>
               ))}
             </select>
+            <select
+              value={catTaxRateId}
+              onChange={(e) => setCatTaxRateId(e.target.value)}
+              aria-label="Category tax rate"
+            >
+              <option value="">Tax rate (optional)</option>
+              {taxRates
+                .filter((r) => r.is_active !== false)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.rate}%)
+                  </option>
+                ))}
+            </select>
             <button
               onClick={async () => {
                 setError('');
@@ -1238,11 +1262,13 @@ export default function Page() {
                       code: catCode,
                       name: catName,
                       parent_id: catParentId || null,
+                      tax_rate_id: catTaxRateId || null,
                     }),
                   });
                   setCatCode('');
                   setCatName('');
                   setCatParentId('');
+                  setCatTaxRateId('');
                   setMessage('Category created');
                   await refresh();
                 } catch (err: any) {

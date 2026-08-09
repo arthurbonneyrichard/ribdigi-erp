@@ -110,6 +110,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 9 exit (2026-08-09):** J1, R1, R2, D1, H9x met — `docs/STAGE_9_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_024_STAGE9_FREEZE.md`. Fidelity: `docs/STAGE_9_FIDELITY.md`.
 
+**Stage 10 open (2026-08-09):** Tax Fidelity & Document Workflow Closeout track approved — `docs/ADR_025_STAGE10_OPEN.md` + `docs/STAGE_10_PLAN.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -683,7 +685,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 9 closed (ADR-024). Next track requires CONTINUE after freeze. Stage 1–8 freezes remain in force.
+**Active delivery plan:** Stage 10 open (ADR-025) — T1 → T2 → A1 → B1 → H10x. Stage 9 remains frozen (ADR-024).
 
 ### 6.2 Features
 

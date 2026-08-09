@@ -683,7 +683,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Add tax types (VAT, GST, Sales Tax, etc.)
   - [ ] Configure tax rates (percentage)
   - [ ] Set tax applicability (inclusive/exclusive pricing)
-  - [ ] Product-category-specific tax rules
+  - [x] Product-category-specific tax rules (Stage 10 T1 — category `tax_rate_id`, parent walk)
   - [ ] Compound tax (tax on tax) support
 
 #### BR-12.2 Automatic Tax Calculation
