@@ -93,6 +93,7 @@ async def test_invoice_print_send_overdue_and_no_repost(client, db_session, monk
     assert posted.status_code == 200, posted.text
     assert posted.json()["data"]["status"] == "posted"
 
+    await db_session.expire_all()
     product_before = (
         await db_session.execute(select(m.Product).where(m.Product.id == seed["p1"].id))
     ).scalar_one()

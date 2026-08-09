@@ -554,7 +554,7 @@ export default function Page() {
           <select value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)}>
             <option value="">Return from invoice</option>
             {invoices
-              .filter((i) => ['posted', 'partial', 'paid'].includes(i.status))
+              .filter((i) => ['posted', 'sent', 'partial', 'paid', 'overdue'].includes(i.status))
               .map((i) => (
                 <option key={i.id} value={i.id}>
                   {i.invoice_number}
