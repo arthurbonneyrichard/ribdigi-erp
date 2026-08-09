@@ -224,6 +224,19 @@ def to_csv(rows: list[m.AuditLog]) -> str:
     return buf.getvalue()
 
 
+def to_pdf(rows: list[m.AuditLog], *, title: str = "Audit Logs") -> bytes:
+    from app.report_export import to_pdf as build_pdf
+
+    lines = [
+        f"{(r.created_at.isoformat() if r.created_at else '')} | {r.module or '-'} | "
+        f"{r.action} | {r.entity}:{r.entity_id or '-'} | user={r.user_id or '-'}"
+        for r in rows
+    ]
+    if not lines:
+        lines = ["No audit events in selection."]
+    return build_pdf(title, lines, subtitle=f"{len(rows)} event(s)")
+
+
 def reject_mutation() -> None:
     raise HTTPException(
         status_code=405,

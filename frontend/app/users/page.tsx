@@ -77,6 +77,8 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
+  const [importReport, setImportReport] = useState<any>(null);
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
   async function refresh() {
     const [usersRes, rolesRes, meRes, br, dep] = await Promise.all([
@@ -139,6 +141,56 @@ export default function Page() {
       setError(err.message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function downloadUserImportTemplate() {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/users/import/template`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Template download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'user_import_template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function importUsersCsv(file: File, dryRun: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch(`${apiBase}/users/import?dry_run=${dryRun}`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+        body,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.detail || json.message || 'Import failed');
+      setImportReport(json.data);
+      setMessage(json.message || (dryRun ? 'Dry-run complete' : 'Import complete'));
+      if (!dryRun) await refresh();
+    } catch (err: any) {
+      setError(err.message);
     }
   }
 
@@ -381,6 +433,54 @@ export default function Page() {
               Close
             </button>
           </div>
+        </div>
+      )}
+
+      {canWrite && (
+        <div className="card" style={{ margin: '20px 0', maxWidth: 640 }}>
+          <h2 style={{ fontSize: 18 }}>Bulk CSV import</h2>
+          <p className="muted">
+            Columns: full_name, email, phone, role, branch_code, department_code, password
+            (optional), record_scope.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            <button type="button" onClick={downloadUserImportTemplate}>
+              Download template
+            </button>
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+              Dry-run
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) importUsersCsv(f, true);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+              Commit
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) importUsersCsv(f, false);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+          </div>
+          {importReport && (
+            <p className="muted">
+              Rows {importReport.total_rows} · valid {importReport.valid_rows} · errors{' '}
+              {importReport.error_rows}
+              {importReport.errors?.length
+                ? ` · first error: ${(importReport.errors[0].errors || []).join('; ')}`
+                : ''}
+            </p>
+          )}
         </div>
       )}
 

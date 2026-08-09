@@ -68,6 +68,9 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "contact_person_email": getattr(tenant, "contact_person_email", None),
         "contact_person_phone": getattr(tenant, "contact_person_phone", None),
         "inactivity_timeout_minutes": int(getattr(tenant, "inactivity_timeout_minutes", None) or 30),
+        "date_format": getattr(tenant, "date_format", None) or "DD/MM/YYYY",
+        "number_format": getattr(tenant, "number_format", None) or "1,234.56",
+        "time_format": getattr(tenant, "time_format", None) or "24h",
         "timezone": tenant.timezone or "Africa/Accra",
         "fiscal_year_start": tenant.fiscal_year_start or "01-01",
         "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
@@ -315,6 +318,9 @@ async def update_profile(
     contact_person_email: str | None = None,
     contact_person_phone: str | None = None,
     inactivity_timeout_minutes: int | None = None,
+    date_format: str | None = None,
+    number_format: str | None = None,
+    time_format: str | None = None,
 ) -> m.Tenant:
     if company_name is not None:
         name = company_name.strip()
@@ -411,6 +417,81 @@ async def update_profile(
                 detail="inactivity_timeout_minutes must be between 5 and 480",
             )
         tenant.inactivity_timeout_minutes = minutes
+    if date_format is not None:
+        fmt = date_format.strip().upper()
+        if fmt not in {"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"}:
+            raise HTTPException(
+                status_code=400,
+                detail="date_format must be one of: DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD",
+            )
+        tenant.date_format = fmt
+    if number_format is not None:
+        nfmt = number_format.strip()
+        if nfmt not in {"1,234.56", "1.234,56", "1 234.56"}:
+            raise HTTPException(
+                status_code=400,
+                detail="number_format must be one of: 1,234.56, 1.234,56, 1 234.56",
+            )
+        tenant.number_format = nfmt
+    if time_format is not None:
+        tfmt = time_format.strip().lower()
+        if tfmt not in {"24h", "12h"}:
+            raise HTTPException(status_code=400, detail="time_format must be 24h or 12h")
+        tenant.time_format = tfmt
+    await db.flush()
+    return tenant
+
+
+VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
+VALID_NUMBER_FORMATS = frozenset({"1,234.56", "1.234,56", "1 234.56"})
+
+
+async def update_smtp_settings(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    smtp_enabled: bool | None = None,
+    smtp_host: str | None = None,
+    smtp_port: int | None = None,
+    smtp_username: str | None = None,
+    smtp_password: str | None = None,
+    clear_password: bool = False,
+    smtp_from_email: str | None = None,
+    smtp_from_name: str | None = None,
+    smtp_use_tls: bool | None = None,
+    smtp_use_ssl: bool | None = None,
+) -> m.Tenant:
+    if smtp_enabled is not None:
+        tenant.smtp_enabled = bool(smtp_enabled)
+    if smtp_host is not None:
+        tenant.smtp_host = smtp_host.strip() or None
+    if smtp_port is not None:
+        port = int(smtp_port)
+        if port < 1 or port > 65535:
+            raise HTTPException(status_code=400, detail="smtp_port must be 1–65535")
+        tenant.smtp_port = port
+    if smtp_username is not None:
+        tenant.smtp_username = smtp_username.strip() or None
+    if clear_password:
+        tenant.smtp_password_enc = None
+    elif smtp_password is not None:
+        from app.totp import encrypt_secret
+
+        pwd = smtp_password.strip()
+        tenant.smtp_password_enc = encrypt_secret(pwd) if pwd else None
+    if smtp_from_email is not None:
+        tenant.smtp_from_email = smtp_from_email.strip() or None
+    if smtp_from_name is not None:
+        tenant.smtp_from_name = smtp_from_name.strip() or None
+    if smtp_use_tls is not None:
+        tenant.smtp_use_tls = bool(smtp_use_tls)
+    if smtp_use_ssl is not None:
+        tenant.smtp_use_ssl = bool(smtp_use_ssl)
+    if tenant.smtp_enabled and not ((tenant.smtp_host or "").strip() and (tenant.smtp_from_email or "").strip()):
+        raise HTTPException(
+            status_code=400,
+            detail="smtp_host and smtp_from_email are required when smtp_enabled is true",
+        )
     await db.flush()
     return tenant
 

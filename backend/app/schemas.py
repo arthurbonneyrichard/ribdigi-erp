@@ -116,6 +116,22 @@ class TenantProfileUpdate(BaseModel):
     contact_person_email: EmailStr | None = None
     contact_person_phone: str | None = None
     inactivity_timeout_minutes: int | None = Field(default=None, ge=5, le=480)
+    date_format: str | None = None
+    number_format: str | None = None
+    time_format: str | None = None
+
+
+class EmailSettingsUpdate(BaseModel):
+    smtp_enabled: bool | None = None
+    smtp_host: str | None = None
+    smtp_port: int | None = Field(default=None, ge=1, le=65535)
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    clear_password: bool = False
+    smtp_from_email: EmailStr | None = None
+    smtp_from_name: str | None = None
+    smtp_use_tls: bool | None = None
+    smtp_use_ssl: bool | None = None
 
 
 class InvoiceSendRequest(BaseModel):

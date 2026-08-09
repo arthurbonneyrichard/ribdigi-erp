@@ -45,6 +45,7 @@ from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
 from app import barcodes as barcode_svc
 from app import product_import as product_import_svc
+from app import user_import as user_import_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -139,6 +140,7 @@ from app.schemas import (
     TenantSuspendRequest,
     TransactionCreate,
     EmailTestRequest,
+    EmailSettingsUpdate,
     TwoFactorConfirm,
     TwoFactorDisable,
     TwoFactorVerify,
@@ -372,6 +374,9 @@ async def tenant_me_update(
         ),
         contact_person_phone=payload.contact_person_phone,
         inactivity_timeout_minutes=payload.inactivity_timeout_minutes,
+        date_format=payload.date_format,
+        number_format=payload.number_format,
+        time_format=payload.time_format,
     )
     await audit_svc.record_event(
         db,
@@ -574,10 +579,54 @@ async def tenant_activate_by_ref(
 @api.get("/settings/email")
 async def settings_email_get(
     claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
 ):
     from app import emailer
 
-    return env(emailer.email_status())
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env(emailer.email_status(tenant))
+
+
+@api.patch("/settings/email")
+async def settings_email_update(
+    payload: EmailSettingsUpdate,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import emailer
+
+    tenants_svc.assert_writable(claims)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    tenant = await tenants_svc.update_smtp_settings(
+        db,
+        tenant,
+        smtp_enabled=payload.smtp_enabled,
+        smtp_host=payload.smtp_host,
+        smtp_port=payload.smtp_port,
+        smtp_username=payload.smtp_username,
+        smtp_password=payload.smtp_password,
+        clear_password=payload.clear_password,
+        smtp_from_email=str(payload.smtp_from_email) if payload.smtp_from_email is not None else None,
+        smtp_from_name=payload.smtp_from_name,
+        smtp_use_tls=payload.smtp_use_tls,
+        smtp_use_ssl=payload.smtp_use_ssl,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="settings",
+        action="email_settings_update",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={
+            "smtp_enabled": tenant.smtp_enabled,
+            "smtp_host": tenant.smtp_host,
+            "smtp_from_email": tenant.smtp_from_email,
+        },
+    )
+    await db.commit()
+    return env(emailer.email_status(tenant), "Email settings updated")
 
 
 @api.post("/settings/email/test")
@@ -588,11 +637,12 @@ async def settings_email_test(
 ):
     from app import emailer
 
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     user = await db.get(m.User, claims["sub"])
     to = str(payload.to) if payload and payload.to else (user.email if user else None)
     if not to:
         raise HTTPException(status_code=400, detail="No recipient email available")
-    result = await emailer.send_test_email(to=to)
+    result = await emailer.send_test_email(to=to, tenant=tenant)
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -600,7 +650,7 @@ async def settings_email_test(
         module="settings",
         action="email_test",
         entity="email",
-        details={"to": to, "sent": result.sent, "mode": result.mode},
+        details={"to": to, "sent": result.sent, "mode": result.mode, "source": emailer.resolve_smtp_config(tenant).get("source")},
     )
     await db.commit()
     if not result.sent and result.mode == "smtp":
@@ -1850,6 +1900,65 @@ async def add_user(
     if settings.DEBUG or settings.APP_ENV.lower() != "production":
         data["email_verification_token"] = raw
     return env(data, "User created; verification email dispatched")
+
+
+@api.get("/users/import/template")
+async def users_import_template(
+    claims=Depends(require_permission("users", "read")),
+):
+    text = user_import_svc.template_csv()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="user_import_template.csv"'},
+    )
+
+
+@api.post("/users/import")
+async def users_import(
+    file: UploadFile = File(...),
+    dry_run: bool = True,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    try:
+        content = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        content = raw.decode("latin-1")
+    result = await user_import_svc.import_users_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_id=claims["sub"],
+        actor_role=claims.get("role"),
+        content=content,
+        dry_run=dry_run,
+    )
+    if not dry_run and result["valid_rows"]:
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="users",
+            action="user_import",
+            entity="user",
+            entity_id=None,
+            details={
+                "created": result["valid_rows"],
+                "errors": result["error_rows"],
+                "filename": file.filename,
+            },
+        )
+        await db.commit()
+    elif not dry_run:
+        await db.commit()
+    return env(
+        result,
+        "Dry-run complete" if dry_run else f"Imported {result['valid_rows']} users",
+    )
 
 
 @api.patch("/users/{user_id}")
@@ -8617,6 +8726,7 @@ async def audit_logs_export(
     action: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
+    format: str = "csv",
     claims=Depends(require_permission("audit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8634,8 +8744,18 @@ async def audit_logs_export(
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         limit=1000,
     )
-    # Reverse for chronological CSV
-    csv_text = audit_svc.to_csv(list(reversed(rows)))
+    chronological = list(reversed(rows))
+    fmt = (format or "csv").strip().lower()
+    if fmt == "pdf":
+        pdf_bytes = audit_svc.to_pdf(chronological)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=audit-logs.pdf"},
+        )
+    if fmt != "csv":
+        raise HTTPException(status_code=400, detail="format must be csv or pdf")
+    csv_text = audit_svc.to_csv(chronological)
     return PlainTextResponse(
         content=csv_text,
         media_type="text/csv",

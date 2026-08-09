@@ -41,25 +41,81 @@ def smtp_configured() -> bool:
     return bool((settings.SMTP_HOST or "").strip() and (settings.SMTP_FROM_EMAIL or "").strip())
 
 
-def email_status() -> dict:
+def _tenant_smtp_ready(tenant: Any | None) -> bool:
+    if tenant is None or not bool(getattr(tenant, "smtp_enabled", False)):
+        return False
+    host = (getattr(tenant, "smtp_host", None) or "").strip()
+    from_email = (getattr(tenant, "smtp_from_email", None) or "").strip()
+    return bool(host and from_email)
+
+
+def resolve_smtp_config(tenant: Any | None = None) -> dict[str, Any]:
+    """Effective SMTP settings: tenant override when enabled, else deployment env."""
+    if _tenant_smtp_ready(tenant):
+        password = None
+        enc = getattr(tenant, "smtp_password_enc", None)
+        if enc:
+            from app.totp import decrypt_secret
+
+            try:
+                password = decrypt_secret(enc)
+            except Exception:
+                password = None
+        return {
+            "source": "tenant",
+            "enabled": True,
+            "host": (tenant.smtp_host or "").strip(),
+            "port": int(tenant.smtp_port or 587),
+            "username": (tenant.smtp_username or "").strip() or None,
+            "password": password,
+            "from_email": (tenant.smtp_from_email or "").strip(),
+            "from_name": (tenant.smtp_from_name or settings.SMTP_FROM_NAME or "RIBDIGI ERP").strip(),
+            "use_tls": bool(getattr(tenant, "smtp_use_tls", True)),
+            "use_ssl": bool(getattr(tenant, "smtp_use_ssl", False)),
+        }
     return {
+        "source": "env",
         "enabled": bool(settings.EMAIL_ENABLED),
-        "configured": smtp_configured(),
-        "mode": _delivery_mode(),
-        "host": settings.SMTP_HOST or None,
-        "port": settings.SMTP_PORT,
-        "from_email": settings.SMTP_FROM_EMAIL or None,
-        "from_name": settings.SMTP_FROM_NAME,
+        "host": (settings.SMTP_HOST or "").strip(),
+        "port": int(settings.SMTP_PORT),
+        "username": (settings.SMTP_USER or "").strip() or None,
+        "password": settings.SMTP_PASSWORD or None,
+        "from_email": (settings.SMTP_FROM_EMAIL or "").strip(),
+        "from_name": (settings.SMTP_FROM_NAME or "RIBDIGI ERP").strip(),
         "use_tls": bool(settings.SMTP_USE_TLS),
         "use_ssl": bool(settings.SMTP_USE_SSL),
+    }
+
+
+def email_status(tenant: Any | None = None) -> dict:
+    cfg = resolve_smtp_config(tenant)
+    configured = bool(cfg["host"] and cfg["from_email"])
+    mode = "disabled"
+    if settings.EMAIL_ENABLED:
+        mode = "smtp" if configured else "console"
+    return {
+        "enabled": bool(settings.EMAIL_ENABLED),
+        "configured": configured,
+        "mode": mode,
+        "source": cfg["source"],
+        "host": cfg["host"] or None,
+        "port": cfg["port"],
+        "from_email": cfg["from_email"] or None,
+        "from_name": cfg["from_name"],
+        "use_tls": bool(cfg["use_tls"]),
+        "use_ssl": bool(cfg["use_ssl"]),
+        "username": cfg["username"],
+        "has_password": bool(cfg["password"]),
+        "tenant_override_enabled": bool(getattr(tenant, "smtp_enabled", False)) if tenant else False,
         "frontend_url": settings.FRONTEND_URL,
     }
 
 
-def _delivery_mode() -> str:
+def _delivery_mode(tenant: Any | None = None) -> str:
     if not settings.EMAIL_ENABLED:
         return "disabled"
-    if smtp_configured():
+    cfg = resolve_smtp_config(tenant)
+    if cfg["host"] and cfg["from_email"]:
         return "smtp"
     return "console"
 
@@ -103,14 +159,16 @@ def build_message(
     text_body: str,
     html_body: str | None = None,
     attachments: list[dict[str, Any]] | None = None,
+    smtp_config: dict[str, Any] | None = None,
 ) -> EmailMessage:
     recipients = [to] if isinstance(to, str) else list(to)
     if not recipients:
         raise HTTPException(status_code=400, detail="At least one recipient is required")
+    cfg = smtp_config or resolve_smtp_config()
     msg = EmailMessage()
     msg["Subject"] = subject
-    from_name = (settings.SMTP_FROM_NAME or "RIBDIGI ERP").strip()
-    from_email = (settings.SMTP_FROM_EMAIL or "noreply@localhost").strip()
+    from_name = (cfg.get("from_name") or "RIBDIGI ERP").strip()
+    from_email = (cfg.get("from_email") or "noreply@localhost").strip()
     msg["From"] = f"{from_name} <{from_email}>"
     msg["To"] = ", ".join(recipients)
     msg.set_content(text_body)
@@ -120,14 +178,15 @@ def build_message(
     return msg
 
 
-def _smtp_send_sync(msg: EmailMessage) -> None:
-    host = settings.SMTP_HOST
-    port = int(settings.SMTP_PORT)
+def _smtp_send_sync(msg: EmailMessage, smtp_config: dict[str, Any] | None = None) -> None:
+    cfg = smtp_config or resolve_smtp_config()
+    host = cfg["host"]
+    port = int(cfg["port"] or 587)
     timeout = float(settings.SMTP_TIMEOUT_SECONDS)
-    user = (settings.SMTP_USER or "").strip() or None
-    password = settings.SMTP_PASSWORD or None
+    user = (cfg.get("username") or "").strip() or None
+    password = cfg.get("password") or None
 
-    if settings.SMTP_USE_SSL:
+    if cfg.get("use_ssl"):
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(host, port, timeout=timeout, context=context) as server:
             if user and password:
@@ -137,7 +196,7 @@ def _smtp_send_sync(msg: EmailMessage) -> None:
 
     with smtplib.SMTP(host, port, timeout=timeout) as server:
         server.ehlo()
-        if settings.SMTP_USE_TLS:
+        if cfg.get("use_tls"):
             context = ssl.create_default_context()
             server.starttls(context=context)
             server.ehlo()
@@ -153,18 +212,21 @@ async def send_email(
     text_body: str,
     html_body: str | None = None,
     attachments: list[dict[str, Any]] | None = None,
+    tenant: Any | None = None,
 ) -> EmailResult:
     recipients = [to] if isinstance(to, str) else [r for r in to if r]
-    mode = _delivery_mode()
+    mode = _delivery_mode(tenant)
     if mode == "disabled":
         return EmailResult(sent=False, mode="disabled", recipients=recipients)
 
+    cfg = resolve_smtp_config(tenant)
     msg = build_message(
         to=recipients,
         subject=subject,
         text_body=text_body,
         html_body=html_body,
         attachments=attachments,
+        smtp_config=cfg,
     )
     attachment_meta = [
         {
@@ -184,6 +246,7 @@ async def send_email(
         "html_body": html_body,
         "attachments": attachment_meta,
         "mode": mode,
+        "source": cfg.get("source"),
     }
 
     if mode == "console":
@@ -192,7 +255,7 @@ async def send_email(
         return EmailResult(sent=True, mode="console", recipients=recipients)
 
     try:
-        await asyncio.to_thread(_smtp_send_sync, msg)
+        await asyncio.to_thread(_smtp_send_sync, msg, cfg)
         _DEV_OUTBOX.append({**record, "delivered": True})
         return EmailResult(sent=True, mode="smtp", recipients=recipients)
     except Exception as exc:
@@ -438,14 +501,17 @@ async def send_purchase_order_email(
     return await send_email(to=to, subject=subject, text_body=text_body, html_body=html)
 
 
-async def send_test_email(*, to: str) -> EmailResult:
+async def send_test_email(*, to: str, tenant: Any | None = None) -> EmailResult:
     if not settings.EMAIL_ENABLED:
         raise HTTPException(status_code=400, detail="EMAIL_ENABLED is false")
-    if not smtp_configured() and _delivery_mode() != "console":
+    mode = _delivery_mode(tenant)
+    cfg = resolve_smtp_config(tenant)
+    if mode == "smtp" and not (cfg["host"] and cfg["from_email"]):
         raise HTTPException(status_code=400, detail="SMTP is not configured")
     return await send_email(
         to=to,
         subject="RIBDIGI ERP test email",
         text_body="This is a test email from RIBDIGI ERP. SMTP delivery is working.",
         html_body="<p>This is a test email from <strong>RIBDIGI ERP</strong>. SMTP delivery is working.</p>",
+        tenant=tenant,
     )

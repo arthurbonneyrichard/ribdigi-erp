@@ -46,6 +46,7 @@ export default function Page() {
       const params = new URLSearchParams();
       if (module) params.set('module', module);
       if (action) params.set('action', action);
+      params.set('format', 'csv');
       const res = await fetch(`${base}/audit-logs/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -66,6 +67,35 @@ export default function Page() {
     }
   }
 
+  async function exportPdf() {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const params = new URLSearchParams();
+      if (module) params.set('module', module);
+      if (action) params.set('action', action);
+      params.set('format', 'pdf');
+      const res = await fetch(`${base}/audit-logs/export?${params}`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('PDF export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'audit-logs.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('PDF downloaded');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   return (
     <Shell>
       <h1>Audit Logs</h1>
@@ -79,6 +109,7 @@ export default function Page() {
         <button onClick={() => refresh().catch((e) => setError(e.message))}>Filter</button>
         <button onClick={runVerify}>Verify chain</button>
         <button onClick={exportCsv}>Export CSV</button>
+        <button onClick={exportPdf}>Export PDF</button>
       </div>
 
       {verify && (

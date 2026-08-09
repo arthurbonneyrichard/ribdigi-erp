@@ -7,6 +7,17 @@ import { api } from '../../lib/api';
 export default function Page() {
   const [tenant, setTenant] = useState<any>(null);
   const [emailStatus, setEmailStatus] = useState<any>(null);
+  const [smtpForm, setSmtpForm] = useState({
+    smtp_enabled: false,
+    smtp_host: '',
+    smtp_port: '587',
+    smtp_username: '',
+    smtp_password: '',
+    smtp_from_email: '',
+    smtp_from_name: '',
+    smtp_use_tls: true,
+    smtp_use_ssl: false,
+  });
   const [smsStatus, setSmsStatus] = useState<any>(null);
   const [storageStatus, setStorageStatus] = useState<any>(null);
   const [profilePhone, setProfilePhone] = useState('');
@@ -63,6 +74,19 @@ export default function Page() {
     ]);
     setTenant(r.data);
     setEmailStatus(e.data);
+    if (e.data) {
+      setSmtpForm({
+        smtp_enabled: !!e.data.tenant_override_enabled,
+        smtp_host: e.data.source === 'tenant' ? e.data.host || '' : '',
+        smtp_port: String(e.data.port || 587),
+        smtp_username: e.data.source === 'tenant' ? e.data.username || '' : '',
+        smtp_password: '',
+        smtp_from_email: e.data.source === 'tenant' ? e.data.from_email || '' : '',
+        smtp_from_name: e.data.source === 'tenant' ? e.data.from_name || '' : '',
+        smtp_use_tls: e.data.use_tls !== false,
+        smtp_use_ssl: !!e.data.use_ssl,
+      });
+    }
     setSmsStatus(s.data);
     setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
@@ -105,6 +129,9 @@ export default function Page() {
           contact_person_email: tenant.contact_person_email || undefined,
           contact_person_phone: tenant.contact_person_phone || undefined,
           inactivity_timeout_minutes: tenant.inactivity_timeout_minutes || undefined,
+          date_format: tenant.date_format || undefined,
+          number_format: tenant.number_format || undefined,
+          time_format: tenant.time_format || undefined,
         }),
       });
       setTenant(r.data);
@@ -346,6 +373,33 @@ export default function Page() {
           }
           placeholder="Inactivity timeout (minutes)"
         />
+        <select
+          value={tenant.date_format || 'DD/MM/YYYY'}
+          onChange={(e) => setTenant({ ...tenant, date_format: e.target.value })}
+        >
+          {['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'].map((f) => (
+            <option key={f} value={f}>
+              Date format: {f}
+            </option>
+          ))}
+        </select>
+        <select
+          value={tenant.number_format || '1,234.56'}
+          onChange={(e) => setTenant({ ...tenant, number_format: e.target.value })}
+        >
+          {['1,234.56', '1.234,56', '1 234.56'].map((f) => (
+            <option key={f} value={f}>
+              Number format: {f}
+            </option>
+          ))}
+        </select>
+        <select
+          value={tenant.time_format || '24h'}
+          onChange={(e) => setTenant({ ...tenant, time_format: e.target.value })}
+        >
+          <option value="24h">Time format: 24h</option>
+          <option value="12h">Time format: 12h</option>
+        </select>
         <input
           value={tenant.timezone || ''}
           onChange={(e) => setTenant({ ...tenant, timezone: e.target.value })}
@@ -531,26 +585,115 @@ export default function Page() {
         <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
           <h2>Email / SMTP</h2>
           <p className="muted">
-            Mode: {emailStatus.mode} · Configured: {String(emailStatus.configured)} · Enabled:{' '}
-            {String(emailStatus.enabled)}
+            Mode: {emailStatus.mode} · Source: {emailStatus.source} · Configured:{' '}
+            {String(emailStatus.configured)} · Enabled: {String(emailStatus.enabled)}
           </p>
           <p className="muted">
-            From: {emailStatus.from_name} &lt;{emailStatus.from_email || '—'}&gt; · Host:{' '}
+            Effective from: {emailStatus.from_name} &lt;{emailStatus.from_email || '—'}&gt; · Host:{' '}
             {emailStatus.host || 'console fallback'}
           </p>
-          <button
-            onClick={async () => {
-              setError('');
-              try {
-                const r = await api('/settings/email/test', { method: 'POST', body: '{}' });
-                setMessage(r.message || `Test email via ${r.data?.mode}`);
-              } catch (err: any) {
-                setError(err.message);
-              }
-            }}
-          >
-            Send test email to me
-          </button>
+          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+            <label>
+              <input
+                type="checkbox"
+                checked={smtpForm.smtp_enabled}
+                onChange={(e) => setSmtpForm({ ...smtpForm, smtp_enabled: e.target.checked })}
+              />{' '}
+              Use tenant SMTP override
+            </label>
+            <input
+              value={smtpForm.smtp_host}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_host: e.target.value })}
+              placeholder="SMTP host"
+            />
+            <input
+              value={smtpForm.smtp_port}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_port: e.target.value })}
+              placeholder="Port"
+            />
+            <input
+              value={smtpForm.smtp_username}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_username: e.target.value })}
+              placeholder="Username"
+            />
+            <input
+              type="password"
+              value={smtpForm.smtp_password}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_password: e.target.value })}
+              placeholder={emailStatus.has_password ? 'Password (leave blank to keep)' : 'Password'}
+            />
+            <input
+              value={smtpForm.smtp_from_email}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_from_email: e.target.value })}
+              placeholder="From email"
+            />
+            <input
+              value={smtpForm.smtp_from_name}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_from_name: e.target.value })}
+              placeholder="From name"
+            />
+            <label>
+              <input
+                type="checkbox"
+                checked={smtpForm.smtp_use_tls}
+                onChange={(e) => setSmtpForm({ ...smtpForm, smtp_use_tls: e.target.checked })}
+              />{' '}
+              STARTTLS
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={smtpForm.smtp_use_ssl}
+                onChange={(e) => setSmtpForm({ ...smtpForm, smtp_use_ssl: e.target.checked })}
+              />{' '}
+              SSL
+            </label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                disabled={!!tenant.read_only}
+                onClick={async () => {
+                  setError('');
+                  try {
+                    const body: any = {
+                      smtp_enabled: smtpForm.smtp_enabled,
+                      smtp_host: smtpForm.smtp_host || null,
+                      smtp_port: Number(smtpForm.smtp_port) || 587,
+                      smtp_username: smtpForm.smtp_username || null,
+                      smtp_from_email: smtpForm.smtp_from_email || null,
+                      smtp_from_name: smtpForm.smtp_from_name || null,
+                      smtp_use_tls: smtpForm.smtp_use_tls,
+                      smtp_use_ssl: smtpForm.smtp_use_ssl,
+                    };
+                    if (smtpForm.smtp_password) body.smtp_password = smtpForm.smtp_password;
+                    const r = await api('/settings/email', {
+                      method: 'PATCH',
+                      body: JSON.stringify(body),
+                    });
+                    setEmailStatus(r.data);
+                    setSmtpForm({ ...smtpForm, smtp_password: '' });
+                    setMessage('SMTP settings saved');
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                Save SMTP
+              </button>
+              <button
+                onClick={async () => {
+                  setError('');
+                  try {
+                    const r = await api('/settings/email/test', { method: 'POST', body: '{}' });
+                    setMessage(r.message || `Test email via ${r.data?.mode}`);
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                Send test email to me
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
