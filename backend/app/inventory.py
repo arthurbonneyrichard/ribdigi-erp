@@ -439,6 +439,114 @@ async def transfer_warehouse_stock(
 ADJUSTMENT_REASONS = frozenset({"damage", "theft", "expiry", "found", "lost", "other"})
 
 
+def serialize_movement(
+    row: m.StockMovement,
+    *,
+    product: m.Product | None = None,
+    warehouse: m.Warehouse | None = None,
+    user: m.User | None = None,
+) -> dict:
+    return {
+        "id": row.id,
+        "product_id": row.product_id,
+        "product_sku": product.sku if product else None,
+        "product_name": product.name if product else None,
+        "variant_id": row.variant_id,
+        "batch_id": row.batch_id,
+        "warehouse_id": row.warehouse_id,
+        "warehouse_code": warehouse.code if warehouse else None,
+        "movement_type": row.movement_type,
+        "quantity": float(row.quantity or 0),
+        "quantity_before": float(row.quantity_before or 0),
+        "quantity_after": float(row.quantity_after or 0),
+        "reference_type": row.reference_type,
+        "reference_id": row.reference_id,
+        "reason": getattr(row, "reason", None),
+        "notes": row.notes,
+        "created_by": row.created_by,
+        "created_by_email": user.email if user else None,
+        "created_by_name": user.full_name if user else None,
+        "created_at": row.created_at,
+    }
+
+
+async def list_movements_serialized(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str | None = None,
+    warehouse_id: str | None = None,
+    movement_type: str | None = None,
+    from_dt=None,
+    to_dt=None,
+    limit: int = 200,
+) -> list[dict]:
+    stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
+    if product_id:
+        stmt = stmt.where(m.StockMovement.product_id == product_id)
+    if warehouse_id:
+        stmt = stmt.where(m.StockMovement.warehouse_id == warehouse_id)
+    if movement_type:
+        stmt = stmt.where(m.StockMovement.movement_type == movement_type)
+    if from_dt:
+        stmt = stmt.where(m.StockMovement.created_at >= from_dt)
+    if to_dt:
+        stmt = stmt.where(m.StockMovement.created_at <= to_dt)
+    rows = list(
+        (await db.execute(stmt.order_by(m.StockMovement.created_at.desc()).limit(limit))).scalars().all()
+    )
+    if not rows:
+        return []
+    product_ids = {r.product_id for r in rows}
+    warehouse_ids = {r.warehouse_id for r in rows if r.warehouse_id}
+    user_ids = {r.created_by for r in rows if r.created_by}
+    products = {
+        p.id: p
+        for p in (
+            await db.execute(
+                select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.id.in_(product_ids))
+            )
+        )
+        .scalars()
+        .all()
+    }
+    warehouses = {}
+    if warehouse_ids:
+        warehouses = {
+            w.id: w
+            for w in (
+                await db.execute(
+                    select(m.Warehouse).where(
+                        m.Warehouse.tenant_id == tenant_id, m.Warehouse.id.in_(warehouse_ids)
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        }
+    users = {}
+    if user_ids:
+        users = {
+            u.id: u
+            for u in (
+                await db.execute(
+                    select(m.User).where(m.User.tenant_id == tenant_id, m.User.id.in_(user_ids))
+                )
+            )
+            .scalars()
+            .all()
+        }
+    return [
+        serialize_movement(
+            r,
+            product=products.get(r.product_id),
+            warehouse=warehouses.get(r.warehouse_id) if r.warehouse_id else None,
+            user=users.get(r.created_by) if r.created_by else None,
+        )
+        for r in rows
+    ]
+
+
 def compute_stock_status(
     quantity: float | None,
     minimum_stock: float | None,

@@ -1759,8 +1759,12 @@ export default function Page() {
                 <th>When</th>
                 <th>Type</th>
                 <th>Qty</th>
+                <th>Before</th>
+                <th>After</th>
                 <th>Product</th>
                 <th>Warehouse</th>
+                <th>User</th>
+                <th>Reason</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -1770,18 +1774,27 @@ export default function Page() {
                   <td>{row.created_at ? String(row.created_at).slice(0, 19) : '—'}</td>
                   <td>{row.movement_type}</td>
                   <td>{row.quantity}</td>
+                  <td>{row.quantity_before ?? '—'}</td>
+                  <td>{row.quantity_after ?? '—'}</td>
                   <td>
-                    {products.find((p) => p.id === row.product_id)?.sku || row.product_id}
+                    {row.product_sku ||
+                      products.find((p) => p.id === row.product_id)?.sku ||
+                      row.product_id}
                   </td>
                   <td>
-                    {warehouses.find((w) => w.id === row.warehouse_id)?.code || row.warehouse_id || '—'}
+                    {row.warehouse_code ||
+                      warehouses.find((w) => w.id === row.warehouse_id)?.code ||
+                      row.warehouse_id ||
+                      '—'}
                   </td>
+                  <td>{row.created_by_email || row.created_by_name || row.created_by || '—'}</td>
+                  <td>{row.reason || '—'}</td>
                   <td>{row.notes || '—'}</td>
                 </tr>
               ))}
               {!movements.length && (
                 <tr>
-                  <td colSpan={6} className="muted">
+                  <td colSpan={10} className="muted">
                     No movements match the current filters
                   </td>
                 </tr>

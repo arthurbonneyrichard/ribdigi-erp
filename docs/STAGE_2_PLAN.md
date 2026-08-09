@@ -20,8 +20,8 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 | **I1** | Dedicated opening stock entry (API + UI + bulk) | P0 | COMPLETE |
 | **I2** | Stock ops barcode scan + adjustment reason codes | P0 | COMPLETE |
 | **I3** | Low stock: `minimum_stock` + traffic lights + warehouse-aware list | P0 | COMPLETE |
-| **I4** | Stock count variance report export (CSV/PDF) | P0 | PENDING |
-| **I5** | Movement history audit UX + integrity/concurrency tests | P1 | PENDING |
+| **I4** | Stock count variance report export (CSV/PDF) | P0 | COMPLETE |
+| **I5** | Movement history audit UX + integrity/concurrency tests | P1 | COMPLETE |
 | **I6** | Catalog harden: UoM conversion, brand logo, weight/dimensions | P1 | PENDING |
 | **P1** | Purchase return multi-line UI | P1 | PENDING |
 | **P2** | PO Kanban board (optional polish) | P2 | DEFERRED unless pulled |
@@ -57,12 +57,26 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 - [x] Low-stock list warehouse-aware; notify/scan uses dual thresholds.
 - [x] Automated tests in `backend/tests/test_low_stock_i3.py`.
 
-## I4 acceptance criteria (next)
+## I4 acceptance criteria
 
-- [ ] Completed stock count → variance report CSV/PDF (expected/counted/variance/value).
-- [ ] Counts UI download action.
-- [ ] Automated tests for export contents.
+- [x] Completed stock count → variance report CSV/PDF/JSON (`GET .../variance-report`).
+- [x] Counts UI download (list + completed detail).
+- [x] Automated tests in `backend/tests/test_stock_count_variance_i4.py`.
+
+## I5 acceptance criteria
+
+- [x] Movements API/UI: before/after, user, reason (serialized list).
+- [x] Integrity test: Σ(movements) vs product stock_qty.
+- [x] Stock-out overdraw returns `INSUFFICIENT_STOCK` (FOR UPDATE; SQLite sequential coverage).
+
+## I6 acceptance criteria (next)
+
+- [ ] UoM conversion ratios on units.
+- [ ] Brand logo upload/serve.
+- [ ] Product weight / dimensions fields + UI.
+- [ ] Automated tests for new fields.
 
 ## Sign-off
 
 Stage 2 opens with ADR-009. Close when all P0 rows are COMPLETE and `docs/STAGE_2_EXIT_CRITERIA.md` is accepted.
+(P0 for this pass: I1–I4. I5–I6 are P1 hardening.)

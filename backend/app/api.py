@@ -3427,23 +3427,18 @@ async def movements(
     db: AsyncSession = Depends(get_db),
 ):
     from app import reports as reports_svc
+    from app.inventory import list_movements_serialized
 
-    stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == claims["tenant_id"])
-    if product_id:
-        stmt = stmt.where(m.StockMovement.product_id == product_id)
-    if warehouse_id:
-        stmt = stmt.where(m.StockMovement.warehouse_id == warehouse_id)
-    if movement_type:
-        stmt = stmt.where(m.StockMovement.movement_type == movement_type)
-    start = reports_svc.parse_date(from_date)
-    end = reports_svc.parse_date(to_date, end_of_day=True)
-    if start:
-        stmt = stmt.where(m.StockMovement.created_at >= start)
-    if end:
-        stmt = stmt.where(m.StockMovement.created_at <= end)
-    rows = (
-        await db.execute(stmt.order_by(m.StockMovement.created_at.desc()).limit(200))
-    ).scalars().all()
+    rows = await list_movements_serialized(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        warehouse_id=warehouse_id,
+        movement_type=movement_type,
+        from_dt=reports_svc.parse_date(from_date),
+        to_dt=reports_svc.parse_date(to_date, end_of_day=True),
+        limit=200,
+    )
     return env(rows)
 
 
