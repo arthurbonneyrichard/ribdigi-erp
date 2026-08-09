@@ -25,7 +25,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 ### Identity & security
 - [x] Login/logout/refresh token flow complete.
 - [x] Email verification and password reset complete.
-  - Tokens issued; SMTP delivery with console fallback in dev; production requires `SMTP_HOST` + `SMTP_FROM_EMAIL` when `EMAIL_ENABLED=true`; tenants may override SMTP via encrypted `PATCH /settings/email`. Login blocked until email verified (`EMAIL_NOT_VERIFIED` + `POST /auth/resend-verification`).
+  - Tokens issued; SMTP delivery with console fallback in dev; production requires `SMTP_HOST` + `SMTP_FROM_EMAIL` when `EMAIL_ENABLED=true`; tenants may override SMTP via encrypted `PATCH /settings/email`. Login blocked until email verified (`EMAIL_NOT_VERIFIED` + `POST /auth/resend-verification`). Authenticated `POST /auth/change-password` revokes other sessions.
 - [x] 2FA/TOTP complete for required roles.
   - Complete: TOTP setup/QR/confirm, backup codes, encrypted secrets, company_admin/super_admin enrollment gate; WebAuthn/passkeys (register/list/delete + login challenge with `methods`); MFA satisfied by TOTP and/or passkeys.
 - [x] Session listing and revocation complete.
