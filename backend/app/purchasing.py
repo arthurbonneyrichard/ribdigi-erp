@@ -15,6 +15,7 @@ from app.tax import compute_line_total
 from app.credit import default_due_date
 
 PO_EDITABLE = {"draft"}
+PO_AMENDABLE = {"draft", "sent", "partially_received"}
 PO_RECEIVABLE = {"sent", "partially_received"}
 PR_EDITABLE = {"draft"}
 PR_SUBMITTABLE = {"draft"}
@@ -229,8 +230,64 @@ async def list_po_items(db: AsyncSession, tenant_id: str, po_id: str) -> list[m.
     ).scalars().all()
 
 
+def _po_line_snapshot(item: m.PurchaseOrderItem) -> dict:
+    return {
+        "id": item.id,
+        "product_id": item.product_id,
+        "quantity": float(item.quantity),
+        "received_qty": float(item.received_qty or 0),
+        "unit_price": float(item.unit_price or 0),
+        "tax_rate": float(item.tax_rate or 0),
+        "line_total": float(item.line_total or 0),
+    }
+
+
+def _po_header_snapshot(po: m.PurchaseOrder) -> dict:
+    return {
+        "warehouse_id": po.warehouse_id,
+        "notes": po.notes,
+        "subtotal": float(po.subtotal or 0),
+        "tax_amount": float(po.tax_amount or 0),
+        "total_amount": float(po.total_amount or 0),
+        "revision": int(getattr(po, "revision", 1) or 1),
+        "status": po.status,
+    }
+
+
+async def list_po_amendments(
+    db: AsyncSession, tenant_id: str, po_id: str
+) -> list[m.PurchaseOrderAmendment]:
+    return list(
+        (
+            await db.execute(
+                select(m.PurchaseOrderAmendment)
+                .where(
+                    m.PurchaseOrderAmendment.tenant_id == tenant_id,
+                    m.PurchaseOrderAmendment.purchase_order_id == po_id,
+                )
+                .order_by(m.PurchaseOrderAmendment.revision.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+def serialize_po_amendment(row: m.PurchaseOrderAmendment) -> dict:
+    return {
+        "id": row.id,
+        "purchase_order_id": row.purchase_order_id,
+        "revision": int(row.revision),
+        "reason": row.reason,
+        "changed_by": row.changed_by,
+        "changes": row.changes or {},
+        "created_at": row.created_at,
+    }
+
+
 async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
     items = await list_po_items(db, po.tenant_id, po.id)
+    amendments = await list_po_amendments(db, po.tenant_id, po.id)
     return {
         "id": po.id,
         "po_number": po.po_number,
@@ -247,7 +304,10 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "purchase_request_id": po.purchase_request_id,
         "sent_at": po.sent_at,
         "emailed_to": po.emailed_to,
+        "revision": int(getattr(po, "revision", 1) or 1),
+        "amendment_count": len(amendments),
         "created_at": po.created_at,
+        "updated_at": po.updated_at,
         "items": [
             {
                 "id": i.id,
@@ -262,6 +322,239 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
             for i in items
         ],
     }
+
+
+async def _prepare_po_lines(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    items: list[dict],
+    existing_by_id: dict[str, m.PurchaseOrderItem] | None = None,
+) -> list[dict]:
+    existing_by_id = existing_by_id or {}
+    prepared: list[dict] = []
+    for item in items:
+        product_id = item.get("product_id")
+        if not product_id:
+            raise HTTPException(status_code=400, detail="Each line requires product_id")
+        product = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.id == product_id,
+                    m.Product.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
+        qty = float(item.get("quantity") or 0)
+        if qty <= 0:
+            raise HTTPException(status_code=400, detail="Line quantity must be greater than zero")
+        line_id = item.get("id")
+        received = 0.0
+        if line_id:
+            existing = existing_by_id.get(str(line_id))
+            if existing is None:
+                raise HTTPException(status_code=404, detail=f"PO line not found: {line_id}")
+            received = float(existing.received_qty or 0)
+            if qty + 1e-9 < received:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot set quantity below received qty ({received}) for line {line_id}",
+                )
+        unit_price = float(item.get("unit_price") if item.get("unit_price") is not None else 0)
+        tax_rate = float(item.get("tax_rate") or 0)
+        line_sub, line_tax, line_total = compute_line_total(qty, unit_price, tax_rate)
+        prepared.append(
+            {
+                "id": str(line_id) if line_id else None,
+                "product_id": product.id,
+                "quantity": qty,
+                "received_qty": received,
+                "unit_price": unit_price,
+                "tax_rate": tax_rate,
+                "line_total": line_total,
+                "line_sub": line_sub,
+                "line_tax": line_tax,
+            }
+        )
+    return prepared
+
+
+async def update_purchase_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    po_id: str,
+    items: list[dict] | None = None,
+    warehouse_id: str | None = None,
+    notes: str | None = None,
+    reason: str | None = None,
+    track_amendment: bool | None = None,
+) -> m.PurchaseOrder:
+    """Edit a draft PO, or amend a sent/partial PO (requires reason)."""
+    po = await get_po(db, tenant_id, po_id)
+    if po.status not in PO_AMENDABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot amend PO in status {po.status}")
+
+    is_draft = po.status == "draft"
+    if not is_draft:
+        reason_clean = (reason or "").strip()
+        if not reason_clean:
+            raise HTTPException(status_code=400, detail="Amendment reason is required for sent POs")
+    else:
+        reason_clean = (reason or "").strip() or "Draft update"
+
+    should_track = bool(track_amendment) if track_amendment is not None else (not is_draft)
+
+    before_header = _po_header_snapshot(po)
+    existing = await list_po_items(db, tenant_id, po.id)
+    existing_by_id = {i.id: i for i in existing}
+    before_items = [_po_line_snapshot(i) for i in existing]
+
+    if warehouse_id is not None:
+        po.warehouse_id = warehouse_id or None
+    if notes is not None:
+        po.notes = notes
+
+    if items is not None:
+        if not items:
+            raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
+        prepared = await _prepare_po_lines(
+            db, tenant_id=tenant_id, items=items, existing_by_id=existing_by_id
+        )
+        keep_ids = {p["id"] for p in prepared if p["id"]}
+        for old in existing:
+            if old.id not in keep_ids:
+                if float(old.received_qty or 0) > 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Cannot remove line {old.id} with received quantity",
+                    )
+                await db.delete(old)
+        subtotal = 0.0
+        tax_total = 0.0
+        for prep in prepared:
+            subtotal += prep["line_sub"]
+            tax_total += prep["line_tax"]
+            if prep["id"]:
+                row = existing_by_id[prep["id"]]
+                row.product_id = prep["product_id"]
+                row.quantity = prep["quantity"]
+                row.unit_price = prep["unit_price"]
+                row.tax_rate = prep["tax_rate"]
+                row.line_total = prep["line_total"]
+            else:
+                db.add(
+                    m.PurchaseOrderItem(
+                        tenant_id=tenant_id,
+                        purchase_order_id=po.id,
+                        product_id=prep["product_id"],
+                        quantity=prep["quantity"],
+                        received_qty=0,
+                        unit_price=prep["unit_price"],
+                        tax_rate=prep["tax_rate"],
+                        line_total=prep["line_total"],
+                    )
+                )
+        po.subtotal = subtotal
+        po.tax_amount = tax_total
+        po.total_amount = subtotal + tax_total
+
+    await db.flush()
+
+    # Re-derive status if quantities changed after partial receipt
+    if po.status in {"sent", "partially_received", "received"}:
+        refreshed = list(await list_po_items(db, tenant_id, po.id))
+        # Only auto-adjust among receivable statuses (never resurrect cancelled).
+        if po.status != "cancelled":
+            derived = derive_po_status(refreshed)
+            if derived in {"sent", "partially_received", "received"}:
+                po.status = derived
+
+    po.updated_at = datetime.utcnow()
+    after_items = [_po_line_snapshot(i) for i in await list_po_items(db, tenant_id, po.id)]
+    after_header = _po_header_snapshot(po)
+
+    if should_track:
+        new_revision = int(getattr(po, "revision", 1) or 1) + 1
+        po.revision = new_revision
+        after_header["revision"] = new_revision
+        db.add(
+            m.PurchaseOrderAmendment(
+                tenant_id=tenant_id,
+                purchase_order_id=po.id,
+                revision=new_revision,
+                reason=reason_clean,
+                changed_by=user_id,
+                changes={
+                    "before": {"header": before_header, "items": before_items},
+                    "after": {"header": after_header, "items": after_items},
+                },
+                created_at=datetime.utcnow(),
+            )
+        )
+        action = "po_amended"
+    else:
+        action = "po_updated"
+        new_revision = int(getattr(po, "revision", 1) or 1)
+
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action=action,
+            entity="purchase_order",
+            entity_id=po.id,
+            details={
+                "po_number": po.po_number,
+                "revision": new_revision,
+                "reason": reason_clean if should_track else None,
+                "total": float(po.total_amount or 0),
+            },
+        )
+    )
+    await db.flush()
+    return po
+
+
+async def amend_purchase_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    po_id: str,
+    reason: str,
+    items: list[dict] | None = None,
+    warehouse_id: str | None = None,
+    notes: str | None = None,
+) -> m.PurchaseOrder:
+    po = await get_po(db, tenant_id, po_id)
+    if po.status == "draft":
+        # Draft amends still track when explicitly requested via /amend
+        return await update_purchase_order(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            po_id=po_id,
+            items=items,
+            warehouse_id=warehouse_id,
+            notes=notes,
+            reason=reason,
+            track_amendment=True,
+        )
+    return await update_purchase_order(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        po_id=po_id,
+        items=items,
+        warehouse_id=warehouse_id,
+        notes=notes,
+        reason=reason,
+        track_amendment=True,
+    )
 
 
 async def get_purchase_request(
@@ -751,6 +1044,7 @@ async def create_purchase_order(
         total_amount=subtotal + tax_total,
         notes=notes,
         purchase_request_id=purchase_request_id,
+        revision=1,
         created_by=user_id,
     )
     db.add(po)

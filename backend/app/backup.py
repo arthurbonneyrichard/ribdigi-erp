@@ -46,6 +46,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("purchase_request_approval_actions", m.PurchaseRequestApprovalAction),
     ("purchase_orders", m.PurchaseOrder),
     ("purchase_order_items", m.PurchaseOrderItem),
+    ("purchase_order_amendments", m.PurchaseOrderAmendment),
     ("goods_receipts", m.GoodsReceipt),
     ("goods_receipt_items", m.GoodsReceiptItem),
     ("purchase_returns", m.PurchaseReturn),

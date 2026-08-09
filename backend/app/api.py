@@ -84,7 +84,9 @@ from app.schemas import (
     ProductVariantCreate,
     ProductVariantUpdate,
     ProfileUpdate,
+    PurchaseOrderAmend,
     PurchaseOrderCreate,
+    PurchaseOrderUpdate,
     PurchaseRequestApprovalSettingsUpdate,
     PurchaseRequestCreate,
     PurchaseRequestDecision,
@@ -3404,6 +3406,62 @@ async def get_purchase_order(
 ):
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     return env(await purchasing_svc.serialize_po(db, po))
+
+
+@api.patch("/purchasing/orders/{po_id}")
+async def patch_purchase_order(
+    po_id: str,
+    payload: PurchaseOrderUpdate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    po = await purchasing_svc.update_purchase_order(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        po_id=po_id,
+        items=[i for i in (data.get("items") or [])] if "items" in data else None,
+        warehouse_id=data.get("warehouse_id") if "warehouse_id" in data else None,
+        notes=data.get("notes") if "notes" in data else None,
+        reason=data.get("reason"),
+        track_amendment=False if data.get("reason") is None else None,
+    )
+    await db.commit()
+    return env(await purchasing_svc.serialize_po(db, po), "Purchase order updated")
+
+
+@api.post("/purchasing/orders/{po_id}/amend")
+async def amend_purchase_order(
+    po_id: str,
+    payload: PurchaseOrderAmend,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    po = await purchasing_svc.amend_purchase_order(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        po_id=po_id,
+        reason=payload.reason,
+        items=data.get("items"),
+        warehouse_id=data.get("warehouse_id") if "warehouse_id" in data else None,
+        notes=data.get("notes") if "notes" in data else None,
+    )
+    await db.commit()
+    return env(await purchasing_svc.serialize_po(db, po), f"Purchase order amended to revision {po.revision}")
+
+
+@api.get("/purchasing/orders/{po_id}/amendments")
+async def list_purchase_order_amendments(
+    po_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    rows = await purchasing_svc.list_po_amendments(db, claims["tenant_id"], po_id)
+    return env([purchasing_svc.serialize_po_amendment(r) for r in rows])
 
 
 @api.post("/purchasing/orders/{po_id}/send")
