@@ -6,7 +6,7 @@ from app.api import api
 from app.config import settings
 from app.audit_middleware import AuditMutationMiddleware
 from app.db import SessionLocal
-from app.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
+from app.middleware import MetricsMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
 from app.security_runtime import is_production, openapi_enabled
 
 is_prod = is_production()
@@ -22,6 +22,7 @@ app = FastAPI(
 
 # Middleware order: last added runs first on request.
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(AuditMutationMiddleware)
 

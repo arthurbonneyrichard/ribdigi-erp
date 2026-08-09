@@ -270,10 +270,60 @@ def _assert_email_verified(user: m.User) -> None:
 
 
 @api.get("/health")
-async def health():
-    from app.security_runtime import security_posture
+async def health(request: Request, deep: bool = False):
+    """Liveness by default; pass deep=true for dependency checks (DB/Redis/broker)."""
+    from fastapi.responses import JSONResponse
 
-    return env({"status": "ok", "service": "ribdigi-erp", **security_posture()})
+    from app import health as health_svc
+
+    factory = getattr(request.app.state, "session_factory", None)
+    body, status_code = await health_svc.assemble_health(deep=deep, session_factory=factory)
+    if status_code != 200:
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "data": body,
+                "message": "Service unhealthy",
+            },
+        )
+    return env(body)
+
+
+@api.get("/health/ready")
+async def health_ready(request: Request):
+    """Readiness probe — always runs deep dependency checks."""
+    from fastapi.responses import JSONResponse
+
+    from app import health as health_svc
+
+    factory = getattr(request.app.state, "session_factory", None)
+    body, status_code = await health_svc.assemble_health(deep=True, session_factory=factory)
+    if status_code != 200:
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "data": body,
+                "message": "Service not ready",
+            },
+        )
+    return env(body, "Ready")
+
+
+@api.get("/metrics")
+async def metrics_endpoint():
+    """Prometheus text exposition (optional; disable with METRICS_ENABLED=false)."""
+    from fastapi.responses import PlainTextResponse
+
+    from app import metrics as metrics_svc
+
+    if not metrics_svc.metrics_enabled():
+        raise HTTPException(status_code=404, detail="Metrics disabled")
+    return PlainTextResponse(
+        metrics_svc.render_prometheus(),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
 
 
 @api.post("/tenants")

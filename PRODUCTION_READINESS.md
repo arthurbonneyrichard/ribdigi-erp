@@ -70,6 +70,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 - [ ] Redis/Celery/RabbitMQ used for intended production workloads.
   - Partial: Redis for distributed API/auth rate limiting; Celery worker + beat on RabbitMQ broker (Redis results) for low-stock scan, payment-due scan, quotation-expiry scan, recurring expenses, due backups, report emails, FX rate refresh, and bank feed sync (`sync_bank_feeds`); admin `GET /jobs` + `POST /jobs/{name}/run`; AI jobs `generate_ai_low_stock_predictions` + `generate_ai_insights` (Celery beat; weekly digest email via `ai_insight` prefs).
 - [ ] Monitoring, metrics, logging and alerting complete.
+  - Partial (Stage 5 H5): deep `/api/v1/health?deep=true` + `/health/ready` (database / Redis / Celery broker checks, 503 on hard failure); Prometheus-text `/api/v1/metrics` with request counters (`METRICS_ENABLED`). Remaining: full Prometheus/Grafana/PagerDuty stack, structured log shipping, alerting rules.
 - [ ] Kubernetes production deployment reviewed.
 - [ ] Load/performance tests meet documented targets.
 - [ ] Disaster recovery drill passes.

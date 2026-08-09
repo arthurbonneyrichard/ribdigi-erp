@@ -93,6 +93,8 @@ class Settings(BaseSettings):
     # Logs older than this many days are eligible for cold-archive copy (rows are never deleted).
     AUDIT_COLD_ARCHIVE_AFTER_DAYS: int = 365
     CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES: int = 1440
+    # Stage 5 H5 — Prometheus-text /metrics (full Grafana stack deferred)
+    METRICS_ENABLED: bool = True
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 

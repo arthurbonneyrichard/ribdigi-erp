@@ -248,6 +248,8 @@ ENROLLMENT_ALLOWED_SUFFIXES = (
     "/auth/webauthn/credentials",
     "/settings/email",
     "/health",
+    "/health/ready",
+    "/metrics",
 )
 
 
