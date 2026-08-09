@@ -13,6 +13,8 @@ def test_default_preferences_cover_core_types():
     assert DEFAULT_PREFERENCES["expense_approval"]["dashboard"] is True
     assert DEFAULT_PREFERENCES["ai_insight"]["email"] is True
     assert DEFAULT_PREFERENCES["ai_insight"]["dashboard"] is True
+    assert DEFAULT_PREFERENCES["security"]["dashboard"] is True
+    assert DEFAULT_PREFERENCES["security"]["email"] is True
 
 
 def test_merge_preferences_overrides_channels():
