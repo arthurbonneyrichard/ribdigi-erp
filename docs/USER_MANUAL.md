@@ -864,14 +864,18 @@ Tax is automatically calculated on:
 
 ### 10.3 Tax Reports
 
-1. Go to **Reports → Tax Reports**
-2. Select **Period** (Monthly, Quarterly, Annually)
-3. System shows:
+1. Go to **Tax** (or **Reports**) and set the period
+2. System shows:
    - **Output Tax:** Tax collected on sales
    - **Input Tax:** Tax paid on purchases
    - **Net Tax Payable:** Output − Input
    - Or **Net Tax Refundable:** If input > output
-4. Export in format required by your tax authority
+3. Export the filing pack (CSV/Excel/PDF), or a government workbook:
+   - **Ghana GRA VAT**
+   - **Nigeria FIRS VAT**
+   - **Kenya KRA VAT** (Stage 10 T2)
+
+> These exports are for **manual filing**. RIBDIGI does not submit returns to tax authority portals (e-file deferred). Set company **tax jurisdiction** and **tax registration number** under Company settings.
 
 ---
 

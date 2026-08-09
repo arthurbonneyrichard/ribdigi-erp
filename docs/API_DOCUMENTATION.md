@@ -1034,7 +1034,11 @@ Returns `{ supplier_id, supplier_name, as_of, total_due, overdue_total, upcoming
 ```
 
 ### 12.2 Tax Reports
-**Endpoint:** `GET /reports/tax?from_date=&to_date=&tax_type=vat`
+**Endpoint:** `GET /reports/tax?from_date=&to_date=&tax_type=vat`  
+**Filing pack:** `GET /reports/tax/filing?from_date=&to_date=&jurisdiction=` — jurisdiction-neutral boxes plus optional government mapping when supported (`GH`, `NG`, `KE`)  
+**Exports:** `tax_filing`, `tax_filing_gh`, `tax_filing_ng`, `tax_filing_ke` via `/reports/export`  
+
+Government templates are **manual filing workbooks only** — they do not e-file to GRA, FIRS, or KRA iTax portals (Stage 10 T2).
 
 ---
 

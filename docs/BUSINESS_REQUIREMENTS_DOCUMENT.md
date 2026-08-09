@@ -703,7 +703,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Input tax summary (tax paid on purchases)
   - [ ] Net tax payable/refundable
   - [ ] Tax report by period (monthly, quarterly, annually)
-  - [ ] Export in government filing format
+  - [x] Export in government filing format (manual GH GRA / NG FIRS / KE KRA workbooks; portal e-file deferred — Stage 10 T2)
 
 ---
 

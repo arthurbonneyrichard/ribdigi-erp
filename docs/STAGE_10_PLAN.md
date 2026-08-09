@@ -19,7 +19,7 @@ Stage 10 closes commercial-MVP tax depth and human-confirmed document apply hole
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **T1** | Category-level tax rules (product → category → default) | P0 | COMPLETE |
-| **T2** | Additional tax filing template beyond GH/NG | P1 | PENDING |
+| **T2** | Additional tax filing template beyond GH/NG | P1 | COMPLETE |
 | **A1** | Human-confirmed OCR/document apply-to-draft | P1 | PENDING |
 | **B1** | Include uploaded media in logical backup/restore | P2 | PENDING |
 | **H10x** | Stage 10 exit criteria + freeze ADR | Exit | PENDING |
@@ -42,9 +42,9 @@ Stage 10 closes commercial-MVP tax depth and human-confirmed document apply hole
 
 ## T2 acceptance criteria
 
-- [ ] At least one filing template pack beyond GH/NG (export + Reports surface).
-- [ ] Docs state no portal e-file.
-- [ ] Automated tests for the new packing/export type.
+- [x] At least one filing template pack beyond GH/NG (Kenya KRA — export + Tax UI).
+- [x] Docs state no portal e-file.
+- [x] Automated tests for the new packing/export type (`backend/tests/test_tax_filing_ke_t2.py`).
 
 ## A1 acceptance criteria
 
