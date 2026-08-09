@@ -489,3 +489,155 @@ async def test_media_key_tenant_mismatch_rejected():
     with pytest.raises(HTTPException) as exc:
         validate_key(f"other-tenant/expenses/file.pdf", tenant_id="alpha-tenant")
     assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_foreign_expense_attachment_404(client, db_session):
+    ac, seed = client
+    await ensure_default_categories(db_session, seed["t2"].id)
+    await db_session.commit()
+    cats = (
+        await db_session.execute(
+            select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == seed["t2"].id)
+        )
+    ).scalars().all()
+    expense = await create_expense(
+        db_session,
+        tenant_id=seed["t2"].id,
+        user_id=seed["u2"].id,
+        amount=12,
+        description="Beta attached expense",
+        category_id=cats[0].id if cats else None,
+        payment_method="cash",
+    )
+    expense.attachment_url = f"{seed['t2'].id}/expenses/beta-receipt.pdf"
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    r = await ac.get(f"/api/v1/expenses/{expense.id}/attachment", headers=headers)
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_foreign_purchase_invoice_attachment_404(client, db_session):
+    ac, seed = client
+    inv = await create_purchase_invoice(
+        db_session,
+        tenant_id=seed["t2"].id,
+        user_id=seed["u2"].id,
+        supplier_id=seed["supplier2"].id,
+        items=[{"product_id": seed["p2"].id, "quantity": 1, "unit_price": 5}],
+    )
+    inv.attachment_url = f"{seed['t2'].id}/purchase_invoices/beta.pdf"
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    r = await ac.get(f"/api/v1/purchasing/invoices/{inv.id}/attachment", headers=headers)
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_foreign_backup_download_404(client, db_session, tmp_path, monkeypatch):
+    ac, seed = client
+    monkeypatch.setattr("app.backup.settings.BACKUP_DIR", str(tmp_path))
+    monkeypatch.setattr("app.backup.settings.BACKUP_ENCRYPTION_KEY", "")
+    job = await create_backup(
+        db_session,
+        tenant_id=seed["t2"].id,
+        user_id=seed["u2"].id,
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    r = await ac.get(f"/api/v1/backup/{job.id}/download", headers=headers)
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_owned_expense_wrong_media_key_403(client, db_session):
+    """Planted cross-tenant key on an owned row must not serve bytes."""
+    ac, seed = client
+    await ensure_default_categories(db_session, seed["t1"].id)
+    await db_session.commit()
+    cats = (
+        await db_session.execute(
+            select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == seed["t1"].id)
+        )
+    ).scalars().all()
+    expense = await create_expense(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["mgr1"].id,
+        amount=9,
+        description="Alpha with planted key",
+        category_id=cats[0].id if cats else None,
+        payment_method="cash",
+    )
+    expense.attachment_url = f"{seed['t2'].id}/expenses/stolen.pdf"
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    r = await ac.get(f"/api/v1/expenses/{expense.id}/attachment", headers=headers)
+    assert r.status_code == 403
+    assert "tenant mismatch" in r.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_owned_logo_wrong_media_key_403(client, db_session):
+    ac, seed = client
+    tenant = await db_session.get(m.Tenant, seed["t1"].id)
+    tenant.logo_url = f"{seed['t2'].id}/logos/stolen.png"
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    r = await ac.get("/api/v1/tenants/me/logo", headers=headers)
+    assert r.status_code == 403
+    assert "tenant mismatch" in r.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_foreign_po_print_404(client, db_session):
+    from app.purchasing import create_purchase_order
+
+    ac, seed = client
+    po = await create_purchase_order(
+        db_session,
+        tenant_id=seed["t2"].id,
+        user_id=seed["u2"].id,
+        supplier_id=seed["supplier2"].id,
+        items=[{"product_id": seed["p2"].id, "quantity": 2, "unit_price": 3}],
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    r = await ac.get(f"/api/v1/purchasing/orders/{po.id}/print", headers=headers)
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_foreign_pos_receipt_404(client, db_session):
+    ac, seed = client
+    tx = m.Transaction(
+        tenant_id=seed["t2"].id,
+        tx_type="pos_sale",
+        reference="POS-BETA-ISO-1",
+        subtotal=10,
+        tax=0,
+        total=10,
+        status="completed",
+        payload={"items": []},
+    )
+    db_session.add(tx)
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    r = await ac.get(f"/api/v1/pos/sales/{tx.id}/receipt", headers=headers)
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_foreign_product_labels_404(client):
+    ac, seed = client
+    headers = await _mgr_headers(ac)
+    r = await ac.get(f"/api/v1/products/{seed['p2'].id}/labels", headers=headers)
+    assert r.status_code == 404
