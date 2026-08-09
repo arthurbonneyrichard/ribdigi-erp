@@ -12,6 +12,8 @@ export default function Page() {
   const [partyId, setPartyId] = useState('');
   const [statement, setStatement] = useState<any>(null);
   const [paymentSchedule, setPaymentSchedule] = useState<any>(null);
+  const [outstanding, setOutstanding] = useState<any[] | null>(null);
+  const [outstandingPartyName, setOutstandingPartyName] = useState('');
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
   const [liquidAccountId, setLiquidAccountId] = useState('');
@@ -56,8 +58,19 @@ export default function Page() {
   }
 
   useEffect(() => {
+    setStatement(null);
+    setPaymentSchedule(null);
+    setOutstanding(null);
+    setOutstandingPartyName('');
     refresh().catch((err) => setError(err.message));
   }, [kind]);
+
+  function clearDetailPanels() {
+    setStatement(null);
+    setPaymentSchedule(null);
+    setOutstanding(null);
+    setOutstandingPartyName('');
+  }
 
   async function loadStatement() {
     if (!partyId) return;
@@ -68,7 +81,26 @@ export default function Page() {
           ? `/credit/customers/${partyId}/statement`
           : `/credit/suppliers/${partyId}/statement`;
       const r = await api(path);
+      clearDetailPanels();
       setStatement(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadOutstanding() {
+    if (!partyId) return;
+    setError('');
+    try {
+      const path =
+        kind === 'receivable'
+          ? `/customers/${partyId}/outstanding`
+          : `/suppliers/${partyId}/outstanding`;
+      const r = await api(path);
+      const party = (kind === 'receivable' ? customers : suppliers).find((p) => p.id === partyId);
+      clearDetailPanels();
+      setOutstanding(Array.isArray(r.data) ? r.data : []);
+      setOutstandingPartyName(party?.name || 'Selected party');
     } catch (err: any) {
       setError(err.message);
     }
@@ -79,8 +111,8 @@ export default function Page() {
     setError('');
     try {
       const r = await api(`/suppliers/${partyId}/payment-schedule`);
+      clearDetailPanels();
       setPaymentSchedule(r.data);
-      setStatement(null);
     } catch (err: any) {
       setError(err.message);
     }
@@ -229,7 +261,8 @@ export default function Page() {
     <Shell>
       <h1>Credit & Aging</h1>
       <p className="muted">
-        AR/AP aging, statements, supplier payment schedule, payments, and early-payment discounts
+        AR/AP aging, outstanding bills, statements, supplier payment schedule, payments, and
+        early-payment discounts
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -328,6 +361,9 @@ export default function Page() {
             ))}
           </select>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={loadOutstanding}>
+              Outstanding
+            </button>
             <button onClick={loadStatement}>Statement</button>
             {kind === 'payable' && (
               <button type="button" onClick={loadPaymentSchedule}>
@@ -418,6 +454,58 @@ export default function Page() {
           ))}
         </tbody>
       </table>
+
+      {outstanding && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3>
+            Outstanding bills — {outstandingPartyName}{' '}
+            <span className="muted">
+              ({kind === 'receivable' ? 'AR' : 'AP'} · Σ{' '}
+              {outstanding.reduce((s, row) => s + Number(row.amount || 0), 0).toFixed(2)})
+            </span>
+          </h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Type</th>
+                <th>Due</th>
+                <th>Status</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {outstanding.map((row: any, idx: number) => (
+                <tr
+                  key={
+                    row.invoice_id ||
+                    row.purchase_invoice_id ||
+                    row.purchase_order_id ||
+                    `out-${idx}`
+                  }
+                >
+                  <td>
+                    {row.invoice_number || row.po_number || row.purchase_invoice_id || '—'}
+                  </td>
+                  <td className="muted">{row.document_type || (kind === 'receivable' ? 'sales_invoice' : '—')}</td>
+                  <td>
+                    {row.due_date ? String(row.due_date).replace('T', ' ').slice(0, 10) : '—'}
+                  </td>
+                  <td>{row.status}</td>
+                  <td>{row.amount}</td>
+                </tr>
+              ))}
+              {!outstanding.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No outstanding bills
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {statement && (
         <div className="card" style={{ marginTop: 16 }}>

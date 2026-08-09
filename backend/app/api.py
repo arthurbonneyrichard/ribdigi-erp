@@ -8650,30 +8650,10 @@ async def customer_outstanding(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == claims["tenant_id"],
-                m.SalesInvoice.customer_id == customer_id,
-                m.SalesInvoice.status.in_(["posted", "partial"]),
-            )
-        )
-    ).scalars().all()
-    rows = []
-    for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
-        if due <= 0:
-            continue
-        rows.append(
-            {
-                "invoice_id": inv.id,
-                "invoice_number": inv.invoice_number,
-                "amount": due,
-                "due_date": inv.due_date,
-                "status": inv.status,
-            }
-        )
-    return env(rows)
+    """Stage 8 S2 — open AR bills for Credit UI."""
+    return env(
+        await credit_svc.customer_outstanding_bills(db, claims["tenant_id"], customer_id)
+    )
 
 
 @api.post("/customers/{customer_id}/payments")

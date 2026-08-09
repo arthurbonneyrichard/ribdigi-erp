@@ -329,6 +329,56 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     }
 
 
+async def customer_outstanding_bills(
+    db: AsyncSession, tenant_id: str, customer_id: str
+) -> list[dict]:
+    """Open AR invoices for a customer (Stage 8 S2 / BR-11.1)."""
+    customer = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == customer_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "customer",
+            )
+        )
+    ).scalar_one_or_none()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    invoices = (
+        await db.execute(
+            select(m.SalesInvoice).where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.customer_id == customer_id,
+                m.SalesInvoice.status.in_(["posted", "partial", "sent", "overdue"]),
+            )
+        )
+    ).scalars().all()
+    rows: list[dict] = []
+    for inv in invoices:
+        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        if due <= 0:
+            continue
+        rows.append(
+            {
+                "invoice_id": inv.id,
+                "invoice_number": inv.invoice_number,
+                "amount": round(due, 2),
+                "due_date": inv.due_date,
+                "status": inv.status,
+                "document_type": "sales_invoice",
+            }
+        )
+    rows.sort(
+        key=lambda r: (
+            r["due_date"] is None,
+            r["due_date"] or datetime.max,
+            -float(r["amount"]),
+        )
+    )
+    return rows
+
+
 async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str) -> dict:
     customer = (
         await db.execute(

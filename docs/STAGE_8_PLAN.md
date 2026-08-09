@@ -18,7 +18,7 @@ Stage 8 closes commercial-MVP AP/credit holes that are documented but unfinished
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **S1** | Supplier payment schedule (API + Credit UI) | P0 | COMPLETE |
-| **S2** | Outstanding bills UI (AP + AR) | P1 | PENDING |
+| **S2** | Outstanding bills UI (AP + AR) | P1 | COMPLETE |
 | **A1** | Account ledger transactions (`GET …/accounts/{id}/transactions`) | P1 | PENDING |
 | **P1** | Purchase return multi-line UI | P1 | PENDING |
 | **H8x** | Stage 8 exit criteria + freeze ADR | Exit | PENDING |
@@ -40,6 +40,13 @@ Stage 8 closes commercial-MVP AP/credit holes that are documented but unfinished
 - [x] Tenant-scoped + `credit:read` RBAC; 404 for missing supplier.
 - [x] Credit UI (Payables) shows Payment schedule table.
 - [x] Automated tests in `backend/tests/test_supplier_payment_schedule_s1.py`.
+
+## S2 acceptance criteria
+
+- [x] Credit UI Outstanding button loads AR (`GET /customers/{id}/outstanding`) and AP (`GET /suppliers/{id}/outstanding`).
+- [x] Customer outstanding returns `document_type`, sorted open bills; 404 for missing customer.
+- [x] Outstanding panel shows document / due / status / amount with period total.
+- [x] Automated tests in `backend/tests/test_outstanding_bills_s2.py`.
 
 ## Sign-off
 
