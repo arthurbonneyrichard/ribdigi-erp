@@ -44,6 +44,7 @@ from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
 from app import barcodes as barcode_svc
 from app import product_import as product_import_svc
+from app import stock_import as stock_import_svc
 from app import suppliers as suppliers_svc
 from app.config import settings
 from app.schemas import (
@@ -1686,6 +1687,64 @@ async def products_import(
     return env(
         result,
         "Dry-run complete" if dry_run else f"Imported {result['valid_rows']} products",
+    )
+
+
+@api.get("/inventory/stock/import/template")
+async def stock_import_template(
+    claims=Depends(require_permission("inventory", "read")),
+):
+    text = stock_import_svc.template_csv()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="stock_import_template.csv"'},
+    )
+
+
+@api.post("/inventory/stock/import")
+async def stock_import(
+    file: UploadFile = File(...),
+    dry_run: bool = True,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    try:
+        content = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        content = raw.decode("latin-1")
+    result = await stock_import_svc.import_stock_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        content=content,
+        dry_run=dry_run,
+    )
+    if not dry_run and result["valid_rows"]:
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="inventory",
+            action="stock_import",
+            entity="stock_movement",
+            entity_id=None,
+            details={
+                "applied": result["valid_rows"],
+                "errors": result["error_rows"],
+                "skipped": result["skipped_rows"],
+                "filename": file.filename,
+            },
+        )
+        await db.commit()
+    elif not dry_run:
+        await db.commit()
+    return env(
+        result,
+        "Dry-run complete" if dry_run else f"Applied stock changes for {result['valid_rows']} rows",
     )
 
 

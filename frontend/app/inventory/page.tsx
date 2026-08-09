@@ -40,6 +40,8 @@ export default function Page() {
   const [categoryTree, setCategoryTree] = useState<any[]>([]);
   const [importReport, setImportReport] = useState<any | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [stockImportReport, setStockImportReport] = useState<any | null>(null);
+  const [stockImportFile, setStockImportFile] = useState<File | null>(null);
   const [variantBarcode, setVariantBarcode] = useState('');
 
   const [catCode, setCatCode] = useState('');
@@ -390,6 +392,55 @@ export default function Page() {
     }
   }
 
+  async function downloadStockImportTemplate() {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/inventory/stock/import/template`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Stock template download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'stock_import_template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function importStockCsv(file: File, dryRun: boolean) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${apiBase}/inventory/stock/import?dry_run=${dryRun}`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+        body: form,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || body.message || 'Stock import failed');
+      setStockImportReport(body.data);
+      setMessage(body.message || (dryRun ? 'Stock dry-run complete' : 'Stock import complete'));
+      if (!dryRun) await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   function renderCategoryNodes(nodes: any[], depth = 0): any {
     return nodes.map((node) => (
       <li key={node.id} style={{ marginLeft: depth * 16 }}>
@@ -629,6 +680,51 @@ export default function Page() {
                 {importReport.dry_run && importReport.valid_rows > 0 && importFile && (
                   <button type="button" onClick={() => importProductsCsv(importFile, false)}>
                     Import valid rows
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 520 }}>
+            <h3>Import stock (CSV)</h3>
+            <p className="muted">
+              Adjust or set quantities for existing products by SKU/barcode. Optional warehouse_code.
+              Modes: adjust (signed delta) or set (absolute qty).
+            </p>
+            <button type="button" onClick={downloadStockImportTemplate}>
+              Download stock template
+            </button>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setStockImportFile(file);
+                  await importStockCsv(file, true);
+                }
+                e.target.value = '';
+              }}
+            />
+            {stockImportReport && (
+              <div className="muted">
+                <p>
+                  Rows {stockImportReport.total_rows}: {stockImportReport.valid_rows} valid,{' '}
+                  {stockImportReport.error_rows} errors, {stockImportReport.skipped_rows || 0} skipped
+                  {stockImportReport.dry_run ? ' (dry-run)' : ''}
+                </p>
+                {stockImportReport.errors?.length > 0 && (
+                  <ul>
+                    {stockImportReport.errors.slice(0, 8).map((err: any) => (
+                      <li key={`${err.row}-${err.sku}`}>
+                        Row {err.row} {err.sku || err.barcode || ''}: {(err.errors || []).join('; ')}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {stockImportReport.dry_run && stockImportReport.valid_rows > 0 && stockImportFile && (
+                  <button type="button" onClick={() => importStockCsv(stockImportFile, false)}>
+                    Apply stock changes
                   </button>
                 )}
               </div>
