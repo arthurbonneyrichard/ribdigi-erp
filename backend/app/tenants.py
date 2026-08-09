@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.config import settings
+from app.document_numbering import normalize_document_numbering, preview_document_numbering, merge_document_numbering
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 VALID_INDUSTRIES = frozenset(
@@ -75,6 +76,12 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "grace_days": int(settings.TRIAL_GRACE_DAYS),
         "logo_url": tenant.logo_url,
         "has_logo": bool(tenant.logo_url),
+        "document_numbering": normalize_document_numbering(
+            getattr(tenant, "document_numbering", None)
+        ),
+        "document_numbering_preview": preview_document_numbering(
+            getattr(tenant, "document_numbering", None)
+        ),
         "suspended_at": tenant.suspended_at,
         "suspended_reason": tenant.suspended_reason,
         "created_at": tenant.created_at,
@@ -284,6 +291,7 @@ async def update_profile(
     tax_jurisdiction: str | None = None,
     tax_registration_number: str | None = None,
     tax_filing_period: str | None = None,
+    document_numbering: dict | None = None,
 ) -> m.Tenant:
     if company_name is not None:
         name = company_name.strip()
@@ -334,6 +342,10 @@ async def update_profile(
         if period not in {"monthly", "quarterly"}:
             raise HTTPException(status_code=400, detail="tax_filing_period must be monthly or quarterly")
         tenant.tax_filing_period = period
+    if document_numbering is not None:
+        tenant.document_numbering = merge_document_numbering(
+            getattr(tenant, "document_numbering", None), document_numbering
+        )
     await db.flush()
     return tenant
 

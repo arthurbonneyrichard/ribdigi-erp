@@ -62,8 +62,10 @@ async def _prepare_lines(
     return round(subtotal, 2), round(tax_total, 2), prepared
 
 
-def _stamp(prefix: str) -> str:
-    return f"{prefix}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+async def _allocate(db: AsyncSession, tenant_id: str, doc_key: str) -> str:
+    from app.document_numbering import allocate_document_number
+
+    return await allocate_document_number(db, tenant_id=tenant_id, doc_key=doc_key)
 
 
 # --- Quotations ---
@@ -147,7 +149,7 @@ async def create_quotation(
         raise HTTPException(status_code=400, detail="Total cannot be negative")
     quote = m.SalesQuotation(
         tenant_id=tenant_id,
-        quotation_number=_stamp("QT"),
+        quotation_number=await _allocate(db, tenant_id, "sales_quotation"),
         customer_id=customer_id,
         status="draft",
         subtotal=subtotal,
@@ -440,7 +442,7 @@ async def create_order(
     address = (delivery_address or "").strip() or (customer.address or None)
     order = m.SalesOrder(
         tenant_id=tenant_id,
-        order_number=_stamp("SO"),
+        order_number=await _allocate(db, tenant_id, "sales_order"),
         customer_id=customer_id,
         quotation_id=quotation_id,
         store_id=resolved_store,
@@ -833,7 +835,7 @@ async def create_return(
 
     ret = m.SalesReturn(
         tenant_id=tenant_id,
-        return_number=_stamp("SR"),
+        return_number=await _allocate(db, tenant_id, "sales_return"),
         customer_id=invoice.customer_id,
         sales_invoice_id=invoice.id,
         status="draft",

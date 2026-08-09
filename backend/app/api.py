@@ -342,6 +342,11 @@ async def tenant_me_update(
         tax_jurisdiction=payload.tax_jurisdiction,
         tax_registration_number=payload.tax_registration_number,
         tax_filing_period=payload.tax_filing_period,
+        document_numbering=(
+            payload.document_numbering.model_dump(exclude_unset=True)
+            if payload.document_numbering is not None
+            else None
+        ),
     )
     await audit_svc.record_event(
         db,

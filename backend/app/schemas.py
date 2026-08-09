@@ -71,6 +71,23 @@ class TenantCreate(BaseModel):
     admin_full_name: str = "Company Administrator"
 
 
+class DocumentNumberSeriesUpdate(BaseModel):
+    prefix: str | None = None
+    include_year: bool | None = None
+    pad: int | None = Field(default=None, ge=1, le=12)
+    next_number: int | None = Field(default=None, ge=1)
+
+
+class DocumentNumberingUpdate(BaseModel):
+    sales_invoice: DocumentNumberSeriesUpdate | None = None
+    purchase_invoice: DocumentNumberSeriesUpdate | None = None
+    purchase_order: DocumentNumberSeriesUpdate | None = None
+    goods_receipt: DocumentNumberSeriesUpdate | None = None
+    sales_quotation: DocumentNumberSeriesUpdate | None = None
+    sales_order: DocumentNumberSeriesUpdate | None = None
+    sales_return: DocumentNumberSeriesUpdate | None = None
+
+
 class TenantProfileUpdate(BaseModel):
     company_name: str | None = None
     industry: str | None = None
@@ -84,6 +101,7 @@ class TenantProfileUpdate(BaseModel):
     tax_jurisdiction: str | None = None
     tax_registration_number: str | None = None
     tax_filing_period: str | None = None
+    document_numbering: DocumentNumberingUpdate | None = None
 
 
 class TenantSuspendRequest(BaseModel):

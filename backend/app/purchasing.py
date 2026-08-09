@@ -1042,9 +1042,11 @@ async def create_purchase_order(
         tax_total += line_tax
         prepared.append((item, line_total))
 
+    from app.document_numbering import allocate_document_number
+
     po = m.PurchaseOrder(
         tenant_id=tenant_id,
-        po_number=f"PO-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        po_number=await allocate_document_number(db, tenant_id=tenant_id, doc_key="purchase_order"),
         supplier_id=supplier_id,
         warehouse_id=warehouse_id,
         status="draft",
@@ -1235,9 +1237,11 @@ async def create_grn(
     po_items = {i.id: i for i in await list_po_items(db, tenant_id, po.id)}
     accepted_value = 0.0
 
+    from app.document_numbering import allocate_document_number
+
     grn = m.GoodsReceipt(
         tenant_id=tenant_id,
-        grn_number=f"GRN-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        grn_number=await allocate_document_number(db, tenant_id=tenant_id, doc_key="goods_receipt"),
         purchase_order_id=po.id,
         supplier_id=po.supplier_id,
         warehouse_id=warehouse_id or po.warehouse_id,
@@ -2266,9 +2270,13 @@ async def create_purchase_invoice(
     if due_date is None:
         due_date = default_due_date(inv_date)
 
+    from app.document_numbering import allocate_document_number
+
     inv = m.PurchaseInvoice(
         tenant_id=tenant_id,
-        invoice_number=f"PINV-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        invoice_number=await allocate_document_number(
+            db, tenant_id=tenant_id, doc_key="purchase_invoice"
+        ),
         supplier_id=supplier_id,
         purchase_order_id=purchase_order_id or (po.id if po else None),
         goods_receipt_id=grn.id if grn else None,

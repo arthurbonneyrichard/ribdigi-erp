@@ -172,9 +172,14 @@ async def create_sales_invoice(
     discount_amount = float(discount_amount or 0)
     total = max(subtotal + tax_total - discount_amount, 0)
 
+    from app.document_numbering import allocate_document_number
+
+    invoice_number = await allocate_document_number(
+        db, tenant_id=tenant_id, doc_key="sales_invoice"
+    )
     invoice = m.SalesInvoice(
         tenant_id=tenant_id,
-        invoice_number=f"INV-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        invoice_number=invoice_number,
         customer_id=customer_id,
         status="draft",
         subtotal=subtotal,

@@ -87,6 +87,7 @@ export default function Page() {
           tax_jurisdiction: tenant.tax_jurisdiction,
           tax_registration_number: tenant.tax_registration_number,
           tax_filing_period: tenant.tax_filing_period,
+          document_numbering: tenant.document_numbering || undefined,
         }),
       });
       setTenant(r.data);
@@ -308,6 +309,108 @@ export default function Page() {
             </button>
           )}
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16, maxWidth: 720 }}>
+        <h2>Document numbering</h2>
+        <p className="muted">Configure invoice/PO/GRN/quotation prefixes and next series numbers.</p>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Prefix</th>
+              <th>Year</th>
+              <th>Pad</th>
+              <th>Next #</th>
+              <th>Preview</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(
+              [
+                ['sales_invoice', 'Sales invoice'],
+                ['purchase_invoice', 'Purchase invoice'],
+                ['purchase_order', 'Purchase order'],
+                ['goods_receipt', 'GRN'],
+                ['sales_quotation', 'Quotation'],
+                ['sales_order', 'Sales order'],
+                ['sales_return', 'Sales return'],
+              ] as const
+            ).map(([key, label]) => {
+              const series = tenant.document_numbering?.[key] || {};
+              const preview = tenant.document_numbering_preview?.[key] || '—';
+              return (
+                <tr key={key}>
+                  <td>{label}</td>
+                  <td>
+                    <input
+                      value={series.prefix || ''}
+                      onChange={(e) =>
+                        setTenant({
+                          ...tenant,
+                          document_numbering: {
+                            ...(tenant.document_numbering || {}),
+                            [key]: { ...series, prefix: e.target.value },
+                          },
+                        })
+                      }
+                      style={{ width: 90 }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={!!series.include_year}
+                      onChange={(e) =>
+                        setTenant({
+                          ...tenant,
+                          document_numbering: {
+                            ...(tenant.document_numbering || {}),
+                            [key]: { ...series, include_year: e.target.checked },
+                          },
+                        })
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={String(series.pad ?? 4)}
+                      onChange={(e) =>
+                        setTenant({
+                          ...tenant,
+                          document_numbering: {
+                            ...(tenant.document_numbering || {}),
+                            [key]: { ...series, pad: Number(e.target.value) || 1 },
+                          },
+                        })
+                      }
+                      style={{ width: 60 }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={String(series.next_number ?? 1)}
+                      onChange={(e) =>
+                        setTenant({
+                          ...tenant,
+                          document_numbering: {
+                            ...(tenant.document_numbering || {}),
+                            [key]: { ...series, next_number: Number(e.target.value) || 1 },
+                          },
+                        })
+                      }
+                      style={{ width: 90 }}
+                    />
+                  </td>
+                  <td className="muted">{preview}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <button onClick={save} disabled={!!tenant.read_only} style={{ marginTop: 8 }}>
+          Save numbering
+        </button>
       </div>
 
       {storageStatus && (

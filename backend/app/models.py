@@ -58,6 +58,8 @@ class Tenant(Base):
     grace_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     trial_notices: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Per-document prefix/series: {sales_invoice: {prefix, include_year, pad, next_number}, ...}
+    document_numbering: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     suspended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     suspended_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
