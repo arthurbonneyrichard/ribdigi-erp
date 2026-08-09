@@ -284,9 +284,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Granular access control across three dimensions.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Module Permissions:** Grant/deny access to entire modules (Inventory, Sales, etc.)
-  - [ ] **Menu Permissions:** Control visibility of specific menu items and submenus
-  - [ ] **Record Permissions:** Control CRUD operations on individual records (own records, department records, all records)
+  - [x] **Module Permissions:** Grant/deny access to entire modules (Inventory, Sales, etc.)
+  - [x] **Menu Permissions:** Control visibility of specific menu items and submenus *(Stage 1: menu item visibility = module `read`/`write`; see `docs/ADR_004_MENU_PERMISSIONS.md`)*
+  - [x] **Record Permissions:** Control CRUD operations on individual records (own records, department records, all records)
   - [ ] Permission inheritance from role with user-level override capability
 
 ---

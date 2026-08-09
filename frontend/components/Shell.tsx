@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { canReadModule } from '../lib/rbac';
 
 const items: [string, string, string][] = [
   ['Dashboard', '/dashboard', 'dashboard'],
@@ -24,13 +25,6 @@ const items: [string, string, string][] = [
   ['AI Assistant', '/ai', 'ai'],
   ['Users', '/users', 'users'],
 ];
-
-function canReadModule(permissions: Record<string, string[]> | null | undefined, module: string) {
-  if (!permissions) return false;
-  if (permissions['*']?.includes('*')) return true;
-  const actions = permissions[module] || [];
-  return actions.includes('*') || actions.includes('read') || actions.includes('write');
-}
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
