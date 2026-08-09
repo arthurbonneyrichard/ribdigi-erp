@@ -93,9 +93,11 @@ async def test_invoice_print_send_overdue_and_no_repost(client, db_session, monk
     assert posted.status_code == 200, posted.text
     assert posted.json()["data"]["status"] == "posted"
 
-    await db_session.expire_all()
+    product_id = str(seed["p1"].id)
+    tenant_id = str(seed["t1"].id)
+    db_session.expire_all()
     product_before = (
-        await db_session.execute(select(m.Product).where(m.Product.id == seed["p1"].id))
+        await db_session.execute(select(m.Product).where(m.Product.id == product_id))
     ).scalar_one()
     stock_before = float(product_before.stock_qty)
 
@@ -132,16 +134,16 @@ async def test_invoice_print_send_overdue_and_no_repost(client, db_session, monk
     out = get_dev_outbox()
     assert out and invoice_number in out[0]["subject"]
 
-    await db_session.expire_all()
+    db_session.expire_all()
     product_after = (
-        await db_session.execute(select(m.Product).where(m.Product.id == seed["p1"].id))
+        await db_session.execute(select(m.Product).where(m.Product.id == product_id))
     ).scalar_one()
     assert float(product_after.stock_qty) == stock_before
 
     journals = (
         await db_session.execute(
             select(m.JournalEntry).where(
-                m.JournalEntry.tenant_id == seed["t1"].id,
+                m.JournalEntry.tenant_id == tenant_id,
                 m.JournalEntry.source_type == "sales_invoice",
                 m.JournalEntry.source_id == invoice_id,
             )
