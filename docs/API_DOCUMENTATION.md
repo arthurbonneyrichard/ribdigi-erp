@@ -376,19 +376,21 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 ## 5. Inventory & Products
 
 ### 5.1 Product Categories
-**List:** `GET /inventory/categories`  
-**Create:** `POST /inventory/categories`  
-**Update:** `PATCH /inventory/categories/{category_id}`  
-**Delete:** `DELETE /inventory/categories/{category_id}`
+**List:** `GET /catalog/categories` (`?tree=true` for nested tree)  
+**Create:** `POST /catalog/categories` — body `{ code, name, parent_id?, tax_rate_id? }`  
+**Update:** `PATCH /catalog/categories/{category_id}` — may set/clear `tax_rate_id`  
+**Delete:** `DELETE /catalog/categories/{category_id}` (soft deactivate)
+
+Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a product line is exempt → line override → product `tax_rate_id` → category rate (walks parents) → tenant default.
 
 ### 5.2 Brands
-**List:** `GET /inventory/brands`  
-**Create:** `POST /inventory/brands`  
-**Update:** `PATCH /inventory/brands/{brand_id}`
+**List:** `GET /catalog/brands`  
+**Create:** `POST /catalog/brands`  
+**Update:** `PATCH /catalog/brands/{brand_id}`
 
 ### 5.3 Units
-**List:** `GET /inventory/units`  
-**Create:** `POST /inventory/units`
+**List:** `GET /catalog/units`  
+**Create:** `POST /catalog/units`
 
 ### 5.4 Products
 **List:** `GET /products?category_id=&brand_id=&low_stock=true`  
