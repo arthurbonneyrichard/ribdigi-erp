@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function Page() {
+function VerifyEmailForm() {
   const params = useSearchParams();
   const router = useRouter();
   const [token, setToken] = useState('');
@@ -41,5 +41,20 @@ export default function Page() {
         {message && <p style={{ color: '#047857' }}>{message}</p>}
       </form>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div className="login">
+          <h1>Verify email</h1>
+          <p>Loading…</p>
+        </div>
+      }
+    >
+      <VerifyEmailForm />
+    </Suspense>
   );
 }
