@@ -21,3 +21,7 @@ Remaining commercial-MVP gaps from Phase 5 / BR-18 include tenant API keys, webh
 
 - Agents may implement Stage 6 plan items without reopening Stage 1–5 feature scope.
 - Stage 6 exit requires `docs/STAGE_6_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned P0 workstreams.
+
+## Amendment (2026-08-09)
+
+Stage 6 exit criteria are **met** and feature scope is **frozen** under [ADR-018](ADR_018_STAGE6_FREEZE.md) / `docs/STAGE_6_EXIT_CRITERIA.md`. This open ADR remains historical for the delivery track.

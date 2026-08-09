@@ -1,8 +1,10 @@
 # Stage 6 Plan — Integrations, Onboarding & Performance
 
-**Status:** Open (ADR-017)  
+**Status:** Closed — exit met; freeze ADR-018  
 **Base:** Remaining Phase 5 roadmap items (BR-18 API/webhooks, onboarding, caching) + `PRODUCTION_READINESS.md`  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
+**Exit:** [STAGE_6_EXIT_CRITERIA.md](STAGE_6_EXIT_CRITERIA.md) · **Freeze:** [ADR-018](ADR_018_STAGE6_FREEZE.md)  
+
 
 Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 5 freeze. It is **not** Kubernetes, WAL/PITR, or vendor pen test.
 
@@ -21,7 +23,7 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 | **W1** | Webhooks + HMAC signing (API docs §17) | P0 | COMPLETE |
 | **N2** | Tenant onboarding checklist (API + Shell) | P0 | COMPLETE |
 | **P2** | Redis app-data cache for dashboard/catalog | P0 | COMPLETE |
-| **H6x** | Stage 6 exit criteria + freeze ADR | Exit | PENDING |
+| **H6x** | Stage 6 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -65,6 +67,12 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 - [x] Invalidate on product/catalog/stock/sale/expense mutations (`invalidate_tenant` / catalog / dashboard).
 - [x] Automated tests in `backend/tests/test_app_cache_p2.py`.
 
+## H6x acceptance criteria
+
+- [x] `docs/STAGE_6_EXIT_CRITERIA.md` records K1–P2 COMPLETE with evidence.
+- [x] Freeze ADR-018 accepted (no new Stage 6 feature scope; Stage 7 requires explicit open).
+- [x] Automated smoke: `backend/tests/test_stage6_exit_h6x.py`.
+
 ## Sign-off
 
-Stage 6 exit will be recorded in `docs/STAGE_6_EXIT_CRITERIA.md` with a freeze ADR when P0 workstreams are complete.
+Stage 6 exit recorded in `docs/STAGE_6_EXIT_CRITERIA.md`; freeze ADR-018.
