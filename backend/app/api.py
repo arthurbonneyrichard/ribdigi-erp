@@ -9012,6 +9012,27 @@ async def store_inventory(
     )
 
 
+@api.get("/stores/{store_id}/sales")
+async def store_sales(
+    store_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    recent_limit: int = 50,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await stores_svc.store_sales(
+            db,
+            claims["tenant_id"],
+            store_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            recent_limit=recent_limit,
+        )
+    )
+
+
 @api.put("/stores/{store_id}/reorder-policy")
 async def set_store_reorder_policy(
     store_id: str,

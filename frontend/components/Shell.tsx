@@ -4,6 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { canReadModule } from '../lib/rbac';
+import {
+  getSelectedStoreId,
+  setSelectedStoreId,
+  subscribeStoreContext,
+} from '../lib/storeContext';
 
 const items: [string, string, string][] = [
   ['Dashboard', '/dashboard', 'dashboard'],
@@ -26,10 +31,19 @@ const items: [string, string, string][] = [
   ['Users', '/users', 'users'],
 ];
 
+type StoreOption = { id: string; code: string; name: string; is_active?: boolean };
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [idleMinutes, setIdleMinutes] = useState(30);
+  const [stores, setStores] = useState<StoreOption[]>([]);
+  const [storeId, setStoreId] = useState('');
+
+  useEffect(() => {
+    setStoreId(getSelectedStoreId());
+    return subscribeStoreContext((id) => setStoreId(id));
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -57,6 +71,30 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       clearInterval(id);
     };
   }, []);
+
+  useEffect(() => {
+    if (!canReadModule(permissions, 'stores')) {
+      setStores([]);
+      return;
+    }
+    let active = true;
+    api('/stores')
+      .then((res) => {
+        if (!active) return;
+        const rows = (res.data || []).filter((s: StoreOption) => s.is_active !== false);
+        setStores(rows);
+        const selected = getSelectedStoreId();
+        if (selected && !rows.some((s: StoreOption) => s.id === selected)) {
+          setSelectedStoreId('');
+        }
+      })
+      .catch(() => {
+        if (active) setStores([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [permissions]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -95,6 +133,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }, [idleMinutes]);
 
   const visible = items.filter(([, , module]) => canReadModule(permissions, module));
+  const showStoreSwitcher = canReadModule(permissions, 'stores') && stores.length > 0;
 
   return (
     <div className="shell">
@@ -111,6 +150,23 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </aside>
       <main className="main">
         <div className="topbar">
+          {showStoreSwitcher && (
+            <label className="store-switcher">
+              <span className="muted">Store</span>
+              <select
+                value={storeId}
+                onChange={(e) => setSelectedStoreId(e.target.value)}
+                aria-label="Global store context"
+              >
+                <option value="">All stores</option>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {canReadModule(permissions, 'notifications') && (
             <Link href="/notifications" className="bell">
               Alerts{unread > 0 ? ` · ${unread}` : ''}

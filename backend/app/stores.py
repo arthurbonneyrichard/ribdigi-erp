@@ -317,6 +317,114 @@ async def store_inventory(
     return out
 
 
+async def store_sales(
+    db: AsyncSession,
+    tenant_id: str,
+    store_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    recent_limit: int = 50,
+) -> dict:
+    """Store-specific sales summary + recent invoice/POS lines (BR-13.1)."""
+    store = await get_store(db, tenant_id, store_id)
+    limit = max(1, min(int(recent_limit or 50), 200))
+
+    inv_stmt = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.store_id == store_id,
+        m.SalesInvoice.status.in_(["posted", "partial", "paid", "sent", "overdue"]),
+    )
+    if from_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
+    if to_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    invoices = (await db.execute(inv_stmt.order_by(m.SalesInvoice.posted_at.desc()))).scalars().all()
+
+    pos_stmt = (
+        select(m.Transaction, m.PosSession)
+        .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+        .where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.PosSession.store_id == store_id,
+        )
+    )
+    if from_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
+    if to_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    pos_rows = (await db.execute(pos_stmt.order_by(m.Transaction.created_at.desc()))).all()
+
+    invoice_revenue = 0.0
+    invoice_tax = 0.0
+    for inv in invoices:
+        invoice_revenue += float(inv.total_amount or 0)
+        invoice_tax += float(inv.tax_amount or 0)
+
+    pos_revenue = 0.0
+    pos_tax = 0.0
+    for tx, _session in pos_rows:
+        pos_revenue += float(tx.total or 0)
+        pos_tax += float(tx.tax or 0)
+
+    sale_count = len(invoices) + len(pos_rows)
+    revenue = round(invoice_revenue + pos_revenue, 2)
+    tax = round(invoice_tax + pos_tax, 2)
+
+    recent: list[dict] = []
+    for inv in invoices:
+        recent.append(
+            {
+                "source": "invoice",
+                "id": inv.id,
+                "number": inv.invoice_number,
+                "total": float(inv.total_amount or 0),
+                "tax": float(inv.tax_amount or 0),
+                "status": inv.status,
+                "occurred_at": inv.posted_at or inv.created_at,
+            }
+        )
+    for tx, _session in pos_rows:
+        recent.append(
+            {
+                "source": "pos",
+                "id": tx.id,
+                "number": tx.reference or tx.id[:8],
+                "total": float(tx.total or 0),
+                "tax": float(tx.tax or 0),
+                "status": "completed",
+                "occurred_at": tx.created_at,
+            }
+        )
+    recent.sort(key=lambda r: r["occurred_at"] or datetime.min, reverse=True)
+    recent = recent[:limit]
+
+    return {
+        "store": {
+            "id": store.id,
+            "code": store.code,
+            "name": store.name,
+            "is_active": bool(getattr(store, "is_active", True)),
+        },
+        "from_date": from_date,
+        "to_date": to_date,
+        "summary": {
+            "invoice_count": len(invoices),
+            "invoice_revenue": round(invoice_revenue, 2),
+            "invoice_tax": round(invoice_tax, 2),
+            "pos_count": len(pos_rows),
+            "pos_revenue": round(pos_revenue, 2),
+            "pos_tax": round(pos_tax, 2),
+            "sale_count": sale_count,
+            "revenue": revenue,
+            "tax": tax,
+            "avg_ticket": round(revenue / sale_count, 2) if sale_count else 0.0,
+        },
+        "recent": recent,
+    }
+
+
 async def set_store_reorder_policy(
     db: AsyncSession,
     *,

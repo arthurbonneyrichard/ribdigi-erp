@@ -18,7 +18,7 @@ Stage 4 here is **not** a rewrite of multi-store, reports, notifications, or AI.
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **T1** | Inter-store dual-manager approval (BR-13.2) | P0 | COMPLETE |
-| **M1** | Global store context + `GET /stores/{id}/sales` (BR-13.1) | P0 | PENDING |
+| **M1** | Global store context + `GET /stores/{id}/sales` (BR-13.1) | P0 | COMPLETE |
 | **N1** | `new_order` notification type (BR-15.1) | P0 | PENDING |
 | **R1** | Sales report depth (customer sales; store/category filters; comparative) | P0 | PENDING |
 | **H4** | Stage 4 exit criteria + freeze ADR | Exit | PENDING |
@@ -41,6 +41,14 @@ Stage 4 here is **not** a rewrite of multi-store, reports, notifications, or AI.
 - [x] Warehouse-only transfers (null store ids) unchanged; unassigned manager keeps prior write access.
 - [x] Serialize `from_store_manager_id` / `to_store_manager_id`; Stores UI gates Ship/Receive.
 - [x] Automated tests in `backend/tests/test_inter_store_dual_manager_t1.py`.
+
+## M1 acceptance criteria
+
+- [x] `GET /stores/{store_id}/sales` returns tenant-scoped summary (invoice + POS) + recent lines; optional `from_date`/`to_date`/`recent_limit`.
+- [x] Foreign store id → 404; `stores` read RBAC.
+- [x] Shell global store switcher (All stores + list) persisted in `localStorage` (`selected_store_id`).
+- [x] Multi-Store UI Sales panel loads `/stores/{id}/sales` and syncs with global context.
+- [x] Automated tests in `backend/tests/test_store_sales_context_m1.py`.
 
 ## Sign-off
 

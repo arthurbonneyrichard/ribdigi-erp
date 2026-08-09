@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import {
+  getSelectedStoreId,
+  setSelectedStoreId,
+  subscribeStoreContext,
+} from '../../lib/storeContext';
 
 type Store = {
   id: string;
@@ -77,6 +82,11 @@ export default function Page() {
   const [products, setProducts] = useState<Product[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
+  const [salesStore, setSalesStore] = useState('');
+  const [storeSales, setStoreSales] = useState<{
+    summary?: Record<string, number>;
+    recent?: { source: string; number: string; total: number; tax: number; status: string; occurred_at?: string }[];
+  } | null>(null);
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -240,8 +250,44 @@ export default function Page() {
     }
   }
 
+  useEffect(() => {
+    const selected = getSelectedStoreId();
+    if (selected) {
+      setViewStore((prev) => prev || selected);
+      setSalesStore((prev) => prev || selected);
+    }
+    return subscribeStoreContext((id) => {
+      if (id) {
+        setViewStore(id);
+        setSalesStore(id);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!salesStore) {
+      setStoreSales(null);
+      return;
+    }
+    let active = true;
+    api(`/stores/${salesStore}/sales`)
+      .then((r) => {
+        if (active) setStoreSales(r.data || null);
+      })
+      .catch((err: any) => {
+        if (active) {
+          setStoreSales(null);
+          setError(err.message);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [salesStore]);
+
   async function loadInventory(storeId: string) {
     setViewStore(storeId);
+    setSelectedStoreId(storeId);
     setError('');
     try {
       const r = await api(`/stores/${storeId}/inventory?include_zero=true`);
@@ -249,6 +295,12 @@ export default function Page() {
     } catch (err: any) {
       setError(err.message);
     }
+  }
+
+  function loadSales(storeId: string) {
+    setSalesStore(storeId);
+    setSelectedStoreId(storeId);
+    setError('');
   }
 
   async function saveReorder() {
@@ -594,8 +646,9 @@ export default function Page() {
               <td>{s.warehouse_code || '—'}</td>
               <td>{s.phone || '—'}</td>
               <td>{s.address || '—'}</td>
-              <td>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button onClick={() => loadInventory(s.id)}>Inventory / reorder</button>
+                <button onClick={() => loadSales(s.id)}>Sales</button>
               </td>
             </tr>
           ))}
@@ -803,6 +856,60 @@ export default function Page() {
           )}
         </tbody>
       </table>
+
+      {salesStore && storeSales && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3>Sales · {storeName(salesStore)}</h3>
+          <p className="muted">Store-specific invoice + POS totals (BR-13.1)</p>
+          <div className="grid" style={{ marginBottom: 12 }}>
+            <div>
+              <div className="muted">Revenue</div>
+              <div className="kpi">{storeSales.summary?.revenue ?? 0}</div>
+            </div>
+            <div>
+              <div className="muted">Sales</div>
+              <div className="kpi">{storeSales.summary?.sale_count ?? 0}</div>
+            </div>
+            <div>
+              <div className="muted">Invoices</div>
+              <div className="kpi">{storeSales.summary?.invoice_count ?? 0}</div>
+            </div>
+            <div>
+              <div className="muted">POS</div>
+              <div className="kpi">{storeSales.summary?.pos_count ?? 0}</div>
+            </div>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Number</th>
+                <th>Total</th>
+                <th>Tax</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(storeSales.recent || []).map((row) => (
+                <tr key={`${row.source}-${row.number}`}>
+                  <td>{row.source}</td>
+                  <td>{row.number}</td>
+                  <td>{row.total}</td>
+                  <td>{row.tax}</td>
+                  <td>{row.status}</td>
+                </tr>
+              ))}
+              {(storeSales.recent || []).length === 0 && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No sales for this store yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {viewStore && (
         <div className="card" style={{ marginTop: 16 }}>

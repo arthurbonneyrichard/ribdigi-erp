@@ -1015,6 +1015,12 @@ Liquid (cash/bank) movements classified as `operating` / `investing` / `financin
 ### 13.3 Store Sales
 **Endpoint:** `GET /stores/{store_id}/sales`
 
+Query params: `from_date`, `to_date`, `recent_limit` (default 50, max 200).
+
+Returns store metadata, aggregated `summary` (invoice/POS counts and revenue), and `recent` sale lines (`source` = `invoice`|`pos`). Tenant-scoped; unknown/foreign store → 404. Requires `stores:read`.
+
+Global UI store context (Shell switcher) is client-side only (`localStorage` key `selected_store_id`); it does not send a store header to the API.
+
 ### 13.4 Inter-Store Transfers
 **List:** `GET /stores/transfers`  
 **Create:** `POST /stores/transfers`  
