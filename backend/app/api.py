@@ -75,6 +75,8 @@ from app.schemas import (
     NotificationPreferencesUpdate,
     CustomerContactCreate,
     CustomerCreate,
+    CustomerGroupCreate,
+    CustomerGroupUpdate,
     CustomerUpdate,
     SupplierContactCreate,
     SupplierCreate,
@@ -189,6 +191,7 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
     await ensure_default_accounts(db, tenant_id)
     await expenses_svc.ensure_default_categories(db, tenant_id)
     await catalog_meta_svc.ensure_default_catalog(db, tenant_id)
+    await customers_svc.ensure_default_customer_groups(db, tenant_id)
     from app.notifications import create_notification
 
     await create_notification(
@@ -3389,12 +3392,95 @@ async def party_list(kind: str, claims: dict, db: AsyncSession):
     return env(rows)
 
 
+async def _serialize_customer_response(
+    db: AsyncSession, tenant_id: str, party: m.Party
+) -> dict:
+    contacts = await customers_svc.list_contacts(db, tenant_id, party.id)
+    group = None
+    if party.customer_group_id:
+        groups = await customers_svc.load_group_map(
+            db, tenant_id, [party.customer_group_id]
+        )
+        group = groups.get(party.customer_group_id)
+    return customers_svc.serialize_customer(party, contacts, group)
+
+
+@api.get("/customers/groups")
+async def list_customer_groups(
+    active_only: bool = False,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await customers_svc.list_groups(
+        db, claims["tenant_id"], active_only=active_only
+    )
+    await db.commit()
+    return env([customers_svc.serialize_group(r) for r in rows])
+
+
+@api.post("/customers/groups")
+async def create_customer_group(
+    payload: CustomerGroupCreate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await customers_svc.create_group(
+        db,
+        tenant_id=claims["tenant_id"],
+        name=payload.name,
+        discount_percent=float(payload.discount_percent or 0),
+    )
+    await db.commit()
+    return env(customers_svc.serialize_group(row), "Customer group created")
+
+
+@api.get("/customers/groups/{group_id}")
+async def get_customer_group(
+    group_id: str,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await customers_svc.get_customer_group(db, claims["tenant_id"], group_id)
+    return env(customers_svc.serialize_group(row))
+
+
+@api.patch("/customers/groups/{group_id}")
+async def patch_customer_group(
+    group_id: str,
+    payload: CustomerGroupUpdate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await customers_svc.update_group(
+        db,
+        tenant_id=claims["tenant_id"],
+        group_id=group_id,
+        fields=payload.model_dump(exclude_unset=True),
+    )
+    await db.commit()
+    return env(customers_svc.serialize_group(row), "Customer group updated")
+
+
+@api.delete("/customers/groups/{group_id}")
+async def delete_customer_group(
+    group_id: str,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await customers_svc.deactivate_group(
+        db, tenant_id=claims["tenant_id"], group_id=group_id
+    )
+    await db.commit()
+    return env(customers_svc.serialize_group(row), "Customer group deactivated")
+
+
 @api.get("/customers")
 async def customers(
     active_only: bool = False,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    await customers_svc.ensure_default_customer_groups(db, claims["tenant_id"])
     stmt = (
         select(m.Party)
         .where(m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "customer")
@@ -3403,10 +3489,18 @@ async def customers(
     if active_only:
         stmt = stmt.where(m.Party.status == "active")
     rows = (await db.execute(stmt)).scalars().all()
+    group_map = await customers_svc.load_group_map(
+        db, claims["tenant_id"], [r.customer_group_id for r in rows if r.customer_group_id]
+    )
     out = []
     for row in rows:
         contacts = await customers_svc.list_contacts(db, claims["tenant_id"], row.id)
-        out.append(customers_svc.serialize_customer(row, contacts))
+        out.append(
+            customers_svc.serialize_customer(
+                row, contacts, group_map.get(row.customer_group_id) if row.customer_group_id else None
+            )
+        )
+    await db.commit()
     return env(out)
 
 
@@ -3425,17 +3519,23 @@ async def add_customer(
         code=data.get("code"),
         party_type=data.get("party_type") or "registered",
         category=data.get("category"),
+        customer_group_id=data.get("customer_group_id"),
+        customer_group=data.get("customer_group"),
         email=data.get("email"),
         phone=data.get("phone"),
         address=data.get("address"),
+        latitude=data.get("latitude"),
+        longitude=data.get("longitude"),
         notes=data.get("notes"),
         payment_terms_days=int(data.get("payment_terms_days") or 0),
         credit_limit=float(data.get("credit_limit") or 0),
         contacts=contacts,
     )
     await db.commit()
-    contacts_rows = await customers_svc.list_contacts(db, claims["tenant_id"], party.id)
-    return env(customers_svc.serialize_customer(party, contacts_rows), "Customer created")
+    return env(
+        await _serialize_customer_response(db, claims["tenant_id"], party),
+        "Customer created",
+    )
 
 
 @api.get("/customers/{customer_id}")
@@ -3445,8 +3545,7 @@ async def get_customer(
     db: AsyncSession = Depends(get_db),
 ):
     party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
-    contacts = await customers_svc.list_contacts(db, claims["tenant_id"], party.id)
-    return env(customers_svc.serialize_customer(party, contacts))
+    return env(await _serialize_customer_response(db, claims["tenant_id"], party))
 
 
 @api.patch("/customers/{customer_id}")
@@ -3463,8 +3562,10 @@ async def patch_customer(
         fields=payload.model_dump(exclude_unset=True),
     )
     await db.commit()
-    contacts = await customers_svc.list_contacts(db, claims["tenant_id"], party.id)
-    return env(customers_svc.serialize_customer(party, contacts), "Customer updated")
+    return env(
+        await _serialize_customer_response(db, claims["tenant_id"], party),
+        "Customer updated",
+    )
 
 
 @api.delete("/customers/{customer_id}")
@@ -3477,8 +3578,10 @@ async def delete_customer(
         db, tenant_id=claims["tenant_id"], customer_id=customer_id
     )
     await db.commit()
-    contacts = await customers_svc.list_contacts(db, claims["tenant_id"], party.id)
-    return env(customers_svc.serialize_customer(party, contacts), "Customer deactivated")
+    return env(
+        await _serialize_customer_response(db, claims["tenant_id"], party),
+        "Customer deactivated",
+    )
 
 
 @api.post("/customers/{customer_id}/contacts")
@@ -5229,12 +5332,20 @@ async def pos_sale(
     from app.tax import resolve_product_tax
     from app.catalog import resolve_sale_line
 
+    group_discount = await customers_svc.customer_group_discount_percent(
+        db, claims["tenant_id"], payload.party_id
+    )
     subtotal = 0.0
     tax_total = 0.0
     line_discounts = 0.0
     priced_items = []
     for item in items:
-        product, variant, unit_price = await resolve_sale_line(db, claims["tenant_id"], item)
+        product, variant, unit_price = await resolve_sale_line(
+            db,
+            claims["tenant_id"],
+            item,
+            group_discount_percent=group_discount,
+        )
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
         line_discount = round(float(item.get("discount") or 0), 2)
         if line_discount < 0:

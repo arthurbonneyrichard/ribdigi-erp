@@ -19,7 +19,15 @@ type Product = {
 
 type CartItem = Product & { quantity: number; discount: number };
 
-type Customer = { id: string; name: string; code?: string | null; credit_limit?: number; balance?: number };
+type Customer = {
+  id: string;
+  name: string;
+  code?: string | null;
+  credit_limit?: number;
+  balance?: number;
+  group_discount_percent?: number;
+  customer_group_name?: string | null;
+};
 
 type Session = {
   session_id: string;
@@ -202,8 +210,16 @@ export default function Page() {
     );
   }
 
+  const selectedCustomer = customers.find((c) => c.id === customerId);
+  const groupDiscountPct = Number(selectedCustomer?.group_discount_percent || 0);
+  function effectiveUnitPrice(base: number) {
+    if (!groupDiscountPct) return Number(base || 0);
+    return Math.round(Number(base || 0) * (1 - groupDiscountPct / 100) * 10000) / 10000;
+  }
+
   const cartSubtotal = cart.reduce(
-    (sum, c) => sum + Math.max(0, Number(c.selling_price) * c.quantity - (c.discount || 0)),
+    (sum, c) =>
+      sum + Math.max(0, effectiveUnitPrice(c.selling_price) * c.quantity - (c.discount || 0)),
     0,
   );
 
@@ -361,7 +377,7 @@ export default function Page() {
               {r.sku}
               {r.kind === 'variant' ? ' · variant' : ''}
             </p>
-            <div className="kpi">{r.selling_price}</div>
+            <div className="kpi">{effectiveUnitPrice(r.selling_price)}</div>
             <p className="muted">Stock: {r.stock_qty}</p>
             <button onClick={() => addToCart(r)} disabled={!session}>
               Add
@@ -385,13 +401,20 @@ export default function Page() {
               <option key={c.id} value={c.id}>
                 {c.name}
                 {c.code ? ` (${c.code})` : ''}
+                {c.customer_group_name ? ` · ${c.customer_group_name}` : ''}
               </option>
             ))}
           </select>
         </label>
+        {groupDiscountPct > 0 && (
+          <p className="muted">
+            {selectedCustomer?.customer_group_name || 'Group'} pricing: {groupDiscountPct}% off catalog
+          </p>
+        )}
         {cart.length === 0 && <p className="muted">No items</p>}
         {cart.map((c) => {
-          const lineGross = Number(c.selling_price) * c.quantity;
+          const unit = effectiveUnitPrice(c.selling_price);
+          const lineGross = unit * c.quantity;
           const lineNet = Math.max(0, lineGross - (c.discount || 0));
           return (
             <div
@@ -407,7 +430,8 @@ export default function Page() {
               <div>
                 <div>{c.name}</div>
                 <div className="muted" style={{ fontSize: 13 }}>
-                  {c.sku} · {Number(c.selling_price).toFixed(2)} each
+                  {c.sku} · {unit.toFixed(2)} each
+                  {groupDiscountPct > 0 ? ` (${groupDiscountPct}% group)` : ''}
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                   <button type="button" onClick={() => setCartQty(c.id, c.quantity - 1)} disabled={!session}>

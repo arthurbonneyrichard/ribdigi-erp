@@ -1,17 +1,23 @@
-"""Customer profile, contacts, and sales history."""
+"""Customer profile, groups, GPS, contacts, and sales history."""
 
 from __future__ import annotations
 
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 
 CUSTOMER_TYPES = frozenset({"walk-in", "registered"})
 CUSTOMER_STATUSES = frozenset({"active", "inactive"})
+
+DEFAULT_CUSTOMER_GROUPS = (
+    ("Retail", 0),
+    ("Wholesale", 10),
+    ("VIP", 15),
+)
 
 
 def normalize_customer_type(value: str | None, *, required: bool = False) -> str | None:
@@ -30,6 +36,36 @@ def normalize_customer_type(value: str | None, *, required: bool = False) -> str
     return normalized
 
 
+def normalize_gps(
+    latitude: float | None,
+    longitude: float | None,
+    *,
+    partial_ok: bool = False,
+) -> tuple[float | None, float | None]:
+    """Validate GPS; require both coordinates when either is provided."""
+    lat_missing = latitude is None
+    lon_missing = longitude is None
+    if lat_missing and lon_missing:
+        return None, None
+    if lat_missing or lon_missing:
+        if partial_ok:
+            return (
+                None if lat_missing else float(latitude),
+                None if lon_missing else float(longitude),
+            )
+        raise HTTPException(
+            status_code=400,
+            detail="latitude and longitude must both be set or both cleared",
+        )
+    lat = float(latitude)
+    lon = float(longitude)
+    if lat < -90 or lat > 90:
+        raise HTTPException(status_code=400, detail="latitude must be between -90 and 90")
+    if lon < -180 or lon > 180:
+        raise HTTPException(status_code=400, detail="longitude must be between -180 and 180")
+    return lat, lon
+
+
 def serialize_contact(row: m.PartyContact) -> dict:
     return {
         "id": row.id,
@@ -43,7 +79,22 @@ def serialize_contact(row: m.PartyContact) -> dict:
     }
 
 
-def serialize_customer(row: m.Party, contacts: list[m.PartyContact] | None = None) -> dict:
+def serialize_group(row: m.CustomerGroup) -> dict:
+    return {
+        "id": row.id,
+        "name": row.name,
+        "discount_percent": float(row.discount_percent or 0),
+        "is_active": bool(row.is_active),
+        "created_at": row.created_at,
+    }
+
+
+def serialize_customer(
+    row: m.Party,
+    contacts: list[m.PartyContact] | None = None,
+    group: m.CustomerGroup | None = None,
+) -> dict:
+    active_group = group if group is not None and bool(group.is_active) else None
     return {
         "id": row.id,
         "kind": row.kind,
@@ -51,10 +102,16 @@ def serialize_customer(row: m.Party, contacts: list[m.PartyContact] | None = Non
         "code": row.code,
         "party_type": row.party_type or "registered",
         "category": row.category,
+        "customer_group_id": row.customer_group_id,
+        "customer_group": serialize_group(group) if group is not None else None,
+        "customer_group_name": group.name if group is not None else None,
+        "group_discount_percent": float(active_group.discount_percent or 0) if active_group else 0.0,
         "status": row.status or "active",
         "email": row.email,
         "phone": row.phone,
         "address": row.address,
+        "latitude": float(row.latitude) if row.latitude is not None else None,
+        "longitude": float(row.longitude) if row.longitude is not None else None,
         "notes": row.notes,
         "payment_terms_days": int(row.payment_terms_days or 0),
         "credit_limit": float(row.credit_limit or 0),
@@ -63,6 +120,28 @@ def serialize_customer(row: m.Party, contacts: list[m.PartyContact] | None = Non
         "updated_at": row.updated_at,
         "contacts": [serialize_contact(c) for c in (contacts or [])],
     }
+
+
+async def ensure_default_customer_groups(db: AsyncSession, tenant_id: str) -> None:
+    existing = (
+        await db.execute(
+            select(m.CustomerGroup.id).where(m.CustomerGroup.tenant_id == tenant_id).limit(1)
+        )
+    ).scalar_one_or_none()
+    if existing:
+        return
+    now = datetime.utcnow()
+    for name, discount in DEFAULT_CUSTOMER_GROUPS:
+        db.add(
+            m.CustomerGroup(
+                tenant_id=tenant_id,
+                name=name,
+                discount_percent=discount,
+                is_active=True,
+                created_at=now,
+            )
+        )
+    await db.flush()
 
 
 async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.Party:
@@ -78,6 +157,195 @@ async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.
     if row is None:
         raise HTTPException(status_code=404, detail="Customer not found")
     return row
+
+
+async def get_customer_group(
+    db: AsyncSession, tenant_id: str, group_id: str, *, active_only: bool = False
+) -> m.CustomerGroup:
+    row = (
+        await db.execute(
+            select(m.CustomerGroup).where(
+                m.CustomerGroup.id == group_id,
+                m.CustomerGroup.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Customer group not found")
+    if active_only and not row.is_active:
+        raise HTTPException(status_code=409, detail="Customer group is inactive")
+    return row
+
+
+async def load_group_map(
+    db: AsyncSession, tenant_id: str, group_ids: list[str]
+) -> dict[str, m.CustomerGroup]:
+    ids = [gid for gid in set(group_ids) if gid]
+    if not ids:
+        return {}
+    rows = (
+        await db.execute(
+            select(m.CustomerGroup).where(
+                m.CustomerGroup.tenant_id == tenant_id,
+                m.CustomerGroup.id.in_(ids),
+            )
+        )
+    ).scalars().all()
+    return {r.id: r for r in rows}
+
+
+async def resolve_group_ref(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    customer_group_id: str | None = None,
+    customer_group: str | None = None,
+    required_active: bool = True,
+) -> str | None:
+    """Resolve group id from id or name; None clears/unsets."""
+    if customer_group_id is not None:
+        gid = str(customer_group_id).strip()
+        if not gid:
+            return None
+        group = await get_customer_group(
+            db, tenant_id, gid, active_only=required_active
+        )
+        return group.id
+    if customer_group is not None:
+        name = str(customer_group).strip()
+        if not name:
+            return None
+        await ensure_default_customer_groups(db, tenant_id)
+        row = (
+            await db.execute(
+                select(m.CustomerGroup).where(
+                    m.CustomerGroup.tenant_id == tenant_id,
+                    func.lower(m.CustomerGroup.name) == name.lower(),
+                )
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Customer group not found")
+        if required_active and not row.is_active:
+            raise HTTPException(status_code=409, detail="Customer group is inactive")
+        return row.id
+    return None
+
+
+async def customer_group_discount_percent(
+    db: AsyncSession, tenant_id: str, customer_id: str | None
+) -> float:
+    if not customer_id:
+        return 0.0
+    customer = await get_customer(db, tenant_id, customer_id)
+    if not customer.customer_group_id:
+        return 0.0
+    group = (
+        await db.execute(
+            select(m.CustomerGroup).where(
+                m.CustomerGroup.id == customer.customer_group_id,
+                m.CustomerGroup.tenant_id == tenant_id,
+                m.CustomerGroup.is_active.is_(True),
+            )
+        )
+    ).scalar_one_or_none()
+    if group is None:
+        return 0.0
+    return max(0.0, min(100.0, float(group.discount_percent or 0)))
+
+
+async def list_groups(
+    db: AsyncSession, tenant_id: str, *, active_only: bool = False
+) -> list[m.CustomerGroup]:
+    await ensure_default_customer_groups(db, tenant_id)
+    stmt = select(m.CustomerGroup).where(m.CustomerGroup.tenant_id == tenant_id)
+    if active_only:
+        stmt = stmt.where(m.CustomerGroup.is_active.is_(True))
+    stmt = stmt.order_by(m.CustomerGroup.name)
+    return list((await db.execute(stmt)).scalars().all())
+
+
+async def create_group(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    name: str,
+    discount_percent: float = 0,
+) -> m.CustomerGroup:
+    await ensure_default_customer_groups(db, tenant_id)
+    name = (name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+    if len(name) > 50:
+        raise HTTPException(status_code=400, detail="name must be at most 50 characters")
+    pct = float(discount_percent or 0)
+    if pct < 0 or pct > 100:
+        raise HTTPException(status_code=400, detail="discount_percent must be between 0 and 100")
+    dup = (
+        await db.execute(
+            select(m.CustomerGroup).where(
+                m.CustomerGroup.tenant_id == tenant_id,
+                func.lower(m.CustomerGroup.name) == name.lower(),
+            )
+        )
+    ).scalar_one_or_none()
+    if dup:
+        raise HTTPException(status_code=409, detail="Customer group name already exists")
+    row = m.CustomerGroup(
+        tenant_id=tenant_id,
+        name=name,
+        discount_percent=pct,
+        is_active=True,
+        created_at=datetime.utcnow(),
+    )
+    db.add(row)
+    await db.flush()
+    return row
+
+
+async def update_group(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    group_id: str,
+    fields: dict,
+) -> m.CustomerGroup:
+    row = await get_customer_group(db, tenant_id, group_id)
+    if "name" in fields and fields["name"] is not None:
+        name = str(fields["name"]).strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="name is required")
+        if len(name) > 50:
+            raise HTTPException(status_code=400, detail="name must be at most 50 characters")
+        dup = (
+            await db.execute(
+                select(m.CustomerGroup).where(
+                    m.CustomerGroup.tenant_id == tenant_id,
+                    func.lower(m.CustomerGroup.name) == name.lower(),
+                    m.CustomerGroup.id != row.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if dup:
+            raise HTTPException(status_code=409, detail="Customer group name already exists")
+        row.name = name
+    if "discount_percent" in fields and fields["discount_percent"] is not None:
+        pct = float(fields["discount_percent"])
+        if pct < 0 or pct > 100:
+            raise HTTPException(status_code=400, detail="discount_percent must be between 0 and 100")
+        row.discount_percent = pct
+    if "is_active" in fields and fields["is_active"] is not None:
+        row.is_active = bool(fields["is_active"])
+    await db.flush()
+    return row
+
+
+async def deactivate_group(
+    db: AsyncSession, *, tenant_id: str, group_id: str
+) -> m.CustomerGroup:
+    return await update_group(
+        db, tenant_id=tenant_id, group_id=group_id, fields={"is_active": False}
+    )
 
 
 async def list_contacts(db: AsyncSession, tenant_id: str, party_id: str) -> list[m.PartyContact]:
@@ -129,9 +397,13 @@ async def create_customer(
     code: str | None = None,
     party_type: str | None = "registered",
     category: str | None = None,
+    customer_group_id: str | None = None,
+    customer_group: str | None = None,
     email: str | None = None,
     phone: str | None = None,
     address: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
     notes: str | None = None,
     payment_terms_days: int = 0,
     credit_limit: float = 0,
@@ -140,8 +412,16 @@ async def create_customer(
     name = (name or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="name is required")
+    await ensure_default_customer_groups(db, tenant_id)
     code = await assert_customer_code_available(db, tenant_id=tenant_id, code=code)
     ctype = normalize_customer_type(party_type) or "registered"
+    group_id = await resolve_group_ref(
+        db,
+        tenant_id,
+        customer_group_id=customer_group_id,
+        customer_group=customer_group,
+    )
+    lat, lon = normalize_gps(latitude, longitude)
     now = datetime.utcnow()
     row = m.Party(
         tenant_id=tenant_id,
@@ -150,10 +430,13 @@ async def create_customer(
         code=code,
         party_type=ctype,
         category=(category or "").strip() or None,
+        customer_group_id=group_id,
         status="active",
         email=str(email).strip() if email else None,
         phone=(phone or "").strip() or None,
         address=(address or "").strip() or None,
+        latitude=lat,
+        longitude=lon,
         notes=(notes or "").strip() or None,
         payment_terms_days=max(0, int(payment_terms_days or 0)),
         credit_limit=float(credit_limit or 0),
@@ -206,6 +489,37 @@ async def update_customer(
                 setattr(row, key, None)
             else:
                 setattr(row, key, str(value).strip())
+    if "customer_group_id" in fields or "customer_group" in fields:
+        # Explicit null clears; omitted keys leave unchanged (caller uses exclude_unset).
+        if "customer_group_id" in fields and fields["customer_group_id"] is None:
+            row.customer_group_id = None
+        elif "customer_group" in fields and fields["customer_group"] is None and "customer_group_id" not in fields:
+            row.customer_group_id = None
+        else:
+            row.customer_group_id = await resolve_group_ref(
+                db,
+                tenant_id,
+                customer_group_id=fields.get("customer_group_id"),
+                customer_group=fields.get("customer_group"),
+            )
+    if "latitude" in fields or "longitude" in fields:
+        lat = fields["latitude"] if "latitude" in fields else row.latitude
+        lon = fields["longitude"] if "longitude" in fields else row.longitude
+        if "latitude" in fields and fields["latitude"] is None and "longitude" in fields and fields["longitude"] is None:
+            row.latitude = None
+            row.longitude = None
+        else:
+            # When clearing only one side via null while other remains, reject unless both cleared.
+            new_lat = None if ("latitude" in fields and fields["latitude"] is None) else lat
+            new_lon = None if ("longitude" in fields and fields["longitude"] is None) else lon
+            if new_lat is None and new_lon is None:
+                row.latitude = None
+                row.longitude = None
+            else:
+                row.latitude, row.longitude = normalize_gps(
+                    None if new_lat is None else float(new_lat),
+                    None if new_lon is None else float(new_lon),
+                )
     if "payment_terms_days" in fields and fields["payment_terms_days"] is not None:
         row.payment_terms_days = max(0, int(fields["payment_terms_days"]))
     if "credit_limit" in fields and fields["credit_limit"] is not None:

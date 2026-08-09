@@ -372,6 +372,18 @@ class StockReservation(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class CustomerGroup(Base):
+    __tablename__ = "customer_groups"
+    __table_args__ = (UniqueConstraint("tenant_id", "name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(50))
+    discount_percent: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Party(Base):
     __tablename__ = "parties"
     __table_args__ = (UniqueConstraint("tenant_id", "kind", "code"),)
@@ -381,13 +393,18 @@ class Party(Base):
     kind: Mapped[str] = mapped_column(String(20))
     name: Mapped[str] = mapped_column(String(180))
     code: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
-    # e.g. manufacturer | distributor | wholesaler | other (suppliers); retail | wholesale (customers)
+    # e.g. manufacturer | distributor | wholesaler | other (suppliers); walk-in | registered (customers)
     party_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
     category: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    customer_group_id: Mapped[str | None] = mapped_column(
+        ForeignKey("customer_groups.id"), nullable=True, index=True
+    )
     status: Mapped[str] = mapped_column(String(20), default="active", index=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     payment_terms_days: Mapped[int] = mapped_column(Integer, default=0)
     # Nullable = inherit tenant early-pay terms; set values override (0/0 disables for this party).

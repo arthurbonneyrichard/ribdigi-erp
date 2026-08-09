@@ -337,9 +337,13 @@ class CustomerCreate(BaseModel):
     code: str | None = None
     party_type: str | None = "registered"
     category: str | None = None
+    customer_group_id: str | None = None
+    customer_group: str | None = None
     email: EmailStr | None = None
     phone: str | None = None
     address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     notes: str | None = None
     payment_terms_days: int = 0
     credit_limit: float = 0
@@ -351,13 +355,28 @@ class CustomerUpdate(BaseModel):
     code: str | None = None
     party_type: str | None = None
     category: str | None = None
+    customer_group_id: str | None = None
+    customer_group: str | None = None
     email: EmailStr | None = None
     phone: str | None = None
     address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     notes: str | None = None
     payment_terms_days: int | None = None
     credit_limit: float | None = None
     status: str | None = None
+
+
+class CustomerGroupCreate(BaseModel):
+    name: str
+    discount_percent: float = Field(default=0, ge=0, le=100)
+
+
+class CustomerGroupUpdate(BaseModel):
+    name: str | None = None
+    discount_percent: float | None = Field(default=None, ge=0, le=100)
+    is_active: bool | None = None
 
 
 class SupplierCreate(BaseModel):

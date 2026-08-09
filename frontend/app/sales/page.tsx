@@ -6,7 +6,7 @@ import { api } from '../../lib/api';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-type Tab = 'invoices' | 'quotations' | 'orders' | 'returns' | 'customers';
+type Tab = 'invoices' | 'quotations' | 'orders' | 'returns' | 'customers' | 'groups';
 
 export default function Page() {
   const [tab, setTab] = useState<Tab>('invoices');
@@ -15,6 +15,7 @@ export default function Page() {
   const [orders, setOrders] = useState<any[]>([]);
   const [returns, setReturns] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [customerGroups, setCustomerGroups] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
@@ -29,11 +30,17 @@ export default function Page() {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [customerLatitude, setCustomerLatitude] = useState('');
+  const [customerLongitude, setCustomerLongitude] = useState('');
+  const [customerGroupId, setCustomerGroupId] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
   const [customerTerms, setCustomerTerms] = useState('0');
   const [creditLimit, setCreditLimit] = useState('0');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [customerHistory, setCustomerHistory] = useState<any | null>(null);
+  const [groupName, setGroupName] = useState('');
+  const [groupDiscount, setGroupDiscount] = useState('0');
+  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [productId, setProductId] = useState('');
   const [variantId, setVariantId] = useState('');
   const [qty, setQty] = useState('1');
@@ -51,8 +58,16 @@ export default function Page() {
 
   const activeCustomers = customers.filter((c) => (c.status || 'active') === 'active');
 
+  function groupPrice(base: number, forCustomerId?: string) {
+    const cid = forCustomerId || customerId;
+    const cust = customers.find((c) => c.id === cid);
+    const pct = Number(cust?.group_discount_percent || 0);
+    if (!pct) return Number(base || 0);
+    return Math.round(Number(base || 0) * (1 - pct / 100) * 10000) / 10000;
+  }
+
   async function refresh() {
-    const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes] = await Promise.all([
+    const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, groupRes] = await Promise.all([
       api('/sales/invoices'),
       api('/customers'),
       api('/products'),
@@ -60,6 +75,7 @@ export default function Page() {
       api('/sales/orders'),
       api('/sales/returns'),
       api('/stores'),
+      api('/customers/groups'),
     ]);
     setInvoices(invRes.data || []);
     setCustomers(custRes.data || []);
@@ -68,6 +84,7 @@ export default function Page() {
     setOrders(oRes.data || []);
     setReturns(rRes.data || []);
     setStores(storeRes.data || []);
+    setCustomerGroups(groupRes.data || []);
   }
 
   function resetCustomerForm() {
@@ -77,6 +94,9 @@ export default function Page() {
     setCustomerEmail('');
     setCustomerPhone('');
     setCustomerAddress('');
+    setCustomerLatitude('');
+    setCustomerLongitude('');
+    setCustomerGroupId('');
     setCustomerNotes('');
     setCustomerTerms('0');
     setCreditLimit('0');
@@ -90,10 +110,32 @@ export default function Page() {
     setCustomerEmail(c.email || '');
     setCustomerPhone(c.phone || '');
     setCustomerAddress(c.address || '');
+    setCustomerLatitude(c.latitude != null ? String(c.latitude) : '');
+    setCustomerLongitude(c.longitude != null ? String(c.longitude) : '');
+    setCustomerGroupId(c.customer_group_id || '');
     setCustomerNotes(c.notes || '');
     setCustomerTerms(String(c.payment_terms_days ?? 0));
     setCreditLimit(String(c.credit_limit ?? 0));
     setCustomerHistory(null);
+  }
+
+  function customerPayload() {
+    const lat = customerLatitude.trim() === '' ? null : Number(customerLatitude);
+    const lon = customerLongitude.trim() === '' ? null : Number(customerLongitude);
+    return {
+      name: customerName,
+      code: customerCode || null,
+      party_type: customerType || 'registered',
+      customer_group_id: customerGroupId || null,
+      email: customerEmail || null,
+      phone: customerPhone || null,
+      address: customerAddress || null,
+      latitude: lat,
+      longitude: lon,
+      notes: customerNotes || null,
+      payment_terms_days: Number(customerTerms) || 0,
+      credit_limit: Number(creditLimit) || 0,
+    };
   }
 
   useEffect(() => {
@@ -105,7 +147,7 @@ export default function Page() {
     setVariants([]);
     if (!productId) return;
     const product = products.find((p) => p.id === productId);
-    if (product) setUnitPrice(String(product.selling_price ?? 0));
+    if (product) setUnitPrice(String(groupPrice(product.selling_price ?? 0)));
     api(`/products/${productId}/variants`)
       .then((r) => setVariants((r.data || []).filter((v: any) => v.is_active !== false)))
       .catch(() => setVariants([]));
@@ -114,8 +156,19 @@ export default function Page() {
   useEffect(() => {
     if (!variantId) return;
     const variant = variants.find((v) => v.id === variantId);
-    if (variant) setUnitPrice(String(variant.selling_price ?? 0));
+    if (variant) setUnitPrice(String(groupPrice(variant.selling_price ?? 0)));
   }, [variantId, variants]);
+
+  useEffect(() => {
+    if (!productId) return;
+    if (variantId) {
+      const variant = variants.find((v) => v.id === variantId);
+      if (variant) setUnitPrice(String(groupPrice(variant.selling_price ?? 0)));
+      return;
+    }
+    const product = products.find((p) => p.id === productId);
+    if (product) setUnitPrice(String(groupPrice(product.selling_price ?? 0)));
+  }, [customerId, customers]);
 
   const selectedProduct = products.find((p) => p.id === productId);
   const availableQty =
@@ -152,17 +205,7 @@ export default function Page() {
     try {
       const r = await api('/customers', {
         method: 'POST',
-        body: JSON.stringify({
-          name: customerName,
-          code: customerCode || null,
-          party_type: customerType || 'registered',
-          email: customerEmail || null,
-          phone: customerPhone || null,
-          address: customerAddress || null,
-          notes: customerNotes || null,
-          payment_terms_days: Number(customerTerms) || 0,
-          credit_limit: Number(creditLimit) || 0,
-        }),
+        body: JSON.stringify(customerPayload()),
       });
       setCustomerId(r.data.id);
       resetCustomerForm();
@@ -181,20 +224,52 @@ export default function Page() {
     try {
       await api(`/customers/${selectedCustomerId}`, {
         method: 'PATCH',
-        body: JSON.stringify({
-          name: customerName,
-          code: customerCode || null,
-          party_type: customerType || 'registered',
-          email: customerEmail || null,
-          phone: customerPhone || null,
-          address: customerAddress || null,
-          notes: customerNotes || null,
-          payment_terms_days: Number(customerTerms) || 0,
-          credit_limit: Number(creditLimit) || 0,
-        }),
+        body: JSON.stringify(customerPayload()),
       });
       await refresh();
       setMessage('Customer updated');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveGroup() {
+    setError('');
+    try {
+      const body = {
+        name: groupName,
+        discount_percent: Number(groupDiscount) || 0,
+      };
+      if (selectedGroupId) {
+        await api(`/customers/groups/${selectedGroupId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        });
+        setMessage('Customer group updated');
+      } else {
+        await api('/customers/groups', { method: 'POST', body: JSON.stringify(body) });
+        setMessage('Customer group created');
+      }
+      setGroupName('');
+      setGroupDiscount('0');
+      setSelectedGroupId('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function deactivateGroup(id: string) {
+    setError('');
+    try {
+      await api(`/customers/groups/${id}`, { method: 'DELETE' });
+      if (selectedGroupId === id) {
+        setSelectedGroupId('');
+        setGroupName('');
+        setGroupDiscount('0');
+      }
+      await refresh();
+      setMessage('Customer group deactivated');
     } catch (err: any) {
       setError(err.message);
     }
@@ -392,6 +467,7 @@ export default function Page() {
             ['orders', 'Orders'],
             ['returns', 'Returns'],
             ['customers', 'Customers'],
+            ['groups', 'Customer Groups'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
@@ -399,6 +475,74 @@ export default function Page() {
           </button>
         ))}
       </div>
+
+      {tab === 'groups' && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>{selectedGroupId ? 'Edit customer group' : 'New customer group'}</h3>
+          <p className="muted">Group discount applies when catalog price is used (no manual unit price override).</p>
+          <div style={{ display: 'grid', gap: 8, maxWidth: 420 }}>
+            <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Name *" />
+            <input
+              value={groupDiscount}
+              onChange={(e) => setGroupDiscount(e.target.value)}
+              placeholder="Discount %"
+            />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button onClick={saveGroup} disabled={!groupName.trim()}>
+                {selectedGroupId ? 'Save group' : 'Create group'}
+              </button>
+              {selectedGroupId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedGroupId('');
+                    setGroupName('');
+                    setGroupDiscount('0');
+                  }}
+                >
+                  New
+                </button>
+              )}
+            </div>
+          </div>
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Discount %</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {customerGroups.map((g) => (
+                <tr key={g.id}>
+                  <td>{g.name}</td>
+                  <td>{g.discount_percent}</td>
+                  <td>{g.is_active ? 'active' : 'inactive'}</td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedGroupId(g.id);
+                        setGroupName(g.name || '');
+                        setGroupDiscount(String(g.discount_percent ?? 0));
+                      }}
+                    >
+                      Open
+                    </button>
+                    {g.is_active && (
+                      <button type="button" onClick={() => deactivateGroup(g.id)}>
+                        Deactivate
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {tab === 'customers' && (
         <div className="card" style={{ marginBottom: 16 }}>
@@ -410,6 +554,16 @@ export default function Page() {
               <option value="registered">Registered</option>
               <option value="walk-in">Walk-in</option>
             </select>
+            <select value={customerGroupId} onChange={(e) => setCustomerGroupId(e.target.value)}>
+              <option value="">No customer group</option>
+              {customerGroups
+                .filter((g) => g.is_active || g.id === customerGroupId)
+                .map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} ({g.discount_percent}% off)
+                  </option>
+                ))}
+            </select>
             <input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Email" />
             <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Phone" />
             <textarea
@@ -418,6 +572,18 @@ export default function Page() {
               placeholder="Address"
               rows={2}
             />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <input
+                value={customerLatitude}
+                onChange={(e) => setCustomerLatitude(e.target.value)}
+                placeholder="Latitude (GPS)"
+              />
+              <input
+                value={customerLongitude}
+                onChange={(e) => setCustomerLongitude(e.target.value)}
+                placeholder="Longitude (GPS)"
+              />
+            </div>
             <textarea
               value={customerNotes}
               onChange={(e) => setCustomerNotes(e.target.value)}
@@ -477,6 +643,7 @@ export default function Page() {
               <tr>
                 <th>Name</th>
                 <th>Code</th>
+                <th>Group</th>
                 <th>Type</th>
                 <th>Status</th>
                 <th>Credit</th>
@@ -488,6 +655,7 @@ export default function Page() {
                 <tr key={c.id}>
                   <td>{c.name}</td>
                   <td>{c.code || '—'}</td>
+                  <td>{c.customer_group_name || '—'}</td>
                   <td>{c.party_type || 'registered'}</td>
                   <td>{c.status || 'active'}</td>
                   <td>{c.credit_limit}</td>
@@ -503,7 +671,7 @@ export default function Page() {
         </div>
       )}
 
-      {tab !== 'customers' && (
+      {tab !== 'customers' && tab !== 'groups' && (
       <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>

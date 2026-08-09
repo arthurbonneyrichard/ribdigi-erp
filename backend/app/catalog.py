@@ -74,8 +74,14 @@ async def resolve_sale_line(
     db: AsyncSession,
     tenant_id: str,
     item: dict,
+    *,
+    group_discount_percent: float = 0,
 ) -> tuple[m.Product, m.ProductVariant | None, float]:
-    """Validate product/variant and resolve unit price (variant price wins when set)."""
+    """Validate product/variant and resolve unit price (variant price wins when set).
+
+    When unit_price is omitted, apply customer-group discount to catalog price.
+    Explicit unit_price always wins (manual override).
+    """
     product = await get_product(db, tenant_id, item["product_id"])
     variant = None
     variant_id = item.get("variant_id")
@@ -87,10 +93,14 @@ async def resolve_sale_line(
             raise HTTPException(status_code=409, detail="Variant is inactive")
     if item.get("unit_price") is not None:
         unit_price = float(item["unit_price"])
-    elif variant is not None:
-        unit_price = float(variant.selling_price or 0)
     else:
-        unit_price = float(product.selling_price or 0)
+        if variant is not None:
+            unit_price = float(variant.selling_price or 0)
+        else:
+            unit_price = float(product.selling_price or 0)
+        pct = max(0.0, min(100.0, float(group_discount_percent or 0)))
+        if pct > 0:
+            unit_price = round(unit_price * (1.0 - pct / 100.0), 4)
     return product, variant, unit_price
 
 

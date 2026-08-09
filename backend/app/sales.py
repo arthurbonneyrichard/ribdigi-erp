@@ -539,12 +539,17 @@ async def create_sales_invoice(
         store = await stores_svc.get_store(db, tenant_id, store_id)
         resolved_store_id = store.id
 
+    from app.customers import customer_group_discount_percent
+
+    group_discount = await customer_group_discount_percent(db, tenant_id, customer_id)
     subtotal = 0.0
     tax_total = 0.0
     reverse_charge_tax = 0.0
     prepared: list[tuple[dict, float]] = []
     for item in items:
-        product, variant, unit_price = await resolve_sale_line(db, tenant_id, item)
+        product, variant, unit_price = await resolve_sale_line(
+            db, tenant_id, item, group_discount_percent=group_discount
+        )
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(
