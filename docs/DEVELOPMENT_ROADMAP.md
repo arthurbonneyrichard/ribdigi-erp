@@ -84,6 +84,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 3 open (2026-08-09):** Sales, POS & Financials hardening track approved — `docs/ADR_011_STAGE3_OPEN.md` + `docs/STAGE_3_PLAN.md`.
 
+**Stage 3 exit (2026-08-09):** A1–A3, P1, C1 met — `docs/STAGE_3_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_012_STAGE3_FREEZE.md` (no new Stage 3 feature scope until Stage 4 is explicitly approved).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -344,7 +346,7 @@ Acceptance Criteria:
 
 Build the revenue-generating side of the platform: customer management, sales pipeline (quotation → order → invoice), Point of Sale (POS), expense tracking, basic accounting, tax management, and credit control. This phase makes the ERP commercially usable.
 
-**Active delivery plan:** `docs/STAGE_3_PLAN.md` (hardening remaining BR ACs on top of existing sales/POS/accounting engines).
+**Stage 3 delivery plan (frozen):** `docs/STAGE_3_PLAN.md` — exit `docs/STAGE_3_EXIT_CRITERIA.md` / ADR-012.
 
 ### 4.2 Features
 

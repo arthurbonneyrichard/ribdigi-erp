@@ -21,3 +21,7 @@ Roadmap Phase 3 features 3.1–3.21 are largely already in the codebase. Remaini
 
 - Agents may implement Stage 3 plan items without reopening Stage 1/2 feature scope.
 - Stage 3 exit requires `docs/STAGE_3_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned P0 workstreams.
+
+## Amendment (2026-08-09)
+
+Stage 3 P0 workstreams A1–A3, P1, C1 met exit criteria (`docs/STAGE_3_EXIT_CRITERIA.md`). Feature scope is frozen under [ADR-012](ADR_012_STAGE3_FREEZE.md). This open ADR remains historical; new Stage 3 feature work is not permitted except bugfixes / security / tests / docs.

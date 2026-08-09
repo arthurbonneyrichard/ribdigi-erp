@@ -1,6 +1,6 @@
 # Stage 3 Plan — Sales, POS & Financials Hardening
 
-**Status:** Open (ADR-011)  
+**Status:** Closed — exit met (ADR-012 freeze); plan retained for evidence  
 **Base:** Phase 3 roadmap (`docs/DEVELOPMENT_ROADMAP.md` §4) + BR-7.x–BR-11.x  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 
@@ -22,7 +22,7 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 | **A3** | Financial report depth (P&L date range; cash-flow O/I/F) | P0 | COMPLETE |
 | **P1** | POS split tender (`pos_payments`) | P0 | COMPLETE |
 | **C1** | Credit-limit override with audit | P0 | COMPLETE |
-| **H3** | Stage 3 exit criteria + freeze ADR | Exit | PENDING |
+| **H3** | Stage 3 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -80,4 +80,4 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 
 ## Sign-off
 
-Stage 3 exit will be recorded in `docs/STAGE_3_EXIT_CRITERIA.md` with a freeze ADR when P0 workstreams are complete.
+Stage 3 exit recorded in `docs/STAGE_3_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_012_STAGE3_FREEZE.md`.
