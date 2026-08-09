@@ -84,7 +84,7 @@ export default function Page() {
 
   useEffect(() => {
     refreshSession().catch((err) => setError(err.message));
-    api('/customers')
+    api('/customers?active_only=true')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
   }, []);

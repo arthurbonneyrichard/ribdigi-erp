@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'invoices' | 'quotations' | 'orders' | 'returns';
+type Tab = 'invoices' | 'quotations' | 'orders' | 'returns' | 'customers';
 
 export default function Page() {
   const [tab, setTab] = useState<Tab>('invoices');
@@ -22,8 +22,16 @@ export default function Page() {
   const [currency, setCurrency] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [customerCode, setCustomerCode] = useState('');
+  const [customerType, setCustomerType] = useState('registered');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerNotes, setCustomerNotes] = useState('');
+  const [customerTerms, setCustomerTerms] = useState('0');
   const [creditLimit, setCreditLimit] = useState('0');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [customerHistory, setCustomerHistory] = useState<any | null>(null);
   const [productId, setProductId] = useState('');
   const [variantId, setVariantId] = useState('');
   const [qty, setQty] = useState('1');
@@ -35,6 +43,8 @@ export default function Page() {
   const [payAmount, setPayAmount] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const activeCustomers = customers.filter((c) => (c.status || 'active') === 'active');
 
   async function refresh() {
     const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes] = await Promise.all([
@@ -53,6 +63,32 @@ export default function Page() {
     setOrders(oRes.data || []);
     setReturns(rRes.data || []);
     setStores(storeRes.data || []);
+  }
+
+  function resetCustomerForm() {
+    setCustomerName('');
+    setCustomerCode('');
+    setCustomerType('registered');
+    setCustomerEmail('');
+    setCustomerPhone('');
+    setCustomerAddress('');
+    setCustomerNotes('');
+    setCustomerTerms('0');
+    setCreditLimit('0');
+  }
+
+  function fillCustomerForm(c: any) {
+    setSelectedCustomerId(c.id);
+    setCustomerName(c.name || '');
+    setCustomerCode(c.code || '');
+    setCustomerType(c.party_type || 'registered');
+    setCustomerEmail(c.email || '');
+    setCustomerPhone(c.phone || '');
+    setCustomerAddress(c.address || '');
+    setCustomerNotes(c.notes || '');
+    setCustomerTerms(String(c.payment_terms_days ?? 0));
+    setCreditLimit(String(c.credit_limit ?? 0));
+    setCustomerHistory(null);
   }
 
   useEffect(() => {
@@ -103,15 +139,73 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           name: customerName,
+          code: customerCode || null,
+          party_type: customerType || 'registered',
           email: customerEmail || null,
+          phone: customerPhone || null,
+          address: customerAddress || null,
+          notes: customerNotes || null,
+          payment_terms_days: Number(customerTerms) || 0,
           credit_limit: Number(creditLimit) || 0,
         }),
       });
       setCustomerId(r.data.id);
-      setCustomerName('');
-      setCustomerEmail('');
+      resetCustomerForm();
+      setSelectedCustomerId(r.data.id);
       await refresh();
       setMessage('Customer created');
+      setTab('customers');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveCustomer() {
+    if (!selectedCustomerId) return;
+    setError('');
+    try {
+      await api(`/customers/${selectedCustomerId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: customerName,
+          code: customerCode || null,
+          party_type: customerType || 'registered',
+          email: customerEmail || null,
+          phone: customerPhone || null,
+          address: customerAddress || null,
+          notes: customerNotes || null,
+          payment_terms_days: Number(customerTerms) || 0,
+          credit_limit: Number(creditLimit) || 0,
+        }),
+      });
+      await refresh();
+      setMessage('Customer updated');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function deactivateCustomer(id: string) {
+    setError('');
+    try {
+      await api(`/customers/${id}`, { method: 'DELETE' });
+      if (customerId === id) setCustomerId('');
+      if (selectedCustomerId === id) {
+        setSelectedCustomerId('');
+        resetCustomerForm();
+      }
+      await refresh();
+      setMessage('Customer deactivated');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadCustomerHistory(id: string) {
+    setError('');
+    try {
+      const r = await api(`/customers/${id}/history`);
+      setCustomerHistory(r.data);
     } catch (err: any) {
       setError(err.message);
     }
@@ -223,6 +317,7 @@ export default function Page() {
             ['quotations', 'Quotations'],
             ['orders', 'Orders'],
             ['returns', 'Returns'],
+            ['customers', 'Customers'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
@@ -231,14 +326,119 @@ export default function Page() {
         ))}
       </div>
 
+      {tab === 'customers' && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>{selectedCustomerId ? 'Edit customer' : 'New customer'}</h3>
+          <div style={{ display: 'grid', gap: 8, maxWidth: 560 }}>
+            <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Name *" />
+            <input value={customerCode} onChange={(e) => setCustomerCode(e.target.value)} placeholder="Code" />
+            <select value={customerType} onChange={(e) => setCustomerType(e.target.value)}>
+              <option value="registered">Registered</option>
+              <option value="walk-in">Walk-in</option>
+            </select>
+            <input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Email" />
+            <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Phone" />
+            <textarea
+              value={customerAddress}
+              onChange={(e) => setCustomerAddress(e.target.value)}
+              placeholder="Address"
+              rows={2}
+            />
+            <textarea
+              value={customerNotes}
+              onChange={(e) => setCustomerNotes(e.target.value)}
+              placeholder="Notes"
+              rows={2}
+            />
+            <input
+              value={customerTerms}
+              onChange={(e) => setCustomerTerms(e.target.value)}
+              placeholder="Payment terms (days)"
+            />
+            <input value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="Credit limit" />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {!selectedCustomerId ? (
+                <button onClick={createCustomer} disabled={!customerName.trim()}>
+                  Create customer
+                </button>
+              ) : (
+                <>
+                  <button onClick={saveCustomer} disabled={!customerName.trim()}>
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedCustomerId('');
+                      resetCustomerForm();
+                      setCustomerHistory(null);
+                    }}
+                  >
+                    New
+                  </button>
+                  <button onClick={() => loadCustomerHistory(selectedCustomerId)}>History</button>
+                  <button onClick={() => deactivateCustomer(selectedCustomerId)}>Deactivate</button>
+                </>
+              )}
+            </div>
+          </div>
+          {customerHistory && (
+            <div style={{ marginTop: 16 }}>
+              <h4>Sales history</h4>
+              <p className="muted">
+                {customerHistory.invoices?.length || 0} invoices · {customerHistory.quotations?.length || 0}{' '}
+                quotations · {customerHistory.orders?.length || 0} orders · {customerHistory.returns?.length || 0}{' '}
+                returns · {customerHistory.payments?.length || 0} payments
+              </p>
+              <ul>
+                {(customerHistory.invoices || []).slice(0, 8).map((inv: any) => (
+                  <li key={inv.id}>
+                    {inv.invoice_number} — {inv.status} — {inv.total_amount}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Code</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Credit</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {customers.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.name}</td>
+                  <td>{c.code || '—'}</td>
+                  <td>{c.party_type || 'registered'}</td>
+                  <td>{c.status || 'active'}</td>
+                  <td>{c.credit_limit}</td>
+                  <td>
+                    <button type="button" onClick={() => fillCustomerForm(c)}>
+                      Open
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab !== 'customers' && (
       <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
             <option value="">Customer</option>
-            {customers.map((c) => (
+            {activeCustomers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
-                {c.email ? ` (${c.email})` : ''}
+                {c.code ? ` (${c.code})` : ''}
+                {c.party_type === 'walk-in' ? ' · walk-in' : ''}
               </option>
             ))}
           </select>
@@ -262,14 +462,9 @@ export default function Page() {
             placeholder="FX rate (optional)"
             style={{ width: 120 }}
           />
-          <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="New customer" />
-          <input
-            value={customerEmail}
-            onChange={(e) => setCustomerEmail(e.target.value)}
-            placeholder="Customer email"
-          />
-          <input value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="Credit limit" />
-          <button onClick={createCustomer}>Add customer</button>
+          <button type="button" onClick={() => setTab('customers')}>
+            Manage customers
+          </button>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <select value={productId} onChange={(e) => setProductId(e.target.value)}>
@@ -323,6 +518,7 @@ export default function Page() {
           <button onClick={createReturn}>Create return</button>
         </div>
       </div>
+      )}
 
       {tab === 'quotations' && (
         <table className="table">

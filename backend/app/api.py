@@ -48,6 +48,7 @@ from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
 from app import suppliers as suppliers_svc
+from app import customers as customers_svc
 from app.config import settings
 from app.schemas import (
     BarcodeLabelPrintRequest,
@@ -71,7 +72,9 @@ from app.schemas import (
     JournalCreate,
     Login,
     NotificationPreferencesUpdate,
-    PartyCreate,
+    CustomerContactCreate,
+    CustomerCreate,
+    CustomerUpdate,
     SupplierContactCreate,
     SupplierCreate,
     SupplierUpdate,
@@ -2724,20 +2727,141 @@ async def party_list(kind: str, claims: dict, db: AsyncSession):
 
 
 @api.get("/customers")
-async def customers(claims=Depends(require_permission("sales", "read")), db: AsyncSession = Depends(get_db)):
-    return await party_list("customer", claims, db)
+async def customers(
+    active_only: bool = False,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = (
+        select(m.Party)
+        .where(m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "customer")
+        .order_by(m.Party.name)
+    )
+    if active_only:
+        stmt = stmt.where(m.Party.status == "active")
+    rows = (await db.execute(stmt)).scalars().all()
+    out = []
+    for row in rows:
+        contacts = await customers_svc.list_contacts(db, claims["tenant_id"], row.id)
+        out.append(customers_svc.serialize_customer(row, contacts))
+    return env(out)
 
 
 @api.post("/customers")
 async def add_customer(
-    payload: PartyCreate,
+    payload: CustomerCreate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    party = m.Party(tenant_id=claims["tenant_id"], kind="customer", **payload.model_dump())
-    db.add(party)
+    data = payload.model_dump()
+    contacts = data.pop("contacts", None) or []
+    party = await customers_svc.create_customer(
+        db,
+        tenant_id=claims["tenant_id"],
+        name=data["name"],
+        code=data.get("code"),
+        party_type=data.get("party_type") or "registered",
+        category=data.get("category"),
+        email=data.get("email"),
+        phone=data.get("phone"),
+        address=data.get("address"),
+        notes=data.get("notes"),
+        payment_terms_days=int(data.get("payment_terms_days") or 0),
+        credit_limit=float(data.get("credit_limit") or 0),
+        contacts=contacts,
+    )
     await db.commit()
-    return env({"id": party.id})
+    contacts_rows = await customers_svc.list_contacts(db, claims["tenant_id"], party.id)
+    return env(customers_svc.serialize_customer(party, contacts_rows), "Customer created")
+
+
+@api.get("/customers/{customer_id}")
+async def get_customer(
+    customer_id: str,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    contacts = await customers_svc.list_contacts(db, claims["tenant_id"], party.id)
+    return env(customers_svc.serialize_customer(party, contacts))
+
+
+@api.patch("/customers/{customer_id}")
+async def patch_customer(
+    customer_id: str,
+    payload: CustomerUpdate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    party = await customers_svc.update_customer(
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=customer_id,
+        fields=payload.model_dump(exclude_unset=True),
+    )
+    await db.commit()
+    contacts = await customers_svc.list_contacts(db, claims["tenant_id"], party.id)
+    return env(customers_svc.serialize_customer(party, contacts), "Customer updated")
+
+
+@api.delete("/customers/{customer_id}")
+async def delete_customer(
+    customer_id: str,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    party = await customers_svc.deactivate_customer(
+        db, tenant_id=claims["tenant_id"], customer_id=customer_id
+    )
+    await db.commit()
+    contacts = await customers_svc.list_contacts(db, claims["tenant_id"], party.id)
+    return env(customers_svc.serialize_customer(party, contacts), "Customer deactivated")
+
+
+@api.post("/customers/{customer_id}/contacts")
+async def add_customer_contact(
+    customer_id: str,
+    payload: CustomerContactCreate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    contact = await customers_svc.add_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=customer_id,
+        **payload.model_dump(),
+    )
+    await db.commit()
+    return env(customers_svc.serialize_contact(contact), "Contact added")
+
+
+@api.delete("/customers/{customer_id}/contacts/{contact_id}")
+async def delete_customer_contact(
+    customer_id: str,
+    contact_id: str,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    await customers_svc.delete_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=customer_id,
+        contact_id=contact_id,
+    )
+    await db.commit()
+    return env(None, "Contact removed")
+
+
+@api.get("/customers/{customer_id}/history")
+async def customer_history(
+    customer_id: str,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = await customers_svc.customer_history(
+        db, tenant_id=claims["tenant_id"], customer_id=customer_id
+    )
+    return env(data)
 
 
 @api.get("/suppliers")
@@ -4133,7 +4257,7 @@ async def pos_sale(
     items = [i.model_dump() for i in payload.items]
     payment_method = pos_svc.normalize_payment_method(payload.payment_method)
     if payment_method == "credit" and not payload.party_id:
-        raise HTTPException(status_code=400, detail="Credit sales require a customer")
+        raise HTTPException(status_code=400, detail="Credit sales require a registered customer")
     from app.tax import resolve_product_tax
     from app.catalog import resolve_sale_line
 
@@ -4194,10 +4318,17 @@ async def pos_sale(
             raise HTTPException(status_code=404, detail="Customer not found")
         if (party.status or "active") != "active":
             raise HTTPException(status_code=409, detail="Customer is not active")
-        if payment_method == "credit" and float(party.credit_limit or 0) > 0:
-            projected = float(party.balance or 0) + float(total)
-            if projected > float(party.credit_limit):
-                raise HTTPException(status_code=409, detail="CREDIT_LIMIT_EXCEEDED")
+        if payment_method == "credit":
+            ctype = (party.party_type or "registered").strip().lower()
+            if ctype == "walk-in":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Credit sales require a registered customer",
+                )
+            if float(party.credit_limit or 0) > 0:
+                projected = float(party.balance or 0) + float(total)
+                if projected > float(party.credit_limit):
+                    raise HTTPException(status_code=409, detail="CREDIT_LIMIT_EXCEEDED")
 
     ref = f"POS_SALE-{datetime.utcnow():%Y%m%d%H%M%S%f}"
     body = payload.model_dump()
@@ -5937,18 +6068,12 @@ async def update_customer_credit_limit(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    customer = (
-        await db.execute(
-            select(m.Party).where(
-                m.Party.id == customer_id,
-                m.Party.tenant_id == claims["tenant_id"],
-                m.Party.kind == "customer",
-            )
-        )
-    ).scalar_one_or_none()
-    if not customer:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    customer.credit_limit = payload.credit_limit
+    customer = await customers_svc.update_customer(
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=customer_id,
+        fields={"credit_limit": payload.credit_limit},
+    )
     await db.commit()
     return env(
         {
@@ -5956,6 +6081,8 @@ async def update_customer_credit_limit(
             "name": customer.name,
             "credit_limit": float(customer.credit_limit),
             "balance": float(customer.balance or 0),
+            "status": customer.status or "active",
+            "party_type": customer.party_type or "registered",
         }
     )
 

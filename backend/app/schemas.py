@@ -220,10 +220,18 @@ class ProductImagePrimaryUpdate(BaseModel):
 
 
 class PartyCreate(BaseModel):
+    """Legacy minimal customer create; prefer CustomerCreate."""
+
     name: str
     email: EmailStr | None = None
     phone: str | None = None
     credit_limit: float = 0
+    code: str | None = None
+    party_type: str | None = "registered"
+    category: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    payment_terms_days: int = 0
 
 
 class SupplierContactCreate(BaseModel):
@@ -232,6 +240,42 @@ class SupplierContactCreate(BaseModel):
     phone: str | None = None
     designation: str | None = None
     is_primary: bool = False
+
+
+class CustomerContactCreate(BaseModel):
+    name: str
+    email: EmailStr | None = None
+    phone: str | None = None
+    designation: str | None = None
+    is_primary: bool = False
+
+
+class CustomerCreate(BaseModel):
+    name: str
+    code: str | None = None
+    party_type: str | None = "registered"
+    category: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    payment_terms_days: int = 0
+    credit_limit: float = 0
+    contacts: list[CustomerContactCreate] = Field(default_factory=list)
+
+
+class CustomerUpdate(BaseModel):
+    name: str | None = None
+    code: str | None = None
+    party_type: str | None = None
+    category: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    payment_terms_days: int | None = None
+    credit_limit: float | None = None
+    status: str | None = None
 
 
 class SupplierCreate(BaseModel):
