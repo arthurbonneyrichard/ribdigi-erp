@@ -714,6 +714,10 @@ async def apply_stock_change(
         from app.notifications import notify_low_stock_if_needed
 
         await notify_low_stock_if_needed(db, tenant_id=tenant_id, product=product)
+    # Stage 6 P2 — stock changes invalidate catalog + dashboard KPI caches
+    from app import cache as cache_svc
+
+    await cache_svc.app_cache.invalidate_tenant(tenant_id)
     return product
 
 

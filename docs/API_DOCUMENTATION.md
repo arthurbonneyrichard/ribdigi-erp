@@ -1274,7 +1274,19 @@ Each delivery includes header `X-Ribdigi-Signature` with value `t=<unix_ts>,v1=<
 
 ---
 
-## 18. Rate Limits
+## 18. Caching (Stage 6 P2)
+
+Read models may be served from Redis (`CACHE_BACKEND=auto|redis|memory`) with soft fallback:
+
+| Endpoint | Key pattern | TTL |
+|----------|-------------|-----|
+| `GET /dashboard` | `ribdigi:cache:dashboard:{tenant_id}:summary` | 5 min |
+| `GET /products` | `ribdigi:cache:products:{tenant_id}:all` | 10 min |
+| `GET /catalog/categories` | `…:categories:flat` / `…:categories:tree` | 10 min |
+
+Invalidated on product/catalog/stock mutations, POS sale, invoice post, and expense approval. Disable with `CACHE_ENABLED=false`.
+
+## 18a. Rate Limits
 
 API requests are rate-limited per tenant:
 

@@ -20,7 +20,7 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 | **K1** | Tenant API keys (BR-18.1) | P0 | COMPLETE |
 | **W1** | Webhooks + HMAC signing (API docs §17) | P0 | COMPLETE |
 | **N2** | Tenant onboarding checklist (API + Shell) | P0 | COMPLETE |
-| **P2** | Redis app-data cache for dashboard/catalog | P0 | PENDING |
+| **P2** | Redis app-data cache for dashboard/catalog | P0 | COMPLETE |
 | **H6x** | Stage 6 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -56,6 +56,14 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 - [x] API: `GET /onboarding/checklist`; admin skip/unskip/dismiss/restore; dismissible at ≥80%.
 - [x] Shell persistent Getting started banner with progress bar and step links.
 - [x] Automated tests in `backend/tests/test_onboarding_checklist_n2.py`.
+
+## P2 acceptance criteria
+
+- [x] `backend/app/cache.py` AppCache (Redis preferred, memory fallback; soft-fail).
+- [x] Config: `CACHE_ENABLED`, `CACHE_BACKEND`, TTLs (dashboard 300s, catalog 600s), `CACHE_REDIS_PREFIX`.
+- [x] Cache `GET /dashboard`, `GET /products`, `GET /catalog/categories` (flat + tree keys).
+- [x] Invalidate on product/catalog/stock/sale/expense mutations (`invalidate_tenant` / catalog / dashboard).
+- [x] Automated tests in `backend/tests/test_app_cache_p2.py`.
 
 ## Sign-off
 

@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     # Production recommendation: set True so multi-instance deploys share sliding windows.
     RATE_LIMIT_REQUIRE_REDIS: bool = False
     RATE_LIMIT_REDIS_PREFIX: str = "ribdigi:ratelimit"
+    # Stage 6 P2 — app-data cache (dashboard / catalog). Soft-fail; never 503 on Redis miss.
+    CACHE_ENABLED: bool = True
+    CACHE_BACKEND: str = "auto"  # auto | redis | memory
+    CACHE_REDIS_PREFIX: str = "ribdigi:cache"
+    CACHE_DASHBOARD_TTL_SECONDS: int = 300
+    CACHE_CATALOG_TTL_SECONDS: int = 600
     ALLOW_DEVELOPMENT_SEED: bool = False
     BACKUP_DIR: str = "/data/backups"
     MEDIA_DIR: str = "/data/media"

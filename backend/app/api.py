@@ -56,6 +56,7 @@ from app import ai_guard as ai_guard_svc
 from app import api_keys as api_keys_svc
 from app import webhooks as webhooks_svc
 from app import onboarding as onboarding_svc
+from app import cache as cache_svc
 from app.config import settings
 from app.schemas import (
     BarcodeLabelPrintRequest,
@@ -2441,6 +2442,11 @@ async def deactivate_user(
 @api.get("/dashboard")
 async def dashboard(claims=Depends(require_permission("dashboard", "read")), db: AsyncSession = Depends(get_db)):
     tid = claims["tenant_id"]
+    dash_key = cache_svc.app_cache.dashboard_key(tid)
+    cached = await cache_svc.app_cache.get_json(dash_key)
+    if cached is not None:
+        return env(cached)
+
     now = datetime.utcnow()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -2642,63 +2648,75 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         db, tenant_id=tid, now=now
     )
 
-    return env(
-        {
-            "total_sales": float(sales) + float(
-                await scalar(
-                    select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-                        m.SalesInvoice.tenant_id == tid,
-                        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
-                    )
+    payload = {
+        "total_sales": float(sales) + float(
+            await scalar(
+                select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+                    m.SalesInvoice.tenant_id == tid,
+                    m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
                 )
-            ),
-            "total_purchases": float(purchases),
-            "total_expenses": float(expenses),
-            "products": products,
-            "low_stock": low,
-            "out_of_stock": out_of_stock,
-            "expiring_batches": expiring_batches,
-            "customers": customers,
-            "suppliers": suppliers,
-            "daily_revenue": daily_revenue,
-            "monthly_revenue": monthly_revenue,
-            "prior_month_revenue": prior_month_revenue,
-            "mom_change_pct": mom_change_pct,
-            "recent_sales": recent,
-            "top_products": top_products,
-            "daily_revenue_series": chart_series["daily_revenue_series"],
-            "monthly_revenue_series": chart_series["monthly_revenue_series"],
-            # BR-4.1 click-through targets (Stage 1 F17)
-            "kpi_links": {
-                "total_sales": "/sales?tab=invoices",
-                "total_purchases": "/purchasing?tab=invoices",
-                "total_expenses": "/expenses",
-                "customers": "/sales?tab=customers",
-                "suppliers": "/purchasing?tab=suppliers",
-                "products": "/inventory?tab=products",
-                "low_stock": "/inventory?tab=lowstock",
-                "out_of_stock": "/inventory?tab=lowstock",
-                "expiring_batches": "/inventory?tab=expiry",
-                "daily_revenue": "/reports?tab=sales",
-                "monthly_revenue": "/reports?tab=sales",
-                "prior_month_revenue": "/reports?tab=sales",
-                "mom_change_pct": "/reports?tab=sales",
-            },
-        }
+            )
+        ),
+        "total_purchases": float(purchases),
+        "total_expenses": float(expenses),
+        "products": products,
+        "low_stock": low,
+        "out_of_stock": out_of_stock,
+        "expiring_batches": expiring_batches,
+        "customers": customers,
+        "suppliers": suppliers,
+        "daily_revenue": daily_revenue,
+        "monthly_revenue": monthly_revenue,
+        "prior_month_revenue": prior_month_revenue,
+        "mom_change_pct": mom_change_pct,
+        "recent_sales": recent,
+        "top_products": top_products,
+        "daily_revenue_series": chart_series["daily_revenue_series"],
+        "monthly_revenue_series": chart_series["monthly_revenue_series"],
+        # BR-4.1 click-through targets (Stage 1 F17)
+        "kpi_links": {
+            "total_sales": "/sales?tab=invoices",
+            "total_purchases": "/purchasing?tab=invoices",
+            "total_expenses": "/expenses",
+            "customers": "/sales?tab=customers",
+            "suppliers": "/purchasing?tab=suppliers",
+            "products": "/inventory?tab=products",
+            "low_stock": "/inventory?tab=lowstock",
+            "out_of_stock": "/inventory?tab=lowstock",
+            "expiring_batches": "/inventory?tab=expiry",
+            "daily_revenue": "/reports?tab=sales",
+            "monthly_revenue": "/reports?tab=sales",
+            "prior_month_revenue": "/reports?tab=sales",
+            "mom_change_pct": "/reports?tab=sales",
+        },
+    }
+    await cache_svc.app_cache.set_json(
+        dash_key, payload, ttl_seconds=int(settings.CACHE_DASHBOARD_TTL_SECONDS)
     )
+    return env(payload)
 
 
 @api.get("/products")
 async def products(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
-    await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
+    tid = claims["tenant_id"]
+    products_key = cache_svc.app_cache.products_key(tid)
+    cached = await cache_svc.app_cache.get_json(products_key)
+    if cached is not None:
+        return env(cached)
+
+    await catalog_meta_svc.ensure_default_catalog(db, tid)
     rows = (
         await db.execute(
             select(m.Product)
-            .where(m.Product.tenant_id == claims["tenant_id"])
+            .where(m.Product.tenant_id == tid)
             .order_by(m.Product.name)
         )
     ).scalars().all()
-    return env([catalog_meta_svc.serialize_product(p) for p in rows])
+    payload = [catalog_meta_svc.serialize_product(p) for p in rows]
+    await cache_svc.app_cache.set_json(
+        products_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
+    )
+    return env(payload)
 
 
 @api.get("/inventory/products/lookup")
@@ -2764,6 +2782,7 @@ async def products_import(
             },
         )
         await db.commit()
+        await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
     elif not dry_run:
         await db.commit()
     return env(
@@ -2871,6 +2890,7 @@ async def add_product(
         )
     await db.commit()
     await db.refresh(product)
+    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
     return env(catalog_meta_svc.serialize_product(product), "Product created")
 
 
@@ -2993,6 +3013,7 @@ async def patch_product(
     )
     await db.commit()
     await db.refresh(product)
+    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
     return env(catalog_meta_svc.serialize_product(product), "Product updated")
 
 
@@ -3002,11 +3023,23 @@ async def catalog_categories(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
-    rows = await catalog_meta_svc.list_categories(db, claims["tenant_id"])
-    if tree:
-        return env(catalog_meta_svc.build_category_tree(rows))
-    return env([catalog_meta_svc.serialize_category(r) for r in rows])
+    tid = claims["tenant_id"]
+    cat_key = cache_svc.app_cache.categories_key(tid, tree=tree)
+    cached = await cache_svc.app_cache.get_json(cat_key)
+    if cached is not None:
+        return env(cached)
+
+    await catalog_meta_svc.ensure_default_catalog(db, tid)
+    rows = await catalog_meta_svc.list_categories(db, tid)
+    payload = (
+        catalog_meta_svc.build_category_tree(rows)
+        if tree
+        else [catalog_meta_svc.serialize_category(r) for r in rows]
+    )
+    await cache_svc.app_cache.set_json(
+        cat_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
+    )
+    return env(payload)
 
 
 @api.post("/catalog/categories")
@@ -3023,6 +3056,7 @@ async def catalog_create_category(
         parent_id=payload.parent_id,
     )
     await db.commit()
+    await cache_svc.app_cache.invalidate_catalog(claims["tenant_id"])
     return env(catalog_meta_svc.serialize_category(row), "Category created")
 
 
@@ -3046,6 +3080,7 @@ async def catalog_patch_category(
         clear_parent=clear_parent,
     )
     await db.commit()
+    await cache_svc.app_cache.invalidate_catalog(claims["tenant_id"])
     return env(catalog_meta_svc.serialize_category(row), "Category updated")
 
 
@@ -3059,6 +3094,7 @@ async def catalog_delete_category(
         db, tenant_id=claims["tenant_id"], category_id=category_id
     )
     await db.commit()
+    await cache_svc.app_cache.invalidate_catalog(claims["tenant_id"])
     return env(catalog_meta_svc.serialize_category(row), "Category deactivated")
 
 
@@ -4854,6 +4890,7 @@ async def post_sales_invoice(
         },
     )
     await db.commit()
+    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
     return env(await sales_svc.serialize_invoice(db, invoice), "Invoice posted; stock and AR updated")
 
 
@@ -6584,6 +6621,7 @@ async def pos_sale(
         user_id=claims.get("sub"),
     )
     await db.commit()
+    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
     payload_out = {
         "id": tx.id,
         "reference": ref,
@@ -7125,6 +7163,8 @@ async def approve_expense(
         actor_role=claims.get("role"),
     )
     await db.commit()
+    if expense.status == "approved":
+        await cache_svc.app_cache.invalidate_dashboard(claims["tenant_id"])
     msg = "Expense approved" if expense.status == "approved" else f"Level {int(expense.approval_step) - 1} approved; awaiting next level"
     return env(await expenses_svc.serialize_expense_full(db, expense), msg)
 

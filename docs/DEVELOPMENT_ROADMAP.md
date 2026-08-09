@@ -764,7 +764,7 @@ BACKEND (FastAPI + DevOps):
 3. API expansion: Public API endpoints under /api/v1/ with API key authentication (separate from JWT). Rate limiting per API key. Webhook system: tenants register URLs, events trigger POST with HMAC-SHA256 signature. Retry logic with exponential backoff.
 4. 2FA: TOTP-based using pyotp. QR code generation for setup. Backup codes (10 single-use). Enforced per role (optional for cashier, mandatory for admin).
 5. Email verification: SendGrid/AWS SES integration. Verification token expires in 24 hours. Unverified users blocked from protected routes.
-6. Performance: Redis caching for dashboard metrics (5 min TTL), product catalog (10 min TTL), user permissions (1 hour TTL). SQL query optimization: add missing indexes, refactor N+1 queries using joinedload. Database connection pooling via PgBouncer.
+6. Performance: Redis caching for dashboard metrics (5 min TTL), product catalog (10 min TTL), user permissions (1 hour TTL). SQL query optimization: add missing indexes, refactor N+1 queries using joinedload. Database connection pooling via PgBouncer. **PARTIAL (Stage 6 P2):** dashboard + catalog Redis/app cache with invalidation; permissions cache and PgBouncer remain deferred.
 7. Security: Input sanitization on all endpoints. CORS restricted to known origins. Security headers (HSTS, CSP, X-Frame-Options). Rate limiting per tenant tier. Container security: non-root user, read-only root filesystem, dropped capabilities.
 
 FRONTEND (Next.js):
