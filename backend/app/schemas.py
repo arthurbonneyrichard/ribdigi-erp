@@ -494,6 +494,21 @@ class RecurringExpenseCreate(BaseModel):
     payee: str | None = None
 
 
+class RecurringExpenseUpdate(BaseModel):
+    """Skip or modify the next occurrence; optionally pause the series."""
+
+    skip_next: bool | None = None
+    next_amount: float | None = Field(default=None, gt=0)
+    next_description: str | None = None
+    clear_next_override: bool | None = None
+    is_active: bool | None = None
+    amount: float | None = Field(default=None, gt=0)
+    description: str | None = None
+    frequency: str | None = None
+    payment_method: str | None = None
+    payee: str | None = None
+
+
 class ApprovalLevelUpdate(BaseModel):
     min_amount: float = Field(gt=0)
     roles: list[str] = Field(min_length=1)

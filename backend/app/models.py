@@ -517,6 +517,10 @@ class RecurringExpense(Base):
     end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     next_run_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    skip_next: Mapped[bool] = mapped_column(Boolean, default=False)
+    next_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    next_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_notified_for: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

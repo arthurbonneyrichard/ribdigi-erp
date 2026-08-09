@@ -107,6 +107,7 @@ from app.schemas import (
     PurchaseInvoiceUpdate,
     PurchaseReturnCreate,
     RecurringExpenseCreate,
+    RecurringExpenseUpdate,
     RefreshRequest,
     SalesInvoiceCreate,
     SalesOrderCreate,
@@ -5892,23 +5893,7 @@ async def list_recurring_expenses(
             .order_by(m.RecurringExpense.created_at.desc())
         )
     ).scalars().all()
-    return env(
-        [
-            {
-                "id": r.id,
-                "category": r.category,
-                "category_id": r.category_id,
-                "description": r.description,
-                "amount": float(r.amount),
-                "frequency": r.frequency,
-                "payment_method": r.payment_method,
-                "payee": r.payee,
-                "next_run_at": r.next_run_at,
-                "is_active": r.is_active,
-            }
-            for r in rows
-        ]
-    )
+    return env([expenses_svc.serialize_recurring(r) for r in rows])
 
 
 @api.post("/expenses/recurring")
@@ -5930,7 +5915,33 @@ async def create_recurring_expense(
         payee=payload.payee,
     )
     await db.commit()
-    return env({"id": row.id, "next_run_at": row.next_run_at}, "Recurring expense created")
+    return env(expenses_svc.serialize_recurring(row), "Recurring expense created")
+
+
+@api.patch("/expenses/recurring/{recurring_id}")
+async def update_recurring_expense(
+    recurring_id: str,
+    payload: RecurringExpenseUpdate,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await expenses_svc.update_recurring(
+        db,
+        tenant_id=claims["tenant_id"],
+        recurring_id=recurring_id,
+        skip_next=payload.skip_next,
+        next_amount=payload.next_amount,
+        next_description=payload.next_description,
+        clear_next_override=payload.clear_next_override,
+        is_active=payload.is_active,
+        amount=payload.amount,
+        description=payload.description,
+        frequency=payload.frequency,
+        payment_method=payload.payment_method,
+        payee=payload.payee,
+    )
+    await db.commit()
+    return env(expenses_svc.serialize_recurring(row), "Recurring expense updated")
 
 
 @api.post("/expenses/recurring/generate")
@@ -8207,13 +8218,21 @@ async def scan_due_notifications(
 ):
     payment_created = await notifications_svc.scan_payment_due(db, claims["tenant_id"])
     quote_scan = await notifications_svc.scan_quotation_expiry(db, claims["tenant_id"])
+    recurring_scan = await notifications_svc.scan_recurring_expense_upcoming(
+        db, claims["tenant_id"]
+    )
     await db.commit()
-    total = int(payment_created) + int(quote_scan.get("reminded") or 0)
+    total = (
+        int(payment_created)
+        + int(quote_scan.get("reminded") or 0)
+        + int(recurring_scan.get("reminded") or 0)
+    )
     return env(
         {
             "created": total,
             "payment_due": payment_created,
             "quotation_expiry": quote_scan,
+            "recurring_expense": recurring_scan,
         },
         f"Created {total} due notification(s)",
     )

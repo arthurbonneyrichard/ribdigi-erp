@@ -18,6 +18,7 @@ DEFAULT_PREFERENCES = {
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
     "payment_due": {"dashboard": True, "email": True, "sms": False},
     "quotation_expiry": {"dashboard": True, "email": True, "sms": False},
+    "recurring_expense": {"dashboard": True, "email": True, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
     "system": {"dashboard": True, "email": False, "sms": False},
@@ -479,3 +480,65 @@ async def scan_quotation_expiry(
         reminded += 1
     await db.flush()
     return {"reminded": reminded, "expired": expired}
+
+
+async def scan_recurring_expense_upcoming(
+    db: AsyncSession, tenant_id: str, within_days: int = 1
+) -> dict[str, int]:
+    """Notify before recurring expenses auto-generate (BR-9.5)."""
+    now = datetime.utcnow()
+    horizon = now + timedelta(days=max(0, int(within_days)))
+    rows = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.tenant_id == tenant_id,
+                m.RecurringExpense.is_active == True,  # noqa: E712
+                m.RecurringExpense.next_run_at <= horizon,
+            )
+        )
+    ).scalars().all()
+    reminded = 0
+    for row in rows:
+        if row.end_date and row.end_date < now:
+            continue
+        if row.skip_next:
+            continue
+        if row.last_notified_for is not None and row.last_notified_for == row.next_run_at:
+            continue
+        existing = (
+            await db.execute(
+                select(m.Notification).where(
+                    m.Notification.tenant_id == tenant_id,
+                    m.Notification.category == "recurring_expense",
+                    m.Notification.entity_id == row.id,
+                    m.Notification.status == "unread",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            row.last_notified_for = row.next_run_at
+            continue
+        amount = float(row.next_amount) if row.next_amount is not None else float(row.amount)
+        label = (row.next_description if row.next_description is not None else row.description) or row.category
+        due = row.next_run_at.date().isoformat() if row.next_run_at else "soon"
+        title = (
+            "Recurring Expense Due"
+            if row.next_run_at and row.next_run_at <= now
+            else "Recurring Expense Upcoming"
+        )
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="recurring_expense",
+            title=title,
+            message=(
+                f"{label} ({amount:.2f}) is scheduled for {due} "
+                f"({row.frequency}). Skip or modify the next occurrence if needed."
+            ),
+            entity_type="recurring_expense",
+            entity_id=row.id,
+        )
+        row.last_notified_for = row.next_run_at
+        reminded += 1
+    await db.flush()
+    return {"reminded": reminded}

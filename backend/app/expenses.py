@@ -791,6 +791,98 @@ async def create_recurring(
     return row
 
 
+def serialize_recurring(row: m.RecurringExpense) -> dict:
+    return {
+        "id": row.id,
+        "category": row.category,
+        "category_id": row.category_id,
+        "description": row.description,
+        "amount": float(row.amount),
+        "frequency": row.frequency,
+        "payment_method": row.payment_method,
+        "payee": row.payee,
+        "next_run_at": row.next_run_at,
+        "end_date": row.end_date,
+        "is_active": row.is_active,
+        "skip_next": bool(row.skip_next),
+        "next_amount": float(row.next_amount) if row.next_amount is not None else None,
+        "next_description": row.next_description,
+        "last_notified_for": row.last_notified_for,
+        "created_at": row.created_at,
+    }
+
+
+def _clear_occurrence_overrides(row: m.RecurringExpense) -> None:
+    row.skip_next = False
+    row.next_amount = None
+    row.next_description = None
+
+
+async def update_recurring(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    recurring_id: str,
+    skip_next: bool | None = None,
+    next_amount: float | None = None,
+    next_description: str | None = None,
+    clear_next_override: bool | None = None,
+    is_active: bool | None = None,
+    amount: float | None = None,
+    description: str | None = None,
+    frequency: str | None = None,
+    payment_method: str | None = None,
+    payee: str | None = None,
+) -> m.RecurringExpense:
+    row = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.id == recurring_id,
+                m.RecurringExpense.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Recurring expense not found")
+
+    if clear_next_override:
+        row.next_amount = None
+        row.next_description = None
+    if skip_next is not None:
+        row.skip_next = bool(skip_next)
+        if row.skip_next:
+            # Skipping cancels a one-off amount/description override for that occurrence.
+            row.next_amount = None
+            row.next_description = None
+    if next_amount is not None:
+        row.next_amount = round(float(next_amount), 2)
+        row.skip_next = False
+    if next_description is not None:
+        row.next_description = next_description
+        row.skip_next = False
+    if is_active is not None:
+        row.is_active = bool(is_active)
+    if amount is not None:
+        row.amount = round(float(amount), 2)
+    if description is not None:
+        row.description = description
+    if frequency is not None:
+        freq = (frequency or "monthly").lower()
+        if freq not in {"daily", "weekly", "monthly", "yearly"}:
+            raise HTTPException(
+                status_code=400,
+                detail="frequency must be daily, weekly, monthly, or yearly",
+            )
+        row.frequency = freq
+    if payment_method is not None:
+        row.payment_method = payment_method
+    if payee is not None:
+        row.payee = payee
+
+    await db.flush()
+    return row
+
+
 async def generate_due_recurring(
     db: AsyncSession,
     *,
@@ -812,12 +904,23 @@ async def generate_due_recurring(
         if row.end_date and row.end_date < now:
             row.is_active = False
             continue
+        if row.skip_next:
+            _clear_occurrence_overrides(row)
+            row.next_run_at = next_run_date(now, row.frequency)
+            row.last_notified_for = None
+            continue
+        amount = float(row.next_amount) if row.next_amount is not None else float(row.amount)
+        description = (
+            row.next_description
+            if row.next_description is not None
+            else (row.description or f"Recurring {row.category}")
+        )
         expense = await create_expense(
             db,
             tenant_id=tenant_id,
             user_id=user_id,
-            amount=float(row.amount),
-            description=row.description or f"Recurring {row.category}",
+            amount=amount,
+            description=description,
             category_id=row.category_id,
             category=row.category,
             payment_method=row.payment_method,
@@ -826,6 +929,8 @@ async def generate_due_recurring(
             expense_date=now,
         )
         created.append(expense)
+        _clear_occurrence_overrides(row)
         row.next_run_at = next_run_date(now, row.frequency)
+        row.last_notified_for = None
     await db.flush()
     return created

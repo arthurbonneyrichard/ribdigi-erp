@@ -24,8 +24,25 @@ type Expense = {
   awaiting_level?: number | null;
 };
 
+type Recurring = {
+  id: string;
+  category: string;
+  category_id?: string;
+  description: string;
+  amount: number;
+  frequency: string;
+  payment_method: string;
+  payee?: string;
+  next_run_at?: string;
+  is_active: boolean;
+  skip_next?: boolean;
+  next_amount?: number | null;
+  next_description?: string | null;
+};
+
 export default function Page() {
   const [rows, setRows] = useState<Expense[]>([]);
+  const [recurring, setRecurring] = useState<Recurring[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [threshold, setThreshold] = useState(100);
   const [l2Threshold, setL2Threshold] = useState(1000);
@@ -41,6 +58,15 @@ export default function Page() {
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
   const [reference, setReference] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [recAmount, setRecAmount] = useState('100');
+  const [recDescription, setRecDescription] = useState('');
+  const [recPayee, setRecPayee] = useState('');
+  const [recFrequency, setRecFrequency] = useState('monthly');
+  const [recCategoryId, setRecCategoryId] = useState('');
+  const [recPaymentMethod, setRecPaymentMethod] = useState('bank_transfer');
+  const [modifyNextId, setModifyNextId] = useState<string | null>(null);
+  const [modifyNextAmount, setModifyNextAmount] = useState('');
+  const [modifyNextDescription, setModifyNextDescription] = useState('');
   const [ocrFor, setOcrFor] = useState<string | null>(null);
   const [ocrDraft, setOcrDraft] = useState<{
     amount: string;
@@ -54,19 +80,22 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [exp, cats, settings, liquid] = await Promise.all([
+    const [exp, cats, settings, liquid, rec] = await Promise.all([
       api('/expenses'),
       api('/expenses/categories'),
       api('/expenses/settings'),
       api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
+      api('/expenses/recurring').catch(() => ({ data: [] })),
     ]);
     setRows(exp.data || []);
     setCategories(cats.data || []);
     setLiquidAccounts(liquid.data || []);
+    setRecurring(rec.data || []);
     setThreshold(settings.data?.expense_approval_threshold ?? 100);
     setL2Threshold(settings.data?.expense_l2_threshold ?? 1000);
     setLevels(settings.data?.levels || []);
     if (!categoryId && cats.data?.length) setCategoryId(cats.data[0].id);
+    if (!recCategoryId && cats.data?.length) setRecCategoryId(cats.data[0].id);
   }
 
   useEffect(() => {
@@ -285,6 +314,80 @@ export default function Page() {
     setLevels((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
   }
 
+  async function createRecurring() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/expenses/recurring', {
+        method: 'POST',
+        body: JSON.stringify({
+          category_id: recCategoryId || undefined,
+          amount: Number(recAmount),
+          description: recDescription,
+          payee: recPayee || undefined,
+          frequency: recFrequency,
+          payment_method: recPaymentMethod,
+        }),
+      });
+      setMessage('Recurring expense created');
+      setRecDescription('');
+      setRecPayee('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function generateRecurring() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/expenses/recurring/generate', { method: 'POST', body: '{}' });
+      const n = (r.data || []).length;
+      setMessage(`Generated ${n} expense(s)`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function skipNext(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/expenses/recurring/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ skip_next: true }),
+      });
+      setMessage('Next occurrence marked to skip');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveModifyNext() {
+    if (!modifyNextId) return;
+    setError('');
+    setMessage('');
+    try {
+      const body: Record<string, unknown> = {};
+      if (modifyNextAmount) body.next_amount = Number(modifyNextAmount);
+      if (modifyNextDescription !== '') body.next_description = modifyNextDescription;
+      await api(`/expenses/recurring/${modifyNextId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      setMessage('Next occurrence updated');
+      setModifyNextId(null);
+      setModifyNextAmount('');
+      setModifyNextDescription('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   return (
     <Shell>
       <h1>Expenses</h1>
@@ -294,6 +397,143 @@ export default function Page() {
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Recurring expenses</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Notify before auto-generate; skip or modify the next occurrence.
+        </p>
+        <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>
+          <select value={recCategoryId} onChange={(e) => setRecCategoryId(e.target.value)}>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <input
+            value={recAmount}
+            onChange={(e) => setRecAmount(e.target.value)}
+            placeholder="Amount"
+          />
+          <input
+            value={recDescription}
+            onChange={(e) => setRecDescription(e.target.value)}
+            placeholder="Description"
+          />
+          <input
+            value={recPayee}
+            onChange={(e) => setRecPayee(e.target.value)}
+            placeholder="Payee"
+          />
+          <select value={recFrequency} onChange={(e) => setRecFrequency(e.target.value)}>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <select
+            value={recPaymentMethod}
+            onChange={(e) => setRecPaymentMethod(e.target.value)}
+          >
+            <option value="bank_transfer">Bank transfer</option>
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="cheque">Cheque</option>
+          </select>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" onClick={createRecurring}>
+              Add recurring
+            </button>
+            <button type="button" onClick={generateRecurring}>
+              Generate due now
+            </button>
+          </div>
+        </div>
+        {modifyNextId && (
+          <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>
+            <p className="muted">Modify next occurrence only</p>
+            <input
+              value={modifyNextAmount}
+              onChange={(e) => setModifyNextAmount(e.target.value)}
+              placeholder="Next amount"
+            />
+            <input
+              value={modifyNextDescription}
+              onChange={(e) => setModifyNextDescription(e.target.value)}
+              placeholder="Next description"
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={saveModifyNext}>
+                Save next override
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setModifyNextId(null);
+                  setModifyNextAmount('');
+                  setModifyNextDescription('');
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Frequency</th>
+              <th>Next run</th>
+              <th>Flags</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recurring.map((r) => (
+              <tr key={r.id}>
+                <td>{r.category}</td>
+                <td>{r.description || '—'}</td>
+                <td>
+                  {r.amount}
+                  {r.next_amount != null ? ` → next ${r.next_amount}` : ''}
+                </td>
+                <td>{r.frequency}</td>
+                <td>{r.next_run_at ? new Date(r.next_run_at).toLocaleString() : '—'}</td>
+                <td>
+                  {!r.is_active ? 'paused' : r.skip_next ? 'skip next' : 'active'}
+                  {r.next_description ? '; desc override' : ''}
+                </td>
+                <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button type="button" onClick={() => skipNext(r.id)} disabled={!!r.skip_next}>
+                    Skip next
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModifyNextId(r.id);
+                      setModifyNextAmount(r.next_amount != null ? String(r.next_amount) : '');
+                      setModifyNextDescription(r.next_description || '');
+                    }}
+                  >
+                    Modify next
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!recurring.length && (
+              <tr>
+                <td colSpan={7} className="muted">
+                  No recurring expenses yet
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Approval matrix</h3>

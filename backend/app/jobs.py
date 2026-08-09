@@ -92,12 +92,18 @@ async def job_scan_quotation_expiry() -> dict:
 
 async def job_generate_recurring_expenses() -> dict:
     from app import expenses as expenses_svc
+    from app import notifications as notifications_svc
 
     async def work(db: AsyncSession, tenant_id: str) -> dict:
+        upcoming = await notifications_svc.scan_recurring_expense_upcoming(db, tenant_id)
         created = await expenses_svc.generate_due_recurring(
             db, tenant_id=tenant_id, user_id=SYSTEM_USER_ID
         )
-        return {"created": len(created), "expense_ids": [e.id for e in created]}
+        return {
+            "notified": int(upcoming.get("reminded") or 0),
+            "created": len(created),
+            "expense_ids": [e.id for e in created],
+        }
 
     return await _for_each_tenant(work)
 
