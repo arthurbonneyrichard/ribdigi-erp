@@ -661,6 +661,8 @@ The MVP includes AI capabilities across 10 modules. Security controls include:
 
 **Stage 5 S1 verify:** `GET /api/v1/health` returns `security.rate_limit_enabled`, `openapi_enabled=false` in production, and response includes CSP + rate-limit headers.
 
+**Stage 5 O1 verify:** run `pytest tests/test_owasp_smoke.py tests/test_owasp_suite_o1.py` — covers OWASP A01/A02/A03/A05/A07 automated controls. Vendor ZAP / pen test is out of MVP scope.
+
 ### 16.2 Ongoing Security Operations
 
 - [ ] Daily review of security alerts and failed login attempts
