@@ -9,6 +9,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 
 
+async def get_warehouse(db: AsyncSession, tenant_id: str, warehouse_id: str) -> m.Warehouse:
+    wh = (
+        await db.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.id == warehouse_id,
+                m.Warehouse.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not wh:
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+    return wh
+
+
 async def get_or_create_warehouse_stock(
     db: AsyncSession,
     *,
@@ -16,6 +30,7 @@ async def get_or_create_warehouse_stock(
     warehouse_id: str,
     product_id: str,
 ) -> m.WarehouseStock:
+    await get_warehouse(db, tenant_id, warehouse_id)
     row = (
         await db.execute(
             select(m.WarehouseStock)
@@ -230,6 +245,7 @@ async def apply_stock_change(
 
     product.stock_qty = after
     if warehouse_id:
+        await get_warehouse(db, tenant_id, warehouse_id)
         await apply_warehouse_stock_change(
             db,
             tenant_id=tenant_id,

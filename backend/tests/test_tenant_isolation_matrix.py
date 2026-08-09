@@ -711,3 +711,125 @@ async def test_foreign_pos_receipt_send_404(client, db_session):
         params={"channel": "email", "to": "nobody@example.com"},
     )
     assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_foreign_account_id_on_bank_statement_import_404(client, db_session):
+    ac, seed = client
+    await ensure_default_accounts(db_session, seed["t2"].id)
+    beta_bank = (
+        await db_session.execute(
+            select(m.Account).where(
+                m.Account.tenant_id == seed["t2"].id, m.Account.code == "1010"
+            )
+        )
+    ).scalar_one()
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    csv_text = "date,amount,description,ref\n2026-08-01,100,Deposit,D1\n"
+    r = await ac.post(
+        "/api/v1/accounting/bank-statements/import",
+        headers=headers,
+        params={"account_id": beta_bank.id, "opening_balance": 0},
+        files={"file": ("beta.csv", csv_text, "text/csv")},
+    )
+    assert r.status_code == 404, r.text
+
+    planted = (
+        await db_session.execute(
+            select(m.BankStatement).where(m.BankStatement.account_id == beta_bank.id)
+        )
+    ).scalars().all()
+    assert planted == []
+
+
+@pytest.mark.asyncio
+async def test_foreign_account_id_on_bank_statement_create_404(client, db_session):
+    ac, seed = client
+    await ensure_default_accounts(db_session, seed["t2"].id)
+    beta_bank = (
+        await db_session.execute(
+            select(m.Account).where(
+                m.Account.tenant_id == seed["t2"].id, m.Account.code == "1010"
+            )
+        )
+    ).scalar_one()
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    r = await ac.post(
+        "/api/v1/accounting/bank-statements",
+        headers=headers,
+        json={
+            "account_id": beta_bank.id,
+            "statement_date": "2026-08-01",
+            "opening_balance": 0,
+            "closing_balance": 50,
+            "lines": [{"posted_at": "2026-08-01", "amount": 50, "description": "x"}],
+        },
+    )
+    assert r.status_code == 404, r.text
+
+
+@pytest.mark.asyncio
+async def test_foreign_account_id_on_bank_connection_create_404(client, db_session):
+    ac, seed = client
+    await ensure_default_accounts(db_session, seed["t2"].id)
+    beta_bank = (
+        await db_session.execute(
+            select(m.Account).where(
+                m.Account.tenant_id == seed["t2"].id, m.Account.code == "1010"
+            )
+        )
+    ).scalar_one()
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    r = await ac.post(
+        "/api/v1/accounting/bank-connections",
+        headers=headers,
+        json={
+            "account_id": beta_bank.id,
+            "provider": "mock",
+            "display_name": "Hijack Beta Bank",
+        },
+    )
+    assert r.status_code == 404, r.text
+
+
+@pytest.mark.asyncio
+async def test_foreign_warehouse_id_on_stock_in_404(client, db_session):
+    ac, seed = client
+    beta_wh = m.Warehouse(
+        tenant_id=seed["t2"].id,
+        name="Beta WH",
+        code="BETA-WH",
+    )
+    db_session.add(beta_wh)
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    before = float(seed["p1"].stock_qty or 0)
+    r = await ac.post(
+        "/api/v1/inventory/stock-in",
+        headers=headers,
+        json={
+            "product_id": seed["p1"].id,
+            "quantity": 3,
+            "warehouse_id": beta_wh.id,
+        },
+    )
+    assert r.status_code == 404, r.text
+
+    await db_session.refresh(seed["p1"])
+    assert float(seed["p1"].stock_qty or 0) == before
+    leaked = (
+        await db_session.execute(
+            select(m.WarehouseStock).where(
+                m.WarehouseStock.warehouse_id == beta_wh.id,
+                m.WarehouseStock.tenant_id == seed["t1"].id,
+            )
+        )
+    ).scalars().all()
+    assert leaked == []
