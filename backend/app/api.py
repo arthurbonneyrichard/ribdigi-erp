@@ -2607,6 +2607,22 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "top_products": top_products,
             "daily_revenue_series": chart_series["daily_revenue_series"],
             "monthly_revenue_series": chart_series["monthly_revenue_series"],
+            # BR-4.1 click-through targets (Stage 1 F17)
+            "kpi_links": {
+                "total_sales": "/sales?tab=invoices",
+                "total_purchases": "/purchasing?tab=invoices",
+                "total_expenses": "/expenses",
+                "customers": "/sales?tab=customers",
+                "suppliers": "/purchasing?tab=suppliers",
+                "products": "/inventory?tab=products",
+                "low_stock": "/inventory?tab=lowstock",
+                "out_of_stock": "/inventory?tab=lowstock",
+                "expiring_batches": "/inventory?tab=expiry",
+                "daily_revenue": "/reports?tab=sales",
+                "monthly_revenue": "/reports?tab=sales",
+                "prior_month_revenue": "/reports?tab=sales",
+                "mom_change_pct": "/reports?tab=sales",
+            },
         }
     )
 

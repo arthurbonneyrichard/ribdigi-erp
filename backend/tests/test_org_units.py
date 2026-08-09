@@ -407,10 +407,13 @@ async def test_dashboard_includes_stage1_kpis(client):
         "mom_change_pct",
         "daily_revenue_series",
         "monthly_revenue_series",
+        "kpi_links",
     ):
         assert key in data
     assert len(data["daily_revenue_series"]) == 30
     assert len(data["monthly_revenue_series"]) == 12
+    assert data["kpi_links"]["low_stock"] == "/inventory?tab=lowstock"
+    assert data["kpi_links"]["customers"] == "/sales?tab=customers"
 
 
 @pytest.mark.asyncio

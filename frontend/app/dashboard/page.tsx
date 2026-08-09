@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { DailyRevenueLineChart, MonthlyRevenueBarChart } from '../../components/RevenueCharts';
@@ -24,6 +25,7 @@ type Dash = {
   top_products?: { name: string; sku: string; quantity: number; revenue: number }[];
   daily_revenue_series?: { date: string; revenue: number }[];
   monthly_revenue_series?: { month: string; revenue: number }[];
+  kpi_links?: Record<string, string>;
 };
 
 type InsightCard = {
@@ -33,6 +35,13 @@ type InsightCard = {
   title: string;
   summary: string;
   action?: string | null;
+};
+
+type KpiCard = {
+  key: string;
+  label: string;
+  value: number | string;
+  href?: string;
 };
 
 export default function Page() {
@@ -60,24 +69,37 @@ export default function Page() {
   }, []);
 
   const n = (v: number | string | null | undefined) => formatNumber(v, formats.number_format);
+  const links = d.kpi_links || {};
 
-  const cards: [string, number | string][] = [
-    ['Total Sales', d.total_sales ?? 0],
-    ['Purchases', d.total_purchases ?? 0],
-    ['Expenses', d.total_expenses ?? 0],
-    ['Customers', d.customers ?? 0],
-    ['Suppliers', d.suppliers ?? 0],
-    ['Products', d.products ?? 0],
-    ['Low Stock', d.low_stock ?? 0],
-    ['Out of Stock', d.out_of_stock ?? 0],
-    ['Expiring (30d)', d.expiring_batches ?? 0],
-    ['Today Revenue', d.daily_revenue ?? 0],
-    ['Month Revenue', d.monthly_revenue ?? 0],
-    ['Prior Month', d.prior_month_revenue ?? 0],
-    [
-      'MoM %',
-      d.mom_change_pct == null ? '—' : `${n(d.mom_change_pct)}%`,
-    ],
+  const cards: KpiCard[] = [
+    { key: 'total_sales', label: 'Total Sales', value: d.total_sales ?? 0, href: links.total_sales },
+    { key: 'total_purchases', label: 'Purchases', value: d.total_purchases ?? 0, href: links.total_purchases },
+    { key: 'total_expenses', label: 'Expenses', value: d.total_expenses ?? 0, href: links.total_expenses },
+    { key: 'customers', label: 'Customers', value: d.customers ?? 0, href: links.customers },
+    { key: 'suppliers', label: 'Suppliers', value: d.suppliers ?? 0, href: links.suppliers },
+    { key: 'products', label: 'Products', value: d.products ?? 0, href: links.products },
+    { key: 'low_stock', label: 'Low Stock', value: d.low_stock ?? 0, href: links.low_stock },
+    { key: 'out_of_stock', label: 'Out of Stock', value: d.out_of_stock ?? 0, href: links.out_of_stock },
+    {
+      key: 'expiring_batches',
+      label: 'Expiring (30d)',
+      value: d.expiring_batches ?? 0,
+      href: links.expiring_batches,
+    },
+    { key: 'daily_revenue', label: 'Today Revenue', value: d.daily_revenue ?? 0, href: links.daily_revenue },
+    { key: 'monthly_revenue', label: 'Month Revenue', value: d.monthly_revenue ?? 0, href: links.monthly_revenue },
+    {
+      key: 'prior_month_revenue',
+      label: 'Prior Month',
+      value: d.prior_month_revenue ?? 0,
+      href: links.prior_month_revenue,
+    },
+    {
+      key: 'mom_change_pct',
+      label: 'MoM %',
+      value: d.mom_change_pct == null ? '—' : `${n(d.mom_change_pct)}%`,
+      href: links.mom_change_pct,
+    },
   ];
 
   const maxTop = Math.max(1, ...(d.top_products || []).map((p) => Number(p.revenue) || 0));
@@ -85,15 +107,34 @@ export default function Page() {
   return (
     <Shell>
       <h1>Executive Dashboard</h1>
-      <p className="muted">Live KPIs from your tenant data</p>
+      <p className="muted">Live KPIs from your tenant data — click a card to open the related report or module</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       <div className="grid">
-        {cards.map(([label, v]) => (
-          <div className="card" key={label}>
-            <div className="muted">{label}</div>
-            <div className="kpi">{typeof v === 'number' ? n(v) : v}</div>
-          </div>
-        ))}
+        {cards.map((card) => {
+          const body = (
+            <>
+              <div className="muted">{card.label}</div>
+              <div className="kpi">{typeof card.value === 'number' ? n(card.value) : card.value}</div>
+            </>
+          );
+          if (card.href) {
+            return (
+              <Link
+                key={card.key}
+                href={card.href}
+                className="card"
+                style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}
+              >
+                {body}
+              </Link>
+            );
+          }
+          return (
+            <div className="card" key={card.key}>
+              {body}
+            </div>
+          );
+        })}
       </div>
 
       <div className="grid" style={{ marginTop: 20 }}>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useTabQuery } from '../../lib/tabQuery';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -17,6 +18,18 @@ type Tab =
   | 'cashflow'
   | 'balancesheet'
   | 'schedules';
+const REPORT_TABS: Tab[] = [
+  'summary',
+  'sales',
+  'salesperson',
+  'stores',
+  'inventory',
+  'purchases',
+  'expenses',
+  'cashflow',
+  'balancesheet',
+  'schedules',
+];
 
 const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   summary: 'summary',
@@ -49,7 +62,7 @@ const REPORT_TYPES = [
 ];
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('summary');
+  const [tab, setTab] = useTabQuery(REPORT_TABS, 'summary');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [data, setData] = useState<any>(null);

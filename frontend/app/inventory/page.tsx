@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useTabQuery } from '../../lib/tabQuery';
 
 type Tab =
   | 'products'
@@ -17,11 +18,24 @@ type Tab =
   | 'movements'
   | 'stock'
   | 'lowstock';
+const INVENTORY_TABS: Tab[] = [
+  'products',
+  'catalog',
+  'variants',
+  'batches',
+  'expiry',
+  'counts',
+  'transfers',
+  'ops',
+  'movements',
+  'stock',
+  'lowstock',
+];
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('products');
+  const [tab, setTab] = useTabQuery(INVENTORY_TABS, 'products');
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);

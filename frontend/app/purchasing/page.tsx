@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useTabQuery } from '../../lib/tabQuery';
 
 type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
+const PURCHASING_TABS: Tab[] = ['suppliers', 'requests', 'orders', 'grn', 'invoices', 'returns'];
 type SupplierContact = {
   id: string;
   name: string;
@@ -128,7 +130,7 @@ type PurchaseInvoice = {
 };
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('requests');
+  const [tab, setTab] = useTabQuery(PURCHASING_TABS, 'requests');
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [grns, setGrns] = useState<Grn[]>([]);

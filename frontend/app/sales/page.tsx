@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useTabQuery } from '../../lib/tabQuery';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type Tab = 'invoices' | 'quotations' | 'orders' | 'returns' | 'customers' | 'groups';
+const SALES_TABS: Tab[] = ['invoices', 'quotations', 'orders', 'returns', 'customers', 'groups'];
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('invoices');
+  const [tab, setTab] = useTabQuery(SALES_TABS, 'invoices');
   const [invoices, setInvoices] = useState<any[]>([]);
   const [quotations, setQuotations] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
