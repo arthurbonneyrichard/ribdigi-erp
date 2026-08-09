@@ -20,3 +20,7 @@ Stage 5 Polish, Security & Launch hardening (S1, O1, A1, B1, H5, L1) delivered p
 - Agents treat Stage 5 S1, O1, A1, B1, H5, L1 as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–4 freezes (ADR-008, ADR-010, ADR-012, ADR-014) remain in force for their scopes.
+
+## Amendment (2026-08-09)
+
+Stage 6 delivery track was **explicitly approved** and opened under [ADR-017](ADR_017_STAGE6_OPEN.md) / `docs/STAGE_6_PLAN.md`. Stage 5 freeze above still applies to Polish/Security/Launch hardening scope.

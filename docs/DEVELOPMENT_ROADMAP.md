@@ -92,7 +92,9 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 5 open (2026-08-09):** Polish, Security & Launch hardening track approved — `docs/ADR_015_STAGE5_OPEN.md` + `docs/STAGE_5_PLAN.md`.
 
-**Stage 5 exit (2026-08-09):** S1, O1, A1, B1, H5, L1 met — `docs/STAGE_5_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_016_STAGE5_FREEZE.md`.
+**Stage 5 exit (2026-08-09):** S1, O1, A1, B1, H5, L1 met — `docs/STAGE_5_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_016_STAGE5_FREEZE.md` (amended when Stage 6 opened).
+
+**Stage 6 open (2026-08-09):** Integrations, Onboarding & Performance track approved — `docs/ADR_017_STAGE6_OPEN.md` + `docs/STAGE_6_PLAN.md`.
 
 ### 2.2 Features
 
@@ -660,7 +662,9 @@ Acceptance Criteria:
 
 Harden the platform for production readiness: implement backup/recovery, audit logs, API expansion, advanced security features, performance optimization, and final QA. This phase ensures the MVP is secure, reliable, and scalable enough for real tenant onboarding.
 
-**Stage 5 delivery plan (closed):** `docs/STAGE_5_PLAN.md` — exit met; freeze ADR-016. Next delivery track requires explicit open ADR.
+**Stage 5 delivery plan (closed):** `docs/STAGE_5_PLAN.md` — exit met; freeze ADR-016.
+
+**Active delivery plan:** `docs/STAGE_6_PLAN.md` (API keys, webhooks, onboarding checklist, Redis app cache).
 
 ### 6.2 Features
 
