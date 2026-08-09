@@ -1,9 +1,9 @@
-"""Tenant API key lifecycle (Stage 6 K1 / BR-18.1)."""
+"""Tenant API key lifecycle (Stage 6 K1 / Stage 7 K2 usage)."""
 
 from __future__ import annotations
 
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException
@@ -55,6 +55,7 @@ def serialize_key(row: m.ApiKey, *, include_secret: str | None = None) -> dict[s
         "created_by": row.created_by,
         "created_at": row.created_at,
         "last_used_at": row.last_used_at,
+        "request_count": int(getattr(row, "request_count", 0) or 0),
         "expires_at": row.expires_at,
         "revoked_at": row.revoked_at,
         "status": "revoked" if row.revoked_at else ("expired" if _is_expired(row) else "active"),
@@ -63,6 +64,90 @@ def serialize_key(row: m.ApiKey, *, include_secret: str | None = None) -> dict[s
         data["api_key"] = include_secret
         data["secret_shown_once"] = True
     return data
+
+
+def _fill_usage_series(
+    counts_by_day: dict[str, int],
+    *,
+    now: datetime,
+    days: int,
+) -> list[dict[str, Any]]:
+    end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start = end - timedelta(days=days - 1)
+    out: list[dict[str, Any]] = []
+    cur = start
+    while cur <= end:
+        key = cur.strftime("%Y-%m-%d")
+        out.append({"date": key, "requests": int(counts_by_day.get(key, 0))})
+        cur += timedelta(days=1)
+    return out
+
+
+async def record_api_key_usage(db: AsyncSession, row: m.ApiKey) -> None:
+    """Increment lifetime + daily counters and persist last_used_at (Stage 7 K2)."""
+    now = datetime.utcnow()
+    row.last_used_at = now
+    row.request_count = int(getattr(row, "request_count", 0) or 0) + 1
+    day = now.strftime("%Y-%m-%d")
+    existing = (
+        await db.execute(
+            select(m.ApiKeyUsageDaily).where(
+                m.ApiKeyUsageDaily.api_key_id == row.id,
+                m.ApiKeyUsageDaily.usage_date == day,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing:
+        existing.request_count = int(existing.request_count or 0) + 1
+        existing.updated_at = now
+    else:
+        db.add(
+            m.ApiKeyUsageDaily(
+                tenant_id=row.tenant_id,
+                api_key_id=row.id,
+                usage_date=day,
+                request_count=1,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+    # Commit so read-only API-key requests still persist usage (get_db does not auto-commit).
+    await db.commit()
+
+
+async def usage_stats(
+    db: AsyncSession,
+    tenant_id: str,
+    key_id: str,
+    *,
+    days: int = 30,
+) -> dict[str, Any]:
+    row = await get_key(db, tenant_id, key_id)
+    window = max(1, min(int(days or 30), 90))
+    now = datetime.utcnow()
+    start = (now - timedelta(days=window - 1)).strftime("%Y-%m-%d")
+    rows = (
+        await db.execute(
+            select(m.ApiKeyUsageDaily).where(
+                m.ApiKeyUsageDaily.tenant_id == tenant_id,
+                m.ApiKeyUsageDaily.api_key_id == key_id,
+                m.ApiKeyUsageDaily.usage_date >= start,
+            )
+        )
+    ).scalars().all()
+    by_day = {r.usage_date: int(r.request_count or 0) for r in rows}
+    series = _fill_usage_series(by_day, now=now, days=window)
+    period_requests = sum(p["requests"] for p in series)
+    return {
+        "api_key_id": row.id,
+        "name": row.name,
+        "key_prefix": row.key_prefix,
+        "last_used_at": row.last_used_at,
+        "total_requests": int(getattr(row, "request_count", 0) or 0),
+        "period_requests": period_requests,
+        "days": window,
+        "series": series,
+    }
 
 
 def _is_expired(row: m.ApiKey, *, now: datetime | None = None) -> bool:
@@ -152,6 +237,5 @@ async def authenticate_api_key(db: AsyncSession, raw_key: str) -> m.ApiKey:
         raise HTTPException(status_code=401, detail="Invalid API key")
     if _is_expired(row):
         raise HTTPException(status_code=401, detail="API key expired")
-    row.last_used_at = datetime.utcnow()
-    await db.flush()
+    await record_api_key_usage(db, row)
     return row

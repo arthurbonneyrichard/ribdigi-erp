@@ -726,7 +726,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - **Backup Management:** Admin page showing backup history (date, size, status). "Backup Now" button, "Restore" button with confirmation modal (destructive action warning). Scheduled backup configuration (frequency, retention).
 - **Audit Log Viewer:** Filterable table (date range, user, event type, resource type). Diff view showing old vs new values for update events. Export to CSV.
 - **Security Settings:** 2FA setup wizard (QR code display, verification code input). Active sessions list with "Revoke" buttons per device. Password policy configuration.
-- **API Keys:** Generate/revoke API keys for third-party integrations. Usage statistics (requests, last used).
+- **API Keys:** Generate/revoke API keys for third-party integrations. Usage statistics (requests, last used) — **COMPLETE (Stage 7 K2).**
 - **Performance Dashboard:** Admin-only page showing query slow log, cache hit rates, average response times, error rates.
 - **Onboarding Checklist:** New tenant sees progress checklist (Setup company → Add products → Create supplier → Make first sale) with skip/complete actions. **COMPLETE (Stage 6 N2):** `GET /onboarding/checklist` + Shell banner; dismissible at ≥80%.
 
@@ -777,7 +777,7 @@ FRONTEND (Next.js):
 1. Backup page: admin-only. Table of backups with download/restore buttons. Schedule config form (cron expression picker). Restore confirmation with "Type RESTORE to confirm" safety.
 2. Audit log viewer: filter sidebar (date range, user dropdown, event type checkboxes). Table with expandable rows showing old/new value diff (green for added, red for removed).
 3. Security settings: 2FA setup modal with QR code and 6-digit input. Active sessions table showing device, IP, location, last active, revoke button.
-4. API Keys: generate button, copy-to-clipboard, revoke button. Usage chart (requests per day).
+4. API Keys: generate button, copy-to-clipboard, revoke button. Usage chart (requests per day). **COMPLETE (Stage 7 K2).**
 5. Onboarding checklist: persistent banner for new tenants. 5 steps with progress bar. Each step links to relevant page. Dismissible after 80% complete.
 
 DEVOPS:

@@ -19,7 +19,7 @@ Stage 7 closes reliability and ops-hygiene holes that block a confident commerci
 |----|------------|----------|---------|
 | **W2** | Webhook delivery retries + exponential backoff | P0 | COMPLETE |
 | **C2** | Permissions Redis cache (1h TTL) | P0 | COMPLETE |
-| **K2** | API key usage statistics | P1 | PENDING |
+| **K2** | API key usage statistics | P1 | COMPLETE |
 | **L7x** | Launch checklist doc + Stage 7 exit/freeze | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -44,6 +44,14 @@ Stage 7 closes reliability and ops-hygiene holes that block a confident commerci
 - [x] Soft-fail when `CACHE_ENABLED=false` or Redis unavailable (same pattern as P2).
 - [x] Invalidate on user role / `record_scope` change and custom-role updates that sync assigned users.
 - [x] Automated tests in `backend/tests/test_permissions_cache_c2.py`.
+
+## K2 acceptance criteria
+
+- [x] Alembic `0082`: `api_keys.request_count` + `api_key_usage_daily` (per-day counts).
+- [x] Each authenticated API-key request increments lifetime + daily counters and persists `last_used_at`.
+- [x] `GET /api-keys/{id}/usage?days=` returns totals and zero-filled daily series (1–90 days).
+- [x] Security UI shows requests / last used and a requests-per-day chart.
+- [x] Automated tests in `backend/tests/test_api_key_usage_k2.py`.
 
 ## Sign-off
 

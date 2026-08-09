@@ -180,21 +180,22 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 
 **Endpoint:** `DELETE /auth/sessions/{session_id}`
 
-### 2.7 API Keys (Stage 6 K1 / BR-18.1)
+### 2.7 API Keys (Stage 6 K1 / Stage 7 K2 / BR-18.1)
 Tenant admins manage integration keys. The raw secret is returned **once** on create.
 
 | Method | Endpoint | Notes |
 |--------|----------|-------|
-| `GET` | `/api-keys` | List keys (prefix + metadata; no secret) |
+| `GET` | `/api-keys` | List keys (prefix + metadata; no secret). Includes `request_count`, `last_used_at`. |
 | `POST` | `/api-keys` | Create (`name`, optional `permissions`, `expires_at`) |
 | `GET` | `/api-keys/{id}` | Get metadata |
+| `GET` | `/api-keys/{id}/usage` | Stage 7 K2 — usage stats (`days` query, default 30, max 90): `total_requests`, `period_requests`, zero-filled `series[{date,requests}]` |
 | `DELETE` | `/api-keys/{id}` | Revoke |
 
 **Authenticate requests** with either:
 - Header `X-API-Key: rdk_…`
 - Header `Authorization: Bearer rdk_…`
 
-Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions are a module→actions map (defaults: inventory/sales/purchasing/customers/reports `read`).
+Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions are a module→actions map (defaults: inventory/sales/purchasing/customers/reports `read`). Each successful authentication increments lifetime and daily request counters (stored in `api_key_usage_daily`).
 
 ---
 

@@ -9927,6 +9927,17 @@ async def api_keys_get(
     return env(api_keys_svc.serialize_key(row))
 
 
+@api.get("/api-keys/{key_id}/usage")
+async def api_keys_usage(
+    key_id: str,
+    days: int = 30,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 7 K2 — request totals and per-day series for the usage chart."""
+    return env(await api_keys_svc.usage_stats(db, claims["tenant_id"], key_id, days=days))
+
+
 @api.delete("/api-keys/{key_id}")
 async def api_keys_revoke(
     key_id: str,

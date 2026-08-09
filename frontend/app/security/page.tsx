@@ -69,6 +69,62 @@ function credentialToJson(cred: PublicKeyCredential): Record<string, unknown> {
   };
 }
 
+function ApiKeyUsageChart({ series }: { series: { date: string; requests: number }[] }) {
+  const width = 560;
+  const height = 160;
+  const pad = { top: 12, right: 8, bottom: 24, left: 36 };
+  const innerW = width - pad.left - pad.right;
+  const innerH = height - pad.top - pad.bottom;
+  const points = series.length ? series : [];
+  const maxY = Math.max(1, ...points.map((p) => Number(p.requests) || 0));
+  const gap = 2;
+  const barW = points.length ? Math.max(2, (innerW - gap * (points.length - 1)) / points.length) : 0;
+
+  if (!points.length) {
+    return <p className="muted">No usage recorded yet</p>;
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+      aria-label="API key requests per day"
+      style={{ width: '100%', height: 'auto', maxWidth: 640 }}
+    >
+      <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + innerH} stroke="#d6d3d1" />
+      <line
+        x1={pad.left}
+        y1={pad.top + innerH}
+        x2={pad.left + innerW}
+        y2={pad.top + innerH}
+        stroke="#d6d3d1"
+      />
+      <text x={4} y={pad.top + 8} fontSize="10" fill="#57534e">
+        {maxY}
+      </text>
+      {points.map((p, i) => {
+        const h = ((Number(p.requests) || 0) / maxY) * innerH;
+        const x = pad.left + i * (barW + gap);
+        const y = pad.top + innerH - h;
+        return (
+          <g key={p.date}>
+            <rect x={x} y={y} width={barW} height={Math.max(h, 0)} fill="#0f766e" opacity={0.85}>
+              <title>
+                {p.date}: {p.requests}
+              </title>
+            </rect>
+            {(i === 0 || i === points.length - 1 || i === Math.floor(points.length / 2)) && (
+              <text x={x + barW / 2} y={height - 6} fontSize="9" fill="#57534e" textAnchor="middle">
+                {p.date.slice(5)}
+              </text>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 export default function Page() {
   const [status, setStatus] = useState<any>(null);
   const [passkeys, setPasskeys] = useState<any[]>([]);
@@ -87,6 +143,8 @@ export default function Page() {
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [apiKeyName, setApiKeyName] = useState('Integration key');
   const [newApiKeySecret, setNewApiKeySecret] = useState('');
+  const [apiKeyUsage, setApiKeyUsage] = useState<any | null>(null);
+  const [apiKeyUsageId, setApiKeyUsageId] = useState('');
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [webhookUrl, setWebhookUrl] = useState('https://');
   const [webhookEvents, setWebhookEvents] = useState('sale.created,webhook.test');
@@ -149,7 +207,22 @@ export default function Page() {
     try {
       await api(`/api-keys/${id}`, { method: 'DELETE' });
       setMessage('API key revoked');
+      if (apiKeyUsageId === id) {
+        setApiKeyUsage(null);
+        setApiKeyUsageId('');
+      }
       await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadApiKeyUsage(id: string) {
+    setError('');
+    try {
+      const r = await api(`/api-keys/${id}/usage?days=30`);
+      setApiKeyUsageId(id);
+      setApiKeyUsage(r.data || null);
     } catch (err: any) {
       setError(err.message);
     }
@@ -569,6 +642,8 @@ export default function Page() {
               <tr>
                 <th>Name</th>
                 <th>Prefix</th>
+                <th>Requests</th>
+                <th>Last used</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -580,8 +655,15 @@ export default function Page() {
                   <td>
                     <code>{k.key_prefix}</code>
                   </td>
+                  <td>{Number(k.request_count || 0)}</td>
+                  <td className="muted">
+                    {k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '—'}
+                  </td>
                   <td>{k.status}</td>
-                  <td>
+                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button type="button" onClick={() => loadApiKeyUsage(k.id)}>
+                      Usage
+                    </button>
                     {k.status === 'active' && (
                       <button type="button" onClick={() => revokeApiKey(k.id)}>
                         Revoke
@@ -592,13 +674,24 @@ export default function Page() {
               ))}
               {!apiKeys.length && (
                 <tr>
-                  <td colSpan={4} className="muted">
+                  <td colSpan={6} className="muted">
                     No API keys yet
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          {apiKeyUsage && (
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ margin: '0 0 8px' }}>
+                Requests per day — {apiKeyUsage.name}{' '}
+                <span className="muted">
+                  (last {apiKeyUsage.days} days · Σ {apiKeyUsage.period_requests})
+                </span>
+              </h3>
+              <ApiKeyUsageChart series={apiKeyUsage.series || []} />
+            </div>
+          )}
         </div>
       )}
 
