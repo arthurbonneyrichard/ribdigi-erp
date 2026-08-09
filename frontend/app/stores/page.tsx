@@ -9,6 +9,7 @@ type Store = {
   code: string;
   name: string;
   address?: string;
+  branch_id?: string | null;
   is_active?: boolean;
   drawer_mode?: string;
   drawer_host?: string | null;
@@ -27,12 +28,14 @@ type Transfer = {
 
 export default function Page() {
   const [stores, setStores] = useState<Store[]>([]);
+  const [branches, setBranches] = useState<{ id: string; code: string; name: string }[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [branchId, setBranchId] = useState('');
   const [fromStore, setFromStore] = useState('');
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
@@ -51,15 +54,17 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [s, p, t, settings] = await Promise.all([
+    const [s, p, t, settings, b] = await Promise.all([
       api('/stores'),
       api('/products'),
       api('/stores/transfers'),
       api('/inventory/settings').catch(() => ({ data: { fefo_strict_warehouse: false } })),
+      api('/branches').catch(() => ({ data: [] })),
     ]);
     setStores(s.data || []);
     setProducts(p.data || []);
     setTransfers(t.data || []);
+    setBranches(b.data || []);
     setFefoStrict(!!settings.data?.fefo_strict_warehouse);
     if (!fromStore && s.data?.length) setFromStore(s.data[0].id);
     if (!toStore && s.data?.length > 1) setToStore(s.data[1].id);
@@ -83,11 +88,17 @@ export default function Page() {
     try {
       await api('/stores', {
         method: 'POST',
-        body: JSON.stringify({ code, name, address: address || undefined }),
+        body: JSON.stringify({
+          code,
+          name,
+          address: address || undefined,
+          branch_id: branchId || null,
+        }),
       });
       setCode('');
       setName('');
       setAddress('');
+      setBranchId('');
       setMessage('Store created');
       await refresh();
     } catch (err: any) {
@@ -220,6 +231,14 @@ export default function Page() {
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code" />
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
+            <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+              <option value="">No branch</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.code} — {b.name}
+                </option>
+              ))}
+            </select>
             <button onClick={createStore}>Create store</button>
           </div>
         </div>
@@ -315,6 +334,7 @@ export default function Page() {
           <tr>
             <th>Code</th>
             <th>Name</th>
+            <th>Branch</th>
             <th>Address</th>
             <th></th>
           </tr>
@@ -324,6 +344,9 @@ export default function Page() {
             <tr key={s.id}>
               <td>{s.code}</td>
               <td>{s.name}</td>
+              <td>
+                {branches.find((b) => b.id === s.branch_id)?.code || s.branch_id || '—'}
+              </td>
               <td>{s.address || '—'}</td>
               <td>
                 <button onClick={() => loadInventory(s.id)}>Inventory / reorder</button>

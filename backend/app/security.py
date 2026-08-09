@@ -15,7 +15,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app import models as m
-from app.rbac import VALID_ROLES, has_permission, permissions_for_role
+from app.rbac import (
+    VALID_ROLES,
+    has_permission,
+    permissions_for_role,
+    record_scope_from_permissions,
+)
 
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
@@ -146,6 +151,17 @@ async def current_claims(
     data["totp_enabled"] = bool(user.totp_enabled)
     data["tenant_status"] = tenant.status
     data["read_only"] = tenants_svc.is_read_only(tenant)
+    data["branch_id"] = getattr(user, "branch_id", None)
+    data["department_id"] = getattr(user, "department_id", None)
+    scope = record_scope_from_permissions(
+        user.role, data["permissions"] if isinstance(data.get("permissions"), dict) else None
+    )
+    data["record_scope"] = scope
+    from app import org_units as org_units_svc
+
+    data["scope_user_ids"] = await org_units_svc.scope_user_ids(
+        db, tenant_id=tenant_id, user=user, scope=scope
+    )
     from app.totp import path_allowed_during_enrollment, role_requires_2fa
     from app import webauthn_svc as webauthn
 

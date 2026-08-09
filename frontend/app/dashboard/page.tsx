@@ -1,2 +1,114 @@
-'use client';import {useEffect,useState} from 'react';import Shell from '../../components/Shell';import {api} from '../../lib/api';
-export default function Page(){const[d,setD]=useState<any>({});useEffect(()=>{api('/dashboard').then(r=>setD(r.data)).catch(()=>{})},[]);const cards=[['Total Sales',d.total_sales||0],['Purchases',d.total_purchases||0],['Expenses',d.total_expenses||0],['Products',d.products||0],['Low Stock',d.low_stock||0]];return <Shell><h1>Executive Dashboard</h1><p className="muted">Real-time business overview</p><div className="grid">{cards.map(([n,v])=><div className="card" key={n}><div className="muted">{n}</div><div className="kpi">{v}</div></div>)}</div></Shell>}
+'use client';
+
+import { useEffect, useState } from 'react';
+import Shell from '../../components/Shell';
+import { api } from '../../lib/api';
+
+type Dash = {
+  total_sales?: number;
+  total_purchases?: number;
+  total_expenses?: number;
+  products?: number;
+  low_stock?: number;
+  customers?: number;
+  suppliers?: number;
+  daily_revenue?: number;
+  monthly_revenue?: number;
+  recent_sales?: { source: string; reference: string; total: number; at?: string }[];
+  top_products?: { name: string; sku: string; quantity: number; revenue: number }[];
+};
+
+export default function Page() {
+  const [d, setD] = useState<Dash>({});
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api('/dashboard')
+      .then((r) => setD(r.data || {}))
+      .catch((err) => setError(err.message));
+  }, []);
+
+  const cards: [string, number | string][] = [
+    ['Total Sales', d.total_sales ?? 0],
+    ['Purchases', d.total_purchases ?? 0],
+    ['Expenses', d.total_expenses ?? 0],
+    ['Customers', d.customers ?? 0],
+    ['Suppliers', d.suppliers ?? 0],
+    ['Products', d.products ?? 0],
+    ['Low Stock', d.low_stock ?? 0],
+    ['Today Revenue', d.daily_revenue ?? 0],
+    ['Month Revenue', d.monthly_revenue ?? 0],
+  ];
+
+  const maxTop = Math.max(1, ...(d.top_products || []).map((p) => Number(p.revenue) || 0));
+
+  return (
+    <Shell>
+      <h1>Executive Dashboard</h1>
+      <p className="muted">Live KPIs from your tenant data</p>
+      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+      <div className="grid">
+        {cards.map(([n, v]) => (
+          <div className="card" key={n}>
+            <div className="muted">{n}</div>
+            <div className="kpi">{typeof v === 'number' ? Number(v).toLocaleString() : v}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid" style={{ marginTop: 20 }}>
+        <div className="card">
+          <h3>Top products</h3>
+          {(d.top_products || []).length === 0 && <p className="muted">No posted invoice lines yet</p>}
+          {(d.top_products || []).map((p) => (
+            <div key={p.sku} style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <span>
+                  {p.name} <span className="muted">({p.sku})</span>
+                </span>
+                <span>{Number(p.revenue).toLocaleString()}</span>
+              </div>
+              <div
+                style={{
+                  height: 6,
+                  background: '#e5e7eb',
+                  marginTop: 4,
+                }}
+              >
+                <div
+                  style={{
+                    height: 6,
+                    width: `${Math.round((Number(p.revenue) / maxTop) * 100)}%`,
+                    background: '#0f766e',
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <h3>Recent sales</h3>
+          {(d.recent_sales || []).length === 0 && <p className="muted">No recent sales</p>}
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Ref</th>
+                <th>Source</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(d.recent_sales || []).map((r) => (
+                <tr key={`${r.source}-${r.reference}`}>
+                  <td>{r.reference}</td>
+                  <td>{r.source}</td>
+                  <td>{Number(r.total).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </Shell>
+  );
+}

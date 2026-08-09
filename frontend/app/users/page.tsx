@@ -19,7 +19,31 @@ type UserRow = {
   role: string;
   is_active: boolean;
   phone?: string | null;
+  branch_id?: string | null;
+  department_id?: string | null;
+  record_scope?: string;
 };
+
+const MODULES = [
+  'dashboard',
+  'inventory',
+  'sales',
+  'pos',
+  'purchasing',
+  'expenses',
+  'accounting',
+  'credit',
+  'tax',
+  'stores',
+  'reports',
+  'notifications',
+  'audit',
+  'ai',
+  'security',
+  'users',
+  'customers',
+  'suppliers',
+];
 
 const emptyForm = {
   email: '',
@@ -27,6 +51,9 @@ const emptyForm = {
   password: '',
   role: 'cashier',
   phone: '',
+  branch_id: '',
+  department_id: '',
+  record_scope: '',
 };
 
 const emptyRoleForm = {
@@ -39,21 +66,30 @@ const emptyRoleForm = {
 export default function Page() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [roles, setRoles] = useState<RoleRow[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [roleForm, setRoleForm] = useState(emptyRoleForm);
+  const [editRole, setEditRole] = useState<string>('');
+  const [matrix, setMatrix] = useState<Record<string, string[]>>({});
+  const [matrixScope, setMatrixScope] = useState('own');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
 
   async function refresh() {
-    const [usersRes, rolesRes, meRes] = await Promise.all([
+    const [usersRes, rolesRes, meRes, br, dep] = await Promise.all([
       api('/users'),
       api('/roles'),
       api('/me'),
+      api('/branches').catch(() => ({ data: [] })),
+      api('/departments').catch(() => ({ data: [] })),
     ]);
     setRows(usersRes.data || []);
     setRoles(rolesRes.data || []);
+    setBranches(br.data || []);
+    setDepartments(dep.data || []);
     const perms = meRes.data?.permissions || {};
     const role = meRes.data?.role || '';
     setCanWrite(
@@ -69,6 +105,14 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
+  useEffect(() => {
+    if (!editRole) return;
+    const role = roles.find((r) => r.role === editRole);
+    if (!role || role.system) return;
+    setMatrix({ ...(role.permissions || {}) });
+    setMatrixScope(role.record_scope || 'own');
+  }, [editRole, roles]);
+
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -83,6 +127,9 @@ export default function Page() {
           password: form.password,
           role: form.role,
           phone: form.phone || null,
+          branch_id: form.branch_id || null,
+          department_id: form.department_id || null,
+          record_scope: form.record_scope || null,
         }),
       });
       setForm(emptyForm);
@@ -120,11 +167,40 @@ export default function Page() {
     }
   }
 
+  async function saveMatrix() {
+    if (!editRole) return;
+    setError('');
+    setMessage('');
+    try {
+      await api(`/roles/${editRole}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify({ permissions: matrix, record_scope: matrixScope }),
+      });
+      setMessage('Role permissions updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function toggleAction(module: string, action: string) {
+    setMatrix((prev) => {
+      const current = new Set(prev[module] || []);
+      if (current.has(action)) current.delete(action);
+      else current.add(action);
+      const next = { ...prev };
+      if (current.size) next[module] = Array.from(current);
+      else delete next[module];
+      return next;
+    });
+  }
+
   async function deleteRole(slug: string) {
     setError('');
     setMessage('');
     try {
       await api(`/roles/${slug}`, { method: 'DELETE' });
+      if (editRole === slug) setEditRole('');
       setMessage('Custom role deleted');
       await refresh();
     } catch (err: any) {
@@ -174,7 +250,7 @@ export default function Page() {
     <Shell>
       <h1>User Management</h1>
       <p className="muted">
-        Create users, assign system or custom roles, and activate or deactivate accounts.
+        Users, custom roles, org assignment, and module permission matrix.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -213,6 +289,8 @@ export default function Page() {
             style={{ width: '100%', padding: 10, marginBottom: 8 }}
           >
             <option value="own">Record scope: own</option>
+            <option value="department">Record scope: department</option>
+            <option value="branch">Record scope: branch</option>
             <option value="all">Record scope: all</option>
           </select>
           <button type="submit" disabled={busy} style={{ padding: '10px 16px' }}>
@@ -229,7 +307,7 @@ export default function Page() {
               <tr>
                 <th>Slug</th>
                 <th>Label</th>
-                <th>Record scope</th>
+                <th>Scope</th>
                 {canWrite && <th>Actions</th>}
               </tr>
             </thead>
@@ -240,7 +318,10 @@ export default function Page() {
                   <td>{r.label}</td>
                   <td>{r.record_scope || 'own'}</td>
                   {canWrite && (
-                    <td>
+                    <td style={{ display: 'flex', gap: 8 }}>
+                      <button type="button" onClick={() => setEditRole(r.role)}>
+                        Permissions
+                      </button>
                       <button type="button" onClick={() => deleteRole(r.role)}>
                         Delete
                       </button>
@@ -250,6 +331,56 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {canWrite && editRole && (
+        <div className="card" style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 18 }}>Permission matrix · {editRole}</h2>
+          <select
+            value={matrixScope}
+            onChange={(e) => setMatrixScope(e.target.value)}
+            style={{ marginBottom: 12, padding: 8 }}
+          >
+            <option value="own">own</option>
+            <option value="department">department</option>
+            <option value="branch">branch</option>
+            <option value="all">all</option>
+          </select>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Module</th>
+                <th>read</th>
+                <th>write</th>
+                <th>approve</th>
+              </tr>
+            </thead>
+            <tbody>
+              {MODULES.map((mod) => (
+                <tr key={mod}>
+                  <td>{mod}</td>
+                  {(['read', 'write', 'approve'] as const).map((action) => (
+                    <td key={action}>
+                      <input
+                        type="checkbox"
+                        checked={(matrix[mod] || []).includes(action)}
+                        onChange={() => toggleAction(mod, action)}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button type="button" onClick={saveMatrix}>
+              Save permissions
+            </button>
+            <button type="button" onClick={() => setEditRole('')}>
+              Close
+            </button>
+          </div>
         </div>
       )}
 
@@ -299,6 +430,41 @@ export default function Page() {
                 </option>
               ))}
           </select>
+          <select
+            value={form.branch_id}
+            onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
+            style={{ width: '100%', padding: 10, marginBottom: 8 }}
+          >
+            <option value="">No branch</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={form.department_id}
+            onChange={(e) => setForm({ ...form, department_id: e.target.value })}
+            style={{ width: '100%', padding: 10, marginBottom: 8 }}
+          >
+            <option value="">No department</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={form.record_scope}
+            onChange={(e) => setForm({ ...form, record_scope: e.target.value })}
+            style={{ width: '100%', padding: 10, marginBottom: 8 }}
+          >
+            <option value="">Default role record scope</option>
+            <option value="own">own</option>
+            <option value="department">department</option>
+            <option value="branch">branch</option>
+            <option value="all">all</option>
+          </select>
           <button type="submit" disabled={busy} style={{ padding: '10px 16px' }}>
             {busy ? 'Creating…' : 'Create user'}
           </button>
@@ -311,6 +477,7 @@ export default function Page() {
             <th>Full Name</th>
             <th>Email</th>
             <th>Role</th>
+            <th>Org</th>
             <th>Active</th>
             {canWrite && <th>Actions</th>}
           </tr>
@@ -333,6 +500,9 @@ export default function Page() {
                 ) : (
                   r.role
                 )}
+              </td>
+              <td className="muted">
+                {[r.branch_id ? 'B' : null, r.department_id ? 'D' : null].filter(Boolean).join('/') || '—'}
               </td>
               <td>{r.is_active ? 'Yes' : 'No'}</td>
               {canWrite && (

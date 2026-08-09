@@ -11,6 +11,10 @@ export default function Page() {
   const [storageStatus, setStorageStatus] = useState<any>(null);
   const [profilePhone, setProfilePhone] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [branchForm, setBranchForm] = useState({ code: '', name: '', address: '' });
+  const [deptForm, setDeptForm] = useState({ code: '', name: '', branch_id: '' });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -42,18 +46,22 @@ export default function Page() {
   }
 
   async function refresh() {
-    const [r, e, s, me, st] = await Promise.all([
+    const [r, e, s, me, st, br, dep] = await Promise.all([
       api('/tenants/me'),
       api('/settings/email'),
       api('/settings/sms'),
       api('/me'),
       api('/settings/storage').catch(() => ({ data: null })),
+      api('/branches').catch(() => ({ data: [] })),
+      api('/departments').catch(() => ({ data: [] })),
     ]);
     setTenant(r.data);
     setEmailStatus(e.data);
     setSmsStatus(s.data);
     setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
+    setBranches(br.data || []);
+    setDepartments(dep.data || []);
     await loadLogoPreview(!!r.data?.has_logo);
   }
 
@@ -392,6 +400,114 @@ export default function Page() {
           </div>
         </div>
       )}
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h3>Branches &amp; departments</h3>
+        <p className="muted">Org units for user assignment and department/branch record scopes.</p>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError('');
+            try {
+              await api('/branches', {
+                method: 'POST',
+                body: JSON.stringify(branchForm),
+              });
+              setBranchForm({ code: '', name: '', address: '' });
+              setMessage('Branch created');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message);
+            }
+          }}
+          style={{ display: 'grid', gap: 8, maxWidth: 480, marginBottom: 16 }}
+        >
+          <strong>New branch</strong>
+          <input
+            value={branchForm.code}
+            onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })}
+            placeholder="Code"
+            required
+          />
+          <input
+            value={branchForm.name}
+            onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })}
+            placeholder="Name"
+            required
+          />
+          <input
+            value={branchForm.address}
+            onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
+            placeholder="Address (optional)"
+          />
+          <button type="submit">Add branch</button>
+        </form>
+        <ul>
+          {branches.map((b) => (
+            <li key={b.id}>
+              {b.code} — {b.name} {b.is_active ? '' : '(inactive)'}
+            </li>
+          ))}
+          {!branches.length && <li className="muted">No branches yet</li>}
+        </ul>
+
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError('');
+            try {
+              await api('/departments', {
+                method: 'POST',
+                body: JSON.stringify({
+                  code: deptForm.code,
+                  name: deptForm.name,
+                  branch_id: deptForm.branch_id || null,
+                }),
+              });
+              setDeptForm({ code: '', name: '', branch_id: '' });
+              setMessage('Department created');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message);
+            }
+          }}
+          style={{ display: 'grid', gap: 8, maxWidth: 480, marginTop: 16 }}
+        >
+          <strong>New department</strong>
+          <input
+            value={deptForm.code}
+            onChange={(e) => setDeptForm({ ...deptForm, code: e.target.value })}
+            placeholder="Code"
+            required
+          />
+          <input
+            value={deptForm.name}
+            onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
+            placeholder="Name"
+            required
+          />
+          <select
+            value={deptForm.branch_id}
+            onChange={(e) => setDeptForm({ ...deptForm, branch_id: e.target.value })}
+          >
+            <option value="">No branch</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          <button type="submit">Add department</button>
+        </form>
+        <ul>
+          {departments.map((d) => (
+            <li key={d.id}>
+              {d.code} — {d.name} {d.is_active ? '' : '(inactive)'}
+            </li>
+          ))}
+          {!departments.length && <li className="muted">No departments yet</li>}
+        </ul>
+      </div>
     </Shell>
   );
 }

@@ -21,6 +21,7 @@ from app.rbac import (
     serialize_user,
 )
 from app import roles as roles_svc
+from app import org_units as org_units_svc
 from app import purchasing as purchasing_svc
 from app import sales as sales_svc
 from app import sales_docs as sales_docs_svc
@@ -136,6 +137,10 @@ from app.schemas import (
     CustomRoleCreate,
     CustomRoleUpdate,
     CustomRolePermissionsUpdate,
+    BranchCreate,
+    BranchUpdate,
+    DepartmentCreate,
+    DepartmentUpdate,
     ProductUpdate,
     StockCountCreate,
     StockCountItemsUpdate,
@@ -246,6 +251,8 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
         company_name=payload.company_name,
         industry=payload.industry,
         currency=payload.currency,
+        timezone=(payload.timezone or "Africa/Accra").strip() or "Africa/Accra",
+        tax_jurisdiction=(payload.tax_jurisdiction or "GH").strip().upper() or "GH",
         status="trial",
         trial_ends_at=tenants_svc.default_trial_ends_at(),
         trial_notices={},
@@ -253,10 +260,11 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
     db.add(tenant)
     await db.flush()
 
+    admin_name = (payload.admin_full_name or "Company Administrator").strip() or "Company Administrator"
     admin = m.User(
         tenant_id=tenant.id,
         email=payload.admin_email,
-        full_name="Company Administrator",
+        full_name=admin_name,
         password_hash=hash_password(payload.admin_password),
         role="company_admin",
         email_verified=False,
@@ -1521,6 +1529,128 @@ async def delete_custom_role(
     return env({"role": role}, "Custom role deleted")
 
 
+@api.get("/branches")
+async def list_branches(
+    active_only: bool = False,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await org_units_svc.list_branches(
+        db, claims["tenant_id"], active_only=active_only
+    )
+    return env([org_units_svc.serialize_branch(r) for r in rows])
+
+
+@api.post("/branches")
+async def create_branch(
+    payload: BranchCreate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    row = await org_units_svc.create_branch(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        address=payload.address,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="branch_created",
+        entity="branch",
+        entity_id=row.id,
+        details={"code": row.code},
+    )
+    await db.commit()
+    return env(org_units_svc.serialize_branch(row), "Branch created")
+
+
+@api.patch("/branches/{branch_id}")
+async def update_branch(
+    branch_id: str,
+    payload: BranchUpdate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    row = await org_units_svc.update_branch(
+        db,
+        tenant_id=claims["tenant_id"],
+        branch_id=branch_id,
+        name=payload.name,
+        address=payload.address,
+        is_active=payload.is_active,
+    )
+    await db.commit()
+    return env(org_units_svc.serialize_branch(row), "Branch updated")
+
+
+@api.get("/departments")
+async def list_departments(
+    branch_id: str | None = None,
+    active_only: bool = False,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await org_units_svc.list_departments(
+        db, claims["tenant_id"], branch_id=branch_id, active_only=active_only
+    )
+    return env([org_units_svc.serialize_department(r) for r in rows])
+
+
+@api.post("/departments")
+async def create_department(
+    payload: DepartmentCreate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    row = await org_units_svc.create_department(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        branch_id=payload.branch_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="department_created",
+        entity="department",
+        entity_id=row.id,
+        details={"code": row.code},
+    )
+    await db.commit()
+    return env(org_units_svc.serialize_department(row), "Department created")
+
+
+@api.patch("/departments/{department_id}")
+async def update_department(
+    department_id: str,
+    payload: DepartmentUpdate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    row = await org_units_svc.update_department(
+        db,
+        tenant_id=claims["tenant_id"],
+        department_id=department_id,
+        name=payload.name,
+        branch_id=payload.branch_id,
+        clear_branch=payload.clear_branch,
+        is_active=payload.is_active,
+    )
+    await db.commit()
+    return env(org_units_svc.serialize_department(row), "Department updated")
+
+
 @api.get("/users")
 async def users(claims=Depends(require_permission("users", "read")), db: AsyncSession = Depends(get_db)):
     rows = (
@@ -1553,6 +1683,12 @@ async def add_user(
         db, claims["tenant_id"], payload.role, actor_role=claims.get("role")
     )
     validate_password_strength(payload.password)
+    branch_id, department_id = await org_units_svc.assert_user_org_assignment(
+        db,
+        claims["tenant_id"],
+        branch_id=payload.branch_id,
+        department_id=payload.department_id,
+    )
     exists = (
         await db.execute(
             select(m.User).where(
@@ -1563,6 +1699,12 @@ async def add_user(
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="User email already exists in tenant")
+    perms = await roles_svc.permissions_for_assignment(db, claims["tenant_id"], role)
+    if payload.record_scope is not None:
+        try:
+            perms[RECORD_SCOPE_KEY] = normalize_record_scope(payload.record_scope)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     user = m.User(
         tenant_id=claims["tenant_id"],
         email=payload.email,
@@ -1570,7 +1712,9 @@ async def add_user(
         phone=payload.phone,
         password_hash=hash_password(payload.password),
         role=role,
-        permissions=await roles_svc.permissions_for_assignment(db, claims["tenant_id"], role),
+        branch_id=branch_id,
+        department_id=department_id,
+        permissions=perms,
         email_verified=False,
         is_active=True,
     )
@@ -1674,6 +1818,26 @@ async def update_user(
             user.permissions = perms
             changes["record_scope"] = scope
 
+    if payload.clear_branch or payload.clear_department or payload.branch_id is not None or payload.department_id is not None:
+        next_branch = None if payload.clear_branch else (
+            payload.branch_id if payload.branch_id is not None else user.branch_id
+        )
+        next_dept = None if payload.clear_department else (
+            payload.department_id if payload.department_id is not None else user.department_id
+        )
+        branch_id, department_id = await org_units_svc.assert_user_org_assignment(
+            db,
+            claims["tenant_id"],
+            branch_id=next_branch,
+            department_id=next_dept,
+        )
+        if user.branch_id != branch_id:
+            user.branch_id = branch_id
+            changes["branch_id"] = branch_id
+        if user.department_id != department_id:
+            user.department_id = department_id
+            changes["department_id"] = department_id
+
     if not changes:
         return env(serialize_user(user), "No changes")
 
@@ -1722,6 +1886,9 @@ async def deactivate_user(
 @api.get("/dashboard")
 async def dashboard(claims=Depends(require_permission("dashboard", "read")), db: AsyncSession = Depends(get_db)):
     tid = claims["tenant_id"]
+    now = datetime.utcnow()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     async def scalar(stmt):
         return (await db.execute(stmt)).scalar() or 0
@@ -1738,6 +1905,14 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             m.Transaction.tx_type == "purchase",
         )
     )
+    # Prefer posted sales invoices for purchases when purchase txs unused.
+    if float(purchases) == 0:
+        purchases = await scalar(
+            select(func.coalesce(func.sum(m.PurchaseInvoice.total_amount), 0)).where(
+                m.PurchaseInvoice.tenant_id == tid,
+                m.PurchaseInvoice.status.in_(["unpaid", "partial", "paid", "overdue"]),
+            )
+        )
     expenses = await scalar(
         select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
             m.Expense.tenant_id == tid,
@@ -1757,15 +1932,135 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     suppliers = await scalar(
         select(func.count(m.Party.id)).where(m.Party.tenant_id == tid, m.Party.kind == "supplier")
     )
+    daily_revenue = await scalar(
+        select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+            m.Transaction.tenant_id == tid,
+            m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+            m.Transaction.created_at >= day_start,
+        )
+    )
+    monthly_revenue = await scalar(
+        select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+            m.Transaction.tenant_id == tid,
+            m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+            m.Transaction.created_at >= month_start,
+        )
+    )
+    # Also include posted invoice totals for the day/month when POS txs alone understate sales.
+    inv_daily = await scalar(
+        select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+            m.SalesInvoice.tenant_id == tid,
+            m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+            m.SalesInvoice.posted_at >= day_start,
+        )
+    )
+    inv_monthly = await scalar(
+        select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+            m.SalesInvoice.tenant_id == tid,
+            m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+            m.SalesInvoice.posted_at >= month_start,
+        )
+    )
+    daily_revenue = float(daily_revenue) + float(inv_daily)
+    monthly_revenue = float(monthly_revenue) + float(inv_monthly)
+
+    recent_sales = (
+        await db.execute(
+            select(m.Transaction)
+            .where(
+                m.Transaction.tenant_id == tid,
+                m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+            )
+            .order_by(m.Transaction.created_at.desc())
+            .limit(8)
+        )
+    ).scalars().all()
+    recent_invoices = (
+        await db.execute(
+            select(m.SalesInvoice)
+            .where(
+                m.SalesInvoice.tenant_id == tid,
+                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+            )
+            .order_by(m.SalesInvoice.posted_at.desc())
+            .limit(8)
+        )
+    ).scalars().all()
+    recent = [
+        *[
+            {
+                "source": "pos",
+                "reference": t.reference,
+                "total": float(t.total or 0),
+                "at": t.created_at,
+            }
+            for t in recent_sales
+        ],
+        *[
+            {
+                "source": "invoice",
+                "reference": inv.invoice_number,
+                "total": float(inv.total_amount or 0),
+                "at": inv.posted_at or inv.created_at,
+            }
+            for inv in recent_invoices
+        ],
+    ]
+    recent.sort(key=lambda r: r.get("at") or datetime.min, reverse=True)
+    recent = recent[:10]
+
+    top_rows = (
+        await db.execute(
+            select(
+                m.Product.id,
+                m.Product.name,
+                m.Product.sku,
+                func.coalesce(func.sum(m.SalesInvoiceItem.quantity), 0).label("qty"),
+                func.coalesce(func.sum(m.SalesInvoiceItem.line_total), 0).label("revenue"),
+            )
+            .join(m.SalesInvoiceItem, m.SalesInvoiceItem.product_id == m.Product.id)
+            .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
+            .where(
+                m.Product.tenant_id == tid,
+                m.SalesInvoice.tenant_id == tid,
+                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+            )
+            .group_by(m.Product.id, m.Product.name, m.Product.sku)
+            .order_by(func.coalesce(func.sum(m.SalesInvoiceItem.line_total), 0).desc())
+            .limit(5)
+        )
+    ).all()
+    top_products = [
+        {
+            "id": row.id,
+            "name": row.name,
+            "sku": row.sku,
+            "quantity": float(row.qty or 0),
+            "revenue": float(row.revenue or 0),
+        }
+        for row in top_rows
+    ]
+
     return env(
         {
-            "total_sales": float(sales),
+            "total_sales": float(sales) + float(
+                await scalar(
+                    select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+                        m.SalesInvoice.tenant_id == tid,
+                        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+                    )
+                )
+            ),
             "total_purchases": float(purchases),
             "total_expenses": float(expenses),
             "products": products,
             "low_stock": low,
             "customers": customers,
             "suppliers": suppliers,
+            "daily_revenue": daily_revenue,
+            "monthly_revenue": monthly_revenue,
+            "recent_sales": recent,
+            "top_products": top_products,
         }
     )
 
@@ -6658,6 +6953,7 @@ async def stores(claims=Depends(require_permission("stores", "read")), db: Async
                 "address": s.address,
                 "phone": s.phone,
                 "manager_id": s.manager_id,
+                "branch_id": s.branch_id,
                 "is_active": s.is_active,
                 **{k: v for k, v in cash_drawer_svc.serialize_drawer_settings(s).items() if k != "source"},
             }
@@ -6672,6 +6968,14 @@ async def add_store(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    branch_id = None
+    if payload.branch_id:
+        branch_id, _ = await org_units_svc.assert_user_org_assignment(
+            db,
+            claims["tenant_id"],
+            branch_id=payload.branch_id,
+            department_id=None,
+        )
     store = await stores_svc.create_store(
         db,
         tenant_id=claims["tenant_id"],
@@ -6680,9 +6984,13 @@ async def add_store(
         address=payload.address,
         phone=payload.phone,
         manager_id=payload.manager_id,
+        branch_id=branch_id,
     )
     await db.commit()
-    return env({"id": store.id, "code": store.code}, "Store created with warehouse")
+    return env(
+        {"id": store.id, "code": store.code, "branch_id": store.branch_id},
+        "Store created with warehouse",
+    )
 
 
 @api.patch("/stores/{store_id}/drawer")

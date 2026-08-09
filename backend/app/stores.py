@@ -70,6 +70,7 @@ async def create_store(
     address: str | None = None,
     phone: str | None = None,
     manager_id: str | None = None,
+    branch_id: str | None = None,
 ) -> m.Store:
     store = m.Store(
         tenant_id=tenant_id,
@@ -78,6 +79,7 @@ async def create_store(
         address=address,
         phone=phone,
         manager_id=manager_id,
+        branch_id=branch_id,
         is_active=True,
     )
     db.add(store)

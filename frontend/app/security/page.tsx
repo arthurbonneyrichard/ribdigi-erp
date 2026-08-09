@@ -71,6 +71,7 @@ function credentialToJson(cred: PublicKeyCredential): Record<string, unknown> {
 export default function Page() {
   const [status, setStatus] = useState<any>(null);
   const [passkeys, setPasskeys] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
   const [setup, setSetup] = useState<any>(null);
   const [code, setCode] = useState('');
   const [passkeyName, setPasskeyName] = useState('My passkey');
@@ -80,12 +81,25 @@ export default function Page() {
   const [message, setMessage] = useState('');
 
   async function refresh() {
-    const [r, keys] = await Promise.all([
+    const [r, keys, sess] = await Promise.all([
       api('/auth/2fa/status'),
       api('/auth/webauthn/credentials').catch(() => ({ data: [] })),
+      api('/auth/sessions').catch(() => ({ data: [] })),
     ]);
     setStatus(r.data);
     setPasskeys(keys.data || []);
+    setSessions(sess.data || []);
+  }
+
+  async function revokeSession(id: string) {
+    setError('');
+    try {
+      await api(`/auth/sessions/${id}`, { method: 'DELETE' });
+      setMessage('Session revoked');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
   }
 
   useEffect(() => {
@@ -278,7 +292,7 @@ export default function Page() {
       )}
 
       {backupCodes.length > 0 && (
-        <div className="card">
+        <div className="card" style={{ marginBottom: 16 }}>
           <h2>Save these codes now</h2>
           <ul>
             {backupCodes.map((c) => (
@@ -289,6 +303,47 @@ export default function Page() {
           </ul>
         </div>
       )}
+
+      <div className="card">
+        <h2>Active sessions</h2>
+        <p className="muted">Revoke devices you no longer recognize.</p>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Created</th>
+              <th>IP</th>
+              <th>Agent</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sessions.map((s) => (
+              <tr key={s.id}>
+                <td>{s.created_at ? String(s.created_at) : '—'}</td>
+                <td>{s.ip_address || '—'}</td>
+                <td className="muted" style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {s.user_agent || '—'}
+                  {s.current ? ' (this device)' : ''}
+                </td>
+                <td>
+                  {!s.current && (
+                    <button type="button" onClick={() => revokeSession(s.id)}>
+                      Revoke
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!sessions.length && (
+              <tr>
+                <td colSpan={4} className="muted">
+                  No active sessions
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </Shell>
   );
 }
