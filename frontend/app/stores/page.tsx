@@ -104,23 +104,40 @@ export default function Page() {
   const [drawerHost, setDrawerHost] = useState('');
   const [drawerPort, setDrawerPort] = useState('9100');
   const [drawerOnCash, setDrawerOnCash] = useState(true);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [whCode, setWhCode] = useState('');
+  const [whName, setWhName] = useState('');
+  const [whType, setWhType] = useState('retail');
+  const [whStoreId, setWhStoreId] = useState('');
+  const [whManagerId, setWhManagerId] = useState('');
+  const [whAddress, setWhAddress] = useState('');
+  const [whCapacity, setWhCapacity] = useState('');
+  const [editWhId, setEditWhId] = useState('');
+  const [editWhName, setEditWhName] = useState('');
+  const [editWhType, setEditWhType] = useState('retail');
+  const [editWhManagerId, setEditWhManagerId] = useState('');
+  const [editWhAddress, setEditWhAddress] = useState('');
+  const [editWhCapacity, setEditWhCapacity] = useState('');
+  const [editWhActive, setEditWhActive] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [s, p, t, settings, b, u] = await Promise.all([
+    const [s, p, t, settings, b, u, w] = await Promise.all([
       api('/stores'),
       api('/products'),
       api('/stores/transfers'),
       api('/inventory/settings').catch(() => ({ data: { fefo_strict_warehouse: false } })),
       api('/branches').catch(() => ({ data: [] })),
       api('/users').catch(() => ({ data: [] })),
+      api('/warehouses').catch(() => ({ data: [] })),
     ]);
     setStores(s.data || []);
     setProducts(p.data || []);
     setTransfers(t.data || []);
     setBranches(b.data || []);
     setUsers(u.data || []);
+    setWarehouses(w.data || []);
     setFefoStrict(!!settings.data?.fefo_strict_warehouse);
     if (!fromStore && s.data?.length) setFromStore(s.data[0].id);
     if (!toStore && s.data?.length > 1) setToStore(s.data[1].id);
@@ -534,6 +551,8 @@ export default function Page() {
             <th>Code</th>
             <th>Name</th>
             <th>Branch</th>
+            <th>Manager</th>
+            <th>Warehouse</th>
             <th>Phone</th>
             <th>Address</th>
             <th></th>
@@ -543,10 +562,19 @@ export default function Page() {
           {stores.map((s) => (
             <tr key={s.id}>
               <td>{s.code}</td>
-              <td>{s.name}</td>
+              <td>
+                {s.name}
+                {s.is_active === false ? ' (inactive)' : ''}
+              </td>
               <td>
                 {branches.find((b) => b.id === s.branch_id)?.code || s.branch_id || '—'}
               </td>
+              <td>
+                {users.find((u) => u.id === s.manager_id)?.full_name ||
+                  users.find((u) => u.id === s.manager_id)?.email ||
+                  '—'}
+              </td>
+              <td>{s.warehouse_code || '—'}</td>
               <td>{s.phone || '—'}</td>
               <td>{s.address || '—'}</td>
               <td>
@@ -554,6 +582,208 @@ export default function Page() {
               </td>
             </tr>
           ))}
+        </tbody>
+      </table>
+
+      <div className="grid" style={{ marginTop: 16 }}>
+        <div className="card">
+          <h3>New warehouse</h3>
+          <p className="muted">Standalone or store-linked warehouses (BR-2.4).</p>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <input value={whCode} onChange={(e) => setWhCode(e.target.value)} placeholder="Code" />
+            <input value={whName} onChange={(e) => setWhName(e.target.value)} placeholder="Name" />
+            <select value={whType} onChange={(e) => setWhType(e.target.value)}>
+              {['retail', 'main', 'cold', 'bulk', 'transit'].map((t) => (
+                <option key={t} value={t}>
+                  Type: {t}
+                </option>
+              ))}
+            </select>
+            <select value={whStoreId} onChange={(e) => setWhStoreId(e.target.value)}>
+              <option value="">No linked store</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
+                </option>
+              ))}
+            </select>
+            <select value={whManagerId} onChange={(e) => setWhManagerId(e.target.value)}>
+              <option value="">No manager</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.email}
+                </option>
+              ))}
+            </select>
+            <input
+              value={whAddress}
+              onChange={(e) => setWhAddress(e.target.value)}
+              placeholder="Address"
+            />
+            <input
+              value={whCapacity}
+              onChange={(e) => setWhCapacity(e.target.value)}
+              placeholder="Capacity"
+            />
+            <button
+              onClick={async () => {
+                setError('');
+                try {
+                  await api('/warehouses', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      code: whCode,
+                      name: whName,
+                      warehouse_type: whType,
+                      store_id: whStoreId || null,
+                      manager_id: whManagerId || null,
+                      address: whAddress || null,
+                      capacity: whCapacity ? Number(whCapacity) : null,
+                    }),
+                  });
+                  setWhCode('');
+                  setWhName('');
+                  setWhType('retail');
+                  setWhStoreId('');
+                  setWhManagerId('');
+                  setWhAddress('');
+                  setWhCapacity('');
+                  setMessage('Warehouse created');
+                  await refresh();
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Create warehouse
+            </button>
+          </div>
+        </div>
+        <div className="card">
+          <h3>Edit warehouse</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <select
+              value={editWhId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setEditWhId(id);
+                const w = warehouses.find((x) => x.id === id);
+                setEditWhName(w?.name || '');
+                setEditWhType(w?.warehouse_type || 'retail');
+                setEditWhManagerId(w?.manager_id || '');
+                setEditWhAddress(w?.address || '');
+                setEditWhCapacity(w?.capacity != null ? String(w.capacity) : '');
+                setEditWhActive(w?.is_active !== false);
+              }}
+            >
+              <option value="">Select warehouse</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.code} — {w.name}
+                  {w.is_active === false ? ' (inactive)' : ''}
+                </option>
+              ))}
+            </select>
+            <input value={editWhName} onChange={(e) => setEditWhName(e.target.value)} placeholder="Name" />
+            <select value={editWhType} onChange={(e) => setEditWhType(e.target.value)}>
+              {['retail', 'main', 'cold', 'bulk', 'transit'].map((t) => (
+                <option key={t} value={t}>
+                  Type: {t}
+                </option>
+              ))}
+            </select>
+            <select value={editWhManagerId} onChange={(e) => setEditWhManagerId(e.target.value)}>
+              <option value="">No manager</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.email}
+                </option>
+              ))}
+            </select>
+            <input
+              value={editWhAddress}
+              onChange={(e) => setEditWhAddress(e.target.value)}
+              placeholder="Address"
+            />
+            <input
+              value={editWhCapacity}
+              onChange={(e) => setEditWhCapacity(e.target.value)}
+              placeholder="Capacity"
+            />
+            <label className="muted">
+              <input
+                type="checkbox"
+                checked={editWhActive}
+                onChange={(e) => setEditWhActive(e.target.checked)}
+              />{' '}
+              Active
+            </label>
+            <button
+              disabled={!editWhId}
+              onClick={async () => {
+                setError('');
+                try {
+                  await api(`/warehouses/${editWhId}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                      name: editWhName,
+                      warehouse_type: editWhType,
+                      manager_id: editWhManagerId || null,
+                      clear_manager: !editWhManagerId,
+                      address: editWhAddress || null,
+                      capacity: editWhCapacity ? Number(editWhCapacity) : null,
+                      is_active: editWhActive,
+                    }),
+                  });
+                  setMessage('Warehouse updated');
+                  await refresh();
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Save warehouse
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <h3 style={{ marginTop: 16 }}>Warehouses</h3>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Store</th>
+            <th>Manager</th>
+            <th>Capacity</th>
+            <th>Active</th>
+          </tr>
+        </thead>
+        <tbody>
+          {warehouses.map((w) => (
+            <tr key={w.id}>
+              <td>{w.code}</td>
+              <td>{w.name}</td>
+              <td>{w.warehouse_type || 'retail'}</td>
+              <td>{stores.find((s) => s.id === w.store_id)?.code || '—'}</td>
+              <td>
+                {users.find((u) => u.id === w.manager_id)?.full_name ||
+                  users.find((u) => u.id === w.manager_id)?.email ||
+                  '—'}
+              </td>
+              <td>{w.capacity ?? '—'}</td>
+              <td>{w.is_active === false ? 'No' : 'Yes'}</td>
+            </tr>
+          ))}
+          {!warehouses.length && (
+            <tr>
+              <td colSpan={7} className="muted">
+                No warehouses yet
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
 

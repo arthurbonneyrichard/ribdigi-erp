@@ -8674,6 +8674,17 @@ async def add_warehouse(
         raise HTTPException(status_code=409, detail="Warehouse code already exists")
     warehouse = m.Warehouse(tenant_id=claims["tenant_id"], is_active=True, **data)
     db.add(warehouse)
+    await db.flush()
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="warehouse_created",
+        entity="warehouse",
+        entity_id=warehouse.id,
+        details={"code": warehouse.code},
+    )
     await db.commit()
     return env(stores_svc.serialize_warehouse(warehouse), "Warehouse created")
 
@@ -8699,6 +8710,16 @@ async def update_warehouse(
         address=payload.address,
         capacity=payload.capacity,
         is_active=payload.is_active,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="warehouse_updated",
+        entity="warehouse",
+        entity_id=warehouse.id,
+        details={"code": warehouse.code, "is_active": bool(warehouse.is_active)},
     )
     await db.commit()
     return env(stores_svc.serialize_warehouse(warehouse), "Warehouse updated")
