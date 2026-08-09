@@ -24,4 +24,4 @@ Remaining commercial-MVP gaps include journal supporting documents (BR-10.2), pu
 
 ## Amendment (2026-08-09)
 
-D1 documentation fidelity sync recorded in `docs/STAGE_9_FIDELITY.md`. J1, R1, R2, and D1 are COMPLETE on the Stage 9 plan; remaining Stage 9 work is **H9x** exit + freeze.
+D1 documentation fidelity sync recorded in `docs/STAGE_9_FIDELITY.md`. Stage 9 exit criteria met (`docs/STAGE_9_EXIT_CRITERIA.md`). Feature scope frozen under [ADR-024](ADR_024_STAGE9_FREEZE.md). Do not open Stage 10 until CONTINUE (or equivalent) after freeze.

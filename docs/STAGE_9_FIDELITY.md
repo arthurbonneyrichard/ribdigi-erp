@@ -1,7 +1,7 @@
 # Stage 9 Documentation Fidelity (D1)
 
-**Status:** Complete  
-**Related:** [STAGE_9_PLAN.md](STAGE_9_PLAN.md), [ADR-023](ADR_023_STAGE9_OPEN.md)  
+**Status:** Complete (Stage 9 exit met — ADR-024)  
+**Related:** [STAGE_9_PLAN.md](STAGE_9_PLAN.md), [STAGE_9_EXIT_CRITERIA.md](STAGE_9_EXIT_CRITERIA.md), [ADR-023](ADR_023_STAGE9_OPEN.md), [ADR-024](ADR_024_STAGE9_FREEZE.md)  
 **Guard:** `backend/tests/test_stage9_fidelity_d1.py`
 
 This note records that Stage 9 delivered behavior is reflected in authoritative docs without overstating deferred work.

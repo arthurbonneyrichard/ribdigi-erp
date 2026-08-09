@@ -21,9 +21,8 @@ def test_stage9_fidelity_note_and_plan():
     plan = _read("docs/STAGE_9_PLAN.md")
     assert "| **D1**" in plan and "COMPLETE" in plan
     assert "STAGE_9_FIDELITY.md" in plan
-    # H9x must still be pending until exit freeze
-    assert "| **H9x**" in plan
-    assert "PENDING" in plan
+    assert "| **H9x**" in plan and "COMPLETE" in plan
+    assert "ADR-024" in plan or "Closed" in plan
 
 
 def test_stage9_api_docs_match_live_routes():

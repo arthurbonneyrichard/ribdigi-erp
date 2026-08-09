@@ -1,9 +1,9 @@
 # Stage 9 Plan — Report Fidelity & Document Attachments Closeout
 
-**Status:** Open  
+**Status:** Closed (exit met — ADR-024)  
 **Base:** BR-10.2 / reporting + document fidelity after Stage 8 freeze  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Exit:** `docs/STAGE_9_EXIT_CRITERIA.md` (at close)
+**Exit:** [STAGE_9_EXIT_CRITERIA.md](STAGE_9_EXIT_CRITERIA.md)
 
 Stage 9 closes commercial-MVP holes for journal supporting documents, purchase/stock report depth, and documentation fidelity. It is **not** Kubernetes, WAL/PITR, vendor pen test, FIFO/LIFO, or paid billing.
 
@@ -22,7 +22,7 @@ Stage 9 closes commercial-MVP holes for journal supporting documents, purchase/s
 | **R1** | Purchase report depth: pending POs + purchase-return summary | P1 | COMPLETE |
 | **R2** | Stock valuation report (qty × cost_price; no FIFO/LIFO) | P1 | COMPLETE |
 | **D1** | Spec / API / User Manual fidelity sync | P2 | COMPLETE |
-| **H9x** | Stage 9 exit criteria + freeze ADR | Exit | PENDING |
+| **H9x** | Stage 9 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -62,9 +62,9 @@ Stage 9 closes commercial-MVP holes for journal supporting documents, purchase/s
 
 ## H9x acceptance criteria
 
-- [ ] `docs/STAGE_9_EXIT_CRITERIA.md` records J1/R1/R2/D1/H9x COMPLETE with evidence.
-- [ ] Scope freeze ADR accepted; automated guard test present.
+- [x] `docs/STAGE_9_EXIT_CRITERIA.md` records J1/R1/R2/D1/H9x COMPLETE with evidence.
+- [x] Scope freeze ADR-024 accepted; automated guard in `backend/tests/test_stage9_exit_h9x.py`.
 
 ## Sign-off
 
-Stage 9 remains open until H9x exit criteria and freeze ADR are recorded.
+Stage 9 exit is recorded in `docs/STAGE_9_EXIT_CRITERIA.md` with freeze [ADR-024](ADR_024_STAGE9_FREEZE.md).
