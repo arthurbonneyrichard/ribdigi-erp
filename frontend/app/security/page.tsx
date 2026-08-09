@@ -84,6 +84,10 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [locale, setLocale] = useState(DEFAULT_LOCALE);
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [apiKeyName, setApiKeyName] = useState('Integration key');
+  const [newApiKeySecret, setNewApiKeySecret] = useState('');
+  const [role, setRole] = useState('');
 
   async function refresh() {
     const [r, keys, sess, me] = await Promise.all([
@@ -95,8 +99,48 @@ export default function Page() {
     setStatus(r.data);
     setPasskeys(keys.data || []);
     setSessions(sess.data || []);
+    const userRole = me.data?.role || r.data?.role || '';
+    setRole(userRole);
     if (me.data?.locale === 'en' || me.data?.preferred_language === 'en') {
       setLocale('en');
+    }
+    if (userRole === 'company_admin' || userRole === 'super_admin') {
+      try {
+        const listed = await api('/api-keys');
+        setApiKeys(listed.data || []);
+      } catch {
+        setApiKeys([]);
+      }
+    } else {
+      setApiKeys([]);
+    }
+  }
+
+  async function createApiKey() {
+    setError('');
+    setMessage('');
+    setNewApiKeySecret('');
+    try {
+      const r = await api('/api-keys', {
+        method: 'POST',
+        body: JSON.stringify({ name: apiKeyName }),
+      });
+      setNewApiKeySecret(r.data?.api_key || '');
+      setMessage(r.message || 'API key created — copy the secret now');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function revokeApiKey(id: string) {
+    setError('');
+    try {
+      await api(`/api-keys/${id}`, { method: 'DELETE' });
+      setMessage('API key revoked');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
     }
   }
 
@@ -375,6 +419,65 @@ export default function Page() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {(role === 'company_admin' || role === 'super_admin') && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>API keys</h2>
+          <p className="muted">
+            Integration keys authenticate with the <code>X-API-Key</code> header. The secret is shown once.
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <input
+              value={apiKeyName}
+              onChange={(e) => setApiKeyName(e.target.value)}
+              placeholder="Key name"
+            />
+            <button type="button" onClick={createApiKey}>
+              Create key
+            </button>
+          </div>
+          {newApiKeySecret && (
+            <p>
+              Secret (copy now): <code>{newApiKeySecret}</code>
+            </p>
+          )}
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Prefix</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {apiKeys.map((k) => (
+                <tr key={k.id}>
+                  <td>{k.name}</td>
+                  <td>
+                    <code>{k.key_prefix}</code>
+                  </td>
+                  <td>{k.status}</td>
+                  <td>
+                    {k.status === 'active' && (
+                      <button type="button" onClick={() => revokeApiKey(k.id)}>
+                        Revoke
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {!apiKeys.length && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No API keys yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 

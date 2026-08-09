@@ -75,12 +75,65 @@ def issue_one_time_token() -> tuple[str, str, datetime]:
     return raw, hash_token(raw), expires
 
 
+async def _claims_from_api_key(
+    request: Request,
+    db: AsyncSession,
+    raw_key: str,
+    x_tenant_id: str | None,
+) -> dict:
+    from app import api_keys as api_keys_svc
+    from app import tenants as tenants_svc
+
+    row = await api_keys_svc.authenticate_api_key(db, raw_key)
+    tenant_id = row.tenant_id
+    if x_tenant_id and x_tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Cross-tenant access denied")
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=403, detail="Tenant suspended or missing")
+    tenant = await tenants_svc.ensure_trial_state(db, tenant)
+    if tenant.status == "suspended":
+        raise HTTPException(status_code=403, detail="Tenant suspended or missing")
+
+    claims = {
+        "sub": f"apikey:{row.id}",
+        "tenant_id": tenant_id,
+        "role": "api_key",
+        "type": "api_key",
+        "permissions": row.permissions or {},
+        "email_verified": True,
+        "totp_enabled": False,
+        "webauthn_enabled": False,
+        "must_enroll_2fa": False,
+        "tenant_status": tenant.status,
+        "read_only": tenants_svc.is_read_only(tenant),
+        "branch_id": None,
+        "department_id": None,
+        "record_scope": "all",
+        "scope_user_ids": [],
+        "auth_method": "api_key",
+        "api_key_id": row.id,
+    }
+    request.state.user_id = claims["sub"]
+    request.state.tenant_id = tenant_id
+    request.state.api_key_id = row.id
+    return claims
+
+
 async def current_claims(
     request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
+    raw_api_key = (x_api_key or "").strip()
+    if not raw_api_key and creds and str(creds.credentials or "").startswith("rdk_"):
+        raw_api_key = str(creds.credentials).strip()
+    if raw_api_key:
+        return await _claims_from_api_key(request, db, raw_api_key, x_tenant_id)
+
     if not creds:
         raise HTTPException(status_code=401, detail="Authentication required")
     try:
@@ -153,6 +206,7 @@ async def current_claims(
     data["read_only"] = tenants_svc.is_read_only(tenant)
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
+    data["auth_method"] = "jwt"
     scope = record_scope_from_permissions(
         user.role, data["permissions"] if isinstance(data.get("permissions"), dict) else None
     )

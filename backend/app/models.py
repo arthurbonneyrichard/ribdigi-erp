@@ -1535,3 +1535,23 @@ class PurchaseInvoiceItem(Base):
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class ApiKey(Base):
+    """Tenant integration API keys (Stage 6 K1 / BR-18.1). Secret stored hashed only."""
+
+    __tablename__ = "api_keys"
+    __table_args__ = (UniqueConstraint("tenant_id", "key_prefix"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    key_prefix: Mapped[str] = mapped_column(String(24), index=True)
+    key_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    # module → list of actions (same shape as user.permissions)
+    permissions: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

@@ -17,7 +17,7 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **K1** | Tenant API keys (BR-18.1) | P0 | PENDING |
+| **K1** | Tenant API keys (BR-18.1) | P0 | COMPLETE |
 | **W1** | Webhooks + HMAC signing (API docs §17) | P0 | PENDING |
 | **N2** | Tenant onboarding checklist (API + Shell) | P0 | PENDING |
 | **P2** | Redis app-data cache for dashboard/catalog | P0 | PENDING |
@@ -32,6 +32,14 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 - Paid billing (ADR-002); schema-per-tenant (ADR-001); i18n packs (ADR-006)
 - Certified 1000-VU staging run (ops; scripts exist from L1)
 - Prophet/LLM upgrades; multi-bin; user↔store membership (ADR-005)
+
+## K1 acceptance criteria
+
+- [x] `api_keys` table (Alembic `0078`); secret hashed (`rdk_` prefix), shown once on create.
+- [x] Admin CRUD: `GET/POST /api-keys`, `GET/DELETE /api-keys/{id}` (company_admin/super_admin).
+- [x] Auth via `X-API-Key` or `Authorization: Bearer rdk_…` with scoped permissions + tenant checks.
+- [x] Audit `api_key_create` / `api_key_revoke`; Security UI list/create/revoke.
+- [x] Automated tests in `backend/tests/test_api_keys_k1.py`.
 
 ## Sign-off
 

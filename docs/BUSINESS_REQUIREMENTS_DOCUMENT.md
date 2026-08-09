@@ -870,7 +870,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] OAuth2 / JWT token generation
   - [ ] Token refresh endpoint
-  - [ ] API key support for service integrations
+  - [x] API key support for service integrations (Stage 6 K1: `POST/GET/DELETE /api-keys`, `X-API-Key` auth)
   - [ ] Rate limiting per tenant
 
 #### BR-18.2 Products API
