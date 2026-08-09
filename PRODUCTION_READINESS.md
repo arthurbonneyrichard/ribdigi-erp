@@ -75,11 +75,11 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 
 ### AI
 - [ ] AI provider configured securely.
-  - Partial: chat remains blocked (503) until an approved provider is configured; deterministic inventory prediction needs no external provider.
+  - Partial: optional external LLM provider still unset; rule-based chat (BR-21.1) works without a provider; deterministic inventory prediction needs no external provider.
 - [ ] Tenant-safe data access enforced.
-  - Partial: AI routes use `require_permission("ai", …)` and tenant-scoped queries; insights + low-stock prediction isolation covered in tests.
+  - Partial: AI routes use `require_permission("ai", …)` and tenant-scoped queries; insights + low-stock prediction + chat history isolation covered in tests.
 - [ ] AI functions use real tenant data and satisfy documented acceptance criteria.
-  - Partial (Phase 4 / BR-21.2 + BR-21.4): structured dashboard insights `GET /ai/insights` (`cards` with sales WoW/MoM spikes-drops, expense anomalies, restock suggestions, low-stock; weekly digest + high-severity notify via Celery `generate_ai_insights` / `ai_insight` prefs); sales-velocity low-stock prediction `GET /ai/inventory/low-stock-prediction` (+ predictions alias) with confidence/horizon/suggested qty + Celery `generate_ai_low_stock_predictions`; Dashboard + AI page cards. Remaining: chat (BR-21.1), Prophet/full demand forecast (BR-21.3), sales/expense AI analysis depth, NL report generator, security monitor.
+  - Partial (Phase 4 / BR-21.1 + BR-21.2 + BR-21.4): rule-based ERP chat `POST /ai/chat` + `GET /ai/chat/history` (NL Q&A, role-gated draft PO, persisted turns); structured dashboard insights `GET /ai/insights` (`cards` with sales WoW/MoM spikes-drops, expense anomalies, restock suggestions, low-stock; weekly digest + high-severity notify via Celery `generate_ai_insights` / `ai_insight` prefs); sales-velocity low-stock prediction `GET /ai/inventory/low-stock-prediction` (+ predictions alias) with confidence/horizon/suggested qty + Celery `generate_ai_low_stock_predictions`; Dashboard + AI page. Remaining: Prophet/full demand forecast (BR-21.3), sales/expense AI analysis depth, NL report generator, security monitor, optional LLM provider.
 - [ ] AI audit logging and prompt/data protections complete.
 
 ## Current repository rule

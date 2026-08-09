@@ -394,7 +394,11 @@ async def test_ai_insights_are_tenant_scoped(client, db_session):
     assert "Beta" not in text
 
     chat = await ac.post("/api/v1/ai/chat", headers=alpha, json={"message": "hi"})
-    assert chat.status_code == 503
+    assert chat.status_code == 200, chat.text
+    chat_body = chat.json()["data"]
+    assert chat_body.get("method") == "rules_v1"
+    assert "Beta" not in (chat_body.get("answer") or "")
+    assert "Beta" not in (chat_body.get("reply") or "")
 
 
 @pytest.mark.asyncio

@@ -50,6 +50,7 @@ from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
 from app import suppliers as suppliers_svc
 from app import customers as customers_svc
+from app import ai_chat as ai_chat_svc
 from app.config import settings
 from app.schemas import (
     BarcodeLabelPrintRequest,
@@ -8661,11 +8662,41 @@ async def backup_restore(
 
 
 @api.post("/ai/chat")
-async def ai_chat(payload: dict, claims=Depends(require_permission("ai", "write"))):
-    raise HTTPException(
-        status_code=503,
-        detail="AI Business Assistant is not configured. Configure an approved AI provider before enabling this feature.",
+async def ai_chat(
+    payload: dict,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.1 — rule-based NL chat with history (no external LLM required)."""
+    message = str((payload or {}).get("message") or "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="message is required")
+    if len(message) > 2000:
+        raise HTTPException(status_code=400, detail="message must be at most 2000 characters")
+    result = await ai_chat_svc.handle_chat(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        claims=claims,
+        message=message,
     )
+    await db.commit()
+    return env(result)
+
+
+@api.get("/ai/chat/history")
+async def ai_chat_history(
+    limit: int = 50,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    items = await ai_chat_svc.list_history(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        limit=limit,
+    )
+    return env({"items": items})
 
 
 @api.get("/ai/insights")

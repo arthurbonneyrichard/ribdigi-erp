@@ -687,6 +687,22 @@ class NotificationPreference(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class AiQuery(Base):
+    """Persisted AI chat turns (rule-based or provider-backed)."""
+
+    __tablename__ = "ai_queries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    message: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    intent: Mapped[str | None] = mapped_column(String(60), nullable=True, index=True)
+    payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class AuditLog(Base):
     """Append-only activity log with optional hash chaining for tamper evidence."""
 
