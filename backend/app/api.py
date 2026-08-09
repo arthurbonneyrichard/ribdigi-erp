@@ -2575,6 +2575,12 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         for row in top_rows
     ]
 
+    from app import dashboard_charts as dashboard_charts_svc
+
+    chart_series = await dashboard_charts_svc.load_revenue_chart_series(
+        db, tenant_id=tid, now=now
+    )
+
     return env(
         {
             "total_sales": float(sales) + float(
@@ -2599,6 +2605,8 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "mom_change_pct": mom_change_pct,
             "recent_sales": recent,
             "top_products": top_products,
+            "daily_revenue_series": chart_series["daily_revenue_series"],
+            "monthly_revenue_series": chart_series["monthly_revenue_series"],
         }
     )
 

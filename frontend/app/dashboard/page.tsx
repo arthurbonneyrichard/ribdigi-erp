@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
+import { DailyRevenueLineChart, MonthlyRevenueBarChart } from '../../components/RevenueCharts';
 import { api } from '../../lib/api';
 import { formatDateTime, formatNumber, type RegionalFormats } from '../../lib/format';
 
@@ -21,6 +22,8 @@ type Dash = {
   mom_change_pct?: number | null;
   recent_sales?: { source: string; reference: string; total: number; at?: string }[];
   top_products?: { name: string; sku: string; quantity: number; revenue: number }[];
+  daily_revenue_series?: { date: string; revenue: number }[];
+  monthly_revenue_series?: { month: string; revenue: number }[];
 };
 
 type InsightCard = {
@@ -91,6 +94,15 @@ export default function Page() {
             <div className="kpi">{typeof v === 'number' ? n(v) : v}</div>
           </div>
         ))}
+      </div>
+
+      <div className="grid" style={{ marginTop: 20 }}>
+        <div className="card">
+          <DailyRevenueLineChart series={d.daily_revenue_series || []} formatValue={n} />
+        </div>
+        <div className="card">
+          <MonthlyRevenueBarChart series={d.monthly_revenue_series || []} formatValue={n} />
+        </div>
       </div>
 
       {insightCards.length > 0 && (
