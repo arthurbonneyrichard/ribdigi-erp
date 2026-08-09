@@ -532,15 +532,14 @@ Proper tax setup is critical for compliance.
 
 ### 5.4 Deleting a User
 
-> **⚠️ CAUTION:** Deletion is permanent. Deactivation is preferred.
+> **Commercial MVP:** Permanent hard delete is **not** available (see ADR-003). Use **Deactivate**.
 
 1. Go to **Admin → Users**
-2. Find user → **Actions (⋮) → Delete**
-3. Choose handling method:
-   - **Reassign Records:** Transfer user's transactions to another user
-   - **Preserve Records:** Keep transactions with "Deleted User" label
-4. Enter confirmation text
-5. Click **Permanently Delete**
+2. Find user → **Deactivate**
+3. Confirm — the user cannot log in; historical transactions and audit trails keep the user ID
+4. To restore access later → **Activate**
+
+Hard delete with archival/reassignment remains a post-MVP capability.
 
 ### 5.5 Bulk User Import
 

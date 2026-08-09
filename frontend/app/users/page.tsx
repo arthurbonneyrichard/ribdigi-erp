@@ -302,7 +302,8 @@ export default function Page() {
     <Shell>
       <h1>User Management</h1>
       <p className="muted">
-        Users, custom roles, org assignment, and module permission matrix.
+        Users, custom roles, org assignment, and module permission matrix. Deactivate soft-disables
+        login (no permanent delete in MVP).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}

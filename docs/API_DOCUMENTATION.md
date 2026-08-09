@@ -303,17 +303,12 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 ### 4.4 Update User
 **Endpoint:** `PATCH /users/{user_id}`
 
-### 4.5 Delete / Deactivate User
+### 4.5 Deactivate User (soft delete)
 **Endpoint:** `DELETE /users/{user_id}`
 
-**Endpoint:** `PATCH /users/{user_id}/status`
+Deactivates the user (`is_active=false`), revokes sessions, and audits `user_deactivated`. The user row is **not** removed (ADR-003). Reactivate with `PATCH /users/{user_id}` and `{"is_active": true}`.
 
-**Request:**
-```json
-{
-  "status": "inactive"
-}
-```
+There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut.
 
 ### 4.6 Roles & Permissions
 

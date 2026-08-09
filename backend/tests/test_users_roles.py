@@ -78,6 +78,13 @@ async def test_admin_creates_updates_and_deactivates_user(client):
     assert deactivated.status_code == 200, deactivated.text
     assert deactivated.json()["data"]["is_active"] is False
 
+    # Soft-delete only (ADR-003): row remains; no hard delete
+    got = await ac.get(f"/api/v1/users/{user_id}", headers=await _admin_headers(ac, seed))
+    assert got.status_code == 200, got.text
+    assert got.json()["data"]["id"] == user_id
+    assert got.json()["data"]["is_active"] is False
+    assert got.json()["data"]["email"] == "newhire@alpha.example.com"
+
     denied = await ac.post(
         "/api/v1/auth/login",
         json={

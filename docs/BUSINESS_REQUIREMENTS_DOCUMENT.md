@@ -266,10 +266,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] Create user with name, email, phone, role, branch/store assignment
   - [ ] Edit user details and assignments
-  - [ ] Soft delete (deactivate) user
-  - [ ] Hard delete with data archival option
-  - [ ] Activate/deactivate toggle
-  - [ ] Bulk user import via CSV
+  - [x] Soft delete (deactivate) user
+  - [ ] Hard delete with data archival option *(deferred post-MVP; see `docs/ADR_003_USER_DELETE_POLICY.md`)*
+  - [x] Activate/deactivate toggle
+  - [x] Bulk user import via CSV
 
 #### BR-3.2 Role Management
 - **Description:** Predefined and custom role definitions.
