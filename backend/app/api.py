@@ -270,7 +270,9 @@ def _assert_email_verified(user: m.User) -> None:
 
 @api.get("/health")
 async def health():
-    return env({"status": "ok", "service": "ribdigi-erp"})
+    from app.security_runtime import security_posture
+
+    return env({"status": "ok", "service": "ribdigi-erp", **security_posture()})
 
 
 @api.post("/tenants")

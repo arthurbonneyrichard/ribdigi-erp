@@ -642,8 +642,8 @@ The MVP includes AI capabilities across 10 modules. Security controls include:
 
 - [ ] All secrets stored in Vault/K8s Secrets (not in code)
 - [ ] TLS 1.3 configured on all endpoints
-- [ ] Rate limiting enabled and tested
-- [ ] CORS policy restricted to known origins
+- [x] Rate limiting enabled and tested (`RATE_LIMIT_ENABLED=true`; prefer `RATE_LIMIT_REQUIRE_REDIS=true` in multi-instance production)
+- [x] CORS policy restricted to known origins (`CORS_ORIGINS` whitelist; never `*`)
 - [ ] SQLAlchemy ORM used exclusively (no raw SQL)
 - [ ] Input validation on all API endpoints
 - [ ] RBAC middleware applied to all protected routes
@@ -652,11 +652,14 @@ The MVP includes AI capabilities across 10 modules. Security controls include:
 - [ ] Container images scanned (no critical CVEs)
 - [ ] Network policies applied in Kubernetes
 - [ ] DDoS protection enabled
-- [ ] Security headers configured (HSTS, CSP, X-Frame-Options)
+- [x] Security headers configured (HSTS in production, CSP `default-src 'none'`, X-Frame-Options DENY, COOP)
+- [x] OpenAPI `/docs` / `/redoc` / `/openapi.json` disabled when `APP_ENV=production`
 - [ ] Password policy enforced
 - [ ] Session timeout and rotation configured
 - [ ] AI input/output sanitization active
 - [ ] Incident response runbook accessible to on-call team
+
+**Stage 5 S1 verify:** `GET /api/v1/health` returns `security.rate_limit_enabled`, `openapi_enabled=false` in production, and response includes CSP + rate-limit headers.
 
 ### 16.2 Ongoing Security Operations
 

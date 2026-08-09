@@ -20,3 +20,7 @@ Stage 4 Intelligence, Multi-Store & Scale hardening (T1, M1, N1, R1) delivered i
 - Agents treat Stage 4 T1, M1, N1, R1 as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–3 freezes (ADR-008, ADR-010, ADR-012) remain in force for their scopes.
+
+## Amendment (2026-08-09)
+
+Stage 5 delivery track was **explicitly approved** and opened under [ADR-015](ADR_015_STAGE5_OPEN.md) / `docs/STAGE_5_PLAN.md`. Stage 4 freeze above still applies to Intelligence/Multi-Store/Scale hardening scope.

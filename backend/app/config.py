@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 120
     RATE_LIMIT_AUTH_PER_MINUTE: int = 20
     RATE_LIMIT_BACKEND: str = "auto"  # auto | redis | memory
+    # Production recommendation: set True so multi-instance deploys share sliding windows.
     RATE_LIMIT_REQUIRE_REDIS: bool = False
     RATE_LIMIT_REDIS_PREFIX: str = "ribdigi:ratelimit"
     ALLOW_DEVELOPMENT_SEED: bool = False

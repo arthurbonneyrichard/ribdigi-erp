@@ -7,15 +7,17 @@ from app.config import settings
 from app.audit_middleware import AuditMutationMiddleware
 from app.db import SessionLocal
 from app.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
+from app.security_runtime import is_production, openapi_enabled
 
-is_prod = settings.APP_ENV.lower() == "production"
+is_prod = is_production()
+_docs = openapi_enabled()
 
 app = FastAPI(
     title="RIBDIGI BUSINESS ERP API",
     version="1.0.0",
-    docs_url=None if is_prod else "/docs",
-    redoc_url=None if is_prod else "/redoc",
-    openapi_url=None if is_prod else "/openapi.json",
+    docs_url="/docs" if _docs else None,
+    redoc_url="/redoc" if _docs else None,
+    openapi_url="/openapi.json" if _docs else None,
 )
 
 # Middleware order: last added runs first on request.
@@ -54,4 +56,8 @@ app.state.session_factory = SessionLocal
 
 @app.get("/")
 async def root():
-    return {"name": "RIBDIGI BUSINESS ERP", "version": "1.0.0", "docs": None if is_prod else "/docs"}
+    return {
+        "name": "RIBDIGI BUSINESS ERP",
+        "version": "1.0.0",
+        "docs": "/docs" if openapi_enabled() else None,
+    }
