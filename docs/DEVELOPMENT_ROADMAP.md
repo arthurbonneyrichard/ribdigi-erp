@@ -574,6 +574,8 @@ Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven 
 | `/reports/inventory/movements` | GET | Stock movement report |
 | `/reports/purchases/summary` | GET | Purchase summary |
 | `/reports/purchases/suppliers` | GET | Supplier purchase report |
+| `/reports/purchases/pending-orders` | GET | Pending POs (Stage 9 R1) |
+| `/reports/purchases/returns` | GET | Purchase return summary (Stage 9 R1) |
 | `/reports/expenses/summary` | GET | Expense summary |
 | `/notifications` | GET | List notifications |
 | `/notifications/{id}/read` | PATCH | Mark read |
