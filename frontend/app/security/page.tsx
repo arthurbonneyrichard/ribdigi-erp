@@ -77,6 +77,9 @@ export default function Page() {
   const [passkeyName, setPasskeyName] = useState('My passkey');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [disablePassword, setDisablePassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -96,6 +99,31 @@ export default function Page() {
     try {
       await api(`/auth/sessions/${id}`, { method: 'DELETE' });
       setMessage('Session revoked');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function changePassword() {
+    setError('');
+    setMessage('');
+    if (newPassword !== confirmPassword) {
+      setError('New password confirmation does not match');
+      return;
+    }
+    try {
+      const r = await api('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setMessage(r.message || 'Password updated');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -219,6 +247,34 @@ export default function Page() {
           {status.confirmed_at && <p className="muted">TOTP confirmed: {String(status.confirmed_at)}</p>}
         </div>
       )}
+
+      <div className="card" style={{ marginBottom: 16, maxWidth: 420 }}>
+        <h2>Change password</h2>
+        <p className="muted">Other devices will be signed out after a successful change.</p>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Current password"
+          />
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="New password"
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm new password"
+          />
+          <button type="button" onClick={changePassword}>
+            Update password
+          </button>
+        </div>
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Passkeys (WebAuthn)</h2>

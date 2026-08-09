@@ -89,6 +89,7 @@ from app.schemas import (
     SupplierCreate,
     SupplierUpdate,
     PasswordResetConfirm,
+    ChangePasswordRequest,
     PasswordResetRequest,
     PosSaleCreate,
     PosSessionClose,
@@ -1427,6 +1428,79 @@ async def password_reset(
     )
     await db.commit()
     return env({"reset": True})
+
+
+@api.post("/auth/change-password")
+async def change_password(
+    payload: ChangePasswordRequest,
+    request: Request,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Authenticated password change (BR-19.1 password management)."""
+    tenants_svc.assert_writable(claims)
+    user = await db.get(m.User, claims["sub"])
+    if not user or user.tenant_id != claims["tenant_id"]:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="User is inactive")
+    if not verify_password(payload.current_password, user.password_hash):
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=user.id,
+            module="auth",
+            action="password_change_failed",
+            entity="user",
+            entity_id=user.id,
+            details={"reason": "bad_current_password"},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=400,
+            detail="New password must be different from the current password",
+        )
+    validate_password_strength(payload.new_password)
+    user.password_hash = hash_password(payload.new_password)
+
+    current_jti = claims.get("jti")
+    sessions = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.user_id == user.id,
+                m.AuthSession.tenant_id == claims["tenant_id"],
+                m.AuthSession.revoked_at.is_(None),
+            )
+        )
+    ).scalars().all()
+    revoked = 0
+    for session in sessions:
+        if current_jti and session.jti == current_jti:
+            continue
+        session.revoked_at = datetime.utcnow()
+        revoked += 1
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=user.id,
+        module="auth",
+        action="password_changed",
+        entity="user",
+        entity_id=user.id,
+        details={"sessions_revoked": revoked},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(
+        {"changed": True, "sessions_revoked": revoked},
+        "Password updated; other sessions revoked",
+    )
 
 
 @api.post("/auth/verify-email")
