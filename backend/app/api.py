@@ -3563,6 +3563,42 @@ async def get_stock_count(
     return env(await stock_counts_svc.serialize_count(db, count))
 
 
+@api.get("/inventory/stock-counts/{count_id}/variance-report")
+async def stock_count_variance_report(
+    count_id: str,
+    format: str = "csv",
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-5.2 — export completed count variance (CSV or PDF)."""
+    report = await stock_counts_svc.build_variance_report(
+        db, tenant_id=claims["tenant_id"], count_id=count_id
+    )
+    fmt = (format or "csv").strip().lower()
+    safe_num = "".join(c if c.isalnum() or c in "-_" else "_" for c in report["count_number"])
+    if fmt == "json":
+        return env(report)
+    if fmt == "pdf":
+        pdf_bytes = stock_counts_svc.variance_report_pdf(report)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="stock-count-{safe_num}-variance.pdf"'
+            },
+        )
+    if fmt != "csv":
+        raise HTTPException(status_code=400, detail="format must be csv, pdf, or json")
+    csv_text = stock_counts_svc.variance_report_csv(report)
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="stock-count-{safe_num}-variance.csv"'
+        },
+    )
+
+
 @api.patch("/inventory/stock-counts/{count_id}/items")
 async def patch_stock_count_items(
     count_id: str,

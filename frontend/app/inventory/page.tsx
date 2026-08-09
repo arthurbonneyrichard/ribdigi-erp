@@ -332,6 +332,42 @@ export default function Page() {
     }
   }
 
+  async function downloadCountVariance(countId: string, format: 'csv' | 'pdf') {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(
+        `${apiBase}/inventory/stock-counts/${countId}/variance-report?format=${format}`,
+        {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+          },
+        },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const detail = body.detail;
+        const msg =
+          typeof detail === 'string'
+            ? detail
+            : detail?.message || body.message || 'Variance report failed';
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `stock-count-variance.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage(`Variance ${format.toUpperCase()} downloaded`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function lookupProductByScan(code: string) {
     const value = code.trim();
     if (!value) return null;
@@ -1461,10 +1497,20 @@ export default function Page() {
                   <td>
                     {c.counted_item_count}/{c.item_count}
                   </td>
-                  <td>
+                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button type="button" onClick={() => openCount(c.id)}>
                       Open
                     </button>
+                    {c.status === 'completed' && (
+                      <>
+                        <button type="button" onClick={() => downloadCountVariance(c.id, 'csv')}>
+                          CSV
+                        </button>
+                        <button type="button" onClick={() => downloadCountVariance(c.id, 'pdf')}>
+                          PDF
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -1547,6 +1593,16 @@ export default function Page() {
                   </button>
                   <button type="button" onClick={completeActiveCount}>
                     Complete &amp; post variances
+                  </button>
+                </div>
+              )}
+              {activeCount.status === 'completed' && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button type="button" onClick={() => downloadCountVariance(activeCount.id, 'csv')}>
+                    Download variance CSV
+                  </button>
+                  <button type="button" onClick={() => downloadCountVariance(activeCount.id, 'pdf')}>
+                    Download variance PDF
                   </button>
                 </div>
               )}

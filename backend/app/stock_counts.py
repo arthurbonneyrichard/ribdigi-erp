@@ -332,3 +332,128 @@ async def cancel_count(
     count.status = "cancelled"
     await db.flush()
     return count
+
+
+VARIANCE_REPORT_FIELDS = [
+    "sku",
+    "name",
+    "barcode",
+    "expected_qty",
+    "counted_qty",
+    "variance_qty",
+    "unit_cost",
+    "variance_value",
+    "notes",
+]
+
+
+async def build_variance_report(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    count_id: str,
+) -> dict:
+    """BR-5.2 variance report for a completed stock count."""
+    count = await get_count(db, tenant_id, count_id)
+    if count.status != "completed":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "COUNT_NOT_COMPLETED",
+                "message": "Variance report is available after the stock count is completed",
+                "status": count.status,
+            },
+        )
+    wh = await get_warehouse(db, tenant_id, count.warehouse_id)
+    data = await serialize_count(db, count)
+    products = {
+        p.id: p
+        for p in (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == tenant_id,
+                    m.Product.id.in_([i["product_id"] for i in data["items"]] or ["__none__"]),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    }
+    rows: list[dict] = []
+    total_variance_qty = 0.0
+    total_variance_value = 0.0
+    for item in data["items"]:
+        product = products.get(item["product_id"])
+        expected = float(item.get("expected_qty") or 0)
+        counted = float(item.get("counted_qty") or 0)
+        variance = round(counted - expected, 3)
+        unit_cost = float(product.cost_price or 0) if product else 0.0
+        variance_value = round(variance * unit_cost, 2)
+        total_variance_qty += variance
+        total_variance_value += variance_value
+        rows.append(
+            {
+                "sku": item.get("product_sku") or (product.sku if product else ""),
+                "name": item.get("product_name") or (product.name if product else ""),
+                "barcode": item.get("product_barcode") or (product.barcode if product else "") or "",
+                "expected_qty": expected,
+                "counted_qty": counted,
+                "variance_qty": variance,
+                "unit_cost": unit_cost,
+                "variance_value": variance_value,
+                "notes": item.get("notes") or "",
+            }
+        )
+    # Non-zero variances first for readability
+    rows.sort(key=lambda r: (abs(float(r["variance_qty"])) < 1e-9, r["sku"] or ""))
+    return {
+        "count_id": count.id,
+        "count_number": count.count_number,
+        "warehouse_id": wh.id,
+        "warehouse_code": wh.code,
+        "warehouse_name": wh.name,
+        "status": count.status,
+        "completed_at": count.completed_at,
+        "line_count": len(rows),
+        "variance_line_count": sum(1 for r in rows if abs(float(r["variance_qty"])) >= 1e-9),
+        "total_variance_qty": round(total_variance_qty, 3),
+        "total_variance_value": round(total_variance_value, 2),
+        "rows": rows,
+    }
+
+
+def variance_report_csv(report: dict) -> str:
+    from app.report_export import to_csv
+
+    return to_csv(report["rows"], fieldnames=VARIANCE_REPORT_FIELDS)
+
+
+def variance_report_pdf(report: dict) -> bytes:
+    from app.report_export import to_pdf
+
+    completed = report.get("completed_at")
+    completed_s = completed.isoformat() if hasattr(completed, "isoformat") else str(completed or "")
+    lines = [
+        f"Count: {report['count_number']}  Warehouse: {report['warehouse_code']} — {report['warehouse_name']}",
+        f"Completed: {completed_s}",
+        (
+            f"Lines: {report['line_count']}  With variance: {report['variance_line_count']}  "
+            f"Qty var: {report['total_variance_qty']}  Value var: {report['total_variance_value']}"
+        ),
+        "",
+        "SKU | Expected | Counted | Var Qty | Var Value",
+    ]
+    for row in report["rows"]:
+        if abs(float(row["variance_qty"])) < 1e-9:
+            continue
+        lines.append(
+            f"{row['sku']} | {row['expected_qty']} | {row['counted_qty']} | "
+            f"{row['variance_qty']} | {row['variance_value']}"
+        )
+    if report["variance_line_count"] == 0:
+        lines.append("(no quantity variances)")
+    return to_pdf(
+        "Stock Count Variance Report",
+        lines,
+        subtitle=report["count_number"],
+    )

@@ -19,7 +19,7 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 |----|------------|----------|---------|
 | **I1** | Dedicated opening stock entry (API + UI + bulk) | P0 | COMPLETE |
 | **I2** | Stock ops barcode scan + adjustment reason codes | P0 | COMPLETE |
-| **I3** | Low stock: `minimum_stock` + traffic lights + warehouse-aware list | P0 | PENDING |
+| **I3** | Low stock: `minimum_stock` + traffic lights + warehouse-aware list | P0 | COMPLETE |
 | **I4** | Stock count variance report export (CSV/PDF) | P0 | PENDING |
 | **I5** | Movement history audit UX + integrity/concurrency tests | P1 | PENDING |
 | **I6** | Catalog harden: UoM conversion, brand logo, weight/dimensions | P1 | PENDING |
@@ -50,12 +50,18 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 - [x] Adjustment reason enum: damage / theft / expiry / found / lost / other (`stock_movements.reason`, Alembic `0072`).
 - [x] Automated tests in `backend/tests/test_stock_ops_i2.py`.
 
-## I3 acceptance criteria (next)
+## I3 acceptance criteria
 
-- [ ] Product (+ warehouse where set) `minimum_stock` alongside `reorder_level`.
-- [ ] Low-stock / catalog traffic-light status (green / yellow / red).
-- [ ] Low-stock list warehouse-aware; Celery/scan uses dual thresholds.
-- [ ] Automated tests for thresholds + status.
+- [x] Product (+ warehouse where set) `minimum_stock` alongside `reorder_level` (Alembic `0073`).
+- [x] Product list + low-stock traffic-light status (green / yellow / red).
+- [x] Low-stock list warehouse-aware; notify/scan uses dual thresholds.
+- [x] Automated tests in `backend/tests/test_low_stock_i3.py`.
+
+## I4 acceptance criteria (next)
+
+- [ ] Completed stock count → variance report CSV/PDF (expected/counted/variance/value).
+- [ ] Counts UI download action.
+- [ ] Automated tests for export contents.
 
 ## Sign-off
 
