@@ -241,6 +241,22 @@ class ProductVariant(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class ProductImage(Base):
+    """Gallery images for a product; one may be marked primary (synced to products.image_url)."""
+
+    __tablename__ = "product_images"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    storage_key: Mapped[str] = mapped_column(String(500))
+    content_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class ProductBatch(Base):
     __tablename__ = "product_batches"
     __table_args__ = (UniqueConstraint("tenant_id", "product_id", "batch_number", "variant_id"),)

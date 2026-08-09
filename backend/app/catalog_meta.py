@@ -157,6 +157,64 @@ async def create_category(
     return row
 
 
+async def update_category(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    category_id: str,
+    code: str | None = None,
+    name: str | None = None,
+    parent_id: str | None = None,
+    is_active: bool | None = None,
+    clear_parent: bool = False,
+) -> m.ProductCategory:
+    row = await db.get(m.ProductCategory, category_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Category not found")
+    if code is not None:
+        code = code.strip().upper()
+        if not code:
+            raise HTTPException(status_code=400, detail="code is required")
+        dup = (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.tenant_id == tenant_id,
+                    m.ProductCategory.code == code,
+                    m.ProductCategory.id != row.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if dup:
+            raise HTTPException(status_code=409, detail="Category code exists")
+        row.code = code
+    if name is not None:
+        name = name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="name is required")
+        row.name = name
+    if clear_parent:
+        row.parent_id = None
+    elif parent_id is not None:
+        if parent_id == row.id:
+            raise HTTPException(status_code=400, detail="Category cannot be its own parent")
+        parent = await db.get(m.ProductCategory, parent_id)
+        if not parent or parent.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Parent category not found")
+        row.parent_id = parent_id
+    if is_active is not None:
+        row.is_active = bool(is_active)
+    await db.flush()
+    return row
+
+
+async def deactivate_category(
+    db: AsyncSession, *, tenant_id: str, category_id: str
+) -> m.ProductCategory:
+    return await update_category(
+        db, tenant_id=tenant_id, category_id=category_id, is_active=False
+    )
+
+
 async def list_brands(db: AsyncSession, tenant_id: str) -> list[m.Brand]:
     return list(
         (
@@ -200,6 +258,55 @@ async def create_brand(
     return row
 
 
+async def update_brand(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    brand_id: str,
+    code: str | None = None,
+    name: str | None = None,
+    description: str | None = None,
+    is_active: bool | None = None,
+    clear_description: bool = False,
+) -> m.Brand:
+    row = await db.get(m.Brand, brand_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    if code is not None:
+        code = code.strip().upper()
+        if not code:
+            raise HTTPException(status_code=400, detail="code is required")
+        dup = (
+            await db.execute(
+                select(m.Brand).where(
+                    m.Brand.tenant_id == tenant_id,
+                    m.Brand.code == code,
+                    m.Brand.id != row.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if dup:
+            raise HTTPException(status_code=409, detail="Brand code exists")
+        row.code = code
+    if name is not None:
+        name = name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="name is required")
+        row.name = name
+    if clear_description:
+        row.description = None
+    elif description is not None:
+        row.description = description.strip() or None
+    if is_active is not None:
+        row.is_active = bool(is_active)
+    await db.flush()
+    return row
+
+
+async def deactivate_brand(db: AsyncSession, *, tenant_id: str, brand_id: str) -> m.Brand:
+    return await update_brand(db, tenant_id=tenant_id, brand_id=brand_id, is_active=False)
+
+
 async def list_units(db: AsyncSession, tenant_id: str) -> list[m.UnitOfMeasure]:
     return list(
         (
@@ -239,6 +346,51 @@ async def create_unit(
     db.add(row)
     await db.flush()
     return row
+
+
+async def update_unit(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    unit_id: str,
+    code: str | None = None,
+    name: str | None = None,
+    is_active: bool | None = None,
+) -> m.UnitOfMeasure:
+    row = await db.get(m.UnitOfMeasure, unit_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    if code is not None:
+        code = code.strip().upper()
+        if not code:
+            raise HTTPException(status_code=400, detail="code is required")
+        dup = (
+            await db.execute(
+                select(m.UnitOfMeasure).where(
+                    m.UnitOfMeasure.tenant_id == tenant_id,
+                    m.UnitOfMeasure.code == code,
+                    m.UnitOfMeasure.id != row.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if dup:
+            raise HTTPException(status_code=409, detail="Unit code exists")
+        row.code = code
+    if name is not None:
+        name = name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="name is required")
+        row.name = name
+    if is_active is not None:
+        row.is_active = bool(is_active)
+    await db.flush()
+    return row
+
+
+async def deactivate_unit(
+    db: AsyncSession, *, tenant_id: str, unit_id: str
+) -> m.UnitOfMeasure:
+    return await update_unit(db, tenant_id=tenant_id, unit_id=unit_id, is_active=False)
 
 
 async def resolve_product_refs(

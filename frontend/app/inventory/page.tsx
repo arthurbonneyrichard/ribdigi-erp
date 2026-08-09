@@ -17,6 +17,7 @@ export default function Page() {
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [variants, setVariants] = useState<any[]>([]);
+  const [gallery, setGallery] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
   const [expiring, setExpiring] = useState<any[]>([]);
   const [counts, setCounts] = useState<any[]>([]);
@@ -73,12 +74,14 @@ export default function Page() {
 
   async function refreshSelected(id: string) {
     if (!id) return;
-    const [v, b] = await Promise.all([
+    const [v, b, g] = await Promise.all([
       api(`/products/${id}/variants`),
       api(`/products/${id}/batches`),
+      api(`/products/${id}/images`),
     ]);
     setVariants(v.data || []);
     setBatches(b.data || []);
+    setGallery(g.data || []);
   }
 
   useEffect(() => {
@@ -210,7 +213,8 @@ export default function Page() {
     }
   }
 
-  async function uploadImage(file: File) {
+  async function uploadImage(file: File, opts?: { asPrimary?: boolean }) {
+    const asPrimary = Boolean(opts?.asPrimary);
     if (!selectedId) return;
     setError('');
     try {
@@ -218,7 +222,10 @@ export default function Page() {
       const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${apiBase}/products/${selectedId}/image`, {
+      const path = asPrimary
+        ? `${apiBase}/products/${selectedId}/image`
+        : `${apiBase}/products/${selectedId}/images`;
+      const res = await fetch(path, {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -228,8 +235,65 @@ export default function Page() {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.detail || body.message || 'Upload failed');
-      setMessage('Product image uploaded');
+      setMessage(asPrimary ? 'Primary product image uploaded' : 'Gallery image added');
       await refresh();
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setPrimaryImage(imageId: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}/images/${imageId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_primary: true }),
+      });
+      setMessage('Primary image updated');
+      await refresh();
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function removeGalleryImage(imageId: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}/images/${imageId}`, { method: 'DELETE' });
+      setMessage('Image removed');
+      await refresh();
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function deactivateVariant(variantId: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}/variants/${variantId}`, { method: 'DELETE' });
+      setMessage('Variant deactivated');
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveVariantPrice(variantId: string, price: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}/variants/${variantId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ selling_price: Number(price) || 0 }),
+      });
+      setMessage('Variant updated');
+      await refreshSelected(selectedId);
     } catch (err: any) {
       setError(err.message);
     }
@@ -315,17 +379,38 @@ export default function Page() {
             </option>
           ))}
         </select>
-        {selected?.has_image && <p className="muted">Has image</p>}
+        {selected?.has_image && <p className="muted">Has primary image</p>}
+        <label className="muted">Add gallery image (max 5)</label>
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
-          disabled={!selectedId}
+          disabled={!selectedId || gallery.length >= 5}
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) uploadImage(file);
+            if (file) uploadImage(file, { asPrimary: gallery.length === 0 });
             e.target.value = '';
           }}
         />
+        {gallery.length > 0 && (
+          <ul className="muted" style={{ marginTop: 8 }}>
+            {gallery.map((img) => (
+              <li key={img.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span>
+                  {img.original_filename || img.storage_key.split('/').pop()}
+                  {img.is_primary ? ' (primary)' : ''}
+                </span>
+                {!img.is_primary && (
+                  <button type="button" onClick={() => setPrimaryImage(img.id)}>
+                    Set primary
+                  </button>
+                )}
+                <button type="button" onClick={() => removeGalleryImage(img.id)}>
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         {selectedId && (
           <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
             <label className="muted">Reorder level</label>
@@ -451,9 +536,29 @@ export default function Page() {
             </button>
             <ul className="muted">
               {categories.map((c) => (
-                <li key={c.id}>
-                  {c.code} — {c.name}
-                  {c.parent_id ? ' (child)' : ''}
+                <li key={c.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span>
+                    {c.code} — {c.name}
+                    {c.parent_id ? ' (child)' : ''}
+                    {!c.is_active ? ' [inactive]' : ''}
+                  </span>
+                  {c.is_active && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setError('');
+                        try {
+                          await api(`/catalog/categories/${c.id}`, { method: 'DELETE' });
+                          setMessage('Category deactivated');
+                          await refresh();
+                        } catch (err: any) {
+                          setError(err.message);
+                        }
+                      }}
+                    >
+                      Deactivate
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -484,8 +589,28 @@ export default function Page() {
             </button>
             <ul className="muted">
               {brands.map((b) => (
-                <li key={b.id}>
-                  {b.code} — {b.name}
+                <li key={b.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span>
+                    {b.code} — {b.name}
+                    {!b.is_active ? ' [inactive]' : ''}
+                  </span>
+                  {b.is_active && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setError('');
+                        try {
+                          await api(`/catalog/brands/${b.id}`, { method: 'DELETE' });
+                          setMessage('Brand deactivated');
+                          await refresh();
+                        } catch (err: any) {
+                          setError(err.message);
+                        }
+                      }}
+                    >
+                      Deactivate
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -516,8 +641,28 @@ export default function Page() {
             </button>
             <ul className="muted">
               {units.map((u) => (
-                <li key={u.id}>
-                  {u.code} — {u.name}
+                <li key={u.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span>
+                    {u.code} — {u.name}
+                    {!u.is_active ? ' [inactive]' : ''}
+                  </span>
+                  {u.is_active && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setError('');
+                        try {
+                          await api(`/catalog/units/${u.id}`, { method: 'DELETE' });
+                          setMessage('Unit deactivated');
+                          await refresh();
+                        } catch (err: any) {
+                          setError(err.message);
+                        }
+                      }}
+                    >
+                      Deactivate
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -544,6 +689,8 @@ export default function Page() {
                 <th>Size</th>
                 <th>Stock</th>
                 <th>Price</th>
+                <th>Active</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -553,7 +700,25 @@ export default function Page() {
                   <td>{v.sku}</td>
                   <td>{v.size || '—'}</td>
                   <td>{v.stock_qty}</td>
-                  <td>{v.selling_price}</td>
+                  <td>
+                    <input
+                      defaultValue={String(v.selling_price ?? 0)}
+                      style={{ width: 80 }}
+                      onBlur={(e) => {
+                        if (String(v.selling_price) !== e.target.value) {
+                          saveVariantPrice(v.id, e.target.value);
+                        }
+                      }}
+                    />
+                  </td>
+                  <td>{v.is_active ? 'yes' : 'no'}</td>
+                  <td>
+                    {v.is_active && (
+                      <button type="button" onClick={() => deactivateVariant(v.id)}>
+                        Deactivate
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

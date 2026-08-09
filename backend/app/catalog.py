@@ -167,6 +167,97 @@ async def create_variant(
     return variant
 
 
+async def update_variant(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+    variant_id: str,
+    name: str | None = None,
+    sku: str | None = None,
+    barcode: str | None = None,
+    size: str | None = None,
+    color: str | None = None,
+    flavor: str | None = None,
+    cost_price: float | None = None,
+    selling_price: float | None = None,
+    is_active: bool | None = None,
+    clear_barcode: bool = False,
+    clear_size: bool = False,
+    clear_color: bool = False,
+    clear_flavor: bool = False,
+) -> m.ProductVariant:
+    await get_product(db, tenant_id, product_id)
+    variant = await get_variant(db, tenant_id, variant_id)
+    if variant.product_id != product_id:
+        raise HTTPException(status_code=404, detail="Variant not found")
+
+    if name is not None:
+        name = name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Variant name is required")
+        variant.name = name
+    if sku is not None:
+        sku = sku.strip()
+        if not sku:
+            raise HTTPException(status_code=400, detail="Variant sku is required")
+        clash = (
+            await db.execute(
+                select(m.ProductVariant).where(
+                    m.ProductVariant.tenant_id == tenant_id,
+                    m.ProductVariant.sku == sku,
+                    m.ProductVariant.id != variant.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if clash:
+            raise HTTPException(status_code=409, detail="Variant SKU already exists")
+        prod_sku = (
+            await db.execute(
+                select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
+            )
+        ).scalar_one_or_none()
+        if prod_sku:
+            raise HTTPException(status_code=409, detail="SKU already used by a product")
+        variant.sku = sku
+    if clear_barcode:
+        variant.barcode = None
+    elif barcode is not None:
+        variant.barcode = barcode.strip() or None
+    if clear_size:
+        variant.size = None
+    elif size is not None:
+        variant.size = size.strip() or None
+    if clear_color:
+        variant.color = None
+    elif color is not None:
+        variant.color = color.strip() or None
+    if clear_flavor:
+        variant.flavor = None
+    elif flavor is not None:
+        variant.flavor = flavor.strip() or None
+    if cost_price is not None:
+        variant.cost_price = float(cost_price)
+    if selling_price is not None:
+        variant.selling_price = float(selling_price)
+    if is_active is not None:
+        variant.is_active = bool(is_active)
+    await db.flush()
+    return variant
+
+
+async def deactivate_variant(
+    db: AsyncSession, *, tenant_id: str, product_id: str, variant_id: str
+) -> m.ProductVariant:
+    return await update_variant(
+        db,
+        tenant_id=tenant_id,
+        product_id=product_id,
+        variant_id=variant_id,
+        is_active=False,
+    )
+
+
 async def list_batches(
     db: AsyncSession,
     tenant_id: str,

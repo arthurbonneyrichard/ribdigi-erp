@@ -41,9 +41,11 @@ from app import storage as storage_svc
 from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
 from app import catalog_meta as catalog_meta_svc
+from app import product_images as product_images_svc
 from app.config import settings
 from app.schemas import (
     BrandCreate,
+    BrandUpdate,
     CreditLimitUpdate,
     CustomerPaymentCreate,
     EarlyPaySettingsUpdate,
@@ -70,11 +72,15 @@ from app.schemas import (
     PosSessionOpen,
     PosDrawerOpen,
     ProductCategoryCreate,
+    ProductCategoryUpdate,
     ProductCreate,
+    ProductImagePrimaryUpdate,
     ProductVariantCreate,
+    ProductVariantUpdate,
     ProfileUpdate,
     PurchaseOrderCreate,
     UnitOfMeasureCreate,
+    UnitOfMeasureUpdate,
     PurchaseInvoiceCreate,
     PurchaseInvoiceUpdate,
     PurchaseReturnCreate,
@@ -1791,6 +1797,42 @@ async def catalog_create_category(
     return env(catalog_meta_svc.serialize_category(row), "Category created")
 
 
+@api.patch("/catalog/categories/{category_id}")
+async def catalog_patch_category(
+    category_id: str,
+    payload: ProductCategoryUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    clear_parent = "parent_id" in data and data["parent_id"] is None
+    row = await catalog_meta_svc.update_category(
+        db,
+        tenant_id=claims["tenant_id"],
+        category_id=category_id,
+        code=data.get("code"),
+        name=data.get("name"),
+        parent_id=data.get("parent_id"),
+        is_active=data.get("is_active"),
+        clear_parent=clear_parent,
+    )
+    await db.commit()
+    return env(catalog_meta_svc.serialize_category(row), "Category updated")
+
+
+@api.delete("/catalog/categories/{category_id}")
+async def catalog_delete_category(
+    category_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await catalog_meta_svc.deactivate_category(
+        db, tenant_id=claims["tenant_id"], category_id=category_id
+    )
+    await db.commit()
+    return env(catalog_meta_svc.serialize_category(row), "Category deactivated")
+
+
 @api.get("/catalog/brands")
 async def catalog_brands(
     claims=Depends(require_permission("inventory", "read")),
@@ -1815,6 +1857,42 @@ async def catalog_create_brand(
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_brand(row), "Brand created")
+
+
+@api.patch("/catalog/brands/{brand_id}")
+async def catalog_patch_brand(
+    brand_id: str,
+    payload: BrandUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    clear_description = "description" in data and data["description"] is None
+    row = await catalog_meta_svc.update_brand(
+        db,
+        tenant_id=claims["tenant_id"],
+        brand_id=brand_id,
+        code=data.get("code"),
+        name=data.get("name"),
+        description=data.get("description"),
+        is_active=data.get("is_active"),
+        clear_description=clear_description,
+    )
+    await db.commit()
+    return env(catalog_meta_svc.serialize_brand(row), "Brand updated")
+
+
+@api.delete("/catalog/brands/{brand_id}")
+async def catalog_delete_brand(
+    brand_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await catalog_meta_svc.deactivate_brand(
+        db, tenant_id=claims["tenant_id"], brand_id=brand_id
+    )
+    await db.commit()
+    return env(catalog_meta_svc.serialize_brand(row), "Brand deactivated")
 
 
 @api.get("/catalog/units")
@@ -1843,6 +1921,39 @@ async def catalog_create_unit(
     return env(catalog_meta_svc.serialize_unit(row), "Unit created")
 
 
+@api.patch("/catalog/units/{unit_id}")
+async def catalog_patch_unit(
+    unit_id: str,
+    payload: UnitOfMeasureUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    row = await catalog_meta_svc.update_unit(
+        db,
+        tenant_id=claims["tenant_id"],
+        unit_id=unit_id,
+        code=data.get("code"),
+        name=data.get("name"),
+        is_active=data.get("is_active"),
+    )
+    await db.commit()
+    return env(catalog_meta_svc.serialize_unit(row), "Unit updated")
+
+
+@api.delete("/catalog/units/{unit_id}")
+async def catalog_delete_unit(
+    unit_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await catalog_meta_svc.deactivate_unit(
+        db, tenant_id=claims["tenant_id"], unit_id=unit_id
+    )
+    await db.commit()
+    return env(catalog_meta_svc.serialize_unit(row), "Unit deactivated")
+
+
 @api.post("/products/{product_id}/image")
 async def product_image_upload(
     product_id: str,
@@ -1850,16 +1961,7 @@ async def product_image_upload(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    product = (
-        await db.execute(
-            select(m.Product).where(
-                m.Product.id == product_id,
-                m.Product.tenant_id == claims["tenant_id"],
-            )
-        )
-    ).scalar_one_or_none()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="product_images",
@@ -1867,10 +1969,17 @@ async def product_image_upload(
         allowed_types=storage_svc.LOGO_CONTENT_TYPES,
         max_bytes=int(settings.MEDIA_MAX_LOGO_BYTES),
     )
-    if product.image_url:
-        storage_svc.delete_key(product.image_url, tenant_id=claims["tenant_id"])
-    product.image_url = stored.key
+    await product_images_svc.add_product_image(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product.id,
+        storage_key=stored.key,
+        content_type=stored.content_type,
+        original_filename=stored.original_filename,
+        is_primary=True,
+    )
     await db.commit()
+    await db.refresh(product)
     return env(catalog_meta_svc.serialize_product(product), "Product image uploaded")
 
 
@@ -1899,20 +2008,88 @@ async def product_image_delete(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    product = (
-        await db.execute(
-            select(m.Product).where(
-                m.Product.id == product_id,
-                m.Product.tenant_id == claims["tenant_id"],
-            )
-        )
-    ).scalar_one_or_none()
-    if not product or not product.image_url:
-        raise HTTPException(status_code=404, detail="Product image not found")
-    storage_svc.delete_key(product.image_url, tenant_id=claims["tenant_id"])
-    product.image_url = None
+    product = await product_images_svc.delete_primary_product_image(
+        db, tenant_id=claims["tenant_id"], product_id=product_id
+    )
     await db.commit()
     return env(catalog_meta_svc.serialize_product(product), "Product image removed")
+
+
+@api.get("/products/{product_id}/images")
+async def product_images_list(
+    product_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await product_images_svc.list_product_images(
+        db, tenant_id=claims["tenant_id"], product_id=product_id
+    )
+    return env([product_images_svc.serialize_image(r) for r in rows])
+
+
+@api.post("/products/{product_id}/images")
+async def product_images_upload(
+    product_id: str,
+    file: UploadFile = File(...),
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    stored = await storage_svc.save_upload(
+        tenant_id=claims["tenant_id"],
+        category="product_images",
+        upload=file,
+        allowed_types=storage_svc.LOGO_CONTENT_TYPES,
+        max_bytes=int(settings.MEDIA_MAX_LOGO_BYTES),
+    )
+    row = await product_images_svc.add_product_image(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        storage_key=stored.key,
+        content_type=stored.content_type,
+        original_filename=stored.original_filename,
+        is_primary=False,
+    )
+    await db.commit()
+    return env(product_images_svc.serialize_image(row), "Product image added")
+
+
+@api.patch("/products/{product_id}/images/{image_id}")
+async def product_images_patch(
+    product_id: str,
+    image_id: str,
+    payload: ProductImagePrimaryUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    if not payload.is_primary:
+        raise HTTPException(status_code=400, detail="Only setting primary is supported")
+    row = await product_images_svc.set_primary_product_image(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        image_id=image_id,
+    )
+    await db.commit()
+    return env(product_images_svc.serialize_image(row), "Primary image updated")
+
+
+@api.delete("/products/{product_id}/images/{image_id}")
+async def product_images_delete(
+    product_id: str,
+    image_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    await product_images_svc.delete_product_image(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        image_id=image_id,
+    )
+    await db.commit()
+    return env(None, "Product image removed")
 
 
 @api.get("/inventory/low-stock")
@@ -2147,6 +2324,55 @@ async def create_product_variant(
     )
     await db.commit()
     return env(catalog_svc.serialize_variant(variant), "Variant created")
+
+
+@api.patch("/products/{product_id}/variants/{variant_id}")
+async def patch_product_variant(
+    product_id: str,
+    variant_id: str,
+    payload: ProductVariantUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    variant = await catalog_svc.update_variant(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        variant_id=variant_id,
+        name=data.get("name"),
+        sku=data.get("sku"),
+        barcode=data.get("barcode"),
+        size=data.get("size"),
+        color=data.get("color"),
+        flavor=data.get("flavor"),
+        cost_price=data.get("cost_price"),
+        selling_price=data.get("selling_price"),
+        is_active=data.get("is_active"),
+        clear_barcode="barcode" in data and data["barcode"] is None,
+        clear_size="size" in data and data["size"] is None,
+        clear_color="color" in data and data["color"] is None,
+        clear_flavor="flavor" in data and data["flavor"] is None,
+    )
+    await db.commit()
+    return env(catalog_svc.serialize_variant(variant), "Variant updated")
+
+
+@api.delete("/products/{product_id}/variants/{variant_id}")
+async def delete_product_variant(
+    product_id: str,
+    variant_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    variant = await catalog_svc.deactivate_variant(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        variant_id=variant_id,
+    )
+    await db.commit()
+    return env(catalog_svc.serialize_variant(variant), "Variant deactivated")
 
 
 @api.get("/products/{product_id}/batches")

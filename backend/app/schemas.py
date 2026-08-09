@@ -161,15 +161,35 @@ class ProductCategoryCreate(BaseModel):
     parent_id: str | None = None
 
 
+class ProductCategoryUpdate(BaseModel):
+    code: str | None = None
+    name: str | None = None
+    parent_id: str | None = None
+    is_active: bool | None = None
+
+
 class BrandCreate(BaseModel):
     code: str
     name: str
     description: str | None = None
 
 
+class BrandUpdate(BaseModel):
+    code: str | None = None
+    name: str | None = None
+    description: str | None = None
+    is_active: bool | None = None
+
+
 class UnitOfMeasureCreate(BaseModel):
     code: str
     name: str
+
+
+class UnitOfMeasureUpdate(BaseModel):
+    code: str | None = None
+    name: str | None = None
+    is_active: bool | None = None
 
 
 class ProductVariantCreate(BaseModel):
@@ -181,6 +201,22 @@ class ProductVariantCreate(BaseModel):
     flavor: str | None = None
     cost_price: float | None = None
     selling_price: float | None = None
+
+
+class ProductVariantUpdate(BaseModel):
+    name: str | None = None
+    sku: str | None = None
+    barcode: str | None = None
+    size: str | None = None
+    color: str | None = None
+    flavor: str | None = None
+    cost_price: float | None = None
+    selling_price: float | None = None
+    is_active: bool | None = None
+
+
+class ProductImagePrimaryUpdate(BaseModel):
+    is_primary: bool = True
 
 
 class PartyCreate(BaseModel):
