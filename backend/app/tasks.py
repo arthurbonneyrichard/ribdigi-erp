@@ -84,6 +84,13 @@ def generate_ai_insights() -> dict:
     return jobs_svc.run_async(jobs_svc.job_generate_ai_insights())
 
 
+@celery.task(name="app.tasks.archive_cold_audit_logs")
+def archive_cold_audit_logs() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_archive_cold_audit_logs())
+
+
 @celery.task(name="app.tasks.run_named_job")
 def run_named_job(name: str) -> dict:
     if not settings.CELERY_ENABLED:

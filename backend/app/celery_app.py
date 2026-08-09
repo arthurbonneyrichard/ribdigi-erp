@@ -85,5 +85,11 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_AI_INSIGHTS_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "archive-cold-audit-logs": {
+            "task": "app.tasks.archive_cold_audit_logs",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
     },
 )

@@ -12,6 +12,8 @@ export default function Page() {
   const [module, setModule] = useState('');
   const [action, setAction] = useState('');
   const [verify, setVerify] = useState<any>(null);
+  const [retention, setRetention] = useState<any>(null);
+  const [archives, setArchives] = useState<any[]>([]);
   const [formats, setFormats] = useState<RegionalFormats>({});
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -21,8 +23,14 @@ export default function Page() {
     if (module) params.set('module', module);
     if (action) params.set('action', action);
     const q = params.toString() ? `?${params}` : '';
-    const r = await api(`/audit-logs${q}`);
-    setRows(r.data || []);
+    const [logs, policy, archiveList] = await Promise.all([
+      api(`/audit-logs${q}`),
+      api('/audit-logs/retention').catch(() => ({ data: null })),
+      api('/audit-logs/archives').catch(() => ({ data: [] })),
+    ]);
+    setRows(logs.data || []);
+    setRetention(policy.data || null);
+    setArchives(archiveList.data || []);
   }
 
   useEffect(() => {
@@ -44,6 +52,22 @@ export default function Page() {
       const r = await api('/audit-logs/verify');
       setVerify(r.data);
       setMessage(r.data?.valid ? 'Integrity chain valid' : 'Integrity chain broken');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function runColdArchive() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/audit-logs/archive-cold', { method: 'POST', body: '{}' });
+      setMessage(
+        r.data?.archived
+          ? `Cold-archived ${r.data.archived} event(s)`
+          : r.message || 'Nothing to archive',
+      );
+      await refresh();
     } catch (err: any) {
       setError(err.message);
     }
@@ -110,7 +134,12 @@ export default function Page() {
   return (
     <Shell>
       <h1>Audit Logs</h1>
-      <p className="muted">Append-only activity trail with integrity verification</p>
+      <p className="muted">
+        Append-only activity trail with integrity verification
+        {retention
+          ? ` · ${retention.retention_years}-year retention · cold archive after ${retention.cold_archive_after_days}d`
+          : ''}
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -121,6 +150,7 @@ export default function Page() {
         <button onClick={runVerify}>Verify chain</button>
         <button onClick={exportCsv}>Export CSV</button>
         <button onClick={exportPdf}>Export PDF</button>
+        <button onClick={runColdArchive}>Run cold archive</button>
       </div>
 
       {verify && (
@@ -128,6 +158,21 @@ export default function Page() {
           <p>Valid: {String(verify.valid)}</p>
           <p>Checked: {verify.checked}</p>
           {verify.broken_at && <p>Broken at: {verify.broken_at}</p>}
+        </div>
+      )}
+
+      {retention && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3 style={{ marginTop: 0 }}>Retention policy</h3>
+          <p className="muted">{retention.notes}</p>
+          <p>
+            Purge allowed: {String(retention.purge_allowed)} · Archives on file: {archives.length}
+          </p>
+          {archives.slice(0, 5).map((a) => (
+            <p key={a.id} className="muted">
+              {a.event_count} events · {a.sha256?.slice(0, 12)}… · {a.storage_key}
+            </p>
+          ))}
         </div>
       )}
 
@@ -141,6 +186,7 @@ export default function Page() {
             <th>User</th>
             <th>IP</th>
             <th>Hash</th>
+            <th>Cold</th>
           </tr>
         </thead>
         <tbody>
@@ -158,6 +204,7 @@ export default function Page() {
               <td>{r.user_id ? String(r.user_id).slice(0, 8) : '—'}</td>
               <td>{r.ip_address || '—'}</td>
               <td>{r.integrity_hash ? String(r.integrity_hash).slice(0, 10) : '—'}</td>
+              <td>{r.archived_at ? 'yes' : '—'}</td>
             </tr>
           ))}
         </tbody>

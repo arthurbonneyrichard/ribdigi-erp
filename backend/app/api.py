@@ -9048,6 +9048,7 @@ async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin")
                 "run_due_report_emails_minutes": app_settings.CELERY_REPORT_EMAIL_INTERVAL_MINUTES,
                 "generate_ai_low_stock_predictions_minutes": app_settings.CELERY_AI_PREDICTION_INTERVAL_MINUTES,
                 "generate_ai_insights_minutes": app_settings.CELERY_AI_INSIGHTS_INTERVAL_MINUTES,
+                "archive_cold_audit_logs_minutes": app_settings.CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES,
             },
         }
     )
@@ -9161,6 +9162,43 @@ async def audit_logs_verify(
     db: AsyncSession = Depends(get_db),
 ):
     return env(await audit_svc.verify_chain(db, claims["tenant_id"]))
+
+
+@api.get("/audit-logs/retention")
+async def audit_logs_retention(
+    claims=Depends(require_permission("audit", "read")),
+):
+    """BR-17.2 / Stage 1 G20 — retention policy (7-year minimum, no purge)."""
+    return env(audit_svc.retention_policy())
+
+
+@api.get("/audit-logs/archives")
+async def audit_logs_archives(
+    claims=Depends(require_permission("audit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await audit_svc.list_cold_archives(db, tenant_id=claims["tenant_id"])
+    return env([audit_svc.serialize_cold_archive(r) for r in rows])
+
+
+@api.post("/audit-logs/archive-cold")
+async def audit_logs_archive_cold(
+    older_than_days: int | None = None,
+    limit: int = 5000,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Copy aged audit rows to cold object storage; mark archived_at (never delete)."""
+    tenants_svc.assert_writable(claims)
+    result = await audit_svc.archive_cold_logs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        older_than_days=older_than_days,
+        limit=limit,
+    )
+    await db.commit()
+    return env(result, "Cold archive completed" if result.get("archived") else "Nothing to archive")
 
 
 @api.delete("/audit-logs/{log_id}")

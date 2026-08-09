@@ -193,6 +193,17 @@ async def job_generate_ai_insights() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_archive_cold_audit_logs() -> dict:
+    from app import audit as audit_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await audit_svc.archive_cold_logs(
+            db, tenant_id=tenant_id, user_id=SYSTEM_USER_ID
+        )
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
@@ -205,6 +216,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "sync_bank_feeds": job_sync_bank_feeds,
     "generate_ai_low_stock_predictions": job_generate_ai_low_stock_predictions,
     "generate_ai_insights": job_generate_ai_insights,
+    "archive_cold_audit_logs": job_archive_cold_audit_logs,
 }
 
 
