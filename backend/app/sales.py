@@ -159,6 +159,10 @@ def render_invoice_text(
     tax_registration_number: str | None = None,
     customer_address: str | None = None,
     item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
 ) -> str:
     tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
     width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
@@ -167,6 +171,10 @@ def render_invoice_text(
     lines = [
         company_name[:width],
     ]
+    if trading_name:
+        lines.append(f"Trading as {trading_name}"[:width])
+    if has_logo or logo_data_url:
+        lines.append("[Company logo on file]"[:width])
     if company_address:
         lines.append(str(company_address)[:width])
     if company_phone:
@@ -226,8 +234,14 @@ def render_invoice_html(
     tax_registration_number: str | None = None,
     customer_address: str | None = None,
     item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
 ) -> str:
     from html import escape
+
+    from app.print_branding import brand_html_block
 
     tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
     cur = escape(currency or invoice_data.get("currency") or "GHS")
@@ -272,6 +286,12 @@ def render_invoice_html(
     rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
     inv_no = escape(str(invoice_data.get("invoice_number") or ""))
     status = escape(str(invoice_data.get("status") or ""))
+    brand_block = brand_html_block(
+        company_name=company_name,
+        logo_data_url=logo_data_url,
+        trading_name=trading_name,
+        meta_html=meta_html,
+    )
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><title>Invoice {inv_no}</title>
 <style>
@@ -282,6 +302,7 @@ def render_invoice_html(
   h2 {{ font-size:1.15rem; margin:24px 0 8px; font-weight:600; }}
   .muted {{ color:#57534e; }}
   .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
+  .brand .logo {{ display:block; max-height:72px; max-width:220px; margin:0 0 10px; object-fit:contain; }}
   table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
   th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
   th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
@@ -292,10 +313,7 @@ def render_invoice_html(
   @media print {{ body {{ background:#fff; }} .toolbar {{ display:none; }} .sheet {{ max-width:none; background:#fff; }} }}
 </style></head><body><div class="sheet">
   <div class="toolbar"><button onclick="window.print()">Print</button></div>
-  <div class="brand">
-    <h1>{escape(company_name)}</h1>
-    <div class="muted">{meta_html}</div>
-  </div>
+  {brand_block}
   <h2>Invoice {inv_no}</h2>
   <div class="muted">Status: {status}{due_line}</div>
   <p><strong>Bill to</strong><br>{escape(customer_name)}{customer_addr_html}</p>
@@ -329,6 +347,10 @@ def render_invoice_pdf(
     tax_registration_number: str | None = None,
     customer_address: str | None = None,
     item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
 ) -> bytes:
     """Branded invoice PDF: A4 letter page or narrow thermal page."""
     tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
@@ -344,6 +366,10 @@ def render_invoice_pdf(
         tax_registration_number=tax_registration_number,
         customer_address=customer_address,
         item_labels=item_labels,
+        logo_data_url=logo_data_url,
+        trading_name=trading_name,
+        legal_name=legal_name,
+        has_logo=has_logo,
     )
     title = f"INVOICE {invoice_data.get('invoice_number') or ''}"
     return render_branded_lines_pdf(

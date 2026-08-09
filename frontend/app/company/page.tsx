@@ -216,6 +216,9 @@ export default function Page() {
 
       <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
         <h3>Company logo</h3>
+        <p className="muted" style={{ margin: 0 }}>
+          Shown on invoices, receipts, quotations, and credit notes when printing.
+        </p>
         {tenant.has_logo && logoPreview && (
           <img src={logoPreview} alt="Company logo" style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain' }} />
         )}

@@ -158,6 +158,10 @@ def render_quotation_text(
     tax_registration_number: str | None = None,
     customer_address: str | None = None,
     item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
 ) -> str:
     tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
     width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
@@ -223,8 +227,14 @@ def render_quotation_html(
     tax_registration_number: str | None = None,
     customer_address: str | None = None,
     item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
 ) -> str:
     from html import escape
+
+    from app.print_branding import brand_html_block
 
     tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
     cur = escape(currency or "GHS")
@@ -264,6 +274,12 @@ def render_quotation_html(
     status = escape(str(quotation_data.get("status") or ""))
     rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
     meta_html = "<br>".join(meta)
+    brand_block = brand_html_block(
+        company_name=company_name,
+        logo_data_url=logo_data_url,
+        trading_name=trading_name,
+        meta_html=meta_html,
+    )
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><title>Quotation {q_no}</title>
 <style>
@@ -274,6 +290,7 @@ def render_quotation_html(
   h2 {{ font-size:1.15rem; margin:24px 0 8px; font-weight:600; }}
   .muted {{ color:#57534e; }}
   .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
+  .brand .logo {{ display:block; max-height:72px; max-width:220px; margin:0 0 10px; object-fit:contain; }}
   table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
   th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
   th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
@@ -284,10 +301,7 @@ def render_quotation_html(
   @media print {{ body {{ background:#fff; }} .toolbar {{ display:none; }} .sheet {{ max-width:none; background:#fff; }} }}
 </style></head><body><div class="sheet">
   <div class="toolbar"><button onclick="window.print()">Print</button></div>
-  <div class="brand">
-    <h1>{escape(company_name)}</h1>
-    <div class="muted">{meta_html}</div>
-  </div>
+  {brand_block}
   <h2>Quotation {q_no}</h2>
   <div class="muted">Status: {status}{valid_line}</div>
   <p><strong>Quote for</strong><br>{escape(customer_name)}{customer_addr_html}</p>
@@ -319,6 +333,10 @@ def render_quotation_pdf(
     tax_registration_number: str | None = None,
     customer_address: str | None = None,
     item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
 ) -> bytes:
     tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
     text = render_quotation_text(
@@ -1192,6 +1210,10 @@ def render_credit_note_text(
     customer_address: str | None = None,
     invoice_number: str | None = None,
     item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
 ) -> str:
     tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
     width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
@@ -1262,8 +1284,14 @@ def render_credit_note_html(
     customer_address: str | None = None,
     invoice_number: str | None = None,
     item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
 ) -> str:
     from html import escape
+
+    from app.print_branding import brand_html_block
 
     tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
     cur = escape(currency or "GHS")
@@ -1304,6 +1332,12 @@ def render_credit_note_html(
     )
     rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
     meta_html = "<br>".join(meta)
+    brand_block = brand_html_block(
+        company_name=company_name,
+        logo_data_url=logo_data_url,
+        trading_name=trading_name,
+        meta_html=meta_html,
+    )
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><title>Credit Note {cn}</title>
 <style>
@@ -1314,6 +1348,7 @@ def render_credit_note_html(
   h2 {{ font-size:1.15rem; margin:24px 0 8px; font-weight:600; }}
   .muted {{ color:#57534e; }}
   .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
+  .brand .logo {{ display:block; max-height:72px; max-width:220px; margin:0 0 10px; object-fit:contain; }}
   table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
   th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
   th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
@@ -1324,10 +1359,7 @@ def render_credit_note_html(
   @media print {{ body {{ background:#fff; }} .toolbar {{ display:none; }} .sheet {{ max-width:none; background:#fff; }} }}
 </style></head><body><div class="sheet">
   <div class="toolbar"><button onclick="window.print()">Print</button></div>
-  <div class="brand">
-    <h1>{escape(company_name)}</h1>
-    <div class="muted">{meta_html}</div>
-  </div>
+  {brand_block}
   <h2>Credit Note {cn}</h2>
   <div class="muted">Return {rn} · Status: {status} · Reason: {reason}</div>
   <p><strong>Credit to</strong><br>{escape(customer_name)}{customer_addr_html}{inv_html}</p>
@@ -1358,6 +1390,10 @@ def render_credit_note_pdf(
     customer_address: str | None = None,
     invoice_number: str | None = None,
     item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
 ) -> bytes:
     tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
     text = render_credit_note_text(

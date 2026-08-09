@@ -4347,17 +4347,24 @@ async def print_sales_invoice(
             )
         ).scalars().all()
         item_labels = {p.id: p.name for p in products}
+    from app.print_branding import tenant_document_brand
+
+    doc_brand = tenant_document_brand(tenant)
     brand = dict(
-        company_name=tenant.company_name,
+        company_name=doc_brand["company_name"],
         customer_name=customer.name,
         template=tpl,
         currency=currency,
-        company_address=getattr(tenant, "address", None),
-        company_phone=getattr(tenant, "phone", None),
-        company_email=str(getattr(tenant, "email", None) or "") or None,
-        tax_registration_number=getattr(tenant, "tax_registration_number", None),
+        company_address=doc_brand["company_address"],
+        company_phone=doc_brand["company_phone"],
+        company_email=doc_brand["company_email"],
+        tax_registration_number=doc_brand["tax_registration_number"],
         customer_address=getattr(customer, "address", None),
         item_labels=item_labels,
+        logo_data_url=doc_brand["logo_data_url"],
+        trading_name=doc_brand["trading_name"],
+        legal_name=doc_brand["legal_name"],
+        has_logo=doc_brand["has_logo"],
     )
     await db.commit()
     if fmt == "pdf":
@@ -4378,7 +4385,11 @@ async def print_sales_invoice(
             "template": tpl,
             "format": fmt,
             "customer_name": customer.name,
-            "company_name": tenant.company_name,
+            "company_name": doc_brand["company_name"],
+            "legal_name": doc_brand["legal_name"],
+            "trading_name": doc_brand["trading_name"],
+            "has_logo": doc_brand["has_logo"],
+            "logo_data_url": doc_brand["logo_data_url"],
         }
     )
 
@@ -4523,17 +4534,24 @@ async def print_sales_quotation(
             )
         ).scalars().all()
         item_labels = {p.id: p.name for p in products}
+    from app.print_branding import tenant_document_brand
+
+    doc_brand = tenant_document_brand(tenant)
     brand = dict(
-        company_name=tenant.company_name,
+        company_name=doc_brand["company_name"],
         customer_name=customer.name,
         template=tpl,
         currency=currency,
-        company_address=getattr(tenant, "address", None),
-        company_phone=getattr(tenant, "phone", None),
-        company_email=str(getattr(tenant, "email", None) or "") or None,
-        tax_registration_number=getattr(tenant, "tax_registration_number", None),
+        company_address=doc_brand["company_address"],
+        company_phone=doc_brand["company_phone"],
+        company_email=doc_brand["company_email"],
+        tax_registration_number=doc_brand["tax_registration_number"],
         customer_address=getattr(customer, "address", None),
         item_labels=item_labels,
+        logo_data_url=doc_brand["logo_data_url"],
+        trading_name=doc_brand["trading_name"],
+        legal_name=doc_brand["legal_name"],
+        has_logo=doc_brand["has_logo"],
     )
     await db.commit()
     if fmt == "pdf":
@@ -4556,7 +4574,11 @@ async def print_sales_quotation(
             "template": tpl,
             "format": fmt,
             "customer_name": customer.name,
-            "company_name": tenant.company_name,
+            "company_name": doc_brand["company_name"],
+            "legal_name": doc_brand["legal_name"],
+            "trading_name": doc_brand["trading_name"],
+            "has_logo": doc_brand["has_logo"],
+            "logo_data_url": doc_brand["logo_data_url"],
         }
     )
 
@@ -4921,18 +4943,25 @@ async def print_sales_return_credit_note(
             )
         ).scalars().all()
         item_labels = {p.id: p.name for p in products}
+    from app.print_branding import tenant_document_brand
+
+    doc_brand = tenant_document_brand(tenant)
     brand = dict(
-        company_name=tenant.company_name,
+        company_name=doc_brand["company_name"],
         customer_name=customer.name,
         template=tpl,
         currency=currency,
-        company_address=getattr(tenant, "address", None),
-        company_phone=getattr(tenant, "phone", None),
-        company_email=str(getattr(tenant, "email", None) or "") or None,
-        tax_registration_number=getattr(tenant, "tax_registration_number", None),
+        company_address=doc_brand["company_address"],
+        company_phone=doc_brand["company_phone"],
+        company_email=doc_brand["company_email"],
+        tax_registration_number=doc_brand["tax_registration_number"],
         customer_address=getattr(customer, "address", None),
         invoice_number=invoice.invoice_number,
         item_labels=item_labels,
+        logo_data_url=doc_brand["logo_data_url"],
+        trading_name=doc_brand["trading_name"],
+        legal_name=doc_brand["legal_name"],
+        has_logo=doc_brand["has_logo"],
     )
     await db.commit()
     if fmt == "pdf":
@@ -4955,7 +4984,11 @@ async def print_sales_return_credit_note(
             "template": tpl,
             "format": fmt,
             "customer_name": customer.name,
-            "company_name": tenant.company_name,
+            "company_name": doc_brand["company_name"],
+            "legal_name": doc_brand["legal_name"],
+            "trading_name": doc_brand["trading_name"],
+            "has_logo": doc_brand["has_logo"],
+            "logo_data_url": doc_brand["logo_data_url"],
             "invoice_number": invoice.invoice_number,
         }
     )

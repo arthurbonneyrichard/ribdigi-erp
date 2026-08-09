@@ -57,6 +57,8 @@ def build_receipt_payload(
     tenant: m.Tenant | None,
     cashier_name: str | None = None,
 ) -> dict[str, Any]:
+    from app.print_branding import tenant_document_brand
+
     payload = tx.payload or {}
     items = payload.get("items") or []
     normalized_items = []
@@ -87,12 +89,17 @@ def build_receipt_payload(
                 "variant_id": raw.get("variant_id"),
             }
         )
+    brand = tenant_document_brand(tenant)
     return {
         "sale_id": tx.id,
         "reference": tx.reference,
-        "company_name": tenant.company_name if tenant else "RIBDIGI ERP",
-        "company_phone": tenant.phone if tenant else None,
-        "company_address": tenant.address if tenant else None,
+        "company_name": brand["company_name"],
+        "legal_name": brand["legal_name"],
+        "trading_name": brand["trading_name"],
+        "has_logo": brand["has_logo"],
+        "logo_data_url": brand["logo_data_url"],
+        "company_phone": brand["company_phone"] or (tenant.phone if tenant else None),
+        "company_address": brand["company_address"] or (tenant.address if tenant else None),
         "currency": tenant.currency if tenant else "GHS",
         "cashier_name": cashier_name,
         "customer_name": payload.get("customer_name"),
@@ -112,6 +119,10 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     width = THERMAL_WIDTHS.get(paper, THERMAL_WIDTHS["80mm"])
     lines: list[str] = []
     lines.append(_center(str(receipt.get("company_name") or "RIBDIGI ERP"), width))
+    if receipt.get("trading_name"):
+        lines.append(_center(f"T/A {receipt['trading_name']}", width))
+    if receipt.get("has_logo") or receipt.get("logo_data_url"):
+        lines.append(_center("[Company logo on file]", width))
     if receipt.get("company_address"):
         lines.extend(_wrap(str(receipt["company_address"]), width))
     if receipt.get("company_phone"):
