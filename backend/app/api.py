@@ -1688,6 +1688,10 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             )
             if tenant
             else 30,
+            "date_format": (getattr(tenant, "date_format", None) or "DD/MM/YYYY") if tenant else "DD/MM/YYYY",
+            "number_format": (getattr(tenant, "number_format", None) or "1,234.56") if tenant else "1,234.56",
+            "time_format": (getattr(tenant, "time_format", None) or "24h") if tenant else "24h",
+            "timezone": (getattr(tenant, "timezone", None) or "Africa/Accra") if tenant else "Africa/Accra",
             **totp_svc.status_payload(user),
         }
     )

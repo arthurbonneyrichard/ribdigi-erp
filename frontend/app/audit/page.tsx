@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { formatDateTime, type RegionalFormats } from '../../lib/format';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -11,6 +12,7 @@ export default function Page() {
   const [module, setModule] = useState('');
   const [action, setAction] = useState('');
   const [verify, setVerify] = useState<any>(null);
+  const [formats, setFormats] = useState<RegionalFormats>({});
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -24,6 +26,15 @@ export default function Page() {
   }
 
   useEffect(() => {
+    api('/me')
+      .then((r) =>
+        setFormats({
+          date_format: r.data?.date_format,
+          number_format: r.data?.number_format,
+          time_format: r.data?.time_format,
+        }),
+      )
+      .catch(() => undefined);
     refresh().catch((err) => setError(err.message));
   }, []);
 
@@ -135,7 +146,9 @@ export default function Page() {
         <tbody>
           {rows.map((r) => (
             <tr key={r.id}>
-              <td>{String(r.created_at)}</td>
+              <td>
+                {formatDateTime(r.created_at, formats.date_format, formats.time_format)}
+              </td>
               <td>{r.module}</td>
               <td>{r.action}</td>
               <td>

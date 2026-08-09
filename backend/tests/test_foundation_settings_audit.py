@@ -64,6 +64,13 @@ async def test_tenant_smtp_settings_and_formats(client):
     assert pdata["number_format"] == "1.234,56"
     assert pdata["time_format"] == "12h"
 
+    me = await ac.get("/api/v1/me", headers=headers)
+    assert me.status_code == 200, me.text
+    mdata = me.json()["data"]
+    assert mdata["date_format"] == "YYYY-MM-DD"
+    assert mdata["number_format"] == "1.234,56"
+    assert mdata["time_format"] == "12h"
+
 
 @pytest.mark.asyncio
 async def test_audit_export_pdf(client):

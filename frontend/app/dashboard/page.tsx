@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { formatDateTime, formatNumber, type RegionalFormats } from '../../lib/format';
 
 type Dash = {
   total_sales?: number;
@@ -34,9 +35,19 @@ type InsightCard = {
 export default function Page() {
   const [d, setD] = useState<Dash>({});
   const [insightCards, setInsightCards] = useState<InsightCard[]>([]);
+  const [formats, setFormats] = useState<RegionalFormats>({});
   const [error, setError] = useState('');
 
   useEffect(() => {
+    api('/me')
+      .then((r) =>
+        setFormats({
+          date_format: r.data?.date_format,
+          number_format: r.data?.number_format,
+          time_format: r.data?.time_format,
+        }),
+      )
+      .catch(() => undefined);
     api('/dashboard')
       .then((r) => setD(r.data || {}))
       .catch((err) => setError(err.message));
@@ -44,6 +55,8 @@ export default function Page() {
       .then((r) => setInsightCards(r.data?.cards || []))
       .catch(() => undefined);
   }, []);
+
+  const n = (v: number | string | null | undefined) => formatNumber(v, formats.number_format);
 
   const cards: [string, number | string][] = [
     ['Total Sales', d.total_sales ?? 0],
@@ -60,7 +73,7 @@ export default function Page() {
     ['Prior Month', d.prior_month_revenue ?? 0],
     [
       'MoM %',
-      d.mom_change_pct == null ? '—' : `${Number(d.mom_change_pct).toLocaleString()}%`,
+      d.mom_change_pct == null ? '—' : `${n(d.mom_change_pct)}%`,
     ],
   ];
 
@@ -72,10 +85,10 @@ export default function Page() {
       <p className="muted">Live KPIs from your tenant data</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       <div className="grid">
-        {cards.map(([n, v]) => (
-          <div className="card" key={n}>
-            <div className="muted">{n}</div>
-            <div className="kpi">{typeof v === 'number' ? Number(v).toLocaleString() : v}</div>
+        {cards.map(([label, v]) => (
+          <div className="card" key={label}>
+            <div className="muted">{label}</div>
+            <div className="kpi">{typeof v === 'number' ? n(v) : v}</div>
           </div>
         ))}
       </div>
@@ -111,7 +124,7 @@ export default function Page() {
                 <span>
                   {p.name} <span className="muted">({p.sku})</span>
                 </span>
-                <span>{Number(p.revenue).toLocaleString()}</span>
+                <span>{n(p.revenue)}</span>
               </div>
               <div
                 style={{
@@ -137,6 +150,7 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
+                <th>When</th>
                 <th>Ref</th>
                 <th>Source</th>
                 <th>Total</th>
@@ -145,9 +159,12 @@ export default function Page() {
             <tbody>
               {(d.recent_sales || []).map((r) => (
                 <tr key={`${r.source}-${r.reference}`}>
+                  <td>
+                    {formatDateTime(r.at, formats.date_format, formats.time_format)}
+                  </td>
                   <td>{r.reference}</td>
                   <td>{r.source}</td>
-                  <td>{Number(r.total).toLocaleString()}</td>
+                  <td>{n(r.total)}</td>
                 </tr>
               ))}
             </tbody>

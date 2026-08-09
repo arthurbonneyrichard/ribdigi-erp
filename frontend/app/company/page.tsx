@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { formatDate } from '../../lib/format';
 
 export default function Page() {
   const [tenant, setTenant] = useState<any>(null);
@@ -211,7 +212,10 @@ export default function Page() {
       {tenant.status === 'trial' && (
         <div className="card" style={{ marginBottom: 12, borderLeft: '4px solid #ca8a04' }}>
           <p>
-            Trial ends {tenant.trial_ends_at ? String(tenant.trial_ends_at).slice(0, 10) : 'soon'}
+            Trial ends{' '}
+            {tenant.trial_ends_at
+              ? formatDate(tenant.trial_ends_at, tenant.date_format)
+              : 'soon'}
             {tenant.days_remaining != null ? ` (${tenant.days_remaining} day(s) left)` : ''}.
           </p>
           <button onClick={activate}>Activate now</button>
@@ -222,7 +226,7 @@ export default function Page() {
           <p>
             <b>Read-only grace period.</b> Writes are blocked until you activate.
             {tenant.grace_ends_at
-              ? ` Grace ends ${String(tenant.grace_ends_at).slice(0, 10)}.`
+              ? ` Grace ends ${formatDate(tenant.grace_ends_at, tenant.date_format)}.`
               : ''}
           </p>
           <button onClick={activate}>Activate to restore access</button>
