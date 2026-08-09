@@ -1,6 +1,6 @@
 # Stage 4 Plan — Intelligence, Multi-Store & Scale Hardening
 
-**Status:** Open (ADR-013)  
+**Status:** Closed — exit met (ADR-014 freeze); plan retained for evidence  
 **Base:** Phase 4 roadmap (`docs/DEVELOPMENT_ROADMAP.md` §5) + BR-13.x–BR-15.x / BR-21.x gaps  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 
@@ -21,7 +21,7 @@ Stage 4 here is **not** a rewrite of multi-store, reports, notifications, or AI.
 | **M1** | Global store context + `GET /stores/{id}/sales` (BR-13.1) | P0 | COMPLETE |
 | **N1** | `new_order` notification type (BR-15.1) | P0 | COMPLETE |
 | **R1** | Sales report depth (customer sales; store/category filters; comparative) | P0 | COMPLETE |
-| **H4** | Stage 4 exit criteria + freeze ADR | Exit | PENDING |
+| **H4** | Stage 4 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -68,4 +68,4 @@ Stage 4 here is **not** a rewrite of multi-store, reports, notifications, or AI.
 
 ## Sign-off
 
-Stage 4 exit will be recorded in `docs/STAGE_4_EXIT_CRITERIA.md` with a freeze ADR when P0 workstreams are complete.
+Stage 4 exit recorded in `docs/STAGE_4_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_014_STAGE4_FREEZE.md`.

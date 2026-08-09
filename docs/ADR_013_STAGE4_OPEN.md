@@ -21,3 +21,7 @@ Roadmap Phase 4 features 4.1–4.22 are largely already in the codebase (stores,
 
 - Agents may implement Stage 4 plan items without reopening Stage 1–3 feature scope.
 - Stage 4 exit requires `docs/STAGE_4_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned P0 workstreams.
+
+## Amendment (2026-08-09)
+
+Stage 4 P0 workstreams T1, M1, N1, R1 met exit criteria (`docs/STAGE_4_EXIT_CRITERIA.md`). Feature scope is frozen under [ADR-014](ADR_014_STAGE4_FREEZE.md). This open ADR remains historical; new Stage 4 feature work is not permitted except bugfixes / security / tests / docs.
