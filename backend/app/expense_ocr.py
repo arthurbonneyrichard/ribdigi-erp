@@ -221,6 +221,9 @@ def suggest_from_media(media: storage_svc.MediaObject) -> dict[str, Any]:
 
 async def suggest_for_expense(db, *, tenant_id: str, expense_id: str) -> dict[str, Any]:
     from app import expenses as expenses_svc
+    from app.ai_expenses import suggest_category_from_text
+    from sqlalchemy import select
+    from app import models as m
 
     expense = await expenses_svc.get_expense(db, tenant_id, expense_id)
     if not expense.attachment_url:
@@ -229,6 +232,40 @@ async def suggest_for_expense(db, *, tenant_id: str, expense_id: str) -> dict[st
         raise HTTPException(status_code=400, detail="External attachment URLs cannot be OCR'd")
     media = storage_svc.read_object(expense.attachment_url, tenant_id=tenant_id)
     result = suggest_from_media(media)
+
+    cats = (
+        await db.execute(
+            select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
+        )
+    ).scalars().all()
+    if not cats:
+        await expenses_svc.ensure_default_categories(db, tenant_id)
+        cats = (
+            await db.execute(
+                select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
+            )
+        ).scalars().all()
+    text_blob = " ".join(
+        filter(
+            None,
+            [
+                result.get("raw_text_preview"),
+                (result.get("suggestions") or {}).get("description"),
+                (result.get("suggestions") or {}).get("payee"),
+                expense.description,
+                expense.payee,
+            ],
+        )
+    )
+    cat_sug = suggest_category_from_text(text_blob, cats)
+    if cat_sug:
+        result["suggestions"] = {
+            **(result.get("suggestions") or {}),
+            "category": cat_sug["name"],
+            "category_id": cat_sug["id"],
+        }
+        result["category_suggestion"] = cat_sug
+
     result["expense_id"] = expense.id
     result["expense_status"] = expense.status
     return result

@@ -8817,3 +8817,43 @@ async def ai_inventory_predictions(
             "forecast_count": forecast["count"],
         }
     )
+
+
+@api.get("/ai/sales/analysis")
+async def ai_sales_analysis(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    lookback_days: int = 90,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.5 — sales trends, RFM segments, product affinity, peak hour/day."""
+    from app import ai_sales as ai_sales_svc
+
+    data = await ai_sales_svc.analyze_sales(
+        db,
+        claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+        lookback_days=lookback_days,
+    )
+    return env(data)
+
+
+@api.get("/ai/expenses/analysis")
+async def ai_expenses_analysis(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.6 — budget variance, anomalies, optimization, OCR category hints."""
+    from app import ai_expenses as ai_expenses_svc
+
+    data = await ai_expenses_svc.analyze_expenses(
+        db,
+        claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+    )
+    return env(data)

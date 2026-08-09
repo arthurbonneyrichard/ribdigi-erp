@@ -65,6 +65,36 @@ export default function Page() {
   const [insightCards, setInsightCards] = useState<
     { id: string; kind: string; severity: string; title: string; summary: string; action?: string }[]
   >([]);
+  const [salesSummary, setSalesSummary] = useState<{
+    invoice_count: number;
+    total_sales: number;
+    trend_direction: string;
+  } | null>(null);
+  const [salesPeaks, setSalesPeaks] = useState<{
+    peak_hour?: number | null;
+    peak_weekday_label?: string | null;
+  } | null>(null);
+  const [salesSegments, setSalesSegments] = useState<[string, number][]>([]);
+  const [salesAffinity, setSalesAffinity] = useState<
+    {
+      product_a_id: string;
+      product_b_id: string;
+      product_a_name: string;
+      product_b_name: string;
+      co_occurrence_count: number;
+      support: number;
+    }[]
+  >([]);
+  const [expenseSummary, setExpenseSummary] = useState<{
+    total_approved: number;
+    total_pending: number;
+  } | null>(null);
+  const [expenseAnomalies, setExpenseAnomalies] = useState<
+    { expense_id?: string; category?: string; description: string; amount: number }[]
+  >([]);
+  const [expenseSuggestions, setExpenseSuggestions] = useState<
+    { kind: string; summary: string }[]
+  >([]);
 
   async function loadPredictions() {
     setError('');
@@ -100,6 +130,29 @@ export default function Page() {
     }
   }
 
+  async function loadSalesAnalysis() {
+    try {
+      const r = await api('/ai/sales/analysis');
+      setSalesSummary(r.data?.summary || null);
+      setSalesPeaks(r.data?.peaks || null);
+      setSalesSegments(Object.entries(r.data?.rfm?.segment_counts || {}));
+      setSalesAffinity(r.data?.product_affinity?.pairs || []);
+    } catch (err: any) {
+      setError(err.message || 'Unable to load sales analysis');
+    }
+  }
+
+  async function loadExpenseAnalysis() {
+    try {
+      const r = await api('/ai/expenses/analysis');
+      setExpenseSummary(r.data?.summary || null);
+      setExpenseAnomalies(r.data?.anomalies || []);
+      setExpenseSuggestions(r.data?.optimization_suggestions || []);
+    } catch (err: any) {
+      setError(err.message || 'Unable to load expense analysis');
+    }
+  }
+
   async function loadInsightCards() {
     try {
       const r = await api('/ai/insights');
@@ -122,6 +175,8 @@ export default function Page() {
     loadPredictions().catch(() => undefined);
     loadForecasts().catch(() => undefined);
     loadDeadStock().catch(() => undefined);
+    loadSalesAnalysis().catch(() => undefined);
+    loadExpenseAnalysis().catch(() => undefined);
     loadInsightCards().catch(() => undefined);
     loadHistory().catch(() => undefined);
   }, []);
@@ -152,8 +207,8 @@ export default function Page() {
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Rule-based chat, demand forecasts (7/30/90 days), dead-stock detection, insights, and
-        velocity stockout predictions — all from your tenant data.
+        Rule-based chat, sales/expense analysis, demand forecasts, dead-stock detection, insights,
+        and velocity stockout predictions — all from your tenant data.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -287,6 +342,82 @@ export default function Page() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Sales analysis</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Trends, RFM segments, product affinity, and peak hour/day from posted invoices.
+        </p>
+        <button type="button" onClick={loadSalesAnalysis} style={{ marginBottom: 12 }}>
+          Refresh sales analysis
+        </button>
+        {salesSummary && (
+          <p>
+            Invoices: {salesSummary.invoice_count} · Sales: {salesSummary.total_sales} · Trend:{' '}
+            {salesSummary.trend_direction}
+            {salesPeaks?.peak_hour != null ? ` · Peak hour: ${salesPeaks.peak_hour}:00` : ''}
+            {salesPeaks?.peak_weekday_label ? ` · Peak day: ${salesPeaks.peak_weekday_label}` : ''}
+          </p>
+        )}
+        {salesSegments.length > 0 && (
+          <p className="muted">
+            RFM segments:{' '}
+            {salesSegments.map(([k, v]) => `${k}: ${v}`).join(' · ')}
+          </p>
+        )}
+        {salesAffinity.length > 0 && (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Bought together</th>
+                <th>Count</th>
+                <th>Support</th>
+              </tr>
+            </thead>
+            <tbody>
+              {salesAffinity.slice(0, 10).map((p) => (
+                <tr key={`${p.product_a_id}-${p.product_b_id}`}>
+                  <td>
+                    {p.product_a_name} + {p.product_b_name}
+                  </td>
+                  <td>{p.co_occurrence_count}</td>
+                  <td>{Math.round((p.support || 0) * 100)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Expense analysis</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Budget variance, unusual spends, and cost optimization suggestions.
+        </p>
+        <button type="button" onClick={loadExpenseAnalysis} style={{ marginBottom: 12 }}>
+          Refresh expense analysis
+        </button>
+        {expenseSummary && (
+          <p>
+            Approved: {expenseSummary.total_approved} · Pending: {expenseSummary.total_pending} ·
+            Anomalies: {expenseAnomalies.length}
+          </p>
+        )}
+        {expenseSuggestions.length > 0 && (
+          <ul>
+            {expenseSuggestions.slice(0, 8).map((s, i) => (
+              <li key={i}>
+                <strong>{s.kind}</strong>: {s.summary}
+              </li>
+            ))}
+          </ul>
+        )}
+        {expenseAnomalies.slice(0, 5).map((a) => (
+          <p key={a.expense_id || a.description} className="muted">
+            {a.category || 'Pattern'}: {a.description} ({a.amount})
+          </p>
+        ))}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
