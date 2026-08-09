@@ -3161,13 +3161,13 @@ async def list_quotations(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.SalesQuotation)
-            .where(m.SalesQuotation.tenant_id == claims["tenant_id"])
-            .order_by(m.SalesQuotation.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.SalesQuotation)
+        .where(m.SalesQuotation.tenant_id == claims["tenant_id"])
+        .order_by(m.SalesQuotation.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.SalesQuotation, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_quotation(db, q) for q in rows])
 
 
@@ -3198,6 +3198,7 @@ async def get_quotation(
     db: AsyncSession = Depends(get_db),
 ):
     quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
+    assert_record_access(claims, quote.created_by)
     return env(await sales_docs_svc.serialize_quotation(db, quote))
 
 
@@ -3208,6 +3209,8 @@ async def send_quotation(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
+    assert_record_access(claims, existing.created_by)
     quote, delivery = await sales_docs_svc.send_quotation(
         db, claims["tenant_id"], quotation_id, to=to
     )
@@ -3233,6 +3236,8 @@ async def accept_quotation(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
+    assert_record_access(claims, existing.created_by)
     quote = await sales_docs_svc.accept_quotation(db, claims["tenant_id"], quotation_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation accepted")
@@ -3244,6 +3249,8 @@ async def reject_quotation(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
+    assert_record_access(claims, existing.created_by)
     quote = await sales_docs_svc.reject_quotation(db, claims["tenant_id"], quotation_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation rejected")
@@ -3255,6 +3262,8 @@ async def convert_quotation_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
+    assert_record_access(claims, existing.created_by)
     order = await sales_docs_svc.convert_quotation_to_order(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
     )
@@ -3268,6 +3277,8 @@ async def convert_quotation_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
+    assert_record_access(claims, existing.created_by)
     invoice = await sales_docs_svc.convert_quotation_to_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
     )
@@ -3280,13 +3291,13 @@ async def list_sales_orders(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.SalesOrder)
-            .where(m.SalesOrder.tenant_id == claims["tenant_id"])
-            .order_by(m.SalesOrder.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.SalesOrder)
+        .where(m.SalesOrder.tenant_id == claims["tenant_id"])
+        .order_by(m.SalesOrder.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.SalesOrder, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_order(db, o) for o in rows])
 
 
@@ -3296,6 +3307,9 @@ async def create_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    if payload.quotation_id:
+        quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], payload.quotation_id)
+        assert_record_access(claims, quote.created_by)
     order = await sales_docs_svc.create_order(
         db,
         tenant_id=claims["tenant_id"],
@@ -3317,6 +3331,7 @@ async def get_sales_order(
     db: AsyncSession = Depends(get_db),
 ):
     order = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, order.created_by)
     return env(await sales_docs_svc.serialize_order(db, order))
 
 
@@ -3326,6 +3341,8 @@ async def confirm_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, existing.created_by)
     order = await sales_docs_svc.confirm_order(db, claims["tenant_id"], order_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Order confirmed")
@@ -3337,6 +3354,8 @@ async def cancel_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, existing.created_by)
     order = await sales_docs_svc.cancel_order(db, claims["tenant_id"], order_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Order cancelled")
@@ -3348,6 +3367,8 @@ async def convert_order_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, existing.created_by)
     invoice = await sales_docs_svc.convert_order_to_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], order_id=order_id
     )
@@ -3360,13 +3381,13 @@ async def list_sales_returns(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.SalesReturn)
-            .where(m.SalesReturn.tenant_id == claims["tenant_id"])
-            .order_by(m.SalesReturn.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.SalesReturn)
+        .where(m.SalesReturn.tenant_id == claims["tenant_id"])
+        .order_by(m.SalesReturn.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.SalesReturn, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_return(db, r) for r in rows])
 
 
@@ -3376,6 +3397,8 @@ async def create_sales_return(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    invoice = await sales_svc.get_invoice(db, claims["tenant_id"], payload.sales_invoice_id)
+    assert_record_access(claims, invoice.created_by)
     ret = await sales_docs_svc.create_return(
         db,
         tenant_id=claims["tenant_id"],
@@ -3397,6 +3420,7 @@ async def get_sales_return(
     db: AsyncSession = Depends(get_db),
 ):
     ret = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, ret.created_by)
     return env(await sales_docs_svc.serialize_return(db, ret))
 
 
@@ -3406,6 +3430,8 @@ async def post_sales_return(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, existing.created_by)
     ret = await sales_docs_svc.post_return(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], return_id=return_id
     )

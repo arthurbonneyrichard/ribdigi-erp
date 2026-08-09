@@ -5,6 +5,8 @@ from __future__ import annotations
 import pyotp
 import pytest
 
+from app import sales as sales_svc
+from app import sales_docs as sales_docs_svc
 from app.expenses import create_expense, ensure_default_categories
 from app.rbac import (
     RECORD_SCOPE_KEY,
@@ -98,3 +100,101 @@ async def test_roles_catalog_includes_record_scope(client):
     by_role = {row["role"]: row for row in r.json()["data"]}
     assert by_role["cashier"]["record_scope"] == "own"
     assert by_role["accountant"]["record_scope"] == "all"
+
+
+@pytest.mark.asyncio
+async def test_sales_docs_own_scope_hides_others_records(client, db_session):
+    ac, seed = client
+    admin = await _admin_headers(ac, seed)
+
+    foreign_quote = await sales_docs_svc.create_quotation(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        customer_id=seed["party1"].id,
+        items=[{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 8}],
+    )
+    foreign_order = await sales_docs_svc.create_order(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        customer_id=seed["party1"].id,
+        items=[{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 8}],
+    )
+    invoice = await sales_svc.create_sales_invoice(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        customer_id=seed["party1"].id,
+        items=[{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 8}],
+    )
+    invoice = await sales_svc.post_sales_invoice(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        invoice_id=invoice.id,
+    )
+    foreign_return = await sales_docs_svc.create_return(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        sales_invoice_id=invoice.id,
+        items=[{"product_id": seed["p1"].id, "quantity": 1}],
+    )
+    await db_session.commit()
+
+    patched = await ac.patch(
+        f"/api/v1/users/{seed['mgr1'].id}",
+        headers=admin,
+        json={"record_scope": "own"},
+    )
+    assert patched.status_code == 200, patched.text
+
+    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    assert (await ac.get(f"/api/v1/sales/quotations/{foreign_quote.id}", headers=mgr)).status_code == 404
+    assert (await ac.get(f"/api/v1/sales/orders/{foreign_order.id}", headers=mgr)).status_code == 404
+    assert (await ac.get(f"/api/v1/sales/returns/{foreign_return.id}", headers=mgr)).status_code == 404
+    assert (await ac.post(f"/api/v1/sales/quotations/{foreign_quote.id}/accept", headers=mgr)).status_code == 404
+    assert (await ac.post(f"/api/v1/sales/orders/{foreign_order.id}/confirm", headers=mgr)).status_code == 404
+
+    q_list = await ac.get("/api/v1/sales/quotations", headers=mgr)
+    assert q_list.status_code == 200
+    assert foreign_quote.id not in {row["id"] for row in q_list.json()["data"]}
+
+    o_list = await ac.get("/api/v1/sales/orders", headers=mgr)
+    assert o_list.status_code == 200
+    assert foreign_order.id not in {row["id"] for row in o_list.json()["data"]}
+
+    r_list = await ac.get("/api/v1/sales/returns", headers=mgr)
+    assert r_list.status_code == 200
+    assert foreign_return.id not in {row["id"] for row in r_list.json()["data"]}
+
+    mine_q = await ac.post(
+        "/api/v1/sales/quotations",
+        headers=mgr,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
+        },
+    )
+    assert mine_q.status_code == 200, mine_q.text
+    mine_qid = mine_q.json()["data"]["id"]
+    assert (await ac.get(f"/api/v1/sales/quotations/{mine_qid}", headers=mgr)).status_code == 200
+
+    # Creating a return against someone else's invoice is hidden under own-scope
+    blocked_return = await ac.post(
+        "/api/v1/sales/returns",
+        headers=mgr,
+        json={
+            "sales_invoice_id": invoice.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert blocked_return.status_code == 404
+
+    # Admin with default all still sees foreign docs
+    admin2 = await _admin_headers(ac, seed)
+    assert (await ac.get(f"/api/v1/sales/quotations/{foreign_quote.id}", headers=admin2)).status_code == 200
+    assert (await ac.get(f"/api/v1/sales/orders/{foreign_order.id}", headers=admin2)).status_code == 200
+    assert (await ac.get(f"/api/v1/sales/returns/{foreign_return.id}", headers=admin2)).status_code == 200
