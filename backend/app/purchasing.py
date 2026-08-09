@@ -1445,6 +1445,17 @@ async def record_supplier_payment(
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Payment amount must be positive")
 
+    if liquid_account_id:
+        from app.accounting import resolve_settlement_gl
+
+        await resolve_settlement_gl(
+            db,
+            tenant_id,
+            payment_method or "bank_transfer",
+            liquid_account_id=liquid_account_id,
+            outflow=True,
+        )
+
     supplier = (
         await db.execute(
             select(m.Party).where(

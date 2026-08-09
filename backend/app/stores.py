@@ -72,6 +72,14 @@ async def create_store(
     manager_id: str | None = None,
     branch_id: str | None = None,
 ) -> m.Store:
+    if manager_id:
+        manager = (
+            await db.execute(
+                select(m.User).where(m.User.id == manager_id, m.User.tenant_id == tenant_id)
+            )
+        ).scalar_one_or_none()
+        if not manager:
+            raise HTTPException(status_code=404, detail="Manager user not found")
     store = m.Store(
         tenant_id=tenant_id,
         name=name,

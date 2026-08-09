@@ -833,3 +833,168 @@ async def test_foreign_warehouse_id_on_stock_in_404(client, db_session):
         )
     ).scalars().all()
     assert leaked == []
+
+
+@pytest.mark.asyncio
+async def test_foreign_liquid_account_id_on_customer_payment_404(client, db_session):
+    ac, seed = client
+    await ensure_default_accounts(db_session, seed["t2"].id)
+    beta_bank = (
+        await db_session.execute(
+            select(m.Account).where(
+                m.Account.tenant_id == seed["t2"].id, m.Account.code == "1010"
+            )
+        )
+    ).scalar_one()
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    r = await ac.post(
+        f"/api/v1/customers/{seed['party1'].id}/payments",
+        headers=headers,
+        json={
+            "customer_id": seed["party1"].id,
+            "amount": 5,
+            "payment_method": "cash",
+            "liquid_account_id": beta_bank.id,
+        },
+    )
+    assert r.status_code == 404, r.text
+    planted = (
+        await db_session.execute(
+            select(m.CustomerPayment).where(
+                m.CustomerPayment.tenant_id == seed["t1"].id,
+                m.CustomerPayment.liquid_account_id == beta_bank.id,
+            )
+        )
+    ).scalars().all()
+    assert planted == []
+
+
+@pytest.mark.asyncio
+async def test_foreign_liquid_account_id_on_supplier_payment_404(client, db_session):
+    ac, seed = client
+    await ensure_default_accounts(db_session, seed["t2"].id)
+    beta_bank = (
+        await db_session.execute(
+            select(m.Account).where(
+                m.Account.tenant_id == seed["t2"].id, m.Account.code == "1010"
+            )
+        )
+    ).scalar_one()
+    supplier = m.Party(
+        tenant_id=seed["t1"].id,
+        name="Alpha Pay Supplier",
+        kind="supplier",
+        credit_limit=0,
+        balance=20,
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    r = await ac.post(
+        f"/api/v1/suppliers/{supplier.id}/payments",
+        headers=headers,
+        json={
+            "supplier_id": supplier.id,
+            "amount": 5,
+            "payment_method": "bank_transfer",
+            "liquid_account_id": beta_bank.id,
+        },
+    )
+    assert r.status_code == 404, r.text
+    planted = (
+        await db_session.execute(
+            select(m.SupplierPayment).where(
+                m.SupplierPayment.tenant_id == seed["t1"].id,
+                m.SupplierPayment.liquid_account_id == beta_bank.id,
+            )
+        )
+    ).scalars().all()
+    assert planted == []
+
+
+@pytest.mark.asyncio
+async def test_foreign_store_id_on_expense_create_404(client, db_session):
+    ac, seed = client
+    store = await create_store(
+        db_session, tenant_id=seed["t2"].id, name="Beta Exp Store", code="BXS"
+    )
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    r = await ac.post(
+        "/api/v1/expenses",
+        headers=headers,
+        json={
+            "amount": 4,
+            "category": "General",
+            "description": "Foreign store expense",
+            "payment_method": "cash",
+            "store_id": store.id,
+        },
+    )
+    assert r.status_code == 404, r.text
+    planted = (
+        await db_session.execute(
+            select(m.Expense).where(
+                m.Expense.tenant_id == seed["t1"].id,
+                m.Expense.store_id == store.id,
+            )
+        )
+    ).scalars().all()
+    assert planted == []
+
+
+@pytest.mark.asyncio
+async def test_foreign_manager_id_on_store_create_404(client, db_session):
+    ac, seed = client
+    headers = await _mgr_headers(ac)
+    r = await ac.post(
+        "/api/v1/stores",
+        headers=headers,
+        json={
+            "code": "MGR-X",
+            "name": "Hijack Manager Store",
+            "manager_id": seed["u2"].id,
+        },
+    )
+    assert r.status_code == 404, r.text
+    planted = (
+        await db_session.execute(
+            select(m.Store).where(
+                m.Store.tenant_id == seed["t1"].id,
+                m.Store.manager_id == seed["u2"].id,
+            )
+        )
+    ).scalars().all()
+    assert planted == []
+
+
+@pytest.mark.asyncio
+async def test_foreign_liquid_account_id_on_expense_create_404(client, db_session):
+    ac, seed = client
+    await ensure_default_accounts(db_session, seed["t2"].id)
+    beta_bank = (
+        await db_session.execute(
+            select(m.Account).where(
+                m.Account.tenant_id == seed["t2"].id, m.Account.code == "1010"
+            )
+        )
+    ).scalar_one()
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    r = await ac.post(
+        "/api/v1/expenses",
+        headers=headers,
+        json={
+            "amount": 3,
+            "category": "General",
+            "description": "Foreign liquid GL expense",
+            "payment_method": "cash",
+            "liquid_account_id": beta_bank.id,
+        },
+    )
+    assert r.status_code == 404, r.text

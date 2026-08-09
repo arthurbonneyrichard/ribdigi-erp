@@ -388,6 +388,17 @@ async def record_customer_payment(
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Payment amount must be positive")
 
+    if liquid_account_id:
+        from app.accounting import resolve_settlement_gl
+
+        await resolve_settlement_gl(
+            db,
+            tenant_id,
+            payment_method or "cash",
+            liquid_account_id=liquid_account_id,
+            outflow=False,
+        )
+
     customer = await get_customer(db, tenant_id, customer_id)
     tenant = (
         await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))

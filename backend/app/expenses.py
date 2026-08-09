@@ -455,6 +455,11 @@ async def create_expense(
             outflow=True,
         )
 
+    if store_id:
+        from app.stores import get_store
+
+        await get_store(db, tenant_id, store_id)
+
     expense = m.Expense(
         tenant_id=tenant_id,
         category_id=cat_id,
