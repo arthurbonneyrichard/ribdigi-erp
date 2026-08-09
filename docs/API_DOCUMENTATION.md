@@ -1076,7 +1076,9 @@ Status flow: `draft` → `requested` → `in_transit` → `received` (or `cancel
 ## 15. Notifications
 
 ### 15.1 List Notifications
-**Endpoint:** `GET /notifications?status=unread`
+**Endpoint:** `GET /notifications?status=unread&category=&group=`
+
+Groups: `stock`, `orders`, `payments`, `system`. Category `new_order` (Stage 4 N1 / BR-15.1) belongs to group `orders` and is emitted when a sales order is created or confirmed.
 
 ### 15.2 Mark as Read
 **Endpoint:** `PATCH /notifications/{notification_id}/read`
@@ -1085,10 +1087,12 @@ Status flow: `draft` → `requested` → `in_transit` → `received` (or `cancel
 **Endpoint:** `GET /notifications/settings`  
 **Update:** `PATCH /notifications/settings`
 
+Preference keys include `new_order`, `low_stock`, `purchase_received`, `payment_due`, `credit_limit`, and other default categories. Each key has `dashboard` / `email` / `sms` booleans.
+
 ```json
 {
   "low_stock": { "dashboard": true, "email": true, "sms": false },
-  "new_orders": { "dashboard": true, "email": true, "sms": false },
+  "new_order": { "dashboard": true, "email": false, "sms": false },
   "payment_due": { "dashboard": true, "email": true, "sms": true },
   "credit_limit": { "dashboard": true, "email": true, "sms": true }
 }
