@@ -236,6 +236,7 @@ ENROLLMENT_ALLOWED_SUFFIXES = (
     "/me",
     "/auth/me",
     "/auth/logout",
+    "/auth/idle-logout",
     "/auth/sessions",
     "/auth/2fa/status",
     "/auth/2fa/setup",

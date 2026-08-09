@@ -1264,6 +1264,46 @@ async def logout(request: Request, claims=Depends(current_claims), db: AsyncSess
     return env({"revoked": True})
 
 
+@api.post("/auth/idle-logout")
+async def idle_logout(
+    request: Request,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Server-side revoke of the current session after client inactivity (BR-19.3)."""
+    jti = claims.get("jti")
+    revoked = False
+    session_id = None
+    if jti:
+        session = (
+            await db.execute(
+                select(m.AuthSession).where(
+                    m.AuthSession.jti == jti,
+                    m.AuthSession.tenant_id == claims["tenant_id"],
+                    m.AuthSession.user_id == claims["sub"],
+                )
+            )
+        ).scalar_one_or_none()
+        if session and session.revoked_at is None:
+            session.revoked_at = datetime.utcnow()
+            revoked = True
+            session_id = session.id
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="auth",
+        action="idle_logout",
+        entity="auth_session",
+        entity_id=session_id,
+        details={"jti": jti, "revoked": revoked},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env({"revoked": revoked}, "Session ended due to inactivity")
+
+
 @api.get("/auth/sessions")
 async def list_sessions(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     rows = (

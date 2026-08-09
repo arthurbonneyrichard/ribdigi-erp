@@ -70,12 +70,25 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     if (!token) return;
     const timeoutMs = Math.max(5, idleMinutes) * 60 * 1000;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let loggingOut = false;
+
+    async function performIdleLogout() {
+      if (loggingOut) return;
+      loggingOut = true;
+      try {
+        await api('/auth/idle-logout', { method: 'POST', body: '{}' });
+      } catch {
+        // Still clear local credentials if the server call fails (expired token, etc.)
+      }
+      localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
+      window.location.href = '/';
+    }
+
     const reset = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/';
+        void performIdleLogout();
       }, timeoutMs);
     };
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'] as const;
