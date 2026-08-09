@@ -722,7 +722,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - **Security Settings:** 2FA setup wizard (QR code display, verification code input). Active sessions list with "Revoke" buttons per device. Password policy configuration.
 - **API Keys:** Generate/revoke API keys for third-party integrations. Usage statistics (requests, last used).
 - **Performance Dashboard:** Admin-only page showing query slow log, cache hit rates, average response times, error rates.
-- **Onboarding Checklist:** New tenant sees progress checklist (Setup company → Add products → Create supplier → Make first sale) with skip/complete actions.
+- **Onboarding Checklist:** New tenant sees progress checklist (Setup company → Add products → Create supplier → Make first sale) with skip/complete actions. **COMPLETE (Stage 6 N2):** `GET /onboarding/checklist` + Shell banner; dismissible at ≥80%.
 
 ### 6.6 Testing Requirements
 

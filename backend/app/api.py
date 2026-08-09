@@ -55,6 +55,7 @@ from app import ai_chat as ai_chat_svc
 from app import ai_guard as ai_guard_svc
 from app import api_keys as api_keys_svc
 from app import webhooks as webhooks_svc
+from app import onboarding as onboarding_svc
 from app.config import settings
 from app.schemas import (
     BarcodeLabelPrintRequest,
@@ -10065,6 +10066,63 @@ async def webhooks_test_delivery(
     )
     await db.commit()
     return env(webhooks_svc.serialize_delivery(delivery), "Webhook test attempted")
+
+
+@api.get("/onboarding/checklist")
+async def onboarding_checklist_get(
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 6 N2 — tenant onboarding checklist with auto-detected progress."""
+    data = await onboarding_svc.build_checklist(db, claims["tenant_id"])
+    return env(data)
+
+
+@api.post("/onboarding/checklist/steps/{step_id}/skip")
+async def onboarding_checklist_skip(
+    step_id: str,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    data = await onboarding_svc.skip_step(db, claims["tenant_id"], step_id)
+    await db.commit()
+    return env(data, "Step skipped")
+
+
+@api.post("/onboarding/checklist/steps/{step_id}/unskip")
+async def onboarding_checklist_unskip(
+    step_id: str,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    data = await onboarding_svc.unskip_step(db, claims["tenant_id"], step_id)
+    await db.commit()
+    return env(data, "Step restored")
+
+
+@api.post("/onboarding/checklist/dismiss")
+async def onboarding_checklist_dismiss(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Dismiss banner when progress ≥ 80% (or 100% complete)."""
+    tenants_svc.assert_writable(claims)
+    data = await onboarding_svc.dismiss(db, claims["tenant_id"])
+    await db.commit()
+    return env(data, "Onboarding checklist dismissed")
+
+
+@api.post("/onboarding/checklist/restore")
+async def onboarding_checklist_restore(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    data = await onboarding_svc.restore(db, claims["tenant_id"])
+    await db.commit()
+    return env(data, "Onboarding checklist restored")
 
 
 @api.get("/backup/settings")

@@ -19,7 +19,7 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 |----|------------|----------|---------|
 | **K1** | Tenant API keys (BR-18.1) | P0 | COMPLETE |
 | **W1** | Webhooks + HMAC signing (API docs §17) | P0 | COMPLETE |
-| **N2** | Tenant onboarding checklist (API + Shell) | P0 | PENDING |
+| **N2** | Tenant onboarding checklist (API + Shell) | P0 | COMPLETE |
 | **P2** | Redis app-data cache for dashboard/catalog | P0 | PENDING |
 | **H6x** | Stage 6 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -48,6 +48,14 @@ Stage 6 closes commercial-MVP integration and launch-ops holes left after Stage 
 - [x] HMAC-SHA256 header `X-Ribdigi-Signature: t=…,v1=…`; delivery log status.
 - [x] Fan-out `emit_event` wired for `sale.created` on invoice post; Security UI manage/test.
 - [x] Automated tests in `backend/tests/test_webhooks_w1.py`.
+
+## N2 acceptance criteria
+
+- [x] `tenants.onboarding_state` JSON (Alembic `0080`); `{dismissed_at, skipped[]}`.
+- [x] Auto-detect steps: setup company → add products → create supplier → stock on hand → first sale.
+- [x] API: `GET /onboarding/checklist`; admin skip/unskip/dismiss/restore; dismissible at ≥80%.
+- [x] Shell persistent Getting started banner with progress bar and step links.
+- [x] Automated tests in `backend/tests/test_onboarding_checklist_n2.py`.
 
 ## Sign-off
 

@@ -262,6 +262,20 @@ Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions a
 
 **Allowed statuses:** `trial`, `active`, `suspended`
 
+### 3.4a Onboarding Checklist (Stage 6 N2)
+
+Authenticated users can read progress; `company_admin` / `super_admin` may skip steps or dismiss the banner (≥80% progress).
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/onboarding/checklist` | Auto-detected steps + progress |
+| `POST` | `/onboarding/checklist/steps/{step_id}/skip` | Admin |
+| `POST` | `/onboarding/checklist/steps/{step_id}/unskip` | Admin |
+| `POST` | `/onboarding/checklist/dismiss` | Admin; requires ≥80% |
+| `POST` | `/onboarding/checklist/restore` | Admin |
+
+Steps: `setup_company`, `add_products`, `create_supplier`, `stock_ready`, `first_sale`.
+
 ### 3.5 Company Setup
 **Endpoint:** `POST /tenants/{tenant_id}/setup`
 

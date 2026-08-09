@@ -91,6 +91,8 @@ class Tenant(Base):
     document_footer: Mapped[str | None] = mapped_column(Text, nullable=True)
     suspended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     suspended_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Stage 6 N2 — {dismissed_at, skipped: [step_id, ...]}
+    onboarding_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

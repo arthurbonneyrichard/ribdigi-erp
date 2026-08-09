@@ -33,12 +33,36 @@ const items: [string, string, string][] = [
 
 type StoreOption = { id: string; code: string; name: string; is_active?: boolean };
 
+type OnboardingStep = {
+  id: string;
+  title: string;
+  description?: string;
+  href: string;
+  completed: boolean;
+  auto_completed?: boolean;
+  skipped?: boolean;
+};
+
+type OnboardingChecklist = {
+  steps: OnboardingStep[];
+  completed_count: number;
+  total_count: number;
+  progress_pct: number;
+  dismissed: boolean;
+  dismissible: boolean;
+  visible: boolean;
+};
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
+  const [role, setRole] = useState('');
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [stores, setStores] = useState<StoreOption[]>([]);
   const [storeId, setStoreId] = useState('');
+  const [onboarding, setOnboarding] = useState<OnboardingChecklist | null>(null);
+  const [onboardingBusy, setOnboardingBusy] = useState(false);
+  const canManageOnboarding = role === 'company_admin' || role === 'super_admin';
 
   useEffect(() => {
     setStoreId(getSelectedStoreId());
@@ -56,11 +80,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         if (!active) return;
         setUnread(countRes.data?.count || 0);
         setPermissions(meRes.data?.permissions || {});
+        setRole(meRes.data?.role || '');
         setIdleMinutes(Number(meRes.data?.inactivity_timeout_minutes) || 30);
       } catch {
         if (active) {
           setUnread(0);
           setPermissions({});
+          setRole('');
         }
       }
     }
@@ -71,6 +97,38 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       clearInterval(id);
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function loadOnboarding() {
+      try {
+        const res = await api('/onboarding/checklist');
+        if (!active) return;
+        setOnboarding(res.data || null);
+      } catch {
+        if (active) setOnboarding(null);
+      }
+    }
+    loadOnboarding();
+    const id = setInterval(loadOnboarding, 60000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, []);
+
+  async function mutateOnboarding(path: string) {
+    if (onboardingBusy) return;
+    setOnboardingBusy(true);
+    try {
+      const res = await api(path, { method: 'POST', body: '{}' });
+      setOnboarding(res.data || null);
+    } catch {
+      // Keep existing banner state; next poll will refresh.
+    } finally {
+      setOnboardingBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!canReadModule(permissions, 'stores')) {
@@ -173,6 +231,82 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </Link>
           )}
         </div>
+        {onboarding?.visible ? (
+          <section className="onboarding-banner" aria-label="Getting started checklist">
+            <div className="onboarding-banner-head">
+              <div>
+                <strong>Getting started</strong>
+                <span className="muted">
+                  {' '}
+                  · {onboarding.completed_count}/{onboarding.total_count} complete (
+                  {onboarding.progress_pct}%)
+                </span>
+              </div>
+              {canManageOnboarding ? (
+                <div className="onboarding-actions">
+                  {onboarding.dismissible ? (
+                    <button
+                      type="button"
+                      className="onboarding-btn"
+                      disabled={onboardingBusy}
+                      onClick={() => mutateOnboarding('/onboarding/checklist/dismiss')}
+                    >
+                      Dismiss
+                    </button>
+                  ) : (
+                    <span className="muted">Dismiss after 80%</span>
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <div
+              className="onboarding-progress"
+              role="progressbar"
+              aria-valuenow={onboarding.progress_pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="onboarding-progress-bar"
+                style={{ width: `${onboarding.progress_pct}%` }}
+              />
+            </div>
+            <ul className="onboarding-steps">
+              {onboarding.steps.map((step) => (
+                <li key={step.id} className={step.completed ? 'done' : ''}>
+                  <span className="onboarding-mark" aria-hidden>
+                    {step.completed ? '✓' : '○'}
+                  </span>
+                  <Link href={step.href}>{step.title}</Link>
+                  {canManageOnboarding && !step.auto_completed && !step.skipped ? (
+                    <button
+                      type="button"
+                      className="onboarding-btn linkish"
+                      disabled={onboardingBusy}
+                      onClick={() =>
+                        mutateOnboarding(`/onboarding/checklist/steps/${step.id}/skip`)
+                      }
+                    >
+                      Skip
+                    </button>
+                  ) : null}
+                  {canManageOnboarding && step.skipped ? (
+                    <button
+                      type="button"
+                      className="onboarding-btn linkish"
+                      disabled={onboardingBusy}
+                      onClick={() =>
+                        mutateOnboarding(`/onboarding/checklist/steps/${step.id}/unskip`)
+                      }
+                    >
+                      Undo skip
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         {children}
       </main>
     </div>
