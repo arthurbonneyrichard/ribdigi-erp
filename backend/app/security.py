@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app import models as m
-from app.rbac import has_permission, permissions_for_role
+from app.rbac import VALID_ROLES, has_permission, permissions_for_role
 
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
@@ -129,7 +129,19 @@ async def current_claims(
     if tenant.status == "suspended":
         raise HTTPException(status_code=403, detail="Tenant suspended or missing")
 
-    data["permissions"] = user.permissions or permissions_for_role(user.role)
+    if isinstance(user.permissions, dict) and user.permissions:
+        data["permissions"] = user.permissions
+    elif user.role in VALID_ROLES:
+        data["permissions"] = permissions_for_role(user.role)
+    else:
+        from app import roles as roles_svc
+
+        try:
+            data["permissions"] = await roles_svc.permissions_for_assignment(
+                db, user.tenant_id, user.role
+            )
+        except Exception:
+            data["permissions"] = {}
     data["email_verified"] = user.email_verified
     data["totp_enabled"] = bool(user.totp_enabled)
     data["tenant_status"] = tenant.status
@@ -172,13 +184,10 @@ def require_permission(module: str, action: str = "read"):
             )
         role = claims.get("role", "")
         overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
-        # permissions in claims may be the full map from user; treat wildcard user override specially
-        user_overrides = None
-        if overrides and overrides.get("*") == ["*"]:
+        if overrides and (overrides.get("*") == ["*"] or "*" in (overrides.get("*") or [])):
             return claims
-        if overrides and module in overrides:
-            user_overrides = {module: overrides[module]}
-        if not has_permission(role, module, action, overrides=user_overrides if user_overrides else overrides):
+        # user.permissions is the authoritative map (system copy or custom role snapshot).
+        if not has_permission(role, module, action, overrides=overrides):
             raise HTTPException(
                 status_code=403,
                 detail=f"Missing permission: {module}:{action}",

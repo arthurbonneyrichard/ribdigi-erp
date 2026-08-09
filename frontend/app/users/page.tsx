@@ -4,7 +4,14 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type RoleRow = { role: string; label: string };
+type RoleRow = {
+  role: string;
+  label: string;
+  system?: boolean;
+  permissions?: Record<string, string[]>;
+  record_scope?: string;
+};
+
 type UserRow = {
   id: string;
   full_name: string;
@@ -22,10 +29,18 @@ const emptyForm = {
   phone: '',
 };
 
+const emptyRoleForm = {
+  slug: '',
+  label: '',
+  base_role: 'cashier',
+  record_scope: 'own',
+};
+
 export default function Page() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [roleForm, setRoleForm] = useState(emptyRoleForm);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -80,6 +95,43 @@ export default function Page() {
     }
   }
 
+  async function createRole(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    setBusy(true);
+    try {
+      await api('/roles', {
+        method: 'POST',
+        body: JSON.stringify({
+          slug: roleForm.slug.trim().toLowerCase(),
+          label: roleForm.label.trim(),
+          base_role: roleForm.base_role,
+          record_scope: roleForm.record_scope,
+        }),
+      });
+      setRoleForm(emptyRoleForm);
+      setMessage('Custom role created');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteRole(slug: string) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/roles/${slug}`, { method: 'DELETE' });
+      setMessage('Custom role deleted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function setRole(userId: string, role: string) {
     setError('');
     setMessage('');
@@ -115,12 +167,91 @@ export default function Page() {
     }
   }
 
+  const systemBases = roles.filter((r) => r.system && r.role !== 'super_admin' && r.role !== 'company_admin');
+  const customRoles = roles.filter((r) => !r.system);
+
   return (
     <Shell>
       <h1>User Management</h1>
-      <p className="muted">Create users, assign system roles, and activate or deactivate accounts.</p>
+      <p className="muted">
+        Create users, assign system or custom roles, and activate or deactivate accounts.
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      {canWrite && (
+        <form onSubmit={createRole} style={{ margin: '20px 0', maxWidth: 520 }}>
+          <h2 style={{ fontSize: 18 }}>Create custom role</h2>
+          <input
+            value={roleForm.slug}
+            onChange={(e) => setRoleForm({ ...roleForm, slug: e.target.value })}
+            placeholder="Slug (e.g. floor_lead)"
+            required
+            style={{ width: '100%', padding: 10, marginBottom: 8 }}
+          />
+          <input
+            value={roleForm.label}
+            onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
+            placeholder="Label"
+            required
+            style={{ width: '100%', padding: 10, marginBottom: 8 }}
+          />
+          <select
+            value={roleForm.base_role}
+            onChange={(e) => setRoleForm({ ...roleForm, base_role: e.target.value })}
+            style={{ width: '100%', padding: 10, marginBottom: 8 }}
+          >
+            {systemBases.map((r) => (
+              <option key={r.role} value={r.role}>
+                Copy permissions from {r.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={roleForm.record_scope}
+            onChange={(e) => setRoleForm({ ...roleForm, record_scope: e.target.value })}
+            style={{ width: '100%', padding: 10, marginBottom: 8 }}
+          >
+            <option value="own">Record scope: own</option>
+            <option value="all">Record scope: all</option>
+          </select>
+          <button type="submit" disabled={busy} style={{ padding: '10px 16px' }}>
+            {busy ? 'Saving…' : 'Create role'}
+          </button>
+        </form>
+      )}
+
+      {customRoles.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 18 }}>Custom roles</h2>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Slug</th>
+                <th>Label</th>
+                <th>Record scope</th>
+                {canWrite && <th>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {customRoles.map((r) => (
+                <tr key={r.role}>
+                  <td>{r.role}</td>
+                  <td>{r.label}</td>
+                  <td>{r.record_scope || 'own'}</td>
+                  {canWrite && (
+                    <td>
+                      <button type="button" onClick={() => deleteRole(r.role)}>
+                        Delete
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {canWrite && (
         <form onSubmit={createUser} style={{ margin: '20px 0', maxWidth: 520 }}>
@@ -164,6 +295,7 @@ export default function Page() {
               .map((r) => (
                 <option key={r.role} value={r.role}>
                   {r.label}
+                  {r.system ? '' : ' (custom)'}
                 </option>
               ))}
           </select>
@@ -194,6 +326,7 @@ export default function Page() {
                     {roles.map((role) => (
                       <option key={role.role} value={role.role}>
                         {role.label}
+                        {role.system ? '' : ' (custom)'}
                       </option>
                     ))}
                   </select>

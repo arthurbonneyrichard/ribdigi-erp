@@ -105,6 +105,28 @@ class UserUpdate(BaseModel):
     record_scope: str | None = None
 
 
+class CustomRoleCreate(BaseModel):
+    slug: str
+    label: str
+    description: str | None = None
+    base_role: str | None = "cashier"
+    permissions: dict | None = None
+    record_scope: str = "own"
+
+
+class CustomRoleUpdate(BaseModel):
+    label: str | None = None
+    description: str | None = None
+    permissions: dict | None = None
+    record_scope: str | None = None
+    is_active: bool | None = None
+
+
+class CustomRolePermissionsUpdate(BaseModel):
+    permissions: dict
+    record_scope: str | None = None
+
+
 class ProductCreate(BaseModel):
     name: str
     sku: str

@@ -15,12 +15,12 @@ from app.rbac import (
     VALID_ROLES,
     apply_created_by_scope,
     assert_record_access,
-    list_role_catalog,
     normalize_record_scope,
     permissions_for_role,
     record_scope_from_permissions,
     serialize_user,
 )
+from app import roles as roles_svc
 from app import purchasing as purchasing_svc
 from app import sales as sales_svc
 from app import sales_docs as sales_docs_svc
@@ -133,6 +133,9 @@ from app.schemas import (
     WebAuthnRegisterVerify,
     UserCreate,
     UserUpdate,
+    CustomRoleCreate,
+    CustomRoleUpdate,
+    CustomRolePermissionsUpdate,
     ProductUpdate,
     StockCountCreate,
     StockCountItemsUpdate,
@@ -1280,7 +1283,12 @@ async def verify_email(payload: EmailVerifyConfirm, db: AsyncSession = Depends(g
 @api.get("/me")
 async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     user = await db.get(m.User, claims["sub"])
-    perms = user.permissions or permissions_for_role(user.role)
+    if isinstance(user.permissions, dict) and user.permissions:
+        perms = user.permissions
+    elif user.role in VALID_ROLES:
+        perms = permissions_for_role(user.role)
+    else:
+        perms = await roles_svc.permissions_for_assignment(db, user.tenant_id, user.role)
     return env(
         {
             "id": user.id,
@@ -1363,16 +1371,154 @@ async def _revoke_user_sessions(db: AsyncSession, *, tenant_id: str, user_id: st
 
 
 @api.get("/roles")
-async def roles_catalog(claims=Depends(require_permission("users", "read"))):
-    return env(list_role_catalog())
+async def roles_catalog(
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await roles_svc.list_role_catalog(db, claims["tenant_id"]))
 
 
 @api.get("/roles/{role}")
-async def role_detail(role: str, claims=Depends(require_permission("users", "read"))):
-    if role not in VALID_ROLES:
-        raise HTTPException(status_code=404, detail="Role not found")
-    catalog = {row["role"]: row for row in list_role_catalog()}
-    return env(catalog[role])
+async def role_detail(
+    role: str,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    if role in VALID_ROLES:
+        return env(roles_svc.role_detail_payload(role))
+    custom = await roles_svc.get_custom_role(db, claims["tenant_id"], role)
+    return env(roles_svc.serialize_custom_role(custom))
+
+
+@api.post("/roles")
+async def create_custom_role(
+    payload: CustomRoleCreate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    try:
+        row = await roles_svc.create_custom_role(
+            db,
+            tenant_id=claims["tenant_id"],
+            slug=payload.slug,
+            label=payload.label,
+            description=payload.description,
+            base_role=payload.base_role,
+            permissions=payload.permissions,
+            record_scope=payload.record_scope,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="custom_role_created",
+        entity="custom_role",
+        entity_id=row.id,
+        details={"slug": row.slug, "label": row.label},
+    )
+    await db.commit()
+    return env(roles_svc.serialize_custom_role(row), "Custom role created")
+
+
+@api.patch("/roles/{role}")
+async def update_custom_role(
+    role: str,
+    payload: CustomRoleUpdate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    if role in VALID_ROLES:
+        raise HTTPException(status_code=400, detail="System roles cannot be modified")
+    try:
+        row = await roles_svc.update_custom_role(
+            db,
+            tenant_id=claims["tenant_id"],
+            slug=role,
+            label=payload.label,
+            description=payload.description,
+            permissions=payload.permissions,
+            record_scope=payload.record_scope,
+            is_active=payload.is_active,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="custom_role_updated",
+        entity="custom_role",
+        entity_id=row.id,
+        details={"slug": row.slug},
+    )
+    await db.commit()
+    return env(roles_svc.serialize_custom_role(row), "Custom role updated")
+
+
+@api.put("/roles/{role}/permissions")
+async def put_custom_role_permissions(
+    role: str,
+    payload: CustomRolePermissionsUpdate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    if role in VALID_ROLES:
+        raise HTTPException(status_code=400, detail="System roles cannot be modified")
+    try:
+        row = await roles_svc.update_custom_role(
+            db,
+            tenant_id=claims["tenant_id"],
+            slug=role,
+            permissions=payload.permissions,
+            record_scope=payload.record_scope,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="custom_role_permissions_updated",
+        entity="custom_role",
+        entity_id=row.id,
+        details={"slug": row.slug},
+    )
+    await db.commit()
+    return env(roles_svc.serialize_custom_role(row), "Role permissions updated")
+
+
+@api.delete("/roles/{role}")
+async def delete_custom_role(
+    role: str,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenants_svc.assert_writable(claims)
+    if role in VALID_ROLES:
+        raise HTTPException(status_code=400, detail="System roles cannot be deleted")
+    custom = await roles_svc.get_custom_role(db, claims["tenant_id"], role)
+    role_id = custom.id
+    await roles_svc.delete_custom_role(db, tenant_id=claims["tenant_id"], slug=role)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="custom_role_deleted",
+        entity="custom_role",
+        entity_id=role_id,
+        details={"slug": role},
+    )
+    await db.commit()
+    return env({"role": role}, "Custom role deleted")
 
 
 @api.get("/users")
@@ -1403,10 +1549,9 @@ async def add_user(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    if payload.role not in VALID_ROLES:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Allowed: {sorted(VALID_ROLES)}")
-    if payload.role == "super_admin" and claims.get("role") != "super_admin":
-        raise HTTPException(status_code=403, detail="Only super_admin can create super_admin users")
+    role = await roles_svc.assert_assignable_role(
+        db, claims["tenant_id"], payload.role, actor_role=claims.get("role")
+    )
     validate_password_strength(payload.password)
     exists = (
         await db.execute(
@@ -1424,8 +1569,8 @@ async def add_user(
         full_name=payload.full_name,
         phone=payload.phone,
         password_hash=hash_password(payload.password),
-        role=payload.role,
-        permissions=permissions_for_role(payload.role),
+        role=role,
+        permissions=await roles_svc.permissions_for_assignment(db, claims["tenant_id"], role),
         email_verified=False,
         is_active=True,
     )
@@ -1487,19 +1632,18 @@ async def update_user(
         changes["phone"] = user.phone
 
     if payload.role is not None:
-        if payload.role not in VALID_ROLES:
-            raise HTTPException(status_code=400, detail=f"Invalid role. Allowed: {sorted(VALID_ROLES)}")
-        if payload.role == "super_admin" and claims.get("role") != "super_admin":
-            raise HTTPException(status_code=403, detail="Only super_admin can assign super_admin")
-        if user.id == claims["sub"] and payload.role != user.role:
+        new_role = await roles_svc.assert_assignable_role(
+            db, claims["tenant_id"], payload.role, actor_role=claims.get("role")
+        )
+        if user.id == claims["sub"] and new_role != user.role:
             raise HTTPException(status_code=400, detail="Cannot change your own role")
-        if user.role != payload.role:
-            changes["role"] = {"from": user.role, "to": payload.role}
+        if user.role != new_role:
+            changes["role"] = {"from": user.role, "to": new_role}
             prev_scope = None
             if isinstance(user.permissions, dict):
                 prev_scope = user.permissions.get(RECORD_SCOPE_KEY)
-            user.role = payload.role
-            perms = permissions_for_role(payload.role)
+            user.role = new_role
+            perms = await roles_svc.permissions_for_assignment(db, claims["tenant_id"], new_role)
             if prev_scope is not None:
                 perms[RECORD_SCOPE_KEY] = prev_scope
             user.permissions = perms

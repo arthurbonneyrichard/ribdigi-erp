@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+from copy import deepcopy
+
 ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     "super_admin": {"*": ["*"]},
     "company_admin": {"*": ["*"]},
@@ -103,6 +106,35 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
 }
 
 VALID_ROLES = set(ROLE_PERMISSIONS.keys())
+SYSTEM_ROLES = frozenset(VALID_ROLES)
+
+# Modules that custom roles may grant (no tenant/backup/users wildcards by default list).
+SYSTEM_MODULES = frozenset(
+    {
+        "dashboard",
+        "company",
+        "inventory",
+        "sales",
+        "pos",
+        "purchasing",
+        "expenses",
+        "accounting",
+        "credit",
+        "tax",
+        "stores",
+        "reports",
+        "notifications",
+        "audit",
+        "backup",
+        "ai",
+        "security",
+        "users",
+        "customers",
+        "suppliers",
+    }
+)
+ALLOWED_ACTIONS = frozenset({"read", "write", "approve", "*"})
+_MODULE_KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 
 # Record-level scope (BR-3.3). `department` reserved until org units exist.
 RECORD_SCOPES = frozenset({"own", "all"})
@@ -121,7 +153,50 @@ ROLE_RECORD_SCOPE: dict[str, str] = {
 
 
 def permissions_for_role(role: str) -> dict[str, list[str]]:
-    return ROLE_PERMISSIONS.get(role, ROLE_PERMISSIONS["cashier"]).copy()
+    """System role permission map. Unknown roles return empty (not cashier) to avoid leaks."""
+    if role in ROLE_PERMISSIONS:
+        return deepcopy(ROLE_PERMISSIONS[role])
+    return {}
+
+
+def normalize_permissions_map(raw: dict | None, *, allow_wildcard: bool = True) -> dict[str, list[str]]:
+    """Validate and normalize a module→actions permission map."""
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ValueError("permissions must be an object")
+    out: dict[str, list[str]] = {}
+    for key, actions in raw.items():
+        module = str(key or "").strip().lower()
+        if not module or module == RECORD_SCOPE_KEY:
+            continue
+        if module == "*":
+            if not allow_wildcard:
+                raise ValueError("Custom roles cannot use wildcard '*' module permissions")
+            if actions == ["*"] or actions == "*" or (isinstance(actions, list) and "*" in actions):
+                return {"*": ["*"]}
+            raise ValueError("Wildcard module must map to ['*']")
+        if module not in SYSTEM_MODULES and not _MODULE_KEY_RE.fullmatch(module):
+            raise ValueError(f"Invalid permission module '{module}'")
+        if module not in SYSTEM_MODULES:
+            raise ValueError(f"Unknown permission module '{module}'")
+        if isinstance(actions, str):
+            action_list = [actions]
+        elif isinstance(actions, list):
+            action_list = [str(a).strip().lower() for a in actions if str(a).strip()]
+        else:
+            raise ValueError(f"Actions for module '{module}' must be a list")
+        cleaned: list[str] = []
+        for action in action_list:
+            if action not in ALLOWED_ACTIONS:
+                raise ValueError(f"Invalid action '{action}' for module '{module}'")
+            if action == "*" and not allow_wildcard:
+                raise ValueError("Custom roles cannot use wildcard '*' actions")
+            if action not in cleaned:
+                cleaned.append(action)
+        if cleaned:
+            out[module] = cleaned
+    return out
 
 
 def normalize_record_scope(value: str | None, *, default: str = "all") -> str:
@@ -175,7 +250,7 @@ def apply_created_by_scope(stmt, model, claims: dict):
     return stmt.where(model.created_by == claims.get("sub"))
 
 
-def list_role_catalog() -> list[dict]:
+def list_system_role_catalog() -> list[dict]:
     """System roles with permission maps for admin UI."""
     rows = []
     for role in sorted(ROLE_PERMISSIONS.keys()):
@@ -191,9 +266,14 @@ def list_role_catalog() -> list[dict]:
     return rows
 
 
+def list_role_catalog() -> list[dict]:
+    """Back-compat: system roles only. Prefer app.roles.list_role_catalog with tenant."""
+    return list_system_role_catalog()
+
+
 def serialize_user(user) -> dict:
     """Safe user payload — never include password hashes or TOTP secrets."""
-    perms = user.permissions or permissions_for_role(user.role)
+    perms = user.permissions if isinstance(user.permissions, dict) and user.permissions else permissions_for_role(user.role)
     return {
         "id": user.id,
         "tenant_id": user.tenant_id,
@@ -216,10 +296,15 @@ def has_permission(
     action: str,
     overrides: dict | None = None,
 ) -> bool:
-    """Check module/action permission. Role catalog is base; user overrides win."""
-    perms = permissions_for_role(role)
-    if overrides:
-        perms = {**perms, **overrides}
+    """Check module/action permission.
+
+    When ``overrides`` is provided (typically ``user.permissions``), it is the
+    authoritative map so custom roles cannot inherit cashier defaults by mistake.
+    """
+    if overrides is not None:
+        perms = {k: v for k, v in dict(overrides).items() if k != RECORD_SCOPE_KEY}
+    else:
+        perms = permissions_for_role(role)
 
     if perms.get("*") == ["*"] or "*" in (perms.get("*") or []):
         return True

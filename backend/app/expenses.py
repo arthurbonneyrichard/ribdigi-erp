@@ -50,9 +50,19 @@ def default_approval_levels(
     ]
 
 
-def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
-    """Validate/normalize levels. Raises HTTPException on bad input."""
+def normalize_approval_matrix(
+    raw: dict | list | None,
+    *,
+    known_roles: set[str] | None = None,
+) -> list[dict]:
+    """Validate/normalize levels. Raises HTTPException on bad input.
+
+    ``known_roles`` may include tenant custom role slugs (system roles always allowed).
+    """
     from app.rbac import VALID_ROLES
+    from app.roles import SLUG_RE
+
+    allowed = set(VALID_ROLES) | set(known_roles or ())
 
     if raw is None:
         return default_approval_levels()
@@ -92,7 +102,8 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
             role = str(r or "").strip()
             if not role:
                 continue
-            if role not in VALID_ROLES:
+            # System roles, known custom roles, or well-formed custom slugs.
+            if role not in allowed and not SLUG_RE.fullmatch(role):
                 raise HTTPException(status_code=400, detail=f"unknown role '{role}' in level {i + 1}")
             if role not in roles:
                 roles.append(role)
