@@ -641,3 +641,73 @@ async def test_foreign_product_labels_404(client):
     headers = await _mgr_headers(ac)
     r = await ac.get(f"/api/v1/products/{seed['p2'].id}/labels", headers=headers)
     assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_foreign_expense_ocr_suggest_404(client, db_session):
+    ac, seed = client
+    await ensure_default_categories(db_session, seed["t2"].id)
+    await db_session.commit()
+    cats = (
+        await db_session.execute(
+            select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == seed["t2"].id)
+        )
+    ).scalars().all()
+    expense = await create_expense(
+        db_session,
+        tenant_id=seed["t2"].id,
+        user_id=seed["u2"].id,
+        amount=18,
+        description="Beta OCR expense",
+        category_id=cats[0].id if cats else None,
+        payment_method="cash",
+    )
+    expense.attachment_url = f"{seed['t2'].id}/expenses/beta-ocr.pdf"
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    r = await ac.post(f"/api/v1/expenses/{expense.id}/ocr-suggest", headers=headers)
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_foreign_purchase_invoice_ocr_suggest_404(client, db_session):
+    ac, seed = client
+    inv = await create_purchase_invoice(
+        db_session,
+        tenant_id=seed["t2"].id,
+        user_id=seed["u2"].id,
+        supplier_id=seed["supplier2"].id,
+        items=[{"product_id": seed["p2"].id, "quantity": 1, "unit_price": 4}],
+    )
+    inv.attachment_url = f"{seed['t2'].id}/purchase_invoices/beta-ocr.pdf"
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    r = await ac.post(f"/api/v1/purchasing/invoices/{inv.id}/ocr-suggest", headers=headers)
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_foreign_pos_receipt_send_404(client, db_session):
+    ac, seed = client
+    tx = m.Transaction(
+        tenant_id=seed["t2"].id,
+        tx_type="pos_sale",
+        reference="POS-BETA-SEND-1",
+        subtotal=12,
+        tax=0,
+        total=12,
+        status="completed",
+        payload={"items": []},
+    )
+    db_session.add(tx)
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    r = await ac.post(
+        f"/api/v1/pos/sales/{tx.id}/receipt/send",
+        headers=headers,
+        params={"channel": "email", "to": "nobody@example.com"},
+    )
+    assert r.status_code == 404

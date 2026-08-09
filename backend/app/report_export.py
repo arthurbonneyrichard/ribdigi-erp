@@ -38,6 +38,7 @@ EXPORTABLE = frozenset(
         "tax",
         "tax_filing",
         "tax_filing_gh",
+        "tax_filing_ng",
     }
 )
 
@@ -334,15 +335,17 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         lines.append(f"Input schedule lines: {len(in_sched)}")
         return rows or [{"note": "no rows"}], lines, "Tax Filing Pack"
 
-    if report_type == "tax_filing_gh":
+    if report_type in {"tax_filing_gh", "tax_filing_ng"}:
         gov = payload.get("government") or {}
         header = gov.get("header") or {}
         boxes = gov.get("boxes") or []
         out_sched = (gov.get("schedules") or {}).get("output") or []
         in_sched = (gov.get("schedules") or {}).get("input") or []
+        juris = "gh" if report_type == "tax_filing_gh" else "ng"
+        box_section = f"{juris}_box"
         rows = [
             {"section": "header", **{k: v for k, v in header.items() if not isinstance(v, (list, dict))}},
-            *[{"section": "gh_box", **b} for b in boxes],
+            *[{"section": box_section, **b} for b in boxes],
             *[{"section": "output", **r} for r in out_sched],
             *[{"section": "input", **r} for r in in_sched],
         ]
@@ -355,12 +358,18 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         ]
         for w in gov.get("warnings") or []:
             lines.append(f"WARNING: {w}")
-        lines.append("-- GH VAT BOXES --")
+        label = "GH VAT BOXES" if report_type == "tax_filing_gh" else "NG VAT BOXES"
+        lines.append(f"-- {label} --")
         for b in boxes:
             lines.append(f"Box {b.get('box')} {b.get('label')}: {b.get('amount')}")
         lines.append(f"Output schedule lines: {len(out_sched)}")
         lines.append(f"Input schedule lines: {len(in_sched)}")
-        return rows or [{"note": "no rows"}], lines, "Ghana GRA VAT Return"
+        title = (
+            "Ghana GRA VAT Return"
+            if report_type == "tax_filing_gh"
+            else "Nigeria FIRS VAT Return"
+        )
+        return rows or [{"note": "no rows"}], lines, title
 
     raise HTTPException(status_code=400, detail=f"Unsupported report type: {report_type}")
 
@@ -458,6 +467,16 @@ async def build_report_payload(
             to_date=td,
             jurisdiction=jurisdiction or "GH",
         )
+    if report_type == "tax_filing_ng":
+        from app import tax_filings as tax_filings_svc
+
+        return await tax_filings_svc.government_filing_pack(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            jurisdiction=jurisdiction or "NG",
+        )
     raise HTTPException(status_code=400, detail="Unhandled report type")
 
 
@@ -499,7 +518,7 @@ async def export_report(
                     ("InputSchedule", in_sched, None),
                 ]
             )
-        elif report_type == "tax_filing_gh" and isinstance(payload, dict):
+        elif report_type in {"tax_filing_gh", "tax_filing_ng"} and isinstance(payload, dict):
             gov = payload.get("government") or {}
             header = gov.get("header") or {}
             header_rows = [{"field": k, "value": v} for k, v in header.items()]
@@ -508,10 +527,11 @@ async def export_report(
             boxes = gov.get("boxes") or []
             out_sched = (gov.get("schedules") or {}).get("output") or []
             in_sched = (gov.get("schedules") or {}).get("input") or []
+            box_sheet = "GHBoxes" if report_type == "tax_filing_gh" else "NGBoxes"
             raw = to_xlsx_sheets(
                 [
                     ("ReturnHeader", header_rows, None),
-                    ("GHBoxes", boxes, None),
+                    (box_sheet, boxes, None),
                     ("OutputSchedule", out_sched, None),
                     ("InputSchedule", in_sched, None),
                 ]

@@ -114,7 +114,10 @@ export default function Page() {
     }
   }
 
-  async function downloadFiling(format: 'csv' | 'pdf' | 'xlsx', reportType: 'tax_filing' | 'tax_filing_gh' = 'tax_filing') {
+  async function downloadFiling(
+    format: 'csv' | 'pdf' | 'xlsx',
+    reportType: 'tax_filing' | 'tax_filing_gh' | 'tax_filing_ng' = 'tax_filing',
+  ) {
     setError('');
     setMessage('');
     try {
@@ -126,6 +129,7 @@ export default function Page() {
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
       if (reportType === 'tax_filing_gh') params.set('jurisdiction', 'GH');
+      if (reportType === 'tax_filing_ng') params.set('jurisdiction', 'NG');
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -146,11 +150,13 @@ export default function Page() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      setMessage(
+      const label =
         reportType === 'tax_filing_gh'
-          ? `Ghana VAT return ${format.toUpperCase()} downloaded`
-          : `Filing pack ${format.toUpperCase()} downloaded`,
-      );
+          ? 'Ghana VAT return'
+          : reportType === 'tax_filing_ng'
+            ? 'Nigeria VAT return'
+            : 'Filing pack';
+      setMessage(`${label} ${format.toUpperCase()} downloaded`);
     } catch (err: any) {
       setError(err.message);
     }
@@ -257,6 +263,9 @@ export default function Page() {
           <button onClick={() => downloadFiling('xlsx', 'tax_filing_gh')}>Export Ghana VAT (XLSX)</button>
           <button onClick={() => downloadFiling('csv', 'tax_filing_gh')}>Export Ghana VAT (CSV)</button>
           <button onClick={() => downloadFiling('pdf', 'tax_filing_gh')}>Export Ghana VAT (PDF)</button>
+          <button onClick={() => downloadFiling('xlsx', 'tax_filing_ng')}>Export Nigeria VAT (XLSX)</button>
+          <button onClick={() => downloadFiling('csv', 'tax_filing_ng')}>Export Nigeria VAT (CSV)</button>
+          <button onClick={() => downloadFiling('pdf', 'tax_filing_ng')}>Export Nigeria VAT (PDF)</button>
         </div>
         {!!filing?.government?.warnings?.length && (
           <p style={{ color: '#b45309' }}>{filing.government.warnings.join(' · ')}</p>
