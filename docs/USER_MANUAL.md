@@ -654,7 +654,7 @@ Store Manager reviews & approves/rejects
 3. **Attach Receipt:** Upload photo or PDF of receipt
 4. Click **Submit**
 
-> **OCR Tip:** The AI Document Assistant can auto-extract amount, date, and vendor from receipt images.
+> **OCR Tip:** Attach a receipt, run **OCR suggest**, review the fields, then **Apply** (`confirm=true`). Nothing is written until you confirm (Stage 10 A1).
 
 ### 7.2 Expense Approval
 
@@ -1044,16 +1044,14 @@ Go to **Inventory → AI Predictions** to see:
 
 ### 14.4 AI Document Assistant
 
-When uploading receipts or invoices:
-1. Go to **Expenses → + New Expense**
-2. Upload receipt image
-3. AI auto-extracts:
-   - Amount
-   - Date
-   - Vendor name
-   - Expense category suggestion
-4. Review and confirm extracted data
-5. Click **Submit**
+When applying receipt or supplier-invoice OCR to a draft:
+1. Upload the attachment on the expense or draft purchase invoice
+2. Click **OCR suggest** to extract amount/date/vendor (or supplier # / notes / dates)
+3. Review the editable suggestion fields
+4. Click **Apply** — the API requires `confirm: true` (no silent auto-write)
+5. Continue approval / submit as usual
+
+Purchase-invoice OCR apply works only while the invoice is still **draft**.
 
 ---
 

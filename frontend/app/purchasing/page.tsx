@@ -927,13 +927,16 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const body: Record<string, unknown> = {};
+      const body: Record<string, unknown> = { confirm: true };
       if (ocrDraft.supplier_invoice_number !== '') {
         body.supplier_invoice_number = ocrDraft.supplier_invoice_number;
       }
       if (ocrDraft.notes !== '') body.notes = ocrDraft.notes;
       if (ocrDraft.invoice_date !== '') body.invoice_date = ocrDraft.invoice_date;
-      await api(`/purchasing/invoices/${ocrFor}`, { method: 'PATCH', body: JSON.stringify(body) });
+      await api(`/purchasing/invoices/${ocrFor}/ocr-apply`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
       setMessage('OCR suggestions applied to draft invoice');
       setOcrFor(null);
       setOcrDraft(null);

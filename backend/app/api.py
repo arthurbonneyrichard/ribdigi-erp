@@ -78,6 +78,7 @@ from app.schemas import (
     ExpenseCreate,
     ExpenseDecision,
     ExpenseThresholdUpdate,
+    ExpenseOcrApply,
     ExpenseUpdate,
     GrnCreate,
     JournalCreate,
@@ -121,6 +122,7 @@ from app.schemas import (
     UnitOfMeasureCreate,
     UnitOfMeasureUpdate,
     PurchaseInvoiceCreate,
+    PurchaseInvoiceOcrApply,
     PurchaseInvoiceUpdate,
     PurchaseReturnCreate,
     RecurringExpenseCreate,
@@ -6148,6 +6150,61 @@ async def purchase_invoice_ocr_suggest(
     return env(result, "OCR suggestions ready — review before applying")
 
 
+@api.post("/purchasing/invoices/{invoice_id}/ocr-apply")
+async def purchase_invoice_ocr_apply(
+    invoice_id: str,
+    payload: PurchaseInvoiceOcrApply,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 10 A1 — apply human-reviewed OCR fields to a draft purchase invoice."""
+    from app import purchase_ocr as purchase_ocr_svc
+
+    if not payload.confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="confirm must be true to apply OCR suggestions",
+        )
+    existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
+    inv = await purchase_ocr_svc.update_purchase_invoice_draft(
+        db,
+        tenant_id=claims["tenant_id"],
+        invoice_id=invoice_id,
+        supplier_invoice_number=payload.supplier_invoice_number,
+        notes=payload.notes,
+        invoice_date=payload.invoice_date,
+        due_date=payload.due_date,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="purchase_invoice_ocr_apply",
+        entity="purchase_invoice",
+        entity_id=inv.id,
+        details={
+            "invoice_number": inv.invoice_number,
+            "fields": [
+                k
+                for k, v in {
+                    "supplier_invoice_number": payload.supplier_invoice_number,
+                    "notes": payload.notes,
+                    "invoice_date": payload.invoice_date,
+                    "due_date": payload.due_date,
+                }.items()
+                if v is not None
+            ],
+        },
+    )
+    await db.commit()
+    return env(
+        await purchasing_svc.serialize_purchase_invoice(db, inv),
+        "OCR suggestions applied to draft invoice",
+    )
+
+
 @api.post("/purchasing/invoices/{invoice_id}/approve")
 async def approve_purchase_invoice(
     invoice_id: str,
@@ -7061,6 +7118,69 @@ async def expense_ocr_suggest(
         db, tenant_id=claims["tenant_id"], expense_id=expense_id
     )
     return env(result, "OCR suggestions ready — review before applying")
+
+
+@api.post("/expenses/{expense_id}/ocr-apply")
+async def expense_ocr_apply(
+    expense_id: str,
+    payload: ExpenseOcrApply,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 10 A1 — apply human-reviewed OCR fields to a pending/rejected expense."""
+    if not payload.confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="confirm must be true to apply OCR suggestions",
+        )
+    existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    assert_record_access(claims, existing.created_by)
+    expense = await expenses_svc.update_expense(
+        db,
+        tenant_id=claims["tenant_id"],
+        expense_id=expense_id,
+        user_id=claims["sub"],
+        amount=payload.amount,
+        description=payload.description,
+        payee=payload.payee,
+        reference=payload.reference,
+        expense_date=payload.expense_date,
+        payment_method=payload.payment_method,
+        category_id=payload.category_id,
+        category=payload.category,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="expenses",
+        action="expense_ocr_apply",
+        entity="expense",
+        entity_id=expense.id,
+        details={
+            "status": expense.status,
+            "amount": float(expense.amount),
+            "fields": [
+                k
+                for k, v in {
+                    "amount": payload.amount,
+                    "description": payload.description,
+                    "payee": payload.payee,
+                    "reference": payload.reference,
+                    "expense_date": payload.expense_date,
+                    "payment_method": payload.payment_method,
+                    "category_id": payload.category_id,
+                    "category": payload.category,
+                }.items()
+                if v is not None
+            ],
+        },
+    )
+    await db.commit()
+    return env(
+        await expenses_svc.serialize_expense_full(db, expense),
+        "OCR suggestions applied to expense",
+    )
 
 
 @api.post("/expenses/{expense_id}/attachment")

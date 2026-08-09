@@ -218,7 +218,10 @@ def suggest_from_media(media: storage_svc.MediaObject) -> dict[str, Any]:
         "confidence": parsed["confidence"],
         "raw_text_preview": parsed["raw_text_preview"],
         "warnings": warnings,
-        "apply_hint": "Review suggestions then PATCH /expenses/{id} with confirmed fields",
+        "apply_hint": (
+            "Review suggestions then POST /expenses/{id}/ocr-apply with confirm=true "
+            "and the fields to apply (Stage 10 A1)"
+        ),
     }
 
 

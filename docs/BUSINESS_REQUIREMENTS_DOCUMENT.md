@@ -572,9 +572,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Digital receipt storage.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Upload receipt images/PDFs
-  - [ ] OCR extraction of amount, date, vendor (AI-assisted)
-  - [ ] Attachment preview and download
+  - [x] Upload receipt images/PDFs
+  - [x] OCR extraction of amount, date, vendor (AI-assisted; Stage 10 A1 human-confirmed `ocr-apply`)
+  - [x] Attachment preview and download
 
 #### BR-9.5 Recurring Expenses
 - **Description:** Automate regular payments.
@@ -1043,10 +1043,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Intelligent cost management.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Expense categorization from receipt OCR
-  - [ ] Budget variance alerts
-  - [ ] Unusual expense pattern detection
-  - [ ] Cost optimization suggestions
+  - [x] Expense categorization from receipt OCR (suggest + Stage 10 A1 confirmed apply)
+  - [x] Budget variance alerts
+  - [x] Unusual expense pattern detection
+  - [x] Cost optimization suggestions
 
 #### BR-21.7 AI Report Generator
 - **Description:** Natural language to report.
@@ -1060,9 +1060,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Intelligent document processing.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] OCR extraction from invoices, receipts, purchase orders
-  - [ ] Auto-match extracted data to system records
-  - [ ] Data validation and discrepancy flagging
+  - [x] OCR extraction from invoices, receipts (suggest + Stage 10 A1 confirmed apply to expense/PI draft; PO OCR deferred)
+  - [x] Auto-match extracted data to system records (`/ai/documents/analyze`)
+  - [x] Data validation and discrepancy flagging
 
 #### BR-21.9 AI Customer Assistant (Basic)
 - **Description:** Customer intelligence.

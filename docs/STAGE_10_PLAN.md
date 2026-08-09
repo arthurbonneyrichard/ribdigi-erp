@@ -20,7 +20,7 @@ Stage 10 closes commercial-MVP tax depth and human-confirmed document apply hole
 |----|------------|----------|---------|
 | **T1** | Category-level tax rules (product → category → default) | P0 | COMPLETE |
 | **T2** | Additional tax filing template beyond GH/NG | P1 | COMPLETE |
-| **A1** | Human-confirmed OCR/document apply-to-draft | P1 | PENDING |
+| **A1** | Human-confirmed OCR/document apply-to-draft | P1 | COMPLETE |
 | **B1** | Include uploaded media in logical backup/restore | P2 | PENDING |
 | **H10x** | Stage 10 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -48,9 +48,9 @@ Stage 10 closes commercial-MVP tax depth and human-confirmed document apply hole
 
 ## A1 acceptance criteria
 
-- [ ] Explicit apply endpoint(s) for OCR suggestions → draft fields (expenses and/or purchase invoices).
-- [ ] No silent auto-write; human confirmation required.
-- [ ] Automated tests for apply + RBAC/tenant.
+- [x] Explicit apply endpoint(s): `POST /expenses/{id}/ocr-apply`, `POST /purchasing/invoices/{id}/ocr-apply`.
+- [x] No silent auto-write; `confirm: true` required; purchase invoice draft-only; Expenses/Purchasing UI review-then-apply.
+- [x] Automated tests in `backend/tests/test_ocr_apply_a1.py` (confirm gate, draft lock, tenant isolation).
 
 ## B1 acceptance criteria
 

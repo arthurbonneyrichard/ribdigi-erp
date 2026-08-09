@@ -259,13 +259,13 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const body: Record<string, unknown> = {};
+      const body: Record<string, unknown> = { confirm: true };
       if (ocrDraft.amount !== '') body.amount = Number(ocrDraft.amount);
       if (ocrDraft.payee !== '') body.payee = ocrDraft.payee;
       if (ocrDraft.description !== '') body.description = ocrDraft.description;
       if (ocrDraft.reference !== '') body.reference = ocrDraft.reference;
       if (ocrDraft.expense_date !== '') body.expense_date = ocrDraft.expense_date;
-      await api(`/expenses/${ocrFor}`, { method: 'PATCH', body: JSON.stringify(body) });
+      await api(`/expenses/${ocrFor}/ocr-apply`, { method: 'POST', body: JSON.stringify(body) });
       setMessage('OCR suggestions applied (pending expense updated)');
       setOcrFor(null);
       setOcrDraft(null);

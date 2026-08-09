@@ -349,10 +349,12 @@ async def analyze_expenses(
         "categorization": {
             "uncategorized_or_misc_count": len(uncategorized),
             "ocr_endpoint": "POST /expenses/{id}/ocr-suggest",
+            "ocr_apply_endpoint": "POST /expenses/{id}/ocr-apply",
             "text_category_suggestions": sample_suggestions[:20],
             "note": (
                 "Receipt OCR extracts amount/date/payee; category is suggested from "
-                "receipt/description keywords against tenant expense categories."
+                "receipt/description keywords against tenant expense categories. "
+                "Apply reviewed fields with confirm=true (Stage 10 A1) — no silent auto-write."
             ),
         },
     }

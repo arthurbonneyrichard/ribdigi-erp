@@ -650,6 +650,21 @@ Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a produc
 
 Supplier payments: `POST /suppliers/{id}/payments` (credit module). Attachment: `POST/GET/DELETE /purchasing/invoices/{invoice_id}/attachment`.
 
+**OCR suggest:** `POST /purchasing/invoices/{invoice_id}/ocr-suggest` — requires `purchasing:write`  
+**OCR apply (Stage 10 A1):** `POST /purchasing/invoices/{invoice_id}/ocr-apply` — requires `purchasing:write`
+
+```json
+{
+  "confirm": true,
+  "supplier_invoice_number": "SUP-42",
+  "notes": "From OCR",
+  "invoice_date": "2026-03-10T00:00:00",
+  "due_date": null
+}
+```
+
+`confirm` must be `true`. Applies only while the invoice is `draft` (409 otherwise). Suggest remains read-only; there is no silent auto-write from OCR.
+
 ### 6.6 Purchase Return
 **List:** `GET /purchasing/returns`  
 **Create:** `POST /purchasing/returns`  
@@ -859,7 +874,24 @@ Credit tender (full or split portion) enforces the same credit-limit gate as inv
 **Get:** `GET /expenses/{expense_id}`  
 **Update:** `PATCH /expenses/{expense_id}`  
 **Approve:** `POST /expenses/{expense_id}/approve`  
-**Delete:** `DELETE /expenses/{expense_id}`
+**Delete:** `DELETE /expenses/{expense_id}`  
+**OCR suggest:** `POST /expenses/{expense_id}/ocr-suggest` — requires `expenses:write`  
+**OCR apply (Stage 10 A1):** `POST /expenses/{expense_id}/ocr-apply` — requires `expenses:write`
+
+```json
+{
+  "confirm": true,
+  "amount": 75.5,
+  "payee": "Office Depot",
+  "description": "Receipt — Office Depot",
+  "reference": "R-9",
+  "expense_date": "2026-04-01T00:00:00",
+  "category_id": null,
+  "payment_method": null
+}
+```
+
+`confirm` must be `true`. Applies only to `pending`/`rejected` expenses (same gate as `PATCH`). Suggest remains read-only; human review is required before apply.
 
 **Create Expense:**
 ```json

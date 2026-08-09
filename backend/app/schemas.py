@@ -560,6 +560,20 @@ class ExpenseUpdate(BaseModel):
     expense_date: datetime | None = None
 
 
+class ExpenseOcrApply(BaseModel):
+    """Stage 10 A1 — human-confirmed OCR field apply (no silent auto-write)."""
+
+    confirm: bool = False
+    category: str | None = None
+    category_id: str | None = None
+    description: str | None = None
+    amount: float | None = Field(default=None, gt=0)
+    payment_method: str | None = None
+    reference: str | None = None
+    payee: str | None = None
+    expense_date: datetime | None = None
+
+
 class ExpenseCategoryCreate(BaseModel):
     code: str
     name: str
@@ -892,6 +906,16 @@ class PurchaseInvoiceCreate(BaseModel):
 
 
 class PurchaseInvoiceUpdate(BaseModel):
+    supplier_invoice_number: str | None = None
+    notes: str | None = None
+    invoice_date: datetime | None = None
+    due_date: datetime | None = None
+
+
+class PurchaseInvoiceOcrApply(BaseModel):
+    """Stage 10 A1 — human-confirmed OCR header apply on draft purchase invoices."""
+
+    confirm: bool = False
     supplier_invoice_number: str | None = None
     notes: str | None = None
     invoice_date: datetime | None = None
