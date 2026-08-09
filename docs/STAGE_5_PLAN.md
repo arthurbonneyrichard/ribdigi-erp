@@ -19,7 +19,7 @@ Stage 5 here is **not** a rewrite of auth, audit, or backup. Core engines alread
 |----|------------|----------|---------|
 | **S1** | Production security gate (rate limit / headers / CORS) | P0 | COMPLETE |
 | **O1** | OWASP automated suite beyond smoke | P0 | COMPLETE |
-| **A1** | AI audit + prompt/data protections | P0 | PENDING |
+| **A1** | AI audit + prompt/data protections | P0 | COMPLETE |
 | **B1** | Logical backup restore proof + DR drill runbook | P0 | PENDING |
 | **H5** | Deep `/health` (+ optional Prometheus `/metrics`) | P0 | PENDING |
 | **L1** | Load-test baseline scripts | P0 | PENDING |
@@ -50,6 +50,14 @@ Stage 5 here is **not** a rewrite of auth, audit, or backup. Core engines alread
 - [x] Existing smoke suite remains green (`test_owasp_smoke.py`).
 - [x] Vendor ZAP / external pen test explicitly deferred (not a Stage 5 P0 blocker).
 - [x] Automated tests in `backend/tests/test_owasp_suite_o1.py`.
+
+## A1 acceptance criteria
+
+- [x] Shared `ai_guard` sanitizes free-text AI prompts (max length + injection/exfil patterns) before processing.
+- [x] Successful AI mutating/NL endpoints audit with `module=ai` and redacted `prompt_preview` (secrets/emails stripped).
+- [x] Rejected prompts audit `ai_prompt_rejected` (committed) and return HTTP 400.
+- [x] Covered endpoints: chat, report generate/export, report templates create, customer assist, document analyze.
+- [x] Automated tests in `backend/tests/test_ai_audit_protections_a1.py`.
 
 ## Sign-off
 

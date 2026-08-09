@@ -52,6 +52,7 @@ from app import barcode_labels as barcode_labels_svc
 from app import suppliers as suppliers_svc
 from app import customers as customers_svc
 from app import ai_chat as ai_chat_svc
+from app import ai_guard as ai_guard_svc
 from app.config import settings
 from app.schemas import (
     BarcodeLabelPrintRequest,
@@ -9932,17 +9933,31 @@ async def ai_chat(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-21.1 — rule-based NL chat with history (no external LLM required)."""
-    message = str((payload or {}).get("message") or "").strip()
-    if not message:
-        raise HTTPException(status_code=400, detail="message is required")
-    if len(message) > 2000:
-        raise HTTPException(status_code=400, detail="message must be at most 2000 characters")
+    message = await ai_guard_svc.require_safe_ai_prompt(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        text=str((payload or {}).get("message") or ""),
+        field="message",
+        max_length=ai_guard_svc.CHAT_MAX_PROMPT_LENGTH,
+        attempted_action="ai_chat",
+    )
     result = await ai_chat_svc.handle_chat(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         claims=claims,
         message=message,
+    )
+    await ai_guard_svc.audit_ai_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        action="ai_chat",
+        entity="ai_query",
+        entity_id=result.get("id"),
+        prompt=message,
+        details={"intent": result.get("intent"), "method": result.get("method")},
     )
     await db.commit()
     return env(result)
@@ -10162,6 +10177,18 @@ async def ai_reports_generate(
         prompt = f"Show me {report_type.replace('_', ' ')} {period}".strip()
     fmt = (payload or {}).get("format")
     template_id = (payload or {}).get("template_id")
+    if not prompt and template_id:
+        tmpl = await ai_reports_svc.get_template(db, claims["tenant_id"], template_id)
+        prompt = tmpl.prompt
+        fmt = fmt or tmpl.format
+    prompt = await ai_guard_svc.require_safe_ai_prompt(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        text=prompt,
+        field="prompt",
+        attempted_action="ai_report_generate",
+    )
     if export or str((payload or {}).get("export") or "").lower() in {"1", "true", "yes"}:
         # Export also needs reports:read semantics — AI read is the gate; data is tenant-scoped.
         content, media, filename = await ai_reports_svc.export_from_prompt(
@@ -10171,6 +10198,16 @@ async def ai_reports_generate(
             format=fmt,
             template_id=template_id,
         )
+        await ai_guard_svc.audit_ai_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims.get("sub"),
+            action="ai_report_export",
+            entity="ai_report",
+            prompt=prompt,
+            details={"format": fmt, "filename": filename, "template_id": template_id},
+        )
+        await db.commit()
         return Response(
             content=content,
             media_type=media,
@@ -10183,6 +10220,20 @@ async def ai_reports_generate(
         format=fmt,
         template_id=template_id,
     )
+    await ai_guard_svc.audit_ai_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        action="ai_report_generate",
+        entity="ai_report",
+        prompt=prompt,
+        details={
+            "report_type": data.get("report_type"),
+            "format": data.get("format"),
+            "template_id": template_id,
+        },
+    )
+    await db.commit()
     return env(data)
 
 
@@ -10207,13 +10258,31 @@ async def ai_report_templates_create(
 ):
     from app import ai_reports as ai_reports_svc
 
+    prompt = await ai_guard_svc.require_safe_ai_prompt(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        text=str((payload or {}).get("prompt") or ""),
+        field="prompt",
+        attempted_action="ai_report_template_create",
+    )
     row = await ai_reports_svc.save_template(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
         name=str((payload or {}).get("name") or ""),
-        prompt=str((payload or {}).get("prompt") or ""),
+        prompt=prompt,
         format=(payload or {}).get("format"),
+    )
+    await ai_guard_svc.audit_ai_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        action="ai_report_template_create",
+        entity="ai_report_template",
+        entity_id=row.id,
+        prompt=prompt,
+        details={"name": row.name},
     )
     await db.commit()
     return env(ai_reports_svc.serialize_template(row), "Report template saved")
@@ -10242,12 +10311,34 @@ async def ai_customer_assist(
     from app import ai_customers as ai_customers_svc
 
     body = payload or {}
+    raw_query = body.get("query") or body.get("message")
+    query = None
+    if raw_query is not None and str(raw_query).strip():
+        query = await ai_guard_svc.require_safe_ai_prompt(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims.get("sub"),
+            text=str(raw_query),
+            field="query",
+            attempted_action="ai_customer_assist",
+        )
     data = await ai_customers_svc.assist_customer(
         db,
         claims["tenant_id"],
         customer_id=body.get("customer_id"),
-        query=body.get("query") or body.get("message"),
+        query=query,
     )
+    await ai_guard_svc.audit_ai_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        action="ai_customer_assist",
+        entity="customer",
+        entity_id=body.get("customer_id"),
+        prompt=query,
+        details={"has_query": bool(query)},
+    )
+    await db.commit()
     return env(data)
 
 
@@ -10282,4 +10373,18 @@ async def ai_documents_analyze(
         upload=file,
         document_type=document_type,
     )
+    filename = getattr(file, "filename", None) or ""
+    await ai_guard_svc.audit_ai_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        action="ai_document_analyze",
+        entity="ai_document",
+        details={
+            "document_type": document_type,
+            "filename": ai_guard_svc.redact_for_audit(filename)[:200],
+            "match_count": len((data or {}).get("matches") or {}),
+        },
+    )
+    await db.commit()
     return env(data)

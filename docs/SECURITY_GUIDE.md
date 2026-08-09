@@ -550,9 +550,10 @@ All security-relevant events are captured in an immutable audit log:
 The MVP includes AI capabilities across 10 modules. Security controls include:
 
 **Input Sanitization:**
-- All user inputs to AI endpoints sanitized for prompt injection attacks
-- Maximum input length enforced (4096 tokens)
-- Blocked keywords and patterns for sensitive data exfiltration attempts
+- All free-text user inputs to AI endpoints sanitized for prompt injection attacks (`app.ai_guard`)
+- Maximum input length enforced (chat 2000 chars; other NL prompts 4000 chars)
+- Blocked keywords and patterns for sensitive data exfiltration / jailbreak attempts
+- AI usage audited (`module=ai`) with secret/email redaction in stored prompt previews; rejections audited as `ai_prompt_rejected`
 
 **Context Isolation:**
 - AI assistant receives only data the user has permission to access
@@ -656,7 +657,7 @@ The MVP includes AI capabilities across 10 modules. Security controls include:
 - [x] OpenAPI `/docs` / `/redoc` / `/openapi.json` disabled when `APP_ENV=production`
 - [ ] Password policy enforced
 - [ ] Session timeout and rotation configured
-- [ ] AI input/output sanitization active
+- [x] AI input sanitization + AI audit logging active (Stage 5 A1; external-LLM output filtering post-MVP)
 - [ ] Incident response runbook accessible to on-call team
 
 **Stage 5 S1 verify:** `GET /api/v1/health` returns `security.rate_limit_enabled`, `openapi_enabled=false` in production, and response includes CSP + rate-limit headers.
