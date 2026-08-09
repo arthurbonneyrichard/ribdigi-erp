@@ -15,6 +15,7 @@ type Tab =
   | 'counts'
   | 'transfers'
   | 'ops'
+  | 'opening'
   | 'movements'
   | 'stock'
   | 'lowstock';
@@ -27,6 +28,7 @@ const INVENTORY_TABS: Tab[] = [
   'counts',
   'transfers',
   'ops',
+  'opening',
   'movements',
   'stock',
   'lowstock',
@@ -62,6 +64,12 @@ export default function Page() {
   const [opsWarehouseId, setOpsWarehouseId] = useState('');
   const [opsQty, setOpsQty] = useState('1');
   const [opsNotes, setOpsNotes] = useState('');
+  const [openingMode, setOpeningMode] = useState<'add' | 'set'>('add');
+  const [openingQty, setOpeningQty] = useState('0');
+  const [openingWarehouseId, setOpeningWarehouseId] = useState('');
+  const [openingNotes, setOpeningNotes] = useState('');
+  const [openingFiscal, setOpeningFiscal] = useState('');
+  const [openingBatch, setOpeningBatch] = useState('');
   const [movements, setMovements] = useState<any[]>([]);
   const [moveFrom, setMoveFrom] = useState('');
   const [moveTo, setMoveTo] = useState('');
@@ -450,6 +458,34 @@ export default function Page() {
     }
   }
 
+  async function submitOpeningStock() {
+    if (!selectedId) return;
+    setError('');
+    try {
+      const qty = Number(openingQty);
+      if (Number.isNaN(qty) || qty < 0) {
+        setError('Opening quantity must be zero or positive');
+        return;
+      }
+      await api('/inventory/opening-stock', {
+        method: 'POST',
+        body: JSON.stringify({
+          product_id: selectedId,
+          quantity: qty,
+          mode: openingMode,
+          warehouse_id: openingWarehouseId || null,
+          notes: openingNotes || undefined,
+          fiscal_period: openingFiscal || undefined,
+          batch_number: openingBatch || undefined,
+        }),
+      });
+      setMessage(`Opening stock (${openingMode}) recorded`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function uploadImage(file: File, opts?: { asPrimary?: boolean }) {
     const asPrimary = Boolean(opts?.asPrimary);
     if (!selectedId) return;
@@ -798,6 +834,7 @@ export default function Page() {
           [
             ['products', 'Products'],
             ['ops', 'Stock ops'],
+            ['opening', 'Opening'],
             ['transfers', 'Transfers'],
             ['movements', 'Movements'],
             ['stock', 'Stock'],
@@ -1484,6 +1521,53 @@ export default function Page() {
         </div>
       )}
 
+      {tab === 'opening' && (
+        <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+          <h3>Opening stock</h3>
+          <p className="muted">
+            Initialize on-hand for go-live or fiscal year start. Uses movement type{' '}
+            <code>opening_stock</code>. Set mode cannot reduce stock — use adjust or stock count.
+            Bulk: stock CSV with <code>mode=opening</code>, or API multi-line{' '}
+            <code>items</code>.
+          </p>
+          <select value={openingMode} onChange={(e) => setOpeningMode(e.target.value as 'add' | 'set')}>
+            <option value="add">Add quantity</option>
+            <option value="set">Set absolute quantity</option>
+          </select>
+          <select value={openingWarehouseId} onChange={(e) => setOpeningWarehouseId(e.target.value)}>
+            <option value="">No warehouse (consolidated only)</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.code} — {w.name}
+              </option>
+            ))}
+          </select>
+          <input
+            value={openingQty}
+            onChange={(e) => setOpeningQty(e.target.value)}
+            placeholder={openingMode === 'set' ? 'Target quantity' : 'Quantity to add'}
+          />
+          <input
+            value={openingFiscal}
+            onChange={(e) => setOpeningFiscal(e.target.value)}
+            placeholder="Fiscal period (optional, e.g. FY2026)"
+          />
+          <input
+            value={openingBatch}
+            onChange={(e) => setOpeningBatch(e.target.value)}
+            placeholder="Batch number (if product tracks batches)"
+          />
+          <input
+            value={openingNotes}
+            onChange={(e) => setOpeningNotes(e.target.value)}
+            placeholder="Notes"
+          />
+          <button type="button" onClick={submitOpeningStock} disabled={!selectedId}>
+            Record opening stock
+          </button>
+        </div>
+      )}
+
       {tab === 'movements' && (
         <>
           <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 560, marginBottom: 16 }}>
@@ -1496,6 +1580,7 @@ export default function Page() {
                 <option value="">All types</option>
                 <option value="stock_in">stock_in</option>
                 <option value="stock_out">stock_out</option>
+                <option value="opening_stock">opening_stock</option>
                 <option value="adjustment">adjustment</option>
                 <option value="transfer_out">transfer_out</option>
                 <option value="transfer_in">transfer_in</option>

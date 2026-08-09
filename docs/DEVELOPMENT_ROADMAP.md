@@ -76,7 +76,9 @@ Phase 1 (Foundation)
 
 Establish the technical foundation of the platform: multi-tenant architecture, authentication, user management, company setup, and the executive dashboard. This phase delivers the "shell" that all subsequent features inhabit.
 
-**Stage 1 exit (2026-08-09):** Foundation workstreams A–H are recorded as met in `docs/STAGE_1_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_008_STAGE1_FREEZE.md` (no new Stage 1 feature scope; do not open Stage 2 until explicit sign-off).
+**Stage 1 exit (2026-08-09):** Foundation workstreams A–H are recorded as met in `docs/STAGE_1_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_008_STAGE1_FREEZE.md` (no new Stage 1 feature scope).
+
+**Stage 2 open (2026-08-09):** Inventory & Supply Chain hardening track approved — `docs/ADR_009_STAGE2_OPEN.md` + `docs/STAGE_2_PLAN.md` (I1→… one workstream at a time).
 
 ### 2.2 Features
 
@@ -202,6 +204,8 @@ Acceptance Criteria:
 ### 3.1 Objective
 
 Build the complete inventory management and purchasing system. This includes product catalog management, stock tracking, warehouse operations, supplier management, and the full purchase order lifecycle. This is the operational heart of the ERP.
+
+**Active delivery plan:** `docs/STAGE_2_PLAN.md` (hardening remaining BR ACs on top of existing engines).
 
 ### 3.2 Features
 

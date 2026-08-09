@@ -18,3 +18,7 @@ Stage 1 (Foundation & Platform Core) delivered auth, tenancy, org UX, users/RBAC
 
 - Agents and engineers treat Stage 1 A–H as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP, distinct from Stage 1 foundation exit.
+
+## Amendment (2026-08-09)
+
+Stage 2 delivery track was **explicitly approved** and opened under [ADR-009](ADR_009_STAGE2_OPEN.md) / `docs/STAGE_2_PLAN.md`. Stage 1 freeze above still applies to foundation A–H scope.

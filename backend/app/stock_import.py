@@ -44,7 +44,7 @@ def template_csv() -> str:
             "barcode": "96385074",
             "warehouse_code": "MAIN",
             "quantity": "25",
-            "mode": "set",
+            "mode": "opening",
             "reason": "Opening stock for warehouse",
         }
     )
@@ -153,8 +153,8 @@ async def import_stock_csv(
                 row_errors.append(f"unknown warehouse_code {warehouse_code}")
 
         mode = (row["mode"] or "adjust").strip().lower() or "adjust"
-        if mode not in {"adjust", "set"}:
-            row_errors.append("mode must be adjust or set")
+        if mode not in {"adjust", "set", "opening"}:
+            row_errors.append("mode must be adjust, set, or opening")
 
         try:
             quantity = _parse_float(row["quantity"])
@@ -162,8 +162,10 @@ async def import_stock_csv(
             row_errors.append(str(exc))
             quantity = 0.0
 
-        if mode == "set" and quantity < 0:
-            row_errors.append("set mode quantity cannot be negative")
+        if mode in {"set", "opening"} and quantity < 0:
+            row_errors.append(f"{mode} mode quantity cannot be negative")
+        if mode == "opening" and quantity <= 0:
+            row_errors.append("opening mode quantity must be positive")
 
         reason = row["reason"].strip() or "Stock CSV import"
 
@@ -209,6 +211,8 @@ async def import_stock_csv(
 
         if mode == "set":
             delta = quantity - current
+        elif mode == "opening":
+            delta = quantity
         else:
             delta = quantity
 
@@ -237,6 +241,13 @@ async def import_stock_csv(
             )
             continue
 
+        if mode == "opening":
+            movement_type = "opening_stock"
+        elif mode == "set" and current == 0:
+            movement_type = "opening_stock"
+        else:
+            movement_type = "adjustment"
+
         running_qty[scope_key] = after
         valid_rows.append(
             {
@@ -251,7 +262,7 @@ async def import_stock_csv(
                 "current_qty": current,
                 "delta": delta,
                 "reason": reason,
-                "movement_type": "opening_stock" if mode == "set" and current == 0 else "adjustment",
+                "movement_type": movement_type,
             }
         )
 

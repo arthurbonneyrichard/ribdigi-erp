@@ -124,6 +124,7 @@ from app.schemas import (
     SalesReturnCreate,
     InvoiceSendRequest,
     SmsTestRequest,
+    OpeningStockRequest,
     StockAdjust,
     StockMove,
     StockTransferCreate,
@@ -3601,6 +3602,57 @@ async def stock_in(
     )
     await db.commit()
     return env(result, "Stock in recorded")
+
+
+@api.post("/inventory/opening-stock")
+async def opening_stock(
+    payload: OpeningStockRequest,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-5.2 Opening Stock — initialize levels for existing products / fiscal start."""
+    if payload.items:
+        result = await catalog_svc.record_opening_stock_batch(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            items=[item.model_dump() for item in payload.items],
+            fiscal_period=payload.fiscal_period,
+        )
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="inventory",
+            action="opening_stock_batch",
+            entity="stock_movement",
+            entity_id=None,
+            details={"count": result["count"], "fiscal_period": payload.fiscal_period},
+        )
+        await db.commit()
+        return env(result, "Opening stock recorded")
+
+    if not payload.product_id or payload.quantity is None:
+        raise HTTPException(
+            status_code=400, detail="product_id and quantity required for single-line opening stock"
+        )
+    result = await catalog_svc.record_opening_stock(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        product_id=payload.product_id,
+        quantity=float(payload.quantity),
+        mode=payload.mode,
+        notes=payload.notes,
+        warehouse_id=payload.warehouse_id,
+        variant_id=payload.variant_id,
+        batch_number=payload.batch_number,
+        manufacturing_date=payload.manufacturing_date,
+        expiry_date=payload.expiry_date,
+        fiscal_period=payload.fiscal_period,
+    )
+    await db.commit()
+    return env(result, "Opening stock recorded")
 
 
 @api.post("/inventory/stock-out")

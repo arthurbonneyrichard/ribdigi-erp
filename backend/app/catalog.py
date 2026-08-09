@@ -344,10 +344,13 @@ async def stock_in_with_batch(
     expiry_date: datetime | None = None,
     reference_type: str | None = None,
     reference_id: str | None = None,
+    movement_type: str = "stock_in",
 ) -> dict:
     quantity = float(quantity)
     if quantity <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
+    if movement_type not in {"stock_in", "opening_stock"}:
+        raise HTTPException(status_code=400, detail="Invalid inbound movement type")
     product = await get_product(db, tenant_id, product_id)
     variant = None
     if variant_id:
@@ -396,7 +399,7 @@ async def stock_in_with_batch(
         tenant_id=tenant_id,
         product_id=product.id,
         quantity_delta=quantity,
-        movement_type="stock_in",
+        movement_type=movement_type,
         user_id=user_id,
         notes=notes,
         warehouse_id=warehouse_id,
@@ -414,7 +417,136 @@ async def stock_in_with_batch(
         "batch_id": batch.id if batch else None,
         "variant": serialize_variant(variant) if variant else None,
         "batch": serialize_batch(batch) if batch else None,
+        "movement_type": movement_type,
+        "quantity_delta": quantity,
     }
+
+
+async def record_opening_stock(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    product_id: str,
+    quantity: float,
+    mode: str = "add",
+    notes: str | None = None,
+    warehouse_id: str | None = None,
+    variant_id: str | None = None,
+    batch_number: str | None = None,
+    manufacturing_date: datetime | None = None,
+    expiry_date: datetime | None = None,
+    fiscal_period: str | None = None,
+) -> dict:
+    """Initialize stock for go-live / fiscal year start (BR-5.2 Opening Stock)."""
+    from app.inventory import get_or_create_warehouse_stock, get_warehouse
+
+    mode_norm = (mode or "add").strip().lower()
+    if mode_norm not in {"add", "set"}:
+        raise HTTPException(status_code=400, detail="mode must be add or set")
+
+    quantity = float(quantity)
+    if quantity < 0:
+        raise HTTPException(status_code=400, detail="quantity cannot be negative")
+
+    product = await get_product(db, tenant_id, product_id)
+    if warehouse_id:
+        await get_warehouse(db, tenant_id, warehouse_id)
+        wh_row = await get_or_create_warehouse_stock(
+            db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product.id
+        )
+        current = float(wh_row.quantity or 0)
+    else:
+        current = float(product.stock_qty or 0)
+
+    if mode_norm == "add":
+        if quantity <= 0:
+            raise HTTPException(status_code=400, detail="quantity must be positive for add mode")
+        delta = quantity
+    else:
+        delta = quantity - current
+        if abs(delta) < 1e-9:
+            raise HTTPException(status_code=400, detail="set mode would not change stock")
+        if delta < 0:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "OPENING_STOCK_CANNOT_REDUCE",
+                    "message": "Opening stock cannot reduce on-hand; use stock adjustment or stock count",
+                    "current_qty": current,
+                    "target_qty": quantity,
+                },
+            )
+
+    note_parts = [notes.strip()] if notes and notes.strip() else []
+    if fiscal_period and fiscal_period.strip():
+        note_parts.append(f"fiscal_period={fiscal_period.strip()}")
+    if mode_norm == "set":
+        note_parts.append(f"opening set target={quantity:g} (was {current:g})")
+    combined_notes = "; ".join(note_parts) if note_parts else "Opening stock entry"
+
+    result = await stock_in_with_batch(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        product_id=product.id,
+        quantity=delta,
+        notes=combined_notes,
+        warehouse_id=warehouse_id,
+        variant_id=variant_id,
+        batch_number=batch_number,
+        manufacturing_date=manufacturing_date,
+        expiry_date=expiry_date,
+        reference_type="opening_stock",
+        reference_id=fiscal_period.strip() if fiscal_period and fiscal_period.strip() else None,
+        movement_type="opening_stock",
+    )
+    result["mode"] = mode_norm
+    result["current_qty_before"] = current
+    result["target_qty"] = quantity if mode_norm == "set" else current + delta
+    result["fiscal_period"] = fiscal_period.strip() if fiscal_period and fiscal_period.strip() else None
+    return result
+
+
+async def record_opening_stock_batch(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    items: list[dict],
+    fiscal_period: str | None = None,
+) -> dict:
+    if not items:
+        raise HTTPException(status_code=400, detail="items required")
+    if len(items) > 500:
+        raise HTTPException(status_code=400, detail="Maximum 500 opening stock lines per request")
+    results: list[dict] = []
+    for idx, item in enumerate(items, start=1):
+        try:
+            results.append(
+                await record_opening_stock(
+                    db,
+                    tenant_id=tenant_id,
+                    user_id=user_id,
+                    product_id=item["product_id"],
+                    quantity=float(item["quantity"]),
+                    mode=item.get("mode") or "add",
+                    notes=item.get("notes"),
+                    warehouse_id=item.get("warehouse_id"),
+                    variant_id=item.get("variant_id"),
+                    batch_number=item.get("batch_number"),
+                    manufacturing_date=item.get("manufacturing_date"),
+                    expiry_date=item.get("expiry_date"),
+                    fiscal_period=item.get("fiscal_period") or fiscal_period,
+                )
+            )
+        except HTTPException as exc:
+            detail = exc.detail
+            raise HTTPException(
+                status_code=exc.status_code,
+                detail={"line": idx, "product_id": item.get("product_id"), "error": detail},
+            ) from exc
+    return {"count": len(results), "items": results}
 
 
 async def stock_out_with_batch(

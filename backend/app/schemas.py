@@ -490,6 +490,35 @@ class StockMove(BaseModel):
     expiry_date: datetime | None = None
 
 
+class OpeningStockLine(BaseModel):
+    product_id: str
+    quantity: float = Field(ge=0)
+    mode: str = "add"
+    notes: str | None = None
+    warehouse_id: str | None = None
+    variant_id: str | None = None
+    batch_number: str | None = None
+    manufacturing_date: datetime | None = None
+    expiry_date: datetime | None = None
+    fiscal_period: str | None = None
+
+
+class OpeningStockRequest(BaseModel):
+    """Single-line or multi-line opening stock (BR-5.2)."""
+
+    product_id: str | None = None
+    quantity: float | None = Field(default=None, ge=0)
+    mode: str = "add"
+    notes: str | None = None
+    warehouse_id: str | None = None
+    variant_id: str | None = None
+    batch_number: str | None = None
+    manufacturing_date: datetime | None = None
+    expiry_date: datetime | None = None
+    fiscal_period: str | None = None
+    items: list[OpeningStockLine] = Field(default_factory=list)
+
+
 class ExpenseCreate(BaseModel):
     category: str | None = None
     category_id: str | None = None
