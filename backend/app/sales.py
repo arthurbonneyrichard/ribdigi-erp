@@ -163,6 +163,7 @@ async def create_sales_invoice(
                     "unit_price": unit_price,
                     "discount": discount,
                     "tax_rate": spec.rate_pct,
+                    "supply_category": spec.supply_category,
                 },
                 line_total,
             )
@@ -203,6 +204,7 @@ async def create_sales_invoice(
                 tax_rate=item.get("tax_rate", 0),
                 discount=item.get("discount", 0),
                 line_total=line_total,
+                supply_category=item.get("supply_category") or "standard",
             )
         )
 

@@ -17,6 +17,10 @@ def map_return(pack: dict, tenant: m.Tenant) -> dict:
     by_code = {b["code"]: float(b.get("amount") or 0) for b in (fb.get("boxes") or [])}
     # Fallbacks if boxes list missing
     taxable_outputs = float(by_code.get("taxable_outputs_net", fb.get("taxable_outputs_net") or 0))
+    zero_rated_outputs = float(
+        by_code.get("zero_rated_outputs_net", fb.get("zero_rated_outputs_net") or 0)
+    )
+    exempt_outputs = float(by_code.get("exempt_outputs_net", fb.get("exempt_outputs_net") or 0))
     output_tax = float(by_code.get("output_tax", fb.get("output_tax") or pack.get("output_tax") or 0))
     reverse_charge = float(
         by_code.get("reverse_charge_tax", fb.get("reverse_charge_tax") or pack.get("reverse_charge_tax") or 0)
@@ -25,7 +29,7 @@ def map_return(pack: dict, tenant: m.Tenant) -> dict:
     input_tax = float(by_code.get("input_tax", fb.get("input_tax") or pack.get("input_tax") or 0))
     net = float(by_code.get("net_tax_payable", fb.get("net_tax_payable") or pack.get("net_tax_payable") or 0))
 
-    # Standard-rated supplies = taxable outputs (zero-rated / exempt not split yet → 0)
+    # GH1/GH2 standard-rated; GH3/GH4 from invoice/POS line supply_category splits.
     boxes = [
         {
             "box": "1",
@@ -47,17 +51,15 @@ def map_return(pack: dict, tenant: m.Tenant) -> dict:
             "box": "3",
             "code": "GH3",
             "label": "Value of zero-rated supplies",
-            "amount": 0.0,
-            "source_box": None,
-            "note": "Not separately tracked; enrich product tax classes to populate",
+            "amount": round(zero_rated_outputs, 2),
+            "source_box": "1z",
         },
         {
             "box": "4",
             "code": "GH4",
             "label": "Value of exempt supplies",
-            "amount": 0.0,
-            "source_box": None,
-            "note": "Not separately tracked",
+            "amount": round(exempt_outputs, 2),
+            "source_box": "1e",
         },
         {
             "box": "5",

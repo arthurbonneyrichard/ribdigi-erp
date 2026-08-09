@@ -4350,6 +4350,7 @@ async def pos_sale(
                 "unit_price": unit_price,
                 "discount": line_discount,
                 "tax_rate": spec.rate_pct,
+                "supply_category": spec.supply_category,
                 "line_subtotal": line_sub,
                 "line_tax": 0.0 if spec.is_reverse_charge else line_tax,
                 "line_total": line_gross,

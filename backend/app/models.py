@@ -796,6 +796,8 @@ class SalesInvoiceItem(Base):
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    # standard | zero | exempt — locked at invoice create for VAT filing splits
+    supply_category: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
 
 class CustomerPayment(Base):
