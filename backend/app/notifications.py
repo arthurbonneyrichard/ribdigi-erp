@@ -12,7 +12,7 @@ from app import models as m
 
 DEFAULT_PREFERENCES = {
     "low_stock": {"dashboard": True, "email": False, "sms": False},
-    "expense_approval": {"dashboard": True, "email": False, "sms": False},
+    "expense_approval": {"dashboard": True, "email": True, "sms": False},
     "shift_variance": {"dashboard": True, "email": False, "sms": False},
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
     "purchase_received": {"dashboard": True, "email": False, "sms": False},

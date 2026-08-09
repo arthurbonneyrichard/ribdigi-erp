@@ -9,6 +9,8 @@ def test_default_preferences_cover_core_types():
     assert DEFAULT_PREFERENCES["low_stock"]["dashboard"] is True
     assert DEFAULT_PREFERENCES["quotation_expiry"]["email"] is True
     assert DEFAULT_PREFERENCES["recurring_expense"]["dashboard"] is True
+    assert DEFAULT_PREFERENCES["expense_approval"]["email"] is True
+    assert DEFAULT_PREFERENCES["expense_approval"]["dashboard"] is True
 
 
 def test_merge_preferences_overrides_channels():

@@ -161,6 +161,52 @@ def assert_actor_may_act(*, levels: list[dict], step: int, actor_role: str | Non
         )
 
 
+async def notify_expense_approvers(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    expense: m.Expense,
+    step: int,
+    title: str,
+    message: str,
+    exclude_user_ids: set[str] | frozenset[str] | None = None,
+) -> int:
+    """Dashboard + email (default on) to active users whose role can act at this step."""
+    settings = await get_approval_settings(db, tenant_id)
+    roles = roles_for_step(settings["levels"], step)
+    if not roles:
+        return 0
+    exclude = set(exclude_user_ids or ())
+    users = (
+        await db.execute(
+            select(m.User).where(
+                m.User.tenant_id == tenant_id,
+                m.User.is_active == True,  # noqa: E712
+                m.User.role.in_(list(roles)),
+            )
+        )
+    ).scalars().all()
+    from app.notifications import create_notification
+
+    notified = 0
+    for user in users:
+        if user.id in exclude:
+            continue
+        note = await create_notification(
+            db,
+            tenant_id=tenant_id,
+            user_id=user.id,
+            category="expense_approval",
+            title=title,
+            message=message,
+            entity_type="expense",
+            entity_id=expense.id,
+        )
+        if note is not None:
+            notified += 1
+    return notified
+
+
 def next_run_date(from_dt: datetime, frequency: str) -> datetime:
     freq = (frequency or "monthly").lower()
     if freq == "daily":
@@ -613,20 +659,18 @@ async def create_expense(
     await db.flush()
 
     if needs_approval:
-        from app.notifications import create_notification
-
-        await create_notification(
+        await notify_expense_approvers(
             db,
             tenant_id=tenant_id,
-            category="expense_approval",
+            expense=expense,
+            step=1,
             title="Expense Approval Required",
             message=(
                 f"Expense {cat_name} of {expense.amount:.2f} exceeds approval threshold "
                 f"({auto_t:.2f}) and awaits level-1 review"
                 + (f" (of {steps} levels)." if steps > 1 else ".")
             ),
-            entity_type="expense",
-            entity_id=expense.id,
+            exclude_user_ids={user_id},
         )
     else:
         await _record_action(
@@ -689,19 +733,17 @@ async def approve_expense(
     if step < required:
         expense.approval_step = step + 1
         expense.approval_comment = comment or f"Level {step} approved; awaiting level {step + 1}"
-        from app.notifications import create_notification
-
-        await create_notification(
+        await notify_expense_approvers(
             db,
             tenant_id=tenant_id,
-            category="expense_approval",
+            expense=expense,
+            step=step + 1,
             title="Expense Needs Next-Level Approval",
             message=(
                 f"Expense {expense.category} of {float(expense.amount):.2f} passed level {step} "
                 f"and awaits level {step + 1} approval."
             ),
-            entity_type="expense",
-            entity_id=expense.id,
+            exclude_user_ids={user_id, expense.created_by} if expense.created_by else {user_id},
         )
         await db.flush()
         return expense
