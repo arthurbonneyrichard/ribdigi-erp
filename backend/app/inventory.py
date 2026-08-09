@@ -280,23 +280,27 @@ async def apply_stock_change(
         created_by=user_id,
     )
     db.add(movement)
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action=f"stock_{movement_type}",
-            entity="product",
-            entity_id=product.id,
-            details={
-                "quantity_delta": float(quantity_delta),
-                "before": before,
-                "after": after,
-                "reference_type": reference_type,
-                "reference_id": reference_id,
-                "variant_id": variant_id,
-                "batch_id": batch_id,
-            },
-        )
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="inventory",
+        action=f"stock_{movement_type}",
+        entity="product",
+        entity_id=product.id,
+        details={
+            "quantity_delta": float(quantity_delta),
+            "before": before,
+            "after": after,
+            "warehouse_id": warehouse_id,
+            "reference_type": reference_type,
+            "reference_id": reference_id,
+            "variant_id": variant_id,
+            "batch_id": batch_id,
+            "notes": notes,
+        },
     )
     if after <= float(product.reorder_level or 0):
         from app.notifications import notify_low_stock_if_needed

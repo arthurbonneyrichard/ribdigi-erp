@@ -1179,7 +1179,12 @@ async def list_sessions(claims=Depends(current_claims), db: AsyncSession = Depen
 
 
 @api.delete("/auth/sessions/{session_id}")
-async def revoke_session(session_id: str, claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
+async def revoke_session(
+    session_id: str,
+    request: Request,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
     session = (
         await db.execute(
             select(m.AuthSession).where(
@@ -1192,12 +1197,28 @@ async def revoke_session(session_id: str, claims=Depends(current_claims), db: As
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     session.revoked_at = datetime.utcnow()
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="auth",
+        action="session_revoked",
+        entity="auth_session",
+        entity_id=session_id,
+        details={"jti": session.jti},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
     await db.commit()
     return env({"id": session_id, "revoked": True})
 
 
 @api.post("/auth/password-reset-request")
-async def password_reset_request(payload: PasswordResetRequest, db: AsyncSession = Depends(get_db)):
+async def password_reset_request(
+    payload: PasswordResetRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
     tenant_id = await tenant_pk(db, payload.tenant_id)
     user = (
         await db.execute(
@@ -1216,6 +1237,18 @@ async def password_reset_request(payload: PasswordResetRequest, db: AsyncSession
                 expires_at=expires,
             )
         )
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="password_reset_request",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
         await db.commit()
         from app import emailer
 
@@ -1231,7 +1264,11 @@ async def password_reset_request(payload: PasswordResetRequest, db: AsyncSession
 
 
 @api.post("/auth/password-reset")
-async def password_reset(payload: PasswordResetConfirm, db: AsyncSession = Depends(get_db)):
+async def password_reset(
+    payload: PasswordResetConfirm,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
     validate_password_strength(payload.new_password)
     token_hash = hash_token(payload.token)
     row = (
@@ -1262,6 +1299,18 @@ async def password_reset(payload: PasswordResetConfirm, db: AsyncSession = Depen
     for session in sessions:
         session.revoked_at = datetime.utcnow()
 
+    await audit_svc.record_event(
+        db,
+        tenant_id=user.tenant_id,
+        user_id=user.id,
+        module="auth",
+        action="password_reset",
+        entity="user",
+        entity_id=user.id,
+        details={"sessions_revoked": len(sessions), "email": user.email},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
     await db.commit()
     return env({"reset": True})
 
@@ -5634,6 +5683,7 @@ async def create_bank_statement(
     from app import bank_recon as bank_recon_svc
 
     await ensure_default_accounts(db, claims["tenant_id"])
+    lines_in = payload.get("lines") or []
     stmt = await bank_recon_svc.create_statement(
         db,
         tenant_id=claims["tenant_id"],
@@ -5643,7 +5693,20 @@ async def create_bank_statement(
         opening_balance=float(payload.get("opening_balance") or 0),
         closing_balance=float(payload.get("closing_balance") or 0),
         notes=payload.get("notes"),
-        lines=payload.get("lines") or [],
+        lines=lines_in,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="accounting",
+        action="bank_statement_create",
+        entity="bank_statement",
+        entity_id=stmt.id,
+        details={
+            "account_id": stmt.account_id,
+            "line_count": len(lines_in),
+        },
     )
     await db.commit()
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], stmt.id)
@@ -5685,6 +5748,21 @@ async def import_bank_statement(
         closing_balance=closing_balance,
         statement_date=statement_date,
         notes=notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="accounting",
+        action="bank_statement_import",
+        entity="bank_statement",
+        entity_id=stmt.id,
+        details={
+            "account_id": account_id,
+            "format": meta.get("format"),
+            "line_count": meta.get("line_count"),
+            "filename": file.filename,
+        },
     )
     await db.commit()
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], stmt.id)
