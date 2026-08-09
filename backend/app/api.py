@@ -8857,3 +8857,24 @@ async def ai_expenses_analysis(
         to_date=to_date,
     )
     return env(data)
+
+
+@api.get("/ai/security/alerts")
+async def ai_security_alerts(
+    lookback_hours: int = 72,
+    notify: bool = False,
+    claims=Depends(require_permission("security", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.10 — behavioral security alerts from audit logs."""
+    from app import ai_security as ai_security_svc
+
+    data = await ai_security_svc.scan_security_alerts(
+        db,
+        claims["tenant_id"],
+        lookback_hours=lookback_hours,
+        notify=notify,
+    )
+    if notify and data.get("notifications_created"):
+        await db.commit()
+    return env(data)

@@ -95,6 +95,9 @@ export default function Page() {
   const [expenseSuggestions, setExpenseSuggestions] = useState<
     { kind: string; summary: string }[]
   >([]);
+  const [securityAlerts, setSecurityAlerts] = useState<
+    { id: string; kind: string; title: string; detail: string; severity: string; score: number }[]
+  >([]);
 
   async function loadPredictions() {
     setError('');
@@ -153,6 +156,16 @@ export default function Page() {
     }
   }
 
+  async function loadSecurityAlerts() {
+    try {
+      const r = await api('/ai/security/alerts?lookback_hours=72');
+      setSecurityAlerts(r.data?.alerts || []);
+    } catch (err: any) {
+      // security:read may be missing for some roles
+      setSecurityAlerts([]);
+    }
+  }
+
   async function loadInsightCards() {
     try {
       const r = await api('/ai/insights');
@@ -177,6 +190,7 @@ export default function Page() {
     loadDeadStock().catch(() => undefined);
     loadSalesAnalysis().catch(() => undefined);
     loadExpenseAnalysis().catch(() => undefined);
+    loadSecurityAlerts().catch(() => undefined);
     loadInsightCards().catch(() => undefined);
     loadHistory().catch(() => undefined);
   }, []);
@@ -207,8 +221,8 @@ export default function Page() {
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Rule-based chat, sales/expense analysis, demand forecasts, dead-stock detection, insights,
-        and velocity stockout predictions — all from your tenant data.
+        Rule-based chat, sales/expense analysis, security monitoring, demand forecasts, dead stock,
+        insights, and velocity stockout predictions — all from your tenant data.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -417,6 +431,28 @@ export default function Page() {
           <p key={a.expense_id || a.description} className="muted">
             {a.category || 'Pattern'}: {a.description} ({a.amount})
           </p>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Security monitor</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Unusual logins and suspicious transaction bursts from audit history.
+        </p>
+        <button type="button" onClick={loadSecurityAlerts} style={{ marginBottom: 12 }}>
+          Refresh security alerts
+        </button>
+        {securityAlerts.length === 0 && <p className="muted">No security alerts in the lookback window</p>}
+        {securityAlerts.slice(0, 12).map((a) => (
+          <div key={a.id} style={{ borderTop: '1px solid #e5e7eb', paddingTop: 8, marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+              <strong>{a.title}</strong>
+              <span className="muted">
+                {a.severity} · score {a.score}
+              </span>
+            </div>
+            <p>{a.detail}</p>
+          </div>
         ))}
       </div>
 
