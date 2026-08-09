@@ -6,7 +6,12 @@ export type RegionalFormats = {
   time_format?: string | null;
 };
 
-const DEFAULTS: Required<RegionalFormats> = {
+/** Defaults are always concrete strings (Required alone does not strip `| null`). */
+type ResolvedRegionalFormats = {
+  [K in keyof Required<RegionalFormats>]: NonNullable<RegionalFormats[K]>;
+};
+
+const DEFAULTS: ResolvedRegionalFormats = {
   date_format: 'DD/MM/YYYY',
   number_format: '1,234.56',
   time_format: '24h',
