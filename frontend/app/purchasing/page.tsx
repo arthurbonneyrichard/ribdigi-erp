@@ -1465,7 +1465,7 @@ export default function Page() {
                     onChange={(e) => setAmendPrice(e.target.value)}
                     placeholder="Unit price (first line)"
                   />
-                  <button type="button" onClick={amendSelectedPo} disabled={!amendReason.trim() && selected.status !== 'draft'}>
+                  <button type="button" onClick={amendSelectedPo} disabled={!amendReason.trim()}>
                     Save amendment
                   </button>
                 </div>
