@@ -59,7 +59,12 @@ export default function Page() {
     setError('');
     try {
       const r = await api('/notifications/scan-due', { method: 'POST' });
-      setMessage(`Payment-due alerts created: ${r.data?.created ?? 0}`);
+      setMessage(
+        `Due alerts created: ${r.data?.created ?? 0}` +
+          (r.data?.quotation_expiry
+            ? ` (quotes reminded ${r.data.quotation_expiry.reminded ?? 0}, expired ${r.data.quotation_expiry.expired ?? 0})`
+            : ''),
+      );
       setStatus('unread');
       await refresh();
     } catch (err: any) {

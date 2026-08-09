@@ -17,6 +17,7 @@ DEFAULT_PREFERENCES = {
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
     "payment_due": {"dashboard": True, "email": True, "sms": False},
+    "quotation_expiry": {"dashboard": True, "email": True, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
     "system": {"dashboard": True, "email": False, "sms": False},
@@ -394,3 +395,87 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
         )
         created += 1
     return created
+
+
+async def scan_quotation_expiry(
+    db: AsyncSession, tenant_id: str, within_days: int = 1
+) -> dict[str, int]:
+    """Remind before quotation validity ends; mark past-due draft/sent quotes expired.
+
+    USER_MANUAL: remind 1 day before quotation expiry (BR-7.2).
+    """
+    now = datetime.utcnow()
+    horizon = now + timedelta(days=max(0, int(within_days)))
+    quotes = (
+        await db.execute(
+            select(m.SalesQuotation).where(
+                m.SalesQuotation.tenant_id == tenant_id,
+                m.SalesQuotation.status.in_(["draft", "sent"]),
+                m.SalesQuotation.valid_until.is_not(None),
+            )
+        )
+    ).scalars().all()
+    reminded = 0
+    expired = 0
+    for quote in quotes:
+        valid_until = quote.valid_until
+        if valid_until is None:
+            continue
+        if valid_until < now:
+            quote.status = "expired"
+            expired += 1
+            existing = (
+                await db.execute(
+                    select(m.Notification).where(
+                        m.Notification.tenant_id == tenant_id,
+                        m.Notification.category == "quotation_expiry",
+                        m.Notification.entity_id == quote.id,
+                        m.Notification.status == "unread",
+                    )
+                )
+            ).scalar_one_or_none()
+            if existing:
+                continue
+            await create_notification(
+                db,
+                tenant_id=tenant_id,
+                category="quotation_expiry",
+                title="Quotation Expired",
+                message=(
+                    f"Quotation {quote.quotation_number} expired on "
+                    f"{valid_until.date().isoformat()}."
+                ),
+                entity_type="sales_quotation",
+                entity_id=quote.id,
+            )
+            reminded += 1
+            continue
+        if valid_until > horizon:
+            continue
+        existing = (
+            await db.execute(
+                select(m.Notification).where(
+                    m.Notification.tenant_id == tenant_id,
+                    m.Notification.category == "quotation_expiry",
+                    m.Notification.entity_id == quote.id,
+                    m.Notification.status == "unread",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            continue
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="quotation_expiry",
+            title="Quotation Expiring Soon",
+            message=(
+                f"Quotation {quote.quotation_number} expires on "
+                f"{valid_until.date().isoformat()}."
+            ),
+            entity_type="sales_quotation",
+            entity_id=quote.id,
+        )
+        reminded += 1
+    await db.flush()
+    return {"reminded": reminded, "expired": expired}
