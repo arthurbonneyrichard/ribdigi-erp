@@ -65,7 +65,7 @@ def test_email_status_shape():
 async def test_smtp_send_uses_thread(monkeypatch):
     calls = []
 
-    def fake_send(msg):
+    def fake_send(msg, smtp_config=None):
         calls.append(msg["To"])
 
     monkeypatch.setattr("app.emailer.settings.SMTP_HOST", "smtp.example.com")
