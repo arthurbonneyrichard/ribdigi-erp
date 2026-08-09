@@ -2,9 +2,21 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from tests.conftest import auth_headers
+
+
+async def _mgr_headers(ac):
+    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+
+async def _super_headers(ac, seed):
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _ensure_supplier(ac, headers) -> str:
@@ -20,15 +32,15 @@ async def _ensure_supplier(ac, headers) -> str:
 @pytest.mark.asyncio
 async def test_purchase_request_approve_convert_flow(client):
     ac, seed = client
-    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
-    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    mgr = await _mgr_headers(ac)
+    super_h = await _super_headers(ac, seed)
 
-    supplier_id = await _ensure_supplier(ac, admin)
+    supplier_id = await _ensure_supplier(ac, mgr)
     product_id = seed["p1"].id
 
     created = await ac.post(
         "/api/v1/purchasing/requests",
-        headers=admin,
+        headers=mgr,
         json={
             "supplier_id": supplier_id,
             "department": "Store Ops",
@@ -43,7 +55,7 @@ async def test_purchase_request_approve_convert_flow(client):
 
     submitted = await ac.post(
         f"/api/v1/purchasing/requests/{pr['id']}/submit",
-        headers=admin,
+        headers=mgr,
     )
     assert submitted.status_code == 200, submitted.text
     assert submitted.json()["data"]["status"] == "pending"
@@ -51,13 +63,13 @@ async def test_purchase_request_approve_convert_flow(client):
     # Creator cannot approve own request
     self_approve = await ac.post(
         f"/api/v1/purchasing/requests/{pr['id']}/approve",
-        headers=admin,
+        headers=mgr,
     )
     assert self_approve.status_code == 403
 
     approved = await ac.post(
         f"/api/v1/purchasing/requests/{pr['id']}/approve",
-        headers=mgr,
+        headers=super_h,
     )
     assert approved.status_code == 200, approved.text
     assert approved.json()["data"]["status"] == "approved"
@@ -65,7 +77,7 @@ async def test_purchase_request_approve_convert_flow(client):
 
     converted = await ac.post(
         f"/api/v1/purchasing/requests/{pr['id']}/convert",
-        headers=admin,
+        headers=mgr,
     )
     assert converted.status_code == 200, converted.text
     body = converted.json()["data"]
@@ -79,38 +91,35 @@ async def test_purchase_request_approve_convert_flow(client):
 @pytest.mark.asyncio
 async def test_purchase_request_reject_and_isolation(client):
     ac, seed = client
-    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
-    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    mgr = await _mgr_headers(ac)
+    super_h = await _super_headers(ac, seed)
 
-    supplier_id = await _ensure_supplier(ac, admin)
+    supplier_id = await _ensure_supplier(ac, mgr)
     created = await ac.post(
         "/api/v1/purchasing/requests",
-        headers=admin,
+        headers=mgr,
         json={
             "supplier_id": supplier_id,
             "items": [{"product_id": seed["p1"].id, "quantity": 3}],
         },
     )
     pr_id = created.json()["data"]["id"]
-    await ac.post(f"/api/v1/purchasing/requests/{pr_id}/submit", headers=admin)
+    await ac.post(f"/api/v1/purchasing/requests/{pr_id}/submit", headers=mgr)
 
     rejected = await ac.post(
         f"/api/v1/purchasing/requests/{pr_id}/reject",
-        headers=mgr,
+        headers=super_h,
         json={"reason": "Budget hold"},
     )
     assert rejected.status_code == 200, rejected.text
     assert rejected.json()["data"]["status"] == "rejected"
     assert rejected.json()["data"]["rejection_reason"] == "Budget hold"
 
-    # Cannot convert rejected
-    bad = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/convert", headers=admin)
+    bad = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/convert", headers=mgr)
     assert bad.status_code == 409
 
-    # Tenant isolation
     foreign = await ac.get(
         f"/api/v1/purchasing/requests/{pr_id}",
         headers=await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta"),
     )
-    # beta cashier lacks purchasing read → 403, or 404 if somehow allowed
     assert foreign.status_code in {403, 404}
