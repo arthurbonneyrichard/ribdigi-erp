@@ -34,7 +34,12 @@ cors_kwargs = {
         "Accept",
         "Origin",
     ],
-    "expose_headers": ["X-RateLimit-Limit", "Retry-After"],
+    "expose_headers": [
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Backend",
+        "Retry-After",
+    ],
     "max_age": 600,
 }
 app.add_middleware(CORSMiddleware, **cors_kwargs)

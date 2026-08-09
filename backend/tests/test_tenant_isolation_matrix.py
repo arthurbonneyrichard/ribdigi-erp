@@ -286,3 +286,121 @@ async def test_mismatched_tenant_header_on_credit_aging(client):
     headers["X-Tenant-ID"] = seed["t2"].id
     r = await ac.get("/api/v1/credit/aging", headers=headers)
     assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_audit_logs_isolation(client, db_session):
+    ac, seed = client
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db_session,
+        tenant_id=seed["t2"].id,
+        user_id=seed["u2"].id,
+        module="system",
+        action="beta_secret_audit",
+        entity="tenant",
+        entity_id=seed["t2"].id,
+        details={"secret": "beta-only"},
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    listed = await ac.get("/api/v1/audit-logs", headers=headers)
+    assert listed.status_code == 200
+    actions = {row.get("action") for row in listed.json()["data"]}
+    assert "beta_secret_audit" not in actions
+
+
+@pytest.mark.asyncio
+async def test_bank_connection_isolation(client, db_session):
+    ac, seed = client
+    from app import bank_connectors as bank_connectors_svc
+
+    await ensure_default_accounts(db_session, seed["t2"].id)
+    bank = (
+        await db_session.execute(
+            select(m.Account).where(
+                m.Account.tenant_id == seed["t2"].id, m.Account.code == "1010"
+            )
+        )
+    ).scalar_one()
+    conn = await bank_connectors_svc.create_connection(
+        db_session,
+        tenant_id=seed["t2"].id,
+        account_id=bank.id,
+        provider="mock",
+        display_name="Beta Bank Secret",
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    missing = await ac.patch(
+        f"/api/v1/accounting/bank-connections/{conn.id}",
+        headers=headers,
+        json={"display_name": "Hijack"},
+    )
+    assert missing.status_code == 404
+
+    listed = await ac.get("/api/v1/accounting/bank-connections", headers=headers)
+    assert listed.status_code == 200
+    names = {row.get("display_name") for row in listed.json()["data"]}
+    assert "Beta Bank Secret" not in names
+
+
+@pytest.mark.asyncio
+async def test_report_schedule_isolation(client, db_session):
+    ac, seed = client
+    from app import report_schedules as report_schedules_svc
+
+    schedule = await report_schedules_svc.create_schedule(
+        db_session,
+        tenant_id=seed["t2"].id,
+        user_id=seed["u2"].id,
+        name="Beta Secret Schedule",
+        report_type="sales_daily",
+        format="csv",
+        frequency="daily",
+        hour_utc=6,
+        recipients=["beta@example.com"],
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    missing = await ac.delete(
+        f"/api/v1/reports/schedules/{schedule.id}",
+        headers=headers,
+    )
+    assert missing.status_code == 404
+
+    listed = await ac.get("/api/v1/reports/schedules", headers=headers)
+    assert listed.status_code == 200
+    names = {row.get("name") for row in listed.json()["data"]}
+    assert "Beta Secret Schedule" not in names
+
+
+@pytest.mark.asyncio
+async def test_ai_insights_are_tenant_scoped(client, db_session):
+    ac, seed = client
+    # Ensure beta has distinct low-stock signal while alpha insights stay scoped.
+    seed["p2"].stock_qty = 0
+    seed["p2"].reorder_level = 5
+    await db_session.commit()
+
+    alpha = await _mgr_headers(ac)
+    r = await ac.get("/api/v1/ai/insights", headers=alpha)
+    assert r.status_code == 200, r.text
+    text = " ".join(r.json()["data"].get("insights") or [])
+    assert "Beta" not in text
+
+    chat = await ac.post("/api/v1/ai/chat", headers=alpha, json={"message": "hi"})
+    assert chat.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_mismatched_tenant_header_on_users(client):
+    ac, seed = client
+    headers = await _mgr_headers(ac)
+    headers["X-Tenant-ID"] = seed["t2"].id
+    r = await ac.get("/api/v1/users", headers=headers)
+    assert r.status_code == 403

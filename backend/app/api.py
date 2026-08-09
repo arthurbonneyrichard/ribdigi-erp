@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.db import get_db
 from app.inventory import apply_line_items_stock, apply_stock_change
-from app.rbac import VALID_ROLES, permissions_for_role
+from app.rbac import VALID_ROLES, list_role_catalog, permissions_for_role, serialize_user
 from app import purchasing as purchasing_svc
 from app import sales as sales_svc
 from app import sales_docs as sales_docs_svc
@@ -96,6 +96,7 @@ from app.schemas import (
     WebAuthnLoginVerify,
     WebAuthnRegisterVerify,
     UserCreate,
+    UserUpdate,
     WarehouseCreate,
 )
 from app.security import (
@@ -1293,12 +1294,66 @@ async def update_me(
     )
 
 
+async def _get_tenant_user(db: AsyncSession, tenant_id: str, user_id: str) -> m.User:
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+async def _revoke_user_sessions(db: AsyncSession, *, tenant_id: str, user_id: str) -> int:
+    now = datetime.utcnow()
+    sessions = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.tenant_id == tenant_id,
+                m.AuthSession.user_id == user_id,
+                m.AuthSession.revoked_at.is_(None),
+            )
+        )
+    ).scalars().all()
+    for session in sessions:
+        session.revoked_at = now
+    return len(sessions)
+
+
+@api.get("/roles")
+async def roles_catalog(claims=Depends(require_permission("users", "read"))):
+    return env(list_role_catalog())
+
+
+@api.get("/roles/{role}")
+async def role_detail(role: str, claims=Depends(require_permission("users", "read"))):
+    if role not in VALID_ROLES:
+        raise HTTPException(status_code=404, detail="Role not found")
+    catalog = {row["role"]: row for row in list_role_catalog()}
+    return env(catalog[role])
+
+
 @api.get("/users")
 async def users(claims=Depends(require_permission("users", "read")), db: AsyncSession = Depends(get_db)):
     rows = (
-        await db.execute(select(m.User).where(m.User.tenant_id == claims["tenant_id"]))
+        await db.execute(
+            select(m.User)
+            .where(m.User.tenant_id == claims["tenant_id"])
+            .order_by(m.User.full_name.asc())
+        )
     ).scalars().all()
-    return env(rows)
+    return env([serialize_user(u) for u in rows])
+
+
+@api.get("/users/{user_id}")
+async def get_user(
+    user_id: str,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    return env(serialize_user(user))
 
 
 @api.post("/users")
@@ -1309,6 +1364,8 @@ async def add_user(
 ):
     if payload.role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail=f"Invalid role. Allowed: {sorted(VALID_ROLES)}")
+    if payload.role == "super_admin" and claims.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super_admin can create super_admin users")
     validate_password_strength(payload.password)
     exists = (
         await db.execute(
@@ -1329,6 +1386,7 @@ async def add_user(
         role=payload.role,
         permissions=permissions_for_role(payload.role),
         email_verified=False,
+        is_active=True,
     )
     db.add(user)
     await db.flush()
@@ -1356,10 +1414,107 @@ async def add_user(
 
     email_result = await emailer.send_verification_email(to=user.email, token=raw)
     await db.commit()
-    data = {"id": user.id, "email": {"sent": email_result.sent, "mode": email_result.mode}}
+    data = {
+        "id": user.id,
+        "user": serialize_user(user),
+        "email": {"sent": email_result.sent, "mode": email_result.mode},
+    }
     if settings.DEBUG or settings.APP_ENV.lower() != "production":
         data["email_verification_token"] = raw
     return env(data, "User created; verification email dispatched")
+
+
+@api.patch("/users/{user_id}")
+async def update_user(
+    user_id: str,
+    payload: UserUpdate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    changes: dict = {}
+
+    if payload.full_name is not None:
+        name = payload.full_name.strip()
+        if len(name) < 2:
+            raise HTTPException(status_code=400, detail="full_name must be at least 2 characters")
+        user.full_name = name
+        changes["full_name"] = name
+
+    if payload.phone is not None:
+        user.phone = payload.phone.strip() or None
+        changes["phone"] = user.phone
+
+    if payload.role is not None:
+        if payload.role not in VALID_ROLES:
+            raise HTTPException(status_code=400, detail=f"Invalid role. Allowed: {sorted(VALID_ROLES)}")
+        if payload.role == "super_admin" and claims.get("role") != "super_admin":
+            raise HTTPException(status_code=403, detail="Only super_admin can assign super_admin")
+        if user.id == claims["sub"] and payload.role != user.role:
+            raise HTTPException(status_code=400, detail="Cannot change your own role")
+        if user.role != payload.role:
+            changes["role"] = {"from": user.role, "to": payload.role}
+            user.role = payload.role
+            user.permissions = permissions_for_role(payload.role)
+
+    if payload.password is not None:
+        validate_password_strength(payload.password)
+        user.password_hash = hash_password(payload.password)
+        changes["password_reset"] = True
+        await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
+
+    if payload.is_active is not None:
+        if user.id == claims["sub"] and payload.is_active is False:
+            raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+        if bool(user.is_active) != bool(payload.is_active):
+            user.is_active = bool(payload.is_active)
+            changes["is_active"] = user.is_active
+            if not user.is_active:
+                await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
+
+    if not changes:
+        return env(serialize_user(user), "No changes")
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="user_updated",
+        entity="user",
+        entity_id=user.id,
+        details=changes,
+    )
+    await db.commit()
+    return env(serialize_user(user), "User updated")
+
+
+@api.delete("/users/{user_id}")
+async def deactivate_user(
+    user_id: str,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Soft-delete: deactivate the user and revoke sessions (no hard delete)."""
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    if user.id == claims["sub"]:
+        raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+    if not user.is_active:
+        return env(serialize_user(user), "User already inactive")
+    user.is_active = False
+    revoked = await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="user_deactivated",
+        entity="user",
+        entity_id=user.id,
+        details={"email": user.email, "sessions_revoked": revoked},
+    )
+    await db.commit()
+    return env(serialize_user(user), "User deactivated")
 
 
 @api.get("/dashboard")

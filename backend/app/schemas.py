@@ -95,6 +95,14 @@ class UserCreate(BaseModel):
     phone: str | None = None
 
 
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+    role: str | None = None
+    is_active: bool | None = None
+    password: str | None = None
+
+
 class ProductCreate(BaseModel):
     name: str
     sku: str

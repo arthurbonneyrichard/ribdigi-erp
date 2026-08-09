@@ -4,38 +4,54 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
-const items = [
-  ['Dashboard', '/dashboard'],
-  ['Company', '/company'],
-  ['Inventory', '/inventory'],
-  ['Sales', '/sales'],
-  ['POS', '/pos'],
-  ['Purchasing', '/purchasing'],
-  ['Expenses', '/expenses'],
-  ['Accounting', '/accounting'],
-  ['Credit', '/credit'],
-  ['Tax', '/tax'],
-  ['Multi-Store', '/stores'],
-  ['Reports', '/reports'],
-  ['Notifications', '/notifications'],
-  ['Audit', '/audit'],
-  ['Backup', '/backup'],
-  ['Security', '/security'],
-  ['AI Assistant', '/ai'],
-  ['Users', '/users'],
+const items: [string, string, string][] = [
+  ['Dashboard', '/dashboard', 'dashboard'],
+  ['Company', '/company', 'company'],
+  ['Inventory', '/inventory', 'inventory'],
+  ['Sales', '/sales', 'sales'],
+  ['POS', '/pos', 'pos'],
+  ['Purchasing', '/purchasing', 'purchasing'],
+  ['Expenses', '/expenses', 'expenses'],
+  ['Accounting', '/accounting', 'accounting'],
+  ['Credit', '/credit', 'credit'],
+  ['Tax', '/tax', 'tax'],
+  ['Multi-Store', '/stores', 'stores'],
+  ['Reports', '/reports', 'reports'],
+  ['Notifications', '/notifications', 'notifications'],
+  ['Audit', '/audit', 'audit'],
+  ['Backup', '/backup', 'backup'],
+  ['Security', '/security', 'security'],
+  ['AI Assistant', '/ai', 'ai'],
+  ['Users', '/users', 'users'],
 ];
+
+function canReadModule(permissions: Record<string, string[]> | null | undefined, module: string) {
+  if (!permissions) return false;
+  if (permissions['*']?.includes('*')) return true;
+  const actions = permissions[module] || [];
+  return actions.includes('*') || actions.includes('read') || actions.includes('write');
+}
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
+  const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const r = await api('/notifications/unread-count');
-        if (active) setUnread(r.data?.count || 0);
+        const [countRes, meRes] = await Promise.all([
+          api('/notifications/unread-count').catch(() => ({ data: { count: 0 } })),
+          api('/me'),
+        ]);
+        if (!active) return;
+        setUnread(countRes.data?.count || 0);
+        setPermissions(meRes.data?.permissions || {});
       } catch {
-        if (active) setUnread(0);
+        if (active) {
+          setUnread(0);
+          setPermissions({});
+        }
       }
     }
     load();
@@ -46,12 +62,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const visible = items.filter(([, , module]) => canReadModule(permissions, module));
+
   return (
     <div className="shell">
       <aside className="side">
         <div className="brand">RIBDIGI ERP</div>
         <nav className="nav">
-          {items.map(([n, h]) => (
+          {visible.map(([n, h]) => (
             <Link key={h} href={h}>
               {n}
               {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
@@ -61,9 +79,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </aside>
       <main className="main">
         <div className="topbar">
-          <Link href="/notifications" className="bell">
-            Alerts{unread > 0 ? ` · ${unread}` : ''}
-          </Link>
+          {canReadModule(permissions, 'notifications') && (
+            <Link href="/notifications" className="bell">
+              Alerts{unread > 0 ? ` · ${unread}` : ''}
+            </Link>
+          )}
         </div>
         {children}
       </main>
