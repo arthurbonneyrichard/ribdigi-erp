@@ -19,7 +19,7 @@ Stage 8 closes commercial-MVP AP/credit holes that are documented but unfinished
 |----|------------|----------|---------|
 | **S1** | Supplier payment schedule (API + Credit UI) | P0 | COMPLETE |
 | **S2** | Outstanding bills UI (AP + AR) | P1 | COMPLETE |
-| **A1** | Account ledger transactions (`GET …/accounts/{id}/transactions`) | P1 | PENDING |
+| **A1** | Account ledger transactions (`GET …/accounts/{id}/transactions`) | P1 | COMPLETE |
 | **P1** | Purchase return multi-line UI | P1 | PENDING |
 | **H8x** | Stage 8 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -47,6 +47,14 @@ Stage 8 closes commercial-MVP AP/credit holes that are documented but unfinished
 - [x] Customer outstanding returns `document_type`, sorted open bills; 404 for missing customer.
 - [x] Outstanding panel shows document / due / status / amount with period total.
 - [x] Automated tests in `backend/tests/test_outstanding_bills_s2.py`.
+
+## A1 acceptance criteria
+
+- [x] `GET /accounting/accounts/{id}/transactions` returns posted lines with running balance (natural side).
+- [x] Optional `from_date` / `to_date` / `include_unposted`; opening balance rolls prior activity.
+- [x] Tenant-scoped + `accounting:read`; 404 for missing account.
+- [x] Accounting Ledger UI: Ledger button + date filter + transaction table.
+- [x] Automated tests in `backend/tests/test_account_transactions_a1.py`.
 
 ## Sign-off
 

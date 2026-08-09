@@ -933,10 +933,12 @@ Unpost reverses account balances and sets status `unposted`. Allowed only when `
 }
 ```
 
-### 10.3 Cash & Bank Accounts
+### 10.3 Cash & Bank Accounts / Account ledger
 **List:** `GET /accounting/accounts?type=asset&sub_type=cash`  
 **Create:** `POST /accounting/accounts`  
-**Get Transactions:** `GET /accounting/accounts/{account_id}/transactions`
+**Get Transactions (Stage 8 A1):** `GET /accounting/accounts/{account_id}/transactions`
+
+Query: `from_date`, `to_date` (ISO date), `include_unposted` (default false). Returns account metadata, `opening_balance` (activity before `from_date`), `closing_balance`, `total_debit` / `total_credit`, and `transactions[]` with `entry_number`, `entry_date`, debit/credit, and running `balance` on the account’s natural side (assets/expenses: debit−credit; liability/equity/income: credit−debit). Requires `accounting:read`.
 
 ### 10.4 Financial Reports
 **Profit & Loss:** `GET /reports/profit-loss?from_date=&to_date=` (also `GET /accounting/profit-loss`)  
