@@ -964,6 +964,7 @@ CREATE TABLE journal_entries (
     total_debit DECIMAL(15,4) NOT NULL,
     total_credit DECIMAL(15,4) NOT NULL,
     is_balanced BOOLEAN GENERATED ALWAYS AS (total_debit = total_credit) STORED,
+    attachment_url TEXT,  -- Stage 9 J1: storage key or external URL for supporting document
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(tenant_id, entry_number)

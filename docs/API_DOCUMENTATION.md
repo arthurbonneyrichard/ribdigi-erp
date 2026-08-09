@@ -909,6 +909,11 @@ Credit tender (full or split portion) enforces the same credit-limit gate as inv
 **Create:** `POST /accounting/journal-entries`  
 **Get:** `GET /accounting/journal-entries/{entry_id}`  
 **Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost`  
+**Upload attachment (Stage 9 J1):** `POST /accounting/journal-entries/{entry_id}/attachment` (multipart `file`) — requires `accounting:write`  
+**Download attachment:** `GET /accounting/journal-entries/{entry_id}/attachment` — requires `accounting:read`  
+**Delete attachment:** `DELETE /accounting/journal-entries/{entry_id}/attachment` — requires `accounting:write`  
+
+Journal payloads include `attachment_url` and `has_attachment`. Upload replaces any prior stored object for the entry. Download returns `404` when none is stored.
 
 Unpost reverses account balances and sets status `unposted`. Allowed only when `entry_date` is in the tenant’s open fiscal year (`fiscal_year_start` MM-DD). Returns `409` with `FISCAL_PERIOD_CLOSED`, `JOURNAL_NOT_POSTED`, or `JOURNAL_RECONCILED` when blocked.
 

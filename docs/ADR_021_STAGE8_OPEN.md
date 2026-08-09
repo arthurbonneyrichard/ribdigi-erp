@@ -24,4 +24,4 @@ Remaining commercial-MVP gaps include the documented-but-unimplemented supplier 
 
 ## Amendment (2026-08-09)
 
-Stage 8 exit criteria met (`docs/STAGE_8_EXIT_CRITERIA.md`). Feature scope frozen under [ADR-022](ADR_022_STAGE8_FREEZE.md). Do not open Stage 9 until CONTINUE (or equivalent) after freeze.
+Stage 8 exit criteria met (`docs/STAGE_8_EXIT_CRITERIA.md`). Feature scope frozen under [ADR-022](ADR_022_STAGE8_FREEZE.md). Stage 9 opened after CONTINUE — see [ADR-023](ADR_023_STAGE9_OPEN.md).

@@ -606,7 +606,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Double-entry journal with debit and credit lines
   - [ ] Auto-balancing validation
   - [ ] Journal number auto-generation
-  - [ ] Attach supporting documents
+  - [x] Attach supporting documents (Stage 9 J1)
   - [ ] Post/unpost capability (unpost only within same fiscal period)
 
 #### BR-10.3 Cash & Bank Accounts

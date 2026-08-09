@@ -20,3 +20,7 @@ Stage 8 Credit Fidelity & AP Cash Closeout (S1, S2, A1, P1, H8x) delivered suppl
 - Agents treat Stage 8 S1, S2, A1, P1, H8x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–7 freezes (ADR-008, ADR-010, ADR-012, ADR-014, ADR-016, ADR-018, ADR-020) remain in force for their scopes.
+
+## Amendment (2026-08-09)
+
+Product owner approved opening Stage 9 via CONTINUE after Stage 8 freeze. Stage 9 track is open under [ADR-023](ADR_023_STAGE9_OPEN.md) + [STAGE_9_PLAN.md](STAGE_9_PLAN.md). Stage 8 feature scope remains frozen (bugfixes / security / tests / docs only).

@@ -722,8 +722,8 @@ For adjustments, accruals, and corrections:
    - Enter **Debit** or **Credit** amount
    - Add description per line
 4. Ensure **Total Debits = Total Credits** (system validates)
-5. Attach supporting document
-6. Click **Post**
+5. Click **Post**
+6. On **Accounting → Ledger → Recent journals**, use **Upload** to attach a supporting document (PDF/image). Use **Download** / **Remove** to manage it later.
 
 > **Important:** Once posted, journal entries can only be unposted within the same fiscal period. After period close, they are immutable.
 

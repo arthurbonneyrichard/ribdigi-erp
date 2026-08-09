@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 type Tab = 'ledger' | 'reconcile' | 'cheques';
 
 export default function Page() {
@@ -135,6 +137,74 @@ export default function Page() {
     try {
       await api(`/accounting/journal-entries/${id}/unpost`, { method: 'POST' });
       setMessage('Journal unposted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function uploadJournalAttachment(id: string, file: File) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+        body: form,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
+      }
+      setMessage('Supporting document uploaded');
+      await refresh();
+    } catch (err: any) {
+      setError(typeof err.message === 'string' ? err.message : 'Upload failed');
+    }
+  }
+
+  async function downloadJournalAttachment(id: string) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Download failed');
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="?([^"]+)"?/);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = match?.[1] || 'journal-attachment';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function removeJournalAttachment(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/journal-entries/${id}/attachment`, { method: 'DELETE' });
+      setMessage('Supporting document removed');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -817,6 +887,7 @@ export default function Page() {
                 <th>Status</th>
                 <th>Debit</th>
                 <th>Credit</th>
+                <th>Document</th>
                 <th></th>
               </tr>
             </thead>
@@ -829,6 +900,31 @@ export default function Page() {
                   <td>{j.status || 'posted'}</td>
                   <td>{j.total_debit}</td>
                   <td>{j.total_credit}</td>
+                  <td>
+                    {j.has_attachment ? (
+                      <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button type="button" onClick={() => downloadJournalAttachment(j.id)}>
+                          Download
+                        </button>
+                        <button type="button" onClick={() => removeJournalAttachment(j.id)}>
+                          Remove
+                        </button>
+                      </span>
+                    ) : (
+                      <label style={{ cursor: 'pointer' }}>
+                        <span className="muted">Upload</span>
+                        <input
+                          type="file"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadJournalAttachment(j.id, f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+                  </td>
                   <td>
                     {(j.status || 'posted') === 'posted' ? (
                       <button type="button" onClick={() => unpostJournal(j.id)}>

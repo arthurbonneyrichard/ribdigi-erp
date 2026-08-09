@@ -1077,6 +1077,9 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
         "total_debit": float(entry.total_debit),
         "total_credit": float(entry.total_credit),
         "status": entry.status,
+        "attachment_url": entry.attachment_url,
+        "has_attachment": bool(entry.attachment_url),
+        "created_by": entry.created_by,
         "created_at": entry.created_at,
         "balanced": abs(float(entry.total_debit) - float(entry.total_credit)) < 0.01,
         "lines": [

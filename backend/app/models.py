@@ -1157,6 +1157,7 @@ class JournalEntry(Base):
     total_debit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_credit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     status: Mapped[str] = mapped_column(String(20), default="posted")
+    attachment_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
