@@ -179,6 +179,22 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 
 **Endpoint:** `DELETE /auth/sessions/{session_id}`
 
+### 2.7 API Keys (Stage 6 K1 / BR-18.1)
+Tenant admins manage integration keys. The raw secret is returned **once** on create.
+
+| Method | Endpoint | Notes |
+|--------|----------|-------|
+| `GET` | `/api-keys` | List keys (prefix + metadata; no secret) |
+| `POST` | `/api-keys` | Create (`name`, optional `permissions`, `expires_at`) |
+| `GET` | `/api-keys/{id}` | Get metadata |
+| `DELETE` | `/api-keys/{id}` | Revoke |
+
+**Authenticate requests** with either:
+- Header `X-API-Key: rdk_…`
+- Header `Authorization: Bearer rdk_…`
+
+Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions are a module→actions map (defaults: inventory/sales/purchasing/customers/reports `read`).
+
 ---
 
 ## 3. Tenant Management
