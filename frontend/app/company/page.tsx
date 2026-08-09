@@ -88,6 +88,7 @@ export default function Page() {
           tax_registration_number: tenant.tax_registration_number,
           tax_filing_period: tenant.tax_filing_period,
           document_numbering: tenant.document_numbering || undefined,
+          invoice_print_template: tenant.invoice_print_template || undefined,
         }),
       });
       setTenant(r.data);
@@ -308,6 +309,25 @@ export default function Page() {
               Suspend
             </button>
           )}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16, maxWidth: 720 }}>
+        <h2>Invoice print template</h2>
+        <p className="muted">Default layout for sales invoice print (A4 or thermal).</p>
+        <select
+          value={tenant.invoice_print_template || 'a4'}
+          onChange={(e) => setTenant({ ...tenant, invoice_print_template: e.target.value })}
+          style={{ maxWidth: 220 }}
+        >
+          <option value="a4">A4</option>
+          <option value="thermal_80">Thermal 80mm</option>
+          <option value="thermal_58">Thermal 58mm</option>
+        </select>
+        <div style={{ marginTop: 8 }}>
+          <button onClick={save} disabled={!!tenant.read_only}>
+            Save print template
+          </button>
         </div>
       </div>
 

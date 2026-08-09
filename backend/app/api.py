@@ -111,6 +111,7 @@ from app.schemas import (
     SalesOrderUpdate,
     SalesQuotationCreate,
     SalesReturnCreate,
+    InvoiceSendRequest,
     SmsTestRequest,
     StockAdjust,
     StockMove,
@@ -347,6 +348,7 @@ async def tenant_me_update(
             if payload.document_numbering is not None
             else None
         ),
+        invoice_print_template=payload.invoice_print_template,
     )
     await audit_svc.record_event(
         db,
@@ -3751,7 +3753,9 @@ async def list_sales_invoices(
     )
     stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
-    return env([await sales_svc.serialize_invoice(db, inv) for inv in rows])
+    out = [await sales_svc.serialize_invoice(db, inv) for inv in rows]
+    await db.commit()  # persist any overdue status refreshes from serialize
+    return env(out)
 
 
 @api.post("/sales/invoices")
@@ -3784,7 +3788,71 @@ async def get_sales_invoice(
 ):
     invoice = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, invoice.created_by)
-    return env(await sales_svc.serialize_invoice(db, invoice))
+    data = await sales_svc.serialize_invoice(db, invoice)
+    await db.commit()
+    return env(data)
+
+
+@api.get("/sales/invoices/{invoice_id}/print")
+async def print_sales_invoice(
+    invoice_id: str,
+    template: str | None = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    invoice = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, invoice.created_by)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    customer = await sales_svc.get_customer(db, claims["tenant_id"], invoice.customer_id)
+    tpl = (template or getattr(tenant, "invoice_print_template", None) or "a4").strip().lower()
+    if tpl not in sales_svc.INVOICE_PRINT_TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"template must be one of: {sorted(sales_svc.INVOICE_PRINT_TEMPLATES)}",
+        )
+    data = await sales_svc.serialize_invoice(db, invoice)
+    currency = data.get("currency") or tenant.currency or "GHS"
+    text = sales_svc.render_invoice_text(
+        data,
+        company_name=tenant.company_name,
+        customer_name=customer.name,
+        template=tpl,
+        currency=currency,
+    )
+    await db.commit()
+    return env(
+        {
+            "invoice": data,
+            "text": text,
+            "template": tpl,
+            "customer_name": customer.name,
+            "company_name": tenant.company_name,
+        }
+    )
+
+
+@api.post("/sales/invoices/{invoice_id}/send")
+async def send_sales_invoice(
+    invoice_id: str,
+    payload: InvoiceSendRequest | None = None,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
+    invoice, delivery = await sales_svc.send_sales_invoice(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        invoice_id=invoice_id,
+        to=payload.to if payload else None,
+    )
+    await db.commit()
+    data = await sales_svc.serialize_invoice(db, invoice)
+    data["delivery"] = delivery
+    return env(data, f"Invoice emailed to {delivery['to']} ({delivery['mode']})")
 
 
 @api.post("/sales/invoices/{invoice_id}/post")

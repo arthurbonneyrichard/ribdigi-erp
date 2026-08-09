@@ -102,6 +102,11 @@ class TenantProfileUpdate(BaseModel):
     tax_registration_number: str | None = None
     tax_filing_period: str | None = None
     document_numbering: DocumentNumberingUpdate | None = None
+    invoice_print_template: str | None = None
+
+
+class InvoiceSendRequest(BaseModel):
+    to: str | None = None
 
 
 class TenantSuspendRequest(BaseModel):

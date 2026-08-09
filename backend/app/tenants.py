@@ -82,6 +82,7 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "document_numbering_preview": preview_document_numbering(
             getattr(tenant, "document_numbering", None)
         ),
+        "invoice_print_template": getattr(tenant, "invoice_print_template", None) or "a4",
         "suspended_at": tenant.suspended_at,
         "suspended_reason": tenant.suspended_reason,
         "created_at": tenant.created_at,
@@ -292,6 +293,7 @@ async def update_profile(
     tax_registration_number: str | None = None,
     tax_filing_period: str | None = None,
     document_numbering: dict | None = None,
+    invoice_print_template: str | None = None,
 ) -> m.Tenant:
     if company_name is not None:
         name = company_name.strip()
@@ -346,6 +348,16 @@ async def update_profile(
         tenant.document_numbering = merge_document_numbering(
             getattr(tenant, "document_numbering", None), document_numbering
         )
+    if invoice_print_template is not None:
+        from app.sales import INVOICE_PRINT_TEMPLATES
+
+        tpl = invoice_print_template.strip().lower()
+        if tpl not in INVOICE_PRINT_TEMPLATES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"invoice_print_template must be one of: {sorted(INVOICE_PRINT_TEMPLATES)}",
+            )
+        tenant.invoice_print_template = tpl
     await db.flush()
     return tenant
 

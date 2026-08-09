@@ -14,12 +14,40 @@ from app.credit import default_due_date
 from app.catalog import resolve_sale_line, stock_out_with_batch
 
 
-def invoice_payment_status(total: float, paid: float) -> str:
-    if paid <= 0:
-        return "posted"
-    if paid + 1e-9 >= total:
+INVOICE_PRINT_TEMPLATES = frozenset({"a4", "thermal_80", "thermal_58"})
+
+
+def invoice_payment_status(total: float, paid: float, *, previous_status: str | None = None) -> str:
+    total_f = float(total or 0)
+    paid_f = float(paid or 0)
+    if paid_f + 1e-9 >= total_f:
         return "paid"
-    return "partial"
+    if paid_f > 0:
+        return "partial"
+    # Unpaid: preserve sent/overdue instead of collapsing back to posted
+    if previous_status in {"sent", "overdue"}:
+        return previous_status
+    return "posted"
+
+
+def refresh_invoice_overdue(invoice: m.SalesInvoice, *, now: datetime | None = None) -> bool:
+    """Mark unpaid posted/sent invoices past due_date as overdue. Returns True if changed."""
+    now = now or datetime.utcnow()
+    balance = max(float(invoice.total_amount or 0) - float(invoice.paid_amount or 0), 0)
+    if invoice.status not in {"posted", "sent", "overdue", "partial"}:
+        return False
+    if balance <= 1e-9:
+        return False
+    if not invoice.due_date or invoice.due_date.date() >= now.date():
+        return False
+    if invoice.status == "partial":
+        # Keep partial for partially paid past-due; expose via is_overdue flag in serialize.
+        return False
+    if invoice.status != "overdue":
+        invoice.status = "overdue"
+        invoice.updated_at = now
+        return True
+    return False
 
 
 async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.Party:
@@ -63,30 +91,43 @@ async def list_invoice_items(db: AsyncSession, tenant_id: str, invoice_id: str) 
 
 
 async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
+    refresh_invoice_overdue(invoice)
     items = await list_invoice_items(db, invoice.tenant_id, invoice.id)
+    balance = max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0)
+    now = datetime.utcnow()
+    is_overdue = bool(
+        balance > 1e-9
+        and invoice.due_date
+        and invoice.due_date.date() < now.date()
+        and invoice.status not in {"draft", "cancelled", "paid"}
+    )
     return {
         "id": invoice.id,
         "invoice_number": invoice.invoice_number,
         "customer_id": invoice.customer_id,
         "store_id": invoice.store_id,
         "status": invoice.status,
+        "is_overdue": is_overdue,
         "subtotal": float(invoice.subtotal),
         "tax_amount": float(invoice.tax_amount),
         "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
         "discount_amount": float(invoice.discount_amount),
         "total_amount": float(invoice.total_amount),
         "paid_amount": float(invoice.paid_amount),
-        "balance_due": max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0),
+        "balance_due": balance,
         "currency": getattr(invoice, "currency", None) or "",
         "exchange_rate": float(getattr(invoice, "exchange_rate", None) or 1),
         "balance_due_base": round(
-            max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0)
-            * float(getattr(invoice, "exchange_rate", None) or 1),
+            balance * float(getattr(invoice, "exchange_rate", None) or 1),
             2,
         ),
         "notes": invoice.notes,
         "posted_at": invoice.posted_at,
         "due_date": invoice.due_date,
+        "emailed_at": getattr(invoice, "emailed_at", None),
+        "emailed_to": getattr(invoice, "emailed_to", None),
+        "sales_order_id": invoice.sales_order_id,
+        "quotation_id": invoice.quotation_id,
         "created_at": invoice.created_at,
         "items": [
             {
@@ -102,6 +143,122 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
             for i in items
         ],
     }
+
+
+def render_invoice_text(
+    invoice_data: dict,
+    *,
+    company_name: str,
+    customer_name: str,
+    template: str = "a4",
+    currency: str = "GHS",
+) -> str:
+    tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
+    width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
+    cur = currency or invoice_data.get("currency") or "GHS"
+    lines = [
+        company_name[:width],
+        f"INVOICE {invoice_data.get('invoice_number')}"[:width],
+        f"Customer: {customer_name}"[:width],
+        f"Status: {invoice_data.get('status')}"[:width],
+    ]
+    if invoice_data.get("due_date"):
+        lines.append(f"Due: {str(invoice_data['due_date'])[:10]}"[:width])
+    lines.extend(["", f"{'Item':<{max(width - 28, 8)}} {'Qty':>6} {'Total':>10}"[:width], "-" * width])
+    for item in invoice_data.get("items") or []:
+        desc = str(item.get("product_id") or "Item")[: max(width - 28, 8)]
+        lines.append(
+            f"{desc:<{max(width - 28, 8)}} {float(item.get('quantity') or 0):>6.2f} "
+            f"{float(item.get('line_total') or 0):>10.2f}"[:width]
+        )
+    lines.extend(
+        [
+            "-" * width,
+            f"Subtotal: {cur} {float(invoice_data.get('subtotal') or 0):.2f}"[:width],
+            f"Tax: {cur} {float(invoice_data.get('tax_amount') or 0):.2f}"[:width],
+            f"Discount: {cur} {float(invoice_data.get('discount_amount') or 0):.2f}"[:width],
+            f"TOTAL: {cur} {float(invoice_data.get('total_amount') or 0):.2f}"[:width],
+            f"Paid: {cur} {float(invoice_data.get('paid_amount') or 0):.2f}"[:width],
+            f"Balance: {cur} {float(invoice_data.get('balance_due') or 0):.2f}"[:width],
+        ]
+    )
+    if invoice_data.get("notes"):
+        lines.extend(["", f"Notes: {invoice_data['notes']}"[:width]])
+    if tpl.startswith("thermal"):
+        lines.extend(["", "Thank you!"[:width]])
+    return "\n".join(lines)
+
+
+async def send_sales_invoice(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    invoice_id: str,
+    to: str | None = None,
+) -> tuple[m.SalesInvoice, dict]:
+    from app import emailer
+
+    invoice = await get_invoice(db, tenant_id, invoice_id)
+    refresh_invoice_overdue(invoice)
+    if invoice.status not in {"posted", "sent", "partial", "overdue", "paid"}:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot email invoice in status {invoice.status}",
+        )
+    customer = await get_customer(db, tenant_id, invoice.customer_id)
+    recipient = (to or customer.email or "").strip()
+    if not recipient:
+        raise HTTPException(
+            status_code=400,
+            detail="Customer has no email; set customer email or pass to= override",
+        )
+    tenant = await db.get(m.Tenant, tenant_id)
+    company_name = tenant.company_name if tenant else "RIBDIGI ERP"
+    currency = (getattr(invoice, "currency", None) or (tenant.currency if tenant else None) or "GHS")
+    payload = await serialize_invoice(db, invoice)
+    result = await emailer.send_invoice_email(
+        to=recipient,
+        company_name=company_name,
+        currency=currency,
+        customer_name=customer.name,
+        invoice=payload,
+    )
+    if not result.sent:
+        if result.mode == "disabled":
+            raise HTTPException(status_code=503, detail="Email delivery is disabled")
+        raise HTTPException(status_code=502, detail=result.error or "Email send failed")
+
+    now = datetime.utcnow()
+    if invoice.status == "posted":
+        invoice.status = "sent"
+    invoice.emailed_at = now
+    invoice.emailed_to = recipient
+    invoice.updated_at = now
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="sales",
+        action="invoice_sent",
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        details={
+            "invoice_number": invoice.invoice_number,
+            "to": recipient,
+            "mode": result.mode,
+        },
+    )
+    await db.flush()
+    delivery = {
+        "sent": result.sent,
+        "mode": result.mode,
+        "to": recipient,
+        "emailed_at": invoice.emailed_at,
+    }
+    return invoice, delivery
 
 
 async def create_sales_invoice(
@@ -580,7 +737,11 @@ async def record_customer_payment(
     customer.balance = max(float(customer.balance or 0) - settlement_base, 0)
     for invoice, apply_amt, _disc in allocations:
         invoice.paid_amount = float(invoice.paid_amount or 0) + apply_amt
-        invoice.status = invoice_payment_status(float(invoice.total_amount), float(invoice.paid_amount))
+        invoice.status = invoice_payment_status(
+            float(invoice.total_amount),
+            float(invoice.paid_amount),
+            previous_status=invoice.status,
+        )
         invoice.updated_at = datetime.utcnow()
 
     from app.accounting import post_customer_payment_journal

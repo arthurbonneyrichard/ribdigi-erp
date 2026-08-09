@@ -41,6 +41,7 @@ export default function Page() {
   const [returnReason, setReturnReason] = useState('other');
   const [restock, setRestock] = useState(true);
   const [payAmount, setPayAmount] = useState('');
+  const [printTemplate, setPrintTemplate] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [message, setMessage] = useState('');
@@ -310,6 +311,29 @@ export default function Page() {
       setMessage(r.message || 'Payment recorded');
       setPayAmount('');
       await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function printInvoice(invId: string, template?: string) {
+    setError('');
+    try {
+      const q = template ? `?template=${encodeURIComponent(template)}` : '';
+      const r = await api(`/sales/invoices/${invId}/print${q}`);
+      const text = r.data?.text || '';
+      const win = window.open('', '_blank', 'noopener,noreferrer,width=720,height=800');
+      if (win) {
+        win.document.write(
+          `<pre style="font:14px/1.4 monospace;padding:16px">${text.replace(/</g, '&lt;')}</pre>`
+        );
+        win.document.close();
+        win.focus();
+      }
+      setMessage(
+        `Print (${r.data?.template || 'a4'}) ready for ${r.data?.invoice?.invoice_number || 'invoice'}`
+      );
+      if (r.data?.invoice) setSelected(r.data.invoice);
     } catch (err: any) {
       setError(err.message);
     }
@@ -658,62 +682,95 @@ export default function Page() {
       )}
 
       {tab === 'invoices' && (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Number</th>
-              <th>Status</th>
-              <th>Store</th>
-              <th>Total</th>
-              <th>Paid</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.map((inv) => (
-              <tr key={inv.id}>
-                <td>{inv.invoice_number}</td>
-                <td>{inv.status}</td>
-                <td>
-                  {stores.find((s) => s.id === inv.store_id)?.name ||
-                    (inv.store_id ? inv.store_id.slice(0, 8) : '—')}
-                </td>
-                <td>{inv.total_amount}</td>
-                <td>{inv.paid_amount}</td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(inv)}>View</button>
-                  {inv.status === 'draft' && (
-                    <>
-                      <button onClick={() => act(`/sales/invoices/${inv.id}/post`, 'Posted')}>Post</button>
-                      <button onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
-                    </>
-                  )}
-                  {['posted', 'partial'].includes(inv.status) && (
-                    <>
-                      <input
-                        value={selected?.id === inv.id ? payAmount : ''}
-                        onChange={(e) => {
-                          setSelected(inv);
-                          setPayAmount(e.target.value);
-                        }}
-                        placeholder="Pay"
-                        style={{ width: 80 }}
-                      />
-                      <button
-                        onClick={() => {
-                          setSelected(inv);
-                          pay();
-                        }}
-                      >
-                        Pay
-                      </button>
-                    </>
-                  )}
-                </td>
+        <>
+          <div className="card" style={{ marginBottom: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <label className="muted">Print template</label>
+            <select value={printTemplate} onChange={(e) => setPrintTemplate(e.target.value)}>
+              <option value="">Tenant default</option>
+              <option value="a4">A4</option>
+              <option value="thermal_80">Thermal 80mm</option>
+              <option value="thermal_58">Thermal 58mm</option>
+            </select>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Status</th>
+                <th>Store</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Emailed</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {invoices.map((inv) => (
+                <tr key={inv.id}>
+                  <td>{inv.invoice_number}</td>
+                  <td>
+                    {inv.status}
+                    {inv.is_overdue && inv.status !== 'overdue' ? ' (overdue)' : ''}
+                  </td>
+                  <td>
+                    {stores.find((s) => s.id === inv.store_id)?.name ||
+                      (inv.store_id ? inv.store_id.slice(0, 8) : '—')}
+                  </td>
+                  <td>{inv.total_amount}</td>
+                  <td>{inv.paid_amount}</td>
+                  <td className="muted">
+                    {inv.emailed_to ? String(inv.emailed_at || '').slice(0, 10) : '—'}
+                  </td>
+                  <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    <button onClick={() => setSelected(inv)}>View</button>
+                    {inv.status !== 'draft' && inv.status !== 'cancelled' && (
+                      <button onClick={() => printInvoice(inv.id, printTemplate || undefined)}>Print</button>
+                    )}
+                    {inv.status === 'draft' && (
+                      <>
+                        <button onClick={() => act(`/sales/invoices/${inv.id}/post`, 'Posted')}>Post</button>
+                        <button onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
+                      </>
+                    )}
+                    {['posted', 'sent', 'partial', 'overdue', 'paid'].includes(inv.status) && (
+                      <button
+                        onClick={() =>
+                          act(
+                            `/sales/invoices/${inv.id}/send`,
+                            inv.emailed_at ? 'Invoice re-emailed' : 'Invoice emailed'
+                          )
+                        }
+                      >
+                        {inv.emailed_at ? 'Resend' : 'Email'}
+                      </button>
+                    )}
+                    {['posted', 'sent', 'partial', 'overdue'].includes(inv.status) && (
+                      <>
+                        <input
+                          value={selected?.id === inv.id ? payAmount : ''}
+                          onChange={(e) => {
+                            setSelected(inv);
+                            setPayAmount(e.target.value);
+                          }}
+                          placeholder="Pay"
+                          style={{ width: 80 }}
+                        />
+                        <button
+                          onClick={() => {
+                            setSelected(inv);
+                            pay();
+                          }}
+                        >
+                          Pay
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
 
       {tab === 'returns' && (
