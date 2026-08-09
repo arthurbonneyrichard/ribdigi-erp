@@ -515,6 +515,15 @@ class WarehouseStockTransferCreate(BaseModel):
     items: list[StockTransferItemCreate] = Field(min_length=1)
 
 
+class LowStockReorderPoCreate(BaseModel):
+    product_id: str
+    supplier_id: str
+    quantity: float | None = Field(default=None, gt=0)
+    warehouse_id: str | None = None
+    unit_price: float | None = Field(default=None, ge=0)
+    notes: str | None = None
+
+
 class TaxCreate(BaseModel):
     name: str
     rate: float = Field(ge=0)

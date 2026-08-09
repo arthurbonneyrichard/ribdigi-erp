@@ -13,7 +13,10 @@ type Tab =
   | 'expiry'
   | 'counts'
   | 'transfers'
-  | 'ops';
+  | 'ops'
+  | 'movements'
+  | 'stock'
+  | 'lowstock';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -45,6 +48,15 @@ export default function Page() {
   const [opsWarehouseId, setOpsWarehouseId] = useState('');
   const [opsQty, setOpsQty] = useState('1');
   const [opsNotes, setOpsNotes] = useState('');
+  const [movements, setMovements] = useState<any[]>([]);
+  const [moveFrom, setMoveFrom] = useState('');
+  const [moveTo, setMoveTo] = useState('');
+  const [moveType, setMoveType] = useState('');
+  const [moveWarehouseId, setMoveWarehouseId] = useState('');
+  const [warehouseStock, setWarehouseStock] = useState<any | null>(null);
+  const [lowStock, setLowStock] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [reorderSupplierId, setReorderSupplierId] = useState('');
 
   const [productName, setProductName] = useState('');
   const [productSku, setProductSku] = useState('');
@@ -81,7 +93,7 @@ export default function Page() {
   const [stockQty, setStockQty] = useState('10');
 
   async function refresh() {
-    const [p, e, c, tree, b, u, w, sc, tr] = await Promise.all([
+    const [p, e, c, tree, b, u, w, sc, tr, ls, sup] = await Promise.all([
       api('/products'),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
@@ -91,6 +103,8 @@ export default function Page() {
       api('/warehouses'),
       api('/inventory/stock-counts'),
       api('/inventory/stock-transfers').catch(() => ({ data: [] })),
+      api('/inventory/low-stock').catch(() => ({ data: [] })),
+      api('/suppliers').catch(() => ({ data: [] })),
     ]);
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
@@ -101,11 +115,35 @@ export default function Page() {
     setWarehouses(w.data || []);
     setCounts(sc.data || []);
     setTransfers(tr.data || []);
+    setLowStock(ls.data || []);
+    setSuppliers(sup.data || []);
     if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!fromWarehouseId && w.data?.length) setFromWarehouseId(w.data[0].id);
     if (!toWarehouseId && w.data?.length > 1) setToWarehouseId(w.data[1].id);
     if (!opsWarehouseId && w.data?.length) setOpsWarehouseId(w.data[0].id);
+    if (!reorderSupplierId && sup.data?.length) setReorderSupplierId(sup.data[0].id);
+  }
+
+  async function loadMovements() {
+    const params = new URLSearchParams();
+    if (selectedId) params.set('product_id', selectedId);
+    if (moveWarehouseId) params.set('warehouse_id', moveWarehouseId);
+    if (moveType) params.set('movement_type', moveType);
+    if (moveFrom) params.set('from_date', moveFrom);
+    if (moveTo) params.set('to_date', moveTo);
+    const qs = params.toString();
+    const r = await api(`/inventory/movements${qs ? `?${qs}` : ''}`);
+    setMovements(r.data || []);
+  }
+
+  async function loadWarehouseStock(id: string) {
+    if (!id) {
+      setWarehouseStock(null);
+      return;
+    }
+    const r = await api(`/products/${id}/warehouse-stock`);
+    setWarehouseStock(r.data || null);
   }
 
   async function refreshSelected(id: string) {
@@ -123,6 +161,41 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  useEffect(() => {
+    if (tab === 'movements') {
+      loadMovements().catch((err) => setError(err.message));
+    }
+    if (tab === 'stock' && selectedId) {
+      loadWarehouseStock(selectedId).catch((err) => setError(err.message));
+    }
+  }, [tab, selectedId]);
+
+  async function createReorderPo(productId: string, quantity?: number) {
+    if (!reorderSupplierId) {
+      setError('Select a supplier for the reorder PO');
+      return;
+    }
+    setError('');
+    try {
+      const body: Record<string, unknown> = {
+        product_id: productId,
+        supplier_id: reorderSupplierId,
+        notes: 'Created from Inventory low-stock reorder',
+      };
+      if (quantity != null && quantity > 0) body.quantity = quantity;
+      const r = await api('/inventory/low-stock/reorder-po', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      setMessage(
+        `Draft PO ${r.data?.po_number || r.data?.id} created with ${r.data?.items?.length || 0} line(s)`,
+      );
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
 
   useEffect(() => {
     if (selectedId) {
@@ -712,6 +785,9 @@ export default function Page() {
             ['products', 'Products'],
             ['ops', 'Stock ops'],
             ['transfers', 'Transfers'],
+            ['movements', 'Movements'],
+            ['stock', 'Stock'],
+            ['lowstock', 'Low stock'],
             ['catalog', 'Catalog'],
             ['variants', 'Variants'],
             ['batches', 'Batches'],
@@ -1392,6 +1468,174 @@ export default function Page() {
             </button>
           </div>
         </div>
+      )}
+
+      {tab === 'movements' && (
+        <>
+          <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 560, marginBottom: 16 }}>
+            <h3>Movement history</h3>
+            <p className="muted">Filter by selected product, warehouse, type, and date range.</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <input type="date" value={moveFrom} onChange={(e) => setMoveFrom(e.target.value)} />
+              <input type="date" value={moveTo} onChange={(e) => setMoveTo(e.target.value)} />
+              <select value={moveType} onChange={(e) => setMoveType(e.target.value)}>
+                <option value="">All types</option>
+                <option value="stock_in">stock_in</option>
+                <option value="stock_out">stock_out</option>
+                <option value="adjustment">adjustment</option>
+                <option value="transfer_out">transfer_out</option>
+                <option value="transfer_in">transfer_in</option>
+              </select>
+              <select value={moveWarehouseId} onChange={(e) => setMoveWarehouseId(e.target.value)}>
+                <option value="">All warehouses</option>
+                {warehouses.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.code} — {w.name}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={() => loadMovements().catch((err) => setError(err.message))}>
+                Apply filters
+              </button>
+            </div>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Type</th>
+                <th>Qty</th>
+                <th>Product</th>
+                <th>Warehouse</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movements.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.created_at ? String(row.created_at).slice(0, 19) : '—'}</td>
+                  <td>{row.movement_type}</td>
+                  <td>{row.quantity}</td>
+                  <td>
+                    {products.find((p) => p.id === row.product_id)?.sku || row.product_id}
+                  </td>
+                  <td>
+                    {warehouses.find((w) => w.id === row.warehouse_id)?.code || row.warehouse_id || '—'}
+                  </td>
+                  <td>{row.notes || '—'}</td>
+                </tr>
+              ))}
+              {!movements.length && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No movements match the current filters
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'stock' && (
+        <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 640 }}>
+          <h3>Warehouse stock</h3>
+          <p className="muted">On-hand by warehouse for the selected product.</p>
+          {!selectedId && <p className="muted">Select a product above.</p>}
+          {warehouseStock && (
+            <>
+              <p>
+                Consolidated qty: <strong>{warehouseStock.stock_qty}</strong> · Reorder level:{' '}
+                {warehouseStock.reorder_level}
+              </p>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Warehouse</th>
+                    <th>Qty</th>
+                    <th>Reorder level</th>
+                    <th>Reorder qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(warehouseStock.warehouses || []).map((row: any) => (
+                    <tr key={row.warehouse_id}>
+                      <td>
+                        {row.code} — {row.name}
+                      </td>
+                      <td>{row.quantity}</td>
+                      <td>{row.reorder_level}</td>
+                      <td>{row.reorder_qty}</td>
+                    </tr>
+                  ))}
+                  {!(warehouseStock.warehouses || []).length && (
+                    <tr>
+                      <td colSpan={4} className="muted">
+                        No warehouse-located stock for this product
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </>
+          )}
+        </div>
+      )}
+
+      {tab === 'lowstock' && (
+        <>
+          <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 480, marginBottom: 16 }}>
+            <h3>Low stock reorder</h3>
+            <p className="muted">Create a draft purchase order for a low-stock product.</p>
+            <select value={reorderSupplierId} onChange={(e) => setReorderSupplierId(e.target.value)}>
+              <option value="">Select supplier</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>On hand</th>
+                <th>Reorder</th>
+                <th>Suggested</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lowStock.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.sku}</td>
+                  <td>{row.name}</td>
+                  <td>{row.stock_qty}</td>
+                  <td>{row.reorder_level}</td>
+                  <td>{row.suggested_order_qty}</td>
+                  <td>
+                    <button
+                      type="button"
+                      disabled={!reorderSupplierId}
+                      onClick={() => createReorderPo(row.id, Number(row.suggested_order_qty))}
+                    >
+                      Create draft PO
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!lowStock.length && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No products at or below reorder level
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </>
       )}
 
       {tab === 'transfers' && (

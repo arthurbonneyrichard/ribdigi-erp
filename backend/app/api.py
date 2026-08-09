@@ -115,6 +115,7 @@ from app.schemas import (
     StockMove,
     StockTransferCreate,
     WarehouseStockTransferCreate,
+    LowStockReorderPoCreate,
     StoreCreate,
     StoreDrawerSettingsUpdate,
     StoreReorderPolicyUpdate,
@@ -2744,13 +2745,110 @@ async def product_images_delete(
 async def lowstock(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
     rows = (
         await db.execute(
-            select(m.Product).where(
+            select(m.Product)
+            .where(
                 m.Product.tenant_id == claims["tenant_id"],
+                m.Product.is_active == True,  # noqa: E712
                 m.Product.stock_qty <= m.Product.reorder_level,
             )
+            .order_by(m.Product.stock_qty.asc())
         )
     ).scalars().all()
-    return env(rows)
+    return env(
+        [
+            {
+                "id": p.id,
+                "sku": p.sku,
+                "name": p.name,
+                "stock_qty": float(p.stock_qty or 0),
+                "reorder_level": float(p.reorder_level or 0),
+                "cost_price": float(p.cost_price or 0),
+                "suggested_order_qty": max(
+                    1.0,
+                    round(float(p.reorder_level or 0) - float(p.stock_qty or 0), 3)
+                    if float(p.reorder_level or 0) > float(p.stock_qty or 0)
+                    else max(float(p.reorder_level or 0), 1.0),
+                ),
+            }
+            for p in rows
+        ]
+    )
+
+
+@api.post("/inventory/low-stock/reorder-po")
+async def low_stock_reorder_po(
+    payload: LowStockReorderPoCreate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a draft purchase order from a low-stock product suggestion."""
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == payload.product_id,
+                m.Product.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    supplier = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == payload.supplier_id,
+                m.Party.tenant_id == claims["tenant_id"],
+                m.Party.kind == "supplier",
+            )
+        )
+    ).scalar_one_or_none()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    if payload.warehouse_id:
+        from app.inventory import get_warehouse
+
+        await get_warehouse(db, claims["tenant_id"], payload.warehouse_id)
+
+    suggested = max(
+        1.0,
+        round(float(product.reorder_level or 0) - float(product.stock_qty or 0), 3)
+        if float(product.reorder_level or 0) > float(product.stock_qty or 0)
+        else max(float(product.reorder_level or 0), 1.0),
+    )
+    qty = float(payload.quantity) if payload.quantity is not None else suggested
+    if qty <= 0:
+        raise HTTPException(status_code=400, detail="quantity must be positive")
+    unit_price = (
+        float(payload.unit_price)
+        if payload.unit_price is not None
+        else float(product.cost_price or 0)
+    )
+    po = await purchasing_svc.create_purchase_order(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        supplier_id=supplier.id,
+        warehouse_id=payload.warehouse_id,
+        notes=payload.notes or f"Reorder from low stock: {product.sku}",
+        items=[{"product_id": product.id, "quantity": qty, "unit_price": unit_price}],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="low_stock_reorder_po",
+        entity="purchase_order",
+        entity_id=po.id,
+        details={
+            "product_id": product.id,
+            "sku": product.sku,
+            "quantity": qty,
+            "supplier_id": supplier.id,
+            "po_number": po.po_number,
+        },
+    )
+    await db.commit()
+    return env(await purchasing_svc.serialize_po(db, po), "Draft purchase order created from low stock")
 
 
 @api.get("/inventory/movements")
@@ -2758,9 +2856,13 @@ async def movements(
     product_id: str | None = None,
     warehouse_id: str | None = None,
     movement_type: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import reports as reports_svc
+
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == claims["tenant_id"])
     if product_id:
         stmt = stmt.where(m.StockMovement.product_id == product_id)
@@ -2768,10 +2870,63 @@ async def movements(
         stmt = stmt.where(m.StockMovement.warehouse_id == warehouse_id)
     if movement_type:
         stmt = stmt.where(m.StockMovement.movement_type == movement_type)
+    start = reports_svc.parse_date(from_date)
+    end = reports_svc.parse_date(to_date, end_of_day=True)
+    if start:
+        stmt = stmt.where(m.StockMovement.created_at >= start)
+    if end:
+        stmt = stmt.where(m.StockMovement.created_at <= end)
     rows = (
         await db.execute(stmt.order_by(m.StockMovement.created_at.desc()).limit(200))
     ).scalars().all()
     return env(rows)
+
+
+@api.get("/products/{product_id}/warehouse-stock")
+async def product_warehouse_stock(
+    product_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    rows = (
+        await db.execute(
+            select(m.WarehouseStock, m.Warehouse)
+            .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
+            .where(
+                m.WarehouseStock.tenant_id == claims["tenant_id"],
+                m.WarehouseStock.product_id == product_id,
+            )
+            .order_by(m.Warehouse.code)
+        )
+    ).all()
+    return env(
+        {
+            "product_id": product.id,
+            "stock_qty": float(product.stock_qty or 0),
+            "reorder_level": float(product.reorder_level or 0),
+            "warehouses": [
+                {
+                    "warehouse_id": wh.id,
+                    "code": wh.code,
+                    "name": wh.name,
+                    "quantity": float(stock.quantity or 0),
+                    "reorder_level": float(stock.reorder_level or 0),
+                    "reorder_qty": float(stock.reorder_qty or 0),
+                }
+                for stock, wh in rows
+            ],
+        }
+    )
 
 
 @api.get("/inventory/stock-counts")
