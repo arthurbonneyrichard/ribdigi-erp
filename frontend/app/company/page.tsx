@@ -24,6 +24,21 @@ export default function Page() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [orgUsers, setOrgUsers] = useState<any[]>([]);
+  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
+  const [editingDeptId, setEditingDeptId] = useState<string | null>(null);
+  const [branchEdit, setBranchEdit] = useState({
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    manager_id: '',
+  });
+  const [deptEdit, setDeptEdit] = useState({
+    name: '',
+    branch_id: '',
+    head_user_id: '',
+  });
   const [branchForm, setBranchForm] = useState({
     code: '',
     name: '',
@@ -63,7 +78,7 @@ export default function Page() {
   }
 
   async function refresh() {
-    const [r, e, s, me, st, br, dep] = await Promise.all([
+    const [r, e, s, me, st, br, dep, users] = await Promise.all([
       api('/tenants/me'),
       api('/settings/email'),
       api('/settings/sms'),
@@ -71,6 +86,7 @@ export default function Page() {
       api('/settings/storage').catch(() => ({ data: null })),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
+      api('/users').catch(() => ({ data: [] })),
     ]);
     setTenant(r.data);
     setEmailStatus(e.data);
@@ -92,6 +108,7 @@ export default function Page() {
     setProfilePhone(me.data?.phone || '');
     setBranches(br.data || []);
     setDepartments(dep.data || []);
+    setOrgUsers(users.data || []);
     await loadLogoPreview(!!r.data?.has_logo);
   }
 
@@ -756,7 +773,7 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 16 }}>
         <h3>Branches &amp; departments</h3>
-        <p className="muted">Org units for user assignment and department/branch record scopes.</p>
+        <p className="muted">Org units for user assignment and department/branch record scopes. Soft-deactivate keeps history; reactivate anytime.</p>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -805,12 +822,115 @@ export default function Page() {
           />
           <button type="submit">Add branch</button>
         </form>
-        <ul>
+        <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 10, maxWidth: 560 }}>
           {branches.map((b) => (
-            <li key={b.id}>
-              {b.code} — {b.name}
-              {b.phone ? ` · ${b.phone}` : ''}
-              {b.is_active ? '' : ' (inactive)'}
+            <li key={b.id} style={{ borderTop: '1px solid #e7e5e4', paddingTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span>
+                  {b.code} — {b.name}
+                  {b.phone ? ` · ${b.phone}` : ''}
+                  {b.is_active ? '' : ' (inactive)'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingBranchId(b.id);
+                    setBranchEdit({
+                      name: b.name || '',
+                      address: b.address || '',
+                      phone: b.phone || '',
+                      email: b.email || '',
+                      manager_id: b.manager_id || '',
+                    });
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setError('');
+                    try {
+                      await api(`/branches/${b.id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ is_active: !b.is_active }),
+                      });
+                      setMessage(b.is_active ? 'Branch deactivated' : 'Branch reactivated');
+                      await refresh();
+                    } catch (err: any) {
+                      setError(err.message);
+                    }
+                  }}
+                >
+                  {b.is_active ? 'Deactivate' : 'Reactivate'}
+                </button>
+              </div>
+              {editingBranchId === b.id && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setError('');
+                    try {
+                      await api(`/branches/${b.id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({
+                          name: branchEdit.name,
+                          address: branchEdit.address || null,
+                          phone: branchEdit.phone || null,
+                          email: branchEdit.email || null,
+                          manager_id: branchEdit.manager_id || null,
+                          clear_manager: !branchEdit.manager_id,
+                        }),
+                      });
+                      setEditingBranchId(null);
+                      setMessage('Branch updated');
+                      await refresh();
+                    } catch (err: any) {
+                      setError(err.message);
+                    }
+                  }}
+                  style={{ display: 'grid', gap: 6, marginTop: 8 }}
+                >
+                  <input
+                    value={branchEdit.name}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, name: e.target.value })}
+                    placeholder="Name"
+                    required
+                  />
+                  <input
+                    value={branchEdit.address}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, address: e.target.value })}
+                    placeholder="Address"
+                  />
+                  <input
+                    value={branchEdit.phone}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, phone: e.target.value })}
+                    placeholder="Phone"
+                  />
+                  <input
+                    value={branchEdit.email}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, email: e.target.value })}
+                    placeholder="Email"
+                  />
+                  <select
+                    value={branchEdit.manager_id}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, manager_id: e.target.value })}
+                  >
+                    <option value="">No manager</option>
+                    {orgUsers.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.full_name || u.email}
+                      </option>
+                    ))}
+                  </select>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="submit">Save branch</button>
+                    <button type="button" onClick={() => setEditingBranchId(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </li>
           ))}
           {!branches.length && <li className="muted">No branches yet</li>}
@@ -856,7 +976,7 @@ export default function Page() {
             onChange={(e) => setDeptForm({ ...deptForm, branch_id: e.target.value })}
           >
             <option value="">No branch</option>
-            {branches.map((b) => (
+            {branches.filter((b) => b.is_active).map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
               </option>
@@ -864,10 +984,106 @@ export default function Page() {
           </select>
           <button type="submit">Add department</button>
         </form>
-        <ul>
+        <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 10, maxWidth: 560, marginTop: 12 }}>
           {departments.map((d) => (
-            <li key={d.id}>
-              {d.code} — {d.name} {d.is_active ? '' : '(inactive)'}
+            <li key={d.id} style={{ borderTop: '1px solid #e7e5e4', paddingTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span>
+                  {d.code} — {d.name} {d.is_active ? '' : '(inactive)'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingDeptId(d.id);
+                    setDeptEdit({
+                      name: d.name || '',
+                      branch_id: d.branch_id || '',
+                      head_user_id: d.head_user_id || '',
+                    });
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setError('');
+                    try {
+                      await api(`/departments/${d.id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ is_active: !d.is_active }),
+                      });
+                      setMessage(d.is_active ? 'Department deactivated' : 'Department reactivated');
+                      await refresh();
+                    } catch (err: any) {
+                      setError(err.message);
+                    }
+                  }}
+                >
+                  {d.is_active ? 'Deactivate' : 'Reactivate'}
+                </button>
+              </div>
+              {editingDeptId === d.id && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setError('');
+                    try {
+                      await api(`/departments/${d.id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({
+                          name: deptEdit.name,
+                          branch_id: deptEdit.branch_id || null,
+                          clear_branch: !deptEdit.branch_id,
+                          head_user_id: deptEdit.head_user_id || null,
+                          clear_head: !deptEdit.head_user_id,
+                        }),
+                      });
+                      setEditingDeptId(null);
+                      setMessage('Department updated');
+                      await refresh();
+                    } catch (err: any) {
+                      setError(err.message);
+                    }
+                  }}
+                  style={{ display: 'grid', gap: 6, marginTop: 8 }}
+                >
+                  <input
+                    value={deptEdit.name}
+                    onChange={(e) => setDeptEdit({ ...deptEdit, name: e.target.value })}
+                    placeholder="Name"
+                    required
+                  />
+                  <select
+                    value={deptEdit.branch_id}
+                    onChange={(e) => setDeptEdit({ ...deptEdit, branch_id: e.target.value })}
+                  >
+                    <option value="">No branch</option>
+                    {branches.filter((b) => b.is_active || b.id === deptEdit.branch_id).map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={deptEdit.head_user_id}
+                    onChange={(e) => setDeptEdit({ ...deptEdit, head_user_id: e.target.value })}
+                  >
+                    <option value="">No head</option>
+                    {orgUsers.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.full_name || u.email}
+                      </option>
+                    ))}
+                  </select>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="submit">Save department</button>
+                    <button type="button" onClick={() => setEditingDeptId(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </li>
           ))}
           {!departments.length && <li className="muted">No departments yet</li>}

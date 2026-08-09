@@ -58,6 +58,78 @@ async def test_branch_and_department_crud(client):
 
 
 @pytest.mark.asyncio
+async def test_branch_and_department_edit_and_soft_deactivate(client):
+    """Stage 1 C7 — PATCH edit + is_active soft-deactivate/reactivate."""
+    ac, seed = client
+    headers = await _admin_headers(ac, seed)
+
+    branch = await ac.post(
+        "/api/v1/branches",
+        headers=headers,
+        json={
+            "code": "C7BR",
+            "name": "C7 Branch",
+            "phone": "+233200000001",
+            "manager_id": seed["mgr1"].id,
+        },
+    )
+    assert branch.status_code == 200, branch.text
+    branch_id = branch.json()["data"]["id"]
+    assert branch.json()["data"]["manager_id"] == seed["mgr1"].id
+
+    updated = await ac.patch(
+        f"/api/v1/branches/{branch_id}",
+        headers=headers,
+        json={"name": "C7 Branch Renamed", "phone": "+233200000099", "is_active": False},
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["data"]["name"] == "C7 Branch Renamed"
+    assert updated.json()["data"]["is_active"] is False
+
+    listed = await ac.get("/api/v1/branches", headers=headers)
+    assert listed.status_code == 200
+    row = next(r for r in listed.json()["data"] if r["id"] == branch_id)
+    assert row["is_active"] is False
+
+    reactivated = await ac.patch(
+        f"/api/v1/branches/{branch_id}",
+        headers=headers,
+        json={"is_active": True},
+    )
+    assert reactivated.status_code == 200
+    assert reactivated.json()["data"]["is_active"] is True
+
+    dept = await ac.post(
+        "/api/v1/departments",
+        headers=headers,
+        json={
+            "code": "C7DE",
+            "name": "C7 Dept",
+            "branch_id": branch_id,
+            "head_user_id": seed["mgr1"].id,
+        },
+    )
+    assert dept.status_code == 200, dept.text
+    dept_id = dept.json()["data"]["id"]
+
+    dept_upd = await ac.patch(
+        f"/api/v1/departments/{dept_id}",
+        headers=headers,
+        json={"name": "C7 Dept Renamed", "is_active": False},
+    )
+    assert dept_upd.status_code == 200, dept_upd.text
+    assert dept_upd.json()["data"]["name"] == "C7 Dept Renamed"
+    assert dept_upd.json()["data"]["is_active"] is False
+
+    foreign = await ac.patch(
+        f"/api/v1/branches/{branch_id}",
+        headers=headers,
+        json={"manager_id": seed["u2"].id},
+    )
+    assert foreign.status_code == 404, foreign.text
+
+
+@pytest.mark.asyncio
 async def test_department_record_scope_peer_visibility(client, db_session):
     ac, seed = client
     headers = await _admin_headers(ac, seed)

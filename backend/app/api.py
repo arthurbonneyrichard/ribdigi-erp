@@ -1972,6 +1972,16 @@ async def update_branch(
         clear_manager=payload.clear_manager,
         is_active=payload.is_active,
     )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="branch_updated",
+        entity="branch",
+        entity_id=row.id,
+        details={"code": row.code, "is_active": bool(row.is_active)},
+    )
     await db.commit()
     return env(org_units_svc.serialize_branch(row), "Branch updated")
 
@@ -2036,6 +2046,16 @@ async def update_department(
         head_user_id=payload.head_user_id,
         clear_head=payload.clear_head,
         is_active=payload.is_active,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="department_updated",
+        entity="department",
+        entity_id=row.id,
+        details={"code": row.code, "is_active": bool(row.is_active)},
     )
     await db.commit()
     return env(org_units_svc.serialize_department(row), "Department updated")
