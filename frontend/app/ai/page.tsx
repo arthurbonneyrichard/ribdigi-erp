@@ -98,6 +98,10 @@ export default function Page() {
   const [securityAlerts, setSecurityAlerts] = useState<
     { id: string; kind: string; title: string; detail: string; severity: string; score: number }[]
   >([]);
+  const [reportPrompt, setReportPrompt] = useState('Show me monthly sales for Q2');
+  const [reportResult, setReportResult] = useState<any>(null);
+  const [reportTemplates, setReportTemplates] = useState<any[]>([]);
+  const [templateName, setTemplateName] = useState('');
 
   async function loadPredictions() {
     setError('');
@@ -156,6 +160,61 @@ export default function Page() {
     }
   }
 
+  async function loadReportTemplates() {
+    try {
+      const r = await api('/ai/reports/templates');
+      setReportTemplates(r.data || []);
+    } catch {
+      setReportTemplates([]);
+    }
+  }
+
+  async function generateReport() {
+    setError('');
+    try {
+      const r = await api('/ai/reports/generate', {
+        method: 'POST',
+        body: JSON.stringify({ prompt: reportPrompt }),
+      });
+      setReportResult(r.data);
+    } catch (err: any) {
+      setError(err.message || 'Unable to generate report');
+    }
+  }
+
+  async function saveReportTemplate() {
+    setError('');
+    try {
+      await api('/ai/reports/templates', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: templateName || reportResult?.title || 'Saved report',
+          prompt: reportPrompt,
+          format: reportResult?.format || 'xlsx',
+        }),
+      });
+      setTemplateName('');
+      await loadReportTemplates();
+      setMessage('Report template saved');
+    } catch (err: any) {
+      setError(err.message || 'Unable to save template');
+    }
+  }
+
+  async function runTemplate(t: any) {
+    setReportPrompt(t.prompt);
+    setError('');
+    try {
+      const r = await api('/ai/reports/generate', {
+        method: 'POST',
+        body: JSON.stringify({ template_id: t.id }),
+      });
+      setReportResult(r.data);
+    } catch (err: any) {
+      setError(err.message || 'Unable to run template');
+    }
+  }
+
   async function loadSecurityAlerts() {
     try {
       const r = await api('/ai/security/alerts?lookback_hours=72');
@@ -190,6 +249,7 @@ export default function Page() {
     loadDeadStock().catch(() => undefined);
     loadSalesAnalysis().catch(() => undefined);
     loadExpenseAnalysis().catch(() => undefined);
+    loadReportTemplates().catch(() => undefined);
     loadSecurityAlerts().catch(() => undefined);
     loadInsightCards().catch(() => undefined);
     loadHistory().catch(() => undefined);
@@ -221,8 +281,8 @@ export default function Page() {
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Rule-based chat, sales/expense analysis, security monitoring, demand forecasts, dead stock,
-        insights, and velocity stockout predictions — all from your tenant data.
+        Rule-based chat, NL report generation, sales/expense analysis, security monitoring, demand
+        forecasts, dead stock, insights, and stockout predictions — all from your tenant data.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -432,6 +492,64 @@ export default function Page() {
             {a.category || 'Pattern'}: {a.description} ({a.amount})
           </p>
         ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Report generator</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Ask in plain language, e.g. &quot;Show me monthly sales for Q2&quot; or &quot;low stock as pdf&quot;.
+        </p>
+        <textarea
+          value={reportPrompt}
+          onChange={(e) => setReportPrompt(e.target.value)}
+          style={{ width: '100%', minHeight: 72 }}
+          placeholder="Describe the report you need"
+        />
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <button type="button" onClick={generateReport} disabled={!reportPrompt.trim()}>
+            Generate
+          </button>
+          <input
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            placeholder="Template name"
+            style={{ minWidth: 160 }}
+          />
+          <button type="button" onClick={saveReportTemplate} disabled={!reportPrompt.trim()}>
+            Save template
+          </button>
+          <button type="button" onClick={loadReportTemplates}>
+            Refresh templates
+          </button>
+        </div>
+        {reportResult && (
+          <div style={{ marginTop: 12 }}>
+            <p>
+              <strong>{reportResult.title}</strong> · {reportResult.report_type} ·{' '}
+              {reportResult.period_label} · {reportResult.row_count} rows · {reportResult.format}
+            </p>
+            <pre style={{ whiteSpace: 'pre-wrap', background: '#f8fafc', padding: 12, maxHeight: 220, overflow: 'auto' }}>
+              {(reportResult.preview_lines || []).slice(0, 20).join('\n') ||
+                JSON.stringify(reportResult.preview_rows?.slice(0, 5) || [], null, 2)}
+            </pre>
+          </div>
+        )}
+        {reportTemplates.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <h4>Saved templates</h4>
+            {reportTemplates.map((t) => (
+              <div key={t.id} style={{ borderTop: '1px solid #e5e7eb', paddingTop: 8, marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                  <strong>{t.name}</strong>
+                  <button type="button" onClick={() => runTemplate(t)}>
+                    Run
+                  </button>
+                </div>
+                <p className="muted">{t.prompt}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

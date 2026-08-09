@@ -703,6 +703,23 @@ class AiQuery(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class AiReportTemplate(Base):
+    """Saved natural-language report prompts for reuse (BR-21.7)."""
+
+    __tablename__ = "ai_report_templates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    prompt: Mapped[str] = mapped_column(Text)
+    report_type: Mapped[str] = mapped_column(String(60), index=True)
+    format: Mapped[str] = mapped_column(String(10), default="xlsx")
+    params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class AuditLog(Base):
     """Append-only activity log with optional hash chaining for tamper evidence."""
 

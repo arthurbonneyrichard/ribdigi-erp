@@ -8878,3 +8878,91 @@ async def ai_security_alerts(
     if notify and data.get("notifications_created"):
         await db.commit()
     return env(data)
+
+
+@api.post("/ai/reports/generate")
+async def ai_reports_generate(
+    payload: dict,
+    export: bool = False,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.7 — generate (or export) a report from a natural-language prompt."""
+    from app import ai_reports as ai_reports_svc
+
+    prompt = str((payload or {}).get("prompt") or (payload or {}).get("message") or "").strip()
+    # API-doc shape also accepts report_type + period without free text
+    if not prompt and (payload or {}).get("report_type"):
+        period = str((payload or {}).get("period") or "").strip()
+        report_type = str(payload.get("report_type") or "").strip()
+        prompt = f"Show me {report_type.replace('_', ' ')} {period}".strip()
+    fmt = (payload or {}).get("format")
+    template_id = (payload or {}).get("template_id")
+    if export or str((payload or {}).get("export") or "").lower() in {"1", "true", "yes"}:
+        # Export also needs reports:read semantics — AI read is the gate; data is tenant-scoped.
+        content, media, filename = await ai_reports_svc.export_from_prompt(
+            db,
+            claims["tenant_id"],
+            prompt=prompt,
+            format=fmt,
+            template_id=template_id,
+        )
+        return Response(
+            content=content,
+            media_type=media,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    data = await ai_reports_svc.generate_from_prompt(
+        db,
+        claims["tenant_id"],
+        prompt=prompt,
+        format=fmt,
+        template_id=template_id,
+    )
+    return env(data)
+
+
+@api.get("/ai/reports/templates")
+async def ai_report_templates_list(
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import ai_reports as ai_reports_svc
+
+    rows = await ai_reports_svc.list_templates(
+        db, claims["tenant_id"], user_id=claims.get("sub")
+    )
+    return env([ai_reports_svc.serialize_template(r) for r in rows])
+
+
+@api.post("/ai/reports/templates")
+async def ai_report_templates_create(
+    payload: dict,
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import ai_reports as ai_reports_svc
+
+    row = await ai_reports_svc.save_template(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        name=str((payload or {}).get("name") or ""),
+        prompt=str((payload or {}).get("prompt") or ""),
+        format=(payload or {}).get("format"),
+    )
+    await db.commit()
+    return env(ai_reports_svc.serialize_template(row), "Report template saved")
+
+
+@api.delete("/ai/reports/templates/{template_id}")
+async def ai_report_templates_delete(
+    template_id: str,
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import ai_reports as ai_reports_svc
+
+    await ai_reports_svc.delete_template(db, claims["tenant_id"], template_id)
+    await db.commit()
+    return env({"id": template_id}, "Report template deleted")

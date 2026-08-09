@@ -79,7 +79,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 - [ ] Tenant-safe data access enforced.
   - Partial: AI routes use `require_permission("ai", …)` and tenant-scoped queries; insights + low-stock prediction + chat history isolation covered in tests.
 - [ ] AI functions use real tenant data and satisfy documented acceptance criteria.
-  - Partial (Phase 4 / BR-21.1–21.6 + BR-21.10): rule-based ERP chat; structured insights + weekly digest; demand forecast / seasonality / optimal reorder / dead stock; low-stock prediction + Celery jobs; sales analysis `GET /ai/sales/analysis`; expense analysis `GET /ai/expenses/analysis`; security monitor `GET /ai/security/alerts` (unusual login IP/time/device, failed-login bursts, sensitive transaction bursts). Remaining: NL report generator (BR-21.7), document/customer assistants, Prophet/ML upgrade, optional LLM provider.
+  - Partial (Phase 4 / BR-21.1–21.7 + BR-21.10): rule-based ERP chat; NL report generator `POST /ai/reports/generate` (+ export) and reusable templates `GET/POST/DELETE /ai/reports/templates`; structured insights + weekly digest; demand forecast / dead stock / low-stock prediction; sales + expense analysis; security monitor. Remaining: document/customer assistants (BR-21.8/21.9), Prophet/ML upgrade, optional LLM provider.
 - [ ] AI audit logging and prompt/data protections complete.
 
 ## Current repository rule
