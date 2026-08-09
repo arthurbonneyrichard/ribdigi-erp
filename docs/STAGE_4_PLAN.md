@@ -20,7 +20,7 @@ Stage 4 here is **not** a rewrite of multi-store, reports, notifications, or AI.
 | **T1** | Inter-store dual-manager approval (BR-13.2) | P0 | COMPLETE |
 | **M1** | Global store context + `GET /stores/{id}/sales` (BR-13.1) | P0 | COMPLETE |
 | **N1** | `new_order` notification type (BR-15.1) | P0 | COMPLETE |
-| **R1** | Sales report depth (customer sales; store/category filters; comparative) | P0 | PENDING |
+| **R1** | Sales report depth (customer sales; store/category filters; comparative) | P0 | COMPLETE |
 | **H4** | Stage 4 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -57,6 +57,14 @@ Stage 4 here is **not** a rewrite of multi-store, reports, notifications, or AI.
 - [x] Emit `new_order` on sales-order create and confirm (not `system`).
 - [x] Channel preferences honored; tenant isolation on list/filter.
 - [x] Automated tests in `backend/tests/test_new_order_notification_n1.py`.
+
+## R1 acceptance criteria
+
+- [x] `GET /reports/sales/customers` — top customers by revenue + frequency (invoice + POS).
+- [x] `GET /reports/sales/products` accepts `store_id` and `category_id` (404 foreign).
+- [x] Daily sales includes prior-day revenue + `change_pct`; monthly keeps prior-month comparison.
+- [x] Export type `sales_customers`; Reports UI Customers tab + store/category filters on Sales.
+- [x] Automated tests in `backend/tests/test_sales_report_depth_r1.py`.
 
 ## Sign-off
 

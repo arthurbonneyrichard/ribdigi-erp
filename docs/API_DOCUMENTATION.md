@@ -1055,9 +1055,14 @@ Status flow: `draft` → `requested` → `in_transit` → `received` (or `cancel
 ## 14. Reports
 
 ### 14.1 Sales Reports
-**Daily Sales:** `GET /reports/sales/daily?date=`  
-**Monthly Sales:** `GET /reports/sales/monthly?month=&year=`  
-**Product Sales:** `GET /reports/sales/products?from_date=&to_date=`
+**Daily Sales:** `GET /reports/sales/daily?date=` — includes `previous_day_revenue` and `change_pct` vs prior day.  
+**Monthly Sales:** `GET /reports/sales/monthly?month=&year=` — includes `previous_month_revenue` and `change_pct`.  
+**Product Sales:** `GET /reports/sales/products?from_date=&to_date=&store_id=&category_id=`  
+**Customer Sales:** `GET /reports/sales/customers?from_date=&to_date=&limit=` — top customers by revenue and frequency (invoice + POS).  
+**Salesperson:** `GET /reports/sales/salesperson?from_date=&to_date=`  
+**By Store:** `GET /reports/sales/by-store?from_date=&to_date=`
+
+Export type `sales_customers` is available on `/reports/export`. Product export honors `store_id` / `category_id`.
 
 ### 14.2 Inventory Reports
 **Stock Balance:** `GET /reports/inventory/balance?warehouse_id=`  
