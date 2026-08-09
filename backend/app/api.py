@@ -355,6 +355,7 @@ async def tenant_me_update(
 ):
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    previous_plan = (getattr(tenant, "plan_code", None) or "trial").strip().lower()
     tenant = await tenants_svc.update_profile(
         db,
         tenant,
@@ -392,6 +393,7 @@ async def tenant_me_update(
         number_format=payload.number_format,
         time_format=payload.time_format,
     )
+    new_plan = (getattr(tenant, "plan_code", None) or "trial").strip().lower()
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -400,10 +402,30 @@ async def tenant_me_update(
         action="profile_update",
         entity="tenant",
         entity_id=tenant.id,
-        details={"company_name": tenant.company_name},
+        details={"company_name": tenant.company_name, "plan_code": new_plan},
     )
+    if payload.plan_code is not None and new_plan != previous_plan:
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="tenants",
+            action="plan_code_changed",
+            entity="tenant",
+            entity_id=tenant.id,
+            details={
+                "from": previous_plan,
+                "to": new_plan,
+                "billing_deferred": True,
+                "payment_processed": False,
+            },
+        )
     await db.commit()
-    return env(tenants_svc.serialize_tenant(tenant), "Company profile updated")
+    data = tenants_svc.serialize_tenant(tenant)
+    msg = "Company profile updated"
+    if payload.plan_code is not None and new_plan != previous_plan:
+        msg = "Plan metadata updated (billing deferred; no payment processed)"
+    return env(data, msg)
 
 
 @api.post("/tenants/me/suspend")

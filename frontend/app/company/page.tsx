@@ -294,6 +294,7 @@ export default function Page() {
         <select
           value={tenant.plan_code || 'trial'}
           onChange={(e) => setTenant({ ...tenant, plan_code: e.target.value })}
+          title="Commercial plan label only — billing is deferred"
         >
           {['trial', 'starter', 'growth', 'enterprise'].map((p) => (
             <option key={p} value={p}>
@@ -301,6 +302,10 @@ export default function Page() {
             </option>
           ))}
         </select>
+        <p className="muted" style={{ margin: 0, gridColumn: '1 / -1' }}>
+          Plan is commercial metadata only. Billing/payment for upgrades is deferred (see ADR-002);
+          changing plan does not charge a card or confirm payment.
+        </p>
         <select
           value={tenant.industry || 'retail'}
           onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}
