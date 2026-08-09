@@ -61,6 +61,9 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
         "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
         "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
+        "purchase_request_approval_matrix": getattr(
+            tenant, "purchase_request_approval_matrix", None
+        ),
         "early_pay_discount_pct": float(getattr(tenant, "early_pay_discount_pct", None) or 0),
         "early_pay_discount_days": int(getattr(tenant, "early_pay_discount_days", None) or 0),
         "fefo_strict_warehouse": bool(getattr(tenant, "fefo_strict_warehouse", False)),

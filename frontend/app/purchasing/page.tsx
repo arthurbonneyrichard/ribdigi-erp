@@ -61,8 +61,14 @@ type PurchaseRequest = {
   required_date?: string | null;
   purchase_order_id?: string | null;
   rejection_reason?: string | null;
+  estimated_total?: number;
+  approval_step?: number;
+  approval_steps_required?: number;
+  awaiting_level?: number | null;
+  awaiting_roles?: string[];
   items: { id: string; product_id: string; quantity: number; unit_price: number }[];
 };
+type ApprovalLevel = { min_amount: number; roles: string[]; label?: string };
 type GrnItem = {
   id: string;
   product_id: string;
@@ -137,6 +143,7 @@ export default function Page() {
   const [prDepartment, setPrDepartment] = useState('');
   const [prRequiredDate, setPrRequiredDate] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [prLevels, setPrLevels] = useState<ApprovalLevel[]>([]);
   const [receiveLines, setReceiveLines] = useState<
     Record<
       string,
@@ -166,7 +173,7 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
+    const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes, settingsRes] = await Promise.all([
       api('/purchasing/requests'),
       api('/purchasing/orders'),
       api('/suppliers'),
@@ -174,6 +181,7 @@ export default function Page() {
       api('/purchasing/grn'),
       api('/purchasing/invoices'),
       api('/purchasing/returns'),
+      api('/purchasing/settings'),
     ]);
     setRequests(prRes.data || []);
     setOrders(poRes.data || []);
@@ -182,6 +190,7 @@ export default function Page() {
     setGrns(grnRes.data || []);
     setInvoices(invRes.data || []);
     setReturns(retRes.data || []);
+    setPrLevels(settingsRes.data?.levels || []);
   }
 
   useEffect(() => {
@@ -420,12 +429,44 @@ export default function Page() {
   async function approvePr(id: string) {
     setError('');
     try {
-      const r = await api(`/purchasing/requests/${id}/approve`, { method: 'POST' });
-      setMessage(`Approved ${r.data.request_number}`);
+      const r = await api(`/purchasing/requests/${id}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      const status = r.data?.status;
+      setMessage(
+        status === 'approved'
+          ? `Approved ${r.data.request_number}`
+          : `${r.data.request_number}: level approved; awaiting L${r.data.approval_step}`
+      );
       await refresh();
     } catch (err: any) {
       setError(err.message);
     }
+  }
+
+  async function savePrMatrix() {
+    setError('');
+    try {
+      const r = await api('/purchasing/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          levels: prLevels.map((l) => ({
+            min_amount: Number(l.min_amount) || 0.01,
+            roles: l.roles,
+            label: l.label || undefined,
+          })),
+        }),
+      });
+      setPrLevels(r.data?.levels || []);
+      setMessage('PR approval matrix saved');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function updatePrLevel(idx: number, patch: Partial<ApprovalLevel>) {
+    setPrLevels((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   }
 
   async function rejectPr(id: string) {
@@ -918,6 +959,52 @@ export default function Page() {
         </div>
       )}
 
+      {tab === 'requests' && prLevels.length > 0 && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>PR approval matrix</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Estimated total must exceed a level&apos;s min to require that step (Store Manager → Company Admin by
+            default). Company admins can save changes.
+          </p>
+          {prLevels.map((lvl, idx) => (
+            <div
+              key={idx}
+              style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}
+            >
+              <span className="muted">L{idx + 1}</span>
+              <input
+                value={lvl.min_amount}
+                onChange={(e) => updatePrLevel(idx, { min_amount: Number(e.target.value) || 0 })}
+                placeholder="Min amount"
+                style={{ width: 100 }}
+              />
+              <input
+                value={lvl.label || ''}
+                onChange={(e) => updatePrLevel(idx, { label: e.target.value })}
+                placeholder="Label"
+                style={{ width: 140 }}
+              />
+              <input
+                value={(lvl.roles || []).join(', ')}
+                onChange={(e) =>
+                  updatePrLevel(idx, {
+                    roles: e.target.value
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  })
+                }
+                placeholder="roles"
+                style={{ minWidth: 220, flex: 1 }}
+              />
+            </div>
+          ))}
+          <button type="button" onClick={savePrMatrix}>
+            Save matrix
+          </button>
+        </div>
+      )}
+
       {tab === 'requests' && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h3>Create purchase request</h3>
@@ -1097,6 +1184,8 @@ export default function Page() {
               <tr>
                 <th>Request</th>
                 <th>Status</th>
+                <th>Approval</th>
+                <th>Est. total</th>
                 <th>Department</th>
                 <th>PO</th>
                 <th>Actions</th>
@@ -1107,6 +1196,17 @@ export default function Page() {
                 <tr key={r.id}>
                   <td>{r.request_number}</td>
                   <td>{r.status}</td>
+                  <td>
+                    {r.status === 'pending'
+                      ? `L${r.awaiting_level || r.approval_step || 1}/${r.approval_steps_required || 1}`
+                      : r.approval_steps_required
+                        ? `${r.approval_steps_required} level(s)`
+                        : '—'}
+                    {r.status === 'pending' && r.awaiting_roles?.length ? (
+                      <div className="muted">{r.awaiting_roles.join(', ')}</div>
+                    ) : null}
+                  </td>
+                  <td>{r.estimated_total ?? '—'}</td>
                   <td>{r.department || '—'}</td>
                   <td>{r.purchase_order_id ? r.purchase_order_id.slice(0, 8) : '—'}</td>
                   <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

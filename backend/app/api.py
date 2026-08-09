@@ -85,7 +85,9 @@ from app.schemas import (
     ProductVariantUpdate,
     ProfileUpdate,
     PurchaseOrderCreate,
+    PurchaseRequestApprovalSettingsUpdate,
     PurchaseRequestCreate,
+    PurchaseRequestDecision,
     PurchaseRequestReject,
     UnitOfMeasureCreate,
     UnitOfMeasureUpdate,
@@ -3205,6 +3207,35 @@ async def list_purchase_requests(
     return env([await purchasing_svc.serialize_pr(db, pr) for pr in rows])
 
 
+@api.get("/purchasing/settings")
+async def get_purchasing_settings(
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await purchasing_svc.get_pr_approval_settings(db, claims["tenant_id"]))
+
+
+@api.patch("/purchasing/settings")
+async def patch_purchasing_settings(
+    payload: PurchaseRequestApprovalSettingsUpdate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    # Company admins configure matrix; store managers have purchasing write — restrict to admin roles.
+    if claims.get("role") not in {"company_admin", "super_admin"}:
+        raise HTTPException(status_code=403, detail="Only company admins can update purchasing settings")
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    data = await purchasing_svc.update_pr_approval_settings(
+        db,
+        tenant,
+        levels=[lvl.model_dump(exclude_none=True) for lvl in payload.levels],
+    )
+    await db.commit()
+    return env(data, "Purchasing approval settings updated")
+
+
 @api.post("/purchasing/requests")
 async def create_purchase_request(
     payload: PurchaseRequestCreate,
@@ -3246,20 +3277,38 @@ async def submit_purchase_request(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_pr(db, pr), "Purchase request submitted")
+    data = await purchasing_svc.serialize_pr(db, pr)
+    msg = (
+        "Purchase request auto-approved"
+        if pr.status == "approved"
+        else "Purchase request submitted"
+    )
+    return env(data, msg)
 
 
 @api.post("/purchasing/requests/{request_id}/approve")
 async def approve_purchase_request(
     request_id: str,
+    payload: PurchaseRequestDecision = PurchaseRequestDecision(),
     claims=Depends(require_permission("purchasing", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
     pr = await purchasing_svc.approve_purchase_request(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        request_id=request_id,
+        comment=payload.comment,
+        actor_role=claims.get("role"),
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_pr(db, pr), "Purchase request approved")
+    data = await purchasing_svc.serialize_pr(db, pr)
+    msg = (
+        "Purchase request approved"
+        if pr.status == "approved"
+        else f"Level {int(pr.approval_step) - 1} approved; awaiting next level"
+    )
+    return env(data, msg)
 
 
 @api.post("/purchasing/requests/{request_id}/reject")
@@ -3275,6 +3324,7 @@ async def reject_purchase_request(
         user_id=claims["sub"],
         request_id=request_id,
         reason=payload.reason,
+        actor_role=claims.get("role"),
     )
     await db.commit()
     return env(await purchasing_svc.serialize_pr(db, pr), "Purchase request rejected")

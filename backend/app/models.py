@@ -45,6 +45,8 @@ class Tenant(Base):
     expense_l2_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=1000)
     # Optional N-level approval matrix: {"levels": [{step, min_amount, roles, label}, ...]}
     expense_approval_matrix: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Purchase request approval matrix (same shape as expense_approval_matrix).
+    purchase_request_approval_matrix: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # e.g. 2/10 net 30 → pct=2, days=10 (0 disables)
     early_pay_discount_pct: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     early_pay_discount_days: Mapped[int] = mapped_column(Integer, default=0)
@@ -621,6 +623,9 @@ class PurchaseRequest(Base):
     required_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    estimated_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    approval_step: Mapped[int] = mapped_column(Integer, default=1)
+    approval_steps_required: Mapped[int] = mapped_column(Integer, default=1)
     purchase_order_id: Mapped[str | None] = mapped_column(
         ForeignKey("purchase_orders.id"), nullable=True, index=True
     )
@@ -629,6 +634,19 @@ class PurchaseRequest(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PurchaseRequestApprovalAction(Base):
+    __tablename__ = "purchase_request_approval_actions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    purchase_request_id: Mapped[str] = mapped_column(ForeignKey("purchase_requests.id"), index=True)
+    step: Mapped[int] = mapped_column(Integer)
+    action: Mapped[str] = mapped_column(String(20))  # approve | reject | auto_approve
+    actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PurchaseRequestItem(Base):

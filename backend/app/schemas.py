@@ -472,6 +472,14 @@ class PurchaseRequestReject(BaseModel):
     reason: str | None = None
 
 
+class PurchaseRequestDecision(BaseModel):
+    comment: str | None = None
+
+
+class PurchaseRequestApprovalSettingsUpdate(BaseModel):
+    levels: list[ApprovalLevelUpdate] = Field(min_length=1)
+
+
 class GrnItemCreate(BaseModel):
     po_item_id: str
     received_qty: float = Field(gt=0)

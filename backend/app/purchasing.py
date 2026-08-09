@@ -24,6 +24,149 @@ PR_CANCELLABLE = {"draft", "pending", "approved"}
 PURCHASE_RETURN_REASONS = frozenset({"damaged", "wrong_item", "expiry", "quality", "other"})
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
 
+# BR-6.2: Inventory Officer creates → Store Manager → (high value) Company Admin
+DEFAULT_PR_L1_MIN = 0.01
+DEFAULT_PR_L2_MIN = 5000.0
+DEFAULT_PR_L1_ROLES = ("store_manager", "company_admin", "super_admin")
+DEFAULT_PR_L2_ROLES = ("company_admin", "super_admin")
+
+
+def default_pr_approval_levels(
+    *,
+    l1_min: float = DEFAULT_PR_L1_MIN,
+    l2_min: float = DEFAULT_PR_L2_MIN,
+) -> list[dict]:
+    from app.expenses import normalize_approval_matrix
+
+    return normalize_approval_matrix(
+        {
+            "levels": [
+                {
+                    "min_amount": l1_min,
+                    "roles": list(DEFAULT_PR_L1_ROLES),
+                    "label": "Store Manager",
+                },
+                {
+                    "min_amount": max(float(l2_min), float(l1_min) + 0.01),
+                    "roles": list(DEFAULT_PR_L2_ROLES),
+                    "label": "Company Admin",
+                },
+            ]
+        }
+    )
+
+
+def resolve_pr_approval_levels(tenant: m.Tenant) -> list[dict]:
+    from app.expenses import normalize_approval_matrix
+
+    raw = getattr(tenant, "purchase_request_approval_matrix", None)
+    if raw:
+        try:
+            return normalize_approval_matrix(raw)
+        except HTTPException:
+            pass
+    return default_pr_approval_levels()
+
+
+async def get_pr_approval_settings(db: AsyncSession, tenant_id: str) -> dict:
+    from app.expenses import MAX_APPROVAL_LEVELS
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    levels = resolve_pr_approval_levels(tenant)
+    return {
+        "levels": levels,
+        "max_levels": MAX_APPROVAL_LEVELS,
+        "l1_threshold": float(levels[0]["min_amount"]) if levels else DEFAULT_PR_L1_MIN,
+        "l2_threshold": float(levels[1]["min_amount"]) if len(levels) > 1 else DEFAULT_PR_L2_MIN,
+    }
+
+
+async def update_pr_approval_settings(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    levels: list[dict],
+) -> dict:
+    from app.expenses import matrix_payload, normalize_approval_matrix
+
+    normalized = normalize_approval_matrix({"levels": levels})
+    tenant.purchase_request_approval_matrix = matrix_payload(normalized)
+    await db.flush()
+    return await get_pr_approval_settings(db, tenant.id)
+
+
+def estimate_pr_total(items: list[m.PurchaseRequestItem] | list[dict]) -> float:
+    total = 0.0
+    for item in items:
+        if isinstance(item, dict):
+            qty = float(item.get("quantity") or 0)
+            price = float(item.get("unit_price") or 0)
+            tax_rate = float(item.get("tax_rate") or 0)
+        else:
+            qty = float(item.quantity or 0)
+            price = float(item.unit_price or 0)
+            tax_rate = float(item.tax_rate or 0)
+        subtotal, tax, line_total = compute_line_total(qty, price, tax_rate)
+        total += float(line_total)
+    return round(total, 2)
+
+
+async def list_pr_approval_actions(
+    db: AsyncSession, tenant_id: str, request_id: str
+) -> list[m.PurchaseRequestApprovalAction]:
+    return list(
+        (
+            await db.execute(
+                select(m.PurchaseRequestApprovalAction)
+                .where(
+                    m.PurchaseRequestApprovalAction.tenant_id == tenant_id,
+                    m.PurchaseRequestApprovalAction.purchase_request_id == request_id,
+                )
+                .order_by(m.PurchaseRequestApprovalAction.created_at.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+def serialize_pr_approval_action(row: m.PurchaseRequestApprovalAction) -> dict:
+    return {
+        "id": row.id,
+        "purchase_request_id": row.purchase_request_id,
+        "step": int(row.step),
+        "action": row.action,
+        "actor_id": row.actor_id,
+        "comment": row.comment,
+        "created_at": row.created_at,
+    }
+
+
+async def _record_pr_action(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    request_id: str,
+    step: int,
+    action: str,
+    actor_id: str | None,
+    comment: str | None = None,
+) -> m.PurchaseRequestApprovalAction:
+    row = m.PurchaseRequestApprovalAction(
+        tenant_id=tenant_id,
+        purchase_request_id=request_id,
+        step=step,
+        action=action,
+        actor_id=actor_id,
+        comment=comment,
+        created_at=datetime.utcnow(),
+    )
+    db.add(row)
+    await db.flush()
+    return row
+
 
 def purchase_invoice_status(total: float, paid: float, due_date: datetime | None = None) -> str:
     if paid + 1e-9 >= total:
@@ -155,8 +298,13 @@ async def list_pr_items(
 
 
 async def serialize_pr(db: AsyncSession, pr: m.PurchaseRequest) -> dict:
+    from app.expenses import roles_for_step
+
     items = await list_pr_items(db, pr.tenant_id, pr.id)
-    return {
+    actions = await list_pr_approval_actions(db, pr.tenant_id, pr.id)
+    step = int(getattr(pr, "approval_step", 1) or 1)
+    required = int(getattr(pr, "approval_steps_required", 1) or 1)
+    data = {
         "id": pr.id,
         "request_number": pr.request_number,
         "supplier_id": pr.supplier_id,
@@ -166,12 +314,17 @@ async def serialize_pr(db: AsyncSession, pr: m.PurchaseRequest) -> dict:
         "required_date": pr.required_date,
         "notes": pr.notes,
         "rejection_reason": pr.rejection_reason,
+        "estimated_total": float(getattr(pr, "estimated_total", None) or 0),
+        "approval_step": step,
+        "approval_steps_required": required,
+        "awaiting_level": step if pr.status == "pending" else None,
         "purchase_order_id": pr.purchase_order_id,
         "created_by": pr.created_by,
         "approved_by": pr.approved_by,
         "approved_at": pr.approved_at,
         "created_at": pr.created_at,
         "updated_at": pr.updated_at,
+        "approval_actions": [serialize_pr_approval_action(a) for a in actions],
         "items": [
             {
                 "id": i.id,
@@ -184,6 +337,11 @@ async def serialize_pr(db: AsyncSession, pr: m.PurchaseRequest) -> dict:
             for i in items
         ],
     }
+    if pr.status == "pending":
+        tenant = await db.get(m.Tenant, pr.tenant_id)
+        levels = resolve_pr_approval_levels(tenant) if tenant else default_pr_approval_levels()
+        data["awaiting_roles"] = roles_for_step(levels, step)
+    return data
 
 
 async def create_purchase_request(
@@ -273,40 +431,151 @@ async def create_purchase_request(
 async def submit_purchase_request(
     db: AsyncSession, *, tenant_id: str, user_id: str, request_id: str
 ) -> m.PurchaseRequest:
+    from app.expenses import steps_required_from_matrix
+
     pr = await get_purchase_request(db, tenant_id, request_id)
     if pr.status not in PR_SUBMITTABLE:
         raise HTTPException(status_code=409, detail=f"Cannot submit PR in status {pr.status}")
     items = await list_pr_items(db, tenant_id, pr.id)
     if not items:
         raise HTTPException(status_code=400, detail="Cannot submit empty purchase request")
-    pr.status = "pending"
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    levels = resolve_pr_approval_levels(tenant)
+    total = estimate_pr_total(items)
+    steps = steps_required_from_matrix(total, levels)
+    pr.estimated_total = total
     pr.updated_at = datetime.utcnow()
-    db.add(
-        m.AuditLog(
+
+    if steps <= 0:
+        pr.status = "approved"
+        pr.approval_step = 0
+        pr.approval_steps_required = 0
+        pr.approved_by = user_id
+        pr.approved_at = datetime.utcnow()
+        pr.rejection_reason = None
+        await _record_pr_action(
+            db,
             tenant_id=tenant_id,
-            user_id=user_id,
-            action="pr_submitted",
-            entity="purchase_request",
-            entity_id=pr.id,
-            details={"request_number": pr.request_number},
+            request_id=pr.id,
+            step=0,
+            action="auto_approve",
+            actor_id=user_id,
+            comment="Below approval matrix thresholds",
         )
-    )
+        db.add(
+            m.AuditLog(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                action="pr_auto_approved",
+                entity="purchase_request",
+                entity_id=pr.id,
+                details={"request_number": pr.request_number, "estimated_total": total},
+            )
+        )
+    else:
+        pr.status = "pending"
+        pr.approval_step = 1
+        pr.approval_steps_required = steps
+        pr.approved_by = None
+        pr.approved_at = None
+        db.add(
+            m.AuditLog(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                action="pr_submitted",
+                entity="purchase_request",
+                entity_id=pr.id,
+                details={
+                    "request_number": pr.request_number,
+                    "estimated_total": total,
+                    "approval_steps_required": steps,
+                },
+            )
+        )
     await db.flush()
     return pr
 
 
 async def approve_purchase_request(
-    db: AsyncSession, *, tenant_id: str, user_id: str, request_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    request_id: str,
+    comment: str | None = None,
+    actor_role: str | None = None,
 ) -> m.PurchaseRequest:
+    from app.expenses import assert_actor_may_act
+
     pr = await get_purchase_request(db, tenant_id, request_id)
     if pr.status not in PR_APPROVABLE:
         raise HTTPException(status_code=409, detail=f"Cannot approve PR in status {pr.status}")
-    if pr.created_by and pr.created_by == user_id:
+    if pr.created_by and pr.created_by == user_id and (actor_role or "") not in {"super_admin"}:
         raise HTTPException(status_code=403, detail="Cannot approve your own purchase request")
+
+    step = int(pr.approval_step or 1)
+    required = int(pr.approval_steps_required or 1)
+    settings = await get_pr_approval_settings(db, tenant_id)
+    assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
+
+    prior = await list_pr_approval_actions(db, tenant_id, pr.id)
+    if any(a.action == "approve" and a.actor_id == user_id for a in prior):
+        raise HTTPException(
+            status_code=403, detail="You already approved an earlier step on this purchase request"
+        )
+
+    await _record_pr_action(
+        db,
+        tenant_id=tenant_id,
+        request_id=pr.id,
+        step=step,
+        action="approve",
+        actor_id=user_id,
+        comment=comment,
+    )
+
+    if step < required:
+        pr.approval_step = step + 1
+        pr.updated_at = datetime.utcnow()
+        from app.notifications import create_notification
+
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="purchase_request",
+            title="Purchase Request Needs Next-Level Approval",
+            message=(
+                f"{pr.request_number} (est. {float(pr.estimated_total or 0):.2f}) passed level {step} "
+                f"and awaits level {step + 1} approval."
+            ),
+            entity_type="purchase_request",
+            entity_id=pr.id,
+        )
+        db.add(
+            m.AuditLog(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                action="pr_level_approved",
+                entity="purchase_request",
+                entity_id=pr.id,
+                details={
+                    "request_number": pr.request_number,
+                    "step": step,
+                    "next_step": step + 1,
+                },
+            )
+        )
+        await db.flush()
+        return pr
+
     pr.status = "approved"
     pr.approved_by = user_id
     pr.approved_at = datetime.utcnow()
     pr.rejection_reason = None
+    pr.approval_step = required
     pr.updated_at = datetime.utcnow()
     db.add(
         m.AuditLog(
@@ -315,7 +584,7 @@ async def approve_purchase_request(
             action="pr_approved",
             entity="purchase_request",
             entity_id=pr.id,
-            details={"request_number": pr.request_number},
+            details={"request_number": pr.request_number, "steps": required},
         )
     )
     await db.flush()
@@ -329,12 +598,29 @@ async def reject_purchase_request(
     user_id: str,
     request_id: str,
     reason: str | None = None,
+    actor_role: str | None = None,
 ) -> m.PurchaseRequest:
+    from app.expenses import assert_actor_may_act
+
     pr = await get_purchase_request(db, tenant_id, request_id)
     if pr.status not in PR_APPROVABLE:
         raise HTTPException(status_code=409, detail=f"Cannot reject PR in status {pr.status}")
-    if pr.created_by and pr.created_by == user_id:
+    if pr.created_by and pr.created_by == user_id and (actor_role or "") not in {"super_admin"}:
         raise HTTPException(status_code=403, detail="Cannot reject your own purchase request")
+
+    step = int(pr.approval_step or 1)
+    settings = await get_pr_approval_settings(db, tenant_id)
+    assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
+
+    await _record_pr_action(
+        db,
+        tenant_id=tenant_id,
+        request_id=pr.id,
+        step=step,
+        action="reject",
+        actor_id=user_id,
+        comment=(reason or "").strip() or None,
+    )
     pr.status = "rejected"
     pr.rejection_reason = (reason or "").strip() or None
     pr.updated_at = datetime.utcnow()
@@ -345,7 +631,7 @@ async def reject_purchase_request(
             action="pr_rejected",
             entity="purchase_request",
             entity_id=pr.id,
-            details={"request_number": pr.request_number, "reason": pr.rejection_reason},
+            details={"request_number": pr.request_number, "reason": pr.rejection_reason, "step": step},
         )
     )
     await db.flush()

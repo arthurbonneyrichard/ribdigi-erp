@@ -43,6 +43,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("expense_categories", m.ExpenseCategory),
     ("purchase_requests", m.PurchaseRequest),
     ("purchase_request_items", m.PurchaseRequestItem),
+    ("purchase_request_approval_actions", m.PurchaseRequestApprovalAction),
     ("purchase_orders", m.PurchaseOrder),
     ("purchase_order_items", m.PurchaseOrderItem),
     ("goods_receipts", m.GoodsReceipt),
@@ -222,6 +223,9 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
             "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
             "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
             "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
+            "purchase_request_approval_matrix": getattr(
+                tenant, "purchase_request_approval_matrix", None
+            ),
             "tax_jurisdiction": getattr(tenant, "tax_jurisdiction", None) or "GH",
             "tax_registration_number": getattr(tenant, "tax_registration_number", None),
             "tax_filing_period": getattr(tenant, "tax_filing_period", None) or "monthly",
