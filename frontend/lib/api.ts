@@ -1,5 +1,17 @@
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+export class ApiError extends Error {
+  code?: string;
+  status?: number;
+
+  constructor(message: string, opts?: { code?: string; status?: number }) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = opts?.code;
+    this.status = opts?.status;
+  }
+}
+
 export async function api(path: string, opts: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
@@ -18,7 +30,8 @@ export async function api(path: string, opts: RequestInit = {}) {
       typeof detail === 'string'
         ? detail
         : detail?.message || detail?.code || body.message || 'Request failed';
-    throw new Error(message);
+    const code = typeof detail === 'object' && detail ? detail.code : undefined;
+    throw new ApiError(message, { code, status: response.status });
   }
   return body;
 }

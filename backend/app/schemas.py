@@ -693,6 +693,11 @@ class EmailVerifyConfirm(BaseModel):
     token: str
 
 
+class EmailVerificationResend(BaseModel):
+    email: EmailStr
+    tenant_id: str
+
+
 class PurchaseOrderItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)

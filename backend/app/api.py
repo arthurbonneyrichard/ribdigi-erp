@@ -61,6 +61,7 @@ from app.schemas import (
     CustomerPaymentCreate,
     EarlyPaySettingsUpdate,
     EmailVerifyConfirm,
+    EmailVerificationResend,
     ExchangeRateRefresh,
     ExchangeRateUpsert,
     FxAutoRefreshUpdate,
@@ -247,6 +248,18 @@ async def create_session(
     )
     db.add(session)
     return access, refresh_raw
+
+
+def _assert_email_verified(user: m.User) -> None:
+    """BR-19.1: email must be verified before first login."""
+    if not bool(user.email_verified):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "EMAIL_NOT_VERIFIED",
+                "message": "Email address is not verified. Check your inbox or request a new verification email.",
+            },
+        )
 
 
 @api.get("/health")
@@ -759,6 +772,22 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
     user.failed_login_attempts = 0
     user.locked_until = None
 
+    if not bool(user.email_verified):
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="login_blocked_unverified",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+        await db.commit()
+        _assert_email_verified(user)
+
     from app import webauthn_svc as webauthn
 
     has_webauthn = await webauthn.user_has_webauthn(db, user.id)
@@ -868,6 +897,7 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
+    _assert_email_verified(user)
     if not user.totp_enabled:
         raise HTTPException(status_code=400, detail="2FA is not enabled for this user")
     ok = await totp_svc.verify_user_second_factor(db, user, payload.code)
@@ -1041,6 +1071,7 @@ async def webauthn_login_verify(
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
+    _assert_email_verified(user)
     await webauthn.verify_authentication(db, user, credential=payload.credential)
     access, refresh = await create_session(db, user=user, request=request)
     await audit_svc.record_event(
@@ -1399,7 +1430,11 @@ async def password_reset(
 
 
 @api.post("/auth/verify-email")
-async def verify_email(payload: EmailVerifyConfirm, db: AsyncSession = Depends(get_db)):
+async def verify_email(
+    payload: EmailVerifyConfirm,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
     token_hash = hash_token(payload.token)
     row = (
         await db.execute(
@@ -1416,8 +1451,79 @@ async def verify_email(payload: EmailVerifyConfirm, db: AsyncSession = Depends(g
         raise HTTPException(status_code=400, detail="Invalid verification token")
     user.email_verified = True
     row.used_at = datetime.utcnow()
+    await audit_svc.record_event(
+        db,
+        tenant_id=user.tenant_id,
+        user_id=user.id,
+        module="auth",
+        action="email_verified",
+        entity="user",
+        entity_id=user.id,
+        details={"email": user.email},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
     await db.commit()
-    return env({"verified": True})
+    return env({"verified": True}, "Email verified")
+
+
+@api.post("/auth/resend-verification")
+async def resend_verification(
+    payload: EmailVerificationResend,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-issue email verification token (tenant-scoped; no existence leak)."""
+    try:
+        tenant = await tenants_svc.resolve_tenant(db, payload.tenant_id)
+    except HTTPException:
+        return env({"requested": True}, "If the account exists, a verification email was sent")
+    user = (
+        await db.execute(
+            select(m.User).where(
+                m.User.tenant_id == tenant.id,
+                m.User.email == str(payload.email),
+            )
+        )
+    ).scalar_one_or_none()
+    data: dict = {"requested": True}
+    if user and user.is_active and not bool(user.email_verified):
+        raw, token_hash, expires = issue_one_time_token()
+        db.add(
+            m.AuthToken(
+                tenant_id=tenant.id,
+                user_id=user.id,
+                purpose="email_verify",
+                token_hash=token_hash,
+                expires_at=expires,
+            )
+        )
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant.id,
+            user_id=user.id,
+            module="auth",
+            action="email_verification_resent",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+        await db.commit()
+        from app import emailer
+
+        email_result = await emailer.send_verification_email(
+            to=user.email, token=raw, company_name=tenant.company_name
+        )
+        data["email"] = {
+            "sent": email_result.sent,
+            "mode": email_result.mode,
+            "error": email_result.error,
+        }
+        if settings.DEBUG or settings.APP_ENV.lower() != "production":
+            data["email_verification_token"] = raw
+    return env(data, "If the account exists, a verification email was sent")
 
 
 @api.get("/me")

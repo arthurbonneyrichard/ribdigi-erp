@@ -34,6 +34,8 @@ export default function Login() {
   const [remember, setRemember] = useState(true);
   const [showReset, setShowReset] = useState(false);
   const [resetMsg, setResetMsg] = useState('');
+  const [needsVerify, setNeedsVerify] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
@@ -112,9 +114,25 @@ export default function Login() {
     }
   }
 
+  async function resendVerification() {
+    setError('');
+    setVerifyMsg('');
+    try {
+      await api('/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email, tenant_id: tenant }),
+      });
+      setVerifyMsg('If the account exists, a verification email was sent.');
+    } catch (err: any) {
+      setError(err.message || 'Could not resend verification');
+    }
+  }
+
   async function go(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setNeedsVerify(false);
+    setVerifyMsg('');
     try {
       if (needs2fa && challengeToken) {
         if (!methods.includes('totp') && methods.includes('webauthn')) {
@@ -147,6 +165,9 @@ export default function Login() {
       }
       finishLogin(r.data);
     } catch (err: any) {
+      if (err?.code === 'EMAIL_NOT_VERIFIED') {
+        setNeedsVerify(true);
+      }
       setError(err.message || 'Login failed');
     }
   }
@@ -230,6 +251,18 @@ export default function Login() {
             </>
           )}
           {error && <p>{error}</p>}
+          {needsVerify && !needs2fa && (
+            <div>
+              <p className="muted">
+                Verify your email before signing in.{' '}
+                <Link href="/verify-email">Have a token?</Link>
+              </p>
+              <button type="button" onClick={resendVerification}>
+                Resend verification email
+              </button>
+              {verifyMsg && <p style={{ color: '#047857' }}>{verifyMsg}</p>}
+            </div>
+          )}
         </form>
       )}
     </div>

@@ -15,6 +15,7 @@ AUTH_PATH_PREFIXES = (
     "/api/v1/auth/password-reset",
     "/api/v1/auth/password-reset-request",
     "/api/v1/auth/verify-email",
+    "/api/v1/auth/resend-verification",
     "/api/v1/tenants",
 )
 

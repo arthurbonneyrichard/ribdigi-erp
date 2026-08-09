@@ -24,7 +24,7 @@ function VerifyEmailForm() {
         method: 'POST',
         body: JSON.stringify({ token }),
       });
-      setMessage(r.message || 'Email verified');
+      setMessage(r.message || 'Email verified — you can sign in now');
       setTimeout(() => router.push('/'), 1200);
     } catch (err: any) {
       setError(err.message);
