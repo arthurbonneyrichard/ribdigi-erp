@@ -78,7 +78,9 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 1 exit (2026-08-09):** Foundation workstreams A–H are recorded as met in `docs/STAGE_1_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_008_STAGE1_FREEZE.md` (no new Stage 1 feature scope).
 
-**Stage 2 open (2026-08-09):** Inventory & Supply Chain hardening track approved — `docs/ADR_009_STAGE2_OPEN.md` + `docs/STAGE_2_PLAN.md` (I1→… one workstream at a time).
+**Stage 2 open (2026-08-09):** Inventory & Supply Chain hardening track approved — `docs/ADR_009_STAGE2_OPEN.md` + `docs/STAGE_2_PLAN.md`.
+
+**Stage 2 exit (2026-08-09):** I1–I6 met — `docs/STAGE_2_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_010_STAGE2_FREEZE.md` (no new Stage 2 feature scope; do not open Stage 3 until explicit sign-off).
 
 ### 2.2 Features
 

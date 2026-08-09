@@ -2904,6 +2904,14 @@ async def patch_product(
             )
         elif key in {"cost_price", "selling_price", "reorder_level", "minimum_stock"} and value is not None:
             setattr(product, key, float(value))
+        elif key in {"weight", "length", "width", "height"}:
+            if value is None:
+                setattr(product, key, None)
+            else:
+                num = float(value)
+                if num < 0:
+                    raise HTTPException(status_code=400, detail=f"{key} cannot be negative")
+                setattr(product, key, num)
         elif key == "tax_rate_id":
             product.tax_rate_id = value
         elif key == "tax_exempt" and value is not None:
@@ -3056,6 +3064,74 @@ async def catalog_delete_brand(
     return env(catalog_meta_svc.serialize_brand(row), "Brand deactivated")
 
 
+@api.post("/catalog/brands/{brand_id}/logo")
+async def catalog_brand_logo_upload(
+    brand_id: str,
+    file: UploadFile = File(...),
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    brand = await catalog_meta_svc.get_brand(db, claims["tenant_id"], brand_id)
+    stored = await storage_svc.save_upload(
+        tenant_id=claims["tenant_id"],
+        category="brand_logos",
+        upload=file,
+        allowed_types=storage_svc.LOGO_CONTENT_TYPES,
+        max_bytes=int(settings.MEDIA_MAX_LOGO_BYTES),
+    )
+    if brand.logo_url:
+        storage_svc.delete_key(brand.logo_url, tenant_id=claims["tenant_id"])
+    brand.logo_url = stored.key
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="brand_logo_upload",
+        entity="brand",
+        entity_id=brand.id,
+        details={"key": stored.key, "size": stored.size, "content_type": stored.content_type},
+    )
+    await db.commit()
+    return env(catalog_meta_svc.serialize_brand(brand), "Brand logo uploaded")
+
+
+@api.get("/catalog/brands/{brand_id}/logo")
+async def catalog_brand_logo_get(
+    brand_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    brand = await catalog_meta_svc.get_brand(db, claims["tenant_id"], brand_id)
+    if not brand.logo_url:
+        raise HTTPException(status_code=404, detail="No brand logo uploaded")
+    return storage_svc.media_response(brand.logo_url, tenant_id=claims["tenant_id"])
+
+
+@api.delete("/catalog/brands/{brand_id}/logo")
+async def catalog_brand_logo_delete(
+    brand_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    brand = await catalog_meta_svc.get_brand(db, claims["tenant_id"], brand_id)
+    if not brand.logo_url:
+        raise HTTPException(status_code=404, detail="No brand logo uploaded")
+    storage_svc.delete_key(brand.logo_url, tenant_id=claims["tenant_id"])
+    brand.logo_url = None
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="brand_logo_delete",
+        entity="brand",
+        entity_id=brand.id,
+    )
+    await db.commit()
+    return env(catalog_meta_svc.serialize_brand(brand), "Brand logo removed")
+
+
 @api.get("/catalog/units")
 async def catalog_units(
     claims=Depends(require_permission("inventory", "read")),
@@ -3064,6 +3140,24 @@ async def catalog_units(
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
     rows = await catalog_meta_svc.list_units(db, claims["tenant_id"])
     return env([catalog_meta_svc.serialize_unit(r) for r in rows])
+
+
+@api.get("/catalog/units/convert")
+async def catalog_convert_units(
+    from_unit_id: str,
+    to_unit_id: str,
+    quantity: float = 1,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await catalog_meta_svc.convert_quantity(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_unit_id=from_unit_id,
+        to_unit_id=to_unit_id,
+        quantity=quantity,
+    )
+    return env(result)
 
 
 @api.post("/catalog/units")
@@ -3077,6 +3171,8 @@ async def catalog_create_unit(
         tenant_id=claims["tenant_id"],
         code=payload.code,
         name=payload.name,
+        base_unit_id=payload.base_unit_id,
+        conversion_factor=payload.conversion_factor,
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_unit(row), "Unit created")
@@ -3096,7 +3192,10 @@ async def catalog_patch_unit(
         unit_id=unit_id,
         code=data.get("code"),
         name=data.get("name"),
+        base_unit_id=data.get("base_unit_id"),
+        conversion_factor=data.get("conversion_factor"),
         is_active=data.get("is_active"),
+        clear_base_unit=bool(data.get("clear_base_unit")),
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_unit(row), "Unit updated")

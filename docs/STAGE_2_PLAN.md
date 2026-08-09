@@ -22,11 +22,11 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 | **I3** | Low stock: `minimum_stock` + traffic lights + warehouse-aware list | P0 | COMPLETE |
 | **I4** | Stock count variance report export (CSV/PDF) | P0 | COMPLETE |
 | **I5** | Movement history audit UX + integrity/concurrency tests | P1 | COMPLETE |
-| **I6** | Catalog harden: UoM conversion, brand logo, weight/dimensions | P1 | PENDING |
-| **P1** | Purchase return multi-line UI | P1 | PENDING |
-| **P2** | PO Kanban board (optional polish) | P2 | DEFERRED unless pulled |
+| **I6** | Catalog harden: UoM conversion, brand logo, weight/dimensions | P1 | COMPLETE |
+| **P1** | Purchase return multi-line UI | P1 | DEFERRED |
+| **P2** | PO Kanban board (optional polish) | P2 | DEFERRED |
 | **M1** | Multi-bin locations | Multi-store | OUT OF SCOPE (this pass) |
-| **H2** | Stage 2 exit criteria + freeze ADR | Exit | PENDING |
+| **H2** | Stage 2 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -69,14 +69,13 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 - [x] Integrity test: Σ(movements) vs product stock_qty.
 - [x] Stock-out overdraw returns `INSUFFICIENT_STOCK` (FOR UPDATE; SQLite sequential coverage).
 
-## I6 acceptance criteria (next)
+## I6 acceptance criteria
 
-- [ ] UoM conversion ratios on units.
-- [ ] Brand logo upload/serve.
-- [ ] Product weight / dimensions fields + UI.
-- [ ] Automated tests for new fields.
+- [x] UoM conversion ratios + `GET /catalog/units/convert` (one-level base).
+- [x] Brand logo upload/serve/delete.
+- [x] Product weight / dimensions (kg / cm) fields + UI.
+- [x] Automated tests in `backend/tests/test_catalog_harden_i6.py`.
 
 ## Sign-off
 
-Stage 2 opens with ADR-009. Close when all P0 rows are COMPLETE and `docs/STAGE_2_EXIT_CRITERIA.md` is accepted.
-(P0 for this pass: I1–I4. I5–I6 are P1 hardening.)
+Stage 2 exit recorded in `docs/STAGE_2_EXIT_CRITERIA.md`; freeze ADR-010.

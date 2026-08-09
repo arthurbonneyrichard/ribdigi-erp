@@ -116,6 +116,12 @@ export default function Page() {
   const [brandName, setBrandName] = useState('');
   const [unitCode, setUnitCode] = useState('');
   const [unitName, setUnitName] = useState('');
+  const [unitBaseId, setUnitBaseId] = useState('');
+  const [unitFactor, setUnitFactor] = useState('1');
+  const [editWeight, setEditWeight] = useState('');
+  const [editLength, setEditLength] = useState('');
+  const [editWidth, setEditWidth] = useState('');
+  const [editHeight, setEditHeight] = useState('');
 
   const [variantName, setVariantName] = useState('');
   const [variantSku, setVariantSku] = useState('');
@@ -238,6 +244,10 @@ export default function Page() {
         setEditReorder(String(p.reorder_level ?? 0));
         setEditPrice(String(p.selling_price ?? 0));
         setEditBarcode(p.barcode || '');
+        setEditWeight(p.weight != null ? String(p.weight) : '');
+        setEditLength(p.length != null ? String(p.length) : '');
+        setEditWidth(p.width != null ? String(p.width) : '');
+        setEditHeight(p.height != null ? String(p.height) : '');
       }
     }
   }, [selectedId, products]);
@@ -253,6 +263,10 @@ export default function Page() {
           reorder_level: Number(editReorder) || 0,
           selling_price: Number(editPrice) || 0,
           barcode: editBarcode || null,
+          weight: editWeight === '' ? null : Number(editWeight),
+          length: editLength === '' ? null : Number(editLength),
+          width: editWidth === '' ? null : Number(editWidth),
+          height: editHeight === '' ? null : Number(editHeight),
         }),
       });
       setMessage('Product updated');
@@ -988,6 +1002,14 @@ export default function Page() {
             <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
             <label className="muted">Selling price</label>
             <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
+            <label className="muted">Weight (kg)</label>
+            <input value={editWeight} onChange={(e) => setEditWeight(e.target.value)} placeholder="Optional" />
+            <label className="muted">Dimensions L×W×H (cm)</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input value={editLength} onChange={(e) => setEditLength(e.target.value)} placeholder="L" />
+              <input value={editWidth} onChange={(e) => setEditWidth(e.target.value)} placeholder="W" />
+              <input value={editHeight} onChange={(e) => setEditHeight(e.target.value)} placeholder="H" />
+            </div>
             <label className="muted">Barcode</label>
             <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} placeholder="EAN/UPC/Code128" />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -1262,24 +1284,78 @@ export default function Page() {
                 <li key={b.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span>
                     {b.code} — {b.name}
+                    {b.has_logo ? ' [logo]' : ''}
                     {!b.is_active ? ' [inactive]' : ''}
                   </span>
                   {b.is_active && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setError('');
-                        try {
-                          await api(`/catalog/brands/${b.id}`, { method: 'DELETE' });
-                          setMessage('Brand deactivated');
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message);
-                        }
-                      }}
-                    >
-                      Deactivate
-                    </button>
+                    <>
+                      <label style={{ cursor: 'pointer' }}>
+                        <span style={{ textDecoration: 'underline' }}>Upload logo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = '';
+                            if (!file) return;
+                            setError('');
+                            try {
+                              const token = localStorage.getItem('token');
+                              const tenant = localStorage.getItem('tenant');
+                              const form = new FormData();
+                              form.append('file', file);
+                              const res = await fetch(`${apiBase}/catalog/brands/${b.id}/logo`, {
+                                method: 'POST',
+                                headers: {
+                                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                                  ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                                },
+                                body: form,
+                              });
+                              const body = await res.json().catch(() => ({}));
+                              if (!res.ok) throw new Error(body.detail || body.message || 'Logo upload failed');
+                              setMessage('Brand logo uploaded');
+                              await refresh();
+                            } catch (err: any) {
+                              setError(err.message);
+                            }
+                          }}
+                        />
+                      </label>
+                      {b.has_logo && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setError('');
+                            try {
+                              await api(`/catalog/brands/${b.id}/logo`, { method: 'DELETE' });
+                              setMessage('Brand logo removed');
+                              await refresh();
+                            } catch (err: any) {
+                              setError(err.message);
+                            }
+                          }}
+                        >
+                          Remove logo
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setError('');
+                          try {
+                            await api(`/catalog/brands/${b.id}`, { method: 'DELETE' });
+                            setMessage('Brand deactivated');
+                            await refresh();
+                          } catch (err: any) {
+                            setError(err.message);
+                          }
+                        }}
+                      >
+                        Deactivate
+                      </button>
+                    </>
                   )}
                 </li>
               ))}
@@ -1287,18 +1363,42 @@ export default function Page() {
           </div>
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Unit of measure</h3>
+            <p className="muted">Optional base unit + factor (e.g. 1 BOX = 12 PCS).</p>
             <input value={unitCode} onChange={(e) => setUnitCode(e.target.value)} placeholder="Code" />
             <input value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="Name" />
+            <select value={unitBaseId} onChange={(e) => setUnitBaseId(e.target.value)}>
+              <option value="">No base (this is a base unit)</option>
+              {units
+                .filter((u) => u.is_active && !u.base_unit_id)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.code} — {u.name}
+                  </option>
+                ))}
+            </select>
+            <input
+              value={unitFactor}
+              onChange={(e) => setUnitFactor(e.target.value)}
+              placeholder="Conversion factor"
+              disabled={!unitBaseId}
+            />
             <button
               onClick={async () => {
                 setError('');
                 try {
                   await api('/catalog/units', {
                     method: 'POST',
-                    body: JSON.stringify({ code: unitCode, name: unitName }),
+                    body: JSON.stringify({
+                      code: unitCode,
+                      name: unitName,
+                      base_unit_id: unitBaseId || null,
+                      conversion_factor: Number(unitFactor) || 1,
+                    }),
                   });
                   setUnitCode('');
                   setUnitName('');
+                  setUnitBaseId('');
+                  setUnitFactor('1');
                   setMessage('Unit created');
                   await refresh();
                 } catch (err: any) {
@@ -1310,31 +1410,35 @@ export default function Page() {
               Add unit
             </button>
             <ul className="muted">
-              {units.map((u) => (
-                <li key={u.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span>
-                    {u.code} — {u.name}
-                    {!u.is_active ? ' [inactive]' : ''}
-                  </span>
-                  {u.is_active && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setError('');
-                        try {
-                          await api(`/catalog/units/${u.id}`, { method: 'DELETE' });
-                          setMessage('Unit deactivated');
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message);
-                        }
-                      }}
-                    >
-                      Deactivate
-                    </button>
-                  )}
-                </li>
-              ))}
+              {units.map((u) => {
+                const base = units.find((x) => x.id === u.base_unit_id);
+                return (
+                  <li key={u.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span>
+                      {u.code} — {u.name}
+                      {base ? ` (= ${u.conversion_factor} × ${base.code})` : ' [base]'}
+                      {!u.is_active ? ' [inactive]' : ''}
+                    </span>
+                    {u.is_active && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setError('');
+                          try {
+                            await api(`/catalog/units/${u.id}`, { method: 'DELETE' });
+                            setMessage('Unit deactivated');
+                            await refresh();
+                          } catch (err: any) {
+                            setError(err.message);
+                          }
+                        }}
+                      >
+                        Deactivate
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

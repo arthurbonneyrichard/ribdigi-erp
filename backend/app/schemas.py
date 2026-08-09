@@ -242,6 +242,10 @@ class ProductCreate(BaseModel):
     stock_qty: float = 0
     minimum_stock: float = 0
     reorder_level: float = 0
+    weight: float | None = None
+    length: float | None = None
+    width: float | None = None
+    height: float | None = None
     tax_rate_id: str | None = None
     tax_exempt: bool = False
     tracks_batches: bool = False
@@ -259,6 +263,10 @@ class ProductUpdate(BaseModel):
     selling_price: float | None = None
     minimum_stock: float | None = None
     reorder_level: float | None = None
+    weight: float | None = None
+    length: float | None = None
+    width: float | None = None
+    height: float | None = None
     tax_rate_id: str | None = None
     tax_exempt: bool | None = None
     tracks_batches: bool | None = None
@@ -310,12 +318,17 @@ class BrandUpdate(BaseModel):
 class UnitOfMeasureCreate(BaseModel):
     code: str
     name: str
+    base_unit_id: str | None = None
+    conversion_factor: float = Field(default=1, gt=0)
 
 
 class UnitOfMeasureUpdate(BaseModel):
     code: str | None = None
     name: str | None = None
+    base_unit_id: str | None = None
+    conversion_factor: float | None = Field(default=None, gt=0)
     is_active: bool | None = None
+    clear_base_unit: bool = False
 
 
 class ProductVariantCreate(BaseModel):

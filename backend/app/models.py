@@ -277,6 +277,7 @@ class Brand(Base):
     code: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -289,6 +290,9 @@ class UnitOfMeasure(Base):
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
     code: Mapped[str] = mapped_column(String(20))
     name: Mapped[str] = mapped_column(String(80))
+    # 1 of this unit = conversion_factor of base_unit (null base => this unit is a base)
+    base_unit_id: Mapped[str | None] = mapped_column(ForeignKey("units_of_measure.id"), nullable=True, index=True)
+    conversion_factor: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -313,6 +317,10 @@ class Product(Base):
     reserved_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     minimum_stock: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    weight: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)  # kg
+    length: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)  # cm
+    width: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)  # cm
+    height: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)  # cm
     tax_rate_id: Mapped[str | None] = mapped_column(ForeignKey("tax_rates.id"), nullable=True)
     tax_exempt: Mapped[bool] = mapped_column(Boolean, default=False)
     tracks_batches: Mapped[bool] = mapped_column(Boolean, default=False)

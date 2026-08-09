@@ -69,6 +69,8 @@ def serialize_brand(row: m.Brand) -> dict:
         "code": row.code,
         "name": row.name,
         "description": row.description,
+        "logo_url": getattr(row, "logo_url", None),
+        "has_logo": bool(getattr(row, "logo_url", None)),
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
@@ -79,6 +81,8 @@ def serialize_unit(row: m.UnitOfMeasure) -> dict:
         "id": row.id,
         "code": row.code,
         "name": row.name,
+        "base_unit_id": getattr(row, "base_unit_id", None),
+        "conversion_factor": float(getattr(row, "conversion_factor", 1) or 1),
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
@@ -112,6 +116,10 @@ def serialize_product(row: m.Product) -> dict:
         "minimum_stock": minimum_stock,
         "reorder_level": reorder_level,
         "stock_status": compute_stock_status(stock_qty, minimum_stock, reorder_level),
+        "weight": float(row.weight) if getattr(row, "weight", None) is not None else None,
+        "length": float(row.length) if getattr(row, "length", None) is not None else None,
+        "width": float(row.width) if getattr(row, "width", None) is not None else None,
+        "height": float(row.height) if getattr(row, "height", None) is not None else None,
         "tax_rate_id": row.tax_rate_id,
         "tax_exempt": bool(row.tax_exempt),
         "tracks_batches": bool(row.tracks_batches),
@@ -374,17 +382,101 @@ async def list_units(db: AsyncSession, tenant_id: str) -> list[m.UnitOfMeasure]:
     )
 
 
+async def get_unit(db: AsyncSession, tenant_id: str, unit_id: str) -> m.UnitOfMeasure:
+    row = await db.get(m.UnitOfMeasure, unit_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    return row
+
+
+async def _validate_base_unit(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    unit_id: str | None,
+    base_unit_id: str | None,
+) -> str | None:
+    if not base_unit_id:
+        return None
+    if unit_id and base_unit_id == unit_id:
+        raise HTTPException(status_code=400, detail="base_unit_id cannot reference itself")
+    base = await get_unit(db, tenant_id, base_unit_id)
+    # One-level conversions only: base unit must itself be a base (no chain)
+    if getattr(base, "base_unit_id", None):
+        raise HTTPException(
+            status_code=400,
+            detail="base_unit_id must reference a base unit (no multi-level chains)",
+        )
+    return base.id
+
+
+def quantity_in_base(unit: m.UnitOfMeasure, quantity: float) -> tuple[str, float]:
+    """Return (base_unit_id, qty_in_base)."""
+    factor = float(getattr(unit, "conversion_factor", 1) or 1)
+    if factor <= 0:
+        raise HTTPException(status_code=400, detail="conversion_factor must be positive")
+    if unit.base_unit_id:
+        return unit.base_unit_id, float(quantity) * factor
+    return unit.id, float(quantity)
+
+
+async def convert_quantity(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_unit_id: str,
+    to_unit_id: str,
+    quantity: float,
+) -> dict:
+    qty = float(quantity)
+    if qty < 0:
+        raise HTTPException(status_code=400, detail="quantity cannot be negative")
+    from_unit = await get_unit(db, tenant_id, from_unit_id)
+    to_unit = await get_unit(db, tenant_id, to_unit_id)
+    from_base, from_base_qty = quantity_in_base(from_unit, qty)
+    to_base, _ = quantity_in_base(to_unit, 1)
+    if from_base != to_base:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INCOMPATIBLE_UNITS",
+                "message": "Units do not share a common base for conversion",
+                "from_unit_id": from_unit.id,
+                "to_unit_id": to_unit.id,
+            },
+        )
+    to_factor = float(getattr(to_unit, "conversion_factor", 1) or 1)
+    if to_unit.base_unit_id:
+        result = from_base_qty / to_factor
+    else:
+        result = from_base_qty
+    return {
+        "from_unit_id": from_unit.id,
+        "from_unit_code": from_unit.code,
+        "to_unit_id": to_unit.id,
+        "to_unit_code": to_unit.code,
+        "quantity": qty,
+        "converted_quantity": round(result, 6),
+        "base_unit_id": from_base,
+    }
+
+
 async def create_unit(
     db: AsyncSession,
     *,
     tenant_id: str,
     code: str,
     name: str,
+    base_unit_id: str | None = None,
+    conversion_factor: float = 1,
 ) -> m.UnitOfMeasure:
     code = code.strip().upper()
     name = name.strip()
     if not code or not name:
         raise HTTPException(status_code=400, detail="code and name are required")
+    factor = float(conversion_factor or 1)
+    if factor <= 0:
+        raise HTTPException(status_code=400, detail="conversion_factor must be positive")
     dup = (
         await db.execute(
             select(m.UnitOfMeasure).where(
@@ -395,7 +487,19 @@ async def create_unit(
     ).scalar_one_or_none()
     if dup:
         raise HTTPException(status_code=409, detail="Unit code exists")
-    row = m.UnitOfMeasure(tenant_id=tenant_id, code=code, name=name, is_active=True)
+    base_id = await _validate_base_unit(
+        db, tenant_id=tenant_id, unit_id=None, base_unit_id=base_unit_id
+    )
+    if base_id is None:
+        factor = 1.0
+    row = m.UnitOfMeasure(
+        tenant_id=tenant_id,
+        code=code,
+        name=name,
+        base_unit_id=base_id,
+        conversion_factor=factor,
+        is_active=True,
+    )
     db.add(row)
     await db.flush()
     return row
@@ -408,11 +512,12 @@ async def update_unit(
     unit_id: str,
     code: str | None = None,
     name: str | None = None,
+    base_unit_id: str | None = None,
+    conversion_factor: float | None = None,
     is_active: bool | None = None,
+    clear_base_unit: bool = False,
 ) -> m.UnitOfMeasure:
-    row = await db.get(m.UnitOfMeasure, unit_id)
-    if row is None or row.tenant_id != tenant_id:
-        raise HTTPException(status_code=404, detail="Unit not found")
+    row = await get_unit(db, tenant_id, unit_id)
     if code is not None:
         code = code.strip().upper()
         if not code:
@@ -434,8 +539,35 @@ async def update_unit(
         if not name:
             raise HTTPException(status_code=400, detail="name is required")
         row.name = name
+    if clear_base_unit:
+        row.base_unit_id = None
+        row.conversion_factor = 1
+    elif base_unit_id is not None:
+        row.base_unit_id = await _validate_base_unit(
+            db, tenant_id=tenant_id, unit_id=row.id, base_unit_id=base_unit_id
+        )
+    if conversion_factor is not None and not clear_base_unit:
+        factor = float(conversion_factor)
+        if factor <= 0:
+            raise HTTPException(status_code=400, detail="conversion_factor must be positive")
+        row.conversion_factor = factor if row.base_unit_id else 1
     if is_active is not None:
         row.is_active = bool(is_active)
+    # Prevent turning a base into a dependent if other units reference it
+    if row.base_unit_id:
+        dependents = (
+            await db.execute(
+                select(m.UnitOfMeasure.id).where(
+                    m.UnitOfMeasure.tenant_id == tenant_id,
+                    m.UnitOfMeasure.base_unit_id == row.id,
+                ).limit(1)
+            )
+        ).scalar_one_or_none()
+        if dependents:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot set a base for a unit that is already used as a base by others",
+            )
     await db.flush()
     return row
 
@@ -444,6 +576,13 @@ async def deactivate_unit(
     db: AsyncSession, *, tenant_id: str, unit_id: str
 ) -> m.UnitOfMeasure:
     return await update_unit(db, tenant_id=tenant_id, unit_id=unit_id, is_active=False)
+
+
+async def get_brand(db: AsyncSession, tenant_id: str, brand_id: str) -> m.Brand:
+    row = await db.get(m.Brand, brand_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    return row
 
 
 async def resolve_product_refs(
