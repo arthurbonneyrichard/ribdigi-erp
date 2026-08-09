@@ -1124,6 +1124,15 @@ class PosSessionClose(BaseModel):
     notes: str | None = None
 
 
+class PosPaymentLine(BaseModel):
+    """One tender toward a POS sale total (BR-8.1 split payments)."""
+
+    payment_method: str = "cash"
+    amount: float = Field(gt=0)
+    reference: str | None = None
+    liquid_account_id: str | None = None
+
+
 class PosSaleCreate(BaseModel):
     session_id: str | None = None
     party_id: str | None = None
@@ -1133,5 +1142,6 @@ class PosSaleCreate(BaseModel):
     discount_amount: float = Field(default=0, ge=0)
     status: str = "completed"
     payment_method: str = "cash"
+    payments: list[PosPaymentLine] | None = None
     payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(min_length=1)

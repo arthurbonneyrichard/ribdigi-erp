@@ -1418,7 +1418,9 @@ async def post_pos_sale_journal(
     user_id: str,
     tx: m.Transaction,
     payment_method: str = "cash",
+    payments: list[dict] | None = None,
 ) -> m.JournalEntry:
+    """Post POS sale GL; supports split tenders as multiple debit lines."""
     await ensure_default_accounts(db, tenant_id)
     amount = float(tx.total or 0)
     tax = float(tx.tax or 0)
@@ -1427,21 +1429,45 @@ async def post_pos_sale_journal(
     revenue = round(float(tx.subtotal or 0) - cart_discount, 2)
     if revenue < 0:
         raise HTTPException(status_code=400, detail="POS revenue after discount cannot be negative")
-    debit_code, debit_label = pos_debit_account_for_payment_method(payment_method)
-    lines = [
-        {
-            "account_code": debit_code,
-            "debit": amount,
-            "credit": 0,
-            "description": f"POS {tx.reference} ({debit_label})",
-        },
-        {"account_code": "4000", "debit": 0, "credit": revenue, "description": "Sales revenue"},
-    ]
-    if tax > 0:
-        lines.append({"account_code": "2100", "debit": 0, "credit": tax, "description": "Tax payable"})
-    # amount should equal revenue + tax
     if abs(amount - (revenue + tax)) > 0.02:
         raise HTTPException(status_code=400, detail="POS journal amounts do not balance")
+
+    tenders = payments or [
+        {"payment_method": payment_method, "amount": amount, "liquid_account_id": None}
+    ]
+    lines: list[dict] = []
+    debit_sum = 0.0
+    for tender in tenders:
+        method = (tender.get("payment_method") or "cash").strip().lower()
+        part = round(float(tender.get("amount") or 0), 2)
+        if part <= 0:
+            continue
+        liquid_id = tender.get("liquid_account_id")
+        if liquid_id and method != "credit":
+            code, label = await resolve_settlement_gl(
+                db, tenant_id, method, liquid_account_id=liquid_id, outflow=False
+            )
+        else:
+            code, label = pos_debit_account_for_payment_method(method)
+        lines.append(
+            {
+                "account_code": code,
+                "debit": part,
+                "credit": 0,
+                "description": f"POS {tx.reference} ({label}/{method})",
+            }
+        )
+        debit_sum += part
+    if abs(debit_sum - amount) > 0.02:
+        raise HTTPException(status_code=400, detail="POS tender debits do not equal sale total")
+
+    lines.append(
+        {"account_code": "4000", "debit": 0, "credit": revenue, "description": "Sales revenue"}
+    )
+    if tax > 0:
+        lines.append(
+            {"account_code": "2100", "debit": 0, "credit": tax, "description": "Tax payable"}
+        )
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,

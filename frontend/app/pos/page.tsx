@@ -76,6 +76,11 @@ export default function Page() {
   const [openingCash, setOpeningCash] = useState('100');
   const [actualCash, setActualCash] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [splitTender, setSplitTender] = useState(false);
+  const [tenders, setTenders] = useState<{ payment_method: string; amount: string }[]>([
+    { payment_method: 'cash', amount: '' },
+    { payment_method: 'card', amount: '' },
+  ]);
   const [paper, setPaper] = useState('80mm');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
@@ -242,10 +247,6 @@ export default function Page() {
       setError('Cart is empty');
       return;
     }
-    if (paymentMethod === 'credit' && !customerId) {
-      setError('Select a customer for credit sales');
-      return;
-    }
     const items = cart.map((c) => ({
       product_id: c.product_id || c.id,
       variant_id: c.variant_id || null,
@@ -253,17 +254,41 @@ export default function Page() {
       discount: c.discount || 0,
     }));
     const discountAmount = Number(cartDiscount) || 0;
+    const body: Record<string, unknown> = {
+      session_id: session.session_id,
+      party_id: customerId || null,
+      discount_amount: discountAmount,
+      status: 'completed',
+      items,
+    };
+    if (splitTender) {
+      const payments = tenders
+        .map((t) => ({
+          payment_method: t.payment_method,
+          amount: Number(t.amount) || 0,
+        }))
+        .filter((t) => t.amount > 0);
+      if (payments.length < 2) {
+        setError('Split tender needs at least two payment amounts');
+        return;
+      }
+      if (payments.some((p) => p.payment_method === 'credit') && !customerId) {
+        setError('Select a customer for credit tenders');
+        return;
+      }
+      body.payments = payments;
+      body.payment_method = 'split';
+    } else {
+      if (paymentMethod === 'credit' && !customerId) {
+        setError('Select a customer for credit sales');
+        return;
+      }
+      body.payment_method = paymentMethod;
+    }
     try {
       const r = await api('/pos/sales', {
         method: 'POST',
-        body: JSON.stringify({
-          session_id: session.session_id,
-          party_id: customerId || null,
-          discount_amount: discountAmount,
-          status: 'completed',
-          payment_method: paymentMethod,
-          items,
-        }),
+        body: JSON.stringify(body),
       });
       const receiptRes = await api(`/pos/sales/${r.data.id}/receipt?paper=${paper}`);
       setReceipt(receiptRes.data);
@@ -275,13 +300,18 @@ export default function Page() {
             : r.data?.drawer?.error
               ? ` · drawer warn: ${r.data.drawer.error}`
               : '';
+      const tenderNote =
+        r.data?.payments?.length > 1
+          ? ` · split ${r.data.payments.map((p: any) => `${p.payment_method} ${p.amount}`).join(' + ')}`
+          : '';
       setMessage(
         `Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0}` +
           (r.data.discount_amount ? `, discount ${r.data.discount_amount}` : '') +
-          `)${drawerNote}`,
+          `)${tenderNote}${drawerNote}`,
       );
       setCart([]);
       setCartDiscount('0');
+      setSplitTender(false);
       await refreshSession();
     } catch (err: any) {
       setError(err.message);
@@ -483,15 +513,67 @@ export default function Page() {
             disabled={!session}
           />
         </label>
-        <label style={{ display: 'block', marginBottom: 8 }}>
-          Payment{' '}
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-            <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="wallet">Digital wallet</option>
-            <option value="credit">Credit (registered customer)</option>
-          </select>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <input
+            type="checkbox"
+            checked={splitTender}
+            onChange={(e) => setSplitTender(e.target.checked)}
+            disabled={!session}
+          />
+          Split tender
         </label>
+        {!splitTender ? (
+          <label style={{ display: 'block', marginBottom: 8 }}>
+            Payment{' '}
+            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+              <option value="cash">Cash</option>
+              <option value="card">Card</option>
+              <option value="wallet">Digital wallet</option>
+              <option value="credit">Credit (registered customer)</option>
+            </select>
+          </label>
+        ) : (
+          <div style={{ display: 'grid', gap: 8, marginBottom: 8, maxWidth: 420 }}>
+            <p className="muted" style={{ margin: 0 }}>
+              Enter amounts that sum to the sale total (after tax/discount).
+            </p>
+            {tenders.map((t, idx) => (
+              <div key={idx} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <select
+                  value={t.payment_method}
+                  onChange={(e) => {
+                    const next = [...tenders];
+                    next[idx] = { ...next[idx], payment_method: e.target.value };
+                    setTenders(next);
+                  }}
+                >
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="wallet">Wallet</option>
+                  <option value="credit">Credit</option>
+                </select>
+                <input
+                  value={t.amount}
+                  onChange={(e) => {
+                    const next = [...tenders];
+                    next[idx] = { ...next[idx], amount: e.target.value };
+                    setTenders(next);
+                  }}
+                  placeholder="Amount"
+                  style={{ width: 120, padding: 8 }}
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() =>
+                setTenders([...tenders, { payment_method: 'cash', amount: '' }])
+              }
+            >
+              Add tender line
+            </button>
+          </div>
+        )}
         <label style={{ display: 'block', marginBottom: 8 }}>
           Receipt paper{' '}
           <select value={paper} onChange={(e) => setPaper(e.target.value)}>
@@ -509,6 +591,11 @@ export default function Page() {
           <h3>Receipt</h3>
           <p>
             {receipt.reference} · Total {receipt.total} · {receipt.payment_method}
+            {receipt.payments?.length > 1
+              ? ` (${receipt.payments
+                  .map((p: any) => `${p.payment_method} ${p.amount}`)
+                  .join(' + ')})`
+              : ''}
           </p>
           <pre
             style={{

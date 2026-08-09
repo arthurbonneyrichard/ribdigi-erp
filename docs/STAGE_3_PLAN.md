@@ -20,7 +20,7 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 | **A1** | Journal unpost + open fiscal-period gate (BR-10.2) | P0 | COMPLETE |
 | **A2** | COA CRUD / hierarchy / opening balances (BR-10.1) | P0 | COMPLETE |
 | **A3** | Financial report depth (P&L date range; cash-flow O/I/F) | P0 | COMPLETE |
-| **P1** | POS split tender (`pos_payments`) | P0 | PENDING |
+| **P1** | POS split tender (`pos_payments`) | P0 | COMPLETE |
 | **C1** | Credit-limit override with audit | P0 | PENDING |
 | **H3** | Stage 3 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -60,9 +60,14 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 - [x] Automated tests in `backend/tests/test_financial_reports_a3.py`.
 - [ ] Branch/store filter on P&L deferred (journals have no store_id yet).
 
-## P1 acceptance criteria (preview)
+## P1 acceptance criteria
 
-- POS sale can record multiple tender lines (`pos_payments`) that sum to total; GL routing per method.
+- [x] `pos_payments` table (Alembic `0076`) linked to POS sale transactions.
+- [x] `POST /pos/sales` accepts `payments[]` (`payment_method`, `amount`, optional `reference` / `liquid_account_id`); sum must equal sale total.
+- [x] Single-tender `payment_method` remains supported; always persists `pos_payments` rows.
+- [x] Split GL: one journal with debit lines per tender (cash/bank/AR); session cash/card/other buckets by tender amounts; credit AR only for credit portion.
+- [x] Receipt + POS UI split-tender checkout; drawer opens if any cash tender.
+- [x] Automated tests in `backend/tests/test_pos_split_tender_p1.py`.
 
 ## C1 acceptance criteria (preview)
 
