@@ -2914,12 +2914,22 @@ async def product_warehouse_stock(
             "product_id": product.id,
             "stock_qty": float(product.stock_qty or 0),
             "reorder_level": float(product.reorder_level or 0),
+            "reserved_qty": float(getattr(product, "reserved_qty", 0) or 0),
+            "available_qty": max(
+                float(product.stock_qty or 0) - float(getattr(product, "reserved_qty", 0) or 0),
+                0.0,
+            ),
             "warehouses": [
                 {
                     "warehouse_id": wh.id,
                     "code": wh.code,
                     "name": wh.name,
                     "quantity": float(stock.quantity or 0),
+                    "reserved_qty": float(getattr(stock, "reserved_qty", 0) or 0),
+                    "available_qty": max(
+                        float(stock.quantity or 0) - float(getattr(stock, "reserved_qty", 0) or 0),
+                        0.0,
+                    ),
                     "reorder_level": float(stock.reorder_level or 0),
                     "reorder_qty": float(stock.reorder_qty or 0),
                 }
@@ -3961,6 +3971,8 @@ async def create_sales_order(
         user_id=claims["sub"],
         customer_id=payload.customer_id,
         quotation_id=payload.quotation_id,
+        store_id=payload.store_id,
+        warehouse_id=payload.warehouse_id,
         discount_amount=payload.discount_amount,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
@@ -3988,9 +4000,11 @@ async def confirm_sales_order(
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
-    order = await sales_docs_svc.confirm_order(db, claims["tenant_id"], order_id)
+    order = await sales_docs_svc.confirm_order(
+        db, claims["tenant_id"], order_id, user_id=claims["sub"]
+    )
     await db.commit()
-    return env(await sales_docs_svc.serialize_order(db, order), "Order confirmed")
+    return env(await sales_docs_svc.serialize_order(db, order), "Order confirmed; inventory reserved")
 
 
 @api.post("/sales/orders/{order_id}/cancel")
@@ -4001,7 +4015,9 @@ async def cancel_sales_order(
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
-    order = await sales_docs_svc.cancel_order(db, claims["tenant_id"], order_id)
+    order = await sales_docs_svc.cancel_order(
+        db, claims["tenant_id"], order_id, user_id=claims["sub"]
+    )
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Order cancelled")
 

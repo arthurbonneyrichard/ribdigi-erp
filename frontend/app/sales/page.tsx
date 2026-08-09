@@ -112,6 +112,14 @@ export default function Page() {
     if (variant) setUnitPrice(String(variant.selling_price ?? 0));
   }, [variantId, variants]);
 
+  const selectedProduct = products.find((p) => p.id === productId);
+  const availableQty =
+    selectedProduct == null
+      ? null
+      : selectedProduct.available_qty != null
+        ? Number(selectedProduct.available_qty)
+        : Math.max(Number(selectedProduct.stock_qty || 0) - Number(selectedProduct.reserved_qty || 0), 0);
+
   const linePayload = {
     customer_id: customerId,
     store_id: storeId || null,
@@ -489,6 +497,12 @@ export default function Page() {
           <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Price" style={{ width: 100 }} />
           <input value={taxRate} onChange={(e) => setTaxRate(e.target.value)} placeholder="Tax %" style={{ width: 80 }} />
         </div>
+        {selectedProduct && (
+          <p className="muted">
+            On hand {selectedProduct.stock_qty} · Reserved {selectedProduct.reserved_qty ?? 0} · Available{' '}
+            {availableQty}
+          </p>
+        )}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={createQuotation}>Create quotation</button>
           <button onClick={createOrder}>Create order</button>
@@ -570,6 +584,8 @@ export default function Page() {
             <tr>
               <th>Number</th>
               <th>Status</th>
+              <th>Store</th>
+              <th>Reserved</th>
               <th>Total</th>
               <th>Actions</th>
             </tr>
@@ -579,11 +595,18 @@ export default function Page() {
               <tr key={o.id}>
                 <td>{o.order_number}</td>
                 <td>{o.status}</td>
+                <td>
+                  {stores.find((s) => s.id === o.store_id)?.name ||
+                    (o.store_id ? o.store_id.slice(0, 8) : '—')}
+                </td>
+                <td>{o.reserved_qty_total ?? 0}</td>
                 <td>{o.total_amount}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(o)}>View</button>
                   {o.status === 'draft' && (
-                    <button onClick={() => act(`/sales/orders/${o.id}/confirm`, 'Confirmed')}>Confirm</button>
+                    <button onClick={() => act(`/sales/orders/${o.id}/confirm`, 'Confirmed')}>
+                      Confirm (reserve)
+                    </button>
                   )}
                   {['draft', 'confirmed'].includes(o.status) && (
                     <>

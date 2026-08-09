@@ -99,6 +99,11 @@ def serialize_product(row: m.Product) -> dict:
         "cost_price": float(row.cost_price or 0),
         "selling_price": float(row.selling_price or 0),
         "stock_qty": float(row.stock_qty or 0),
+        "reserved_qty": float(getattr(row, "reserved_qty", 0) or 0),
+        "available_qty": max(
+            float(row.stock_qty or 0) - float(getattr(row, "reserved_qty", 0) or 0),
+            0.0,
+        ),
         "reorder_level": float(row.reorder_level or 0),
         "tax_rate_id": row.tax_rate_id,
         "tax_exempt": bool(row.tax_exempt),

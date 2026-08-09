@@ -266,6 +266,18 @@ async def post_sales_invoice(
         wh = await warehouse_for_store(db, tenant_id, invoice.store_id)
         warehouse_id = wh.id
 
+    # Soft allocations from the source sales order must be consumed before stock-out
+    # so available qty includes this order's reserved quantity.
+    if invoice.sales_order_id:
+        from app.inventory import consume_reservations_for_order
+
+        await consume_reservations_for_order(
+            db,
+            tenant_id=tenant_id,
+            sales_order_id=invoice.sales_order_id,
+            user_id=user_id,
+        )
+
     for item in items:
         if warehouse_id:
             await allocate_unlocated_stock(
@@ -354,6 +366,20 @@ async def cancel_sales_invoice(
         raise HTTPException(status_code=409, detail="Only draft invoices can be cancelled")
     invoice.status = "cancelled"
     invoice.updated_at = datetime.utcnow()
+    if invoice.sales_order_id:
+        # Keep soft allocations; reopen the order so it can be re-invoiced.
+        order = (
+            await db.execute(
+                select(m.SalesOrder).where(
+                    m.SalesOrder.id == invoice.sales_order_id,
+                    m.SalesOrder.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if order and order.status == "invoiced":
+            order.status = "confirmed" if order.confirmed_at else "draft"
+            order.converted_invoice_id = None
+            order.updated_at = datetime.utcnow()
     from app import audit as audit_svc
     await audit_svc.record_event(
         db,

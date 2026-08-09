@@ -208,6 +208,7 @@ class WarehouseStock(Base):
     warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    reserved_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
 
@@ -267,6 +268,7 @@ class Product(Base):
     cost_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     selling_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     stock_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    reserved_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     tax_rate_id: Mapped[str | None] = mapped_column(ForeignKey("tax_rates.id"), nullable=True)
     tax_exempt: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -345,6 +347,25 @@ class StockMovement(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class StockReservation(Base):
+    """Soft allocation against on-hand stock for confirmed sales orders."""
+
+    __tablename__ = "stock_reservations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True, index=True)
+    sales_order_id: Mapped[str] = mapped_column(ForeignKey("sales_orders.id"), index=True)
+    sales_order_item_id: Mapped[str] = mapped_column(ForeignKey("sales_order_items.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    # active | released | consumed
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Party(Base):
@@ -1199,6 +1220,8 @@ class SalesOrder(Base):
     order_number: Mapped[str] = mapped_column(String(50), index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     quotation_id: Mapped[str | None] = mapped_column(ForeignKey("sales_quotations.id"), nullable=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)

@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+
+
+def available_qty(on_hand: float, reserved: float) -> float:
+    return max(float(on_hand or 0) - float(reserved or 0), 0.0)
 
 
 async def get_warehouse(db: AsyncSession, tenant_id: str, warehouse_id: str) -> m.Warehouse:
@@ -68,8 +74,25 @@ async def apply_warehouse_stock_change(
         db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product_id
     )
     before = float(row.quantity or 0)
+    reserved = float(row.reserved_qty or 0)
     after = before + float(quantity_delta)
-    if after < 0 and not allow_negative:
+    if float(quantity_delta) < 0 and not allow_negative:
+        avail = available_qty(before, reserved)
+        if abs(float(quantity_delta)) > avail + 1e-9:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "INSUFFICIENT_WAREHOUSE_STOCK",
+                    "message": "Insufficient available stock at source warehouse",
+                    "on_hand": before,
+                    "reserved": reserved,
+                    "available": avail,
+                    "requested": abs(float(quantity_delta)),
+                    "warehouse_id": warehouse_id,
+                    "product_id": product_id,
+                },
+            )
+    elif after < 0 and not allow_negative:
         raise HTTPException(
             status_code=409,
             detail={
@@ -84,6 +107,217 @@ async def apply_warehouse_stock_change(
     row.quantity = after
     await db.flush()
     return row
+
+
+async def reserve_product_stock(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+    quantity: float,
+    sales_order_id: str,
+    sales_order_item_id: str,
+    warehouse_id: str | None = None,
+    variant_id: str | None = None,
+    user_id: str | None = None,
+) -> m.StockReservation:
+    """Soft-allocate on-hand stock for a sales order line (does not reduce stock_qty)."""
+    qty = float(quantity)
+    if qty <= 0:
+        raise HTTPException(status_code=400, detail="Reservation quantity must be positive")
+
+    product = (
+        await db.execute(
+            select(m.Product)
+            .where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    wh_row = None
+    if warehouse_id:
+        await allocate_unlocated_stock(
+            db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product_id
+        )
+        wh_row = await get_or_create_warehouse_stock(
+            db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product_id
+        )
+        # re-lock warehouse row
+        wh_row = (
+            await db.execute(
+                select(m.WarehouseStock)
+                .where(m.WarehouseStock.id == wh_row.id)
+                .with_for_update()
+            )
+        ).scalar_one()
+        avail = available_qty(wh_row.quantity, wh_row.reserved_qty)
+        if qty > avail + 1e-9:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "INSUFFICIENT_AVAILABLE_STOCK",
+                    "message": f"Insufficient available stock for {product.sku} at warehouse",
+                    "on_hand": float(wh_row.quantity or 0),
+                    "reserved": float(wh_row.reserved_qty or 0),
+                    "available": avail,
+                    "requested": qty,
+                    "product_id": product_id,
+                    "warehouse_id": warehouse_id,
+                },
+            )
+        wh_row.reserved_qty = float(wh_row.reserved_qty or 0) + qty
+
+    # Consolidated product reservation always tracks total soft allocation.
+    prod_avail = available_qty(product.stock_qty, product.reserved_qty)
+    if qty > prod_avail + 1e-9:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "INSUFFICIENT_AVAILABLE_STOCK",
+                "message": f"Insufficient available stock for {product.sku}",
+                "on_hand": float(product.stock_qty or 0),
+                "reserved": float(product.reserved_qty or 0),
+                "available": prod_avail,
+                "requested": qty,
+                "product_id": product_id,
+            },
+        )
+    product.reserved_qty = float(product.reserved_qty or 0) + qty
+
+    now = datetime.utcnow()
+    reservation = m.StockReservation(
+        tenant_id=tenant_id,
+        product_id=product_id,
+        variant_id=variant_id,
+        warehouse_id=warehouse_id,
+        sales_order_id=sales_order_id,
+        sales_order_item_id=sales_order_item_id,
+        quantity=qty,
+        status="active",
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(reservation)
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="inventory",
+        action="stock_reserve",
+        entity="sales_order",
+        entity_id=sales_order_id,
+        details={
+            "product_id": product_id,
+            "variant_id": variant_id,
+            "warehouse_id": warehouse_id,
+            "quantity": qty,
+            "sales_order_item_id": sales_order_item_id,
+        },
+    )
+    await db.flush()
+    return reservation
+
+
+async def _finalize_reservations(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    sales_order_id: str,
+    new_status: str,
+    user_id: str | None = None,
+) -> list[m.StockReservation]:
+    if new_status not in {"released", "consumed"}:
+        raise ValueError("new_status must be released or consumed")
+    rows = (
+        await db.execute(
+            select(m.StockReservation)
+            .where(
+                m.StockReservation.tenant_id == tenant_id,
+                m.StockReservation.sales_order_id == sales_order_id,
+                m.StockReservation.status == "active",
+            )
+            .with_for_update()
+        )
+    ).scalars().all()
+    now = datetime.utcnow()
+    for row in rows:
+        qty = float(row.quantity or 0)
+        product = (
+            await db.execute(
+                select(m.Product)
+                .where(m.Product.id == row.product_id, m.Product.tenant_id == tenant_id)
+                .with_for_update()
+            )
+        ).scalar_one_or_none()
+        if product:
+            product.reserved_qty = max(float(product.reserved_qty or 0) - qty, 0.0)
+        if row.warehouse_id:
+            wh_row = (
+                await db.execute(
+                    select(m.WarehouseStock)
+                    .where(
+                        m.WarehouseStock.tenant_id == tenant_id,
+                        m.WarehouseStock.warehouse_id == row.warehouse_id,
+                        m.WarehouseStock.product_id == row.product_id,
+                    )
+                    .with_for_update()
+                )
+            ).scalar_one_or_none()
+            if wh_row:
+                wh_row.reserved_qty = max(float(wh_row.reserved_qty or 0) - qty, 0.0)
+        row.status = new_status
+        row.updated_at = now
+    if rows:
+        from app import audit as audit_svc
+
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            module="inventory",
+            action=f"stock_reservation_{new_status}",
+            entity="sales_order",
+            entity_id=sales_order_id,
+            details={"count": len(rows), "status": new_status},
+        )
+    await db.flush()
+    return list(rows)
+
+
+async def release_reservations_for_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    sales_order_id: str,
+    user_id: str | None = None,
+) -> list[m.StockReservation]:
+    return await _finalize_reservations(
+        db,
+        tenant_id=tenant_id,
+        sales_order_id=sales_order_id,
+        new_status="released",
+        user_id=user_id,
+    )
+
+
+async def consume_reservations_for_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    sales_order_id: str,
+    user_id: str | None = None,
+) -> list[m.StockReservation]:
+    return await _finalize_reservations(
+        db,
+        tenant_id=tenant_id,
+        sales_order_id=sales_order_id,
+        new_status="consumed",
+        user_id=user_id,
+    )
 
 
 async def allocate_unlocated_stock(
@@ -231,8 +465,23 @@ async def apply_stock_change(
         raise HTTPException(status_code=404, detail="Product not found")
 
     before = float(product.stock_qty or 0)
+    reserved = float(product.reserved_qty or 0)
     after = before + float(quantity_delta)
-    if after < 0 and not allow_negative:
+    if float(quantity_delta) < 0 and not allow_negative:
+        avail = available_qty(before, reserved)
+        if abs(float(quantity_delta)) > avail + 1e-9:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "INSUFFICIENT_STOCK",
+                    "message": f"Insufficient available stock for {product.sku}",
+                    "on_hand": before,
+                    "reserved": reserved,
+                    "available": avail,
+                    "requested": abs(float(quantity_delta)),
+                },
+            )
+    elif after < 0 and not allow_negative:
         raise HTTPException(
             status_code=409,
             detail={
