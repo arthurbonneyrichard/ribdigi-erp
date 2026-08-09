@@ -27,32 +27,31 @@ def test_default_pr_levels_require_manager_then_admin():
 async def test_pr_two_level_http_flow(client, db_session):
     ac, seed = client
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     super_h = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
 
-    # Tighten L1 to store_manager only so admin cannot skip ahead.
+    # L1 store_manager only; L2 super_admin (company_admin seed lacks 2FA enrollment).
     tenant = await db_session.get(m.Tenant, seed["t1"].id)
     await purchasing_svc.update_pr_approval_settings(
         db_session,
         tenant,
         levels=[
             {"min_amount": 0.01, "roles": ["store_manager"], "label": "Store Manager"},
-            {"min_amount": 1000, "roles": ["company_admin", "super_admin"], "label": "Admin"},
+            {"min_amount": 1000, "roles": ["super_admin"], "label": "Super Admin"},
         ],
     )
     await db_session.commit()
 
-    supplier = await ac.post("/api/v1/suppliers", headers=admin, json={"name": "Matrix Sup"})
+    supplier = await ac.post("/api/v1/suppliers", headers=super_h, json={"name": "Matrix Sup"})
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
 
-    # Admin creates high-value PR (cannot self-approve L1 as store_manager-only).
+    # Super creates high-value PR (cannot self-approve L1 as store_manager-only).
     created = await ac.post(
         "/api/v1/purchasing/requests",
-        headers=admin,
+        headers=super_h,
         json={
             "supplier_id": supplier_id,
             "items": [{"product_id": seed["p1"].id, "quantity": 200, "unit_price": 10}],
@@ -60,7 +59,7 @@ async def test_pr_two_level_http_flow(client, db_session):
     )
     assert created.status_code == 200, created.text
     pr_id = created.json()["data"]["id"]
-    submitted = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/submit", headers=admin)
+    submitted = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/submit", headers=super_h)
     assert submitted.status_code == 200, submitted.text
     body = submitted.json()["data"]
     assert body["status"] == "pending"
@@ -69,7 +68,7 @@ async def test_pr_two_level_http_flow(client, db_session):
     assert body["estimated_total"] == 2000.0
 
     # Wrong role for L1
-    denied = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/approve", headers=admin)
+    denied = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/approve", headers=super_h)
     assert denied.status_code == 403
 
     mid = await ac.post(
@@ -100,7 +99,10 @@ async def test_pr_two_level_http_flow(client, db_session):
 async def test_pr_settings_admin_only_and_role_reject(client, db_session):
     ac, seed = client
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    super_h = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     blocked = await ac.patch(
         "/api/v1/purchasing/settings",
@@ -115,7 +117,7 @@ async def test_pr_settings_admin_only_and_role_reject(client, db_session):
 
     ok = await ac.patch(
         "/api/v1/purchasing/settings",
-        headers=admin,
+        headers=super_h,
         json={
             "levels": [
                 {"min_amount": 1, "roles": ["store_manager"], "label": "Manager"},
