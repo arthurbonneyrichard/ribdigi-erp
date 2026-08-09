@@ -20,7 +20,7 @@ Stage 9 closes commercial-MVP holes for journal supporting documents, purchase/s
 |----|------------|----------|---------|
 | **J1** | Journal supporting documents (upload/download/delete + Ledger UI) | P0 | COMPLETE |
 | **R1** | Purchase report depth: pending POs + purchase-return summary | P1 | COMPLETE |
-| **R2** | Stock valuation report (qty × cost_price; no FIFO/LIFO) | P1 | PENDING |
+| **R2** | Stock valuation report (qty × cost_price; no FIFO/LIFO) | P1 | COMPLETE |
 | **D1** | Spec / API / User Manual fidelity sync | P2 | PENDING |
 | **H9x** | Stage 9 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -50,9 +50,9 @@ Stage 9 closes commercial-MVP holes for journal supporting documents, purchase/s
 
 ## R2 acceptance criteria
 
-- [ ] Stock valuation report returns quantity × `cost_price` (and totals), warehouse/store filter where applicable.
-- [ ] No FIFO/LIFO claims; docs state costing method clearly.
-- [ ] Automated tests cover valuation math and RBAC/tenant isolation.
+- [x] Stock valuation report returns quantity × `cost_price` (and totals), warehouse/store filter where applicable.
+- [x] No FIFO/LIFO claims; docs state costing method clearly.
+- [x] Automated tests cover valuation math and RBAC/tenant isolation (`backend/tests/test_stock_valuation_r2.py`).
 
 ## D1 acceptance criteria
 

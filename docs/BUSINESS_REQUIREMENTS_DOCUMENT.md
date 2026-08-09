@@ -373,7 +373,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] View stock levels per warehouse
   - [ ] Warehouse-specific reorder levels
   - [ ] Transfer stock between warehouses
-  - [ ] Warehouse-wise stock valuation
+  - [x] Warehouse-wise stock valuation (Stage 9 R2 — qty × `cost_price`)
 
 #### BR-5.5 Low Stock Management
 - **Description:** Proactive inventory replenishment alerts.
@@ -750,7 +750,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] **Stock Balance:** Current stock per product per warehouse
   - [ ] **Low Stock:** Products below reorder level
   - [ ] **Stock Movement:** All in/out/adjustment/transfer transactions
-  - [ ] **Stock Valuation:** FIFO, LIFO, weighted average costing methods
+  - [x] **Stock Valuation:** quantity × product `cost_price` (standard cost; Stage 9 R2). FIFO/LIFO/WA deferred.
   - [ ] **Expiry Report:** Products nearing expiry (pharmacy/food)
 
 #### BR-14.3 Purchase Reports

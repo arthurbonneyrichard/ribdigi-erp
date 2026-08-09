@@ -931,7 +931,7 @@ Go to **Reports** from the main sidebar. Reports are organized by category:
 | **Stock Balance** | Current stock per product per warehouse |
 | **Low Stock** | Products below reorder level |
 | **Stock Movement** | All in/out/transfer/adjustment history |
-| **Stock Valuation** | Inventory value by costing method |
+| **Stock Valuation** | Inventory value at standard cost (qty × product cost price); warehouse/store filterable. FIFO/LIFO not used. |
 | **Expiry Report** | Products nearing expiry (pharmacy/food) |
 
 ### 12.4 Purchase Reports

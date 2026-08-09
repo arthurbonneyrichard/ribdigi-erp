@@ -1112,7 +1112,10 @@ Export type `sales_customers` is available on `/reports/export`. Product export 
 ### 14.2 Inventory Reports
 **Stock Balance:** `GET /reports/inventory/balance?warehouse_id=`  
 **Stock Movement:** `GET /reports/inventory/movements?product_id=&from_date=&to_date=`  
-**Low Stock:** `GET /reports/inventory/low-stock`
+**Low Stock:** `GET /reports/inventory/low-stock`  
+**Stock Valuation (Stage 9 R2):** `GET /reports/inventory/valuation?warehouse_id=&store_id=`  
+
+Valuation uses **standard cost** only: `value = quantity × product.cost_price`. Response includes `costing_method`, `costing_method_note`, line items, `by_warehouse` totals, and overall `total_value`. FIFO/LIFO/weighted average are not implemented. Export type: `inventory_valuation`. Requires `reports:read`.
 
 ### 14.3 Purchase Reports
 **Purchase Summary:** `GET /reports/purchases/summary?from_date=&to_date=`  

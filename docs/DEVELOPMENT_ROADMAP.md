@@ -571,6 +571,7 @@ Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven 
 | `/reports/sales/monthly` | GET | Monthly sales report |
 | `/reports/sales/products` | GET | Product sales report |
 | `/reports/inventory/balance` | GET | Stock balance report |
+| `/reports/inventory/valuation` | GET | Stock valuation (Stage 9 R2 — standard cost) |
 | `/reports/inventory/movements` | GET | Stock movement report |
 | `/reports/purchases/summary` | GET | Purchase summary |
 | `/reports/purchases/suppliers` | GET | Supplier purchase report |
