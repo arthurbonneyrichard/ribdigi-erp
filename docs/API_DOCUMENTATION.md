@@ -1019,13 +1019,21 @@ Liquid (cash/bank) movements classified as `operating` / `investing` / `financin
 **List:** `GET /stores/transfers`  
 **Create:** `POST /stores/transfers`  
 **Get:** `GET /stores/transfers/{transfer_id}`  
-**Update Status:** `PATCH /stores/transfers/{transfer_id}/status`
+**Submit:** `POST /stores/transfers/{transfer_id}/submit`  
+**Ship:** `POST /stores/transfers/{transfer_id}/ship`  
+**Receive:** `POST /stores/transfers/{transfer_id}/receive`  
+**Cancel:** `POST /stores/transfers/{transfer_id}/cancel`
+
+Status flow: `draft` → `requested` → `in_transit` → `received` (or `cancelled`).
+
+**Dual-manager approval (Stage 4 T1 / BR-13.2):** When the source store has `manager_id`, only that user may ship (`403 TRANSFER_SHIP_FORBIDDEN` otherwise). When the destination store has `manager_id`, only that user may receive (`403 TRANSFER_RECEIVE_FORBIDDEN`). `company_admin` / `super_admin` may override either action; override writes audit action `transfer_manager_override`. Warehouse-only transfers (null store ids) skip this gate. Serialized transfers include `from_store_manager_id` / `to_store_manager_id`.
 
 **Create Transfer:**
 ```json
 {
   "from_store_id": "st_001",
   "to_store_id": "st_002",
+  "submit": true,
   "items": [
     {
       "product_id": "prod_001",

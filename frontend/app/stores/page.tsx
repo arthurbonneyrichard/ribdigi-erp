@@ -28,9 +28,13 @@ type Transfer = {
   transfer_number: string;
   from_store_id: string;
   to_store_id: string;
+  from_store_manager_id?: string | null;
+  to_store_manager_id?: string | null;
   status: string;
   items: { product_id: string; quantity: number }[];
 };
+
+type Me = { id: string; role?: string };
 
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const WEEKDAY_LABELS: Record<(typeof WEEKDAYS)[number], string> = {
@@ -121,9 +125,10 @@ export default function Page() {
   const [editWhActive, setEditWhActive] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [me, setMe] = useState<Me | null>(null);
 
   async function refresh() {
-    const [s, p, t, settings, b, u, w] = await Promise.all([
+    const [s, p, t, settings, b, u, w, meRes] = await Promise.all([
       api('/stores'),
       api('/products'),
       api('/stores/transfers'),
@@ -131,6 +136,7 @@ export default function Page() {
       api('/branches').catch(() => ({ data: [] })),
       api('/users').catch(() => ({ data: [] })),
       api('/warehouses').catch(() => ({ data: [] })),
+      api('/me').catch(() => ({ data: null })),
     ]);
     setStores(s.data || []);
     setProducts(p.data || []);
@@ -138,6 +144,7 @@ export default function Page() {
     setBranches(b.data || []);
     setUsers(u.data || []);
     setWarehouses(w.data || []);
+    setMe(meRes.data || null);
     setFefoStrict(!!settings.data?.fefo_strict_warehouse);
     if (!fromStore && s.data?.length) setFromStore(s.data[0].id);
     if (!toStore && s.data?.length > 1) setToStore(s.data[1].id);
@@ -315,6 +322,16 @@ export default function Page() {
   }
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name || id;
+
+  const isAdminOverride = me?.role === 'company_admin' || me?.role === 'super_admin';
+  const canShip = (t: Transfer) => {
+    if (!t.from_store_manager_id) return true;
+    return isAdminOverride || me?.id === t.from_store_manager_id;
+  };
+  const canReceive = (t: Transfer) => {
+    if (!t.to_store_manager_id) return true;
+    return isAdminOverride || me?.id === t.to_store_manager_id;
+  };
 
   return (
     <Shell>
@@ -861,15 +878,25 @@ export default function Page() {
               <td>{storeName(t.to_store_id)}</td>
               <td>{t.status}</td>
               <td>
-                {(t.status === 'draft' || t.status === 'requested') && (
+                {(t.status === 'draft' || t.status === 'requested') && canShip(t) && (
                   <button onClick={() => act(t.id, 'ship')} style={{ marginRight: 6 }}>
                     Ship
                   </button>
                 )}
-                {t.status === 'in_transit' && (
+                {(t.status === 'draft' || t.status === 'requested') && !canShip(t) && (
+                  <span className="muted" style={{ marginRight: 6 }}>
+                    Awaiting source manager
+                  </span>
+                )}
+                {t.status === 'in_transit' && canReceive(t) && (
                   <button onClick={() => act(t.id, 'receive')} style={{ marginRight: 6 }}>
                     Receive
                   </button>
+                )}
+                {t.status === 'in_transit' && !canReceive(t) && (
+                  <span className="muted" style={{ marginRight: 6 }}>
+                    Awaiting destination manager
+                  </span>
                 )}
                 {['draft', 'requested', 'in_transit'].includes(t.status) && (
                   <button onClick={() => act(t.id, 'cancel')}>Cancel</button>

@@ -392,6 +392,28 @@ async def list_transfer_items(
 
 async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dict:
     items = await list_transfer_items(db, transfer.tenant_id, transfer.id)
+    from_manager_id = None
+    to_manager_id = None
+    if transfer.from_store_id:
+        from_store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.id == transfer.from_store_id,
+                    m.Store.tenant_id == transfer.tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        from_manager_id = getattr(from_store, "manager_id", None) if from_store else None
+    if transfer.to_store_id:
+        to_store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.id == transfer.to_store_id,
+                    m.Store.tenant_id == transfer.tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        to_manager_id = getattr(to_store, "manager_id", None) if to_store else None
     return {
         "id": transfer.id,
         "transfer_number": transfer.transfer_number,
@@ -399,9 +421,13 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
         "to_store_id": transfer.to_store_id,
         "from_warehouse_id": transfer.from_warehouse_id,
         "to_warehouse_id": transfer.to_warehouse_id,
+        "from_store_manager_id": from_manager_id,
+        "to_store_manager_id": to_manager_id,
         "status": transfer.status,
         "notes": transfer.notes,
         "created_by": transfer.created_by,
+        "shipped_by": transfer.shipped_by,
+        "received_by": transfer.received_by,
         "shipped_at": transfer.shipped_at,
         "received_at": transfer.received_at,
         "created_at": transfer.created_at,
@@ -530,12 +556,92 @@ async def submit_transfer(db: AsyncSession, *, tenant_id: str, transfer_id: str)
     return transfer
 
 
+async def assert_inter_store_manager_action(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    role: str,
+    transfer: m.StockTransfer,
+    action: str,
+) -> None:
+    """BR-13.2: ship = source manager; receive = destination manager.
+
+    Warehouse-only transfers (null store id for the action side) skip this gate.
+    When a store has no manager assigned, any ``stores``/inventory write may act.
+    When a manager is assigned, only that user — or company_admin/super_admin with
+    audit ``transfer_manager_override`` — may act.
+    """
+    if action not in {"ship", "receive"}:
+        raise ValueError(f"Unsupported transfer action: {action}")
+
+    store_id = transfer.from_store_id if action == "ship" else transfer.to_store_id
+    if not store_id:
+        return
+
+    store = await get_store(db, tenant_id, store_id)
+    manager_id = getattr(store, "manager_id", None)
+    if not manager_id:
+        return
+    if user_id == manager_id:
+        return
+
+    if role in {"company_admin", "super_admin"}:
+        from app import audit as audit_svc
+
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="transfer_manager_override",
+            entity="stock_transfer",
+            entity_id=transfer.id,
+            module="stores",
+            details={
+                "transfer_action": action,
+                "store_id": store_id,
+                "store_code": store.code,
+                "expected_manager_id": manager_id,
+                "transfer_number": transfer.transfer_number,
+            },
+        )
+        return
+
+    code = "TRANSFER_SHIP_FORBIDDEN" if action == "ship" else "TRANSFER_RECEIVE_FORBIDDEN"
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": code,
+            "message": (
+                "Only the source store manager may ship this transfer"
+                if action == "ship"
+                else "Only the destination store manager may receive this transfer"
+            ),
+            "store_id": store_id,
+            "manager_id": manager_id,
+        },
+    )
+
+
 async def ship_transfer(
-    db: AsyncSession, *, tenant_id: str, user_id: str, transfer_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    transfer_id: str,
+    role: str = "company_admin",
 ) -> m.StockTransfer:
     transfer = await get_transfer(db, tenant_id, transfer_id)
     if transfer.status not in TRANSFER_SHIPPABLE:
         raise HTTPException(status_code=409, detail=f"Cannot ship transfer in status {transfer.status}")
+    await assert_inter_store_manager_action(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        role=role,
+        transfer=transfer,
+        action="ship",
+    )
     items = await list_transfer_items(db, tenant_id, transfer_id)
     for item in items:
         await allocate_unlocated_stock(
@@ -589,11 +695,24 @@ async def ship_transfer(
 
 
 async def receive_transfer(
-    db: AsyncSession, *, tenant_id: str, user_id: str, transfer_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    transfer_id: str,
+    role: str = "company_admin",
 ) -> m.StockTransfer:
     transfer = await get_transfer(db, tenant_id, transfer_id)
     if transfer.status not in TRANSFER_RECEIVABLE:
         raise HTTPException(status_code=409, detail=f"Cannot receive transfer in status {transfer.status}")
+    await assert_inter_store_manager_action(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        role=role,
+        transfer=transfer,
+        action="receive",
+    )
     items = await list_transfer_items(db, tenant_id, transfer_id)
     for item in items:
         qty = float(item.shipped_qty or item.quantity)

@@ -9127,7 +9127,11 @@ async def ship_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.ship_transfer(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        transfer_id=transfer_id,
+        role=claims.get("role") or "",
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer shipped")
@@ -9140,7 +9144,11 @@ async def receive_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.receive_transfer(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        transfer_id=transfer_id,
+        role=claims.get("role") or "",
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer received")
@@ -9329,7 +9337,11 @@ async def ship_inventory_stock_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.ship_transfer(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        transfer_id=transfer_id,
+        role=claims.get("role") or "",
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer shipped")
@@ -9342,7 +9354,11 @@ async def receive_inventory_stock_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.receive_transfer(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        transfer_id=transfer_id,
+        role=claims.get("role") or "",
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer received")
