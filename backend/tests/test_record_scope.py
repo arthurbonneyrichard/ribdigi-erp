@@ -5,6 +5,8 @@ from __future__ import annotations
 import pyotp
 import pytest
 
+from app import models as m
+from app import purchasing as purchasing_svc
 from app import sales as sales_svc
 from app import sales_docs as sales_docs_svc
 from app.expenses import create_expense, ensure_default_categories
@@ -198,3 +200,96 @@ async def test_sales_docs_own_scope_hides_others_records(client, db_session):
     assert (await ac.get(f"/api/v1/sales/quotations/{foreign_quote.id}", headers=admin2)).status_code == 200
     assert (await ac.get(f"/api/v1/sales/orders/{foreign_order.id}", headers=admin2)).status_code == 200
     assert (await ac.get(f"/api/v1/sales/returns/{foreign_return.id}", headers=admin2)).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_purchasing_docs_own_scope_hides_others_records(client, db_session):
+    ac, seed = client
+    admin = await _admin_headers(ac, seed)
+
+    supplier = m.Party(
+        tenant_id=seed["t1"].id,
+        kind="supplier",
+        name="Scope Supplier",
+        status="active",
+    )
+    db_session.add(supplier)
+    await db_session.flush()
+
+    foreign_pr = await purchasing_svc.create_purchase_request(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        supplier_id=supplier.id,
+        items=[{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 4}],
+    )
+    foreign_po = await purchasing_svc.create_purchase_order(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        supplier_id=supplier.id,
+        items=[{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 4}],
+    )
+    foreign_inv = await purchasing_svc.create_purchase_invoice(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        supplier_id=supplier.id,
+        items=[{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 4}],
+    )
+    await db_session.commit()
+
+    patched = await ac.patch(
+        f"/api/v1/users/{seed['mgr1'].id}",
+        headers=admin,
+        json={"record_scope": "own"},
+    )
+    assert patched.status_code == 200, patched.text
+    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    assert (await ac.get(f"/api/v1/purchasing/requests/{foreign_pr.id}", headers=mgr)).status_code == 404
+    assert (await ac.get(f"/api/v1/purchasing/orders/{foreign_po.id}", headers=mgr)).status_code == 404
+    assert (await ac.get(f"/api/v1/purchasing/invoices/{foreign_inv.id}", headers=mgr)).status_code == 404
+    assert (await ac.post(f"/api/v1/purchasing/orders/{foreign_po.id}/send", headers=mgr)).status_code == 404
+    assert (await ac.post(f"/api/v1/purchasing/requests/{foreign_pr.id}/submit", headers=mgr)).status_code == 404
+
+    pr_list = await ac.get("/api/v1/purchasing/requests", headers=mgr)
+    assert pr_list.status_code == 200
+    assert foreign_pr.id not in {row["id"] for row in pr_list.json()["data"]}
+    po_list = await ac.get("/api/v1/purchasing/orders", headers=mgr)
+    assert po_list.status_code == 200
+    assert foreign_po.id not in {row["id"] for row in po_list.json()["data"]}
+    inv_list = await ac.get("/api/v1/purchasing/invoices", headers=mgr)
+    assert inv_list.status_code == 200
+    assert foreign_inv.id not in {row["id"] for row in inv_list.json()["data"]}
+
+    # Approvals intentionally bypass own-scope (creator is admin1, not mgr)
+    await purchasing_svc.submit_purchase_request(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        request_id=foreign_pr.id,
+    )
+    await db_session.commit()
+    approved = await ac.post(
+        f"/api/v1/purchasing/requests/{foreign_pr.id}/approve",
+        headers=mgr,
+    )
+    assert approved.status_code == 200, approved.text
+    assert approved.json()["data"]["status"] == "approved"
+
+    mine_po = await ac.post(
+        "/api/v1/purchasing/orders",
+        headers=mgr,
+        json={
+            "supplier_id": supplier.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
+        },
+    )
+    assert mine_po.status_code == 200, mine_po.text
+    mine_id = mine_po.json()["data"]["id"]
+    assert (await ac.get(f"/api/v1/purchasing/orders/{mine_id}", headers=mgr)).status_code == 200
+
+    admin2 = await _admin_headers(ac, seed)
+    assert (await ac.get(f"/api/v1/purchasing/orders/{foreign_po.id}", headers=admin2)).status_code == 200
+    assert (await ac.get(f"/api/v1/purchasing/requests/{foreign_pr.id}", headers=admin2)).status_code == 200

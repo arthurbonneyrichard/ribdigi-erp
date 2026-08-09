@@ -3506,13 +3506,13 @@ async def list_purchase_requests(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.PurchaseRequest)
-            .where(m.PurchaseRequest.tenant_id == claims["tenant_id"])
-            .order_by(m.PurchaseRequest.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.PurchaseRequest)
+        .where(m.PurchaseRequest.tenant_id == claims["tenant_id"])
+        .order_by(m.PurchaseRequest.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.PurchaseRequest, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_pr(db, pr) for pr in rows])
 
 
@@ -3573,6 +3573,7 @@ async def get_purchase_request(
     db: AsyncSession = Depends(get_db),
 ):
     pr = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
+    assert_record_access(claims, pr.created_by)
     return env(await purchasing_svc.serialize_pr(db, pr))
 
 
@@ -3582,6 +3583,8 @@ async def submit_purchase_request(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
+    assert_record_access(claims, existing.created_by)
     pr = await purchasing_svc.submit_purchase_request(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
@@ -3645,6 +3648,8 @@ async def cancel_purchase_request(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
+    assert_record_access(claims, existing.created_by)
     pr = await purchasing_svc.cancel_purchase_request(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
@@ -3658,6 +3663,8 @@ async def convert_purchase_request(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
+    assert_record_access(claims, existing.created_by)
     pr, po = await purchasing_svc.convert_purchase_request_to_po(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
@@ -3676,13 +3683,13 @@ async def list_purchase_orders(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.PurchaseOrder)
-            .where(m.PurchaseOrder.tenant_id == claims["tenant_id"])
-            .order_by(m.PurchaseOrder.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.PurchaseOrder)
+        .where(m.PurchaseOrder.tenant_id == claims["tenant_id"])
+        .order_by(m.PurchaseOrder.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.PurchaseOrder, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_po(db, po) for po in rows])
 
 
@@ -3712,6 +3719,7 @@ async def get_purchase_order(
     db: AsyncSession = Depends(get_db),
 ):
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, po.created_by)
     return env(await purchasing_svc.serialize_po(db, po))
 
 
@@ -3722,6 +3730,8 @@ async def patch_purchase_order(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, existing.created_by)
     data = payload.model_dump(exclude_unset=True)
     po = await purchasing_svc.update_purchase_order(
         db,
@@ -3745,6 +3755,8 @@ async def amend_purchase_order(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, existing.created_by)
     data = payload.model_dump(exclude_unset=True)
     po = await purchasing_svc.amend_purchase_order(
         db,
@@ -3766,7 +3778,8 @@ async def list_purchase_order_amendments(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, po.created_by)
     rows = await purchasing_svc.list_po_amendments(db, claims["tenant_id"], po_id)
     return env([purchasing_svc.serialize_po_amendment(r) for r in rows])
 
@@ -3779,6 +3792,8 @@ async def send_purchase_order(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, existing.created_by)
     po, delivery = await purchasing_svc.send_purchase_order(
         db,
         tenant_id=claims["tenant_id"],
@@ -3806,6 +3821,7 @@ async def print_purchase_order(
     from app import tenants as tenants_svc
 
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, po.created_by)
     supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], po.supplier_id)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     data = await purchasing_svc.serialize_po(db, po)
@@ -3823,6 +3839,8 @@ async def cancel_purchase_order(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, existing.created_by)
     po = await purchasing_svc.cancel_purchase_order(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id
     )
@@ -3835,13 +3853,13 @@ async def list_grns(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.GoodsReceipt)
-            .where(m.GoodsReceipt.tenant_id == claims["tenant_id"])
-            .order_by(m.GoodsReceipt.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.GoodsReceipt)
+        .where(m.GoodsReceipt.tenant_id == claims["tenant_id"])
+        .order_by(m.GoodsReceipt.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.GoodsReceipt, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_grn(db, g) for g in rows])
 
 
@@ -3851,6 +3869,7 @@ async def create_grn(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    # Receiving may be done by warehouse staff who did not create the PO; do not gate on PO creator.
     grn = await purchasing_svc.create_grn(
         db,
         tenant_id=claims["tenant_id"],
@@ -3871,6 +3890,7 @@ async def get_grn(
     db: AsyncSession = Depends(get_db),
 ):
     grn = await purchasing_svc.get_grn(db, claims["tenant_id"], grn_id)
+    assert_record_access(claims, grn.created_by)
     return env(await purchasing_svc.serialize_grn(db, grn))
 
 
@@ -3879,13 +3899,13 @@ async def list_purchase_returns(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.PurchaseReturn)
-            .where(m.PurchaseReturn.tenant_id == claims["tenant_id"])
-            .order_by(m.PurchaseReturn.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.PurchaseReturn)
+        .where(m.PurchaseReturn.tenant_id == claims["tenant_id"])
+        .order_by(m.PurchaseReturn.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.PurchaseReturn, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_return(db, r) for r in rows])
 
 
@@ -3915,6 +3935,7 @@ async def get_purchase_return(
     db: AsyncSession = Depends(get_db),
 ):
     ret = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, ret.created_by)
     return env(await purchasing_svc.serialize_purchase_return(db, ret))
 
 
@@ -3924,6 +3945,8 @@ async def post_purchase_return(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, existing.created_by)
     ret = await purchasing_svc.post_purchase_return(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], return_id=return_id
     )
@@ -3939,13 +3962,13 @@ async def list_purchase_invoices(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.PurchaseInvoice)
-            .where(m.PurchaseInvoice.tenant_id == claims["tenant_id"])
-            .order_by(m.PurchaseInvoice.created_at.desc())
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.PurchaseInvoice)
+        .where(m.PurchaseInvoice.tenant_id == claims["tenant_id"])
+        .order_by(m.PurchaseInvoice.created_at.desc())
+    )
+    stmt = apply_created_by_scope(stmt, m.PurchaseInvoice, claims)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_invoice(db, r) for r in rows])
 
 
@@ -3982,6 +4005,7 @@ async def get_purchase_invoice(
     db: AsyncSession = Depends(get_db),
 ):
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, inv.created_by)
     return env(await purchasing_svc.serialize_purchase_invoice(db, inv))
 
 
@@ -3994,6 +4018,8 @@ async def patch_purchase_invoice(
 ):
     from app import purchase_ocr as purchase_ocr_svc
 
+    existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
     inv = await purchase_ocr_svc.update_purchase_invoice_draft(
         db,
         tenant_id=claims["tenant_id"],
@@ -4025,6 +4051,8 @@ async def purchase_invoice_ocr_suggest(
 ):
     from app import purchase_ocr as purchase_ocr_svc
 
+    existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
     result = await purchase_ocr_svc.suggest_for_purchase_invoice(
         db, tenant_id=claims["tenant_id"], invoice_id=invoice_id
     )
@@ -4037,6 +4065,8 @@ async def approve_purchase_invoice(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
     inv = await purchasing_svc.approve_purchase_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
@@ -4050,6 +4080,8 @@ async def cancel_purchase_invoice(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
     inv = await purchasing_svc.cancel_purchase_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
@@ -4065,6 +4097,7 @@ async def upload_purchase_invoice_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, inv.created_by)
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="purchase_invoices",
@@ -4103,6 +4136,7 @@ async def download_purchase_invoice_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, inv.created_by)
     if not inv.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     # External URLs (legacy client-supplied) are not served from local media
@@ -4123,6 +4157,7 @@ async def delete_purchase_invoice_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, inv.created_by)
     if not inv.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     storage_svc.delete_key(inv.attachment_url, tenant_id=claims["tenant_id"])
