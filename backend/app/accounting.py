@@ -178,6 +178,168 @@ async def ensure_default_accounts(db: AsyncSession, tenant_id: str) -> None:
     await db.flush()
 
 
+def _infer_liquid_move_kind(from_acct: m.Account, to_acct: m.Account) -> str:
+    if from_acct.is_cash_account and to_acct.is_bank_account:
+        return "deposit"
+    if from_acct.is_bank_account and to_acct.is_cash_account:
+        return "withdrawal"
+    return "transfer"
+
+
+async def create_liquid_account(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    kind: str,
+    code: str,
+    name: str,
+    bank_name: str | None = None,
+    account_number: str | None = None,
+    bank_branch: str | None = None,
+) -> m.Account:
+    await ensure_default_accounts(db, tenant_id)
+    kind_norm = (kind or "").strip().lower()
+    if kind_norm not in {"cash", "bank"}:
+        raise HTTPException(status_code=400, detail="kind must be cash or bank")
+    code_norm = (code or "").strip()
+    name_norm = (name or "").strip()
+    if not code_norm or not name_norm:
+        raise HTTPException(status_code=400, detail="code and name are required")
+
+    existing = (
+        await db.execute(
+            select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code_norm)
+        )
+    ).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
+
+    is_cash = kind_norm == "cash"
+    is_bank = kind_norm == "bank"
+    if is_bank and not (bank_name or "").strip():
+        raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
+
+    row = m.Account(
+        tenant_id=tenant_id,
+        code=code_norm,
+        name=name_norm,
+        account_type="asset",
+        balance=0,
+        is_cash_account=is_cash,
+        is_bank_account=is_bank,
+        bank_name=((bank_name or "").strip() or None) if is_bank else None,
+        account_number=((account_number or "").strip() or None) if is_bank else None,
+        bank_branch=((bank_branch or "").strip() or None) if is_bank else None,
+    )
+    db.add(row)
+    await db.flush()
+    return row
+
+
+async def update_liquid_account(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    account_id: str,
+    name: str | None = None,
+    bank_name: str | None = None,
+    account_number: str | None = None,
+    bank_branch: str | None = None,
+    clear_bank_details: bool | None = None,
+) -> m.Account:
+    from app.bank_recon import get_liquid_account
+
+    row = await get_liquid_account(db, tenant_id, account_id)
+    if name is not None:
+        name_norm = name.strip()
+        if not name_norm:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        row.name = name_norm
+    if clear_bank_details:
+        row.bank_name = None
+        row.account_number = None
+        row.bank_branch = None
+    if bank_name is not None:
+        row.bank_name = bank_name.strip() or None
+    if account_number is not None:
+        row.account_number = account_number.strip() or None
+    if bank_branch is not None:
+        row.bank_branch = bank_branch.strip() or None
+    if row.is_bank_account and not (row.bank_name or "").strip():
+        raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
+    await db.flush()
+    return row
+
+
+async def transfer_liquid_funds(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    from_account_id: str,
+    to_account_id: str,
+    amount: float,
+    description: str | None = None,
+    reference: str | None = None,
+    kind: str | None = None,
+) -> m.JournalEntry:
+    """Move funds between cash/bank accounts (deposit, withdrawal, or transfer)."""
+    from app.bank_recon import get_liquid_account
+
+    await ensure_default_accounts(db, tenant_id)
+    amt = round(float(amount), 2)
+    if amt <= 0:
+        raise HTTPException(status_code=400, detail="amount must be positive")
+    if from_account_id == to_account_id:
+        raise HTTPException(status_code=400, detail="from_account_id and to_account_id must differ")
+
+    from_acct = await get_liquid_account(db, tenant_id, from_account_id)
+    to_acct = await get_liquid_account(db, tenant_id, to_account_id)
+
+    inferred = _infer_liquid_move_kind(from_acct, to_acct)
+    kind_norm = (kind or inferred).strip().lower()
+    if kind_norm not in {"deposit", "withdrawal", "transfer"}:
+        raise HTTPException(
+            status_code=400,
+            detail="kind must be deposit, withdrawal, or transfer",
+        )
+    if kind_norm == "deposit" and not (from_acct.is_cash_account and to_acct.is_bank_account):
+        raise HTTPException(status_code=400, detail="deposit requires cash → bank")
+    if kind_norm == "withdrawal" and not (from_acct.is_bank_account and to_acct.is_cash_account):
+        raise HTTPException(status_code=400, detail="withdrawal requires bank → cash")
+
+    default_desc = {
+        "deposit": f"Deposit {from_acct.code} → {to_acct.code}",
+        "withdrawal": f"Withdrawal {from_acct.code} → {to_acct.code}",
+        "transfer": f"Transfer {from_acct.code} → {to_acct.code}",
+    }[kind_norm]
+    desc = (description or "").strip() or default_desc
+
+    return await post_journal_entry(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=desc,
+        reference=reference,
+        source_type=f"liquid_{kind_norm}",
+        source_id=None,
+        lines=[
+            {
+                "account_id": to_acct.id,
+                "debit": amt,
+                "credit": 0,
+                "description": desc,
+            },
+            {
+                "account_id": from_acct.id,
+                "debit": 0,
+                "credit": amt,
+                "description": desc,
+            },
+        ],
+    )
+
+
 def _signed_balance_delta(account_type: str, debit: float, credit: float) -> float:
     """Update running balance: assets/expenses increase with debit; liability/income/equity with credit."""
     if account_type in {"asset", "expense"}:

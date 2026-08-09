@@ -538,6 +538,7 @@ class Account(Base):
     is_bank_account: Mapped[bool] = mapped_column(Boolean, default=False)
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     account_number: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    bank_branch: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
 
 class BankAccountConnection(Base):

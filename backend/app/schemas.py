@@ -925,6 +925,39 @@ class JournalCreate(BaseModel):
     lines: list[JournalLineCreate] = Field(min_length=2)
 
 
+class LiquidAccountCreate(BaseModel):
+    """Create a cash or bank GL account (BR-10.3)."""
+
+    kind: str = Field(description="cash or bank")
+    code: str = Field(min_length=1, max_length=30)
+    name: str = Field(min_length=1, max_length=150)
+    bank_name: str | None = None
+    account_number: str | None = None
+    bank_branch: str | None = None
+
+
+class LiquidAccountUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=150)
+    bank_name: str | None = None
+    account_number: str | None = None
+    bank_branch: str | None = None
+    clear_bank_details: bool | None = None
+
+
+class LiquidTransferCreate(BaseModel):
+    """Deposit / withdrawal / transfer between liquid accounts."""
+
+    from_account_id: str
+    to_account_id: str
+    amount: float = Field(gt=0)
+    description: str | None = None
+    reference: str | None = None
+    kind: str | None = Field(
+        default=None,
+        description="Optional deposit|withdrawal|transfer; inferred from account types when omitted",
+    )
+
+
 class PosSessionOpen(BaseModel):
     store_id: str | None = None
     opening_cash: float = Field(default=0, ge=0)

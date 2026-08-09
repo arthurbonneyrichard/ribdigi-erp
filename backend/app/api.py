@@ -71,6 +71,9 @@ from app.schemas import (
     ExpenseUpdate,
     GrnCreate,
     JournalCreate,
+    LiquidAccountCreate,
+    LiquidAccountUpdate,
+    LiquidTransferCreate,
     Login,
     NotificationPreferencesUpdate,
     CustomerContactCreate,
@@ -6229,6 +6232,91 @@ async def liquid_accounts(
     await db.commit()
     rows = await bank_recon_svc.list_liquid_accounts(db, claims["tenant_id"])
     return env([bank_recon_svc.serialize_account(r) for r in rows])
+
+
+@api.post("/accounting/liquid-accounts")
+async def create_liquid_account(
+    payload: LiquidAccountCreate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+    from app import bank_recon as bank_recon_svc
+    from app import audit as audit_svc
+
+    row = await accounting_svc.create_liquid_account(
+        db,
+        tenant_id=claims["tenant_id"],
+        kind=payload.kind,
+        code=payload.code,
+        name=payload.name,
+        bank_name=payload.bank_name,
+        account_number=payload.account_number,
+        bank_branch=payload.bank_branch,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="accounting",
+        action="liquid_account_create",
+        entity="account",
+        entity_id=row.id,
+        details={
+            "code": row.code,
+            "kind": "cash" if row.is_cash_account else "bank",
+            "name": row.name,
+        },
+    )
+    await db.commit()
+    return env(bank_recon_svc.serialize_account(row), "Liquid account created")
+
+
+@api.patch("/accounting/liquid-accounts/{account_id}")
+async def update_liquid_account(
+    account_id: str,
+    payload: LiquidAccountUpdate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+    from app import bank_recon as bank_recon_svc
+
+    row = await accounting_svc.update_liquid_account(
+        db,
+        tenant_id=claims["tenant_id"],
+        account_id=account_id,
+        name=payload.name,
+        bank_name=payload.bank_name,
+        account_number=payload.account_number,
+        bank_branch=payload.bank_branch,
+        clear_bank_details=payload.clear_bank_details,
+    )
+    await db.commit()
+    return env(bank_recon_svc.serialize_account(row), "Liquid account updated")
+
+
+@api.post("/accounting/liquid-transfers")
+async def create_liquid_transfer(
+    payload: LiquidTransferCreate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    entry = await accounting_svc.transfer_liquid_funds(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        from_account_id=payload.from_account_id,
+        to_account_id=payload.to_account_id,
+        amount=payload.amount,
+        description=payload.description,
+        reference=payload.reference,
+        kind=payload.kind,
+    )
+    await db.commit()
+    return env(await accounting_svc.serialize_journal(db, entry), "Liquid transfer posted")
 
 
 @api.get("/settings/bank-feed")

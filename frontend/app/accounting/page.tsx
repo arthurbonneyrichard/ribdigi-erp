@@ -35,6 +35,16 @@ export default function Page() {
   const [connProvider, setConnProvider] = useState('mock');
   const [connFeedUrl, setConnFeedUrl] = useState('');
   const [connExtId, setConnExtId] = useState('demo-acct-1');
+  const [liqKind, setLiqKind] = useState<'cash' | 'bank'>('cash');
+  const [liqCode, setLiqCode] = useState('1005');
+  const [liqName, setLiqName] = useState('Petty Cash');
+  const [liqBankName, setLiqBankName] = useState('');
+  const [liqAccountNumber, setLiqAccountNumber] = useState('');
+  const [liqBankBranch, setLiqBankBranch] = useState('');
+  const [xferFrom, setXferFrom] = useState('');
+  const [xferTo, setXferTo] = useState('');
+  const [xferAmount, setXferAmount] = useState('50');
+  const [xferDesc, setXferDesc] = useState('');
 
   async function refresh() {
     const [a, j, t, p, liq, stmts, chq, conns] = await Promise.all([
@@ -56,6 +66,8 @@ export default function Page() {
     setCheques(chq.data || []);
     setConnections(conns.data || []);
     if (!reconAccountId && liq.data?.length) setReconAccountId(liq.data[0].id);
+    if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
+    if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
   }
 
   useEffect(() => {
@@ -78,6 +90,49 @@ export default function Page() {
         }),
       });
       setMessage('Journal posted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createLiquidAccount() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/accounting/liquid-accounts', {
+        method: 'POST',
+        body: JSON.stringify({
+          kind: liqKind,
+          code: liqCode,
+          name: liqName,
+          bank_name: liqKind === 'bank' ? liqBankName || undefined : undefined,
+          account_number: liqKind === 'bank' ? liqAccountNumber || undefined : undefined,
+          bank_branch: liqKind === 'bank' ? liqBankBranch || undefined : undefined,
+        }),
+      });
+      setMessage(`${liqKind === 'cash' ? 'Cash' : 'Bank'} account created`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function postLiquidTransfer() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/accounting/liquid-transfers', {
+        method: 'POST',
+        body: JSON.stringify({
+          from_account_id: xferFrom,
+          to_account_id: xferTo,
+          amount: Number(xferAmount),
+          description: xferDesc || undefined,
+        }),
+      });
+      setMessage(`Posted ${r.data?.source_type || 'liquid transfer'}`);
+      setXferDesc('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -364,6 +419,104 @@ export default function Page() {
 
       {tab === 'ledger' && (
         <>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3>Cash &amp; bank accounts</h3>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Create petty cash / bank accounts; deposit (cash→bank), withdrawal (bank→cash), or
+              transfer between liquid accounts.
+            </p>
+            <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
+              <select
+                value={liqKind}
+                onChange={(e) => setLiqKind(e.target.value as 'cash' | 'bank')}
+              >
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+              </select>
+              <input value={liqCode} onChange={(e) => setLiqCode(e.target.value)} placeholder="Code" />
+              <input value={liqName} onChange={(e) => setLiqName(e.target.value)} placeholder="Name" />
+              {liqKind === 'bank' && (
+                <>
+                  <input
+                    value={liqBankName}
+                    onChange={(e) => setLiqBankName(e.target.value)}
+                    placeholder="Bank name"
+                  />
+                  <input
+                    value={liqAccountNumber}
+                    onChange={(e) => setLiqAccountNumber(e.target.value)}
+                    placeholder="Account number"
+                  />
+                  <input
+                    value={liqBankBranch}
+                    onChange={(e) => setLiqBankBranch(e.target.value)}
+                    placeholder="Branch"
+                  />
+                </>
+              )}
+              <button type="button" onClick={createLiquidAccount}>
+                Create {liqKind} account
+              </button>
+            </div>
+            <table className="table" style={{ marginBottom: 16 }}>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Kind</th>
+                  <th>Bank</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {liquid.map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.code}</td>
+                    <td>{a.name}</td>
+                    <td>{a.is_cash_account ? 'cash' : 'bank'}</td>
+                    <td>
+                      {a.is_bank_account
+                        ? [a.bank_name, a.account_number, a.bank_branch].filter(Boolean).join(' · ') ||
+                          '—'
+                        : '—'}
+                    </td>
+                    <td>{a.balance}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <h4>Deposit / withdrawal / transfer</h4>
+            <div style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+              <select value={xferFrom} onChange={(e) => setXferFrom(e.target.value)}>
+                {liquid.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    From {a.code} {a.name} ({a.balance})
+                  </option>
+                ))}
+              </select>
+              <select value={xferTo} onChange={(e) => setXferTo(e.target.value)}>
+                {liquid.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    To {a.code} {a.name} ({a.balance})
+                  </option>
+                ))}
+              </select>
+              <input
+                value={xferAmount}
+                onChange={(e) => setXferAmount(e.target.value)}
+                placeholder="Amount"
+              />
+              <input
+                value={xferDesc}
+                onChange={(e) => setXferDesc(e.target.value)}
+                placeholder="Description (optional)"
+              />
+              <button type="button" onClick={postLiquidTransfer}>
+                Post move
+              </button>
+            </div>
+          </div>
+
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Manual journal</h3>
             <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
