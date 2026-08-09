@@ -21,3 +21,7 @@ Roadmap Phase 5 features 5.1–5.18 mix already-shipped auth/audit/backup engine
 
 - Agents may implement Stage 5 plan items without reopening Stage 1–4 feature scope.
 - Stage 5 exit requires `docs/STAGE_5_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned P0 workstreams.
+
+## Amendment (2026-08-09)
+
+Stage 5 exit criteria are met and scope is frozen under [ADR-016](ADR_016_STAGE5_FREEZE.md) / `docs/STAGE_5_EXIT_CRITERIA.md`. This open ADR remains historical context for the Stage 5 track.

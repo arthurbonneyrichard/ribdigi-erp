@@ -1,6 +1,6 @@
 # Stage 5 Plan — Polish, Security & Launch Hardening
 
-**Status:** Open (ADR-015)  
+**Status:** Closed — exit met (ADR-016 freeze); plan retained for evidence  
 **Base:** Phase 5 roadmap (`docs/DEVELOPMENT_ROADMAP.md` §6) + `PRODUCTION_READINESS.md` launch gates  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 
@@ -23,7 +23,7 @@ Stage 5 here is **not** a rewrite of auth, audit, or backup. Core engines alread
 | **B1** | Logical backup restore proof + DR drill runbook | P0 | COMPLETE |
 | **H5** | Deep `/health` (+ optional Prometheus `/metrics`) | P0 | COMPLETE |
 | **L1** | Load-test baseline scripts | P0 | COMPLETE |
-| **H5x** | Stage 5 exit criteria + freeze ADR | Exit | PENDING |
+| **H5x** | Stage 5 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -85,6 +85,11 @@ Stage 5 here is **not** a rewrite of auth, audit, or backup. Core engines alread
 - [x] Automated ASGI smoke in `backend/tests/test_loadtest_baseline_l1.py`.
 - [x] Full 1000-VU production certification remains an operator staging drill (not CI).
 
+## H5x acceptance criteria
+
+- [x] `docs/STAGE_5_EXIT_CRITERIA.md` records S1–L1 COMPLETE with deferred list.
+- [x] Freeze ADR-016 accepted; Stage 5 plan marked closed.
+
 ## Sign-off
 
-Stage 5 exit will be recorded in `docs/STAGE_5_EXIT_CRITERIA.md` with a freeze ADR when P0 workstreams are complete.
+Stage 5 exit is recorded in `docs/STAGE_5_EXIT_CRITERIA.md` with freeze [ADR-016](ADR_016_STAGE5_FREEZE.md).
