@@ -16,7 +16,11 @@ def _png_bytes() -> bytes:
 
 
 @pytest.mark.asyncio
-async def test_product_gallery_upload_primary_and_delete(client, db_session):
+async def test_product_gallery_upload_primary_and_delete(client, db_session, tmp_path, monkeypatch):
+    from app import storage as storage_svc
+
+    monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
+    monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     product_id = seed["p1"].id
@@ -71,7 +75,11 @@ async def test_product_gallery_upload_primary_and_delete(client, db_session):
 
 
 @pytest.mark.asyncio
-async def test_product_gallery_max_five(client):
+async def test_product_gallery_max_five(client, tmp_path, monkeypatch):
+    from app import storage as storage_svc
+
+    monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
+    monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     product_id = seed["p1"].id
