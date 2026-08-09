@@ -36,6 +36,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("product_batches", m.ProductBatch),
     ("warehouse_stocks", m.WarehouseStock),
     ("parties", m.Party),
+    ("party_contacts", m.PartyContact),
     ("tax_rates", m.TaxRate),
     ("exchange_rates", m.ExchangeRate),
     ("accounts", m.Account),

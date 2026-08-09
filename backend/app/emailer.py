@@ -336,6 +336,25 @@ async def send_quotation_email(
     return await send_email(to=to, subject=subject, text_body=text, html_body=html)
 
 
+async def send_purchase_order_email(
+    *,
+    to: str,
+    company_name: str,
+    supplier_name: str,
+    purchase_order: dict[str, Any],
+    text_body: str,
+) -> EmailResult:
+    number = purchase_order.get("po_number") or ""
+    subject = f"Purchase Order {number} from {company_name}"
+    html = (
+        f"<p>Dear {supplier_name},</p>"
+        f"<p>Please find purchase order <strong>{number}</strong> from {company_name}.</p>"
+        f"<pre>{text_body}</pre>"
+        f"<p>Total: {_fmt_money(purchase_order.get('total_amount'))}</p>"
+    )
+    return await send_email(to=to, subject=subject, text_body=text_body, html_body=html)
+
+
 async def send_test_email(*, to: str) -> EmailResult:
     if not settings.EMAIL_ENABLED:
         raise HTTPException(status_code=400, detail="EMAIL_ENABLED is false")

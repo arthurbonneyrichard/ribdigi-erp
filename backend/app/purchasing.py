@@ -102,6 +102,8 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "due_date": po.due_date,
         "notes": po.notes,
         "purchase_request_id": po.purchase_request_id,
+        "sent_at": po.sent_at,
+        "emailed_to": po.emailed_to,
         "created_at": po.created_at,
         "items": [
             {
@@ -495,16 +497,95 @@ async def create_purchase_order(
     return po
 
 
-async def send_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: str, po_id: str) -> m.PurchaseOrder:
+def render_po_text(po_data: dict, *, supplier_name: str, company_name: str) -> str:
+    lines = [
+        f"{company_name}",
+        f"Purchase Order {po_data.get('po_number')}",
+        f"Supplier: {supplier_name}",
+        f"Status: {po_data.get('status')}",
+        "",
+        f"{'Product':<36} {'Qty':>10} {'Price':>12} {'Total':>12}",
+        "-" * 72,
+    ]
+    for item in po_data.get("items") or []:
+        lines.append(
+            f"{str(item.get('product_id')):<36} {float(item.get('quantity') or 0):>10.3f} "
+            f"{float(item.get('unit_price') or 0):>12.2f} {float(item.get('line_total') or 0):>12.2f}"
+        )
+    lines.extend(
+        [
+            "-" * 72,
+            f"Subtotal: {float(po_data.get('subtotal') or 0):.2f}",
+            f"Tax: {float(po_data.get('tax_amount') or 0):.2f}",
+            f"Total: {float(po_data.get('total_amount') or 0):.2f}",
+        ]
+    )
+    if po_data.get("notes"):
+        lines.extend(["", f"Notes: {po_data['notes']}"])
+    return "\n".join(lines)
+
+
+async def send_purchase_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    po_id: str,
+    email: bool | None = None,
+    to: str | None = None,
+) -> tuple[m.PurchaseOrder, dict | None]:
+    from app import emailer
+    from app import tenants as tenants_svc
+
     po = await get_po(db, tenant_id, po_id)
     if po.status not in PO_EDITABLE:
         raise HTTPException(status_code=409, detail=f"Cannot send PO in status {po.status}")
     items = await list_po_items(db, tenant_id, po.id)
     if not items:
         raise HTTPException(status_code=400, detail="Cannot send empty purchase order")
+    supplier = await get_supplier(db, tenant_id, po.supplier_id)
     po.status = "sent"
-    po.due_date = po.due_date or default_due_date()
+    if po.due_date is None and int(supplier.payment_terms_days or 0) > 0:
+        from datetime import timedelta
+
+        po.due_date = datetime.utcnow() + timedelta(days=int(supplier.payment_terms_days))
+    else:
+        po.due_date = po.due_date or default_due_date()
+    po.sent_at = datetime.utcnow()
     po.updated_at = datetime.utcnow()
+
+    recipient = (to or supplier.email or "").strip()
+    should_email = bool(email) if email is not None else bool(recipient)
+    delivery = None
+    if should_email:
+        if not recipient:
+            raise HTTPException(
+                status_code=400,
+                detail="Supplier has no email; pass to= or set email=false",
+            )
+        tenant = await tenants_svc.get_tenant(db, tenant_id)
+        po_data = await serialize_po(db, po)
+        result = await emailer.send_purchase_order_email(
+            to=recipient,
+            company_name=tenant.company_name if tenant else "RIBDIGI ERP",
+            supplier_name=supplier.name,
+            purchase_order=po_data,
+            text_body=render_po_text(
+                po_data,
+                supplier_name=supplier.name,
+                company_name=tenant.company_name if tenant else "RIBDIGI ERP",
+            ),
+        )
+        delivery = {
+            "to": recipient,
+            "mode": result.mode,
+            "sent": result.sent,
+            "error": result.error,
+        }
+        if not result.sent and result.mode == "smtp":
+            raise HTTPException(status_code=502, detail=f"Failed to email PO: {result.error}")
+        po.emailed_to = recipient
+
     db.add(
         m.AuditLog(
             tenant_id=tenant_id,
@@ -512,10 +593,11 @@ async def send_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: str,
             action="po_sent",
             entity="purchase_order",
             entity_id=po.id,
-            details={"po_number": po.po_number},
+            details={"po_number": po.po_number, "delivery": delivery},
         )
     )
-    return po
+    await db.flush()
+    return po, delivery
 
 
 async def cancel_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: str, po_id: str) -> m.PurchaseOrder:

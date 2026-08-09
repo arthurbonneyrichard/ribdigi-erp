@@ -44,6 +44,7 @@ from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
 from app import barcodes as barcode_svc
 from app import product_import as product_import_svc
+from app import suppliers as suppliers_svc
 from app.config import settings
 from app.schemas import (
     BrandCreate,
@@ -67,6 +68,9 @@ from app.schemas import (
     Login,
     NotificationPreferencesUpdate,
     PartyCreate,
+    SupplierContactCreate,
+    SupplierCreate,
+    SupplierUpdate,
     PasswordResetConfirm,
     PasswordResetRequest,
     PosSaleCreate,
@@ -2577,19 +2581,135 @@ async def add_customer(
 
 @api.get("/suppliers")
 async def suppliers(claims=Depends(require_permission("purchasing", "read")), db: AsyncSession = Depends(get_db)):
-    return await party_list("supplier", claims, db)
+    rows = (
+        await db.execute(
+            select(m.Party)
+            .where(m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "supplier")
+            .order_by(m.Party.name)
+        )
+    ).scalars().all()
+    out = []
+    for row in rows:
+        contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], row.id)
+        out.append(suppliers_svc.serialize_supplier(row, contacts))
+    return env(out)
 
 
 @api.post("/suppliers")
 async def add_supplier(
-    payload: PartyCreate,
+    payload: SupplierCreate,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    party = m.Party(tenant_id=claims["tenant_id"], kind="supplier", **payload.model_dump())
-    db.add(party)
+    data = payload.model_dump()
+    contacts = data.pop("contacts", None) or []
+    party = await suppliers_svc.create_supplier(
+        db,
+        tenant_id=claims["tenant_id"],
+        name=data["name"],
+        code=data.get("code"),
+        party_type=data.get("party_type"),
+        category=data.get("category"),
+        email=data.get("email"),
+        phone=data.get("phone"),
+        address=data.get("address"),
+        notes=data.get("notes"),
+        payment_terms_days=int(data.get("payment_terms_days") or 0),
+        credit_limit=float(data.get("credit_limit") or 0),
+        contacts=contacts,
+    )
     await db.commit()
-    return env({"id": party.id})
+    contacts_rows = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
+    return env(suppliers_svc.serialize_supplier(party, contacts_rows), "Supplier created")
+
+
+@api.get("/suppliers/{supplier_id}")
+async def get_supplier(
+    supplier_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    party = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
+    contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
+    return env(suppliers_svc.serialize_supplier(party, contacts))
+
+
+@api.patch("/suppliers/{supplier_id}")
+async def patch_supplier(
+    supplier_id: str,
+    payload: SupplierUpdate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    party = await suppliers_svc.update_supplier(
+        db,
+        tenant_id=claims["tenant_id"],
+        supplier_id=supplier_id,
+        fields=payload.model_dump(exclude_unset=True),
+    )
+    await db.commit()
+    contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
+    return env(suppliers_svc.serialize_supplier(party, contacts), "Supplier updated")
+
+
+@api.delete("/suppliers/{supplier_id}")
+async def delete_supplier(
+    supplier_id: str,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    party = await suppliers_svc.deactivate_supplier(
+        db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
+    )
+    await db.commit()
+    contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
+    return env(suppliers_svc.serialize_supplier(party, contacts), "Supplier deactivated")
+
+
+@api.post("/suppliers/{supplier_id}/contacts")
+async def add_supplier_contact(
+    supplier_id: str,
+    payload: SupplierContactCreate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    contact = await suppliers_svc.add_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        supplier_id=supplier_id,
+        **payload.model_dump(),
+    )
+    await db.commit()
+    return env(suppliers_svc.serialize_contact(contact), "Contact added")
+
+
+@api.delete("/suppliers/{supplier_id}/contacts/{contact_id}")
+async def delete_supplier_contact(
+    supplier_id: str,
+    contact_id: str,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    await suppliers_svc.delete_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        supplier_id=supplier_id,
+        contact_id=contact_id,
+    )
+    await db.commit()
+    return env(None, "Contact removed")
+
+
+@api.get("/suppliers/{supplier_id}/history")
+async def supplier_history(
+    supplier_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = await suppliers_svc.supplier_history(
+        db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
+    )
+    return env(data)
 
 
 async def tx_list(kind: str, claims: dict, db: AsyncSession):
@@ -3239,14 +3359,47 @@ async def get_purchase_order(
 @api.post("/purchasing/orders/{po_id}/send")
 async def send_purchase_order(
     po_id: str,
+    email: bool | None = None,
+    to: str | None = None,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    po = await purchasing_svc.send_purchase_order(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id
+    po, delivery = await purchasing_svc.send_purchase_order(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        po_id=po_id,
+        email=email,
+        to=to,
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_po(db, po), "Purchase order sent")
+    data = await purchasing_svc.serialize_po(db, po)
+    if delivery:
+        data["delivery"] = delivery
+    msg = "Purchase order sent"
+    if delivery and delivery.get("sent"):
+        msg = f"Purchase order sent and emailed to {delivery['to']}"
+    return env(data, msg)
+
+
+@api.get("/purchasing/orders/{po_id}/print")
+async def print_purchase_order(
+    po_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], po.supplier_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    data = await purchasing_svc.serialize_po(db, po)
+    text = purchasing_svc.render_po_text(
+        data,
+        supplier_name=supplier.name,
+        company_name=tenant.company_name,
+    )
+    return env({"po": data, "text": text, "supplier_name": supplier.name})
 
 
 @api.post("/purchasing/orders/{po_id}/cancel")

@@ -4,8 +4,36 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
-type Supplier = { id: string; name: string };
+type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
+type SupplierContact = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  designation?: string | null;
+  is_primary?: boolean;
+};
+type Supplier = {
+  id: string;
+  name: string;
+  code?: string | null;
+  party_type?: string | null;
+  category?: string | null;
+  status?: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  payment_terms_days?: number;
+  credit_limit?: number;
+  contacts?: SupplierContact[];
+};
+type SupplierHistory = {
+  orders: { id: string; po_number: string; status: string; total_amount: number }[];
+  invoices: { id: string; invoice_number: string; status: string; total_amount: number }[];
+  returns: { id: string; return_number: string; status: string; total_amount: number }[];
+  payments: { id: string; amount: number; payment_method: string }[];
+};
 type Product = { id: string; name: string; sku: string; cost_price: number };
 type PoItem = {
   id: string;
@@ -87,6 +115,22 @@ export default function Page() {
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
   const [supplierId, setSupplierId] = useState('');
   const [supplierName, setSupplierName] = useState('');
+  const [supplierCode, setSupplierCode] = useState('');
+  const [supplierType, setSupplierType] = useState('');
+  const [supplierCategory, setSupplierCategory] = useState('');
+  const [supplierEmail, setSupplierEmail] = useState('');
+  const [supplierPhone, setSupplierPhone] = useState('');
+  const [supplierAddress, setSupplierAddress] = useState('');
+  const [supplierNotes, setSupplierNotes] = useState('');
+  const [supplierTerms, setSupplierTerms] = useState('0');
+  const [supplierCredit, setSupplierCredit] = useState('0');
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  const [supplierHistory, setSupplierHistory] = useState<SupplierHistory | null>(null);
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactPrimary, setContactPrimary] = useState(false);
+  const [emailOnSend, setEmailOnSend] = useState(true);
   const [productId, setProductId] = useState('');
   const [qty, setQty] = useState('10');
   const [unitPrice, setUnitPrice] = useState('0');
@@ -182,17 +226,153 @@ export default function Page() {
     }
   }, [grnId, grns]);
 
+  function resetSupplierForm() {
+    setSupplierName('');
+    setSupplierCode('');
+    setSupplierType('');
+    setSupplierCategory('');
+    setSupplierEmail('');
+    setSupplierPhone('');
+    setSupplierAddress('');
+    setSupplierNotes('');
+    setSupplierTerms('0');
+    setSupplierCredit('0');
+  }
+
+  function loadSupplierForm(s: Supplier) {
+    setSelectedSupplierId(s.id);
+    setSupplierId(s.id);
+    setSupplierName(s.name || '');
+    setSupplierCode(s.code || '');
+    setSupplierType(s.party_type || '');
+    setSupplierCategory(s.category || '');
+    setSupplierEmail(s.email || '');
+    setSupplierPhone(s.phone || '');
+    setSupplierAddress(s.address || '');
+    setSupplierNotes(s.notes || '');
+    setSupplierTerms(String(s.payment_terms_days ?? 0));
+    setSupplierCredit(String(s.credit_limit ?? 0));
+  }
+
   async function createSupplier() {
     setError('');
     try {
       const r = await api('/suppliers', {
         method: 'POST',
-        body: JSON.stringify({ name: supplierName }),
+        body: JSON.stringify({
+          name: supplierName,
+          code: supplierCode || undefined,
+          party_type: supplierType || undefined,
+          category: supplierCategory || undefined,
+          email: supplierEmail || undefined,
+          phone: supplierPhone || undefined,
+          address: supplierAddress || undefined,
+          notes: supplierNotes || undefined,
+          payment_terms_days: Number(supplierTerms) || 0,
+          credit_limit: Number(supplierCredit) || 0,
+        }),
       });
       setSupplierId(r.data.id);
-      setSupplierName('');
+      setSelectedSupplierId(r.data.id);
+      resetSupplierForm();
       await refresh();
+      const detail = await api(`/suppliers/${r.data.id}`);
+      loadSupplierForm(detail.data);
       setMessage('Supplier created');
+      setTab('suppliers');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveSupplier() {
+    if (!selectedSupplierId) return;
+    setError('');
+    try {
+      const r = await api(`/suppliers/${selectedSupplierId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: supplierName,
+          code: supplierCode || null,
+          party_type: supplierType || null,
+          category: supplierCategory || null,
+          email: supplierEmail || null,
+          phone: supplierPhone || null,
+          address: supplierAddress || null,
+          notes: supplierNotes || null,
+          payment_terms_days: Number(supplierTerms) || 0,
+          credit_limit: Number(supplierCredit) || 0,
+        }),
+      });
+      loadSupplierForm(r.data);
+      await refresh();
+      setMessage('Supplier updated');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function deactivateSupplier(id: string) {
+    setError('');
+    try {
+      await api(`/suppliers/${id}`, { method: 'DELETE' });
+      if (selectedSupplierId === id) {
+        setSelectedSupplierId('');
+        resetSupplierForm();
+        setSupplierHistory(null);
+      }
+      await refresh();
+      setMessage('Supplier deactivated');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadHistory(id: string) {
+    setError('');
+    try {
+      const r = await api(`/suppliers/${id}/history`);
+      setSupplierHistory(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function addContact() {
+    if (!selectedSupplierId || !contactName.trim()) return;
+    setError('');
+    try {
+      await api(`/suppliers/${selectedSupplierId}/contacts`, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: contactName,
+          email: contactEmail || undefined,
+          phone: contactPhone || undefined,
+          is_primary: contactPrimary,
+        }),
+      });
+      setContactName('');
+      setContactEmail('');
+      setContactPhone('');
+      setContactPrimary(false);
+      const r = await api(`/suppliers/${selectedSupplierId}`);
+      loadSupplierForm(r.data);
+      await refresh();
+      setMessage('Contact added');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function removeContact(contactId: string) {
+    if (!selectedSupplierId) return;
+    setError('');
+    try {
+      await api(`/suppliers/${selectedSupplierId}/contacts/${contactId}`, { method: 'DELETE' });
+      const r = await api(`/suppliers/${selectedSupplierId}`);
+      loadSupplierForm(r.data);
+      await refresh();
+      setMessage('Contact removed');
     } catch (err: any) {
       setError(err.message);
     }
@@ -306,10 +486,33 @@ export default function Page() {
   async function sendPo(poId: string) {
     setError('');
     try {
-      const r = await api(`/purchasing/orders/${poId}/send`, { method: 'POST' });
-      setMessage(`Sent ${r.data.po_number}`);
+      const qs = emailOnSend ? '' : '?email=false';
+      const r = await api(`/purchasing/orders/${poId}/send${qs}`, { method: 'POST' });
+      const delivery = r.data?.delivery;
+      setMessage(
+        delivery?.sent
+          ? `Sent ${r.data.po_number} and emailed ${delivery.to}`
+          : `Sent ${r.data.po_number}`
+      );
       await refresh();
       setSelected(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function printPo(poId: string) {
+    setError('');
+    try {
+      const r = await api(`/purchasing/orders/${poId}/print`);
+      const text = r.data?.text || '';
+      const win = window.open('', '_blank', 'noopener,noreferrer,width=720,height=800');
+      if (win) {
+        win.document.write(`<pre style="font:14px/1.4 monospace;padding:16px">${text.replace(/</g, '&lt;')}</pre>`);
+        win.document.close();
+        win.focus();
+      }
+      setMessage(`Print view ready for ${r.data?.po?.po_number || 'PO'}`);
     } catch (err: any) {
       setError(err.message);
     }
@@ -573,9 +776,10 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {(
           [
+            ['suppliers', 'Suppliers'],
             ['requests', 'Requests'],
             ['orders', 'Orders'],
             ['grn', 'GRNs'],
@@ -589,15 +793,130 @@ export default function Page() {
         ))}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Quick add supplier</h3>
-        <div style={{ display: 'flex', gap: 8, maxWidth: 480 }}>
-          <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Supplier name" />
-          <button onClick={createSupplier} disabled={!supplierName.trim()}>
-            Add
-          </button>
+      {tab === 'suppliers' && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>{selectedSupplierId ? 'Edit supplier' : 'New supplier'}</h3>
+          <div style={{ display: 'grid', gap: 8, maxWidth: 560 }}>
+            <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Name *" />
+            <input value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} placeholder="Code" />
+            <select value={supplierType} onChange={(e) => setSupplierType(e.target.value)}>
+              <option value="">Type</option>
+              <option value="manufacturer">Manufacturer</option>
+              <option value="distributor">Distributor</option>
+              <option value="wholesaler">Wholesaler</option>
+              <option value="other">Other</option>
+            </select>
+            <input value={supplierCategory} onChange={(e) => setSupplierCategory(e.target.value)} placeholder="Category" />
+            <input value={supplierEmail} onChange={(e) => setSupplierEmail(e.target.value)} placeholder="Email" />
+            <input value={supplierPhone} onChange={(e) => setSupplierPhone(e.target.value)} placeholder="Phone" />
+            <textarea value={supplierAddress} onChange={(e) => setSupplierAddress(e.target.value)} placeholder="Address" rows={2} />
+            <textarea value={supplierNotes} onChange={(e) => setSupplierNotes(e.target.value)} placeholder="Notes" rows={2} />
+            <input value={supplierTerms} onChange={(e) => setSupplierTerms(e.target.value)} placeholder="Payment terms (days)" />
+            <input value={supplierCredit} onChange={(e) => setSupplierCredit(e.target.value)} placeholder="Credit limit" />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {!selectedSupplierId ? (
+                <button onClick={createSupplier} disabled={!supplierName.trim()}>
+                  Create supplier
+                </button>
+              ) : (
+                <>
+                  <button onClick={saveSupplier} disabled={!supplierName.trim()}>
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedSupplierId('');
+                      resetSupplierForm();
+                      setSupplierHistory(null);
+                    }}
+                  >
+                    New
+                  </button>
+                  <button onClick={() => loadHistory(selectedSupplierId)}>History</button>
+                  <button onClick={() => deactivateSupplier(selectedSupplierId)}>Deactivate</button>
+                </>
+              )}
+            </div>
+          </div>
+          {selectedSupplierId && (
+            <div style={{ marginTop: 16, maxWidth: 560 }}>
+              <h4>Contacts</h4>
+              <ul>
+                {(suppliers.find((s) => s.id === selectedSupplierId)?.contacts || []).map((c) => (
+                  <li key={c.id} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                    <span>
+                      {c.name}
+                      {c.is_primary ? ' (primary)' : ''}
+                      {c.email ? ` — ${c.email}` : ''}
+                      {c.phone ? ` — ${c.phone}` : ''}
+                    </span>
+                    <button onClick={() => removeContact(c.id)}>Remove</button>
+                  </li>
+                ))}
+              </ul>
+              <div style={{ display: 'grid', gap: 8 }}>
+                <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Contact name" />
+                <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="Contact email" />
+                <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Contact phone" />
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input type="checkbox" checked={contactPrimary} onChange={(e) => setContactPrimary(e.target.checked)} />
+                  Primary contact
+                </label>
+                <button onClick={addContact} disabled={!contactName.trim()}>
+                  Add contact
+                </button>
+              </div>
+            </div>
+          )}
+          {supplierHistory && (
+            <div style={{ marginTop: 16 }}>
+              <h4>Purchase history</h4>
+              <p className="muted">
+                {supplierHistory.orders.length} POs · {supplierHistory.invoices.length} invoices ·{' '}
+                {supplierHistory.returns.length} returns · {supplierHistory.payments.length} payments
+              </p>
+              <ul>
+                {supplierHistory.orders.slice(0, 8).map((o) => (
+                  <li key={o.id}>
+                    {o.po_number} — {o.status} — {o.total_amount}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Code</th>
+                <th>Status</th>
+                <th>Terms</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {suppliers.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.name}</td>
+                  <td>{s.code || '—'}</td>
+                  <td>{s.status || 'active'}</td>
+                  <td>{s.payment_terms_days ?? 0}d</td>
+                  <td>
+                    <button
+                      onClick={() => {
+                        loadSupplierForm(s);
+                        loadHistory(s.id);
+                      }}
+                    >
+                      Open
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
 
       {tab === 'requests' && (
         <div className="card" style={{ marginBottom: 16 }}>
@@ -605,9 +924,12 @@ export default function Page() {
           <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
             <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
               <option value="">Preferred supplier</option>
-              {suppliers.map((s) => (
+              {suppliers
+                .filter((s) => (s.status || 'active') === 'active')
+                .map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
+                  {s.code ? ` (${s.code})` : ''}
                 </option>
               ))}
             </select>
@@ -636,9 +958,12 @@ export default function Page() {
         <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
           <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
             <option value="">Select supplier</option>
-            {suppliers.map((s) => (
+            {suppliers
+              .filter((s) => (s.status || 'active') === 'active')
+              .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
+                {s.code ? ` (${s.code})` : ''}
               </option>
             ))}
           </select>
@@ -652,6 +977,10 @@ export default function Page() {
           </select>
           <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Quantity" />
           <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit price" />
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="checkbox" checked={emailOnSend} onChange={(e) => setEmailOnSend(e.target.checked)} />
+            Email supplier when sending PO
+          </label>
           <button onClick={createPo} disabled={!supplierId || !productId}>
             Create draft PO
           </button>
@@ -686,7 +1015,9 @@ export default function Page() {
         <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
           <select value={manualInvSupplierId} onChange={(e) => setManualInvSupplierId(e.target.value)}>
             <option value="">Select supplier</option>
-            {suppliers.map((s) => (
+            {suppliers
+              .filter((s) => (s.status || 'active') === 'active')
+              .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
@@ -822,6 +1153,7 @@ export default function Page() {
                   <td>{o.total_amount}</td>
                   <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {o.status === 'draft' && <button onClick={() => sendPo(o.id)}>Send</button>}
+                    <button onClick={() => printPo(o.id)}>Print</button>
                     {(o.status === 'draft' || o.status === 'sent') && (
                       <button onClick={() => cancelPo(o.id)}>Cancel</button>
                     )}

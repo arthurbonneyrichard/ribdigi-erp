@@ -226,6 +226,42 @@ class PartyCreate(BaseModel):
     credit_limit: float = 0
 
 
+class SupplierContactCreate(BaseModel):
+    name: str
+    email: EmailStr | None = None
+    phone: str | None = None
+    designation: str | None = None
+    is_primary: bool = False
+
+
+class SupplierCreate(BaseModel):
+    name: str
+    code: str | None = None
+    party_type: str | None = None
+    category: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    payment_terms_days: int = 0
+    credit_limit: float = 0
+    contacts: list[SupplierContactCreate] = Field(default_factory=list)
+
+
+class SupplierUpdate(BaseModel):
+    name: str | None = None
+    code: str | None = None
+    party_type: str | None = None
+    category: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    payment_terms_days: int | None = None
+    credit_limit: float | None = None
+    status: str | None = None
+
+
 class LineItem(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
