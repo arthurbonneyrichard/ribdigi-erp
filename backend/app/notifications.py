@@ -20,6 +20,7 @@ DEFAULT_PREFERENCES = {
     "quotation_expiry": {"dashboard": True, "email": True, "sms": False},
     "recurring_expense": {"dashboard": True, "email": True, "sms": False},
     "ai_insight": {"dashboard": True, "email": True, "sms": False},
+    "security": {"dashboard": True, "email": True, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
     "system": {"dashboard": True, "email": False, "sms": False},
