@@ -1307,7 +1307,7 @@ X-RateLimit-Reset: 1691415060
 
 ---
 
-## 19. Error Codes
+## 20. Error Codes
 
 ### HTTP Status Codes
 | Code | Meaning |
