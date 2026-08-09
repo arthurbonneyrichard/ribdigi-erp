@@ -7990,6 +7990,8 @@ async def reports_export(
     year: int | None = None,
     month: int | None = None,
     warehouse_id: str | None = None,
+    store_id: str | None = None,
+    category_id: str | None = None,
     jurisdiction: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
@@ -8005,6 +8007,8 @@ async def reports_export(
         year=year,
         month=month,
         warehouse_id=warehouse_id,
+        store_id=store_id,
+        category_id=category_id,
         jurisdiction=jurisdiction,
     )
     return Response(
@@ -8149,6 +8153,8 @@ async def report_sales_monthly(
 async def report_sales_products(
     from_date: str | None = None,
     to_date: str | None = None,
+    store_id: str | None = None,
+    category_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8158,6 +8164,27 @@ async def report_sales_products(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=store_id,
+            category_id=category_id,
+        )
+    )
+
+
+@api.get("/reports/sales/customers")
+async def report_sales_customers(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    limit: int = 50,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await reports_svc.sales_by_customer(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            limit=limit,
         )
     )
 

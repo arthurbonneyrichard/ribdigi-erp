@@ -23,6 +23,7 @@ EXPORTABLE = frozenset(
         "sales_daily",
         "sales_monthly",
         "sales_products",
+        "sales_customers",
         "sales_salesperson",
         "sales_by_store",
         "inventory_balance",
@@ -217,6 +218,15 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             for r in rows[:50]
         ]
         return rows or [{"note": "no rows"}], lines, "Sales by Product"
+
+    if report_type == "sales_customers":
+        items = payload.get("customers") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload if isinstance(payload, dict) else {}) + [
+            f"{r.get('name')}: sales={r.get('sale_count')} revenue={r.get('revenue')} avg={r.get('avg_ticket')}"
+            for r in rows[:50]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Sales by Customer"
 
     if report_type == "sales_salesperson":
         items = payload.get("salespeople") or []
@@ -439,6 +449,8 @@ async def build_report_payload(
     year: int | None = None,
     month: int | None = None,
     warehouse_id: str | None = None,
+    store_id: str | None = None,
+    category_id: str | None = None,
     jurisdiction: str | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
@@ -469,7 +481,16 @@ async def build_report_payload(
             db, tenant_id, year or now.year, month or now.month
         )
     if report_type == "sales_products":
-        return await reports_svc.sales_by_product(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.sales_by_product(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id,
+            category_id=category_id,
+        )
+    if report_type == "sales_customers":
+        return await reports_svc.sales_by_customer(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "sales_salesperson":
         return await reports_svc.sales_by_salesperson(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "sales_by_store":

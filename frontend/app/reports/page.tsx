@@ -10,6 +10,7 @@ const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 type Tab =
   | 'summary'
   | 'sales'
+  | 'customers'
   | 'salesperson'
   | 'stores'
   | 'inventory'
@@ -22,6 +23,7 @@ type Tab =
 const REPORT_TABS: Tab[] = [
   'summary',
   'sales',
+  'customers',
   'salesperson',
   'stores',
   'inventory',
@@ -36,6 +38,7 @@ const REPORT_TABS: Tab[] = [
 const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   summary: 'summary',
   sales: 'sales_products',
+  customers: 'sales_customers',
   salesperson: 'sales_salesperson',
   stores: 'sales_by_store',
   inventory: 'inventory_low_stock',
@@ -51,6 +54,7 @@ const REPORT_TYPES = [
   'sales_daily',
   'sales_monthly',
   'sales_products',
+  'sales_customers',
   'sales_salesperson',
   'sales_by_store',
   'inventory_balance',
@@ -69,6 +73,10 @@ export default function Page() {
   const [tab, setTab] = useTabQuery(REPORT_TABS, 'summary');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [storeId, setStoreId] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [stores, setStores] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -94,6 +102,16 @@ export default function Page() {
     return s ? `?${s}` : '';
   }
 
+  useEffect(() => {
+    Promise.all([
+      api('/stores').catch(() => ({ data: [] })),
+      api('/catalog/categories').catch(() => ({ data: [] })),
+    ]).then(([s, c]) => {
+      setStores(s.data || []);
+      setCategories(c.data || []);
+    });
+  }, []);
+
   async function load(nextTab: Tab = tab) {
     setLoading(true);
     setError('');
@@ -105,7 +123,13 @@ export default function Page() {
         return;
       }
       let path = '/reports/summary';
-      if (nextTab === 'sales') path = `/reports/sales/products${qs()}`;
+      if (nextTab === 'sales') {
+        path = `/reports/sales/products${qs({
+          store_id: storeId,
+          category_id: categoryId,
+        })}`;
+      }
+      if (nextTab === 'customers') path = `/reports/sales/customers${qs()}`;
       if (nextTab === 'salesperson') path = `/reports/sales/salesperson${qs()}`;
       if (nextTab === 'stores') path = `/reports/sales/by-store${qs()}`;
       if (nextTab === 'inventory') path = '/reports/inventory/low-stock';
@@ -161,6 +185,8 @@ export default function Page() {
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
+      if (storeId) params.set('store_id', storeId);
+      if (categoryId) params.set('category_id', categoryId);
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -260,6 +286,7 @@ export default function Page() {
           [
             ['summary', 'Summary'],
             ['sales', 'Sales'],
+            ['customers', 'Customers'],
             ['salesperson', 'Salespeople'],
             ['stores', 'Stores'],
             ['inventory', 'Inventory'],
@@ -281,6 +308,30 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        {tab === 'sales' && (
+          <>
+            <select value={storeId} onChange={(e) => setStoreId(e.target.value)} aria-label="Store filter">
+              <option value="">All stores</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              aria-label="Category filter"
+            >
+              <option value="">All categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         <button onClick={() => load()} disabled={loading}>
           {loading ? 'Loading…' : 'Apply filters'}
         </button>
@@ -295,6 +346,9 @@ export default function Page() {
             <button onClick={() => download('csv', 'trial_balance')}>Trial balance CSV</button>
             <button onClick={() => download('pdf', 'profit_loss')}>P&amp;L PDF</button>
           </>
+        )}
+        {tab === 'customers' && (
+          <button onClick={() => download('xlsx', 'sales_customers')}>Customers Excel</button>
         )}
         {tab === 'salesperson' && (
           <button onClick={() => download('xlsx', 'sales_salesperson')}>Export Excel</button>
@@ -334,11 +388,14 @@ export default function Page() {
               <h3>Today</h3>
               <p>Revenue: {data.daily?.total_revenue}</p>
               <p>Invoices: {data.daily?.invoice_count} · POS: {data.daily?.pos_count}</p>
+              <p className="muted">
+                vs {data.daily?.previous_date || 'prior day'}: {data.daily?.change_pct ?? '—'}%
+              </p>
             </div>
             <div className="card">
               <h3>This month</h3>
               <p>Revenue: {data.monthly?.total_revenue}</p>
-              <p>Change: {data.monthly?.change_pct ?? '—'}%</p>
+              <p className="muted">vs prior month: {data.monthly?.change_pct ?? '—'}%</p>
             </div>
           </div>
           <h3 style={{ marginTop: 16 }}>Products</h3>
@@ -358,6 +415,49 @@ export default function Page() {
                   <td>{p.name}</td>
                   <td>{p.quantity}</td>
                   <td>{p.revenue}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'customers' && data && (
+        <>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Total revenue</div>
+              <div className="kpi">{data.total_revenue ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Sales count</div>
+              <div className="kpi">{data.total_sales ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Customers</div>
+              <div className="kpi">{data.customer_count ?? 0}</div>
+            </div>
+          </div>
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Sales</th>
+                <th>Invoices</th>
+                <th>POS</th>
+                <th>Revenue</th>
+                <th>Avg ticket</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.customers || []).map((c: any) => (
+                <tr key={c.customer_id || 'walk_in'}>
+                  <td>{c.name}</td>
+                  <td>{c.sale_count}</td>
+                  <td>{c.invoice_count}</td>
+                  <td>{c.pos_count}</td>
+                  <td>{c.revenue}</td>
+                  <td>{c.avg_ticket}</td>
                 </tr>
               ))}
             </tbody>

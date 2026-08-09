@@ -42,10 +42,9 @@ def month_bounds(year: int, month: int) -> tuple[datetime, datetime]:
     return start, end
 
 
-async def sales_daily(db: AsyncSession, tenant_id: str, date: datetime | None = None) -> dict:
-    day = date or datetime.utcnow()
-    start, end = day_bounds(day)
-
+async def _sales_totals_for_bounds(
+    db: AsyncSession, tenant_id: str, start: datetime, end: datetime
+) -> dict:
     invoices = (
         await db.execute(
             select(m.SalesInvoice).where(
@@ -66,23 +65,38 @@ async def sales_daily(db: AsyncSession, tenant_id: str, date: datetime | None = 
             )
         )
     ).scalars().all()
-
     invoice_total = sum(float(i.total_amount or 0) for i in invoices)
     invoice_tax = sum(float(i.tax_amount or 0) for i in invoices)
     invoice_discount = sum(float(i.discount_amount or 0) for i in invoices)
     pos_total = sum(float(t.total or 0) for t in pos)
     pos_tax = sum(float(t.tax or 0) for t in pos)
-
+    total = invoice_total + pos_total
     return {
-        "date": start.date().isoformat(),
         "invoice_count": len(invoices),
         "pos_count": len(pos),
         "invoice_revenue": round(invoice_total, 2),
         "pos_revenue": round(pos_total, 2),
-        "total_revenue": round(invoice_total + pos_total, 2),
+        "total_revenue": round(total, 2),
         "tax": round(invoice_tax + pos_tax, 2),
         "discounts": round(invoice_discount, 2),
-        "net_sales": round(invoice_total + pos_total - invoice_discount, 2),
+        "net_sales": round(total - invoice_discount, 2),
+    }
+
+
+async def sales_daily(db: AsyncSession, tenant_id: str, date: datetime | None = None) -> dict:
+    day = date or datetime.utcnow()
+    start, end = day_bounds(day)
+    current = await _sales_totals_for_bounds(db, tenant_id, start, end)
+    prev_start, prev_end = day_bounds(start - timedelta(days=1))
+    previous = await _sales_totals_for_bounds(db, tenant_id, prev_start, prev_end)
+    prev_rev = float(previous["total_revenue"] or 0)
+    cur_rev = float(current["total_revenue"] or 0)
+    return {
+        "date": start.date().isoformat(),
+        **current,
+        "previous_date": prev_start.date().isoformat(),
+        "previous_day_revenue": prev_rev,
+        "change_pct": round(((cur_rev - prev_rev) / prev_rev) * 100, 2) if prev_rev else None,
     }
 
 
@@ -169,7 +183,33 @@ async def sales_by_product(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    store_id: str | None = None,
+    category_id: str | None = None,
 ) -> dict:
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(m.Store.id == store_id, m.Store.tenant_id == tenant_id)
+            )
+        ).scalar_one_or_none()
+        if not store:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail="Store not found")
+    if category_id:
+        cat = (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.id == category_id,
+                    m.ProductCategory.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not cat:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail="Category not found")
+
     stmt = select(m.SalesInvoiceItem, m.SalesInvoice, m.Product).join(
         m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id
     ).join(m.Product, m.Product.id == m.SalesInvoiceItem.product_id).where(
@@ -180,6 +220,10 @@ async def sales_by_product(
         stmt = stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         stmt = stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_id:
+        stmt = stmt.where(m.SalesInvoice.store_id == store_id)
+    if category_id:
+        stmt = stmt.where(m.Product.category_id == category_id)
     rows = (await db.execute(stmt)).all()
 
     agg: dict[str, dict] = {}
@@ -190,6 +234,7 @@ async def sales_by_product(
                 "product_id": product.id,
                 "sku": product.sku,
                 "name": product.name,
+                "category_id": getattr(product, "category_id", None),
                 "quantity": 0.0,
                 "revenue": 0.0,
             },
@@ -198,7 +243,9 @@ async def sales_by_product(
         row["revenue"] = round(row["revenue"] + float(item.line_total or 0), 2)
 
     # Include POS payload items where possible
-    pos_stmt = select(m.Transaction).where(
+    pos_stmt = select(m.Transaction, m.PosSession).outerjoin(
+        m.PosSession, m.PosSession.id == m.Transaction.session_id
+    ).where(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type == "pos_sale",
     )
@@ -206,7 +253,9 @@ async def sales_by_product(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
-    for tx in (await db.execute(pos_stmt)).scalars().all():
+    if store_id:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
+    for tx, _session in (await db.execute(pos_stmt)).all():
         for line in (tx.payload or {}).get("items") or []:
             pid = line.get("product_id")
             if not pid:
@@ -214,12 +263,15 @@ async def sales_by_product(
             product = await db.get(m.Product, pid)
             if not product or product.tenant_id != tenant_id:
                 continue
+            if category_id and getattr(product, "category_id", None) != category_id:
+                continue
             row = agg.setdefault(
                 product.id,
                 {
                     "product_id": product.id,
                     "sku": product.sku,
                     "name": product.name,
+                    "category_id": getattr(product, "category_id", None),
                     "quantity": 0.0,
                     "revenue": 0.0,
                 },
@@ -233,9 +285,105 @@ async def sales_by_product(
     return {
         "from_date": from_date,
         "to_date": to_date,
+        "store_id": store_id,
+        "category_id": category_id,
         "products": products,
         "total_revenue": round(sum(p["revenue"] for p in products), 2),
         "total_quantity": round(sum(p["quantity"] for p in products), 3),
+    }
+
+
+async def sales_by_customer(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    limit: int = 50,
+) -> dict:
+    """Top customers by revenue and purchase frequency (BR-14.1)."""
+    limit = max(1, min(int(limit or 50), 200))
+
+    def _bucket(agg: dict[str, dict], customer_id: str | None) -> dict:
+        key = customer_id or "walk_in"
+        return agg.setdefault(
+            key,
+            {
+                "customer_id": None if key == "walk_in" else key,
+                "name": "Walk-in",
+                "code": None,
+                "sale_count": 0,
+                "invoice_count": 0,
+                "pos_count": 0,
+                "revenue": 0.0,
+                "tax": 0.0,
+                "avg_ticket": 0.0,
+            },
+        )
+
+    agg: dict[str, dict] = {}
+    inv_stmt = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "partial", "paid", "sent", "overdue"]),
+    )
+    if from_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
+    if to_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    for inv in (await db.execute(inv_stmt)).scalars().all():
+        row = _bucket(agg, inv.customer_id)
+        row["invoice_count"] += 1
+        row["sale_count"] += 1
+        row["revenue"] = round(row["revenue"] + float(inv.total_amount or 0), 2)
+        row["tax"] = round(row["tax"] + float(inv.tax_amount or 0), 2)
+
+    pos_stmt = select(m.Transaction).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.tx_type == "pos_sale",
+    )
+    if from_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
+    if to_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    for tx in (await db.execute(pos_stmt)).scalars().all():
+        row = _bucket(agg, tx.party_id)
+        row["pos_count"] += 1
+        row["sale_count"] += 1
+        row["revenue"] = round(row["revenue"] + float(tx.total or 0), 2)
+        row["tax"] = round(row["tax"] + float(tx.tax or 0), 2)
+
+    party_ids = [k for k in agg.keys() if k != "walk_in"]
+    if party_ids:
+        parties = (
+            await db.execute(
+                select(m.Party).where(
+                    m.Party.tenant_id == tenant_id,
+                    m.Party.id.in_(party_ids),
+                )
+            )
+        ).scalars().all()
+        by_id = {p.id: p for p in parties}
+        for key in party_ids:
+            party = by_id.get(key)
+            if party:
+                agg[key]["name"] = party.name
+                agg[key]["code"] = getattr(party, "code", None)
+
+    for row in agg.values():
+        row["avg_ticket"] = round(row["revenue"] / row["sale_count"], 2) if row["sale_count"] else 0.0
+
+    customers = sorted(agg.values(), key=lambda x: (x["revenue"], x["sale_count"]), reverse=True)
+    # Prefer named customers ahead of empty walk-in when revenue ties at zero
+    if customers and customers[0]["customer_id"] is None and customers[0]["sale_count"] == 0:
+        customers = customers[1:]
+    customers = customers[:limit]
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "customers": customers,
+        "total_revenue": round(sum(c["revenue"] for c in customers), 2),
+        "total_sales": sum(c["sale_count"] for c in customers),
+        "customer_count": len(customers),
     }
 
 
