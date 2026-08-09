@@ -21,3 +21,7 @@ Remaining commercial-MVP gaps include the documented-but-unimplemented supplier 
 
 - Agents may implement Stage 8 plan items without reopening Stage 1–7 feature scope.
 - Stage 8 exit requires `docs/STAGE_8_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Amendment (2026-08-09)
+
+Stage 8 exit criteria met (`docs/STAGE_8_EXIT_CRITERIA.md`). Feature scope frozen under [ADR-022](ADR_022_STAGE8_FREEZE.md). Do not open Stage 9 until CONTINUE (or equivalent) after freeze.

@@ -104,6 +104,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 8 open (2026-08-09):** Credit Fidelity & AP Cash Closeout track approved — `docs/ADR_021_STAGE8_OPEN.md` + `docs/STAGE_8_PLAN.md`.
 
+**Stage 8 exit (2026-08-09):** S1, S2, A1, P1, H8x met — `docs/STAGE_8_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_022_STAGE8_FREEZE.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -674,7 +676,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** `docs/STAGE_8_PLAN.md` (supplier payment schedule, outstanding UI, account transactions, return multi-line UI).
+**Active delivery plan:** Stage 8 closed (ADR-022). Next track requires CONTINUE after freeze.
 
 ### 6.2 Features
 

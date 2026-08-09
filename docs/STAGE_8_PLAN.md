@@ -1,8 +1,9 @@
 # Stage 8 Plan — Credit Fidelity & AP Cash Closeout
 
-**Status:** Open (ADR-021)  
+**Status:** Closed (exit met — ADR-022)  
 **Base:** BR-11.2 / remaining credit + purchasing UI fidelity after Stage 7 freeze  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
+**Exit:** [STAGE_8_EXIT_CRITERIA.md](STAGE_8_EXIT_CRITERIA.md)
 
 Stage 8 closes commercial-MVP AP/credit holes that are documented but unfinished. It is **not** Kubernetes, WAL/PITR, vendor pen test, or paid billing.
 
@@ -21,7 +22,7 @@ Stage 8 closes commercial-MVP AP/credit holes that are documented but unfinished
 | **S2** | Outstanding bills UI (AP + AR) | P1 | COMPLETE |
 | **A1** | Account ledger transactions (`GET …/accounts/{id}/transactions`) | P1 | COMPLETE |
 | **P1** | Purchase return multi-line UI | P1 | COMPLETE |
-| **H8x** | Stage 8 exit criteria + freeze ADR | Exit | PENDING |
+| **H8x** | Stage 8 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -62,6 +63,11 @@ Stage 8 closes commercial-MVP AP/credit holes that are documented but unfinished
 - [x] API `POST /purchasing/returns` multi-line payload unchanged; returns list shows line count.
 - [x] Automated tests in `backend/tests/test_purchase_return_multiline_p1.py`.
 
+## H8x acceptance criteria
+
+- [x] `docs/STAGE_8_EXIT_CRITERIA.md` records S1/S2/A1/P1/H8x COMPLETE with evidence.
+- [x] Scope freeze ADR-022 accepted; automated guard in `backend/tests/test_stage8_exit_h8x.py`.
+
 ## Sign-off
 
-Stage 8 exit will be recorded in `docs/STAGE_8_EXIT_CRITERIA.md` with a freeze ADR when planned workstreams are complete.
+Stage 8 exit is recorded in `docs/STAGE_8_EXIT_CRITERIA.md` with freeze [ADR-022](ADR_022_STAGE8_FREEZE.md).
