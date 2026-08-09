@@ -264,7 +264,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Full lifecycle management of user accounts.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Create user with name, email, phone, role, branch/store assignment
+  - [ ] Create user with name, email, phone, role, branch/store assignment *(branch + department yes; dedicated user↔store membership deferred — `docs/ADR_005_USER_STORE_ASSIGNMENT.md`)*
   - [ ] Edit user details and assignments
   - [x] Soft delete (deactivate) user
   - [ ] Hard delete with data archival option *(deferred post-MVP; see `docs/ADR_003_USER_DELETE_POLICY.md`)*
