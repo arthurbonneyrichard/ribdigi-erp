@@ -21,3 +21,7 @@ Remaining commercial-MVP gaps include webhook delivery retries (Phase 5 AC), per
 
 - Agents may implement Stage 7 plan items without reopening Stage 1–6 feature scope.
 - Stage 7 exit requires `docs/STAGE_7_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned P0 workstreams.
+
+## Amendment (2026-08-09)
+
+Stage 7 exit criteria met (`docs/STAGE_7_EXIT_CRITERIA.md`). Feature scope frozen under [ADR-020](ADR_020_STAGE7_FREEZE.md). Do not open Stage 8 until CONTINUE (or equivalent) after freeze.

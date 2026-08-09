@@ -100,6 +100,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 7 open (2026-08-09):** Launch Reliability Closeout track approved — `docs/ADR_019_STAGE7_OPEN.md` + `docs/STAGE_7_PLAN.md`.
 
+**Stage 7 exit (2026-08-09):** W2, C2, K2, L7x met — `docs/STAGE_7_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_020_STAGE7_FREEZE.md`. Launch checklist: `docs/LAUNCH_CHECKLIST.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -670,7 +672,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** `docs/STAGE_7_PLAN.md` (webhook retries, permissions cache, API key usage, launch checklist).
+**Active delivery plan:** Stage 7 closed (ADR-020). Next track requires CONTINUE after freeze. Operator go-live list: `docs/LAUNCH_CHECKLIST.md`.
 
 ### 6.2 Features
 
@@ -757,7 +759,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - [ ] Security hardened: TLS 1.3, WAF rules, rate limiting, input validation, RBAC enforced
 - [ ] Production Kubernetes deployment with monitoring (Prometheus/Grafana)
 - [ ] Complete documentation set: API docs, User Manual, Admin Manual, Security Guide
-- [ ] Launch checklist completed and signed off
+- [x] Launch checklist documented (Stage 7 L7x — `docs/LAUNCH_CHECKLIST.md`); operator environment sign-off remains ops
 
 ### 6.8 AI/Cursor Implementation Prompt
 

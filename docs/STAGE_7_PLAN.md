@@ -1,8 +1,9 @@
 # Stage 7 Plan — Launch Reliability Closeout
 
-**Status:** Open (ADR-019)  
+**Status:** Closed (exit met — ADR-020)  
 **Base:** Remaining Phase 5 polish items after Stage 6 freeze + `PRODUCTION_READINESS.md`  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
+**Exit:** [STAGE_7_EXIT_CRITERIA.md](STAGE_7_EXIT_CRITERIA.md) · [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md)
 
 Stage 7 closes reliability and ops-hygiene holes that block a confident commercial launch. It is **not** Kubernetes, WAL/PITR, or vendor pen test.
 
@@ -20,7 +21,7 @@ Stage 7 closes reliability and ops-hygiene holes that block a confident commerci
 | **W2** | Webhook delivery retries + exponential backoff | P0 | COMPLETE |
 | **C2** | Permissions Redis cache (1h TTL) | P0 | COMPLETE |
 | **K2** | API key usage statistics | P1 | COMPLETE |
-| **L7x** | Launch checklist doc + Stage 7 exit/freeze | Exit | PENDING |
+| **L7x** | Launch checklist doc + Stage 7 exit/freeze | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -53,6 +54,12 @@ Stage 7 closes reliability and ops-hygiene holes that block a confident commerci
 - [x] Security UI shows requests / last used and a requests-per-day chart.
 - [x] Automated tests in `backend/tests/test_api_key_usage_k2.py`.
 
+## L7x acceptance criteria
+
+- [x] `docs/LAUNCH_CHECKLIST.md` — operator go-live hygiene (config, security, integrations, ERP smoke, deferred infra).
+- [x] `docs/STAGE_7_EXIT_CRITERIA.md` records W2/C2/K2/L7x COMPLETE with evidence.
+- [x] Scope freeze ADR-020 accepted; automated guard in `backend/tests/test_stage7_exit_l7x.py`.
+
 ## Sign-off
 
-Stage 7 exit will be recorded in `docs/STAGE_7_EXIT_CRITERIA.md` with a freeze ADR when planned workstreams are complete.
+Stage 7 exit is recorded in `docs/STAGE_7_EXIT_CRITERIA.md` with freeze [ADR-020](ADR_020_STAGE7_FREEZE.md).
