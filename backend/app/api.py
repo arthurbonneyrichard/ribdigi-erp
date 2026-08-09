@@ -377,6 +377,9 @@ async def tenant_me_update(
             else None
         ),
         invoice_print_template=payload.invoice_print_template,
+        receipt_print_template=payload.receipt_print_template,
+        document_header=payload.document_header,
+        document_footer=payload.document_footer,
         plan_code=payload.plan_code,
         legal_name=payload.legal_name,
         registration_number=payload.registration_number,
@@ -4411,6 +4414,8 @@ async def print_sales_invoice(
         trading_name=doc_brand["trading_name"],
         legal_name=doc_brand["legal_name"],
         has_logo=doc_brand["has_logo"],
+        document_header=doc_brand["document_header"],
+        document_footer=doc_brand["document_footer"],
     )
     await db.commit()
     if fmt == "pdf":
@@ -4598,6 +4603,8 @@ async def print_sales_quotation(
         trading_name=doc_brand["trading_name"],
         legal_name=doc_brand["legal_name"],
         has_logo=doc_brand["has_logo"],
+        document_header=doc_brand["document_header"],
+        document_footer=doc_brand["document_footer"],
     )
     await db.commit()
     if fmt == "pdf":
@@ -5008,6 +5015,8 @@ async def print_sales_return_credit_note(
         trading_name=doc_brand["trading_name"],
         legal_name=doc_brand["legal_name"],
         has_logo=doc_brand["has_logo"],
+        document_header=doc_brand["document_header"],
+        document_footer=doc_brand["document_footer"],
     )
     await db.commit()
     if fmt == "pdf":
@@ -6173,7 +6182,7 @@ async def pos_search(
 async def pos_receipt(
     sale_id: str,
     format: str = "json",
-    paper: str = "80mm",
+    paper: str | None = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6186,7 +6195,8 @@ async def pos_receipt(
         user_id=claims.get("sub"),
     )
     fmt = (format or "json").lower()
-    paper = paper if paper in {"58mm", "80mm"} else "80mm"
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    paper = receipts_svc.resolve_receipt_paper(tenant, paper)
     if fmt == "json":
         receipt["paper"] = paper
         receipt["text"] = receipts_svc.render_thermal_text(receipt, paper=paper)
@@ -6214,7 +6224,7 @@ async def pos_receipt_send(
     sale_id: str,
     channel: str = "email",
     to: str | None = None,
-    paper: str = "80mm",
+    paper: str | None = None,
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6229,7 +6239,8 @@ async def pos_receipt_send(
         sale_id=sale_id,
         user_id=claims.get("sub"),
     )
-    paper = paper if paper in {"58mm", "80mm"} else "80mm"
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    paper = receipts_svc.resolve_receipt_paper(tenant, paper)
     text = receipts_svc.render_thermal_text(receipt, paper=paper)
     channel = (channel or "email").lower()
 

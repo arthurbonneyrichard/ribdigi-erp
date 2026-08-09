@@ -163,7 +163,11 @@ def render_invoice_text(
     trading_name: str | None = None,
     legal_name: str | None = None,
     has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
 ) -> str:
+    from app.print_branding import header_footer_text_lines
+
     tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
     width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
     cur = currency or invoice_data.get("currency") or "GHS"
@@ -183,6 +187,8 @@ def render_invoice_text(
         lines.append(str(company_email)[:width])
     if tax_registration_number:
         lines.append(f"Tax #: {tax_registration_number}"[:width])
+    for part in header_footer_text_lines(document_header, width):
+        lines.append(part[:width])
     lines.extend(
         [
             "",
@@ -216,7 +222,11 @@ def render_invoice_text(
     )
     if invoice_data.get("notes"):
         lines.extend(["", f"Notes: {invoice_data['notes']}"[:width]])
-    if tpl.startswith("thermal"):
+    footer_lines = header_footer_text_lines(document_footer, width)
+    if footer_lines:
+        lines.append("")
+        lines.extend(part[:width] for part in footer_lines)
+    elif tpl.startswith("thermal"):
         lines.extend(["", "Thank you!"[:width]])
     return "\n".join(lines)
 
@@ -238,10 +248,12 @@ def render_invoice_html(
     trading_name: str | None = None,
     legal_name: str | None = None,
     has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
 ) -> str:
     from html import escape
 
-    from app.print_branding import brand_html_block
+    from app.print_branding import brand_html_block, header_footer_html
 
     tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
     cur = escape(currency or invoice_data.get("currency") or "GHS")
@@ -277,11 +289,14 @@ def render_invoice_html(
         if invoice_data.get("notes")
         else ""
     )
-    thanks_html = (
-        "<p>Thank you for your business.</p>"
-        if tpl.startswith("thermal")
-        else "<p class='muted' style='margin-top:28px'>Thank you for your business.</p>"
-    )
+    header_html = header_footer_html(document_header, css_class="doc-header")
+    footer_html = header_footer_html(document_footer, css_class="doc-footer")
+    if not footer_html:
+        footer_html = (
+            "<p>Thank you for your business.</p>"
+            if tpl.startswith("thermal")
+            else "<p class='muted' style='margin-top:28px'>Thank you for your business.</p>"
+        )
     meta_html = "<br>".join(meta)
     rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
     inv_no = escape(str(invoice_data.get("invoice_number") or ""))
@@ -303,6 +318,8 @@ def render_invoice_html(
   .muted {{ color:#57534e; }}
   .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
   .brand .logo {{ display:block; max-height:72px; max-width:220px; margin:0 0 10px; object-fit:contain; }}
+  .doc-header {{ margin:8px 0 0; }}
+  .doc-footer {{ margin-top:28px; }}
   table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
   th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
   th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
@@ -314,6 +331,7 @@ def render_invoice_html(
 </style></head><body><div class="sheet">
   <div class="toolbar"><button onclick="window.print()">Print</button></div>
   {brand_block}
+  {header_html}
   <h2>Invoice {inv_no}</h2>
   <div class="muted">Status: {status}{due_line}</div>
   <p><strong>Bill to</strong><br>{escape(customer_name)}{customer_addr_html}</p>
@@ -330,7 +348,7 @@ def render_invoice_html(
     <div><span>Balance</span><span>{cur} {float(invoice_data.get("balance_due") or 0):.2f}</span></div>
   </div>
   {notes_html}
-  {thanks_html}
+  {footer_html}
 </div></body></html>"""
 
 
@@ -351,6 +369,8 @@ def render_invoice_pdf(
     trading_name: str | None = None,
     legal_name: str | None = None,
     has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
 ) -> bytes:
     """Branded invoice PDF: A4 letter page or narrow thermal page."""
     tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
@@ -370,6 +390,8 @@ def render_invoice_pdf(
         trading_name=trading_name,
         legal_name=legal_name,
         has_logo=has_logo,
+        document_header=document_header,
+        document_footer=document_footer,
     )
     title = f"INVOICE {invoice_data.get('invoice_number') or ''}"
     return render_branded_lines_pdf(

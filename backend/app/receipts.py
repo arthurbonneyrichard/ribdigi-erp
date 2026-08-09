@@ -13,6 +13,19 @@ from app.report_export import _pdf_escape
 
 # Typical 80mm thermal width (~48 monospace chars); 58mm ~32
 THERMAL_WIDTHS = {"80mm": 42, "58mm": 32}
+RECEIPT_PRINT_TEMPLATES = frozenset({"thermal_80", "thermal_58"})
+RECEIPT_TEMPLATE_TO_PAPER = {"thermal_80": "80mm", "thermal_58": "58mm"}
+PAPER_TO_RECEIPT_TEMPLATE = {"80mm": "thermal_80", "58mm": "thermal_58"}
+
+
+def resolve_receipt_paper(tenant: m.Tenant | None, paper: str | None = None) -> str:
+    """Resolve POS receipt paper width from explicit paper or tenant default template."""
+    if paper in THERMAL_WIDTHS:
+        return paper  # type: ignore[return-value]
+    tpl = (getattr(tenant, "receipt_print_template", None) or "thermal_80").strip().lower()
+    if tpl not in RECEIPT_PRINT_TEMPLATES:
+        tpl = "thermal_80"
+    return RECEIPT_TEMPLATE_TO_PAPER[tpl]
 
 
 def _money(value: float) -> str:
@@ -90,6 +103,7 @@ def build_receipt_payload(
             }
         )
     brand = tenant_document_brand(tenant)
+    default_paper = resolve_receipt_paper(tenant)
     return {
         "sale_id": tx.id,
         "reference": tx.reference,
@@ -98,6 +112,10 @@ def build_receipt_payload(
         "trading_name": brand["trading_name"],
         "has_logo": brand["has_logo"],
         "logo_data_url": brand["logo_data_url"],
+        "document_header": brand["document_header"],
+        "document_footer": brand["document_footer"],
+        "receipt_print_template": PAPER_TO_RECEIPT_TEMPLATE.get(default_paper, "thermal_80"),
+        "default_paper": default_paper,
         "company_phone": brand["company_phone"] or (tenant.phone if tenant else None),
         "company_address": brand["company_address"] or (tenant.address if tenant else None),
         "currency": tenant.currency if tenant else "GHS",
@@ -116,6 +134,8 @@ def build_receipt_payload(
 
 
 def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
+    from app.print_branding import header_footer_text_lines
+
     width = THERMAL_WIDTHS.get(paper, THERMAL_WIDTHS["80mm"])
     lines: list[str] = []
     lines.append(_center(str(receipt.get("company_name") or "RIBDIGI ERP"), width))
@@ -127,6 +147,8 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         lines.extend(_wrap(str(receipt["company_address"]), width))
     if receipt.get("company_phone"):
         lines.append(_center(str(receipt["company_phone"]), width))
+    for part in header_footer_text_lines(receipt.get("document_header"), width):
+        lines.append(_center(part, width))
     lines.append("-" * width)
     lines.append(_lr("Sale", str(receipt.get("reference") or ""), width))
     created = receipt.get("created_at")
@@ -157,7 +179,12 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0), width))
     lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
     lines.append("-" * width)
-    lines.append(_center("Thank you", width))
+    footer_lines = header_footer_text_lines(receipt.get("document_footer"), width)
+    if footer_lines:
+        for part in footer_lines:
+            lines.append(_center(part, width))
+    else:
+        lines.append(_center("Thank you", width))
     lines.append(_center("Powered by RIBDIGI", width))
     lines.append("")
     return "\n".join(lines)

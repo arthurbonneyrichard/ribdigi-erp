@@ -95,6 +95,13 @@ export default function Page() {
     api('/customers?active_only=true')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
+    api('/tenants/me')
+      .then((r) => {
+        const tpl = r.data?.receipt_print_template;
+        if (tpl === 'thermal_58') setPaper('58mm');
+        else if (tpl === 'thermal_80') setPaper('80mm');
+      })
+      .catch(() => undefined);
   }, []);
 
   async function openShift() {

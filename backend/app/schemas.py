@@ -106,6 +106,9 @@ class TenantProfileUpdate(BaseModel):
     tax_filing_period: str | None = None
     document_numbering: DocumentNumberingUpdate | None = None
     invoice_print_template: str | None = None
+    receipt_print_template: str | None = None
+    document_header: str | None = None
+    document_footer: str | None = None
     plan_code: str | None = None
     legal_name: str | None = None
     registration_number: str | None = None

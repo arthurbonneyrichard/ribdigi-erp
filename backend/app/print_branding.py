@@ -57,6 +57,8 @@ def load_logo_data_url(tenant: m.Tenant | None) -> str | None:
 def tenant_document_brand(tenant: m.Tenant | None) -> dict[str, Any]:
     """Shared brand fields for invoice/receipt/quotation/credit-note prints."""
     logo_data_url = load_logo_data_url(tenant)
+    header = (getattr(tenant, "document_header", None) or "").strip() if tenant else ""
+    footer = (getattr(tenant, "document_footer", None) or "").strip() if tenant else ""
     return {
         "company_name": document_company_name(tenant),
         "legal_name": (getattr(tenant, "legal_name", None) or "").strip() or None if tenant else None,
@@ -67,7 +69,43 @@ def tenant_document_brand(tenant: m.Tenant | None) -> dict[str, Any]:
         "tax_registration_number": getattr(tenant, "tax_registration_number", None) if tenant else None,
         "has_logo": bool(logo_data_url),
         "logo_data_url": logo_data_url,
+        "document_header": header or None,
+        "document_footer": footer or None,
     }
+
+
+def header_footer_text_lines(text: str | None, width: int) -> list[str]:
+    """Wrap optional header/footer for monospace thermal/A4 text layouts."""
+    raw = (text or "").strip()
+    if not raw:
+        return []
+    lines: list[str] = []
+    for paragraph in raw.splitlines() or [raw]:
+        para = paragraph.strip()
+        if not para:
+            continue
+        while len(para) > width:
+            cut = para.rfind(" ", 0, width + 1)
+            if cut <= 0:
+                cut = width
+            lines.append(para[:cut].rstrip())
+            para = para[cut:].lstrip()
+        if para:
+            lines.append(para)
+    return lines
+
+
+def header_footer_html(text: str | None, *, css_class: str) -> str:
+    """Escaped HTML block for document header/footer customization."""
+    from html import escape
+
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+    body = "<br>".join(escape(line) for line in raw.splitlines() if line.strip())
+    if not body:
+        return ""
+    return f'<p class="{css_class} muted">{body}</p>'
 
 
 def brand_html_block(

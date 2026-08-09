@@ -162,7 +162,11 @@ def render_quotation_text(
     trading_name: str | None = None,
     legal_name: str | None = None,
     has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
 ) -> str:
+    from app.print_branding import header_footer_text_lines
+
     tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
     width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
     cur = currency or "GHS"
@@ -176,6 +180,8 @@ def render_quotation_text(
         lines.append(str(company_email)[:width])
     if tax_registration_number:
         lines.append(f"Tax #: {tax_registration_number}"[:width])
+    for part in header_footer_text_lines(document_header, width):
+        lines.append(part[:width])
     lines.extend(
         [
             "",
@@ -209,7 +215,11 @@ def render_quotation_text(
     )
     if quotation_data.get("notes"):
         lines.extend(["", f"Notes: {quotation_data['notes']}"[:width]])
-    if tpl.startswith("thermal"):
+    footer_lines = header_footer_text_lines(document_footer, width)
+    if footer_lines:
+        lines.append("")
+        lines.extend(part[:width] for part in footer_lines)
+    elif tpl.startswith("thermal"):
         lines.extend(["", "Thank you!"[:width]])
     return "\n".join(lines)
 
@@ -231,10 +241,12 @@ def render_quotation_html(
     trading_name: str | None = None,
     legal_name: str | None = None,
     has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
 ) -> str:
     from html import escape
 
-    from app.print_branding import brand_html_block
+    from app.print_branding import brand_html_block, header_footer_html
 
     tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
     cur = escape(currency or "GHS")
@@ -270,6 +282,10 @@ def render_quotation_html(
         if quotation_data.get("notes")
         else ""
     )
+    header_html = header_footer_html(document_header, css_class="doc-header")
+    footer_html = header_footer_html(document_footer, css_class="doc-footer") or (
+        '<p class="muted" style="margin-top:28px">Thank you for considering us.</p>'
+    )
     q_no = escape(str(quotation_data.get("quotation_number") or ""))
     status = escape(str(quotation_data.get("status") or ""))
     rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
@@ -291,6 +307,8 @@ def render_quotation_html(
   .muted {{ color:#57534e; }}
   .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
   .brand .logo {{ display:block; max-height:72px; max-width:220px; margin:0 0 10px; object-fit:contain; }}
+  .doc-header {{ margin:8px 0 0; }}
+  .doc-footer {{ margin-top:28px; }}
   table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
   th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
   th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
@@ -302,6 +320,7 @@ def render_quotation_html(
 </style></head><body><div class="sheet">
   <div class="toolbar"><button onclick="window.print()">Print</button></div>
   {brand_block}
+  {header_html}
   <h2>Quotation {q_no}</h2>
   <div class="muted">Status: {status}{valid_line}</div>
   <p><strong>Quote for</strong><br>{escape(customer_name)}{customer_addr_html}</p>
@@ -316,7 +335,7 @@ def render_quotation_html(
     <div class="grand"><span>Total</span><span>{cur} {float(quotation_data.get("total_amount") or 0):.2f}</span></div>
   </div>
   {notes_html}
-  <p class="muted" style="margin-top:28px">Thank you for considering us.</p>
+  {footer_html}
 </div></body></html>"""
 
 
@@ -337,6 +356,8 @@ def render_quotation_pdf(
     trading_name: str | None = None,
     legal_name: str | None = None,
     has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
 ) -> bytes:
     tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
     text = render_quotation_text(
@@ -351,6 +372,12 @@ def render_quotation_pdf(
         tax_registration_number=tax_registration_number,
         customer_address=customer_address,
         item_labels=item_labels,
+        logo_data_url=logo_data_url,
+        trading_name=trading_name,
+        legal_name=legal_name,
+        has_logo=has_logo,
+        document_header=document_header,
+        document_footer=document_footer,
     )
     title = f"QUOTATION {quotation_data.get('quotation_number') or ''}"
     return render_branded_lines_pdf(
@@ -1214,7 +1241,11 @@ def render_credit_note_text(
     trading_name: str | None = None,
     legal_name: str | None = None,
     has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
 ) -> str:
+    from app.print_branding import header_footer_text_lines
+
     tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
     width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
     cur = currency or "GHS"
@@ -1229,6 +1260,8 @@ def render_credit_note_text(
         lines.append(str(company_email)[:width])
     if tax_registration_number:
         lines.append(f"Tax #: {tax_registration_number}"[:width])
+    for part in header_footer_text_lines(document_header, width):
+        lines.append(part[:width])
     lines.extend(
         [
             "",
@@ -1265,7 +1298,11 @@ def render_credit_note_text(
     )
     if return_data.get("notes"):
         lines.extend(["", f"Notes: {return_data['notes']}"[:width]])
-    if tpl.startswith("thermal"):
+    footer_lines = header_footer_text_lines(document_footer, width)
+    if footer_lines:
+        lines.append("")
+        lines.extend(part[:width] for part in footer_lines)
+    elif tpl.startswith("thermal"):
         lines.extend(["", "Thank you!"[:width]])
     return "\n".join(lines)
 
@@ -1288,10 +1325,12 @@ def render_credit_note_html(
     trading_name: str | None = None,
     legal_name: str | None = None,
     has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
 ) -> str:
     from html import escape
 
-    from app.print_branding import brand_html_block
+    from app.print_branding import brand_html_block, header_footer_html
 
     tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
     cur = escape(currency or "GHS")
@@ -1330,6 +1369,8 @@ def render_credit_note_html(
         if return_data.get("notes")
         else ""
     )
+    header_html = header_footer_html(document_header, css_class="doc-header")
+    footer_html = header_footer_html(document_footer, css_class="doc-footer")
     rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
     meta_html = "<br>".join(meta)
     brand_block = brand_html_block(
@@ -1349,6 +1390,8 @@ def render_credit_note_html(
   .muted {{ color:#57534e; }}
   .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
   .brand .logo {{ display:block; max-height:72px; max-width:220px; margin:0 0 10px; object-fit:contain; }}
+  .doc-header {{ margin:8px 0 0; }}
+  .doc-footer {{ margin-top:28px; }}
   table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
   th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
   th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
@@ -1360,6 +1403,7 @@ def render_credit_note_html(
 </style></head><body><div class="sheet">
   <div class="toolbar"><button onclick="window.print()">Print</button></div>
   {brand_block}
+  {header_html}
   <h2>Credit Note {cn}</h2>
   <div class="muted">Return {rn} · Status: {status} · Reason: {reason}</div>
   <p><strong>Credit to</strong><br>{escape(customer_name)}{customer_addr_html}{inv_html}</p>
@@ -1373,6 +1417,7 @@ def render_credit_note_html(
     <div class="grand"><span>Total credit</span><span>{cur} {float(return_data.get("total_amount") or 0):.2f}</span></div>
   </div>
   {notes_html}
+  {footer_html}
 </div></body></html>"""
 
 
@@ -1394,6 +1439,8 @@ def render_credit_note_pdf(
     trading_name: str | None = None,
     legal_name: str | None = None,
     has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
 ) -> bytes:
     tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
     text = render_credit_note_text(
@@ -1409,6 +1456,12 @@ def render_credit_note_pdf(
         customer_address=customer_address,
         invoice_number=invoice_number,
         item_labels=item_labels,
+        logo_data_url=logo_data_url,
+        trading_name=trading_name,
+        legal_name=legal_name,
+        has_logo=has_logo,
+        document_header=document_header,
+        document_footer=document_footer,
     )
     title = f"CREDIT NOTE {return_data.get('credit_note_number') or ''}"
     return render_branded_lines_pdf(

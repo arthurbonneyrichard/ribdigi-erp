@@ -137,6 +137,9 @@ export default function Page() {
           tax_filing_period: tenant.tax_filing_period,
           document_numbering: tenant.document_numbering || undefined,
           invoice_print_template: tenant.invoice_print_template || undefined,
+          receipt_print_template: tenant.receipt_print_template || undefined,
+          document_header: tenant.document_header ?? undefined,
+          document_footer: tenant.document_footer ?? undefined,
           plan_code: tenant.plan_code || undefined,
           legal_name: tenant.legal_name || undefined,
           registration_number: tenant.registration_number || undefined,
@@ -472,8 +475,14 @@ export default function Page() {
       </div>
 
       <div className="card" style={{ marginTop: 16, maxWidth: 720 }}>
-        <h2>Invoice print template</h2>
-        <p className="muted">Default layout for sales invoice print (A4 or thermal).</p>
+        <h2>Print templates</h2>
+        <p className="muted">
+          Default layouts for invoices and POS receipts, plus optional header/footer text on printed
+          documents.
+        </p>
+        <label className="muted" style={{ display: 'block', marginTop: 8 }}>
+          Invoice print template
+        </label>
         <select
           value={tenant.invoice_print_template || 'a4'}
           onChange={(e) => setTenant({ ...tenant, invoice_print_template: e.target.value })}
@@ -483,9 +492,42 @@ export default function Page() {
           <option value="thermal_80">Thermal 80mm</option>
           <option value="thermal_58">Thermal 58mm</option>
         </select>
+        <label className="muted" style={{ display: 'block', marginTop: 12 }}>
+          Receipt print template
+        </label>
+        <select
+          value={tenant.receipt_print_template || 'thermal_80'}
+          onChange={(e) => setTenant({ ...tenant, receipt_print_template: e.target.value })}
+          style={{ maxWidth: 220 }}
+        >
+          <option value="thermal_80">Thermal 80mm</option>
+          <option value="thermal_58">Thermal 58mm</option>
+        </select>
+        <label className="muted" style={{ display: 'block', marginTop: 12 }}>
+          Document header
+        </label>
+        <textarea
+          rows={2}
+          maxLength={500}
+          placeholder="Optional line under company branding (e.g. branch slogan)"
+          value={tenant.document_header || ''}
+          onChange={(e) => setTenant({ ...tenant, document_header: e.target.value })}
+          style={{ width: '100%', maxWidth: 560 }}
+        />
+        <label className="muted" style={{ display: 'block', marginTop: 12 }}>
+          Document footer
+        </label>
+        <textarea
+          rows={2}
+          maxLength={500}
+          placeholder="Optional closing line (e.g. returns policy)"
+          value={tenant.document_footer || ''}
+          onChange={(e) => setTenant({ ...tenant, document_footer: e.target.value })}
+          style={{ width: '100%', maxWidth: 560 }}
+        />
         <div style={{ marginTop: 8 }}>
           <button onClick={save} disabled={!!tenant.read_only}>
-            Save print template
+            Save print templates
           </button>
         </div>
       </div>

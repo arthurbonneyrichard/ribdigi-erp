@@ -84,6 +84,11 @@ class Tenant(Base):
     document_numbering: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # Default sales invoice print layout: a4 | thermal_80 | thermal_58
     invoice_print_template: Mapped[str] = mapped_column(String(20), default="a4")
+    # Default POS receipt layout: thermal_80 | thermal_58
+    receipt_print_template: Mapped[str] = mapped_column(String(20), default="thermal_80")
+    # Optional free-text lines on invoices/receipts/quotations/credit notes
+    document_header: Mapped[str | None] = mapped_column(Text, nullable=True)
+    document_footer: Mapped[str | None] = mapped_column(Text, nullable=True)
     suspended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     suspended_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

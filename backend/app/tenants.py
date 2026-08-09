@@ -100,6 +100,9 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
             getattr(tenant, "document_numbering", None)
         ),
         "invoice_print_template": getattr(tenant, "invoice_print_template", None) or "a4",
+        "receipt_print_template": getattr(tenant, "receipt_print_template", None) or "thermal_80",
+        "document_header": getattr(tenant, "document_header", None),
+        "document_footer": getattr(tenant, "document_footer", None),
         "suspended_at": tenant.suspended_at,
         "suspended_reason": tenant.suspended_reason,
         "created_at": tenant.created_at,
@@ -311,6 +314,9 @@ async def update_profile(
     tax_filing_period: str | None = None,
     document_numbering: dict | None = None,
     invoice_print_template: str | None = None,
+    receipt_print_template: str | None = None,
+    document_header: str | None = None,
+    document_footer: str | None = None,
     plan_code: str | None = None,
     legal_name: str | None = None,
     registration_number: str | None = None,
@@ -388,6 +394,26 @@ async def update_profile(
                 detail=f"invoice_print_template must be one of: {sorted(INVOICE_PRINT_TEMPLATES)}",
             )
         tenant.invoice_print_template = tpl
+    if receipt_print_template is not None:
+        from app.receipts import RECEIPT_PRINT_TEMPLATES
+
+        rtpl = receipt_print_template.strip().lower()
+        if rtpl not in RECEIPT_PRINT_TEMPLATES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"receipt_print_template must be one of: {sorted(RECEIPT_PRINT_TEMPLATES)}",
+            )
+        tenant.receipt_print_template = rtpl
+    if document_header is not None:
+        header = document_header.strip()
+        if len(header) > 500:
+            raise HTTPException(status_code=400, detail="document_header must be at most 500 characters")
+        tenant.document_header = header or None
+    if document_footer is not None:
+        footer = document_footer.strip()
+        if len(footer) > 500:
+            raise HTTPException(status_code=400, detail="document_footer must be at most 500 characters")
+        tenant.document_footer = footer or None
     if plan_code is not None:
         plan = plan_code.strip().lower()
         if plan not in VALID_PLAN_CODES:
