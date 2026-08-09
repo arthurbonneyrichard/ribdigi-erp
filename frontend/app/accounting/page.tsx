@@ -51,6 +51,8 @@ export default function Page() {
   const [coaParentId, setCoaParentId] = useState('');
   const [obAccountId, setObAccountId] = useState('');
   const [obAmount, setObAmount] = useState('100');
+  const [pnlFrom, setPnlFrom] = useState('');
+  const [pnlTo, setPnlTo] = useState('');
 
   function accountDepth(row: any, byId: Record<string, any>): number {
     let depth = 0;
@@ -65,11 +67,17 @@ export default function Page() {
   }
 
   async function refresh() {
+    const pnlQs = new URLSearchParams();
+    if (pnlFrom) pnlQs.set('from_date', pnlFrom);
+    if (pnlTo) pnlQs.set('to_date', pnlTo);
+    const pnlPath = pnlQs.toString()
+      ? `/accounting/profit-loss?${pnlQs}`
+      : '/accounting/profit-loss';
     const [a, j, t, p, liq, stmts, chq, conns] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
       api('/accounting/trial-balance'),
-      api('/accounting/profit-loss'),
+      api(pnlPath),
       api('/accounting/liquid-accounts'),
       api('/accounting/bank-statements'),
       api('/accounting/cheques'),
@@ -698,8 +706,18 @@ export default function Page() {
             </div>
             <div className="card">
               <h3>Profit &amp; Loss</h3>
-              <p>Income: {pnl?.income}</p>
-              <p>Expense: {pnl?.expense}</p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                <input type="date" value={pnlFrom} onChange={(e) => setPnlFrom(e.target.value)} />
+                <input type="date" value={pnlTo} onChange={(e) => setPnlTo(e.target.value)} />
+                <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
+                  Apply
+                </button>
+              </div>
+              <p>Revenue: {pnl?.revenue ?? pnl?.income}</p>
+              <p>COGS: {pnl?.cogs ?? 0}</p>
+              <p>Gross: {pnl?.gross_profit ?? 0}</p>
+              <p>OpEx: {pnl?.operating_expenses ?? 0}</p>
+              <p>Income: {pnl?.income} · Expense: {pnl?.expense}</p>
               <div className="kpi">{pnl?.net_profit}</div>
             </div>
           </div>

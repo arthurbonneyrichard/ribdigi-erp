@@ -7845,6 +7845,8 @@ async def get_trial_balance(
 
 @api.get("/accounting/profit-loss")
 async def get_profit_loss(
+    from_date: str | None = None,
+    to_date: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7852,15 +7854,24 @@ async def get_profit_loss(
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
-    return env(await profit_and_loss(db, claims["tenant_id"]))
+    return env(
+        await profit_and_loss(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        )
+    )
 
 
 @api.get("/reports/profit-loss")
 async def report_profit_loss(
+    from_date: str | None = None,
+    to_date: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_profit_loss(claims, db)
+    return await get_profit_loss(from_date, to_date, claims, db)
 
 
 @api.get("/reports/trial-balance")

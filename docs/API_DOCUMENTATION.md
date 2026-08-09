@@ -900,8 +900,14 @@ Unpost reverses account balances and sets status `unposted`. Allowed only when `
 **Get Transactions:** `GET /accounting/accounts/{account_id}/transactions`
 
 ### 10.4 Financial Reports
-**Profit & Loss:** `GET /reports/profit-loss?from_date=&to_date=`  
+**Profit & Loss:** `GET /reports/profit-loss?from_date=&to_date=` (also `GET /accounting/profit-loss`)  
+
+Returns period totals from **posted** journal lines: `revenue`, `cogs`, `gross_profit`, `operating_expenses`, `other_income`, `income`, `expense`, `net_profit`, plus per-account `bucket`.
+
 **Cash Flow:** `GET /reports/cash-flow?from_date=&to_date=`  
+
+Liquid (cash/bank) movements classified as `operating` / `investing` / `financing` / `transfer` by journal `source_type`. Includes `opening_cash`, `closing_cash`, `net_change` (excludes cash↔bank transfers).
+
 **Trial Balance:** `GET /reports/trial-balance?as_of_date=`
 
 ---

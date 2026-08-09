@@ -790,6 +790,30 @@ async def expenses_summary(
     }
 
 
+# IAS 7-style activity buckets for liquid GL movements (MVP heuristics).
+_CASH_FLOW_FINANCING = frozenset({"opening_balance"})
+_CASH_FLOW_TRANSFER = frozenset(
+    {"liquid_deposit", "liquid_withdrawal", "liquid_transfer"}
+)
+_CASH_FLOW_INVESTING = frozenset()  # reserved; no dedicated fixed-asset sources yet
+
+
+def classify_cash_flow_activity(source_type: str | None) -> str:
+    """Map journal source_type → operating | investing | financing | transfer."""
+    key = (source_type or "manual").strip().lower()
+    if key in _CASH_FLOW_TRANSFER:
+        return "transfer"
+    if key in _CASH_FLOW_FINANCING:
+        return "financing"
+    if key in _CASH_FLOW_INVESTING:
+        return "investing"
+    return "operating"
+
+
+def _empty_activity() -> dict:
+    return {"inflows": 0.0, "outflows": 0.0, "net": 0.0, "lines": []}
+
+
 async def cash_flow(
     db: AsyncSession,
     tenant_id: str,
@@ -797,7 +821,7 @@ async def cash_flow(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
 ) -> dict:
-    """Cash flow from cash + bank GL accounts (is_cash_account / is_bank_account)."""
+    """Cash flow from cash + bank GL accounts, split into O/I/F activities."""
     from app.accounting import ensure_default_accounts
 
     await ensure_default_accounts(db, tenant_id)
@@ -817,17 +841,53 @@ async def cash_flow(
             )
         ).scalar_one_or_none()
         liquid = [cash] if cash else []
+    empty_sections = {
+        "operating": _empty_activity(),
+        "investing": _empty_activity(),
+        "financing": _empty_activity(),
+        "transfers": _empty_activity(),
+    }
     if not liquid:
-        return {"inflows": 0, "outflows": 0, "net": 0, "lines": [], "accounts": []}
+        return {
+            "from_date": from_date.date().isoformat() if from_date else None,
+            "to_date": to_date.date().isoformat() if to_date else None,
+            "inflows": 0,
+            "outflows": 0,
+            "net": 0,
+            "net_change": 0,
+            "opening_cash": 0,
+            "closing_cash": 0,
+            "lines": [],
+            "accounts": [],
+            **empty_sections,
+        }
 
     account_ids = [a.id for a in liquid]
     by_id = {a.id: a for a in liquid}
+
+    # Opening cash = cumulative liquid deltas before from_date (posted only).
+    opening_cash = 0.0
+    if from_date:
+        open_stmt = (
+            select(m.JournalEntryLine, m.JournalEntry)
+            .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+            .where(
+                m.JournalEntryLine.tenant_id == tenant_id,
+                m.JournalEntryLine.account_id.in_(account_ids),
+                m.JournalEntry.status == "posted",
+                m.JournalEntry.entry_date < from_date,
+            )
+        )
+        for line, _entry in (await db.execute(open_stmt)).all():
+            opening_cash += float(line.debit or 0) - float(line.credit or 0)
+
     stmt = (
         select(m.JournalEntryLine, m.JournalEntry)
         .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
         .where(
             m.JournalEntryLine.tenant_id == tenant_id,
             m.JournalEntryLine.account_id.in_(account_ids),
+            m.JournalEntry.status == "posted",
         )
     )
     if from_date:
@@ -835,6 +895,13 @@ async def cash_flow(
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
     rows = (await db.execute(stmt.order_by(m.JournalEntry.entry_date.asc()))).all()
+
+    sections = {
+        "operating": _empty_activity(),
+        "investing": _empty_activity(),
+        "financing": _empty_activity(),
+        "transfers": _empty_activity(),
+    }
     inflows = 0.0
     outflows = 0.0
     lines = []
@@ -843,23 +910,50 @@ async def cash_flow(
         credit = float(line.credit or 0)
         inflows += debit
         outflows += credit
+        activity = classify_cash_flow_activity(entry.source_type)
+        section_key = "transfers" if activity == "transfer" else activity
+        section = sections[section_key]
+        section["inflows"] = round(section["inflows"] + debit, 2)
+        section["outflows"] = round(section["outflows"] + credit, 2)
+        section["net"] = round(section["inflows"] - section["outflows"], 2)
         acct = by_id.get(line.account_id)
-        lines.append(
-            {
-                "date": entry.entry_date,
-                "entry_number": entry.entry_number,
-                "description": entry.description,
-                "account_code": acct.code if acct else None,
-                "account_name": acct.name if acct else None,
-                "inflow": debit,
-                "outflow": credit,
-                "source_type": entry.source_type,
-            }
-        )
+        row = {
+            "date": entry.entry_date,
+            "entry_number": entry.entry_number,
+            "description": entry.description,
+            "account_code": acct.code if acct else None,
+            "account_name": acct.name if acct else None,
+            "inflow": debit,
+            "outflow": credit,
+            "source_type": entry.source_type,
+            "activity": activity,
+        }
+        section["lines"].append(row)
+        lines.append(row)
+
+    period_net = round(inflows - outflows, 2)
+    # Statement net change excludes pure cash↔bank transfers (cash equivalents).
+    net_change = round(
+        sections["operating"]["net"]
+        + sections["investing"]["net"]
+        + sections["financing"]["net"],
+        2,
+    )
+    closing_cash = round(opening_cash + period_net, 2)
+
     return {
+        "from_date": from_date.date().isoformat() if from_date else None,
+        "to_date": to_date.date().isoformat() if to_date else None,
         "inflows": round(inflows, 2),
         "outflows": round(outflows, 2),
-        "net": round(inflows - outflows, 2),
+        "net": period_net,
+        "net_change": net_change,
+        "opening_cash": round(opening_cash, 2),
+        "closing_cash": closing_cash,
+        "operating": sections["operating"],
+        "investing": sections["investing"],
+        "financing": sections["financing"],
+        "transfers": sections["transfers"],
         "lines": lines,
         "accounts": [{"id": a.id, "code": a.code, "name": a.name} for a in liquid],
     }

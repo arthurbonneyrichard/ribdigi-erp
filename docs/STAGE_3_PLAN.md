@@ -19,7 +19,7 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 |----|------------|----------|---------|
 | **A1** | Journal unpost + open fiscal-period gate (BR-10.2) | P0 | COMPLETE |
 | **A2** | COA CRUD / hierarchy / opening balances (BR-10.1) | P0 | COMPLETE |
-| **A3** | Financial report depth (P&L date range; cash-flow O/I/F) | P0 | PENDING |
+| **A3** | Financial report depth (P&L date range; cash-flow O/I/F) | P0 | COMPLETE |
 | **P1** | POS split tender (`pos_payments`) | P0 | PENDING |
 | **C1** | Credit-limit override with audit | P0 | PENDING |
 | **H3** | Stage 3 exit criteria + freeze ADR | Exit | PENDING |
@@ -51,9 +51,14 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 - [x] Accounting Ledger UI: create account + opening balance + indented COA.
 - [x] Tenant + RBAC (`accounting` write); automated tests in `backend/tests/test_coa_crud_a2.py`.
 
-## A3 acceptance criteria (preview)
+## A3 acceptance criteria
 
-- P&L supports `from_date`/`to_date`; cash-flow report splits operating / investing / financing where data allows.
+- [x] P&L from posted journal lines with `from_date`/`to_date` on `/accounting/profit-loss` and `/reports/profit-loss`.
+- [x] P&L buckets: revenue, COGS, gross profit, operating expenses, other income, net profit.
+- [x] Cash-flow splits operating / investing / financing (+ transfers for cash↔bank); opening/closing cash; `net_change` excludes transfers.
+- [x] Export `profit_loss` / `cash_flow` honor date filters; Reports UI P&L tab + O/I/F cash-flow display; Ledger P&L date filter.
+- [x] Automated tests in `backend/tests/test_financial_reports_a3.py`.
+- [ ] Branch/store filter on P&L deferred (journals have no store_id yet).
 
 ## P1 acceptance criteria (preview)
 

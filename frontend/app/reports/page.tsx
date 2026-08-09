@@ -15,6 +15,7 @@ type Tab =
   | 'inventory'
   | 'purchases'
   | 'expenses'
+  | 'pnl'
   | 'cashflow'
   | 'balancesheet'
   | 'schedules';
@@ -26,6 +27,7 @@ const REPORT_TABS: Tab[] = [
   'inventory',
   'purchases',
   'expenses',
+  'pnl',
   'cashflow',
   'balancesheet',
   'schedules',
@@ -39,6 +41,7 @@ const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   inventory: 'inventory_low_stock',
   purchases: 'purchases_summary',
   expenses: 'expenses_summary',
+  pnl: 'profit_loss',
   cashflow: 'cash_flow',
   balancesheet: 'balance_sheet',
 };
@@ -54,6 +57,7 @@ const REPORT_TYPES = [
   'inventory_low_stock',
   'purchases_summary',
   'expenses_summary',
+  'profit_loss',
   'cash_flow',
   'balance_sheet',
   'tax',
@@ -107,6 +111,7 @@ export default function Page() {
       if (nextTab === 'inventory') path = '/reports/inventory/low-stock';
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
       if (nextTab === 'expenses') path = `/reports/expenses/summary${qs()}`;
+      if (nextTab === 'pnl') path = `/reports/profit-loss${qs()}`;
       if (nextTab === 'cashflow') path = `/reports/cash-flow${qs()}`;
       if (nextTab === 'balancesheet') path = '/reports/balance-sheet';
       const r = await api(path);
@@ -260,6 +265,7 @@ export default function Page() {
             ['inventory', 'Inventory'],
             ['purchases', 'Purchases'],
             ['expenses', 'Expenses'],
+            ['pnl', 'P&L'],
             ['cashflow', 'Cash flow'],
             ['balancesheet', 'Balance sheet'],
             ['schedules', 'Email schedules'],
@@ -547,27 +553,94 @@ export default function Page() {
         </>
       )}
 
+      {tab === 'pnl' && data && (
+        <>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Revenue</div>
+              <div className="kpi">{data.revenue ?? data.income}</div>
+            </div>
+            <div className="card">
+              <div className="muted">COGS</div>
+              <div className="kpi">{data.cogs ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Gross profit</div>
+              <div className="kpi">{data.gross_profit ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Operating expenses</div>
+              <div className="kpi">{data.operating_expenses ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Net profit</div>
+              <div className="kpi">{data.net_profit}</div>
+            </div>
+          </div>
+          <p className="muted" style={{ marginTop: 8 }}>
+            Period: {data.from_date || 'all'} → {data.to_date || 'all'}
+          </p>
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Bucket</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.accounts || []).map((a: any) => (
+                <tr key={a.account_id || a.code}>
+                  <td>{a.code}</td>
+                  <td>{a.name}</td>
+                  <td>{a.bucket || a.account_type}</td>
+                  <td>{a.balance}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
       {tab === 'cashflow' && data && (
         <>
           <div className="grid">
             <div className="card">
-              <div className="muted">Inflows</div>
-              <div className="kpi">{data.inflows}</div>
+              <div className="muted">Opening cash</div>
+              <div className="kpi">{data.opening_cash ?? 0}</div>
             </div>
             <div className="card">
-              <div className="muted">Outflows</div>
-              <div className="kpi">{data.outflows}</div>
+              <div className="muted">Operating</div>
+              <div className="kpi">{data.operating?.net ?? 0}</div>
             </div>
             <div className="card">
-              <div className="muted">Net</div>
-              <div className="kpi">{data.net}</div>
+              <div className="muted">Investing</div>
+              <div className="kpi">{data.investing?.net ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Financing</div>
+              <div className="kpi">{data.financing?.net ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Net change</div>
+              <div className="kpi">{data.net_change ?? data.net}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Closing cash</div>
+              <div className="kpi">{data.closing_cash ?? data.net}</div>
             </div>
           </div>
+          <p className="muted" style={{ marginTop: 8 }}>
+            Transfers (cash↔bank): {data.transfers?.net ?? 0} · Period: {data.from_date || 'all'} →{' '}
+            {data.to_date || 'all'}
+          </p>
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Entry</th>
+                <th>Activity</th>
                 <th>In</th>
                 <th>Out</th>
               </tr>
@@ -577,6 +650,7 @@ export default function Page() {
                 <tr key={`${l.entry_number}-${idx}`}>
                   <td>{String(l.date)}</td>
                   <td>{l.entry_number}</td>
+                  <td>{l.activity || '—'}</td>
                   <td>{l.inflow}</td>
                   <td>{l.outflow}</td>
                 </tr>

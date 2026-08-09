@@ -1490,24 +1490,93 @@ async def trial_balance(db: AsyncSession, tenant_id: str) -> dict:
     }
 
 
-async def profit_and_loss(db: AsyncSession, tenant_id: str) -> dict:
-    accounts = (
-        await db.execute(select(m.Account).where(m.Account.tenant_id == tenant_id))
-    ).scalars().all()
-    income = sum(float(a.balance or 0) for a in accounts if a.account_type == "income")
-    expense = sum(float(a.balance or 0) for a in accounts if a.account_type == "expense")
+def _pnl_bucket(account: m.Account) -> str:
+    """Classify P&L account into revenue / cogs / operating_expense / other_income."""
+    code = (account.code or "").strip()
+    if account.account_type == "income":
+        if code.startswith("42") or code.startswith("43"):
+            return "other_income"
+        return "revenue"
+    if account.account_type == "expense":
+        if code.startswith("5") or "cogs" in (account.name or "").lower():
+            return "cogs"
+        return "operating_expense"
+    return "other"
+
+
+async def profit_and_loss(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    """Period P&L from posted journal lines (optional date range)."""
+    await ensure_default_accounts(db, tenant_id)
+
+    stmt = (
+        select(m.JournalEntryLine, m.Account, m.JournalEntry)
+        .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntry.status == "posted",
+            m.Account.account_type.in_(("income", "expense")),
+        )
+    )
+    if from_date:
+        stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
+    if to_date:
+        stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
+
+    rows = (await db.execute(stmt)).all()
+    by_account: dict[str, dict] = {}
+    for line, account, _entry in rows:
+        debit = float(line.debit or 0)
+        credit = float(line.credit or 0)
+        # Income increases with credit; expense with debit.
+        if account.account_type == "income":
+            delta = credit - debit
+        else:
+            delta = debit - credit
+        slot = by_account.get(account.id)
+        if not slot:
+            slot = {
+                "account_id": account.id,
+                "code": account.code,
+                "name": account.name,
+                "account_type": account.account_type,
+                "bucket": _pnl_bucket(account),
+                "balance": 0.0,
+            }
+            by_account[account.id] = slot
+        slot["balance"] = round(float(slot["balance"]) + delta, 2)
+
+    accounts_out = sorted(by_account.values(), key=lambda r: r["code"])
+    revenue = round(sum(r["balance"] for r in accounts_out if r["bucket"] == "revenue"), 2)
+    other_income = round(
+        sum(r["balance"] for r in accounts_out if r["bucket"] == "other_income"), 2
+    )
+    cogs = round(sum(r["balance"] for r in accounts_out if r["bucket"] == "cogs"), 2)
+    operating_expenses = round(
+        sum(r["balance"] for r in accounts_out if r["bucket"] == "operating_expense"), 2
+    )
+    income = round(revenue + other_income, 2)
+    expense = round(cogs + operating_expenses, 2)
+    gross_profit = round(revenue - cogs, 2)
+    net_profit = round(income - expense, 2)
+
     return {
+        "from_date": from_date.date().isoformat() if from_date else None,
+        "to_date": to_date.date().isoformat() if to_date else None,
+        "revenue": revenue,
+        "other_income": other_income,
+        "cogs": cogs,
+        "gross_profit": gross_profit,
+        "operating_expenses": operating_expenses,
         "income": income,
         "expense": expense,
-        "net_profit": income - expense,
-        "accounts": [
-            {
-                "code": a.code,
-                "name": a.name,
-                "account_type": a.account_type,
-                "balance": float(a.balance or 0),
-            }
-            for a in accounts
-            if a.account_type in {"income", "expense"}
-        ],
+        "net_profit": net_profit,
+        "accounts": accounts_out,
     }

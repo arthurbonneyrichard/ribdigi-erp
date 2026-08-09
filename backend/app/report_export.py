@@ -277,8 +277,26 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
     if report_type == "cash_flow":
         lines_data = payload.get("lines") or []
         rows = [dict(x) for x in lines_data] if lines_data else [dict(payload)]
-        pdf = _kv_lines(payload) + [
-            f"{r.get('date')}: +{r.get('inflow')} -{r.get('outflow')} {r.get('description')}"
+        summary = {
+            k: payload.get(k)
+            for k in (
+                "from_date",
+                "to_date",
+                "opening_cash",
+                "closing_cash",
+                "net_change",
+                "inflows",
+                "outflows",
+                "net",
+            )
+            if k in payload
+        }
+        for section in ("operating", "investing", "financing", "transfers"):
+            block = payload.get(section) or {}
+            if isinstance(block, dict):
+                summary[f"{section}_net"] = block.get("net")
+        pdf = _kv_lines(summary) + [
+            f"{r.get('date')} [{r.get('activity')}]: +{r.get('inflow')} -{r.get('outflow')} {r.get('description')}"
             for r in lines_data[:40]
         ]
         return rows, pdf, "Cash Flow"
@@ -289,7 +307,30 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         return rows or [{"note": "no rows"}], lines, "Trial Balance"
 
     if report_type == "profit_loss":
-        return [dict(payload)], _kv_lines(payload), "Profit and Loss"
+        accounts = payload.get("accounts") or []
+        rows = [dict(x) for x in accounts] if accounts else [dict(payload)]
+        lines = _kv_lines(
+            {
+                k: payload.get(k)
+                for k in (
+                    "from_date",
+                    "to_date",
+                    "revenue",
+                    "cogs",
+                    "gross_profit",
+                    "operating_expenses",
+                    "other_income",
+                    "income",
+                    "expense",
+                    "net_profit",
+                )
+                if k in payload
+            }
+        ) + [
+            f"{r.get('code')} {r.get('name')} [{r.get('bucket')}]: {r.get('balance')}"
+            for r in accounts[:50]
+        ]
+        return rows, lines, "Profit and Loss"
 
     if report_type == "balance_sheet":
         rows = []
@@ -450,7 +491,9 @@ async def build_report_payload(
     if report_type == "trial_balance":
         return await accounting_svc.trial_balance(db, tenant_id)
     if report_type == "profit_loss":
-        return await accounting_svc.profit_and_loss(db, tenant_id)
+        return await accounting_svc.profit_and_loss(
+            db, tenant_id, from_date=fd, to_date=td
+        )
     if report_type == "balance_sheet":
         return await reports_svc.balance_sheet(db, tenant_id)
     if report_type == "tax":
