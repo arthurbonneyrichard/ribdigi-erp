@@ -30,8 +30,9 @@
 15. [Notifications](#15-notifications)
 16. [AI Business Assistant](#16-ai-business-assistant)
 17. [Webhooks](#17-webhooks)
-18. [Rate Limits](#18-rate-limits)
-19. [Error Codes](#19-error-codes)
+18. [Caching](#18-caching-stage-6-p2)
+19. [Rate Limits](#19-rate-limits)
+20. [Error Codes](#20-error-codes)
 
 ---
 
@@ -1286,7 +1287,7 @@ Read models may be served from Redis (`CACHE_BACKEND=auto|redis|memory`) with so
 
 Invalidated on product/catalog/stock mutations, POS sale, invoice post, and expense approval. Disable with `CACHE_ENABLED=false`.
 
-## 18a. Rate Limits
+## 19. Rate Limits
 
 API requests are rate-limited per tenant:
 
