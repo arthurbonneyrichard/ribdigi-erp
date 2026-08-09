@@ -102,6 +102,9 @@ export default function Page() {
   const [reportResult, setReportResult] = useState<any>(null);
   const [reportTemplates, setReportTemplates] = useState<any[]>([]);
   const [templateName, setTemplateName] = useState('');
+  const [customerInsights, setCustomerInsights] = useState<any>(null);
+  const [customerQuery, setCustomerQuery] = useState('Who are my best customers?');
+  const [customerAnswer, setCustomerAnswer] = useState('');
 
   async function loadPredictions() {
     setError('');
@@ -157,6 +160,36 @@ export default function Page() {
       setExpenseSuggestions(r.data?.optimization_suggestions || []);
     } catch (err: any) {
       setError(err.message || 'Unable to load expense analysis');
+    }
+  }
+
+  async function loadCustomerInsights() {
+    try {
+      const r = await api('/ai/customers/insights');
+      setCustomerInsights(r.data);
+    } catch (err: any) {
+      setError(err.message || 'Unable to load customer insights');
+    }
+  }
+
+  async function askCustomerAssist() {
+    setError('');
+    try {
+      const r = await api('/ai/customer/assist', {
+        method: 'POST',
+        body: JSON.stringify({ query: customerQuery }),
+      });
+      setCustomerAnswer(r.data?.answer || '');
+      if (r.data?.best_customers) {
+        setCustomerInsights((prev: any) => ({
+          ...(prev || {}),
+          best_customers: r.data.best_customers,
+          churn_risks: r.data.churn_risks,
+          promotion_suggestions: r.data.promotion_suggestions,
+        }));
+      }
+    } catch (err: any) {
+      setError(err.message || 'Unable to assist');
     }
   }
 
@@ -249,6 +282,7 @@ export default function Page() {
     loadDeadStock().catch(() => undefined);
     loadSalesAnalysis().catch(() => undefined);
     loadExpenseAnalysis().catch(() => undefined);
+    loadCustomerInsights().catch(() => undefined);
     loadReportTemplates().catch(() => undefined);
     loadSecurityAlerts().catch(() => undefined);
     loadInsightCards().catch(() => undefined);
@@ -281,8 +315,8 @@ export default function Page() {
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Rule-based chat, NL report generation, sales/expense analysis, security monitoring, demand
-        forecasts, dead stock, insights, and stockout predictions — all from your tenant data.
+        Rule-based chat, NL reports, customer intelligence, sales/expense analysis, security monitoring,
+        demand forecasts, dead stock, insights, and stockout predictions — from your tenant data.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -492,6 +526,46 @@ export default function Page() {
             {a.category || 'Pattern'}: {a.description} ({a.amount})
           </p>
         ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Customer assistant</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Churn risk, best customers, and promotion suggestions from sales history.
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+          <input
+            value={customerQuery}
+            onChange={(e) => setCustomerQuery(e.target.value)}
+            style={{ flex: 1, minWidth: 220 }}
+            placeholder="Ask about customers"
+          />
+          <button type="button" onClick={askCustomerAssist}>
+            Ask
+          </button>
+          <button type="button" onClick={loadCustomerInsights}>
+            Refresh insights
+          </button>
+        </div>
+        {customerAnswer && <p>{customerAnswer}</p>}
+        {customerInsights?.best_customers?.length > 0 && (
+          <p className="muted">
+            Best:{' '}
+            {customerInsights.best_customers
+              .slice(0, 5)
+              .map((c: any) => `${c.name} (${c.monetary})`)
+              .join(' · ')}
+          </p>
+        )}
+        {customerInsights?.churn_risks?.length > 0 && (
+          <p className="muted">
+            Churn risk:{' '}
+            {customerInsights.churn_risks
+              .slice(0, 5)
+              .map((c: any) => `${c.name} (${c.churn?.band})`)
+              .join(' · ')}
+          </p>
+        )}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

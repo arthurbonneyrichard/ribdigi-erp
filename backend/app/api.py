@@ -8966,3 +8966,56 @@ async def ai_report_templates_delete(
     await ai_reports_svc.delete_template(db, claims["tenant_id"], template_id)
     await db.commit()
     return env({"id": template_id}, "Report template deleted")
+
+
+@api.post("/ai/customer/assist")
+async def ai_customer_assist(
+    payload: dict | None = None,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.9 — customer intelligence / assist from sales history."""
+    from app import ai_customers as ai_customers_svc
+
+    body = payload or {}
+    data = await ai_customers_svc.assist_customer(
+        db,
+        claims["tenant_id"],
+        customer_id=body.get("customer_id"),
+        query=body.get("query") or body.get("message"),
+    )
+    return env(data)
+
+
+@api.get("/ai/customers/insights")
+async def ai_customers_insights(
+    lookback_days: int = 180,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.9 — churn risks, best customers, promotion suggestions."""
+    from app import ai_customers as ai_customers_svc
+
+    data = await ai_customers_svc.customer_intelligence(
+        db, claims["tenant_id"], lookback_days=lookback_days
+    )
+    return env(data)
+
+
+@api.post("/ai/documents/analyze")
+async def ai_documents_analyze(
+    document_type: str = "receipt",
+    file: UploadFile = File(...),
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.8 — OCR extract, match to parties/products, flag discrepancies."""
+    from app import ai_documents as ai_documents_svc
+
+    data = await ai_documents_svc.analyze_document(
+        db,
+        claims["tenant_id"],
+        upload=file,
+        document_type=document_type,
+    )
+    return env(data)

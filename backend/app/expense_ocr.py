@@ -60,7 +60,10 @@ def extract_text_from_pdf(data: bytes) -> str:
         ) from exc
     from io import BytesIO
 
-    reader = PdfReader(BytesIO(data))
+    try:
+        reader = PdfReader(BytesIO(data))
+    except Exception:  # noqa: BLE001 — corrupt/unsupported PDFs
+        return ""
     parts: list[str] = []
     for page in reader.pages:
         try:
