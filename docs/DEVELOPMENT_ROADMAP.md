@@ -84,7 +84,9 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 3 open (2026-08-09):** Sales, POS & Financials hardening track approved — `docs/ADR_011_STAGE3_OPEN.md` + `docs/STAGE_3_PLAN.md`.
 
-**Stage 3 exit (2026-08-09):** A1–A3, P1, C1 met — `docs/STAGE_3_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_012_STAGE3_FREEZE.md` (no new Stage 3 feature scope until Stage 4 is explicitly approved).
+**Stage 3 exit (2026-08-09):** A1–A3, P1, C1 met — `docs/STAGE_3_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_012_STAGE3_FREEZE.md` (amended when Stage 4 opened).
+
+**Stage 4 open (2026-08-09):** Intelligence, Multi-Store & Scale hardening track approved — `docs/ADR_013_STAGE4_OPEN.md` + `docs/STAGE_4_PLAN.md`.
 
 ### 2.2 Features
 
@@ -499,6 +501,8 @@ Acceptance Criteria:
 ### 5.1 Objective
 
 Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven business insights, multi-store management for retail chains, comprehensive reporting, and proactive notifications. This phase transforms the ERP from a record-keeping tool into an intelligent business advisor.
+
+**Active delivery plan:** `docs/STAGE_4_PLAN.md` (hardening remaining BR ACs on top of existing multi-store / reports / notifications / AI engines).
 
 ### 5.2 Features
 

@@ -20,3 +20,7 @@ Stage 3 Sales, POS & Financials hardening (A1–A3, P1, C1) delivered journal un
 - Agents treat Stage 3 A1–A3, P1, C1 as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1 and Stage 2 freezes (ADR-008, ADR-010) remain in force for their scopes.
+
+## Amendment (2026-08-09)
+
+Stage 4 delivery track was **explicitly approved** and opened under [ADR-013](ADR_013_STAGE4_OPEN.md) / `docs/STAGE_4_PLAN.md`. Stage 3 freeze above still applies to Sales/POS/Financials hardening scope.
