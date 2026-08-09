@@ -204,6 +204,16 @@ async def job_archive_cold_audit_logs() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_retry_due_webhooks() -> dict:
+    """Stage 7 W2 — re-attempt pending_retry webhook deliveries that are due."""
+    from app import webhooks as webhooks_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await webhooks_svc.process_due_retries(db, tenant_id=tenant_id)
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
@@ -217,6 +227,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "generate_ai_low_stock_predictions": job_generate_ai_low_stock_predictions,
     "generate_ai_insights": job_generate_ai_insights,
     "archive_cold_audit_logs": job_archive_cold_audit_logs,
+    "retry_due_webhooks": job_retry_due_webhooks,
 }
 
 

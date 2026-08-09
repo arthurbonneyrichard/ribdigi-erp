@@ -20,3 +20,7 @@ Stage 6 Integrations, Onboarding & Performance (K1, W1, N2, P2) delivered tenant
 - Agents treat Stage 6 K1, W1, N2, P2 as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–5 freezes (ADR-008, ADR-010, ADR-012, ADR-014, ADR-016) remain in force for their scopes.
+
+## Amendment (2026-08-09)
+
+Stage 7 delivery track was **explicitly approved** and opened under [ADR-019](ADR_019_STAGE7_OPEN.md) / `docs/STAGE_7_PLAN.md`. Stage 6 freeze above still applies to Integrations/Onboarding/Performance scope.

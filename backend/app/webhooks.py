@@ -1,12 +1,13 @@
-"""Tenant webhooks with HMAC-SHA256 signatures (Stage 6 W1)."""
+"""Tenant webhooks with HMAC-SHA256 signatures (Stage 6 W1 / Stage 7 W2 retries)."""
 
 from __future__ import annotations
 
 import hashlib
 import hmac
 import json
+import logging
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlparse
 
@@ -17,6 +18,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import totp as totp_svc
+from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 VALID_EVENTS: frozenset[str] = frozenset(
     {
@@ -36,6 +40,22 @@ VALID_EVENTS: frozenset[str] = frozenset(
 
 SIGNATURE_HEADER = "X-Ribdigi-Signature"
 MAX_EVENTS_PER_ENDPOINT = 20
+STATUS_PENDING = "pending"
+STATUS_PENDING_RETRY = "pending_retry"
+STATUS_DELIVERED = "delivered"
+STATUS_FAILED = "failed"
+
+
+def max_attempts() -> int:
+    return max(1, int(settings.WEBHOOK_MAX_ATTEMPTS or 5))
+
+
+def retry_delay_seconds(attempt_count: int) -> int:
+    """Exponential backoff after attempt N failed: base * 5^(N-1), capped at 1h."""
+    base = max(1, int(settings.WEBHOOK_RETRY_BASE_SECONDS or 60))
+    n = max(1, int(attempt_count))
+    delay = base * (5 ** (n - 1))
+    return min(delay, 3600)
 
 
 def generate_secret() -> str:
@@ -136,6 +156,7 @@ def serialize_delivery(row: m.WebhookDelivery) -> dict[str, Any]:
         "attempt_count": row.attempt_count,
         "response_status": row.response_status,
         "error": row.error,
+        "next_retry_at": row.next_retry_at,
         "created_at": row.created_at,
         "delivered_at": row.delivered_at,
     }
@@ -275,6 +296,37 @@ async def _deliver_http(
         return None, str(exc)[:300]
 
 
+def _apply_attempt_outcome(
+    *,
+    delivery: m.WebhookDelivery,
+    endpoint: m.WebhookEndpoint,
+    status_code: int | None,
+    error: str | None,
+) -> None:
+    delivery.attempt_count = int(delivery.attempt_count or 0) + 1
+    delivery.response_status = status_code
+    endpoint.last_delivery_at = datetime.utcnow()
+    endpoint.last_status_code = status_code
+    endpoint.updated_at = datetime.utcnow()
+    if error:
+        delivery.error = error
+        endpoint.failure_count = int(endpoint.failure_count or 0) + 1
+        if delivery.attempt_count < max_attempts():
+            delay = retry_delay_seconds(delivery.attempt_count)
+            delivery.status = STATUS_PENDING_RETRY
+            delivery.next_retry_at = datetime.utcnow() + timedelta(seconds=delay)
+            delivery.delivered_at = None
+        else:
+            delivery.status = STATUS_FAILED
+            delivery.next_retry_at = None
+    else:
+        delivery.status = STATUS_DELIVERED
+        delivery.delivered_at = datetime.utcnow()
+        delivery.error = None
+        delivery.next_retry_at = None
+        endpoint.failure_count = 0
+
+
 async def deliver_to_endpoint(
     db: AsyncSession,
     endpoint: m.WebhookEndpoint,
@@ -292,7 +344,7 @@ async def deliver_to_endpoint(
         webhook_id=endpoint.id,
         event=event,
         payload=envelope,
-        status="pending",
+        status=STATUS_PENDING,
         attempt_count=0,
     )
     db.add(delivery)
@@ -301,22 +353,91 @@ async def deliver_to_endpoint(
     status_code, error = await _deliver_http(
         url=endpoint.url, body=body, signature_header=signature, transport=transport
     )
-    delivery.attempt_count = 1
-    delivery.response_status = status_code
-    endpoint.last_delivery_at = datetime.utcnow()
-    endpoint.last_status_code = status_code
-    endpoint.updated_at = datetime.utcnow()
-    if error:
-        delivery.status = "failed"
-        delivery.error = error
-        endpoint.failure_count = int(endpoint.failure_count or 0) + 1
-    else:
-        delivery.status = "delivered"
-        delivery.delivered_at = datetime.utcnow()
-        delivery.error = None
-        endpoint.failure_count = 0
+    _apply_attempt_outcome(
+        delivery=delivery, endpoint=endpoint, status_code=status_code, error=error
+    )
     await db.flush()
     return delivery
+
+
+async def retry_delivery(
+    db: AsyncSession,
+    delivery: m.WebhookDelivery,
+    *,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> m.WebhookDelivery:
+    """Re-attempt a pending_retry delivery with a freshly signed payload."""
+    endpoint = await db.get(m.WebhookEndpoint, delivery.webhook_id)
+    if not endpoint or endpoint.tenant_id != delivery.tenant_id:
+        delivery.status = STATUS_FAILED
+        delivery.error = "Webhook endpoint missing"
+        delivery.next_retry_at = None
+        await db.flush()
+        return delivery
+    if not endpoint.is_active:
+        delivery.status = STATUS_FAILED
+        delivery.error = "Webhook endpoint inactive"
+        delivery.next_retry_at = None
+        await db.flush()
+        return delivery
+
+    envelope = delivery.payload if isinstance(delivery.payload, dict) else {}
+    body = json.dumps(envelope, sort_keys=True, default=str).encode("utf-8")
+    secret = decrypt_webhook_secret(endpoint.secret_enc)
+    signature, _ = sign_payload(secret=secret, body=body)
+    status_code, error = await _deliver_http(
+        url=endpoint.url, body=body, signature_header=signature, transport=transport
+    )
+    _apply_attempt_outcome(
+        delivery=delivery, endpoint=endpoint, status_code=status_code, error=error
+    )
+    await db.flush()
+    return delivery
+
+
+async def process_due_retries(
+    db: AsyncSession,
+    *,
+    tenant_id: str | None = None,
+    limit: int = 100,
+    transport: httpx.AsyncBaseTransport | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Pick up pending_retry rows whose next_retry_at is due (Stage 7 W2)."""
+    cutoff = now or datetime.utcnow()
+    stmt = (
+        select(m.WebhookDelivery)
+        .where(
+            m.WebhookDelivery.status == STATUS_PENDING_RETRY,
+            m.WebhookDelivery.next_retry_at.is_not(None),
+            m.WebhookDelivery.next_retry_at <= cutoff,
+        )
+        .order_by(m.WebhookDelivery.next_retry_at.asc())
+        .limit(max(1, int(limit)))
+    )
+    if tenant_id:
+        stmt = stmt.where(m.WebhookDelivery.tenant_id == tenant_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    retried = 0
+    delivered = 0
+    failed = 0
+    still_pending = 0
+    for row in rows:
+        updated = await retry_delivery(db, row, transport=transport)
+        retried += 1
+        if updated.status == STATUS_DELIVERED:
+            delivered += 1
+        elif updated.status == STATUS_FAILED:
+            failed += 1
+        elif updated.status == STATUS_PENDING_RETRY:
+            still_pending += 1
+    return {
+        "due": len(rows),
+        "retried": retried,
+        "delivered": delivered,
+        "failed": failed,
+        "pending_retry": still_pending,
+    }
 
 
 async def emit_event(

@@ -1273,6 +1273,9 @@ RIBDIGI ERP supports webhook subscriptions for real-time event notifications.
 ### 17.4 Signature verification (Stage 6 W1)
 Each delivery includes header `X-Ribdigi-Signature` with value `t=<unix_ts>,v1=<hex>` where `v1` is HMAC-SHA256 of `{t}.{raw_body}` using the webhook signing secret (`whsec_…`, shown once on create). Reject if timestamp skew exceeds 5 minutes. Test ping: `POST /webhooks/{id}/test` (`webhook.test` event). Invoice post emits `sale.created`.
 
+### 17.5 Delivery retries (Stage 7 W2)
+Non-2xx or transport errors set delivery status to `pending_retry` with `next_retry_at` using exponential backoff (`WEBHOOK_RETRY_BASE_SECONDS` × 5^(attempt−1), capped at 1 hour). Celery beat job `retry_due_webhooks` (also `POST /jobs/retry_due_webhooks/run`) re-signs the stored payload with a fresh timestamp and re-POSTs. After `WEBHOOK_MAX_ATTEMPTS` (default 5) the delivery is terminal `failed`. Successful retry → `delivered` and clears `next_retry_at`.
+
 ---
 
 ## 18. Caching (Stage 6 P2)

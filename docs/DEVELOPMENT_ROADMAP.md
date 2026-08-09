@@ -96,7 +96,9 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 6 open (2026-08-09):** Integrations, Onboarding & Performance track approved — `docs/ADR_017_STAGE6_OPEN.md` + `docs/STAGE_6_PLAN.md`.
 
-**Stage 6 exit (2026-08-09):** K1, W1, N2, P2 met — `docs/STAGE_6_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_018_STAGE6_FREEZE.md` (no new Stage 6 feature scope until next track is explicitly opened).
+**Stage 6 exit (2026-08-09):** K1, W1, N2, P2 met — `docs/STAGE_6_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_018_STAGE6_FREEZE.md` (amended when Stage 7 opened).
+
+**Stage 7 open (2026-08-09):** Launch Reliability Closeout track approved — `docs/ADR_019_STAGE7_OPEN.md` + `docs/STAGE_7_PLAN.md`.
 
 ### 2.2 Features
 
@@ -667,6 +669,8 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 **Stage 5 delivery plan (closed):** `docs/STAGE_5_PLAN.md` — exit met; freeze ADR-016.
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
+
+**Active delivery plan:** `docs/STAGE_7_PLAN.md` (webhook retries, permissions cache, API key usage, launch checklist).
 
 ### 6.2 Features
 

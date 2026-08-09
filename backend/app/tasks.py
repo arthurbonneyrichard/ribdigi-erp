@@ -91,6 +91,13 @@ def archive_cold_audit_logs() -> dict:
     return jobs_svc.run_async(jobs_svc.job_archive_cold_audit_logs())
 
 
+@celery.task(name="app.tasks.retry_due_webhooks")
+def retry_due_webhooks() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_retry_due_webhooks())
+
+
 @celery.task(name="app.tasks.run_named_job")
 def run_named_job(name: str) -> dict:
     if not settings.CELERY_ENABLED:

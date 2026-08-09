@@ -16,6 +16,8 @@ def test_celery_app_has_broker_and_beat_entries():
     assert "sync-bank-feeds" in celery.conf.beat_schedule
     assert "generate-ai-low-stock-predictions" in celery.conf.beat_schedule
     assert "generate-ai-insights" in celery.conf.beat_schedule
+    assert "archive-cold-audit-logs" in celery.conf.beat_schedule
+    assert "retry-due-webhooks" in celery.conf.beat_schedule
 
 
 def test_job_handlers_registered():
@@ -31,6 +33,8 @@ def test_job_handlers_registered():
         "sync_bank_feeds",
         "generate_ai_low_stock_predictions",
         "generate_ai_insights",
+        "archive_cold_audit_logs",
+        "retry_due_webhooks",
     }
 
 

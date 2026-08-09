@@ -91,5 +91,11 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "retry-due-webhooks": {
+            "task": "app.tasks.retry_due_webhooks",
+            "schedule": schedule(
+                run_every=max(5, int(settings.CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS))
+            ),
+        },
     },
 )
