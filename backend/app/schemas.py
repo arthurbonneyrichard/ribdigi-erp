@@ -101,6 +101,8 @@ class UserUpdate(BaseModel):
     role: str | None = None
     is_active: bool | None = None
     password: str | None = None
+    # Record visibility override: own | all (department reserved / maps to all for MVP)
+    record_scope: str | None = None
 
 
 class ProductCreate(BaseModel):

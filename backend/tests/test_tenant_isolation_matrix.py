@@ -404,3 +404,88 @@ async def test_mismatched_tenant_header_on_users(client):
     headers["X-Tenant-ID"] = seed["t2"].id
     r = await ac.get("/api/v1/users", headers=headers)
     assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_cheque_isolation(client, db_session):
+    ac, seed = client
+    cheque = m.Cheque(
+        tenant_id=seed["t2"].id,
+        direction="received",
+        status="pending",
+        cheque_number="BETA-CHQ-1",
+        amount=55,
+        party_id=seed["party2"].id,
+        created_by=seed["u2"].id,
+    )
+    db_session.add(cheque)
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    missing = await ac.get(f"/api/v1/accounting/cheques/{cheque.id}", headers=headers)
+    assert missing.status_code == 404
+
+    listed = await ac.get("/api/v1/accounting/cheques", headers=headers)
+    assert listed.status_code == 200
+    numbers = {row.get("cheque_number") for row in listed.json()["data"]}
+    assert "BETA-CHQ-1" not in numbers
+
+
+@pytest.mark.asyncio
+async def test_stock_transfer_isolation(client, db_session):
+    ac, seed = client
+    from_store = await create_store(
+        db_session, tenant_id=seed["t2"].id, name="Beta From", code="BF1"
+    )
+    to_store = await create_store(
+        db_session, tenant_id=seed["t2"].id, name="Beta To", code="BT1"
+    )
+    await db_session.flush()
+    from_wh = (
+        await db_session.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == seed["t2"].id,
+                m.Warehouse.store_id == from_store.id,
+            )
+        )
+    ).scalar_one()
+    to_wh = (
+        await db_session.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == seed["t2"].id,
+                m.Warehouse.store_id == to_store.id,
+            )
+        )
+    ).scalar_one()
+    transfer = m.StockTransfer(
+        tenant_id=seed["t2"].id,
+        transfer_number="TR-BETA-1",
+        from_store_id=from_store.id,
+        to_store_id=to_store.id,
+        from_warehouse_id=from_wh.id,
+        to_warehouse_id=to_wh.id,
+        status="draft",
+        created_by=seed["u2"].id,
+    )
+    db_session.add(transfer)
+    await db_session.commit()
+
+    headers = await _mgr_headers(ac)
+    missing = await ac.get(f"/api/v1/stores/transfers/{transfer.id}", headers=headers)
+    assert missing.status_code == 404
+
+    listed = await ac.get("/api/v1/stores/transfers", headers=headers)
+    assert listed.status_code == 200
+    numbers = {row.get("transfer_number") for row in listed.json()["data"]}
+    assert "TR-BETA-1" not in numbers
+
+
+@pytest.mark.asyncio
+async def test_media_key_tenant_mismatch_rejected():
+    from fastapi import HTTPException
+
+    from app.storage import validate_key
+
+    with pytest.raises(HTTPException) as exc:
+        validate_key(f"other-tenant/expenses/file.pdf", tenant_id="alpha-tenant")
+    assert exc.value.status_code == 403
