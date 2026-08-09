@@ -1695,6 +1695,10 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "number_format": (getattr(tenant, "number_format", None) or "1,234.56") if tenant else "1,234.56",
             "time_format": (getattr(tenant, "time_format", None) or "24h") if tenant else "24h",
             "timezone": (getattr(tenant, "timezone", None) or "Africa/Accra") if tenant else "Africa/Accra",
+            # ADR-006 / BR-2.7 — English MVP; i18n scaffold on frontend
+            "locale": "en",
+            "preferred_language": "en",
+            "supported_locales": ["en"],
             **totp_svc.status_payload(user),
         }
     )
@@ -1725,6 +1729,17 @@ async def update_me(
             if not normalized:
                 raise HTTPException(status_code=400, detail="Invalid phone number")
             user.phone = normalized if normalized.startswith("+") else phone.strip()
+    if payload.preferred_language is not None:
+        lang = payload.preferred_language.strip().lower()
+        if lang != "en":
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "LOCALE_UNSUPPORTED",
+                    "message": "Only English (en) is available in the commercial MVP. Additional language packs are deferred (ADR-006).",
+                    "supported_locales": ["en"],
+                },
+            )
     await db.commit()
     return env(
         {
@@ -1733,6 +1748,9 @@ async def update_me(
             "full_name": user.full_name,
             "phone": user.phone,
             "role": user.role,
+            "locale": "en",
+            "preferred_language": "en",
+            "supported_locales": ["en"],
         },
         "Profile updated",
     )

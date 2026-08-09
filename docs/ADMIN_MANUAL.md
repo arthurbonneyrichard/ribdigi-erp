@@ -422,10 +422,9 @@ For businesses operating in multiple currencies:
 
 ### 4.7 Language Configuration
 
-1. Go to **Admin → Company Setup → Languages**
-2. **Default Language:** Set for all users (MVP: English only)
-3. **User-Level Override:** Individual users can set their preferred language in profile settings
-4. **i18n Framework:** Ready for future language packs (Spanish, French, Arabic, Chinese, etc.)
+1. Commercial MVP UI language is **English only** (ADR-006 / BR-2.7).
+2. Profile / Security shows the current language (`en`); other locales are rejected until packs ship.
+3. Frontend i18n scaffold (`frontend/lib/i18n.ts`) is in place for future language packs — do not claim Spanish/French/etc. are available in MVP.
 
 ### 4.8 Tax Configuration
 

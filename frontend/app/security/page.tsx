@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, t } from '../../lib/i18n';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -82,16 +83,21 @@ export default function Page() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [locale, setLocale] = useState(DEFAULT_LOCALE);
 
   async function refresh() {
-    const [r, keys, sess] = await Promise.all([
+    const [r, keys, sess, me] = await Promise.all([
       api('/auth/2fa/status'),
       api('/auth/webauthn/credentials').catch(() => ({ data: [] })),
       api('/auth/sessions').catch(() => ({ data: [] })),
+      api('/me').catch(() => ({ data: null })),
     ]);
     setStatus(r.data);
     setPasskeys(keys.data || []);
     setSessions(sess.data || []);
+    if (me.data?.locale === 'en' || me.data?.preferred_language === 'en') {
+      setLocale('en');
+    }
   }
 
   async function revokeSession(id: string) {
@@ -274,6 +280,18 @@ export default function Page() {
             Update password
           </button>
         </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
+        <h2>{t('language.label', locale)}</h2>
+        <p className="muted">{t('language.mvp_only', locale)}</p>
+        <select value={locale} disabled style={{ maxWidth: 220 }}>
+          {SUPPORTED_LOCALES.map((code) => (
+            <option key={code} value={code}>
+              {t('language.english', locale)} ({code})
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

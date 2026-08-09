@@ -53,6 +53,8 @@ class SmsTestRequest(BaseModel):
 class ProfileUpdate(BaseModel):
     full_name: str | None = None
     phone: str | None = None
+    # ADR-006: MVP accepts English only; other locales rejected until packs ship.
+    preferred_language: str | None = None
 
 
 class RefreshRequest(BaseModel):
