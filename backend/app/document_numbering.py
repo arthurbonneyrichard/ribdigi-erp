@@ -19,6 +19,7 @@ DOC_KEYS = (
     "sales_quotation",
     "sales_order",
     "sales_return",
+    "sales_credit_note",
     "purchase_return",
     "purchase_debit_note",
 )
@@ -31,6 +32,7 @@ DEFAULTS: dict[str, dict] = {
     "sales_quotation": {"prefix": "QT", "include_year": True, "pad": 4, "next_number": 1},
     "sales_order": {"prefix": "SO", "include_year": True, "pad": 4, "next_number": 1},
     "sales_return": {"prefix": "SR", "include_year": True, "pad": 4, "next_number": 1},
+    "sales_credit_note": {"prefix": "CN", "include_year": True, "pad": 4, "next_number": 1},
     "purchase_return": {"prefix": "PR", "include_year": True, "pad": 4, "next_number": 1},
     "purchase_debit_note": {"prefix": "DN", "include_year": True, "pad": 4, "next_number": 1},
 }

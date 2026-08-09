@@ -355,6 +355,7 @@ export default function Page() {
                 ['sales_quotation', 'Quotation'],
                 ['sales_order', 'Sales order'],
                 ['sales_return', 'Sales return'],
+                ['sales_credit_note', 'Sales credit note'],
                 ['purchase_return', 'Purchase return'],
                 ['purchase_debit_note', 'Purchase debit note'],
               ] as const

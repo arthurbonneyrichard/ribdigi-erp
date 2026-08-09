@@ -970,6 +970,7 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
     return {
         "id": ret.id,
         "return_number": ret.return_number,
+        "credit_note_number": ret.credit_note_number,
         "customer_id": ret.customer_id,
         "sales_invoice_id": ret.sales_invoice_id,
         "status": ret.status,
@@ -1149,6 +1150,7 @@ async def post_return(
 
     ret.status = "posted"
     ret.posted_at = datetime.utcnow()
+    ret.credit_note_number = await _allocate(db, tenant_id, "sales_credit_note")
 
     from app.accounting import post_sales_return_journal
 
@@ -1161,9 +1163,221 @@ async def post_return(
         tenant_id=tenant_id,
         category="system",
         title="Sales return posted",
-        message=f"Return {ret.return_number} posted for {float(ret.total_amount):.2f}.",
+        message=(
+            f"Return {ret.return_number} / {ret.credit_note_number} posted for "
+            f"{float(ret.total_amount):.2f}."
+        ),
         entity_type="sales_return",
         entity_id=ret.id,
     )
     await db.flush()
     return ret
+
+
+CREDIT_NOTE_PRINT_TEMPLATES = QUOTATION_PRINT_TEMPLATES
+CREDIT_NOTE_PRINT_FORMATS = QUOTATION_PRINT_FORMATS
+
+
+def render_credit_note_text(
+    return_data: dict,
+    *,
+    company_name: str,
+    customer_name: str,
+    template: str = "a4",
+    currency: str = "GHS",
+    company_address: str | None = None,
+    company_phone: str | None = None,
+    company_email: str | None = None,
+    tax_registration_number: str | None = None,
+    customer_address: str | None = None,
+    invoice_number: str | None = None,
+    item_labels: dict[str, str] | None = None,
+) -> str:
+    tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
+    width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
+    cur = currency or "GHS"
+    labels = item_labels or {}
+    cn = return_data.get("credit_note_number") or "—"
+    lines = [company_name[:width]]
+    if company_address:
+        lines.append(str(company_address)[:width])
+    if company_phone:
+        lines.append(f"Tel: {company_phone}"[:width])
+    if company_email:
+        lines.append(str(company_email)[:width])
+    if tax_registration_number:
+        lines.append(f"Tax #: {tax_registration_number}"[:width])
+    lines.extend(
+        [
+            "",
+            f"CREDIT NOTE {cn}"[:width],
+            f"Return: {return_data.get('return_number')}"[:width],
+            f"Customer: {customer_name}"[:width],
+        ]
+    )
+    if customer_address:
+        lines.append(str(customer_address)[:width])
+    if invoice_number:
+        lines.append(f"Invoice: {invoice_number}"[:width])
+    lines.append(f"Status: {return_data.get('status')}"[:width])
+    lines.append(f"Reason: {return_data.get('reason')}"[:width])
+    if return_data.get("posted_at"):
+        lines.append(f"Posted: {str(return_data['posted_at'])[:19]}"[:width])
+    lines.extend(
+        ["", f"{'Item':<{max(width - 28, 8)}} {'Qty':>6} {'Total':>10}"[:width], "-" * width]
+    )
+    for item in return_data.get("items") or []:
+        pid = str(item.get("product_id") or "")
+        desc = str(labels.get(pid) or pid or "Item")[: max(width - 28, 8)]
+        lines.append(
+            f"{desc:<{max(width - 28, 8)}} {float(item.get('quantity') or 0):>6.2f} "
+            f"{float(item.get('line_total') or 0):>10.2f}"[:width]
+        )
+    lines.extend(
+        [
+            "-" * width,
+            f"Subtotal: {cur} {float(return_data.get('subtotal') or 0):.2f}"[:width],
+            f"Tax: {cur} {float(return_data.get('tax_amount') or 0):.2f}"[:width],
+            f"TOTAL CREDIT: {cur} {float(return_data.get('total_amount') or 0):.2f}"[:width],
+        ]
+    )
+    if return_data.get("notes"):
+        lines.extend(["", f"Notes: {return_data['notes']}"[:width]])
+    if tpl.startswith("thermal"):
+        lines.extend(["", "Thank you!"[:width]])
+    return "\n".join(lines)
+
+
+def render_credit_note_html(
+    return_data: dict,
+    *,
+    company_name: str,
+    customer_name: str,
+    template: str = "a4",
+    currency: str = "GHS",
+    company_address: str | None = None,
+    company_phone: str | None = None,
+    company_email: str | None = None,
+    tax_registration_number: str | None = None,
+    customer_address: str | None = None,
+    invoice_number: str | None = None,
+    item_labels: dict[str, str] | None = None,
+) -> str:
+    from html import escape
+
+    tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
+    cur = escape(currency or "GHS")
+    labels = item_labels or {}
+    max_width = "80mm" if tpl == "thermal_80" else "58mm" if tpl == "thermal_58" else "720px"
+    font = "12px/1.4 monospace" if tpl.startswith("thermal") else "15px/1.45 Georgia, 'Times New Roman', serif"
+    rows = []
+    for item in return_data.get("items") or []:
+        pid = str(item.get("product_id") or "")
+        desc = escape(str(labels.get(pid) or pid or "Item"))
+        rows.append(
+            "<tr>"
+            f"<td>{desc}</td>"
+            f"<td style='text-align:right'>{float(item.get('quantity') or 0):.2f}</td>"
+            f"<td style='text-align:right'>{float(item.get('unit_price') or 0):.2f}</td>"
+            f"<td style='text-align:right'>{float(item.get('line_total') or 0):.2f}</td>"
+            "</tr>"
+        )
+    meta = []
+    if company_address:
+        meta.append(escape(str(company_address)))
+    if company_phone:
+        meta.append(f"Tel: {escape(str(company_phone))}")
+    if company_email:
+        meta.append(escape(str(company_email)))
+    if tax_registration_number:
+        meta.append(f"Tax #: {escape(str(tax_registration_number))}")
+    cn = escape(str(return_data.get("credit_note_number") or "—"))
+    rn = escape(str(return_data.get("return_number") or ""))
+    status = escape(str(return_data.get("status") or ""))
+    reason = escape(str(return_data.get("reason") or ""))
+    customer_addr_html = f"<br>{escape(str(customer_address))}" if customer_address else ""
+    inv_html = f"<br>Invoice: {escape(str(invoice_number))}" if invoice_number else ""
+    notes_html = (
+        f"<p class='muted'>Notes: {escape(str(return_data.get('notes')))}</p>"
+        if return_data.get("notes")
+        else ""
+    )
+    rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
+    meta_html = "<br>".join(meta)
+    return f"""<!doctype html>
+<html><head><meta charset="utf-8"><title>Credit Note {cn}</title>
+<style>
+  body {{ margin:0; background:#f3f0ea; color:#1c1917; font:{font}; }}
+  .sheet {{ max-width:{max_width}; margin:0 auto; min-height:100vh; padding:28px 32px 40px;
+    background:linear-gradient(180deg,#fffdf8 0%,#f7f1e8 100%); }}
+  h1 {{ font-size:1.8rem; letter-spacing:.04em; margin:0 0 6px; font-weight:700; }}
+  h2 {{ font-size:1.15rem; margin:24px 0 8px; font-weight:600; }}
+  .muted {{ color:#57534e; }}
+  .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
+  table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
+  th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
+  th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
+  .totals {{ margin-top:18px; width:100%; max-width:280px; margin-left:auto; }}
+  .totals div {{ display:flex; justify-content:space-between; padding:4px 0; }}
+  .totals .grand {{ font-weight:700; border-top:2px solid #292524; margin-top:6px; padding-top:8px; }}
+  .toolbar {{ position:sticky; top:0; background:#fffdf8cc; padding:8px 0 12px; }}
+  @media print {{ body {{ background:#fff; }} .toolbar {{ display:none; }} .sheet {{ max-width:none; background:#fff; }} }}
+</style></head><body><div class="sheet">
+  <div class="toolbar"><button onclick="window.print()">Print</button></div>
+  <div class="brand">
+    <h1>{escape(company_name)}</h1>
+    <div class="muted">{meta_html}</div>
+  </div>
+  <h2>Credit Note {cn}</h2>
+  <div class="muted">Return {rn} · Status: {status} · Reason: {reason}</div>
+  <p><strong>Credit to</strong><br>{escape(customer_name)}{customer_addr_html}{inv_html}</p>
+  <table>
+    <thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
+    <tbody>{rows_html}</tbody>
+  </table>
+  <div class="totals">
+    <div><span>Subtotal</span><span>{cur} {float(return_data.get("subtotal") or 0):.2f}</span></div>
+    <div><span>Tax</span><span>{cur} {float(return_data.get("tax_amount") or 0):.2f}</span></div>
+    <div class="grand"><span>Total credit</span><span>{cur} {float(return_data.get("total_amount") or 0):.2f}</span></div>
+  </div>
+  {notes_html}
+</div></body></html>"""
+
+
+def render_credit_note_pdf(
+    return_data: dict,
+    *,
+    company_name: str,
+    customer_name: str,
+    template: str = "a4",
+    currency: str = "GHS",
+    company_address: str | None = None,
+    company_phone: str | None = None,
+    company_email: str | None = None,
+    tax_registration_number: str | None = None,
+    customer_address: str | None = None,
+    invoice_number: str | None = None,
+    item_labels: dict[str, str] | None = None,
+) -> bytes:
+    tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
+    text = render_credit_note_text(
+        return_data,
+        company_name=company_name,
+        customer_name=customer_name,
+        template=tpl,
+        currency=currency,
+        company_address=company_address,
+        company_phone=company_phone,
+        company_email=company_email,
+        tax_registration_number=tax_registration_number,
+        customer_address=customer_address,
+        invoice_number=invoice_number,
+        item_labels=item_labels,
+    )
+    title = f"CREDIT NOTE {return_data.get('credit_note_number') or ''}"
+    return render_branded_lines_pdf(
+        text.splitlines() or [""],
+        template=tpl,
+        company_name=company_name,
+        title=title,
+    )

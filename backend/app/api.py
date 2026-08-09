@@ -4464,6 +4464,94 @@ async def get_sales_return(
     return env(await sales_docs_svc.serialize_return(db, ret))
 
 
+@api.get("/sales/returns/{return_id}/print")
+async def print_sales_return_credit_note(
+    return_id: str,
+    template: str | None = None,
+    format: str = "text",
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    ret = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, ret.created_by)
+    if ret.status != "posted" or not ret.credit_note_number:
+        raise HTTPException(
+            status_code=409,
+            detail="Credit note is available after the sales return is posted",
+        )
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    customer = await sales_svc.get_customer(db, claims["tenant_id"], ret.customer_id)
+    invoice = await sales_svc.get_invoice(db, claims["tenant_id"], ret.sales_invoice_id)
+    tpl = (template or getattr(tenant, "invoice_print_template", None) or "a4").strip().lower()
+    if tpl not in sales_docs_svc.CREDIT_NOTE_PRINT_TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"template must be one of: {sorted(sales_docs_svc.CREDIT_NOTE_PRINT_TEMPLATES)}",
+        )
+    fmt = (format or "text").strip().lower()
+    if fmt not in sales_docs_svc.CREDIT_NOTE_PRINT_FORMATS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"format must be one of: {sorted(sales_docs_svc.CREDIT_NOTE_PRINT_FORMATS)}",
+        )
+    data = await sales_docs_svc.serialize_return(db, ret)
+    currency = tenant.currency or "GHS"
+    product_ids = [
+        str(i.get("product_id")) for i in (data.get("items") or []) if i.get("product_id")
+    ]
+    item_labels: dict[str, str] = {}
+    if product_ids:
+        products = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == claims["tenant_id"],
+                    m.Product.id.in_(product_ids),
+                )
+            )
+        ).scalars().all()
+        item_labels = {p.id: p.name for p in products}
+    brand = dict(
+        company_name=tenant.company_name,
+        customer_name=customer.name,
+        template=tpl,
+        currency=currency,
+        company_address=getattr(tenant, "address", None),
+        company_phone=getattr(tenant, "phone", None),
+        company_email=str(getattr(tenant, "email", None) or "") or None,
+        tax_registration_number=getattr(tenant, "tax_registration_number", None),
+        customer_address=getattr(customer, "address", None),
+        invoice_number=invoice.invoice_number,
+        item_labels=item_labels,
+    )
+    await db.commit()
+    if fmt == "pdf":
+        pdf = sales_docs_svc.render_credit_note_pdf(data, **brand)
+        filename = f"credit-note_{(data.get('credit_note_number') or return_id)}.pdf".replace(
+            "/", "-"
+        )
+        return Response(
+            content=pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        )
+    if fmt == "html":
+        return HTMLResponse(sales_docs_svc.render_credit_note_html(data, **brand))
+    text = sales_docs_svc.render_credit_note_text(data, **brand)
+    return env(
+        {
+            "return": data,
+            "text": text,
+            "template": tpl,
+            "format": fmt,
+            "customer_name": customer.name,
+            "company_name": tenant.company_name,
+            "invoice_number": invoice.invoice_number,
+        }
+    )
+
+
 @api.post("/sales/returns/{return_id}/post")
 async def post_sales_return(
     return_id: str,

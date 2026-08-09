@@ -374,7 +374,7 @@ async def post_sales_return_journal(
         tenant_id=tenant_id,
         user_id=user_id,
         description=f"Sales return {sales_return.return_number}",
-        reference=sales_return.return_number,
+        reference=sales_return.credit_note_number or sales_return.return_number,
         source_type="sales_return",
         source_id=sales_return.id,
         lines=lines,

@@ -401,8 +401,12 @@ export default function Page() {
     return printSalesDoc('quotations', quoteId, template, format);
   }
 
+  async function printCreditNote(returnId: string, template?: string, format: 'text' | 'pdf' | 'html' = 'html') {
+    return printSalesDoc('returns', returnId, template, format);
+  }
+
   async function printSalesDoc(
-    kind: 'invoices' | 'quotations',
+    kind: 'invoices' | 'quotations' | 'returns',
     docId: string,
     template?: string,
     format: 'text' | 'pdf' | 'html' = 'html',
@@ -425,7 +429,8 @@ export default function Page() {
           win.document.close();
           win.focus();
         }
-        const label = kind === 'quotations' ? 'Quotation' : 'Invoice';
+        const label =
+          kind === 'quotations' ? 'Quotation' : kind === 'returns' ? 'Credit note' : 'Invoice';
         setMessage(`${label} print (${r.data?.template || 'a4'}) ready`);
         return;
       }
@@ -448,17 +453,31 @@ export default function Page() {
         win.document.write(html);
         win.document.close();
         win.focus();
-        setMessage(kind === 'quotations' ? 'Quotation print view ready' : 'Branded invoice print view ready');
+        setMessage(
+          kind === 'quotations'
+            ? 'Quotation print view ready'
+            : kind === 'returns'
+              ? 'Credit note print view ready'
+              : 'Branded invoice print view ready',
+        );
         return;
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${kind === 'quotations' ? 'quotation' : 'invoice'}-${docId.slice(0, 8)}.pdf`;
+      a.download = `${
+        kind === 'quotations' ? 'quotation' : kind === 'returns' ? 'credit-note' : 'invoice'
+      }-${docId.slice(0, 8)}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-      setMessage(kind === 'quotations' ? 'Quotation PDF downloaded' : 'Invoice PDF downloaded');
+      setMessage(
+        kind === 'quotations'
+          ? 'Quotation PDF downloaded'
+          : kind === 'returns'
+            ? 'Credit note PDF downloaded'
+            : 'Invoice PDF downloaded',
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -1009,6 +1028,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Number</th>
+              <th>Credit note</th>
               <th>Status</th>
               <th>Reason</th>
               <th>Total</th>
@@ -1019,13 +1039,24 @@ export default function Page() {
             {returns.map((r) => (
               <tr key={r.id}>
                 <td>{r.return_number}</td>
+                <td>{r.credit_note_number || '—'}</td>
                 <td>{r.status}</td>
                 <td>{r.reason}</td>
                 <td>{r.total_amount}</td>
-                <td style={{ display: 'flex', gap: 4 }}>
+                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(r)}>View</button>
                   {r.status === 'draft' && (
                     <button onClick={() => act(`/sales/returns/${r.id}/post`, 'Posted')}>Post</button>
+                  )}
+                  {r.status === 'posted' && (
+                    <>
+                      <button onClick={() => printCreditNote(r.id, printTemplate || undefined, 'html')}>
+                        Print
+                      </button>
+                      <button onClick={() => printCreditNote(r.id, printTemplate || undefined, 'pdf')}>
+                        PDF
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>
