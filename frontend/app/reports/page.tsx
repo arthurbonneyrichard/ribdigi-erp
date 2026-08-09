@@ -60,6 +60,8 @@ const REPORT_TYPES = [
   'inventory_balance',
   'inventory_low_stock',
   'purchases_summary',
+  'purchases_pending_orders',
+  'purchases_returns',
   'expenses_summary',
   'profit_loss',
   'cash_flow',
@@ -152,8 +154,17 @@ export default function Page() {
         ]);
         setData({ lowStock: r.data, balance: balance.data, movements: movements.data });
       } else if (nextTab === 'purchases') {
-        const suppliers = await api(`/reports/purchases/suppliers${qs()}`);
-        setData({ summary: r.data, suppliers: suppliers.data });
+        const [suppliers, pending, returns] = await Promise.all([
+          api(`/reports/purchases/suppliers${qs()}`),
+          api(`/reports/purchases/pending-orders${qs()}`),
+          api(`/reports/purchases/returns${qs()}`),
+        ]);
+        setData({
+          summary: r.data,
+          suppliers: suppliers.data,
+          pending: pending.data,
+          returns: returns.data,
+        });
       } else {
         setData(r.data);
       }
@@ -610,6 +621,7 @@ export default function Page() {
             <p>Total: {data.summary?.total_amount}</p>
             <p>Outstanding: {data.summary?.outstanding_amount}</p>
           </div>
+          <h3 style={{ marginTop: 16 }}>By supplier</h3>
           <table className="table">
             <thead>
               <tr>
@@ -624,6 +636,81 @@ export default function Page() {
                   <td>{s.name}</td>
                   <td>{s.order_count}</td>
                   <td>{s.total_amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 style={{ marginTop: 16 }}>
+            Pending orders ({data.pending?.count ?? 0}) — open qty {data.pending?.open_qty ?? 0}
+          </h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>PO</th>
+                <th>Supplier</th>
+                <th>Status</th>
+                <th>Ordered</th>
+                <th>Received</th>
+                <th>Open</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.pending?.orders || []).map((o: any) => (
+                <tr key={o.id}>
+                  <td>{o.po_number}</td>
+                  <td>{o.supplier_name}</td>
+                  <td>{o.status}</td>
+                  <td>{o.ordered_qty}</td>
+                  <td>{o.received_qty}</td>
+                  <td>{o.open_qty}</td>
+                  <td>{o.total_amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 style={{ marginTop: 16 }}>
+            Purchase returns ({data.returns?.return_count ?? 0}) — posted{' '}
+            {data.returns?.posted_amount ?? 0}
+          </h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Reason</th>
+                <th>Count</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.returns?.by_reason || []).map((r: any) => (
+                <tr key={r.reason}>
+                  <td>{r.reason}</td>
+                  <td>{r.return_count}</td>
+                  <td>{r.total_amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <table className="table" style={{ marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th>Return</th>
+                <th>Supplier</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.returns?.returns || []).map((r: any) => (
+                <tr key={r.id}>
+                  <td>{r.return_number}</td>
+                  <td>{r.supplier_name}</td>
+                  <td>{r.reason}</td>
+                  <td>{r.status}</td>
+                  <td>{r.total_amount}</td>
                 </tr>
               ))}
             </tbody>

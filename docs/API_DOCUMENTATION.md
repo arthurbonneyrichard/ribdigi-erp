@@ -1116,7 +1116,11 @@ Export type `sales_customers` is available on `/reports/export`. Product export 
 
 ### 14.3 Purchase Reports
 **Purchase Summary:** `GET /reports/purchases/summary?from_date=&to_date=`  
-**Supplier Purchases:** `GET /reports/purchases/suppliers?supplier_id=&from_date=&to_date=`
+**Supplier Purchases:** `GET /reports/purchases/suppliers?supplier_id=&from_date=&to_date=`  
+**Pending Orders (Stage 9 R1):** `GET /reports/purchases/pending-orders?supplier_id=&from_date=&to_date=` — issued POs in `sent` or `partially_received` with ordered/received/open quantities  
+**Purchase Return Summary (Stage 9 R1):** `GET /reports/purchases/returns?supplier_id=&from_date=&to_date=` — returns by reason/supplier with posted totals  
+
+Export types: `purchases_pending_orders`, `purchases_returns` (plus existing `purchases_summary` / `purchases_suppliers`). Requires `reports:read`.
 
 ### 14.4 Expense Reports
 **Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=`

@@ -31,6 +31,8 @@ EXPORTABLE = frozenset(
         "inventory_low_stock",
         "purchases_summary",
         "purchases_suppliers",
+        "purchases_pending_orders",
+        "purchases_returns",
         "expenses_summary",
         "cash_flow",
         "trial_balance",
@@ -278,6 +280,30 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         rows = [dict(x) for x in items]
         return rows or [{"note": "no rows"}], [f"{r.get('name') or r.get('supplier_name')}: {r.get('total') or r.get('amount')}" for r in rows[:50]], "Purchases by Supplier"
 
+    if report_type == "purchases_pending_orders":
+        items = payload.get("orders") or []
+        rows = [dict(x) for x in items]
+        lines = [
+            f"{r.get('po_number')}: {r.get('supplier_name')} open_qty={r.get('open_qty')} ({r.get('status')})"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines or _kv_lines(payload), "Pending Purchase Orders"
+
+    if report_type == "purchases_returns":
+        items = payload.get("returns") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(
+            {
+                k: payload.get(k)
+                for k in ("return_count", "posted_count", "total_amount", "posted_amount")
+                if k in payload
+            }
+        ) + [
+            f"{r.get('return_number')}: {r.get('reason')} {r.get('total_amount')} ({r.get('status')})"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Purchase Return Summary"
+
     if report_type == "expenses_summary":
         cats = payload.get("by_category") or []
         rows = cats if cats else [dict(payload)]
@@ -505,6 +531,10 @@ async def build_report_payload(
         return await reports_svc.purchases_summary(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "purchases_suppliers":
         return await reports_svc.purchases_by_supplier(db, tenant_id, from_date=fd, to_date=td)
+    if report_type == "purchases_pending_orders":
+        return await reports_svc.purchases_pending_orders(db, tenant_id, from_date=fd, to_date=td)
+    if report_type == "purchases_returns":
+        return await reports_svc.purchases_return_summary(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "expenses_summary":
         return await reports_svc.expenses_summary(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "cash_flow":

@@ -757,10 +757,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Procurement analysis.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] **Purchase Summary:** Total purchases by period
-  - [ ] **Supplier Purchases:** Purchase volume and value per supplier
-  - [ ] **Pending Orders:** POs not yet received
-  - [ ] **Purchase Return Summary**
+  - [x] **Purchase Summary:** Total purchases by period
+  - [x] **Supplier Purchases:** Purchase volume and value per supplier
+  - [x] **Pending Orders:** POs not yet received (Stage 9 R1 — `sent` / `partially_received`)
+  - [x] **Purchase Return Summary** (Stage 9 R1)
 
 #### BR-14.4 Expense Reports
 - **Description:** Expenditure analysis.

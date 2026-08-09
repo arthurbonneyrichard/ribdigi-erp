@@ -19,7 +19,7 @@ Stage 9 closes commercial-MVP holes for journal supporting documents, purchase/s
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **J1** | Journal supporting documents (upload/download/delete + Ledger UI) | P0 | COMPLETE |
-| **R1** | Purchase report depth: pending POs + purchase-return summary | P1 | PENDING |
+| **R1** | Purchase report depth: pending POs + purchase-return summary | P1 | COMPLETE |
 | **R2** | Stock valuation report (qty × cost_price; no FIFO/LIFO) | P1 | PENDING |
 | **D1** | Spec / API / User Manual fidelity sync | P2 | PENDING |
 | **H9x** | Stage 9 exit criteria + freeze ADR | Exit | PENDING |
@@ -44,9 +44,9 @@ Stage 9 closes commercial-MVP holes for journal supporting documents, purchase/s
 
 ## R1 acceptance criteria
 
-- [ ] Purchase reports expose pending purchase orders and a purchase-return summary (tenant-scoped + reports RBAC).
-- [ ] UI or existing Reports surface shows the new sections.
-- [ ] Automated tests cover the new report payloads.
+- [x] Purchase reports expose pending purchase orders and a purchase-return summary (tenant-scoped + reports RBAC).
+- [x] UI or existing Reports surface shows the new sections.
+- [x] Automated tests cover the new report payloads (`backend/tests/test_purchase_report_depth_r1.py`).
 
 ## R2 acceptance criteria
 

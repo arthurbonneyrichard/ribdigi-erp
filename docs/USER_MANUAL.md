@@ -936,12 +936,14 @@ Go to **Reports** from the main sidebar. Reports are organized by category:
 
 ### 12.4 Purchase Reports
 
+Open **Reports → Purchases** (optional date range):
+
 | Report | What It Shows |
 |--------|--------------|
 | **Purchase Summary** | Total purchases by period |
 | **Supplier Purchases** | Volume and value per supplier |
-| **Pending Orders** | POs not yet received |
-| **Purchase Return Summary** | Returns by reason and supplier |
+| **Pending Orders** | Issued POs not yet fully received (`sent` / `partially_received`) with open quantities |
+| **Purchase Return Summary** | Returns by reason and supplier (includes draft and posted) |
 
 ### 12.5 Expense Reports
 

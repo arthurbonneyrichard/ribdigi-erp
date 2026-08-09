@@ -8552,6 +8552,44 @@ async def report_purchases_suppliers(
     )
 
 
+@api.get("/reports/purchases/pending-orders")
+async def report_purchases_pending_orders(
+    supplier_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await reports_svc.purchases_pending_orders(
+            db,
+            claims["tenant_id"],
+            supplier_id=supplier_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        )
+    )
+
+
+@api.get("/reports/purchases/returns")
+async def report_purchases_returns(
+    supplier_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await reports_svc.purchases_return_summary(
+            db,
+            claims["tenant_id"],
+            supplier_id=supplier_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        )
+    )
+
+
 @api.get("/reports/expenses/summary")
 async def report_expenses_summary(
     from_date: str | None = None,

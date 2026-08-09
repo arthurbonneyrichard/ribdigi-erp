@@ -899,6 +899,172 @@ async def purchases_by_supplier(
     return {"suppliers": suppliers, "total_amount": round(sum(s["total_amount"] for s in suppliers), 2)}
 
 
+# Issued POs awaiting full receipt (BR-14.3 Pending Orders).
+_PENDING_PO_STATUSES = frozenset({"sent", "partially_received"})
+
+
+async def purchases_pending_orders(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    supplier_id: str | None = None,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    """POs not yet fully received — status sent or partially_received."""
+    stmt = (
+        select(m.PurchaseOrder, m.Party)
+        .join(m.Party, m.Party.id == m.PurchaseOrder.supplier_id)
+        .where(
+            m.PurchaseOrder.tenant_id == tenant_id,
+            m.PurchaseOrder.status.in_(_PENDING_PO_STATUSES),
+        )
+        .order_by(m.PurchaseOrder.created_at.asc())
+    )
+    if supplier_id:
+        stmt = stmt.where(m.PurchaseOrder.supplier_id == supplier_id)
+    if from_date:
+        stmt = stmt.where(m.PurchaseOrder.created_at >= from_date)
+    if to_date:
+        stmt = stmt.where(m.PurchaseOrder.created_at <= to_date)
+    rows = (await db.execute(stmt)).all()
+    orders: list[dict] = []
+    total_amount = 0.0
+    open_qty_total = 0.0
+    for po, party in rows:
+        items = (
+            await db.execute(
+                select(m.PurchaseOrderItem).where(
+                    m.PurchaseOrderItem.tenant_id == tenant_id,
+                    m.PurchaseOrderItem.purchase_order_id == po.id,
+                )
+            )
+        ).scalars().all()
+        ordered_qty = round(sum(float(i.quantity or 0) for i in items), 3)
+        received_qty = round(sum(float(i.received_qty or 0) for i in items), 3)
+        open_qty = round(max(ordered_qty - received_qty, 0.0), 3)
+        amount = float(po.total_amount or 0)
+        total_amount += amount
+        open_qty_total += open_qty
+        orders.append(
+            {
+                "id": po.id,
+                "po_number": po.po_number,
+                "supplier_id": party.id,
+                "supplier_name": party.name,
+                "status": po.status,
+                "total_amount": round(amount, 2),
+                "ordered_qty": ordered_qty,
+                "received_qty": received_qty,
+                "open_qty": open_qty,
+                "due_date": po.due_date,
+                "sent_at": po.sent_at,
+                "created_at": po.created_at,
+            }
+        )
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "count": len(orders),
+        "total_amount": round(total_amount, 2),
+        "open_qty": round(open_qty_total, 3),
+        "orders": orders,
+    }
+
+
+async def purchases_return_summary(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    supplier_id: str | None = None,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    """Purchase return summary by reason and supplier (BR-14.3)."""
+    stmt = (
+        select(m.PurchaseReturn, m.Party)
+        .join(m.Party, m.Party.id == m.PurchaseReturn.supplier_id)
+        .where(
+            m.PurchaseReturn.tenant_id == tenant_id,
+            m.PurchaseReturn.status != "cancelled",
+        )
+        .order_by(m.PurchaseReturn.created_at.desc())
+    )
+    if supplier_id:
+        stmt = stmt.where(m.PurchaseReturn.supplier_id == supplier_id)
+    if from_date:
+        stmt = stmt.where(
+            func.coalesce(m.PurchaseReturn.posted_at, m.PurchaseReturn.created_at) >= from_date
+        )
+    if to_date:
+        stmt = stmt.where(
+            func.coalesce(m.PurchaseReturn.posted_at, m.PurchaseReturn.created_at) <= to_date
+        )
+    rows = (await db.execute(stmt)).all()
+
+    by_reason: dict[str, dict] = {}
+    by_supplier: dict[str, dict] = {}
+    by_status: dict[str, int] = defaultdict(int)
+    posted_total = 0.0
+    posted_count = 0
+    returns: list[dict] = []
+    for ret, party in rows:
+        by_status[ret.status] += 1
+        amount = float(ret.total_amount or 0)
+        reason = ret.reason or "other"
+        reason_row = by_reason.setdefault(
+            reason, {"reason": reason, "return_count": 0, "total_amount": 0.0}
+        )
+        reason_row["return_count"] += 1
+        reason_row["total_amount"] = round(reason_row["total_amount"] + amount, 2)
+
+        sup_row = by_supplier.setdefault(
+            party.id,
+            {
+                "supplier_id": party.id,
+                "name": party.name,
+                "return_count": 0,
+                "total_amount": 0.0,
+            },
+        )
+        sup_row["return_count"] += 1
+        sup_row["total_amount"] = round(sup_row["total_amount"] + amount, 2)
+
+        if ret.status == "posted":
+            posted_count += 1
+            posted_total += amount
+
+        returns.append(
+            {
+                "id": ret.id,
+                "return_number": ret.return_number,
+                "supplier_id": party.id,
+                "supplier_name": party.name,
+                "status": ret.status,
+                "reason": reason,
+                "total_amount": round(amount, 2),
+                "debit_note_number": ret.debit_note_number,
+                "posted_at": ret.posted_at,
+                "created_at": ret.created_at,
+            }
+        )
+
+    reasons = sorted(by_reason.values(), key=lambda x: x["total_amount"], reverse=True)
+    suppliers = sorted(by_supplier.values(), key=lambda x: x["total_amount"], reverse=True)
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "return_count": len(returns),
+        "posted_count": posted_count,
+        "total_amount": round(sum(float(r["total_amount"]) for r in returns), 2),
+        "posted_amount": round(posted_total, 2),
+        "by_status": dict(by_status),
+        "by_reason": reasons,
+        "by_supplier": suppliers,
+        "returns": returns,
+    }
+
+
 async def expenses_summary(
     db: AsyncSession,
     tenant_id: str,
