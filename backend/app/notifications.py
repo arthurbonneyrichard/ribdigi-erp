@@ -28,6 +28,26 @@ DEFAULT_PREFERENCES = {
 
 VALID_CATEGORIES = set(DEFAULT_PREFERENCES.keys())
 
+# BR-4.4 display groups → underlying category keys
+CATEGORY_GROUPS: dict[str, frozenset[str]] = {
+    "stock": frozenset({"low_stock", "transfer"}),
+    "orders": frozenset(
+        {"purchase_received", "quotation_expiry", "expense_approval", "recurring_expense"}
+    ),
+    "payments": frozenset({"payment_due", "credit_limit", "billing", "shift_variance"}),
+    "system": frozenset({"system", "security", "ai_insight"}),
+}
+VALID_CATEGORY_GROUPS = frozenset(CATEGORY_GROUPS.keys())
+HISTORY_DAYS = 90
+
+
+def category_group(category: str | None) -> str:
+    cat = category or "system"
+    for group, members in CATEGORY_GROUPS.items():
+        if cat in members:
+            return group
+    return "system"
+
 
 def merge_preferences(raw: dict | None) -> dict:
     merged = {k: dict(v) for k, v in DEFAULT_PREFERENCES.items()}
@@ -40,10 +60,12 @@ def merge_preferences(raw: dict | None) -> dict:
 
 
 def serialize_notification(note: m.Notification) -> dict:
+    cat = note.category or "system"
     return {
         "id": note.id,
         "user_id": note.user_id,
-        "category": note.category or "system",
+        "category": cat,
+        "group": category_group(cat),
         "title": note.title,
         "message": note.message,
         "status": note.status,
@@ -187,6 +209,7 @@ async def list_notifications(
     user_id: str | None = None,
     status: str | None = None,
     category: str | None = None,
+    group: str | None = None,
     limit: int = 100,
 ) -> list[m.Notification]:
     stmt = select(m.Notification).where(m.Notification.tenant_id == tenant_id)
@@ -198,8 +221,16 @@ async def list_notifications(
         stmt = stmt.where(m.Notification.status == status)
     if category:
         stmt = stmt.where(m.Notification.category == category)
-    # Keep last ~90 days
-    cutoff = datetime.utcnow() - timedelta(days=90)
+    if group:
+        g = group.strip().lower()
+        if g not in VALID_CATEGORY_GROUPS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"group must be one of: {sorted(VALID_CATEGORY_GROUPS)}",
+            )
+        stmt = stmt.where(m.Notification.category.in_(sorted(CATEGORY_GROUPS[g])))
+    # Keep last ~90 days (BR-4.4 history window)
+    cutoff = datetime.utcnow() - timedelta(days=HISTORY_DAYS)
     stmt = stmt.where(m.Notification.created_at >= cutoff)
     stmt = stmt.order_by(m.Notification.created_at.desc()).limit(limit)
     return (await db.execute(stmt)).scalars().all()
@@ -212,7 +243,7 @@ async def unread_count(db: AsyncSession, tenant_id: str, user_id: str | None = N
     return len(rows)
 
 
-async def mark_read(
+async def _get_owned_notification(
     db: AsyncSession, *, tenant_id: str, notification_id: str, user_id: str | None = None
 ) -> m.Notification:
     note = (
@@ -227,7 +258,27 @@ async def mark_read(
         raise HTTPException(status_code=404, detail="Notification not found")
     if user_id and note.user_id and note.user_id != user_id:
         raise HTTPException(status_code=403, detail="Notification belongs to another user")
+    return note
+
+
+async def mark_read(
+    db: AsyncSession, *, tenant_id: str, notification_id: str, user_id: str | None = None
+) -> m.Notification:
+    note = await _get_owned_notification(
+        db, tenant_id=tenant_id, notification_id=notification_id, user_id=user_id
+    )
     note.status = "read"
+    await db.flush()
+    return note
+
+
+async def mark_unread(
+    db: AsyncSession, *, tenant_id: str, notification_id: str, user_id: str | None = None
+) -> m.Notification:
+    note = await _get_owned_notification(
+        db, tenant_id=tenant_id, notification_id=notification_id, user_id=user_id
+    )
+    note.status = "unread"
     await db.flush()
     return note
 

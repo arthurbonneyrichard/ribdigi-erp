@@ -37,6 +37,16 @@ type InsightCard = {
   action?: string | null;
 };
 
+type Note = {
+  id: string;
+  category: string;
+  group?: string;
+  title: string;
+  message: string;
+  status: string;
+  created_at?: string;
+};
+
 type KpiCard = {
   key: string;
   label: string;
@@ -47,6 +57,8 @@ type KpiCard = {
 export default function Page() {
   const [d, setD] = useState<Dash>({});
   const [insightCards, setInsightCards] = useState<InsightCard[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [unread, setUnread] = useState(0);
   const [formats, setFormats] = useState<RegionalFormats>({});
   const [error, setError] = useState('');
 
@@ -65,6 +77,15 @@ export default function Page() {
       .catch((err) => setError(err.message));
     api('/ai/insights')
       .then((r) => setInsightCards(r.data?.cards || []))
+      .catch(() => undefined);
+    Promise.all([
+      api('/notifications?status=unread').catch(() => ({ data: [] })),
+      api('/notifications/unread-count').catch(() => ({ data: { count: 0 } })),
+    ])
+      .then(([list, count]) => {
+        setNotes((list.data || []).slice(0, 8));
+        setUnread(count.data?.count || 0);
+      })
       .catch(() => undefined);
   }, []);
 
@@ -144,6 +165,40 @@ export default function Page() {
         <div className="card">
           <MonthlyRevenueBarChart series={d.monthly_revenue_series || []} formatValue={n} />
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+          <h3 style={{ margin: 0 }}>Notifications</h3>
+          <Link href="/notifications" className="muted">
+            {unread > 0 ? `${unread} unread · view all` : 'View history'}
+          </Link>
+        </div>
+        <p className="muted" style={{ marginTop: 4 }}>
+          Unread stream by category group (stock, orders, payments, system)
+        </p>
+        {notes.length === 0 ? (
+          <p className="muted">No unread notifications</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Group</th>
+                <th>Title</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {notes.map((note) => (
+                <tr key={note.id}>
+                  <td>{note.group || note.category}</td>
+                  <td>{note.title}</td>
+                  <td>{note.message}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {insightCards.length > 0 && (

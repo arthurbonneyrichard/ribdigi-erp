@@ -1,4 +1,9 @@
-from app.notifications import DEFAULT_PREFERENCES, merge_preferences, VALID_CATEGORIES
+from app.notifications import (
+    DEFAULT_PREFERENCES,
+    VALID_CATEGORIES,
+    category_group,
+    merge_preferences,
+)
 
 
 def test_default_preferences_cover_core_types():
@@ -30,3 +35,9 @@ def test_valid_categories():
     assert "quotation_expiry" in VALID_CATEGORIES
     assert "recurring_expense" in VALID_CATEGORIES
     assert "ai_insight" in VALID_CATEGORIES
+
+
+def test_category_group_mapping():
+    assert category_group("low_stock") == "stock"
+    assert category_group("payment_due") == "payments"
+    assert category_group("unknown_thing") == "system"
