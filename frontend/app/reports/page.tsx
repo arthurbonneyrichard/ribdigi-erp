@@ -41,7 +41,7 @@ const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   customers: 'sales_customers',
   salesperson: 'sales_salesperson',
   stores: 'sales_by_store',
-  inventory: 'inventory_low_stock',
+  inventory: 'inventory_valuation',
   purchases: 'purchases_summary',
   expenses: 'expenses_summary',
   pnl: 'profit_loss',
@@ -59,6 +59,7 @@ const REPORT_TYPES = [
   'sales_by_store',
   'inventory_balance',
   'inventory_low_stock',
+  'inventory_valuation',
   'purchases_summary',
   'purchases_pending_orders',
   'purchases_returns',
@@ -148,11 +149,17 @@ export default function Page() {
         ]);
         setData({ products: r.data, daily: daily.data, monthly: monthly.data });
       } else if (nextTab === 'inventory') {
-        const [balance, movements] = await Promise.all([
+        const [balance, movements, valuation] = await Promise.all([
           api('/reports/inventory/balance'),
           api('/reports/inventory/movements'),
+          api(`/reports/inventory/valuation${qs({ store_id: storeId })}`),
         ]);
-        setData({ lowStock: r.data, balance: balance.data, movements: movements.data });
+        setData({
+          lowStock: r.data,
+          balance: balance.data,
+          movements: movements.data,
+          valuation: valuation.data,
+        });
       } else if (nextTab === 'purchases') {
         const [suppliers, pending, returns] = await Promise.all([
           api(`/reports/purchases/suppliers${qs()}`),
@@ -319,29 +326,29 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        {(tab === 'sales' || tab === 'inventory') && (
+          <select value={storeId} onChange={(e) => setStoreId(e.target.value)} aria-label="Store filter">
+            <option value="">All stores</option>
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code} — {s.name}
+              </option>
+            ))}
+          </select>
+        )}
         {tab === 'sales' && (
-          <>
-            <select value={storeId} onChange={(e) => setStoreId(e.target.value)} aria-label="Store filter">
-              <option value="">All stores</option>
-              {stores.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code} — {s.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              aria-label="Category filter"
-            >
-              <option value="">All categories</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </>
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            aria-label="Category filter"
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         )}
         <button onClick={() => load()} disabled={loading}>
           {loading ? 'Loading…' : 'Apply filters'}
@@ -590,22 +597,57 @@ export default function Page() {
               ))}
             </ul>
           </div>
-          <h3 style={{ marginTop: 16 }}>Stock value: {data.balance?.total_value ?? 0}</h3>
+
+          <h3 style={{ marginTop: 16 }}>
+            Stock valuation: {data.valuation?.total_value ?? data.balance?.total_value ?? 0}
+          </h3>
+          <p className="muted">
+            {data.valuation?.costing_method_note ||
+              'Value = quantity × product cost price (standard cost).'}
+          </p>
+          {(data.valuation?.by_warehouse || []).length > 0 && (
+            <table className="table" style={{ marginBottom: 12 }}>
+              <thead>
+                <tr>
+                  <th>Warehouse</th>
+                  <th>Lines</th>
+                  <th>Qty</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.valuation.by_warehouse.map((w: any) => (
+                  <tr key={w.warehouse_id}>
+                    <td>
+                      {w.warehouse_code} — {w.warehouse_name}
+                    </td>
+                    <td>{w.line_count}</td>
+                    <td>{w.total_quantity}</td>
+                    <td>{w.total_value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
           <table className="table">
             <thead>
               <tr>
                 <th>SKU</th>
                 <th>Name</th>
+                <th>Warehouse</th>
                 <th>Qty</th>
+                <th>Cost</th>
                 <th>Value</th>
               </tr>
             </thead>
             <tbody>
-              {(data.balance?.items || []).slice(0, 50).map((i: any) => (
-                <tr key={i.product_id}>
+              {(data.valuation?.items || data.balance?.items || []).slice(0, 50).map((i: any) => (
+                <tr key={`${i.warehouse_id || 'all'}-${i.product_id}`}>
                   <td>{i.sku}</td>
                   <td>{i.name}</td>
+                  <td>{i.warehouse_code || '—'}</td>
                   <td>{i.quantity}</td>
+                  <td>{i.cost_price ?? '—'}</td>
                   <td>{i.value}</td>
                 </tr>
               ))}

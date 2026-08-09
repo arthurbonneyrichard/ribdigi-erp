@@ -679,6 +679,114 @@ async def inventory_balance(db: AsyncSession, tenant_id: str, warehouse_id: str 
     }
 
 
+async def inventory_valuation(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
+) -> dict:
+    """Stock valuation at standard cost: quantity × product.cost_price (Stage 9 R2).
+
+    FIFO, LIFO, and weighted-average layer costing are intentionally out of scope.
+    """
+    from app import stores as stores_svc
+
+    resolved_warehouse_id = warehouse_id
+    if store_id and not warehouse_id:
+        wh = await stores_svc.warehouse_for_store(db, tenant_id, store_id)
+        resolved_warehouse_id = wh.id
+
+    stmt = (
+        select(m.WarehouseStock, m.Product, m.Warehouse)
+        .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+        .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
+        .where(m.WarehouseStock.tenant_id == tenant_id)
+        .order_by(m.Warehouse.code, m.Product.name)
+    )
+    if resolved_warehouse_id:
+        stmt = stmt.where(m.WarehouseStock.warehouse_id == resolved_warehouse_id)
+    rows = (await db.execute(stmt)).all()
+
+    items: list[dict] = []
+    by_wh: dict[str, dict] = {}
+    for stock, product, warehouse in rows:
+        qty = float(stock.quantity or 0)
+        cost = float(product.cost_price or 0)
+        value = round(qty * cost, 2)
+        items.append(
+            {
+                "product_id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "warehouse_id": warehouse.id,
+                "warehouse_code": warehouse.code,
+                "warehouse_name": warehouse.name,
+                "quantity": qty,
+                "cost_price": cost,
+                "value": value,
+            }
+        )
+        bucket = by_wh.setdefault(
+            warehouse.id,
+            {
+                "warehouse_id": warehouse.id,
+                "warehouse_code": warehouse.code,
+                "warehouse_name": warehouse.name,
+                "line_count": 0,
+                "total_quantity": 0.0,
+                "total_value": 0.0,
+            },
+        )
+        bucket["line_count"] += 1
+        bucket["total_quantity"] = round(bucket["total_quantity"] + qty, 3)
+        bucket["total_value"] = round(bucket["total_value"] + value, 2)
+
+    # Fallback when tenant stock lives only on product.stock_qty (no warehouse rows yet).
+    if not items and not resolved_warehouse_id:
+        products = (
+            await db.execute(
+                select(m.Product)
+                .where(m.Product.tenant_id == tenant_id, m.Product.is_active == True)  # noqa: E712
+                .order_by(m.Product.name)
+            )
+        ).scalars().all()
+        for product in products:
+            qty = float(product.stock_qty or 0)
+            if qty == 0:
+                continue
+            cost = float(product.cost_price or 0)
+            items.append(
+                {
+                    "product_id": product.id,
+                    "sku": product.sku,
+                    "name": product.name,
+                    "warehouse_id": None,
+                    "warehouse_code": None,
+                    "warehouse_name": None,
+                    "quantity": qty,
+                    "cost_price": cost,
+                    "value": round(qty * cost, 2),
+                }
+            )
+
+    by_warehouse = sorted(by_wh.values(), key=lambda x: x["warehouse_code"] or "")
+    return {
+        "costing_method": "standard_cost",
+        "costing_method_note": (
+            "Value = quantity × product.cost_price. "
+            "FIFO, LIFO, and weighted average are not used in commercial MVP."
+        ),
+        "warehouse_id": resolved_warehouse_id,
+        "store_id": store_id,
+        "items": items,
+        "by_warehouse": by_warehouse,
+        "total_quantity": round(sum(i["quantity"] for i in items), 3),
+        "total_value": round(sum(i["value"] for i in items), 2),
+        "line_count": len(items),
+    }
+
+
 async def inventory_movements(
     db: AsyncSession,
     tenant_id: str,
