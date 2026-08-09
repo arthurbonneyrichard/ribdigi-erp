@@ -113,7 +113,7 @@ async def test_stock_adjust_uses_hash_chained_audit(client, db_session):
     r = await ac.post(
         f"/api/v1/inventory/adjust/{seed['p1'].id}",
         headers=headers,
-        json={"quantity": 2, "reason": "cycle count"},
+        json={"quantity": 2, "reason": "other", "notes": "cycle count"},
     )
     assert r.status_code == 200, r.text
 

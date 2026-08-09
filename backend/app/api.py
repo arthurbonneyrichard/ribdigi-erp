@@ -3566,6 +3566,9 @@ async def adjust(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.inventory import normalize_adjustment_reason
+
+    reason = normalize_adjustment_reason(payload.reason)
     product = await apply_stock_change(
         db,
         tenant_id=claims["tenant_id"],
@@ -3573,12 +3576,19 @@ async def adjust(
         quantity_delta=float(payload.quantity),
         movement_type="adjustment",
         user_id=claims["sub"],
-        notes=payload.notes or payload.reason,
+        reason=reason,
+        notes=payload.notes,
         warehouse_id=payload.warehouse_id,
         allow_negative=True,
     )
     await db.commit()
-    return env({"product_id": product.id, "stock_qty": float(product.stock_qty)})
+    return env(
+        {
+            "product_id": product.id,
+            "stock_qty": float(product.stock_qty),
+            "reason": reason,
+        }
+    )
 
 
 @api.post("/inventory/stock-in")

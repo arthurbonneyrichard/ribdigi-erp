@@ -55,6 +55,9 @@ export default function Page() {
   const [countQtys, setCountQtys] = useState<Record<string, string>>({});
   const [countScan, setCountScan] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerTarget, setScannerTarget] = useState<'count' | 'ops'>('count');
+  const [opsScan, setOpsScan] = useState('');
+  const [opsReason, setOpsReason] = useState('other');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -320,6 +323,17 @@ export default function Page() {
     }
   }
 
+  async function lookupProductByScan(code: string) {
+    const value = code.trim();
+    if (!value) return null;
+    const params = new URLSearchParams({ q: value, barcode: value });
+    const r = await api('/inventory/products/lookup?' + params.toString());
+    const rows: any[] = r.data || [];
+    return (
+      rows.find((row) => row.barcode === value || row.sku === value) || (rows.length === 1 ? rows[0] : null)
+    );
+  }
+
   async function applyCountScan(code: string) {
     const value = code.trim();
     if (!value || !activeCount || activeCount.status !== 'draft') return;
@@ -327,11 +341,7 @@ export default function Page() {
     setCountScan(value);
     setScannerOpen(false);
     try {
-      const params = new URLSearchParams({ q: value, barcode: value });
-      const r = await api('/inventory/products/lookup?' + params.toString());
-      const rows: any[] = r.data || [];
-      const exact =
-        rows.find((row) => row.barcode === value || row.sku === value) || (rows.length === 1 ? rows[0] : null);
+      const exact = await lookupProductByScan(value);
       if (!exact) {
         setError(`No product for barcode ${value}`);
         return;
@@ -352,6 +362,36 @@ export default function Page() {
       setCountScan('');
     } catch (err: any) {
       setError(err.message);
+    }
+  }
+
+  async function applyOpsScan(code: string) {
+    const value = code.trim();
+    if (!value) return;
+    setError('');
+    setOpsScan(value);
+    setScannerOpen(false);
+    try {
+      const exact = await lookupProductByScan(value);
+      if (!exact) {
+        setError(`No product for barcode ${value}`);
+        return;
+      }
+      const productId = exact.product_id || exact.id;
+      setSelectedId(productId);
+      setMessage(`Selected ${exact.name || exact.sku} for stock ops`);
+      setOpsScan('');
+      await refreshSelected(productId).catch(() => undefined);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function onCameraScan(code: string) {
+    if (scannerTarget === 'ops') {
+      applyOpsScan(code);
+    } else {
+      applyCountScan(code);
     }
   }
 
@@ -426,7 +466,8 @@ export default function Page() {
           method: 'POST',
           body: JSON.stringify({
             quantity: qty,
-            reason: opsNotes || 'adjustment',
+            reason: opsReason || 'other',
+            notes: opsNotes || undefined,
             warehouse_id: opsWarehouseId || null,
           }),
         });
@@ -1437,7 +1478,13 @@ export default function Page() {
                   <button type="button" onClick={() => applyCountScan(countScan)} disabled={!countScan.trim()}>
                     Apply scan
                   </button>
-                  <button type="button" onClick={() => setScannerOpen(true)}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScannerTarget('count');
+                      setScannerOpen(true);
+                    }}
+                  >
                     Camera scan
                   </button>
                 </div>
@@ -1494,9 +1541,38 @@ export default function Page() {
       )}
 
       {tab === 'ops' && (
-        <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+        <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
           <h3>Stock in / out / adjust</h3>
-          <p className="muted">Uses the selected product above. Optional warehouse for located stock.</p>
+          <p className="muted">
+            Scan a barcode to select the product, or use the selector above. Optional warehouse for
+            located stock. Adjustments require a BR-5.2 reason code.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <input
+              value={opsScan}
+              onChange={(e) => setOpsScan(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  applyOpsScan(opsScan);
+                }
+              }}
+              placeholder="Scan barcode to select product"
+              style={{ padding: 10, flex: '1 1 240px' }}
+            />
+            <button type="button" onClick={() => applyOpsScan(opsScan)} disabled={!opsScan.trim()}>
+              Apply scan
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setScannerTarget('ops');
+                setScannerOpen(true);
+              }}
+            >
+              Camera scan
+            </button>
+          </div>
           <select value={opsWarehouseId} onChange={(e) => setOpsWarehouseId(e.target.value)}>
             <option value="">No warehouse (consolidated only)</option>
             {warehouses.map((w) => (
@@ -1506,7 +1582,15 @@ export default function Page() {
             ))}
           </select>
           <input value={opsQty} onChange={(e) => setOpsQty(e.target.value)} placeholder="Quantity" />
-          <input value={opsNotes} onChange={(e) => setOpsNotes(e.target.value)} placeholder="Notes / reason" />
+          <select value={opsReason} onChange={(e) => setOpsReason(e.target.value)}>
+            <option value="damage">damage</option>
+            <option value="theft">theft</option>
+            <option value="expiry">expiry</option>
+            <option value="found">found</option>
+            <option value="lost">lost</option>
+            <option value="other">other</option>
+          </select>
+          <input value={opsNotes} onChange={(e) => setOpsNotes(e.target.value)} placeholder="Notes (optional)" />
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button type="button" onClick={() => stockOp('in')} disabled={!selectedId}>
               Stock in
@@ -1824,8 +1908,8 @@ export default function Page() {
       <BarcodeCameraScanner
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
-        onScan={applyCountScan}
-        title="Stock count barcode scan"
+        onScan={onCameraScan}
+        title={scannerTarget === 'ops' ? 'Stock ops barcode scan' : 'Stock count barcode scan'}
       />
     </Shell>
   );

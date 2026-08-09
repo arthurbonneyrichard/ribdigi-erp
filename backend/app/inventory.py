@@ -436,6 +436,25 @@ async def transfer_warehouse_stock(
     )
 
 
+ADJUSTMENT_REASONS = frozenset({"damage", "theft", "expiry", "found", "lost", "other"})
+
+
+def normalize_adjustment_reason(reason: str | None) -> str:
+    code = (reason or "").strip().lower()
+    if code not in ADJUSTMENT_REASONS:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_ADJUSTMENT_REASON",
+                "message": "reason must be one of: damage, theft, expiry, found, lost, other",
+                "allowed": sorted(ADJUSTMENT_REASONS),
+            },
+        )
+    return code
+
+
 async def apply_stock_change(
     db: AsyncSession,
     *,
@@ -447,6 +466,7 @@ async def apply_stock_change(
     reference_type: str | None = None,
     reference_id: str | None = None,
     notes: str | None = None,
+    reason: str | None = None,
     warehouse_id: str | None = None,
     allow_negative: bool = False,
     variant_id: str | None = None,
@@ -525,6 +545,7 @@ async def apply_stock_change(
         quantity_after=after,
         reference_type=reference_type,
         reference_id=reference_id,
+        reason=reason,
         notes=notes,
         created_by=user_id,
     )
@@ -548,6 +569,7 @@ async def apply_stock_change(
             "reference_id": reference_id,
             "variant_id": variant_id,
             "batch_id": batch_id,
+            "reason": reason,
             "notes": notes,
         },
     )

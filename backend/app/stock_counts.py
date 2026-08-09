@@ -307,6 +307,7 @@ async def complete_count(
             user_id=user_id,
             reference_type="stock_count",
             reference_id=count.id,
+            reason="other",
             notes=f"Stock count {count.count_number} variance",
             warehouse_id=count.warehouse_id,
             allow_negative=True,

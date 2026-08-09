@@ -385,6 +385,7 @@ class StockMovement(Base):
     quantity_after: Mapped[float] = mapped_column(Numeric(14, 3))
     reference_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     reference_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    reason: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

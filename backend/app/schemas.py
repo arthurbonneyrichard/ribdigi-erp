@@ -474,7 +474,7 @@ class TransactionCreate(BaseModel):
 class StockAdjust(BaseModel):
     quantity: float
     notes: str | None = None
-    reason: str = "adjustment"
+    reason: str = "other"
     warehouse_id: str | None = None
 
 
