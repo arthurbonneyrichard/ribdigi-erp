@@ -17,7 +17,9 @@ type Product = {
   kind?: string;
 };
 
-type CartItem = Product & { quantity: number };
+type CartItem = Product & { quantity: number; discount: number };
+
+type Customer = { id: string; name: string; code?: string | null; credit_limit?: number; balance?: number };
 
 type Session = {
   session_id: string;
@@ -67,6 +69,9 @@ export default function Page() {
   const [actualCash, setActualCash] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paper, setPaper] = useState('80mm');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerId, setCustomerId] = useState('');
+  const [cartDiscount, setCartDiscount] = useState('0');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<any>(null);
@@ -79,6 +84,9 @@ export default function Page() {
 
   useEffect(() => {
     refreshSession().catch((err) => setError(err.message));
+    api('/customers')
+      .then((r) => setCustomers(r.data || []))
+      .catch(() => setCustomers([]));
   }, []);
 
   async function openShift() {
@@ -175,10 +183,29 @@ export default function Page() {
           product_id: pid,
           variant_id: product.variant_id || null,
           quantity: 1,
+          discount: 0,
         },
       ];
     });
   }
+
+  function setCartQty(id: string, quantity: number) {
+    setCart((prev) => {
+      if (quantity <= 0) return prev.filter((p) => p.id !== id);
+      return prev.map((p) => (p.id === id ? { ...p, quantity } : p));
+    });
+  }
+
+  function setLineDiscount(id: string, discount: number) {
+    setCart((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, discount: Math.max(0, discount) } : p)),
+    );
+  }
+
+  const cartSubtotal = cart.reduce(
+    (sum, c) => sum + Math.max(0, Number(c.selling_price) * c.quantity - (c.discount || 0)),
+    0,
+  );
 
   async function checkout() {
     setError('');
@@ -192,20 +219,24 @@ export default function Page() {
       setError('Cart is empty');
       return;
     }
+    if (paymentMethod === 'credit' && !customerId) {
+      setError('Select a customer for credit sales');
+      return;
+    }
     const items = cart.map((c) => ({
       product_id: c.product_id || c.id,
       variant_id: c.variant_id || null,
       quantity: c.quantity,
+      discount: c.discount || 0,
     }));
-    const subtotal = cart.reduce((sum, c) => sum + Number(c.selling_price) * c.quantity, 0);
+    const discountAmount = Number(cartDiscount) || 0;
     try {
       const r = await api('/pos/sales', {
         method: 'POST',
         body: JSON.stringify({
           session_id: session.session_id,
-          subtotal,
-          tax: 0,
-          total: subtotal,
+          party_id: customerId || null,
+          discount_amount: discountAmount,
           status: 'completed',
           payment_method: paymentMethod,
           items,
@@ -221,8 +252,13 @@ export default function Page() {
             : r.data?.drawer?.error
               ? ` · drawer warn: ${r.data.drawer.error}`
               : '';
-      setMessage(`Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0})${drawerNote}`);
+      setMessage(
+        `Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0}` +
+          (r.data.discount_amount ? `, discount ${r.data.discount_amount}` : '') +
+          `)${drawerNote}`,
+      );
       setCart([]);
+      setCartDiscount('0');
       await refreshSession();
     } catch (err: any) {
       setError(err.message);
@@ -336,22 +372,93 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 16 }}>
         <h3>Cart</h3>
+        <label style={{ display: 'block', marginBottom: 12 }}>
+          Customer{' '}
+          <select
+            value={customerId}
+            onChange={(e) => setCustomerId(e.target.value)}
+            disabled={!session}
+            style={{ minWidth: 220 }}
+          >
+            <option value="">Walk-in</option>
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+                {c.code ? ` (${c.code})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
         {cart.length === 0 && <p className="muted">No items</p>}
-        {cart.map((c) => (
-          <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span>
-              {c.name} × {c.quantity}
-            </span>
-            <span>{(Number(c.selling_price) * c.quantity).toFixed(2)}</span>
-          </div>
-        ))}
+        {cart.map((c) => {
+          const lineGross = Number(c.selling_price) * c.quantity;
+          const lineNet = Math.max(0, lineGross - (c.discount || 0));
+          return (
+            <div
+              key={c.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr auto',
+                gap: 8,
+                marginBottom: 12,
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <div>{c.name}</div>
+                <div className="muted" style={{ fontSize: 13 }}>
+                  {c.sku} · {Number(c.selling_price).toFixed(2)} each
+                </div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button type="button" onClick={() => setCartQty(c.id, c.quantity - 1)} disabled={!session}>
+                    −
+                  </button>
+                  <input
+                    value={c.quantity}
+                    onChange={(e) => setCartQty(c.id, Number(e.target.value) || 0)}
+                    style={{ width: 56, padding: 6 }}
+                    disabled={!session}
+                  />
+                  <button type="button" onClick={() => setCartQty(c.id, c.quantity + 1)} disabled={!session}>
+                    +
+                  </button>
+                  <label style={{ fontSize: 13 }}>
+                    Line disc{' '}
+                    <input
+                      value={c.discount || 0}
+                      onChange={(e) => setLineDiscount(c.id, Number(e.target.value) || 0)}
+                      style={{ width: 72, padding: 6 }}
+                      disabled={!session}
+                    />
+                  </label>
+                  <button type="button" onClick={() => setCartQty(c.id, 0)} disabled={!session}>
+                    Remove
+                  </button>
+                </div>
+              </div>
+              <strong>{lineNet.toFixed(2)}</strong>
+            </div>
+          );
+        })}
+        <p>
+          Cart lines: <b>{cartSubtotal.toFixed(2)}</b>
+        </p>
+        <label style={{ display: 'block', marginBottom: 8 }}>
+          Cart discount{' '}
+          <input
+            value={cartDiscount}
+            onChange={(e) => setCartDiscount(e.target.value)}
+            style={{ width: 100, padding: 8 }}
+            disabled={!session}
+          />
+        </label>
         <label style={{ display: 'block', marginBottom: 8 }}>
           Payment{' '}
           <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
             <option value="cash">Cash</option>
             <option value="card">Card</option>
-            <option value="wallet">Wallet</option>
-            <option value="credit">Credit</option>
+            <option value="wallet">Digital wallet</option>
+            <option value="credit">Credit (registered customer)</option>
           </select>
         </label>
         <label style={{ display: 'block', marginBottom: 8 }}>

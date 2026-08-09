@@ -267,6 +267,7 @@ class LineItem(BaseModel):
     quantity: float = Field(gt=0)
     variant_id: str | None = None
     unit_price: float | None = None
+    discount: float = Field(default=0, ge=0)
 
 
 class TransactionCreate(BaseModel):
@@ -740,6 +741,7 @@ class PosSaleCreate(BaseModel):
     subtotal: float = 0
     tax: float = 0
     total: float = 0
+    discount_amount: float = Field(default=0, ge=0)
     status: str = "completed"
     payment_method: str = "cash"
     payload: dict = Field(default_factory=dict)

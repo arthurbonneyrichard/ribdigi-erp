@@ -4132,19 +4132,28 @@ async def pos_sale(
     )
     items = [i.model_dump() for i in payload.items]
     payment_method = pos_svc.normalize_payment_method(payload.payment_method)
+    if payment_method == "credit" and not payload.party_id:
+        raise HTTPException(status_code=400, detail="Credit sales require a customer")
     from app.tax import resolve_product_tax
     from app.catalog import resolve_sale_line
 
     subtotal = 0.0
     tax_total = 0.0
+    line_discounts = 0.0
     priced_items = []
     for item in items:
         product, variant, unit_price = await resolve_sale_line(db, claims["tenant_id"], item)
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
-        line_sub, line_tax, line_gross = spec.compute_amounts(
-            float(item["quantity"]) * float(unit_price)
-        )
+        line_discount = round(float(item.get("discount") or 0), 2)
+        if line_discount < 0:
+            raise HTTPException(status_code=400, detail="Line discount must be >= 0")
+        gross_before_discount = round(float(item["quantity"]) * float(unit_price), 2)
+        if line_discount > gross_before_discount:
+            raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
+        taxable_base = round(gross_before_discount - line_discount, 2)
+        line_sub, line_tax, line_gross = spec.compute_amounts(taxable_base)
         subtotal += line_sub
+        line_discounts += line_discount
         if not spec.is_reverse_charge:
             tax_total += line_tax
         priced_items.append(
@@ -4154,6 +4163,7 @@ async def pos_sale(
                 "name": variant.name if variant else product.name,
                 "sku": variant.sku if variant else product.sku,
                 "unit_price": unit_price,
+                "discount": line_discount,
                 "tax_rate": spec.rate_pct,
                 "line_subtotal": line_sub,
                 "line_tax": 0.0 if spec.is_reverse_charge else line_tax,
@@ -4161,8 +4171,15 @@ async def pos_sale(
                 "is_reverse_charge": spec.is_reverse_charge,
             }
         )
-    total = round(subtotal + tax_total, 2)
+    cart_discount = round(float(payload.discount_amount or 0), 2)
+    if cart_discount < 0:
+        raise HTTPException(status_code=400, detail="discount_amount must be >= 0")
+    max_cart_discount = round(subtotal + tax_total, 2)
+    if cart_discount > max_cart_discount:
+        raise HTTPException(status_code=400, detail="Cart discount exceeds sale total")
+    total = round(subtotal + tax_total - cart_discount, 2)
 
+    party = None
     if payload.party_id:
         party = (
             await db.execute(
@@ -4173,7 +4190,11 @@ async def pos_sale(
                 )
             )
         ).scalar_one_or_none()
-        if party and float(party.credit_limit or 0) > 0:
+        if party is None:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        if (party.status or "active") != "active":
+            raise HTTPException(status_code=409, detail="Customer is not active")
+        if payment_method == "credit" and float(party.credit_limit or 0) > 0:
             projected = float(party.balance or 0) + float(total)
             if projected > float(party.credit_limit):
                 raise HTTPException(status_code=409, detail="CREDIT_LIMIT_EXCEEDED")
@@ -4188,6 +4209,10 @@ async def pos_sale(
         "items": priced_items,
         "payment_method": payment_method,
         "session_id": session.id,
+        "discount_amount": cart_discount,
+        "line_discounts": round(line_discounts, 2),
+        "party_id": payload.party_id,
+        "customer_name": party.name if party else None,
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
@@ -4252,8 +4277,10 @@ async def pos_sale(
         "id": tx.id,
         "reference": ref,
         "session_id": session.id,
+        "party_id": payload.party_id,
         "subtotal": float(tx.subtotal),
         "tax": float(tx.tax),
+        "discount_amount": cart_discount,
         "total": float(tx.total),
         "payment_method": payment_method,
     }

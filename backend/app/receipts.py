@@ -95,8 +95,10 @@ def build_receipt_payload(
         "company_address": tenant.address if tenant else None,
         "currency": tenant.currency if tenant else "GHS",
         "cashier_name": cashier_name,
+        "customer_name": payload.get("customer_name"),
         "subtotal": float(tx.subtotal or 0),
         "tax": float(tx.tax or 0),
+        "discount_amount": float(payload.get("discount_amount") or 0),
         "total": float(tx.total or 0),
         "items": normalized_items,
         "payment_method": payload.get("payment_method", "cash"),
@@ -123,6 +125,8 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         lines.append(_lr("Date", str(created)[:16], width))
     if receipt.get("cashier_name"):
         lines.append(_lr("Cashier", str(receipt["cashier_name"])[: width // 2], width))
+    if receipt.get("customer_name"):
+        lines.append(_lr("Customer", str(receipt["customer_name"])[: width // 2], width))
     lines.append("-" * width)
     for item in receipt.get("items") or []:
         name = str(item.get("name") or "Item")
@@ -136,6 +140,9 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     currency = receipt.get("currency") or ""
     lines.append(_lr("Subtotal", _money(receipt.get("subtotal") or 0), width))
     lines.append(_lr("Tax", _money(receipt.get("tax") or 0), width))
+    discount = float(receipt.get("discount_amount") or 0)
+    if discount > 0:
+        lines.append(_lr("Discount", _money(discount), width))
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0), width))
     lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
     lines.append("-" * width)

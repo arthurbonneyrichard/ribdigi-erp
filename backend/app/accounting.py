@@ -743,7 +743,11 @@ async def post_pos_sale_journal(
     await ensure_default_accounts(db, tenant_id)
     amount = float(tx.total or 0)
     tax = float(tx.tax or 0)
-    revenue = round(amount - tax, 2)
+    cart_discount = float((tx.payload or {}).get("discount_amount") or 0)
+    # Net revenue: subtotal already excludes line discounts; cart discount reduces cash total.
+    revenue = round(float(tx.subtotal or 0) - cart_discount, 2)
+    if revenue < 0:
+        raise HTTPException(status_code=400, detail="POS revenue after discount cannot be negative")
     debit_code, debit_label = pos_debit_account_for_payment_method(payment_method)
     lines = [
         {
@@ -756,6 +760,9 @@ async def post_pos_sale_journal(
     ]
     if tax > 0:
         lines.append({"account_code": "2100", "debit": 0, "credit": tax, "description": "Tax payable"})
+    # amount should equal revenue + tax
+    if abs(amount - (revenue + tax)) > 0.02:
+        raise HTTPException(status_code=400, detail="POS journal amounts do not balance")
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
