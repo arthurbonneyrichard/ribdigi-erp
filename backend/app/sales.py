@@ -123,6 +123,10 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
             2,
         ),
         "notes": invoice.notes,
+        "credit_limit_overridden": bool(getattr(invoice, "credit_limit_overridden", False)),
+        "credit_override_reason": getattr(invoice, "credit_override_reason", None),
+        "credit_override_by": getattr(invoice, "credit_override_by", None),
+        "credit_override_at": getattr(invoice, "credit_override_at", None),
         "posted_at": invoice.posted_at,
         "due_date": invoice.due_date,
         "emailed_at": getattr(invoice, "emailed_at", None),
@@ -703,6 +707,10 @@ async def post_sales_invoice(
     tenant_id: str,
     user_id: str,
     invoice_id: str,
+    role: str = "",
+    permissions: dict | None = None,
+    credit_limit_override: bool = False,
+    credit_override_reason: str | None = None,
 ) -> m.SalesInvoice:
     invoice = await get_invoice(db, tenant_id, invoice_id)
     if invoice.status != "draft":
@@ -714,24 +722,30 @@ async def post_sales_invoice(
 
     customer = await get_customer(db, tenant_id, invoice.customer_id)
     from app.fx import doc_rate, to_base
+    from app.credit import enforce_credit_limit
 
     inv_base = to_base(float(invoice.total_amount), doc_rate(invoice))
-    credit_limit = float(customer.credit_limit or 0)
-    if credit_limit > 0:
-        projected = float(customer.balance or 0) + inv_base
-        if projected > credit_limit + 1e-9:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "CREDIT_LIMIT_EXCEEDED",
-                    "message": "Posting this invoice would exceed the customer credit limit",
-                    "credit_limit": credit_limit,
-                    "current_balance": float(customer.balance or 0),
-                    "invoice_total": float(invoice.total_amount),
-                    "invoice_total_base": inv_base,
-                    "currency": getattr(invoice, "currency", None) or "",
-                },
-            )
+    credit_gate = await enforce_credit_limit(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        role=role,
+        permissions=permissions,
+        customer=customer,
+        additional_amount=inv_base,
+        override=credit_limit_override,
+        override_reason=credit_override_reason,
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        module="sales",
+        extra_details={
+            "invoice_total": float(invoice.total_amount),
+            "invoice_total_base": inv_base,
+            "currency": getattr(invoice, "currency", None) or "",
+            "invoice_number": invoice.invoice_number,
+        },
+    )
+    credit_limit = float(credit_gate["credit_limit"] or 0)
 
     warehouse_id = None
     if invoice.store_id:
@@ -779,6 +793,11 @@ async def post_sales_invoice(
     invoice.posted_at = datetime.utcnow()
     invoice.due_date = invoice.due_date or default_due_date(invoice.posted_at)
     invoice.updated_at = datetime.utcnow()
+    if credit_gate.get("overridden"):
+        invoice.credit_limit_overridden = True
+        invoice.credit_override_reason = credit_gate.get("override_reason")
+        invoice.credit_override_by = user_id
+        invoice.credit_override_at = datetime.utcnow()
 
     from app.accounting import post_sales_invoice_journal
 

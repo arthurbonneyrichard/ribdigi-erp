@@ -21,7 +21,7 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 | **A2** | COA CRUD / hierarchy / opening balances (BR-10.1) | P0 | COMPLETE |
 | **A3** | Financial report depth (P&L date range; cash-flow O/I/F) | P0 | COMPLETE |
 | **P1** | POS split tender (`pos_payments`) | P0 | COMPLETE |
-| **C1** | Credit-limit override with audit | P0 | PENDING |
+| **C1** | Credit-limit override with audit | P0 | COMPLETE |
 | **H3** | Stage 3 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -69,9 +69,14 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 - [x] Receipt + POS UI split-tender checkout; drawer opens if any cash tender.
 - [x] Automated tests in `backend/tests/test_pos_split_tender_p1.py`.
 
-## C1 acceptance criteria (preview)
+## C1 acceptance criteria
 
-- Credit sale / invoice over limit requires override reason + audit event; role-gated.
+- [x] Exceeding credit limit without override → `409 CREDIT_LIMIT_EXCEEDED` (invoice post + POS credit/split credit).
+- [x] Override requires `credit:approve` + `credit_override_reason` (≥3 chars); else `403 CREDIT_OVERRIDE_FORBIDDEN` / `400 CREDIT_OVERRIDE_REASON_REQUIRED`.
+- [x] Successful override records audit action `credit_limit_override`; invoice stores override columns (Alembic `0077`).
+- [x] Roles: `store_manager` and `accountant` have `credit:approve` (not sales_officer/cashier).
+- [x] Sales + POS UI prompt for reason and retry with override flags.
+- [x] Automated tests in `backend/tests/test_credit_limit_override_c1.py`.
 
 ## Sign-off
 

@@ -476,3 +476,98 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
 
 def default_due_date(from_dt: datetime | None = None, terms_days: int = DEFAULT_PAYMENT_TERMS_DAYS) -> datetime:
     return (from_dt or datetime.utcnow()) + timedelta(days=terms_days)
+
+
+def credit_limit_projection(customer: m.Party, additional_amount: float) -> dict:
+    """Return credit utilization projection for an additional AR amount (base currency)."""
+    limit = float(customer.credit_limit or 0)
+    balance = float(customer.balance or 0)
+    add = round(float(additional_amount or 0), 2)
+    projected = round(balance + add, 2)
+    exceeded = limit > 0 and projected > limit + 1e-9
+    return {
+        "credit_limit": limit,
+        "current_balance": balance,
+        "additional_amount": add,
+        "projected_balance": projected,
+        "exceeded": exceeded,
+        "available": round(max(limit - balance, 0), 2) if limit > 0 else None,
+    }
+
+
+async def enforce_credit_limit(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    role: str,
+    permissions: dict | None,
+    customer: m.Party,
+    additional_amount: float,
+    override: bool = False,
+    override_reason: str | None = None,
+    entity: str,
+    entity_id: str | None,
+    module: str = "credit",
+    extra_details: dict | None = None,
+    record_audit: bool = True,
+) -> dict:
+    """Block over-limit credit unless caller has credit:approve and supplies a reason.
+
+    Returns projection dict. When override is applied, records an audit event
+    (unless ``record_audit`` is False — caller will record with a final entity id).
+    """
+    from app.rbac import has_permission
+    from app import audit as audit_svc
+
+    projection = credit_limit_projection(customer, additional_amount)
+    if not projection["exceeded"]:
+        return {**projection, "overridden": False}
+
+    detail = {
+        "code": "CREDIT_LIMIT_EXCEEDED",
+        "message": "This sale would exceed the customer credit limit",
+        **projection,
+        **(extra_details or {}),
+    }
+
+    if not override:
+        raise HTTPException(status_code=409, detail=detail)
+
+    reason = (override_reason or "").strip()
+    if len(reason) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "CREDIT_OVERRIDE_REASON_REQUIRED",
+                "message": "credit_override_reason is required (min 3 characters) to override the credit limit",
+            },
+        )
+
+    if not has_permission(role, "credit", "approve", overrides=permissions):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "CREDIT_OVERRIDE_FORBIDDEN",
+                "message": "Missing permission: credit:approve",
+            },
+        )
+
+    if record_audit:
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="credit_limit_override",
+            entity=entity,
+            entity_id=entity_id,
+            module=module,
+            details={
+                "customer_id": customer.id,
+                "customer_name": customer.name,
+                "reason": reason,
+                **projection,
+                **(extra_details or {}),
+            },
+        )
+    return {**projection, "overridden": True, "override_reason": reason}

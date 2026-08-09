@@ -285,10 +285,10 @@ export default function Page() {
       }
       body.payment_method = paymentMethod;
     }
-    try {
+    async function submitSale(payload: Record<string, unknown>) {
       const r = await api('/pos/sales', {
         method: 'POST',
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
       });
       const receiptRes = await api(`/pos/sales/${r.data.id}/receipt?paper=${paper}`);
       setReceipt(receiptRes.data);
@@ -307,13 +307,36 @@ export default function Page() {
       setMessage(
         `Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0}` +
           (r.data.discount_amount ? `, discount ${r.data.discount_amount}` : '') +
-          `)${tenderNote}${drawerNote}`,
+          `)${tenderNote}${drawerNote}` +
+          (r.data?.credit_limit_overridden ? ' · credit limit overridden' : ''),
       );
       setCart([]);
       setCartDiscount('0');
       setSplitTender(false);
       await refreshSession();
+    }
+
+    try {
+      await submitSale(body);
     } catch (err: any) {
+      if (err?.code === 'CREDIT_LIMIT_EXCEEDED') {
+        const reason = window.prompt(
+          `${err.message}\n\nEnter override reason (requires credit:approve):`,
+        );
+        if (reason && reason.trim().length >= 3) {
+          try {
+            await submitSale({
+              ...body,
+              credit_limit_override: true,
+              credit_override_reason: reason.trim(),
+            });
+            return;
+          } catch (err2: any) {
+            setError(err2.message);
+            return;
+          }
+        }
+      }
       setError(err.message);
     }
   }

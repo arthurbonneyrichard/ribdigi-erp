@@ -686,8 +686,20 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 **List:** `GET /sales/invoices`  
 **Create:** `POST /sales/invoices`  
 **Get:** `GET /sales/invoices/{invoice_id}`  
+**Post:** `POST /sales/invoices/{invoice_id}/post`  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
 **Print:** `GET /sales/invoices/{invoice_id}/print`
+
+**Post (credit-limit override):** When posting would push customer AR over `credit_limit`, the API returns `409` with `detail.code=CREDIT_LIMIT_EXCEEDED` and projection fields. Callers with `credit:approve` may retry with:
+
+```json
+{
+  "credit_limit_override": true,
+  "credit_override_reason": "Approved by store manager — VIP order"
+}
+```
+
+Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Missing permission → `403 CREDIT_OVERRIDE_FORBIDDEN`. Successful override writes audit action `credit_limit_override` and sets invoice `credit_limit_overridden` / `credit_override_reason` / `credit_override_by` / `credit_override_at`.
 
 **Create Invoice:**
 ```json
@@ -763,6 +775,8 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 
 Single tender: set `payment_method` (`cash`|`card`|`wallet`|`credit`|`other`).  
 Split tender: set `payments[]` with `{ "payment_method", "amount", "reference?", "liquid_account_id?" }` summing to the computed sale total (`PAYMENT_TOTAL_MISMATCH` if not). Response includes `payments` rows and `payment_method` (`split` when multiple). Credit portion only increases customer AR balance.
+
+Credit tender (full or split portion) enforces the same credit-limit gate as invoice post. Optional body fields: `credit_limit_override` (bool), `credit_override_reason` (string). Same `CREDIT_LIMIT_*` error codes and audit action apply.
 
 ```json
 {

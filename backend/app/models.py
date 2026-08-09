@@ -988,6 +988,10 @@ class SalesInvoice(Base):
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     quotation_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     sales_order_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    credit_limit_overridden: Mapped[bool] = mapped_column(Boolean, default=False)
+    credit_override_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    credit_override_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    credit_override_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

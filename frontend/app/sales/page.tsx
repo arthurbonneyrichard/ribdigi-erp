@@ -363,14 +363,25 @@ export default function Page() {
     }
   }
 
-  async function act(path: string, label: string) {
+  async function act(path: string, label: string, body: Record<string, unknown> = {}) {
     setError('');
     try {
-      const r = await api(path, { method: 'POST', body: '{}' });
+      const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
       setMessage(r.message || label);
       setSelected(r.data);
       await refresh();
     } catch (err: any) {
+      if (err?.code === 'CREDIT_LIMIT_EXCEEDED' && path.includes('/post')) {
+        const reason = window.prompt(
+          `${err.message}\n\nEnter override reason (requires credit:approve):`,
+        );
+        if (reason && reason.trim().length >= 3) {
+          return act(path, label, {
+            credit_limit_override: true,
+            credit_override_reason: reason.trim(),
+          });
+        }
+      }
       setError(err.message);
     }
   }

@@ -1133,6 +1133,13 @@ class PosPaymentLine(BaseModel):
     liquid_account_id: str | None = None
 
 
+class CreditLimitOverrideRequest(BaseModel):
+    """Optional body for invoice post / credit sale when exceeding the limit (BR-11.1)."""
+
+    credit_limit_override: bool = False
+    credit_override_reason: str | None = None
+
+
 class PosSaleCreate(BaseModel):
     session_id: str | None = None
     party_id: str | None = None
@@ -1143,5 +1150,7 @@ class PosSaleCreate(BaseModel):
     status: str = "completed"
     payment_method: str = "cash"
     payments: list[PosPaymentLine] | None = None
+    credit_limit_override: bool = False
+    credit_override_reason: str | None = None
     payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(min_length=1)
