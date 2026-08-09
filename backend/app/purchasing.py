@@ -1962,9 +1962,13 @@ async def create_purchase_return(
         )
         already[grn_item.id] = already.get(grn_item.id, 0.0) + qty
 
+    from app.document_numbering import allocate_document_number
+
     ret = m.PurchaseReturn(
         tenant_id=tenant_id,
-        return_number=f"PR-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        return_number=await allocate_document_number(
+            db, tenant_id=tenant_id, doc_key="purchase_return"
+        ),
         supplier_id=grn.supplier_id,
         purchase_order_id=grn.purchase_order_id,
         goods_receipt_id=grn.id,
@@ -2051,7 +2055,11 @@ async def post_purchase_return(
 
     ret.status = "posted"
     ret.posted_at = datetime.utcnow()
-    ret.debit_note_number = f"DN-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+    from app.document_numbering import allocate_document_number
+
+    ret.debit_note_number = await allocate_document_number(
+        db, tenant_id=tenant_id, doc_key="purchase_debit_note"
+    )
 
     from app.accounting import post_purchase_return_journal
 
@@ -2086,6 +2094,54 @@ async def post_purchase_return(
     )
     await db.flush()
     return ret
+
+
+def render_debit_note_text(
+    return_data: dict,
+    *,
+    supplier_name: str,
+    company_name: str,
+    po_number: str | None = None,
+    grn_number: str | None = None,
+) -> str:
+    dn = return_data.get("debit_note_number") or "—"
+    lines = [
+        f"{company_name}",
+        f"DEBIT NOTE {dn}",
+        f"Return: {return_data.get('return_number')}",
+        f"Supplier: {supplier_name}",
+        f"Status: {return_data.get('status')}",
+        f"Reason: {return_data.get('reason')}",
+    ]
+    if po_number:
+        lines.append(f"PO: {po_number}")
+    if grn_number:
+        lines.append(f"GRN: {grn_number}")
+    if return_data.get("posted_at"):
+        lines.append(f"Posted: {str(return_data['posted_at'])[:19]}")
+    lines.extend(
+        [
+            "",
+            f"{'Product':<36} {'Qty':>10} {'Price':>12} {'Total':>12}",
+            "-" * 72,
+        ]
+    )
+    for item in return_data.get("items") or []:
+        lines.append(
+            f"{str(item.get('product_id')):<36} {float(item.get('quantity') or 0):>10.3f} "
+            f"{float(item.get('unit_price') or 0):>12.2f} {float(item.get('line_total') or 0):>12.2f}"
+        )
+    lines.extend(
+        [
+            "-" * 72,
+            f"Subtotal: {float(return_data.get('subtotal') or 0):.2f}",
+            f"Tax: {float(return_data.get('tax_amount') or 0):.2f}",
+            f"Total credit: {float(return_data.get('total_amount') or 0):.2f}",
+        ]
+    )
+    if return_data.get("notes"):
+        lines.extend(["", f"Notes: {return_data['notes']}"])
+    return "\n".join(lines)
 
 
 # --- Purchase invoices ---

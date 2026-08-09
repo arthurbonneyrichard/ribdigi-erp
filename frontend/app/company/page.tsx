@@ -355,6 +355,8 @@ export default function Page() {
                 ['sales_quotation', 'Quotation'],
                 ['sales_order', 'Sales order'],
                 ['sales_return', 'Sales return'],
+                ['purchase_return', 'Purchase return'],
+                ['purchase_debit_note', 'Purchase debit note'],
               ] as const
             ).map(([key, label]) => {
               const series = tenant.document_numbering?.[key] || {};

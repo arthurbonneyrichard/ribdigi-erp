@@ -4769,6 +4769,45 @@ async def get_purchase_return(
     return env(await purchasing_svc.serialize_purchase_return(db, ret))
 
 
+@api.get("/purchasing/returns/{return_id}/print")
+async def print_purchase_return_debit_note(
+    return_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    ret = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, ret.created_by)
+    if ret.status != "posted" or not ret.debit_note_number:
+        raise HTTPException(
+            status_code=409,
+            detail="Debit note is available after the purchase return is posted",
+        )
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], ret.supplier_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    po = await purchasing_svc.get_po(db, claims["tenant_id"], ret.purchase_order_id)
+    grn = await purchasing_svc.get_grn(db, claims["tenant_id"], ret.goods_receipt_id)
+    data = await purchasing_svc.serialize_purchase_return(db, ret)
+    text = purchasing_svc.render_debit_note_text(
+        data,
+        supplier_name=supplier.name,
+        company_name=tenant.company_name,
+        po_number=po.po_number,
+        grn_number=grn.grn_number,
+    )
+    return env(
+        {
+            "return": data,
+            "text": text,
+            "supplier_name": supplier.name,
+            "company_name": tenant.company_name,
+            "po_number": po.po_number,
+            "grn_number": grn.grn_number,
+        }
+    )
+
+
 @api.post("/purchasing/returns/{return_id}/post")
 async def post_purchase_return(
     return_id: str,

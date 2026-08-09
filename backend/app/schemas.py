@@ -86,6 +86,8 @@ class DocumentNumberingUpdate(BaseModel):
     sales_quotation: DocumentNumberSeriesUpdate | None = None
     sales_order: DocumentNumberSeriesUpdate | None = None
     sales_return: DocumentNumberSeriesUpdate | None = None
+    purchase_return: DocumentNumberSeriesUpdate | None = None
+    purchase_debit_note: DocumentNumberSeriesUpdate | None = None
 
 
 class TenantProfileUpdate(BaseModel):

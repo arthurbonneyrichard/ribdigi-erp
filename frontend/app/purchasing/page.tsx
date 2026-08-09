@@ -636,6 +636,25 @@ export default function Page() {
     }
   }
 
+  async function printDebitNote(returnId: string) {
+    setError('');
+    try {
+      const r = await api(`/purchasing/returns/${returnId}/print`);
+      const text = r.data?.text || '';
+      const win = window.open('', '_blank', 'noopener,noreferrer,width=720,height=800');
+      if (win) {
+        win.document.write(`<pre style="font:14px/1.4 monospace;padding:16px">${text.replace(/</g, '&lt;')}</pre>`);
+        win.document.close();
+        win.focus();
+      }
+      setMessage(
+        `Debit note print ready for ${r.data?.return?.debit_note_number || r.data?.return?.return_number || 'return'}`
+      );
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function receiveSelectedPo() {
     if (!selected) return;
     setError('');
@@ -1699,6 +1718,9 @@ export default function Page() {
                 <td>{r.total_amount}</td>
                 <td>
                   {r.status === 'draft' && <button onClick={() => postReturn(r.id)}>Post</button>}
+                  {r.status === 'posted' && (
+                    <button onClick={() => printDebitNote(r.id)}>Print debit note</button>
+                  )}
                 </td>
               </tr>
             ))}
