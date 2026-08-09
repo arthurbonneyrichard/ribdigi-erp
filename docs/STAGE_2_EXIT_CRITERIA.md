@@ -15,7 +15,7 @@ Stage 2 exit closes the Inventory & Supply Chain **hardening** track on top of e
 | I2 | Stock ops scan + adjustment reasons | COMPLETE | Ops barcode/camera; `stock_movements.reason`; Alembic `0072`; `test_stock_ops_i2.py` |
 | I3 | Minimum stock + traffic lights | COMPLETE | `minimum_stock`; green/yellow/red; warehouse-aware low-stock; Alembic `0073`; `test_low_stock_i3.py` |
 | I4 | Stock count variance report | COMPLETE | `GET .../variance-report` csv/pdf/json; Counts UI; `test_stock_count_variance_i4.py` |
-| I5 | Movement audit UX + integrity | COMPLETE | Serialized before/after/user/reason; Σ + overdraw tests; `test_stock_integrity_i5.py` |
+| I5 | Movement audit UX + integrity | COMPLETE | Serialized before/after/user/reason; Σ + overdraw tests; `test_stock_integrity_i5.py`; reconciliation suite `test_inventory_reconciliation.py` (API ops, warehouse Σ, transfer preserve, RBAC/tenant) |
 | I6 | Catalog harden (UoM/logo/dims) | COMPLETE | UoM conversion + convert API; brand logo; weight/LWH; Alembic `0074`; `test_catalog_harden_i6.py` |
 | P1 | Purchase return multi-line UI | DEFERRED | API already multi-line; UI polish optional |
 | P2 | PO Kanban board | DEFERRED | Optional polish |

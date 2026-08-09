@@ -68,6 +68,7 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 - [x] Movements API/UI: before/after, user, reason (serialized list).
 - [x] Integrity test: Σ(movements) vs product stock_qty.
 - [x] Stock-out overdraw returns `INSUFFICIENT_STOCK` (FOR UPDATE; SQLite sequential coverage).
+- [x] Reconciliation suite (`test_inventory_reconciliation.py`): stock-in/out/adjust/opening via API persist movements; warehouse Σ; transfer preserves consolidated qty; cashier write denied + cross-tenant 404.
 
 ## I6 acceptance criteria
 
