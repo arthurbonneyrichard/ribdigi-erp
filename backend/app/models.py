@@ -250,6 +250,7 @@ class WarehouseStock(Base):
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reserved_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    minimum_stock: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
 
@@ -310,6 +311,7 @@ class Product(Base):
     selling_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     stock_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reserved_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    minimum_stock: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     tax_rate_id: Mapped[str | None] = mapped_column(ForeignKey("tax_rates.id"), nullable=True)
     tax_exempt: Mapped[bool] = mapped_column(Boolean, default=False)

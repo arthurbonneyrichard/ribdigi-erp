@@ -18,7 +18,7 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **I1** | Dedicated opening stock entry (API + UI + bulk) | P0 | COMPLETE |
-| **I2** | Stock ops barcode scan + adjustment reason codes | P0 | PENDING |
+| **I2** | Stock ops barcode scan + adjustment reason codes | P0 | COMPLETE |
 | **I3** | Low stock: `minimum_stock` + traffic lights + warehouse-aware list | P0 | PENDING |
 | **I4** | Stock count variance report export (CSV/PDF) | P0 | PENDING |
 | **I5** | Movement history audit UX + integrity/concurrency tests | P1 | PENDING |
@@ -44,11 +44,18 @@ Stage 2 here is **not** a rewrite of inventory/purchasing. Core engines (catalog
 - [x] Inventory UI **Opening** tab for single-line entry; stock CSV may use `mode=opening`.
 - [x] Tenant + RBAC (`inventory` write); automated tests in `backend/tests/test_opening_stock_i1.py`.
 
-## I2 acceptance criteria (next)
+## I2 acceptance criteria
 
-- [ ] Stock ops tab: barcode/camera lookup selects product.
-- [ ] Adjustment reason enum: damage / theft / expiry / found / lost / other (stored on movement).
-- [ ] Automated tests for scan lookup + reason persistence.
+- [x] Stock ops tab: barcode/camera lookup selects product.
+- [x] Adjustment reason enum: damage / theft / expiry / found / lost / other (`stock_movements.reason`, Alembic `0072`).
+- [x] Automated tests in `backend/tests/test_stock_ops_i2.py`.
+
+## I3 acceptance criteria (next)
+
+- [ ] Product (+ warehouse where set) `minimum_stock` alongside `reorder_level`.
+- [ ] Low-stock / catalog traffic-light status (green / yellow / red).
+- [ ] Low-stock list warehouse-aware; Celery/scan uses dual thresholds.
+- [ ] Automated tests for thresholds + status.
 
 ## Sign-off
 

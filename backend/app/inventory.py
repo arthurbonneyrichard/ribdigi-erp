@@ -439,6 +439,33 @@ async def transfer_warehouse_stock(
 ADJUSTMENT_REASONS = frozenset({"damage", "theft", "expiry", "found", "lost", "other"})
 
 
+def compute_stock_status(
+    quantity: float | None,
+    minimum_stock: float | None,
+    reorder_level: float | None,
+) -> str:
+    """BR-5.5 traffic light: red ≤ minimum, yellow ≤ reorder, else green."""
+    qty = float(quantity or 0)
+    minimum = float(minimum_stock or 0)
+    reorder = float(reorder_level or 0)
+    if qty <= minimum:
+        return "red"
+    if reorder > 0 and qty <= reorder:
+        return "yellow"
+    return "green"
+
+
+def effective_warehouse_thresholds(
+    stock: m.WarehouseStock,
+    product: m.Product,
+) -> tuple[float, float]:
+    w_min = float(getattr(stock, "minimum_stock", 0) or 0)
+    w_ro = float(getattr(stock, "reorder_level", 0) or 0)
+    if w_min <= 0 and w_ro <= 0:
+        return float(getattr(product, "minimum_stock", 0) or 0), float(product.reorder_level or 0)
+    return w_min, w_ro
+
+
 def normalize_adjustment_reason(reason: str | None) -> str:
     code = (reason or "").strip().lower()
     if code not in ADJUSTMENT_REASONS:
@@ -573,7 +600,9 @@ async def apply_stock_change(
             "notes": notes,
         },
     )
-    if after <= float(product.reorder_level or 0):
+    if compute_stock_status(
+        after, getattr(product, "minimum_stock", 0), product.reorder_level
+    ) != "green":
         from app.notifications import notify_low_stock_if_needed
 
         await notify_low_stock_if_needed(db, tenant_id=tenant_id, product=product)

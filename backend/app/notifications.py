@@ -299,9 +299,13 @@ async def notify_low_stock_if_needed(
     tenant_id: str,
     product: m.Product,
 ) -> m.Notification | None:
+    from app.inventory import compute_stock_status
+
     stock = float(product.stock_qty or 0)
+    minimum = float(getattr(product, "minimum_stock", 0) or 0)
     reorder = float(product.reorder_level or 0)
-    if stock > reorder:
+    status = compute_stock_status(stock, minimum, reorder)
+    if status == "green":
         return None
     # Avoid duplicate unread low-stock alerts for same product
     existing = (
@@ -320,8 +324,11 @@ async def notify_low_stock_if_needed(
         db,
         tenant_id=tenant_id,
         category="low_stock",
-        title="Low Stock",
-        message=f"{product.name} ({product.sku}) is at {stock} (reorder {reorder}).",
+        title="Low Stock" if status == "yellow" else "Critical low stock",
+        message=(
+            f"{product.name} ({product.sku}) is at {stock} "
+            f"({status}; minimum {minimum}, reorder {reorder})."
+        ),
         entity_type="product",
         entity_id=product.id,
     )
@@ -334,9 +341,14 @@ async def notify_warehouse_low_stock_if_needed(
     product: m.Product,
     stock: m.WarehouseStock,
 ) -> m.Notification | None:
+    from app.inventory import compute_stock_status, effective_warehouse_thresholds
+
     qty = float(stock.quantity or 0)
-    reorder = float(getattr(stock, "reorder_level", 0) or 0)
-    if reorder <= 0 or qty > reorder:
+    minimum, reorder = effective_warehouse_thresholds(stock, product)
+    status = compute_stock_status(qty, minimum, reorder)
+    w_min = float(getattr(stock, "minimum_stock", 0) or 0)
+    w_ro = float(getattr(stock, "reorder_level", 0) or 0)
+    if (w_min <= 0 and w_ro <= 0) or status == "green":
         return None
     entity_id = f"{stock.warehouse_id}:{product.id}"
     existing = (
@@ -365,10 +377,10 @@ async def notify_warehouse_low_stock_if_needed(
         db,
         tenant_id=tenant_id,
         category="low_stock",
-        title="Store/warehouse low stock",
+        title="Store/warehouse low stock" if status == "yellow" else "Store/warehouse critical stock",
         message=(
             f"{product.name} ({product.sku}) at {loc}: {qty} "
-            f"(reorder {reorder}; suggest order {suggested})."
+            f"({status}; minimum {minimum}, reorder {reorder}; suggest order {suggested})."
         ),
         entity_type="warehouse_stock",
         entity_id=entity_id,
@@ -392,7 +404,7 @@ async def scan_low_stock(db: AsyncSession, tenant_id: str) -> int:
             .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
             .where(
                 m.WarehouseStock.tenant_id == tenant_id,
-                m.WarehouseStock.reorder_level > 0,
+                (m.WarehouseStock.reorder_level > 0) | (m.WarehouseStock.minimum_stock > 0),
             )
         )
     ).all()

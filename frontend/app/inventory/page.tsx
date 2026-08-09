@@ -91,9 +91,16 @@ export default function Page() {
   const [productBrandId, setProductBrandId] = useState('');
   const [productUnitId, setProductUnitId] = useState('');
   const [productBarcode, setProductBarcode] = useState('');
+  const [editMinimum, setEditMinimum] = useState('0');
   const [editReorder, setEditReorder] = useState('0');
   const [editPrice, setEditPrice] = useState('0');
   const [editBarcode, setEditBarcode] = useState('');
+
+  function statusColor(status?: string) {
+    if (status === 'red') return '#b91c1c';
+    if (status === 'yellow') return '#a16207';
+    return '#047857';
+  }
   const [categoryTree, setCategoryTree] = useState<any[]>([]);
   const [importReport, setImportReport] = useState<any | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -227,6 +234,7 @@ export default function Page() {
       refreshSelected(selectedId).catch((err) => setError(err.message));
       const p = products.find((x) => x.id === selectedId);
       if (p) {
+        setEditMinimum(String(p.minimum_stock ?? 0));
         setEditReorder(String(p.reorder_level ?? 0));
         setEditPrice(String(p.selling_price ?? 0));
         setEditBarcode(p.barcode || '');
@@ -241,6 +249,7 @@ export default function Page() {
       await api(`/products/${selectedId}`, {
         method: 'PATCH',
         body: JSON.stringify({
+          minimum_stock: Number(editMinimum) || 0,
           reorder_level: Number(editReorder) || 0,
           selling_price: Number(editPrice) || 0,
           barcode: editBarcode || null,
@@ -937,6 +946,8 @@ export default function Page() {
         )}
         {selectedId && (
           <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+            <label className="muted">Minimum stock</label>
+            <input value={editMinimum} onChange={(e) => setEditMinimum(e.target.value)} />
             <label className="muted">Reorder level</label>
             <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
             <label className="muted">Selling price</label>
@@ -1111,6 +1122,7 @@ export default function Page() {
                 <th>Barcode</th>
                 <th>Category</th>
                 <th>Stock</th>
+                <th>Status</th>
                 <th>Batches?</th>
                 <th>Price</th>
                 <th>Image</th>
@@ -1131,6 +1143,9 @@ export default function Page() {
                   <td>{p.barcode || '—'}</td>
                   <td>{p.category}</td>
                   <td>{p.stock_qty}</td>
+                  <td style={{ color: statusColor(p.stock_status), fontWeight: 600 }}>
+                    {p.stock_status || 'green'}
+                  </td>
                   <td>{p.tracks_batches ? 'yes' : 'no'}</td>
                   <td>{p.selling_price}</td>
                   <td>{p.has_image ? 'yes' : '—'}</td>
@@ -1784,19 +1799,29 @@ export default function Page() {
               <tr>
                 <th>SKU</th>
                 <th>Name</th>
+                <th>Scope</th>
                 <th>On hand</th>
+                <th>Minimum</th>
                 <th>Reorder</th>
+                <th>Status</th>
                 <th>Suggested</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {lowStock.map((row) => (
-                <tr key={row.id}>
+                <tr key={`${row.scope || 'product'}-${row.id}-${row.warehouse_id || ''}`}>
                   <td>{row.sku}</td>
                   <td>{row.name}</td>
+                  <td>
+                    {row.scope === 'warehouse' ? `WH ${row.warehouse_code || row.warehouse_id}` : 'Product'}
+                  </td>
                   <td>{row.stock_qty}</td>
+                  <td>{row.minimum_stock ?? 0}</td>
                   <td>{row.reorder_level}</td>
+                  <td style={{ color: statusColor(row.stock_status), fontWeight: 600 }}>
+                    {row.stock_status || 'yellow'}
+                  </td>
                   <td>{row.suggested_order_qty}</td>
                   <td>
                     <button
@@ -1811,8 +1836,8 @@ export default function Page() {
               ))}
               {!lowStock.length && (
                 <tr>
-                  <td colSpan={6} className="muted">
-                    No products at or below reorder level
+                  <td colSpan={9} className="muted">
+                    No products at or below minimum / reorder level
                   </td>
                 </tr>
               )}

@@ -2902,7 +2902,7 @@ async def patch_product(
                 barcode=value,
                 exclude_product_id=product.id,
             )
-        elif key in {"cost_price", "selling_price", "reorder_level"} and value is not None:
+        elif key in {"cost_price", "selling_price", "reorder_level", "minimum_stock"} and value is not None:
             setattr(product, key, float(value))
         elif key == "tax_rate_id":
             product.tax_rate_id = value
@@ -3255,36 +3255,89 @@ async def product_images_delete(
 
 @api.get("/inventory/low-stock")
 async def lowstock(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
-    rows = (
+    from app.inventory import compute_stock_status, effective_warehouse_thresholds
+
+    products = (
         await db.execute(
             select(m.Product)
             .where(
                 m.Product.tenant_id == claims["tenant_id"],
-                m.Product.is_active == True,  # noqa: E712
-                m.Product.stock_qty <= m.Product.reorder_level,
+                m.Product.is_active == True,  # noqa: E712,
             )
             .order_by(m.Product.stock_qty.asc())
         )
     ).scalars().all()
-    return env(
-        [
+    out: list[dict] = []
+    for p in products:
+        qty = float(p.stock_qty or 0)
+        minimum = float(getattr(p, "minimum_stock", 0) or 0)
+        reorder = float(p.reorder_level or 0)
+        status = compute_stock_status(qty, minimum, reorder)
+        if status == "green":
+            continue
+        out.append(
             {
                 "id": p.id,
                 "sku": p.sku,
                 "name": p.name,
-                "stock_qty": float(p.stock_qty or 0),
-                "reorder_level": float(p.reorder_level or 0),
+                "stock_qty": qty,
+                "minimum_stock": minimum,
+                "reorder_level": reorder,
+                "stock_status": status,
                 "cost_price": float(p.cost_price or 0),
+                "scope": "product",
+                "warehouse_id": None,
                 "suggested_order_qty": max(
                     1.0,
-                    round(float(p.reorder_level or 0) - float(p.stock_qty or 0), 3)
-                    if float(p.reorder_level or 0) > float(p.stock_qty or 0)
-                    else max(float(p.reorder_level or 0), 1.0),
+                    round(reorder - qty, 3) if reorder > qty else max(reorder, 1.0),
                 ),
             }
-            for p in rows
-        ]
-    )
+        )
+
+    wh_rows = (
+        await db.execute(
+            select(m.WarehouseStock, m.Product, m.Warehouse)
+            .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+            .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
+            .where(
+                m.WarehouseStock.tenant_id == claims["tenant_id"],
+                m.Product.is_active == True,  # noqa: E712
+            )
+            .order_by(m.WarehouseStock.quantity.asc())
+        )
+    ).all()
+    for stock, product, wh in wh_rows:
+        qty = float(stock.quantity or 0)
+        minimum, reorder = effective_warehouse_thresholds(stock, product)
+        status = compute_stock_status(qty, minimum, reorder)
+        if status == "green":
+            continue
+        # Skip duplicate when warehouse has no local policy and product already listed
+        w_min = float(getattr(stock, "minimum_stock", 0) or 0)
+        w_ro = float(stock.reorder_level or 0)
+        if w_min <= 0 and w_ro <= 0:
+            continue
+        out.append(
+            {
+                "id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "stock_qty": qty,
+                "minimum_stock": minimum,
+                "reorder_level": reorder,
+                "stock_status": status,
+                "cost_price": float(product.cost_price or 0),
+                "scope": "warehouse",
+                "warehouse_id": wh.id,
+                "warehouse_code": wh.code,
+                "suggested_order_qty": max(
+                    1.0,
+                    float(stock.reorder_qty or 0)
+                    or (round(reorder - qty, 3) if reorder > qty else max(reorder, 1.0)),
+                ),
+            }
+        )
+    return env(out)
 
 
 @api.post("/inventory/low-stock/reorder-po")
@@ -3421,32 +3474,39 @@ async def product_warehouse_stock(
             .order_by(m.Warehouse.code)
         )
     ).all()
+    from app.inventory import compute_stock_status, effective_warehouse_thresholds
+
+    p_min = float(getattr(product, "minimum_stock", 0) or 0)
+    p_ro = float(product.reorder_level or 0)
+    p_qty = float(product.stock_qty or 0)
+    warehouses_out = []
+    for stock, wh in rows:
+        qty = float(stock.quantity or 0)
+        minimum, reorder = effective_warehouse_thresholds(stock, product)
+        warehouses_out.append(
+            {
+                "warehouse_id": wh.id,
+                "code": wh.code,
+                "name": wh.name,
+                "quantity": qty,
+                "reserved_qty": float(getattr(stock, "reserved_qty", 0) or 0),
+                "available_qty": max(qty - float(getattr(stock, "reserved_qty", 0) or 0), 0.0),
+                "minimum_stock": minimum,
+                "reorder_level": reorder,
+                "stock_status": compute_stock_status(qty, minimum, reorder),
+                "reorder_qty": float(stock.reorder_qty or 0),
+            }
+        )
     return env(
         {
             "product_id": product.id,
-            "stock_qty": float(product.stock_qty or 0),
-            "reorder_level": float(product.reorder_level or 0),
+            "stock_qty": p_qty,
+            "minimum_stock": p_min,
+            "reorder_level": p_ro,
+            "stock_status": compute_stock_status(p_qty, p_min, p_ro),
             "reserved_qty": float(getattr(product, "reserved_qty", 0) or 0),
-            "available_qty": max(
-                float(product.stock_qty or 0) - float(getattr(product, "reserved_qty", 0) or 0),
-                0.0,
-            ),
-            "warehouses": [
-                {
-                    "warehouse_id": wh.id,
-                    "code": wh.code,
-                    "name": wh.name,
-                    "quantity": float(stock.quantity or 0),
-                    "reserved_qty": float(getattr(stock, "reserved_qty", 0) or 0),
-                    "available_qty": max(
-                        float(stock.quantity or 0) - float(getattr(stock, "reserved_qty", 0) or 0),
-                        0.0,
-                    ),
-                    "reorder_level": float(stock.reorder_level or 0),
-                    "reorder_qty": float(stock.reorder_qty or 0),
-                }
-                for stock, wh in rows
-            ],
+            "available_qty": max(p_qty - float(getattr(product, "reserved_qty", 0) or 0), 0.0),
+            "warehouses": warehouses_out,
         }
     )
 
@@ -8610,6 +8670,7 @@ async def set_store_reorder_policy(
         tenant_id=claims["tenant_id"],
         store_id=store_id,
         product_id=payload.product_id,
+        minimum_stock=payload.minimum_stock,
         reorder_level=payload.reorder_level,
         reorder_qty=payload.reorder_qty,
     )

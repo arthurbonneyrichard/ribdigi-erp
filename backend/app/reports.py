@@ -577,26 +577,36 @@ async def inventory_low_stock(
     warehouse_id: str | None = None,
 ) -> dict:
     """Product-level and optional store/warehouse reorder breaches."""
+    from app.inventory import compute_stock_status
+
     products = (
         await db.execute(
             select(m.Product).where(
                 m.Product.tenant_id == tenant_id,
                 m.Product.is_active == True,  # noqa: E712
-                m.Product.stock_qty <= m.Product.reorder_level,
             ).order_by(m.Product.stock_qty.asc())
         )
     ).scalars().all()
-    product_rows = [
-        {
-            "id": p.id,
-            "sku": p.sku,
-            "name": p.name,
-            "stock_qty": float(p.stock_qty or 0),
-            "reorder_level": float(p.reorder_level or 0),
-            "scope": "product",
-        }
-        for p in products
-    ]
+    product_rows = []
+    for p in products:
+        qty = float(p.stock_qty or 0)
+        minimum = float(getattr(p, "minimum_stock", 0) or 0)
+        reorder = float(p.reorder_level or 0)
+        status = compute_stock_status(qty, minimum, reorder)
+        if status == "green":
+            continue
+        product_rows.append(
+            {
+                "id": p.id,
+                "sku": p.sku,
+                "name": p.name,
+                "stock_qty": qty,
+                "minimum_stock": minimum,
+                "reorder_level": reorder,
+                "stock_status": status,
+                "scope": "product",
+            }
+        )
 
     wh_filter = warehouse_id
     store = None
@@ -614,16 +624,20 @@ async def inventory_low_stock(
         .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
         .where(
             m.WarehouseStock.tenant_id == tenant_id,
-            m.WarehouseStock.reorder_level > 0,
-            m.WarehouseStock.quantity <= m.WarehouseStock.reorder_level,
+            (m.WarehouseStock.reorder_level > 0) | (m.WarehouseStock.minimum_stock > 0),
         )
         .order_by(m.WarehouseStock.quantity.asc())
     )
     if wh_filter:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == wh_filter)
+    from app.inventory import compute_stock_status, effective_warehouse_thresholds
+
     for stock, product, wh in (await db.execute(stmt)).all():
         qty = float(stock.quantity or 0)
-        reorder = float(stock.reorder_level or 0)
+        minimum, reorder = effective_warehouse_thresholds(stock, product)
+        status = compute_stock_status(qty, minimum, reorder)
+        if status == "green":
+            continue
         reorder_qty = float(stock.reorder_qty or 0)
         warehouse_rows.append(
             {
@@ -631,7 +645,9 @@ async def inventory_low_stock(
                 "sku": product.sku,
                 "name": product.name,
                 "quantity": qty,
+                "minimum_stock": minimum,
                 "reorder_level": reorder,
+                "stock_status": status,
                 "reorder_qty": reorder_qty,
                 "suggested_order_qty": max(reorder_qty, round(reorder - qty, 3)),
                 "warehouse_id": wh.id,

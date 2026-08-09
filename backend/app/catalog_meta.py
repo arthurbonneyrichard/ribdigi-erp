@@ -85,6 +85,11 @@ def serialize_unit(row: m.UnitOfMeasure) -> dict:
 
 
 def serialize_product(row: m.Product) -> dict:
+    from app.inventory import compute_stock_status
+
+    stock_qty = float(row.stock_qty or 0)
+    minimum_stock = float(getattr(row, "minimum_stock", 0) or 0)
+    reorder_level = float(row.reorder_level or 0)
     return {
         "id": row.id,
         "name": row.name,
@@ -98,13 +103,15 @@ def serialize_product(row: m.Product) -> dict:
         "has_image": bool(row.image_url),
         "cost_price": float(row.cost_price or 0),
         "selling_price": float(row.selling_price or 0),
-        "stock_qty": float(row.stock_qty or 0),
+        "stock_qty": stock_qty,
         "reserved_qty": float(getattr(row, "reserved_qty", 0) or 0),
         "available_qty": max(
-            float(row.stock_qty or 0) - float(getattr(row, "reserved_qty", 0) or 0),
+            stock_qty - float(getattr(row, "reserved_qty", 0) or 0),
             0.0,
         ),
-        "reorder_level": float(row.reorder_level or 0),
+        "minimum_stock": minimum_stock,
+        "reorder_level": reorder_level,
+        "stock_status": compute_stock_status(stock_qty, minimum_stock, reorder_level),
         "tax_rate_id": row.tax_rate_id,
         "tax_exempt": bool(row.tax_exempt),
         "tracks_batches": bool(row.tracks_batches),

@@ -325,7 +325,10 @@ async def set_store_reorder_policy(
     product_id: str,
     reorder_level: float,
     reorder_qty: float = 0,
+    minimum_stock: float = 0,
 ) -> dict:
+    from app.inventory import compute_stock_status
+
     await get_store(db, tenant_id, store_id)
     product = (
         await db.execute(
@@ -338,18 +341,22 @@ async def set_store_reorder_policy(
     row = await get_or_create_warehouse_stock(
         db, tenant_id=tenant_id, warehouse_id=wh.id, product_id=product_id
     )
+    row.minimum_stock = max(float(minimum_stock or 0), 0)
     row.reorder_level = max(float(reorder_level or 0), 0)
     row.reorder_qty = max(float(reorder_qty or 0), 0)
     await db.flush()
     qty = float(row.quantity or 0)
+    minimum = float(row.minimum_stock or 0)
     reorder = float(row.reorder_level or 0)
     return {
         "product_id": product.id,
         "sku": product.sku,
         "name": product.name,
         "quantity": qty,
+        "minimum_stock": minimum,
         "reorder_level": reorder,
         "reorder_qty": float(row.reorder_qty or 0),
+        "stock_status": compute_stock_status(qty, minimum, reorder),
         "below_reorder": reorder > 0 and qty <= reorder,
         "warehouse_id": wh.id,
         "store_id": store_id,

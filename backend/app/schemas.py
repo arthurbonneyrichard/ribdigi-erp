@@ -240,6 +240,7 @@ class ProductCreate(BaseModel):
     cost_price: float = 0
     selling_price: float = 0
     stock_qty: float = 0
+    minimum_stock: float = 0
     reorder_level: float = 0
     tax_rate_id: str | None = None
     tax_exempt: bool = False
@@ -256,6 +257,7 @@ class ProductUpdate(BaseModel):
     unit_id: str | None = None
     cost_price: float | None = None
     selling_price: float | None = None
+    minimum_stock: float | None = None
     reorder_level: float | None = None
     tax_rate_id: str | None = None
     tax_exempt: bool | None = None
@@ -633,6 +635,7 @@ class PosDrawerOpen(BaseModel):
 
 class StoreReorderPolicyUpdate(BaseModel):
     product_id: str
+    minimum_stock: float = Field(default=0, ge=0)
     reorder_level: float = Field(ge=0)
     reorder_qty: float = Field(default=0, ge=0)
 
