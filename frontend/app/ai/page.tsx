@@ -20,6 +20,29 @@ type Prediction = {
   seasonality_factor: number;
 };
 
+type Forecast = {
+  product_id: string;
+  sku: string;
+  name: string;
+  available_qty: number;
+  forecast_7d: number;
+  forecast_30d: number;
+  forecast_90d: number;
+  optimal_reorder_qty: number;
+  seasonality: string;
+  confidence: number;
+  status: string;
+};
+
+type DeadStock = {
+  product_id: string;
+  sku: string;
+  name: string;
+  stock_qty: number;
+  days_without_sale: number | null;
+  estimated_carrying_cost: number;
+};
+
 type ChatTurn = {
   id: string;
   message: string;
@@ -34,6 +57,8 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [forecasts, setForecasts] = useState<Forecast[]>([]);
+  const [deadStock, setDeadStock] = useState<DeadStock[]>([]);
   const [atRiskCount, setAtRiskCount] = useState(0);
   const [method, setMethod] = useState('');
   const [history, setHistory] = useState<ChatTurn[]>([]);
@@ -57,6 +82,24 @@ export default function Page() {
     }
   }
 
+  async function loadForecasts() {
+    try {
+      const r = await api('/ai/inventory/demand-forecast');
+      setForecasts(r.data?.forecasts || []);
+    } catch (err: any) {
+      setError(err.message || 'Unable to load demand forecast');
+    }
+  }
+
+  async function loadDeadStock() {
+    try {
+      const r = await api('/ai/inventory/dead-stock?lookback_days=90');
+      setDeadStock(r.data?.items || []);
+    } catch (err: any) {
+      setError(err.message || 'Unable to load dead stock');
+    }
+  }
+
   async function loadInsightCards() {
     try {
       const r = await api('/ai/insights');
@@ -71,12 +114,14 @@ export default function Page() {
       const r = await api('/ai/chat/history?limit=30');
       setHistory(r.data?.items || []);
     } catch {
-      /* history is optional when chat is unavailable */
+      /* optional */
     }
   }
 
   useEffect(() => {
     loadPredictions().catch(() => undefined);
+    loadForecasts().catch(() => undefined);
+    loadDeadStock().catch(() => undefined);
     loadInsightCards().catch(() => undefined);
     loadHistory().catch(() => undefined);
   }, []);
@@ -86,8 +131,7 @@ export default function Page() {
     setA('');
     try {
       const r = await api('/ai/chat', { method: 'POST', body: JSON.stringify({ message: q }) });
-      const answer = r.data?.answer || r.data?.reply || '';
-      setA(answer);
+      setA(r.data?.answer || r.data?.reply || '');
       setQ('');
       await loadHistory();
     } catch (err: any) {
@@ -108,9 +152,8 @@ export default function Page() {
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Rule-based chat answers sales, stock, expense, and customer questions from your tenant data.
-        Draft purchase orders when you have purchasing write access. Insights and velocity stockout
-        predictions are also available.
+        Rule-based chat, demand forecasts (7/30/90 days), dead-stock detection, insights, and
+        velocity stockout predictions — all from your tenant data.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -154,6 +197,96 @@ export default function Page() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Demand forecast</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          7 / 30 / 90-day unit demand from sales velocity with short-window seasonality and optimal
+          reorder quantity.
+        </p>
+        <button type="button" onClick={loadForecasts} style={{ marginBottom: 12 }}>
+          Refresh forecast
+        </button>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Avail</th>
+              <th>7d</th>
+              <th>30d</th>
+              <th>90d</th>
+              <th>Reorder qty</th>
+              <th>Seasonality</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {forecasts
+              .filter((f) => f.status === 'ok')
+              .slice(0, 40)
+              .map((f) => (
+                <tr key={f.product_id}>
+                  <td>
+                    {f.name} <span className="muted">({f.sku})</span>
+                  </td>
+                  <td>{f.available_qty}</td>
+                  <td>{f.forecast_7d}</td>
+                  <td>{f.forecast_30d}</td>
+                  <td>{f.forecast_90d}</td>
+                  <td>{f.optimal_reorder_qty}</td>
+                  <td>{f.seasonality}</td>
+                  <td>{Math.round((f.confidence || 0) * 100)}%</td>
+                </tr>
+              ))}
+            {!forecasts.filter((f) => f.status === 'ok').length && (
+              <tr>
+                <td colSpan={8} className="muted">
+                  No forecastable products yet (need posted sales history)
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Dead stock</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          On-hand inventory with no posted sales in the last 90 days.
+        </p>
+        <button type="button" onClick={loadDeadStock} style={{ marginBottom: 12 }}>
+          Refresh dead stock
+        </button>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Stock</th>
+              <th>Days without sale</th>
+              <th>Est. carrying cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deadStock.slice(0, 40).map((d) => (
+              <tr key={d.product_id}>
+                <td>
+                  {d.name} <span className="muted">({d.sku})</span>
+                </td>
+                <td>{d.stock_qty}</td>
+                <td>{d.days_without_sale ?? '—'}</td>
+                <td>{d.estimated_carrying_cost}</td>
+              </tr>
+            ))}
+            {!deadStock.length && (
+              <tr>
+                <td colSpan={4} className="muted">
+                  No dead stock detected
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

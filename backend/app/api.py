@@ -8738,6 +8738,46 @@ async def ai_low_stock_prediction(
     return env(data)
 
 
+@api.get("/ai/inventory/demand-forecast")
+async def ai_demand_forecast(
+    lookback_days: int = 30,
+    lead_time_days: int = 7,
+    product_id: str | None = None,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.3 — 7/30/90-day demand forecast, seasonality, optimal reorder qty."""
+    from app import ai_inventory as ai_inventory_svc
+
+    data = await ai_inventory_svc.forecast_demand(
+        db,
+        claims["tenant_id"],
+        lookback_days=lookback_days,
+        lead_time_days=lead_time_days,
+        product_id=product_id,
+    )
+    return env(data)
+
+
+@api.get("/ai/inventory/dead-stock")
+async def ai_dead_stock(
+    lookback_days: int = 90,
+    min_stock: float = 0,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.3 — identify products with stock and no sales in the lookback window."""
+    from app import ai_inventory as ai_inventory_svc
+
+    data = await ai_inventory_svc.identify_dead_stock(
+        db,
+        claims["tenant_id"],
+        lookback_days=lookback_days,
+        min_stock=min_stock,
+    )
+    return env(data)
+
+
 @api.get("/ai/inventory/predictions")
 async def ai_inventory_predictions(
     lookback_days: int = 30,
@@ -8746,12 +8786,34 @@ async def ai_inventory_predictions(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Alias of low-stock prediction for Phase 4 API catalog compatibility."""
-    return await ai_low_stock_prediction(
+    """Inventory intelligence: demand forecasts plus low-stock predictions."""
+    from app import ai_inventory as ai_inventory_svc
+
+    forecast = await ai_inventory_svc.forecast_demand(
+        db,
+        claims["tenant_id"],
+        lookback_days=lookback_days,
+        lead_time_days=lead_time_days,
+    )
+    low = await ai_inventory_svc.predict_low_stock(
+        db,
+        claims["tenant_id"],
         lookback_days=lookback_days,
         horizon_days=horizon_days,
         lead_time_days=lead_time_days,
         at_risk_only=False,
-        claims=claims,
-        db=db,
+    )
+    return env(
+        {
+            "generated_at": forecast["generated_at"],
+            "method": forecast["method"],
+            "lookback_days": lookback_days,
+            "horizon_days": horizon_days,
+            "lead_time_days": lead_time_days,
+            "horizons_days": forecast["horizons_days"],
+            "forecasts": forecast["forecasts"],
+            "predictions": low["predictions"],
+            "at_risk_count": low["at_risk_count"],
+            "forecast_count": forecast["count"],
+        }
     )
