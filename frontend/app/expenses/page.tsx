@@ -78,19 +78,27 @@ export default function Page() {
   const [ocrMeta, setOcrMeta] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [budgets, setBudgets] = useState<any>(null);
+  const [newCatCode, setNewCatCode] = useState('');
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatBudget, setNewCatBudget] = useState('0');
+  const [editBudgetId, setEditBudgetId] = useState<string | null>(null);
+  const [editBudgetAmount, setEditBudgetAmount] = useState('');
 
   async function refresh() {
-    const [exp, cats, settings, liquid, rec] = await Promise.all([
+    const [exp, cats, settings, liquid, rec, bud] = await Promise.all([
       api('/expenses'),
       api('/expenses/categories'),
       api('/expenses/settings'),
       api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
       api('/expenses/recurring').catch(() => ({ data: [] })),
+      api('/expenses/budgets').catch(() => ({ data: null })),
     ]);
     setRows(exp.data || []);
     setCategories(cats.data || []);
     setLiquidAccounts(liquid.data || []);
     setRecurring(rec.data || []);
+    setBudgets(bud.data || null);
     setThreshold(settings.data?.expense_approval_threshold ?? 100);
     setL2Threshold(settings.data?.expense_l2_threshold ?? 1000);
     setLevels(settings.data?.levels || []);
@@ -388,6 +396,46 @@ export default function Page() {
     }
   }
 
+  async function createCategory() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/expenses/categories', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: newCatCode,
+          name: newCatName,
+          budget_amount: Number(newCatBudget) || 0,
+        }),
+      });
+      setMessage('Category created');
+      setNewCatCode('');
+      setNewCatName('');
+      setNewCatBudget('0');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveCategoryBudget() {
+    if (!editBudgetId) return;
+    setError('');
+    setMessage('');
+    try {
+      await api(`/expenses/categories/${editBudgetId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ budget_amount: Number(editBudgetAmount) || 0 }),
+      });
+      setMessage('Category budget updated');
+      setEditBudgetId(null);
+      setEditBudgetAmount('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   return (
     <Shell>
       <h1>Expenses</h1>
@@ -397,6 +445,108 @@ export default function Page() {
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Categories &amp; budgets</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Allocate monthly budgets per category; variance uses approved spend in the current period
+          {budgets?.from_date
+            ? ` (${new Date(budgets.from_date).toLocaleDateString()} – ${new Date(
+                budgets.to_date
+              ).toLocaleDateString()})`
+            : ''}
+          .
+        </p>
+        <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>
+          <input
+            value={newCatCode}
+            onChange={(e) => setNewCatCode(e.target.value)}
+            placeholder="Code (e.g. TRAVEL)"
+          />
+          <input
+            value={newCatName}
+            onChange={(e) => setNewCatName(e.target.value)}
+            placeholder="Name"
+          />
+          <input
+            value={newCatBudget}
+            onChange={(e) => setNewCatBudget(e.target.value)}
+            placeholder="Budget amount"
+          />
+          <button type="button" onClick={createCategory}>
+            Add category
+          </button>
+        </div>
+        {editBudgetId && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <input
+              value={editBudgetAmount}
+              onChange={(e) => setEditBudgetAmount(e.target.value)}
+              placeholder="Budget"
+              style={{ width: 120 }}
+            />
+            <button type="button" onClick={saveCategoryBudget}>
+              Save budget
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditBudgetId(null);
+                setEditBudgetAmount('');
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Budget</th>
+              <th>Spent</th>
+              <th>Pending</th>
+              <th>Variance</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {(budgets?.categories || categories.map((c) => ({ ...c, spent: 0, pending: 0, variance: c.budget_amount }))).map(
+              (c: any) => (
+                <tr key={c.id}>
+                  <td>
+                    {c.name} <span className="muted">({c.code})</span>
+                  </td>
+                  <td>{c.budget_amount}</td>
+                  <td>{c.spent ?? '—'}</td>
+                  <td>{c.pending ?? '—'}</td>
+                  <td style={{ color: c.over_budget ? '#b91c1c' : undefined }}>
+                    {c.variance ?? '—'}
+                    {c.utilization_pct != null ? ` (${c.utilization_pct}%)` : ''}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditBudgetId(c.id);
+                        setEditBudgetAmount(String(c.budget_amount ?? 0));
+                      }}
+                    >
+                      Set budget
+                    </button>
+                  </td>
+                </tr>
+              )
+            )}
+          </tbody>
+        </table>
+        {budgets?.totals && (
+          <p className="muted" style={{ marginTop: 8 }}>
+            Totals — budget {budgets.totals.budget_amount}, spent {budgets.totals.spent}, variance{' '}
+            {budgets.totals.variance}
+          </p>
+        )}
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Recurring expenses</h3>

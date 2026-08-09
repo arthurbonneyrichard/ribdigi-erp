@@ -761,10 +761,16 @@ async def expenses_summary(
         {"category": k, "amount": round(v, 2)}
         for k, v in sorted(by_category.items(), key=lambda x: x[1], reverse=True)
     ]
+    from app import expenses as expenses_svc
+
+    budget = await expenses_svc.category_budget_variance(
+        db, tenant_id, from_date=from_date, to_date=to_date
+    )
     return {
         "count": len(rows),
         "total_amount": round(sum(float(e.amount or 0) for e in rows), 2),
         "by_category": categories,
+        "budgets": budget,
     }
 
 

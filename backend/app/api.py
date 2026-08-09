@@ -65,6 +65,7 @@ from app.schemas import (
     BankConnectionCreate,
     BankConnectionUpdate,
     ExpenseCategoryCreate,
+    ExpenseCategoryUpdate,
     ExpenseCreate,
     ExpenseDecision,
     ExpenseThresholdUpdate,
@@ -5816,18 +5817,7 @@ async def list_expense_categories(
             .order_by(m.ExpenseCategory.name)
         )
     ).scalars().all()
-    return env(
-        [
-            {
-                "id": c.id,
-                "code": c.code,
-                "name": c.name,
-                "budget_amount": float(c.budget_amount or 0),
-                "is_active": c.is_active,
-            }
-            for c in rows
-        ]
-    )
+    return env([expenses_svc.serialize_category(c) for c in rows])
 
 
 @api.post("/expenses/categories")
@@ -5848,7 +5838,45 @@ async def create_expense_category(
     except Exception as exc:
         await db.rollback()
         raise HTTPException(status_code=409, detail="Category code already exists") from exc
-    return env({"id": cat.id, "code": cat.code, "name": cat.name})
+    return env(expenses_svc.serialize_category(cat), "Expense category created")
+
+
+@api.patch("/expenses/categories/{category_id}")
+async def update_expense_category(
+    category_id: str,
+    payload: ExpenseCategoryUpdate,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    cat = await expenses_svc.update_category(
+        db,
+        tenant_id=claims["tenant_id"],
+        category_id=category_id,
+        name=payload.name,
+        budget_amount=payload.budget_amount,
+        is_active=payload.is_active,
+    )
+    await db.commit()
+    return env(expenses_svc.serialize_category(cat), "Expense category updated")
+
+
+@api.get("/expenses/budgets")
+async def expense_category_budgets(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import reports as reports_svc
+
+    data = await expenses_svc.category_budget_variance(
+        db,
+        claims["tenant_id"],
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+    )
+    await db.commit()
+    return env(data)
 
 
 @api.get("/expenses/settings")

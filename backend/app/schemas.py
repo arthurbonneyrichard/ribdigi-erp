@@ -479,6 +479,12 @@ class ExpenseCategoryCreate(BaseModel):
     budget_amount: float = Field(default=0, ge=0)
 
 
+class ExpenseCategoryUpdate(BaseModel):
+    name: str | None = None
+    budget_amount: float | None = Field(default=None, ge=0)
+    is_active: bool | None = None
+
+
 class ExpenseDecision(BaseModel):
     comment: str | None = None
     reason: str | None = None

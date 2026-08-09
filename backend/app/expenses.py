@@ -185,6 +185,135 @@ async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
     await db.flush()
 
 
+def serialize_category(cat: m.ExpenseCategory) -> dict:
+    return {
+        "id": cat.id,
+        "code": cat.code,
+        "name": cat.name,
+        "budget_amount": float(cat.budget_amount or 0),
+        "is_active": bool(cat.is_active),
+    }
+
+
+async def update_category(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    category_id: str,
+    name: str | None = None,
+    budget_amount: float | None = None,
+    is_active: bool | None = None,
+) -> m.ExpenseCategory:
+    cat = (
+        await db.execute(
+            select(m.ExpenseCategory).where(
+                m.ExpenseCategory.id == category_id,
+                m.ExpenseCategory.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Expense category not found")
+    if name is not None:
+        name_norm = name.strip()
+        if not name_norm:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        cat.name = name_norm
+    if budget_amount is not None:
+        if float(budget_amount) < 0:
+            raise HTTPException(status_code=400, detail="budget_amount cannot be negative")
+        cat.budget_amount = round(float(budget_amount), 2)
+    if is_active is not None:
+        cat.is_active = bool(is_active)
+    await db.flush()
+    return cat
+
+
+async def category_budget_variance(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    """Budget vs approved spend by category for a period (defaults to current month)."""
+    await ensure_default_categories(db, tenant_id)
+    now = datetime.utcnow()
+    start = from_date or datetime(now.year, now.month, 1)
+    if to_date is None:
+        if now.month == 12:
+            end = datetime(now.year, 12, 31, 23, 59, 59)
+        else:
+            end = datetime(now.year, now.month + 1, 1) - timedelta(seconds=1)
+    else:
+        end = to_date
+
+    cats = (
+        await db.execute(
+            select(m.ExpenseCategory)
+            .where(m.ExpenseCategory.tenant_id == tenant_id)
+            .order_by(m.ExpenseCategory.name)
+        )
+    ).scalars().all()
+
+    expenses = (
+        await db.execute(
+            select(m.Expense).where(
+                m.Expense.tenant_id == tenant_id,
+                m.Expense.expense_date >= start,
+                m.Expense.expense_date <= end,
+                m.Expense.status.in_(["approved", "pending"]),
+            )
+        )
+    ).scalars().all()
+
+    spent_by: dict[str, float] = {}
+    pending_by: dict[str, float] = {}
+    for e in expenses:
+        key = e.category_id or f"name:{e.category or 'Uncategorized'}"
+        amt = float(e.amount or 0)
+        if e.status == "approved":
+            spent_by[key] = spent_by.get(key, 0) + amt
+        else:
+            pending_by[key] = pending_by.get(key, 0) + amt
+
+    rows = []
+    total_budget = 0.0
+    total_spent = 0.0
+    total_pending = 0.0
+    for cat in cats:
+        budget = float(cat.budget_amount or 0)
+        spent = round(spent_by.get(cat.id, 0), 2)
+        pending = round(pending_by.get(cat.id, 0), 2)
+        variance = round(budget - spent, 2)
+        util = round((spent / budget) * 100, 2) if budget > 0 else None
+        rows.append(
+            {
+                **serialize_category(cat),
+                "spent": spent,
+                "pending": pending,
+                "variance": variance,
+                "utilization_pct": util,
+                "over_budget": bool(budget > 0 and spent > budget),
+            }
+        )
+        total_budget += budget
+        total_spent += spent
+        total_pending += pending
+
+    return {
+        "from_date": start,
+        "to_date": end,
+        "categories": rows,
+        "totals": {
+            "budget_amount": round(total_budget, 2),
+            "spent": round(total_spent, 2),
+            "pending": round(total_pending, 2),
+            "variance": round(total_budget - total_spent, 2),
+        },
+    }
+
+
 def resolve_tenant_levels(tenant: m.Tenant) -> list[dict]:
     raw = getattr(tenant, "expense_approval_matrix", None)
     if raw:
