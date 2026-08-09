@@ -18,7 +18,7 @@ Stage 7 closes reliability and ops-hygiene holes that block a confident commerci
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **W2** | Webhook delivery retries + exponential backoff | P0 | COMPLETE |
-| **C2** | Permissions Redis cache (1h TTL) | P0 | PENDING |
+| **C2** | Permissions Redis cache (1h TTL) | P0 | COMPLETE |
 | **K2** | API key usage statistics | P1 | PENDING |
 | **L7x** | Launch checklist doc + Stage 7 exit/freeze | Exit | PENDING |
 
@@ -37,6 +37,13 @@ Stage 7 closes reliability and ops-hygiene holes that block a confident commerci
 - [x] Celery/job `retry_due_webhooks` re-attempts with fresh HMAC `t=`; max attempts configurable.
 - [x] Terminal `failed` after max attempts; success → `delivered` and stops retries.
 - [x] Alembic `0081` (`next_retry_at`); automated tests in `backend/tests/test_webhook_retries_w2.py`.
+
+## C2 acceptance criteria
+
+- [x] `current_claims` / `GET /me` resolve permissions via AppCache (`ribdigi:cache:perms:{tenant_id}:{user_id}`, TTL 1h).
+- [x] Soft-fail when `CACHE_ENABLED=false` or Redis unavailable (same pattern as P2).
+- [x] Invalidate on user role / `record_scope` change and custom-role updates that sync assigned users.
+- [x] Automated tests in `backend/tests/test_permissions_cache_c2.py`.
 
 ## Sign-off
 

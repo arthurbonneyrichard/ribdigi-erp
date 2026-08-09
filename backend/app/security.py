@@ -121,6 +121,40 @@ async def _claims_from_api_key(
     return claims
 
 
+async def resolve_user_permissions(db: AsyncSession, user: m.User) -> dict:
+    """Resolve effective permissions with optional Redis/app-cache (Stage 7 C2).
+
+    Soft-fails when cache is disabled or Redis is down (same pattern as P2).
+    """
+    from app.cache import app_cache
+
+    key = app_cache.permissions_key(user.tenant_id, user.id)
+    cached = await app_cache.get_json(key)
+    if isinstance(cached, dict):
+        return cached
+
+    if isinstance(user.permissions, dict) and user.permissions:
+        perms = dict(user.permissions)
+    elif user.role in VALID_ROLES:
+        perms = permissions_for_role(user.role)
+    else:
+        from app import roles as roles_svc
+
+        try:
+            perms = await roles_svc.permissions_for_assignment(
+                db, user.tenant_id, user.role
+            )
+        except Exception:
+            perms = {}
+
+    if not isinstance(perms, dict):
+        perms = {}
+    await app_cache.set_json(
+        key, perms, ttl_seconds=int(settings.CACHE_PERMISSIONS_TTL_SECONDS)
+    )
+    return perms
+
+
 async def current_claims(
     request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),
@@ -187,19 +221,7 @@ async def current_claims(
     if tenant.status == "suspended":
         raise HTTPException(status_code=403, detail="Tenant suspended or missing")
 
-    if isinstance(user.permissions, dict) and user.permissions:
-        data["permissions"] = user.permissions
-    elif user.role in VALID_ROLES:
-        data["permissions"] = permissions_for_role(user.role)
-    else:
-        from app import roles as roles_svc
-
-        try:
-            data["permissions"] = await roles_svc.permissions_for_assignment(
-                db, user.tenant_id, user.role
-            )
-        except Exception:
-            data["permissions"] = {}
+    data["permissions"] = await resolve_user_permissions(db, user)
     data["email_verified"] = user.email_verified
     data["totp_enabled"] = bool(user.totp_enabled)
     data["tenant_status"] = tenant.status

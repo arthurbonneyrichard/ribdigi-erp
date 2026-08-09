@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     CACHE_REDIS_PREFIX: str = "ribdigi:cache"
     CACHE_DASHBOARD_TTL_SECONDS: int = 300
     CACHE_CATALOG_TTL_SECONDS: int = 600
+    # Stage 7 C2 — user permissions cache (architecture: perms:{user_id}, 1h)
+    CACHE_PERMISSIONS_TTL_SECONDS: int = 3600
     # Stage 7 W2 — webhook delivery retries (exponential backoff from base)
     WEBHOOK_MAX_ATTEMPTS: int = 5
     WEBHOOK_RETRY_BASE_SECONDS: int = 60

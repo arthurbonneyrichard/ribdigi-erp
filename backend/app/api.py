@@ -183,6 +183,7 @@ from app.security import (
     issue_refresh_token,
     require_permission,
     require_roles,
+    resolve_user_permissions,
     validate_password_strength,
     verify_password,
 )
@@ -1730,12 +1731,7 @@ async def resend_verification(
 @api.get("/me")
 async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     user = await db.get(m.User, claims["sub"])
-    if isinstance(user.permissions, dict) and user.permissions:
-        perms = user.permissions
-    elif user.role in VALID_ROLES:
-        perms = permissions_for_role(user.role)
-    else:
-        perms = await roles_svc.permissions_for_assignment(db, user.tenant_id, user.role)
+    perms = await resolve_user_permissions(db, user)
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     return env(
         {
@@ -2408,6 +2404,8 @@ async def update_user(
         details=changes,
     )
     await db.commit()
+    if "role" in changes or "record_scope" in changes:
+        await cache_svc.app_cache.invalidate_user_permissions(claims["tenant_id"], user.id)
     return env(serialize_user(user), "User updated")
 
 

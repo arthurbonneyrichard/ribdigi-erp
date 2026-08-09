@@ -1,4 +1,4 @@
-"""Stage 6 P2 — Redis app-data cache for dashboard + product catalog.
+"""Stage 6 P2 / Stage 7 C2 — Redis app-data cache (dashboard, catalog, permissions).
 
 Soft-fails to in-memory (or no-op when disabled). Never blocks business APIs
 when Redis is unavailable. Extends the rate-limit Redis connection pattern.
@@ -95,6 +95,10 @@ class AppCache:
             self.categories_key(tenant_id, tree=True),
         ]
 
+    def permissions_key(self, tenant_id: str, user_id: str) -> str:
+        # Architecture: perms:{user_id} — physical key includes tenant for isolation
+        return f"{self._prefix()}:perms:{tenant_id}:{user_id}"
+
     async def get_json(self, key: str) -> Any | None:
         if not settings.CACHE_ENABLED:
             return None
@@ -163,6 +167,14 @@ class AppCache:
     async def invalidate_tenant(self, tenant_id: str) -> None:
         """Invalidate dashboard + catalog read models for a tenant."""
         await self.delete(self.dashboard_key(tenant_id), *self.catalog_keys(tenant_id))
+
+    async def invalidate_user_permissions(self, tenant_id: str, user_id: str) -> None:
+        await self.delete(self.permissions_key(tenant_id, user_id))
+
+    async def invalidate_users_permissions(self, tenant_id: str, user_ids: list[str]) -> None:
+        if not user_ids:
+            return
+        await self.delete(*(self.permissions_key(tenant_id, uid) for uid in user_ids))
 
 
 app_cache = AppCache()

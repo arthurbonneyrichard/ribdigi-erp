@@ -260,6 +260,7 @@ async def update_custom_role(
             select(m.User).where(m.User.tenant_id == tenant_id, m.User.role == row.slug)
         )
     ).scalars().all()
+    assigned_ids: list[str] = []
     for user in assigned:
         prev_scope = None
         if isinstance(user.permissions, dict) and RECORD_SCOPE_KEY in user.permissions:
@@ -270,7 +271,12 @@ async def update_custom_role(
             prev_scope if prev_scope is not None else (row.record_scope or "own")
         )
         user.permissions = perms
+        assigned_ids.append(user.id)
     await db.flush()
+    if assigned_ids:
+        from app.cache import app_cache
+
+        await app_cache.invalidate_users_permissions(tenant_id, assigned_ids)
     return row
 
 

@@ -1278,17 +1278,18 @@ Non-2xx or transport errors set delivery status to `pending_retry` with `next_re
 
 ---
 
-## 18. Caching (Stage 6 P2)
+## 18. Caching (Stage 6 P2 / Stage 7 C2)
 
-Read models may be served from Redis (`CACHE_BACKEND=auto|redis|memory`) with soft fallback:
+Read models and resolved permissions may be served from Redis (`CACHE_BACKEND=auto|redis|memory`) with soft fallback:
 
-| Endpoint | Key pattern | TTL |
-|----------|-------------|-----|
+| Endpoint / path | Key pattern | TTL |
+|-----------------|-------------|-----|
 | `GET /dashboard` | `ribdigi:cache:dashboard:{tenant_id}:summary` | 5 min |
 | `GET /products` | `ribdigi:cache:products:{tenant_id}:all` | 10 min |
 | `GET /catalog/categories` | `…:categories:flat` / `…:categories:tree` | 10 min |
+| Auth claims / `GET /me` | `ribdigi:cache:perms:{tenant_id}:{user_id}` | 1 hour (`CACHE_PERMISSIONS_TTL_SECONDS`) |
 
-Invalidated on product/catalog/stock mutations, POS sale, invoice post, and expense approval. Disable with `CACHE_ENABLED=false`.
+Dashboard/catalog invalidated on product/catalog/stock mutations, POS sale, invoice post, and expense approval. Permissions invalidated on user role/`record_scope` change and custom-role updates that sync assigned users. Disable with `CACHE_ENABLED=false`.
 
 ## 19. Rate Limits
 
