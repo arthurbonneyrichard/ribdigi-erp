@@ -23,7 +23,8 @@ def test_ean13_check_digit_and_formats():
     assert barcode_svc.is_valid_upca("036000291452")
     assert barcode_svc.detect_barcode_format("RDABC12AB34CD") == "code128"
     with pytest.raises(HTTPException):
-        barcode_svc.validate_barcode("123")
+        barcode_svc.validate_barcode("not\nvalid")
+    assert barcode_svc.validate_barcode("") is None
 
 
 def test_ean8_valid_known():
