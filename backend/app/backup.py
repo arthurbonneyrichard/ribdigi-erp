@@ -411,6 +411,112 @@ async def validate_restore_payload(payload: dict, tenant_id: str) -> dict:
     }
 
 
+_PROOF_FIELDS: dict[str, tuple[str, ...]] = {
+    "products": ("name", "sku", "stock_qty"),
+    "parties": ("name", "kind", "status"),
+    "stores": ("name", "code", "is_active"),
+    "warehouses": ("name", "code", "is_active"),
+    "accounts": ("code", "name", "account_type"),
+    "sales_invoices": ("invoice_number", "status", "total_amount"),
+    "purchase_orders": ("po_number", "status"),
+}
+
+
+def _proof_values_equal(expected: Any, actual: Any) -> bool:
+    if expected is None and actual is None:
+        return True
+    if isinstance(expected, (int, float, Decimal)) or isinstance(actual, (int, float, Decimal)):
+        try:
+            return float(expected or 0) == float(actual or 0)
+        except (TypeError, ValueError):
+            return str(expected) == str(actual)
+    return str(expected) == str(actual)
+
+
+async def prove_restore_integrity(
+    db: AsyncSession,
+    tenant_id: str,
+    payload: dict,
+    *,
+    sample_limit: int = 100,
+) -> dict:
+    """Compare live tenant rows to a decrypted backup payload (restore proof).
+
+    Logical restore is upsert-only: rows created after the backup may remain.
+    Proof checks that every sampled backup row is present with matching fields.
+    """
+    datasets = payload.get("datasets") or {}
+    mismatches: list[dict[str, Any]] = []
+    checked = 0
+    by_dataset: dict[str, dict[str, int]] = {}
+
+    for name, model in DATASET_SPECS:
+        rows = datasets.get(name) or []
+        dataset_checked = 0
+        dataset_bad = 0
+        fields = _PROOF_FIELDS.get(name, ("name", "status"))
+        for raw in rows[:sample_limit]:
+            pk = (raw or {}).get("id")
+            if not pk:
+                continue
+            checked += 1
+            dataset_checked += 1
+            live = await db.get(model, pk)
+            if live is None or getattr(live, "tenant_id", None) != tenant_id:
+                dataset_bad += 1
+                mismatches.append({"dataset": name, "id": pk, "error": "missing"})
+                continue
+            for field in fields:
+                if field not in raw or not hasattr(live, field):
+                    continue
+                actual = getattr(live, field)
+                if not _proof_values_equal(raw[field], actual):
+                    dataset_bad += 1
+                    mismatches.append(
+                        {
+                            "dataset": name,
+                            "id": pk,
+                            "field": field,
+                            "expected": raw[field],
+                            "actual": actual if not isinstance(actual, Decimal) else float(actual),
+                        }
+                    )
+                    break
+        by_dataset[name] = {"checked": dataset_checked, "mismatches": dataset_bad}
+
+    return {
+        "ok": len(mismatches) == 0,
+        "checked": checked,
+        "mismatch_count": len(mismatches),
+        "mismatches": mismatches[:50],
+        "by_dataset": by_dataset,
+        "sample_limit": sample_limit,
+        "mode": "upsert_field_match",
+    }
+
+
+async def verify_backup(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    backup_id: str,
+    sample_limit: int = 100,
+) -> dict:
+    """Decrypt backup, validate tenant binding, and prove against live data."""
+    job = await get_backup(db, tenant_id, backup_id)
+    file_bytes = await read_backup_bytes(job)
+    payload = decrypt_archive(file_bytes, expected_file_checksum=job.checksum_sha256)
+    report = await validate_restore_payload(payload, tenant_id)
+    proof = await prove_restore_integrity(
+        db, tenant_id, payload, sample_limit=sample_limit
+    )
+    report["proof"] = proof
+    report["backup_id"] = backup_id
+    report["checksum_sha256"] = job.checksum_sha256
+    report["filename"] = job.filename
+    return report
+
+
 async def apply_restore(db: AsyncSession, tenant_id: str, payload: dict) -> dict:
     report = await validate_restore_payload(payload, tenant_id)
     datasets = payload.get("datasets") or {}
@@ -465,6 +571,7 @@ async def restore_backup(
     await db.flush()
     try:
         report = await apply_restore(db, tenant_id, payload)
+        report["proof"] = await prove_restore_integrity(db, tenant_id, payload)
         job.status = "completed"
         await db.flush()
         report["dry_run"] = False

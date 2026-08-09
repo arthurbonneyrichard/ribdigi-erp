@@ -20,7 +20,7 @@ Stage 5 here is **not** a rewrite of auth, audit, or backup. Core engines alread
 | **S1** | Production security gate (rate limit / headers / CORS) | P0 | COMPLETE |
 | **O1** | OWASP automated suite beyond smoke | P0 | COMPLETE |
 | **A1** | AI audit + prompt/data protections | P0 | COMPLETE |
-| **B1** | Logical backup restore proof + DR drill runbook | P0 | PENDING |
+| **B1** | Logical backup restore proof + DR drill runbook | P0 | COMPLETE |
 | **H5** | Deep `/health` (+ optional Prometheus `/metrics`) | P0 | PENDING |
 | **L1** | Load-test baseline scripts | P0 | PENDING |
 | **H5x** | Stage 5 exit criteria + freeze ADR | Exit | PENDING |
@@ -58,6 +58,14 @@ Stage 5 here is **not** a rewrite of auth, audit, or backup. Core engines alread
 - [x] Rejected prompts audit `ai_prompt_rejected` (committed) and return HTTP 400.
 - [x] Covered endpoints: chat, report generate/export, report templates create, customer assist, document analyze.
 - [x] Automated tests in `backend/tests/test_ai_audit_protections_a1.py`.
+
+## B1 acceptance criteria
+
+- [x] Post-restore integrity proof compares sampled backup rows to live tenant data (`prove_restore_integrity`).
+- [x] `POST /backup/{id}/verify` decrypts + proves against live data; audits `restore_verify`.
+- [x] Apply restore returns `proof` and requires `confirm_text=RESTORE` for destructive apply.
+- [x] Automated drill test: backup → mutate → dry-run → restore → verify (`test_backup_restore_proof_b1.py`).
+- [x] Operator runbook `docs/DR_LOGICAL_BACKUP_RUNBOOK.md` (logical `.ribbak`; WAL/PITR deferred).
 
 ## Sign-off
 
