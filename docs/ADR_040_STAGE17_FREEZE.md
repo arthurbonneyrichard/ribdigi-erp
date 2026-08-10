@@ -25,3 +25,7 @@ Stage 17 Inventory Catalog & Stock Ops Fidelity (C1, S1, S2, W1, L1, A1, D1, H17
 ## Note (2026-08-10) — owner outline already closed
 
 Product owner re-submitted the Multi-Store / Reports / Notifications outline after Stage 17 D1. That surface **exit is already met** under Stage 16 (`docs/STAGE_16_EXIT_CRITERIA.md`, ADR-038). Remaining items on that outline (multi-bin, ADR-005 staff membership, WebSocket push, balance-sheet store filters, full financial comparative) stay **deferred** — they are not a Stage 16 reopen and are not opened by this freeze. A new Stage 18 track requires a distinct outline (or an explicit decision to lift a named deferred item).
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 18 (Launch Integrity & Ops Fidelity) after Stage 17 freeze — see [ADR-041](ADR_041_STAGE18_OPEN.md) and [STAGE_18_PLAN.md](STAGE_18_PLAN.md). Stage 17 feature scope remains frozen; Stage 18 does not reopen C1–A1 / D1 / H17x.
