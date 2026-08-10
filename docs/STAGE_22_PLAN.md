@@ -48,7 +48,7 @@ Fidelity closeout
 | **P1** | AR/AP aging, payments, overdue + financial export (BR-10.4–10.6) | P1 | COMPLETE |
 | **R1** | Customer credit surface fidelity (BR-11.1) | P1 | COMPLETE |
 | **T1** | Tax configuration fidelity (BR-12.1) | P1 | COMPLETE |
-| **D1** | Spec / BR-9–12 / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-9–12 / readiness / USER_MANUAL / API fidelity sync | P2 | COMPLETE |
 | **H22x** | Stage 22 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -112,8 +112,8 @@ Fidelity closeout
 
 ## D1 acceptance criteria
 
-- [ ] BR-9–12, finance readiness, USER_MANUAL / API aligned — `docs/STAGE_22_FIDELITY.md`.
-- [ ] Guard test: `backend/tests/test_stage22_fidelity_d1.py`.
+- [x] BR-9–12, finance readiness, USER_MANUAL / API aligned — `docs/STAGE_22_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage22_fidelity_d1.py`.
 
 ## H22x acceptance criteria
 
@@ -121,4 +121,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-E1–T1 complete. Pending D1 → H22x. Stages 1–21 remain frozen for their scopes.
+E1–T1 and D1 complete. H22x next. Stages 1–21 remain frozen for their scopes.

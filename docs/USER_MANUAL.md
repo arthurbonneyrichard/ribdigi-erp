@@ -67,7 +67,7 @@ If you're setting up RIBDIGI for the first time:
 
 5. **Set Up Chart of Accounts**
    - Go to **Accounting → Chart of Accounts**
-   - Review the pre-loaded accounts based on your industry
+   - Review the pre-loaded industry-agnostic system Chart of Accounts (Stage 22 C1)
    - Adjust opening balances if migrating mid-year
 
 Stage 21 (ADR-047) proves tenant lifecycle, org units, users/roles, and executive dashboard fidelity — see `docs/STAGE_21_FIDELITY.md`.
@@ -620,6 +620,8 @@ Store Manager reviews & approves/rejects
 
 ## 7. Expense Management
 
+Stage 22 (ADR-049) proves expense categories, budgets, approval matrix, and recurring fidelity — see `docs/STAGE_22_FIDELITY.md`.
+
 ### 7.1 Recording an Expense
 
 1. Go to **Expenses → + New Expense**
@@ -635,7 +637,7 @@ Store Manager reviews & approves/rejects
 3. **Attach Receipt:** Upload photo or PDF of receipt
 4. Click **Submit**
 
-> **Category GL:** Under **Expenses → Categories**, link each category to an expense Chart of Accounts account so approvals post to the right GL (Stage 14 E1; unmapped categories use Operating Expenses `6000`).
+> **Category GL:** Under **Expenses → Categories**, link each category to an expense Chart of Accounts account so approvals post to the right GL (Stage 14 E1; unmapped categories use Operating Expenses `6000`). Set **budget amount** per category for period variance (Stage 22 E1).
 
 > **OCR Tip:** Attach a receipt, run **OCR suggest**, review the fields, then **Apply** (`confirm=true`). Nothing is written until you confirm (Stage 10 A1).
 
@@ -647,6 +649,8 @@ If the expense exceeds your company's approval threshold:
 2. Approver (usually Store Manager or Company Admin) receives notification
 3. Approver reviews and clicks **Approve** or **Reject** with comments
 4. Approved expenses are posted to accounting automatically
+
+> **Approval matrix:** Configure multi-level thresholds and role gates under expense approval settings (Stage 22 A1).
 
 > **Audit:** Submit / auto-approve / level-approve / final approve / reject write domain audit events (`expense_submitted`, `expense_auto_approved`, `expense_level_approved`, `expense_approved`, `expense_rejected`) — Stage 14 A3.
 
@@ -661,7 +665,7 @@ For regular payments like rent or subscriptions:
    - **Amount** and **Category**
    - **Store** / **Department** (carried into generated expenses; Stage 14 E2)
 3. System auto-generates expense entries on schedule
-4. You can skip or modify individual occurrences
+4. You can skip or modify individual occurrences (Stage 22 A1 — `skip_next` / next amount or description)
 
 ### 7.4 Expense Reports
 
@@ -675,9 +679,11 @@ Go to **Reports → Expense Summary** to see:
 
 ## 8. Basic Accounting
 
+Stage 22 proves COA, cash/bank/recon/cheques, AR/AP aging, and financial export fidelity — see `docs/STAGE_22_FIDELITY.md`.
+
 ### 8.1 Chart of Accounts (COA)
 
-The COA is the backbone of your accounting. RIBDIGI comes pre-loaded with an industry-appropriate COA.
+The COA is the backbone of your accounting. RIBDIGI seeds a standard industry-agnostic system COA for all tenants (MVP; per-industry packs deferred).
 
 **Account Types:**
 | Type | Code Range | Examples |
@@ -732,6 +738,8 @@ For adjustments, accruals, and corrections:
 4. Click **Complete Reconciliation**
 5. **Difference** should be zero
 
+> Stage 22 B1: liquid cash/bank accounts, deposits/withdrawals/transfers, statement recon, and cheque issue/deposit/bounce/clear are proven. Open Banking adapters remain deferred.
+
 ### 8.4 Accounts Receivable (AR)
 
 1. Go to **Accounting → Accounts Receivable**
@@ -762,7 +770,7 @@ For adjustments, accruals, and corrections:
 - **Go to:** Accounting → Reports → Profit & Loss
 - **Shows:** Revenue − Cost of Goods Sold = Gross Profit; Gross Profit − Expenses = Net Profit
 - **Filters:** Date range, store (Stage 14 A1 — journals tagged with store)
-- **Export:** PDF, Excel
+- **Export:** PDF, Excel (Stage 22 P1 `/reports/export`)
 
 #### Cash Flow Statement
 - **Go to:** Accounting → Reports → Cash Flow
@@ -775,6 +783,7 @@ For adjustments, accruals, and corrections:
 - **Shows:** All accounts with debit and credit balances
 - **As of:** Optional date rebuilds balances from posted journals through that day (Stage 14 A2)
 - **Validation:** Total Debits must equal Total Credits
+- **Export:** PDF, Excel (Stage 22 P1)
 - Used for period-end verification
 
 #### Balance Sheet
@@ -784,6 +793,8 @@ For adjustments, accruals, and corrections:
 ---
 
 ## 9. Credit Management
+
+Stage 22 R1 proves customer credit limit, block+override, collections, and statements — see `docs/STAGE_22_FIDELITY.md`.
 
 ### 9.1 Customer Credit
 
@@ -796,7 +807,7 @@ For adjustments, accruals, and corrections:
 #### Monitoring Outstanding Balances
 - Customer profile shows real-time outstanding amount
 - **Credit Utilization:** (Outstanding / Limit) × 100
-- System blocks new credit sales if limit is exceeded
+- System blocks new credit sales if limit is exceeded (override requires `credit:approve` + reason — Stage 22 R1)
 
 #### Recording Payments
 1. Go to **Sales → Customers → [Customer] → Record Payment**
@@ -828,6 +839,8 @@ For adjustments, accruals, and corrections:
 
 ## 10. Tax Management
 
+Stage 22 T1 proves tax types, tax-inclusive/exclusive pricing, and compound tax — see `docs/STAGE_22_FIDELITY.md`.
+
 ### 10.1 Configuring Tax Rates
 
 1. Go to **Settings → Tax Configuration**
@@ -837,6 +850,7 @@ For adjustments, accruals, and corrections:
    - **Rate:** e.g., 15%
    - **Type:** VAT, GST, Sales Tax
    - **Applicability:** All products or specific categories
+   - **Compound components** when tax-on-tax applies (Stage 22 T1)
 4. Set as **Default** if applicable
 5. **Edit** or **Deactivate** an existing rate anytime (Stage 14 T1). Deactivating clears default.
 
@@ -853,7 +867,7 @@ Tax is automatically calculated on:
 - **Inclusive:** Price entered includes tax; system shows tax breakdown
 - **Exclusive:** Tax added on top of price
 
-> Configure this in **Settings → Tax Configuration → Default Pricing Method**
+> Configure this in **Settings → Tax Configuration → Default Pricing Method**. Compound (tax on tax) uses rate components with compound basis (Stage 22 T1).
 
 ### 10.3 Tax Reports
 

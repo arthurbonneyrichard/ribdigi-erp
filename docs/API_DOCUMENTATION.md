@@ -38,7 +38,7 @@
 
 ## 1. API Standards
 
-Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21. Stage 21 D1/H21x tenant/org/dashboard fidelity + exit: `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`), `docs/STAGE_21_EXIT_CRITERIA.md`, ADR-048 (`test_stage21_exit_h21x.py`) — BR-1–4.
+Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21. Stage 21 D1/H21x tenant/org/dashboard fidelity + exit: `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`), `docs/STAGE_21_EXIT_CRITERIA.md`, ADR-048 (`test_stage21_exit_h21x.py`) — BR-1–4. Stage 22 D1 expenses/ledger/credit/tax fidelity sync: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`) — BR-9–12.
 
 ### 1.1 Request Format
 - All requests and responses use **JSON**.
@@ -890,12 +890,15 @@ Successful send records domain audit `pos_receipt_sent` (`module=pos`, `entity=p
 
 ## 9. Expense Management
 
+Stage 22 D1 fidelity for BR-9: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`).
+
 ### 9.1 Expense Categories
 **List:** `GET /expenses/categories`  
 **Create:** `POST /expenses/categories`  
-**Update:** `PATCH /expenses/categories/{category_id}`
+**Update:** `PATCH /expenses/categories/{category_id}`  
+**Budgets (Stage 22 E1):** `GET /expenses/budgets`
 
-Create/update accept optional `account_id` (tenant expense-type COA; Stage 14 E1). Serialize includes `account_id`, `account_code`, `account_name`. Clear mapping with `clear_account: true` on PATCH. Invalid non-expense account → `400 INVALID_EXPENSE_ACCOUNT`.
+Create/update accept optional `account_id` (tenant expense-type COA; Stage 14 E1) and `budget_amount` (Stage 22 E1). Serialize includes `account_id`, `account_code`, `account_name`. Clear mapping with `clear_account: true` on PATCH. Invalid non-expense account → `400 INVALID_EXPENSE_ACCOUNT`.
 
 ### 9.2 Expenses
 **List:** `GET /expenses?store_id=&department_id=`  
@@ -905,6 +908,7 @@ Create/update accept optional `account_id` (tenant expense-type COA; Stage 14 E1
 **Approve:** `POST /expenses/{expense_id}/approve`  
 **Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }`  
 **Delete:** `DELETE /expenses/{expense_id}`  
+**Approval settings (Stage 22 A1):** `GET/PATCH /expenses/settings` — levels, thresholds, role gates (expense approval matrix)  
 **OCR suggest:** `POST /expenses/{expense_id}/ocr-suggest` — requires `expenses:write`  
 **OCR apply (Stage 10 A1):** `POST /expenses/{expense_id}/ocr-apply` — requires `expenses:write`
 
@@ -943,9 +947,10 @@ Create/update accept optional `store_id`, `department_id`, `payee` (Stage 14 E2)
 ### 9.3 Recurring Expenses
 **List:** `GET /expenses/recurring`  
 **Create:** `POST /expenses/recurring`  
-**Update:** `PATCH /expenses/recurring/{id}`
+**Update:** `PATCH /expenses/recurring/{id}`  
+**Generate (Stage 22 A1):** `POST /expenses/recurring/generate`
 
-Templates carry optional `store_id` / `department_id` into generated expenses (Stage 14 E2).
+Templates carry optional `store_id` / `department_id` into generated expenses (Stage 14 E2). `PATCH` supports `skip_next`, `next_amount`, `next_description` (Stage 22 A1).
 
 **Create Recurring:**
 ```json
@@ -962,6 +967,8 @@ Templates carry optional `store_id` / `department_id` into generated expenses (S
 ---
 
 ## 10. Accounting
+
+Stage 22 D1 fidelity for BR-10: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`). Seeded system COA is industry-agnostic for MVP (Stage 22 C1).
 
 ### 10.1 Chart of Accounts
 **List:** `GET /accounting/accounts` (`tree=true` for nested children; `active_only` default true)  
@@ -1011,7 +1018,11 @@ Unpost reverses account balances and sets status `unposted`. Allowed only when `
 ```
 
 ### 10.3 Cash & Bank Accounts / Account ledger
-**List:** `GET /accounting/accounts?type=asset&sub_type=cash`  
+**Liquid accounts (Stage 22 B1):** `GET/POST /accounting/liquid-accounts`, `PATCH /accounting/liquid-accounts/{account_id}` — cash/bank with optional `bank_name` / `account_number` / `bank_branch`  
+**Liquid transfers:** `POST /accounting/liquid-transfers` — `deposit` / `withdrawal` / `transfer`  
+**Bank statements / recon:** `GET/POST /accounting/bank-statements`, `POST .../import`, match/ignore/complete lines (Open Banking adapters deferred)  
+**Cheques:** `GET/POST /accounting/cheques` + issue/deposit/bounce/clear lifecycle  
+**List (COA filter):** `GET /accounting/accounts?type=asset&sub_type=cash`  
 **Create:** `POST /accounting/accounts`  
 **Get Transactions (Stage 8 A1):** `GET /accounting/accounts/{account_id}/transactions`
 
@@ -1034,12 +1045,18 @@ When `as_of_date` is set, balances are rebuilt from **posted** journal lines wit
 
 Same `as_of_date` semantics as trial balance; response includes `as_of`, assets/liabilities/equity, and `balanced` (Stage 14 A2). Export `trial_balance` / `balance_sheet` accept `as_of_date`.
 
+**Export (Stage 22 P1):** `GET /reports/export?report_type=profit_loss|trial_balance&format=pdf|xlsx` (also CSV where supported). AR/AP aging via `GET /credit/aging?kind=receivable|payable`.
+
 ---
 
 ## 11. Credit Management
 
+Stage 22 D1 fidelity for BR-11: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`).
+
 ### 11.1 Customer Credit
-**Get Credit Info:** use customer `balance` on `GET /customers/{customer_id}` plus `GET /credit/customers/{customer_id}/statement` (`credit:read`) — there is no `GET /customers/{customer_id}/credit` route.
+**Get Credit Info:** use customer `balance` on `GET /customers/{customer_id}` plus `GET /credit/customers/{customer_id}/statement` (`credit:read`) — there is no `GET /customers/{customer_id}/credit` route.  
+**Aging:** `GET /credit/aging?kind=receivable|payable`  
+**Credit limit (Stage 22 R1):** `PATCH /customers/{customer_id}/credit-limit` — block on exceed (`CREDIT_LIMIT_EXCEEDED`); override with `credit_limit_override` + reason + `credit:approve`
 
 **Response:**
 ```json
@@ -1095,12 +1112,15 @@ Optional `purchase_invoice_id` and/or `purchase_order_id`; omit both to auto-all
 
 ## 12. Tax Management
 
+Stage 22 D1 fidelity for BR-12: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`).
+
 ### 12.1 Tax Rates
 **List:** `GET /tax/rates?active_only=` (alias `GET /taxes/rates`)  
 **Create:** `POST /tax/rates`  
 **Get:** `GET /tax/rates/{rate_id}`  
 **Update (Stage 14 T1):** `PATCH /tax/rates/{rate_id}` — name/rate/type/mode/components/flags; `is_active: false` deactivates and clears default  
-**Set default:** `POST /tax/rates/{rate_id}/default`
+**Set default:** `POST /tax/rates/{rate_id}/default`  
+**Calculate (Stage 22 T1):** `POST /tax/calculate` — inclusive/exclusive pricing mode + compound components (`basis: compound`)
 
 **Create Tax Rate:**
 ```json

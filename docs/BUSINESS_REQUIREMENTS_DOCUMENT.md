@@ -713,6 +713,8 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
   - [x] Tax report by period (monthly, quarterly, annually) — Stage 14 T1 `period` + `year`/`month`/`quarter` on `/reports/tax` and filing
   - [x] Export in government filing format (manual GH GRA / NG FIRS / KE KRA workbooks; portal e-file deferred — Stage 10 T2)
 
+Fidelity sync: Stage 22 D1 — `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`).
+
 ---
 
 ### 4.13 Multi-Store Management

@@ -176,6 +176,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 22 open (2026-08-10):** Expenses, Ledger, Credit & Tax Surface Fidelity track approved — `docs/ADR_049_STAGE22_OPEN.md` + `docs/STAGE_22_PLAN.md` (expenses → ledger → credit/tax).
 
+**Stage 22 D1 (2026-08-10):** Spec / BR-9–12 / readiness / USER_MANUAL / API / launch fidelity sync — `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -756,7 +758,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 22 open (`docs/STAGE_22_PLAN.md`, ADR-049). Stages 1–21 remain frozen for their scopes.
+**Active delivery plan:** Stage 22 open (`docs/STAGE_22_PLAN.md`, ADR-049) — E1–D1 complete (`docs/STAGE_22_FIDELITY.md`); H22x next. Stages 1–21 remain frozen for their scopes.
 
 ### 6.2 Features
 

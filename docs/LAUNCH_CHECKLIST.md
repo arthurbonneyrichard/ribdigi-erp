@@ -123,7 +123,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Dashboard notifications fidelity (Stage 21 N1: `test_dashboard_notifications_n1.py` — unread count, stock/orders/payments/system groups, mark read/unread, 90-day history)
 - [x] Stage 21 fidelity sync (D1: `test_stage21_fidelity_d1.py`, `docs/STAGE_21_FIDELITY.md` — BR-1–4 + tenancy readiness + USER_MANUAL / API / launch §§1–2)
 - [x] Stage 21 exit + freeze (H21x: `test_stage21_exit_h21x.py`, ADR-048)
-- [ ] Stage 22 Expenses, Ledger, Credit & Tax Surface Fidelity (open: `docs/STAGE_22_PLAN.md`, ADR-049) — E1–T1 complete; D1 next
+- [ ] Stage 22 Expenses, Ledger, Credit & Tax Surface Fidelity (open: `docs/STAGE_22_PLAN.md`, ADR-049) — E1–D1 complete; H22x next
 - [x] Expense categories & entry fidelity (Stage 22 E1: `test_expense_categories_entry_e1.py` — predefined/custom categories, budgets, full expense entry fields)
 - [x] Expense approval & recurring fidelity (Stage 22 A1: `test_expense_approval_recurring_a1.py` — thresholds/multi-level/comments/notify + recurring frequency/generate/notify/skip/modify)
 - [x] COA fidelity (Stage 22 C1: `test_coa_fidelity_c1.py` — seeded types/hierarchy, non-system CRUD, opening balance; industry-agnostic system COA)
@@ -131,6 +131,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] AR/AP aging, payments, overdue + financial export (Stage 22 P1: `test_ar_ap_export_p1.py` — AR/AP auto, aging buckets, partial pay, due notify, P&L/TB PDF+Excel)
 - [x] Customer credit surface fidelity (Stage 22 R1: `test_customer_credit_r1.py` — credit limit, block+override, balance, collections, statement)
 - [x] Tax configuration fidelity (Stage 22 T1: `test_tax_config_fidelity_t1.py` — tax types, inclusive/exclusive, compound tax)
+- [x] Stage 22 fidelity sync (D1: `test_stage22_fidelity_d1.py`, `docs/STAGE_22_FIDELITY.md` — BR-9–12 + finance readiness + USER_MANUAL / API / launch)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1
