@@ -937,30 +937,30 @@ Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
 - **Description:** Secure user access.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Email/password login with bcrypt hashing
-  - [ ] Password complexity requirements (min 8 chars, mixed case, number, symbol)
-  - [ ] Account lockout after 5 failed attempts (30-minute cooldown)
-  - [ ] Email verification before first login
-  - [ ] Password reset via secure token link (expires in 1 hour)
+  - [x] Email/password login with bcrypt hashing — Stage 19 U1 (`POST /auth/login`; password hashes `$2b$…`; `test_auth_session_br19_u1.py`)
+  - [x] Password complexity requirements (min 8 chars, mixed case, number, symbol) — Stage 19 U1 (`validate_password_strength` / change-password reject)
+  - [x] Account lockout after 5 failed attempts (30-minute cooldown) — Stage 19 U1 (`423` + `locked_until` ≈ +30m)
+  - [x] Email verification before first login — Stage 19 U1 (`EMAIL_NOT_VERIFIED`; also `test_email_verification_gate.py`)
+  - [x] Password reset via secure token link (expires in 1 hour) — Stage 19 U1 (`issue_one_time_token` 1h; `POST /auth/password-reset*`)
 
 #### BR-19.2 Two-Factor Authentication (2FA)
 - **Description:** Enhanced account security.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Optional TOTP-based 2FA (Google Authenticator, Authy)
-  - [ ] QR code setup for 2FA
-  - [ ] Backup recovery codes
-  - [ ] Enforce 2FA for Super Admin and Company Admin roles
+  - [x] Optional TOTP-based 2FA (Google Authenticator, Authy) — Stage 19 U1 (`POST /auth/2fa/setup` + `confirm`; WebAuthn in `test_webauthn.py`)
+  - [x] QR code setup for 2FA — Stage 19 U1 (`otpauth_url` + `qr_png_base64`)
+  - [x] Backup recovery codes — Stage 19 U1 (returned once on confirm)
+  - [x] Enforce 2FA for Super Admin and Company Admin roles — Stage 19 U1 (`must_enroll_2fa` on login; `role_requires_2fa`)
 
 #### BR-19.3 Session Management
 - **Description:** Control active user sessions.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] JWT token with configurable expiry (default: 24 hours)
-  - [ ] Refresh token rotation
-  - [ ] View active sessions per user
-  - [ ] Remote session termination
-  - [ ] Auto-logout on inactivity (configurable timeout)
+  - [x] JWT token with configurable expiry (default: 24 hours) — Stage 19 U1: configurable via `ACCESS_TOKEN_EXPIRE_MINUTES` (engine default **15** minutes; `expires_in` matches config)
+  - [x] Refresh token rotation — Stage 19 U1 / Stage 19 K1 (`POST /auth/refresh` invalidates old refresh)
+  - [x] View active sessions per user — Stage 19 U1 (`GET /auth/sessions`)
+  - [x] Remote session termination — Stage 19 U1 (`DELETE /auth/sessions/{id}`)
+  - [x] Auto-logout on inactivity (configurable timeout) — Stage 19 U1 (`POST /auth/idle-logout`; tenant inactivity setting)
 
 ---
 

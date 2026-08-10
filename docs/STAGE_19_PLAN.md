@@ -43,7 +43,7 @@ Operator reliability
 | **P1** | Products + Customers API fidelity (BR-18.2–18.3) | P0 | COMPLETE |
 | **S1** | Sales + Purchases API fidelity (BR-18.4–18.5) | P0 | COMPLETE |
 | **A1** | API standards fidelity (BR-18.6) | P0 | COMPLETE |
-| **U1** | Auth & session BR-19 fidelity sync | P0 | PENDING |
+| **U1** | Auth & session BR-19 fidelity sync | P0 | COMPLETE |
 | **C1** | Company/settings BR-20 fidelity sync | P1 | PENDING |
 | **R1** | Reliability & cache (LAUNCH §5) | P0 | PENDING |
 | **D1** | Spec / BR-18–20 / readiness / launch fidelity sync | P2 | PENDING |
@@ -83,8 +83,8 @@ Operator reliability
 
 ## U1 acceptance criteria
 
-- [ ] Login / password policy / lockout / email verify / reset / TOTP+WebAuthn / sessions / idle-logout mapped to checked BR-19 ACs with live proof (engines already Complete in readiness).
-- [ ] Automated proof: `backend/tests/test_auth_session_br19_u1.py`.
+- [x] Login / password policy / lockout / email verify / reset / TOTP+WebAuthn / sessions / idle-logout mapped to checked BR-19 ACs with live proof (engines already Complete in readiness).
+- [x] Automated proof: `backend/tests/test_auth_session_br19_u1.py`.
 
 ## C1 acceptance criteria
 
@@ -107,4 +107,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-K1–P1–S1–A1 complete. Pending U1 → H19x. Stages 1–18 remain frozen for their scopes.
+K1–P1–S1–A1–U1 complete. Pending C1 → H19x. Stages 1–18 remain frozen for their scopes.

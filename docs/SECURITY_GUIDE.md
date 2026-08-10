@@ -149,14 +149,20 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** Resource Owner Passwo
 
 ### 4.2 Password Policy
 
+Live engine (`validate_password_strength` / login lockout) — Stage 19 U1 evidence: `test_auth_session_br19_u1.py`.
+
 | Requirement | Rule |
 |-------------|------|
-| Minimum Length | 12 characters |
+| Minimum Length | 8 characters |
 | Complexity | Uppercase, lowercase, digit, special character |
-| History | Last 5 passwords cannot be reused |
-| Expiry | 90 days (configurable per tenant) |
-| Lockout | 5 failed attempts → 15-minute lockout |
-| Storage | bcrypt with cost factor 12 |
+| History | Not enforced in commercial MVP (deferred) |
+| Expiry | Not enforced in commercial MVP (deferred) |
+| Lockout | 5 failed attempts → 30-minute lockout |
+| Storage | bcrypt (`$2b$` / `$2a$`) |
+
+### 4.2 Password Policy (aspirational / post-MVP)
+
+Earlier draft targets (min 12, 15-minute lockout, history/expiry) remain product backlog — not current runtime.
 
 ### 4.3 Two-Factor Authentication (Optional)
 
