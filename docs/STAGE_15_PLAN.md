@@ -25,7 +25,7 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 | **R1** | Sales return chain fidelity (warehouse restock, AR/tax/COGS, store) | P1 | COMPLETE |
 | **T1** | Sales-path tax → filing from live invoice post | P1 | COMPLETE |
 | **A1** | Sales-path domain audit closeout (`sales_return_posted`, enrich `invoice_posted`) | P1 | COMPLETE |
-| **D1** | Spec / BR-5/7/10/12/17 / readiness fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-5/7/10/12/17 / readiness fidelity sync | P2 | COMPLETE |
 | **H15x** | Stage 15 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -78,8 +78,8 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 
 ## D1 acceptance criteria
 
-- [ ] BR-5/7/10/12/17, API, readiness, user manual aligned — `docs/STAGE_15_FIDELITY.md`.
-- [ ] Guard test: `backend/tests/test_stage15_fidelity_d1.py`.
+- [x] BR-5/7/10/12/17, API, readiness, user manual aligned — `docs/STAGE_15_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage15_fidelity_d1.py`.
 
 ## H15x acceptance criteria
 
@@ -87,4 +87,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1–A1 complete. Pending D1 → H15x.
+C1–D1 complete. Pending H15x (exit criteria + freeze ADR).

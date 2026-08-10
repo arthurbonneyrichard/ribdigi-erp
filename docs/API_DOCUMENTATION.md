@@ -745,6 +745,12 @@ Supplier payments: `POST /suppliers/{id}/payments` (credit module). Attachment: 
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
 **Print:** `GET /sales/invoices/{invoice_id}/print`
 
+**Post stock integrity (Stage 15 H1):** Aggregated line quantities are checked before stock-out / AR / journal. Insufficient available stock → `409` with `detail.code = INSUFFICIENT_STOCK`; invoice stays `draft` (no movements, AR bump, or JE).
+
+**Post GL (Stage 15 I1):** Auto journal debits AR `1100`, credits Revenue `4000` (+ Tax `2100` when applicable), and when standard cost > 0 also Dr COGS `5000` / Cr Inventory `1200` (qty × product/variant `cost_price`). Same COGS helper applies to POS sale journals.
+
+**Post audit (Stage 15 A1):** Domain audit `invoice_posted` (`module=sales`) includes tax, stock qty out, customer balance, currency/FX, store.
+
 **Post (credit-limit override):** When posting would push customer AR over `credit_limit`, the API returns `409` with `detail.code=CREDIT_LIMIT_EXCEEDED` and projection fields. Callers with `credit:approve` may retry with:
 
 ```json
@@ -780,19 +786,22 @@ Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Mi
 ### 7.6 Sales Return
 **List:** `GET /sales/returns`  
 **Create:** `POST /sales/returns`  
-**Get:** `GET /sales/returns/{return_id}`
+**Get:** `GET /sales/returns/{return_id}`  
+**Post:** `POST /sales/returns/{return_id}/post`
+
+**Post (Stage 15 R1/A1):** Restock sellable lines into the original invoice’s store warehouse when `store_id` is set. Customer balance and return journal amounts use `to_base` via the invoice `exchange_rate` (document `paid_amount` stays in doc currency). Journal includes tax reverse `2100`, COGS/Inventory reverse when restocked, and `store_id`. Allocates credit note number. Domain audit `sales_return_posted`.
 
 **Create Return:**
 ```json
 {
-  "invoice_id": "inv_001",
-  "return_date": "2026-08-07",
+  "sales_invoice_id": "inv_001",
+  "reason": "defective",
+  "restock": true,
   "items": [
     {
-      "invoice_item_id": "invi_001",
-      "return_qty": 1,
-      "reason": "defective",
-      "refund_amount": 12.99
+      "product_id": "prod_001",
+      "quantity": 1,
+      "condition": "sellable"
     }
   ]
 }
@@ -976,7 +985,7 @@ Templates carry optional `store_id` / `department_id` into generated expenses (S
 **Download attachment:** `GET /accounting/journal-entries/{entry_id}/attachment` — requires `accounting:read`  
 **Delete attachment:** `DELETE /accounting/journal-entries/{entry_id}/attachment` — requires `accounting:write`  
 
-Journal payloads include `attachment_url`, `has_attachment`, and optional `store_id` (Stage 14 A1). Manual create accepts `store_id` (tenant-scoped 404). Auto-post from expense / sales invoice / POS sets store when known. List filter `store_id` returns matching entries only. Upload replaces any prior stored object for the entry. Download returns `404` when none is stored.
+Journal payloads include `attachment_url`, `has_attachment`, and optional `store_id` (Stage 14 A1). Manual create accepts `store_id` (tenant-scoped 404). Auto-post from expense / sales invoice / POS sets store when known. Sales invoice / POS / sales return journals include standard-cost COGS↔Inventory lines when cost > 0 (Stage 15 I1); returns also carry invoice `store_id` (Stage 15 R1). List filter `store_id` returns matching entries only. Upload replaces any prior stored object for the entry. Download returns `404` when none is stored.
 
 Unpost reverses account balances and sets status `unposted`. Allowed only when `entry_date` is in the tenant’s open fiscal year (`fiscal_year_start` MM-DD). Returns `409` with `FISCAL_PERIOD_CLOSED`, `JOURNAL_NOT_POSTED`, or `JOURNAL_RECONCILED` when blocked.
 

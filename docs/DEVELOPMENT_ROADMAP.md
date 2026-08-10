@@ -134,6 +134,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 15 open (2026-08-10):** Sales Inventory–Ledger Chain Fidelity track approved — `docs/ADR_035_STAGE15_OPEN.md` + `docs/STAGE_15_PLAN.md` (Sales → Inventory → Customer balance → Tax → Accounting → Audit).
 
+**Stage 15 D1 (2026-08-10):** Spec / BR / readiness fidelity sync — `docs/STAGE_15_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |

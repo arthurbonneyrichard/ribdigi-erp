@@ -384,8 +384,11 @@ Use this to correct discrepancies between physical and system stock:
    - **Credit:** Customer pays later (checks credit limit)
    - **Digital Wallet:** Record wallet payment
 6. Click **Save & Print** or **Save & Email**
+7. **Post** the draft when ready — posting is all-or-nothing: if any line lacks stock, nothing is written (no partial stock-out, AR, or journal).
 
 > **Credit Sales:** If customer has insufficient credit limit, system blocks the sale. Company Admin can override.
+
+> **Accounting on post (Stage 15):** Revenue / AR / tax journals plus **COGS (Dr 5000) and Inventory (Cr 1200)** at product standard cost when cost > 0. See `docs/STAGE_15_FIDELITY.md`.
 
 #### Invoice Actions
 - **Print:** Thermal receipt or A4 invoice
@@ -405,10 +408,12 @@ Use this to correct discrepancies between physical and system stock:
    - Customer changed mind
    - Expired
 5. Choose handling:
-   - **Restock:** Add back to inventory
+   - **Restock:** Add back to the invoice store’s warehouse when the invoice has a store
    - **Discard:** Do not restock (damaged/expired)
 6. Click **Process Return**
-7. System generates a **Credit Note** and updates customer balance
+7. System generates a **Credit Note**, updates customer balance (FX-safe via the invoice exchange rate), and posts a reversing journal (tax reverse; COGS/Inventory reverse when restocked)
+
+Prefer Sales Returns for the full inventory↔ledger path; Stage 15 fidelity notes are in `docs/STAGE_15_FIDELITY.md`.
 
 ---
 

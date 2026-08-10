@@ -55,6 +55,13 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Credit UI allocate to invoice/bill (Stage 14 R1: `test_credit_payment_allocate_r1.py`)
 - [x] Expense approve/reject domain audit (Stage 14 A3: `test_expense_audit_a3.py`)
 - [x] Stage 14 exit + freeze (H14x: `test_stage14_exit_h14x.py`, ADR-034)
+- [x] Invoice stock → AR → tax → JE (Stage 15 C1: `test_sales_inventory_ledger_chain_c1.py`)
+- [x] Standard-cost COGS / Inventory GL (Stage 15 I1: `test_sales_cogs_inventory_i1.py`)
+- [x] Invoice post stock preflight atomicity (Stage 15 H1: `test_sales_invoice_atomicity_h1.py`)
+- [x] Sales return warehouse restock + FX-safe AR (Stage 15 R1: `test_sales_return_chain_r1.py`)
+- [x] Live sales tax → report → filing (Stage 15 T1: `test_sales_tax_filing_t1.py`)
+- [x] Sales invoice/return domain audit (Stage 15 A1: `test_sales_audit_a1.py`)
+- [x] Stage 15 fidelity sync (D1: `test_stage15_fidelity_d1.py`, `docs/STAGE_15_FIDELITY.md`)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)

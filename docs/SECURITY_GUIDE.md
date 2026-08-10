@@ -435,6 +435,7 @@ All security-relevant events are captured in an immutable audit log:
 - Backup and restore operations
 - AI assistant queries (anonymized where possible)
 - Expense workflow domain audit (Stage 14 A3): `expense_submitted`, `expense_auto_approved`, `expense_level_approved`, `expense_approved`, `expense_rejected` (`module=expenses`; reject includes reason)
+- Sales path domain audit (Stage 15 A1): enriched `invoice_posted` (stock/tax/AR) and `sales_return_posted` (`module=sales`); linked `journal_posted` for `source_type=sales_invoice|sales_return`
 
 ### 10.2 Audit Log Schema
 

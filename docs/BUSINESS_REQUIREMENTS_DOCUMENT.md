@@ -351,7 +351,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [ ] **Stock In:** Record incoming stock with reference (purchase order, transfer, adjustment), quantity, batch, expiry, warehouse
-  - [ ] **Stock Out:** Record outgoing stock with reference (sales, transfer, adjustment, damage), quantity, warehouse
+  - [x] **Stock Out:** Record outgoing stock with reference (sales, transfer, adjustment, damage), quantity, warehouse — Stage 15 C1/H1 sales invoice `stock_movements` (`reference_type=sales_invoice`); aggregated post preflight
   - [ ] **Stock Adjustment:** Correct stock discrepancies with reason (damage, theft, expiry, found, lost)
   - [ ] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow
   - [ ] **Opening Stock:** Initialize stock levels for new products or fiscal year start
@@ -499,6 +499,9 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Status: Draft, Approved, Sent, Paid, Partially Paid, Overdue, Cancelled
   - [x] Auto-update Accounts Receivable
   - [x] Support credit sales with credit limit check
+  - [x] Post atomicity: insufficient stock → `409 INSUFFICIENT_STOCK`; no partial AR/JE (Stage 15 H1)
+  - [x] Auto-post journal includes standard-cost COGS `5000` / Inventory `1200` when `cost_price` > 0 (Stage 15 I1)
+  - [x] Domain audit `invoice_posted` with stock/tax/AR details (Stage 15 A1)
 
 #### BR-7.5 Sales Return
 - **Description:** Customer returns and refunds.
@@ -506,9 +509,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Create return referencing original invoice
   - [x] Record return reason and condition
-  - [x] Restock or discard returned items
+  - [x] Restock or discard returned items — Stage 15 R1 restock to invoice store warehouse
   - [x] Generate credit note
-  - [x] Refund or adjust customer balance
+  - [x] Refund or adjust customer balance — FX-safe `to_base` via invoice exchange rate (Stage 15 R1)
+  - [x] Return journal: tax reverse, COGS reverse, `store_id`; audit `sales_return_posted` (Stage 15 R1/A1)
 
 ---
 
@@ -645,7 +649,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Standard financial statements.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [x] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit; filterable by date range and store (Stage 14 A1 — `store_id` on journals / P&L)
+  - [x] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit; filterable by date range and store (Stage 14 A1 — `store_id` on journals / P&L; Stage 15 I1 sale COGS posts to `5000`)
   - [x] **Cash Flow:** Operating, investing, financing activities (Stage 3 A3 + Stage 14 A1 store filter)
   - [x] **Trial Balance:** All accounts with debit/credit balances; validation that total debits = total credits; point-in-time `as_of_date` (Stage 14 A2; balance sheet same)
   - [ ] Export to PDF and Excel
@@ -692,18 +696,18 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Real-time tax computation on transactions.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Auto-calculate tax on sales invoices, purchase invoices, POS transactions
-  - [ ] Display tax breakdown per line item and total
-  - [ ] Handle tax exemptions (zero-rated, exempt products)
-  - [ ] Reverse charge mechanism support
+  - [x] Auto-calculate tax on sales invoices, purchase invoices, POS transactions
+  - [x] Display tax breakdown per line item and total
+  - [x] Handle tax exemptions (zero-rated, exempt products) — Stage 15 T1 live filing supply splits
+  - [x] Reverse charge mechanism support — Stage 15 T1 sales RC memo → filing box 2a from live post
 
 #### BR-12.3 Tax Reports
 - **Description:** Compliance and filing support.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Output tax summary (tax collected on sales)
-  - [ ] Input tax summary (tax paid on purchases)
-  - [ ] Net tax payable/refundable
+  - [x] Output tax summary (tax collected on sales) — Stage 15 T1 live invoice → `/reports/tax`
+  - [x] Input tax summary (tax paid on purchases)
+  - [x] Net tax payable/refundable
   - [x] Tax report by period (monthly, quarterly, annually) — Stage 14 T1 `period` + `year`/`month`/`quarter` on `/reports/tax` and filing
   - [x] Export in government filing format (manual GH GRA / NG FIRS / KE KRA workbooks; portal e-file deferred — Stage 10 T2)
 
@@ -848,7 +852,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] **Login/Logout:** Timestamp, IP address, device, success/failure
   - [ ] **Product Changes:** Create, update, delete with before/after values
-  - [ ] **Sales:** Invoice creation, modification, cancellation
+  - [x] **Sales:** Invoice creation, modification, cancellation — Stage 15 A1 enriched `invoice_posted` + `sales_return_posted`
   - [ ] **Purchases:** PO, GRN, invoice changes
   - [ ] **User Activity:** Permission changes, role assignments, deletions
   - [ ] **Financial:** Journal entry posting, account modifications
