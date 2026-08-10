@@ -371,7 +371,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] View stock levels per warehouse — Stage 17 W1 (`GET /products/{id}/warehouse-stock`)
-  - [ ] Warehouse-specific reorder levels
+  - [x] Warehouse-specific reorder levels — Stage 17 L1 (`PUT /stores/{id}/reorder-policy` → `WarehouseStock` min/reorder/reorder_qty; low-stock `scope=warehouse`)
   - [x] Transfer stock between warehouses — Stage 17 W1 (ship/receive qty + movements)
   - [x] Warehouse-wise stock valuation (Stage 9 R2 — qty × `cost_price`)
 
@@ -379,11 +379,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Proactive inventory replenishment alerts.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Set minimum stock level per product per warehouse
-  - [ ] Set reorder level (trigger point for purchase)
-  - [ ] Visual indicators on product list (green/yellow/red status)
-  - [ ] Automated low-stock notifications to Inventory Officer and Store Manager
-  - [ ] Generate purchase suggestions based on reorder levels
+  - [x] Set minimum stock level per product per warehouse — Stage 17 L1 (`PUT /stores/{id}/reorder-policy`; product-level via `PATCH /products/{id}`)
+  - [x] Set reorder level (trigger point for purchase) — Stage 17 L1 (`PATCH /products/{id}` `reorder_level` / store reorder policy)
+  - [x] Visual indicators on product list (green/yellow/red status) — Stage 17 L1 (`stock_status` on products + `GET /inventory/low-stock`)
+  - [x] Automated low-stock notifications to Inventory Officer and Store Manager — Stage 16 N1 (`scan_low_stock` / `low_stock`)
+  - [x] Generate purchase suggestions based on reorder levels — Stage 17 L1 (`suggested_order_qty` + `POST /inventory/low-stock/reorder-po` draft PO)
 
 ---
 

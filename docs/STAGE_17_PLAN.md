@@ -33,7 +33,7 @@ Inventory
 | **S1** | Stock ops chain (stock-in → movements → warehouse qty; adjust reasons; opening stock) | P0 | COMPLETE |
 | **S2** | Stock count → variance report → post adjustments | P0 | COMPLETE |
 | **W1** | Warehouse stock grid + inter-warehouse transfer ship/receive chain | P1 | COMPLETE |
-| **L1** | Low-stock indicators + suggested order qty + reorder-PO | P1 | PENDING |
+| **L1** | Low-stock indicators + suggested order qty + reorder-PO | P1 | COMPLETE |
 | **A1** | Inventory domain audit closeout (product/stock mutations) | P1 | PENDING |
 | **D1** | Spec / BR-5.1–5.5 / readiness fidelity sync | P2 | PENDING |
 | **H17x** | Stage 17 exit criteria + freeze ADR | Exit | PENDING |
@@ -72,8 +72,8 @@ Inventory
 
 ## L1 acceptance criteria
 
-- [ ] Traffic-light / low-stock list + suggested order qty + draft reorder PO path proven.
-- [ ] Automated proof.
+- [x] Traffic-light / low-stock list + suggested order qty + draft reorder PO path proven.
+- [x] Automated proof: `backend/tests/test_low_stock_reorder_l1.py`.
 
 ## A1 acceptance criteria
 
@@ -91,4 +91,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1–W1 complete. Pending L1 → … → H17x.
+C1–L1 complete. Pending A1 → D1 → H17x.

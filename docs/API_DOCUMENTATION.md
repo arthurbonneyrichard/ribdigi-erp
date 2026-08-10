@@ -475,36 +475,55 @@ Stage 17 S2 proves create → enter counted qty → complete (posts `adjustment`
 **Endpoint:** `GET /inventory/movements?product_id=&warehouse_id=&from_date=&to_date=`
 
 ### 5.8 Low Stock Alerts
-**Endpoint:** `GET /inventory/low-stock`
+**Endpoint:** `GET /inventory/low-stock`  
+**Reorder PO:** `POST /inventory/low-stock/reorder-po` (requires `purchasing:write`)
 
-**Response:**
+Stage 17 L1: traffic-light `stock_status` (`green`/`yellow`/`red`), `suggested_order_qty`, product + warehouse scopes; draft PO from suggestion. Warehouse thresholds via `PUT /stores/{store_id}/reorder-policy`. Evidence: `test_low_stock_reorder_l1.py`.
+
+**Low-stock list response (`data` is an array):**
 ```json
 {
   "success": true,
-  "data": {
-    "items": [
-      {
-        "product_id": "prod_001",
-        "product_name": "Organic Wheat Flour",
-        "current_stock": 5,
-        "minimum_stock": 20,
-        "reorder_level": 30,
-        "warehouse_id": "wh_001"
-      }
-    ]
-  }
+  "data": [
+    {
+      "id": "prod_001",
+      "sku": "FLOUR-01",
+      "name": "Organic Wheat Flour",
+      "stock_qty": 5,
+      "minimum_stock": 20,
+      "reorder_level": 30,
+      "stock_status": "red",
+      "suggested_order_qty": 25,
+      "scope": "product",
+      "warehouse_id": null
+    }
+  ]
 }
 ```
 
+**Create draft reorder PO:**
+```json
+{
+  "product_id": "prod_001",
+  "supplier_id": "sup_001",
+  "quantity": 25,
+  "warehouse_id": null,
+  "unit_price": null,
+  "notes": null
+}
+```
+Omitting `quantity` uses the product suggested order qty; omitting `unit_price` uses `cost_price`. Cross-tenant supplier → `404`.
+
 ### 5.9 Set Stock Levels
-**Endpoint:** `PATCH /products/{product_id}/stock-levels`
+**Product:** `PATCH /products/{product_id}` with `minimum_stock` / `reorder_level`  
+**Warehouse (store-linked):** `PUT /stores/{store_id}/reorder-policy`
 
 ```json
 {
-  "warehouse_id": "wh_001",
+  "product_id": "prod_001",
   "minimum_stock": 20,
   "reorder_level": 30,
-  "reorder_quantity": 100
+  "reorder_qty": 100
 }
 ```
 

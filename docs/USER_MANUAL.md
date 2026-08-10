@@ -263,16 +263,16 @@ Stage 17 S2: create a count, enter counted quantities, **Complete & post varianc
 
 ### 3.4 Low Stock Alerts
 
-1. Go to **Inventory → Products**
-2. For each product, set:
-   - **Minimum Stock Level:** Absolute minimum before emergency reorder
-   - **Reorder Level:** Trigger point for normal reorder
-   - **Reorder Quantity:** Suggested quantity to order
+Stage 17 L1: product list and **Inventory → Low stock** show traffic-light `stock_status` (green / yellow / red) with `suggested_order_qty`. **Create draft PO** calls `POST /inventory/low-stock/reorder-po` (draft purchase order — not a Purchase Request). Store/warehouse thresholds: `PUT /stores/{id}/reorder-policy`.
+
+1. Go to **Inventory → Products** (or edit a product) and set:
+   - **Minimum Stock Level:** Absolute minimum before emergency reorder (red)
+   - **Reorder Level:** Trigger point for normal reorder (yellow)
+2. For store-linked warehouses, set per-product **reorder policy** (minimum / reorder / reorder qty)
 3. When stock hits reorder level, you'll receive:
-   - Dashboard alert
-   - Email notification (if configured)
-   - SMS alert (if configured)
-4. Click **Generate Purchase Suggestion** to auto-create a Purchase Request
+   - Dashboard / notification bell alert (`low_stock` scan)
+   - Email / SMS when channel prefs are enabled (Stage 16 N2)
+4. Open **Inventory → Low stock**, select a supplier, and click **Create draft PO** for a suggested line
 
 ---
 
