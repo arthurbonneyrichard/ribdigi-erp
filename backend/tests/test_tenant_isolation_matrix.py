@@ -15,6 +15,8 @@ from app.purchasing import create_purchase_invoice
 from app.stores import create_store
 from tests.conftest import auth_headers
 
+pytestmark = pytest.mark.isolation
+
 
 async def _super_headers(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()

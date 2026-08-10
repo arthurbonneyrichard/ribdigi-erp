@@ -16,6 +16,8 @@ from app.config import settings
 from app.roles import assert_assignable_role
 from tests.conftest import auth_headers
 
+pytestmark = pytest.mark.security
+
 
 @pytest.mark.asyncio
 async def test_a01_cashier_cannot_create_users(client):

@@ -15,6 +15,8 @@ from app import stock_counts as stock_counts_svc
 from app import webhooks as webhooks_svc
 from tests.conftest import auth_headers
 
+pytestmark = pytest.mark.isolation
+
 ROOT = Path(__file__).resolve().parents[2]
 
 

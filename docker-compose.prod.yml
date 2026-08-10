@@ -1,0 +1,51 @@
+# Production-oriented Compose overlay (Stage 18 C1).
+# Usage:
+#   cp .env.production.example .env.production   # fill real secrets
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# No Kubernetes / Helm deploy. Staging K8s remains explicitly out of Stage 18.
+
+services:
+  backend:
+    env_file: .env.production
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: production
+      DEBUG: "false"
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_BACKEND: redis
+      RATE_LIMIT_REQUIRE_REDIS: "true"
+      CELERY_TASK_ALWAYS_EAGER: "false"
+      ALLOW_DEVELOPMENT_SEED: "false"
+      REQUEST_LOG_ENABLED: "true"
+      METRICS_ENABLED: "true"
+    # No bind-mount of source; do not enable uvicorn reload in production
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
+
+  celery_worker:
+    env_file: .env.production
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: production
+      DEBUG: "false"
+      CELERY_TASK_ALWAYS_EAGER: "false"
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+
+  celery_beat:
+    env_file: .env.production
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: production
+      DEBUG: "false"
+      CELERY_TASK_ALWAYS_EAGER: "false"
+    volumes: []
+
+  frontend:
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.example.com/api/v1}

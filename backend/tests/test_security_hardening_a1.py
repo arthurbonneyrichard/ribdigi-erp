@@ -13,6 +13,8 @@ from app import models as m
 from app import purchasing as purchasing_svc
 from tests.conftest import auth_headers
 
+pytestmark = pytest.mark.security
+
 ROOT = Path(__file__).resolve().parents[2]
 
 

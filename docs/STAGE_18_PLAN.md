@@ -54,7 +54,7 @@ Performance testing
 | **I1** | Cross-module integrity (inventory Σ movements · accounting TB/GL · POS money-path) | P0 | COMPLETE |
 | **L1** | Structured request/error logging + health/metrics monitoring hooks (MVP-lite) | P0 | COMPLETE |
 | **T1** | Testing fidelity (OWASP expand · load evidence · launch E2E smoke) | P0 | COMPLETE |
-| **C1** | CI + production configuration fidelity (no K8s deploy) | P1 | PENDING |
+| **C1** | CI + production configuration fidelity (no K8s deploy) | P1 | COMPLETE |
 | **D1** | Spec / BR-16–17 / readiness / launch fidelity sync | P2 | PENDING |
 | **H18x** | Stage 18 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -103,8 +103,8 @@ Performance testing
 
 ## C1 acceptance criteria
 
-- [ ] CI runs pytest (+ security/isolation markers as applicable) and frontend build; production Compose/env template aligned with Stage 5 S1 validators (Redis-required rate limit, CORS, secrets posture). No K8s deploy job.
-- [ ] Automated / doc proof.
+- [x] CI runs pytest (+ security/isolation markers as applicable) and frontend build; production Compose/env template aligned with Stage 5 S1 validators (Redis-required rate limit, CORS, secrets posture). No K8s deploy job.
+- [x] Automated / doc proof: `test_ci_prod_config_c1.py`; `.env.production.example`; `docker-compose.prod.yml`; CI marker step in `.github/workflows/ci.yml`.
 
 ## D1 acceptance criteria
 
@@ -117,4 +117,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-S1–A1–B1–I1–L1–T1 complete. Pending C1 → D1 → H18x. Stages 1–17 remain frozen for their scopes.
+S1–A1–B1–I1–L1–T1–C1 complete. Pending D1 → H18x. Stages 1–17 remain frozen for their scopes.

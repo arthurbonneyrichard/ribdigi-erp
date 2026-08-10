@@ -10,6 +10,8 @@ from app.main import app
 from app.rate_limit import rate_limiter
 from app.security_runtime import is_production, openapi_enabled, security_posture
 
+pytestmark = pytest.mark.security
+
 
 def test_production_accepts_secure_defaults():
     cfg = Settings(

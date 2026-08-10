@@ -9,6 +9,8 @@ from app.main import app
 from app.rate_limit import rate_limiter
 from tests.conftest import auth_headers
 
+pytestmark = pytest.mark.security
+
 
 def test_security_headers_include_csp():
     rate_limiter.reset_for_tests()

@@ -79,10 +79,11 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Inventory domain audit (Stage 17 A1: `test_inventory_audit_a1.py`)
 - [x] Stage 17 fidelity sync (D1: `test_stage17_fidelity_d1.py`, `docs/STAGE_17_FIDELITY.md`)
 - [x] Stage 17 exit + freeze (H17x: `test_stage17_exit_h17x.py`, ADR-040)
-- [ ] Stage 18 Launch Integrity & Ops (open: `docs/STAGE_18_PLAN.md`, ADR-041) — S1/A1/B1/I1/L1/T1 complete; C1 next
+- [ ] Stage 18 Launch Integrity & Ops (open: `docs/STAGE_18_PLAN.md`, ADR-041) — S1–C1 complete; D1 next
 - [x] Cross-module integrity: inventory Σ movements · TB/GL · POS money-path (Stage 18 I1: `test_cross_module_integrity_i1.py`)
 - [x] Structured request logs + health/metrics hooks (Stage 18 L1: `test_request_logging_l1.py`, `docs/OPS_MONITORING_MVP.md`)
 - [x] OWASP expand · load evidence · launch E2E smoke (Stage 18 T1: `test_owasp_suite_t1.py`, `test_loadtest_evidence_t1.py`, `test_launch_smoke_t1.py`)
+- [x] CI + production Compose/env fidelity (Stage 18 C1: `test_ci_prod_config_c1.py`, `.env.production.example`, `docker-compose.prod.yml`; no K8s deploy)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1

@@ -11,6 +11,10 @@ from app import models as m
 from app import webhooks as webhooks_svc
 from tests.conftest import auth_headers
 
+pytestmark = pytest.mark.security
+
+
+
 
 async def _mgr(ac):
     return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
