@@ -48,7 +48,7 @@ Notifications
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **M1** | Transfer → stock chain proof (ship/receive → warehouse qty + movements) | P0 | COMPLETE |
-| **N1** | Notification emission proof matrix (low stock, sales, credit, operational) | P0 | PENDING |
+| **N1** | Notification emission proof matrix (low stock, sales, credit, operational) | P0 | COMPLETE |
 | **R1** | Reports suite fidelity (Sales / Inventory / Low Stock / Purchasing / Expenses / Financial / Store Performance) | P0 | PENDING |
 | **R2** | Credit + Tax report packaging fidelity (Reports outline ↔ existing APIs/UI) | P1 | PENDING |
 | **M2** | Transfer history / consolidated multi-store ops reporting | P1 | PENDING |
@@ -76,9 +76,9 @@ Notifications
 
 ## N1 acceptance criteria
 
-- [ ] Prove emissions for outline buckets: Low Stock (`low_stock` scan), Important Sales Events (`new_order` and/or related sales path), Credit Alerts (`credit_limit`), Operational Alerts (`purchase_received`, `shift_variance`, and/or `transfer` / expense approval as applicable).
-- [ ] Prefer HTTP/service proofs over planted notification rows; prefs categories honored where asserted.
-- [ ] Automated proof: `backend/tests/test_notification_emission_n1.py` (or split files with clear Stage 16 N1 markers).
+- [x] Prove emissions for outline buckets: Low Stock (`low_stock` scan), Important Sales Events (`new_order`), Credit Alerts (`credit_limit` on invoice post ≥80% utilization), Operational Alerts (`purchase_received`, `shift_variance`, `transfer`).
+- [x] Prefer HTTP/service proofs over planted notification rows; prefs categories honored (`shift_variance` dashboard off suppresses targeted note).
+- [x] Automated proof: `backend/tests/test_notification_emission_n1.py`.
 
 ## R1 acceptance criteria
 
@@ -112,4 +112,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-M1 complete. Pending N1 → … → H16x.
+M1–N1 complete. Pending R1 → … → H16x.

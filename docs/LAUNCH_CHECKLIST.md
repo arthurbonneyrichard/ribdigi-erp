@@ -64,6 +64,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Stage 15 fidelity sync (D1: `test_stage15_fidelity_d1.py`, `docs/STAGE_15_FIDELITY.md`)
 - [x] Stage 15 exit + freeze (H15x: `test_stage15_exit_h15x.py`, ADR-036)
 - [x] Inter-store transfer → warehouse stock → movements (Stage 16 M1: `test_multistore_transfer_chain_m1.py`)
+- [x] Notification emission matrix (Stage 16 N1: `test_notification_emission_n1.py`)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)
