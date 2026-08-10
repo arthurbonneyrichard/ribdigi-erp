@@ -146,6 +146,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 17 open (2026-08-10):** Inventory Catalog & Stock Ops Fidelity track approved — `docs/ADR_039_STAGE17_OPEN.md` + `docs/STAGE_17_PLAN.md` (Catalog → Stock Ops → Warehouse → Low Stock).
 
+**Stage 17 D1 (2026-08-10):** Spec / BR-5.1–5.5 / readiness fidelity sync — `docs/STAGE_17_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |

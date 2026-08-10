@@ -75,6 +75,9 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Stock ops chain (Stage 17 S1: `test_stock_ops_chain_s1.py`)
 - [x] Stock count variance chain (Stage 17 S2: `test_stock_count_chain_s2.py`)
 - [x] Warehouse transfer chain (Stage 17 W1: `test_warehouse_transfer_chain_w1.py`)
+- [x] Low-stock + reorder-PO (Stage 17 L1: `test_low_stock_reorder_l1.py`)
+- [x] Inventory domain audit (Stage 17 A1: `test_inventory_audit_a1.py`)
+- [x] Stage 17 fidelity sync (D1: `test_stage17_fidelity_d1.py`, `docs/STAGE_17_FIDELITY.md`)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)

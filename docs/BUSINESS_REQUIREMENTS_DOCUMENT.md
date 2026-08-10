@@ -361,10 +361,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Complete audit trail of all inventory changes.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Log every stock change with timestamp, user, transaction type, quantity before/after
-  - [ ] Filter by date range, product, warehouse, transaction type
-  - [ ] Export to CSV/PDF
-  - [ ] Immutable records (no deletion allowed)
+  - [x] Log every stock change with timestamp, user, transaction type, quantity before/after — Stage 17 D1 / Stage 2 I5 (`stock_movements` via `apply_stock_change`; `GET /inventory/movements`)
+  - [x] Filter by date range, product, warehouse, transaction type — Stage 17 D1 (`GET /inventory/movements?product_id=&warehouse_id=&movement_type=&from_date=&to_date=`)
+  - [x] Export to CSV/PDF — Stage 17 D1 (`report_type=inventory_movements` / `GET /reports/inventory/movements`)
+  - [x] Immutable records (no deletion allowed) — Stage 17 D1 (append-only `stock_movements`; no delete API)
 
 #### BR-5.4 Warehouse Stock
 - **Description:** Warehouse-specific inventory visibility.

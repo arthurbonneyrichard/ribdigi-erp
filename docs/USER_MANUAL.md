@@ -158,7 +158,7 @@ Click the **🔔 bell icon** to see:
 
 ## 3. Inventory Management
 
-Stage 17 (ADR-039) proves catalog and stock-ops fidelity on the existing Inventory engine — see `docs/STAGE_17_PLAN.md`. Catalog surfaces live under **Inventory** (categories tree, brands, units, variants, barcodes, images, batches).
+Stage 17 (ADR-039) proves catalog and stock-ops fidelity on the existing Inventory engine — see `docs/STAGE_17_PLAN.md` and `docs/STAGE_17_FIDELITY.md`. Catalog surfaces live under **Inventory** (categories tree, brands, units, variants, barcodes, images, batches).
 
 ### 3.1 Managing Products
 
@@ -1068,7 +1068,7 @@ Go to **Inventory → AI Predictions** to see:
 - Predicted stockout date
 - Recommended order quantity
 - Confidence score
-- One-click **Generate Purchase Request**
+- One-click **Create draft PO** from low-stock / prediction suggestions (`POST /inventory/low-stock/reorder-po`)
 
 ### 14.4 AI Document Assistant
 

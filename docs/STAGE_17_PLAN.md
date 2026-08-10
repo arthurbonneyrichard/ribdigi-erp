@@ -35,7 +35,7 @@ Inventory
 | **W1** | Warehouse stock grid + inter-warehouse transfer ship/receive chain | P1 | COMPLETE |
 | **L1** | Low-stock indicators + suggested order qty + reorder-PO | P1 | COMPLETE |
 | **A1** | Inventory domain audit closeout (product/stock mutations) | P1 | COMPLETE |
-| **D1** | Spec / BR-5.1–5.5 / readiness fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-5.1–5.5 / readiness fidelity sync | P2 | COMPLETE |
 | **H17x** | Stage 17 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -82,8 +82,8 @@ Inventory
 
 ## D1 acceptance criteria
 
-- [ ] BR-5.1–5.5, API, readiness, user manual aligned — `docs/STAGE_17_FIDELITY.md`.
-- [ ] Guard test: `backend/tests/test_stage17_fidelity_d1.py`.
+- [x] BR-5.1–5.5, API, readiness, user manual aligned — `docs/STAGE_17_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage17_fidelity_d1.py`.
 
 ## H17x acceptance criteria
 
@@ -91,4 +91,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1–A1 complete. Pending D1 → H17x.
+C1–D1 complete. Pending H17x.

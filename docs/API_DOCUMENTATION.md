@@ -473,7 +473,10 @@ Stage 17 S2 proves create → enter counted qty → complete (posts `adjustment`
 **Variance report:** `GET /inventory/stock-counts/{count_id}/variance-report?format=csv|pdf|json` — requires `completed` (`409 COUNT_NOT_COMPLETED` otherwise)
 
 ### 5.7 Stock Movement History
-**Endpoint:** `GET /inventory/movements?product_id=&warehouse_id=&from_date=&to_date=`
+**Endpoint:** `GET /inventory/movements?product_id=&warehouse_id=&movement_type=&from_date=&to_date=`  
+**Report / export:** `GET /reports/inventory/movements` · export `report_type=inventory_movements` (CSV/PDF)
+
+Stage 17 D1: movements are append-only (`quantity_before` / `quantity_after`, `created_by`); filters cover product, warehouse, type, dates; no delete API. Evidence: `test_stock_integrity_i5.py`, `docs/STAGE_17_FIDELITY.md`.
 
 ### 5.8 Low Stock Alerts
 **Endpoint:** `GET /inventory/low-stock`  
