@@ -51,7 +51,7 @@ Performance testing
 | **S1** | Tenant isolation matrix completeness (MVP write/read paths) | P0 | COMPLETE |
 | **A1** | Security hardening fidelity (RBAC / session / audit BR-17 sync + sensitive-path proof) | P0 | COMPLETE |
 | **B1** | Backup schedule / retention / failure notify + restore drill evidence | P0 | COMPLETE |
-| **I1** | Cross-module integrity (inventory Σ movements · accounting TB/GL · POS money-path) | P0 | PENDING |
+| **I1** | Cross-module integrity (inventory Σ movements · accounting TB/GL · POS money-path) | P0 | COMPLETE |
 | **L1** | Structured request/error logging + health/metrics monitoring hooks (MVP-lite) | P0 | PENDING |
 | **T1** | Testing fidelity (OWASP expand · load evidence · launch E2E smoke) | P0 | PENDING |
 | **C1** | CI + production configuration fidelity (no K8s deploy) | P1 | PENDING |
@@ -88,8 +88,8 @@ Performance testing
 
 ## I1 acceptance criteria
 
-- [ ] Inventory qty = Σ movements (incl. Stage 17 chains); accounting journals/TB balanced with Inventory GL / AR-AP sanity; POS sale paths leave no orphan sale/payment/JE/stock.
-- [ ] Automated proof (extend existing recon/integrity tests).
+- [x] Inventory qty = Σ movements (incl. Stage 17 chains); accounting journals/TB balanced with Inventory GL / AR-AP sanity; POS sale paths leave no orphan sale/payment/JE/stock.
+- [x] Automated proof: `backend/tests/test_cross_module_integrity_i1.py` (extends Stage 2/13/15 recon and atomicity patterns).
 
 ## L1 acceptance criteria
 
@@ -117,4 +117,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-S1–A1–B1 complete. Pending I1 → … → H18x. Stages 1–17 remain frozen for their scopes.
+S1–A1–B1–I1 complete. Pending L1 → … → H18x. Stages 1–17 remain frozen for their scopes.
