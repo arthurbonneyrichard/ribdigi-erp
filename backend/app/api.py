@@ -8490,6 +8490,7 @@ async def reports_export(
     store_id: str | None = None,
     category_id: str | None = None,
     jurisdiction: str | None = None,
+    kind: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8508,6 +8509,7 @@ async def reports_export(
         store_id=store_id,
         category_id=category_id,
         jurisdiction=jurisdiction,
+        kind=kind,
     )
     return Response(
         content=content,

@@ -215,7 +215,7 @@ async def test_reports_suite_tenant_isolation(client, db_session):
 
 
 def test_reports_ui_tabs_cover_outline():
-    """Frontend Reports page tabs map to Stage 16 outline (Credit/Tax packaging → R2)."""
+    """Frontend Reports page tabs map to Stage 16 outline (Credit/Tax packaging in R2)."""
     page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
     for tab in (
         "sales",

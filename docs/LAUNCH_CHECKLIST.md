@@ -66,6 +66,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Inter-store transfer → warehouse stock → movements (Stage 16 M1: `test_multistore_transfer_chain_m1.py`)
 - [x] Notification emission matrix (Stage 16 N1: `test_notification_emission_n1.py`)
 - [x] Reports suite fidelity (Stage 16 R1: `test_reports_suite_r1.py`)
+- [x] Credit + Tax Reports packaging (Stage 16 R2: `test_credit_tax_reports_r2.py`)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)

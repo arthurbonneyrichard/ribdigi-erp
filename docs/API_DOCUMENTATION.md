@@ -1120,9 +1120,14 @@ Optional `purchase_invoice_id` and/or `purchase_order_id`; omit both to auto-all
 
 `period=monthly|quarterly|annually` resolves bounds from `year` / `month` / `quarter` (defaults to current UTC period). Response includes `period`, `period_year`, `period_month`, `period_quarter` when a preset is used (Stage 14 T1). Explicit `from_date`/`to_date` still work when `period` is omitted.
 
-**Exports:** `tax_filing`, `tax_filing_gh`, `tax_filing_ng`, `tax_filing_ke` via `/reports/export`  
+**Exports:** `tax`, `tax_filing`, `tax_filing_gh`, `tax_filing_ng`, `tax_filing_ke` via `/reports/export` (also surfaced on Reports → Tax UI — Stage 16 R2)  
 
 Government templates are **manual filing workbooks only** — they do not e-file to GRA, FIRS, or KRA iTax portals (Stage 10 T2).
+
+### 12.3 Credit aging export (Stage 16 R2)
+**Export:** `GET /reports/export?report_type=credit_aging&format=csv|xlsx|pdf&kind=receivable|payable&as_of_date=`  
+
+Packages existing `/credit/aging` into the Reports export surface (no parallel Credit engine). Default `kind=receivable`. Reports UI Credit tab links to `/credit`.
 
 ---
 

@@ -50,7 +50,7 @@ Notifications
 | **M1** | Transfer → stock chain proof (ship/receive → warehouse qty + movements) | P0 | COMPLETE |
 | **N1** | Notification emission proof matrix (low stock, sales, credit, operational) | P0 | COMPLETE |
 | **R1** | Reports suite fidelity (Sales / Inventory / Low Stock / Purchasing / Expenses / Financial / Store Performance) | P0 | COMPLETE |
-| **R2** | Credit + Tax report packaging fidelity (Reports outline ↔ existing APIs/UI) | P1 | PENDING |
+| **R2** | Credit + Tax report packaging fidelity (Reports outline ↔ existing APIs/UI) | P1 | COMPLETE |
 | **M2** | Transfer history / consolidated multi-store ops reporting | P1 | PENDING |
 | **N2** | Channel delivery hardening (email/SMS prefs for key categories) | P1 | PENDING |
 | **D1** | Spec / BR-13–15 / readiness fidelity sync | P2 | PENDING |
@@ -88,8 +88,8 @@ Notifications
 
 ## R2 acceptance criteria
 
-- [ ] Credit and Tax appear in the Reports product story without a parallel engine: cross-link, export type, or Reports UI surfacing to existing `/credit/*` and `/reports/tax*`.
-- [ ] Automated proof or fidelity guard covering the packaging decision.
+- [x] Credit and Tax appear in the Reports product story without a parallel engine: Reports UI tabs + cross-links to `/credit` and `/tax`; export `credit_aging` / existing `tax` + `tax_filing`.
+- [x] Automated proof: `backend/tests/test_credit_tax_reports_r2.py`.
 
 ## M2 acceptance criteria
 
@@ -112,4 +112,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-M1–R1 complete. Pending R2 → … → H16x.
+M1–R2 complete. Pending M2 → … → H16x.

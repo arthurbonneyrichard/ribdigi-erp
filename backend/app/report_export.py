@@ -39,6 +39,7 @@ EXPORTABLE = frozenset(
         "trial_balance",
         "profit_loss",
         "balance_sheet",
+        "credit_aging",
         "tax",
         "tax_filing",
         "tax_filing_gh",
@@ -404,6 +405,27 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
                 lines.append(f"  {item.get('code')} {item.get('name')}: {item.get('balance')}")
         return rows or [{"note": "no rows"}], lines, "Balance Sheet"
 
+    if report_type == "credit_aging":
+        parties = payload.get("parties") or []
+        docs = payload.get("documents") or []
+        rows = [
+            *[{"section": "party", **{k: v for k, v in p.items() if not isinstance(v, (list, dict))}} for p in parties],
+            *[{"section": "document", **{k: v for k, v in d.items() if not isinstance(v, (list, dict))}} for d in docs],
+        ]
+        lines = _kv_lines(
+            {
+                k: v
+                for k, v in payload.items()
+                if k not in {"parties", "documents", "totals"} and not isinstance(v, (list, dict))
+            }
+        )
+        totals = payload.get("totals") or {}
+        lines.append(f"Kind: {payload.get('kind')}")
+        lines.append(f"Total due: {payload.get('total_due')}")
+        for k, v in totals.items():
+            lines.append(f"Bucket {k}: {v}")
+        return rows or [{"note": "no outstanding"}], lines, "Credit Aging"
+
     if report_type == "tax":
         items = payload.get("lines") or payload.get("items") or []
         if isinstance(payload, list):
@@ -504,6 +526,7 @@ async def build_report_payload(
     store_id: str | None = None,
     category_id: str | None = None,
     jurisdiction: str | None = None,
+    kind: str | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -578,6 +601,13 @@ async def build_report_payload(
         )
     if report_type == "balance_sheet":
         return await reports_svc.balance_sheet(db, tenant_id, as_of=as_of)
+    if report_type == "credit_aging":
+        from app import credit as credit_svc
+
+        aging_kind = (kind or "receivable").strip().lower()
+        if aging_kind in {"payable", "ap"}:
+            return await credit_svc.ap_aging(db, tenant_id, as_of=as_of or now)
+        return await credit_svc.ar_aging(db, tenant_id, as_of=as_of or now)
     if report_type == "tax":
         return await tax_svc.tax_report(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "tax_filing":

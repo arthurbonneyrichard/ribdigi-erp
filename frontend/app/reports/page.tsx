@@ -19,6 +19,8 @@ type Tab =
   | 'pnl'
   | 'cashflow'
   | 'balancesheet'
+  | 'credit'
+  | 'tax'
   | 'schedules';
 const REPORT_TABS: Tab[] = [
   'summary',
@@ -32,6 +34,8 @@ const REPORT_TABS: Tab[] = [
   'pnl',
   'cashflow',
   'balancesheet',
+  'credit',
+  'tax',
   'schedules',
 ];
 
@@ -47,6 +51,8 @@ const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   pnl: 'profit_loss',
   cashflow: 'cash_flow',
   balancesheet: 'balance_sheet',
+  credit: 'credit_aging',
+  tax: 'tax',
 };
 
 const REPORT_TYPES = [
@@ -67,6 +73,7 @@ const REPORT_TYPES = [
   'profit_loss',
   'cash_flow',
   'balance_sheet',
+  'credit_aging',
   'tax',
   'tax_filing',
   'tax_filing_gh',
@@ -145,6 +152,22 @@ export default function Page() {
       if (nextTab === 'balancesheet') {
         path = `/reports/balance-sheet${qs({ as_of_date: toDate })}`;
       }
+      if (nextTab === 'credit') {
+        const [ar, ap] = await Promise.all([
+          api('/credit/aging?kind=receivable'),
+          api('/credit/aging?kind=payable'),
+        ]);
+        setData({ ar: ar.data, ap: ap.data });
+        return;
+      }
+      if (nextTab === 'tax') {
+        const [taxReport, filing] = await Promise.all([
+          api(`/reports/tax${qs()}`),
+          api(`/reports/tax/filing${qs()}`),
+        ]);
+        setData({ tax: taxReport.data, filing: filing.data });
+        return;
+      }
       const r = await api(path);
       if (nextTab === 'sales') {
         const [daily, monthly] = await Promise.all([
@@ -195,7 +218,7 @@ export default function Page() {
     load(t);
   }
 
-  async function download(format: 'csv' | 'pdf' | 'xlsx', reportType?: string) {
+  async function download(format: 'csv' | 'pdf' | 'xlsx', reportType?: string, extra: Record<string, string> = {}) {
     if (tab === 'schedules') return;
     setError('');
     setMessage('');
@@ -210,6 +233,7 @@ export default function Page() {
       if (toDate) params.set('as_of_date', toDate);
       if (storeId) params.set('store_id', storeId);
       if (categoryId) params.set('category_id', categoryId);
+      Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -300,7 +324,9 @@ export default function Page() {
   return (
     <Shell>
       <h1>Reports & Analytics</h1>
-      <p className="muted">Sales, inventory, purchases, expenses, cash flow, and balance sheet</p>
+      <p className="muted">
+        Sales, inventory, purchases, expenses, financials, credit aging, and tax — plus email schedules
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -318,6 +344,8 @@ export default function Page() {
             ['pnl', 'P&L'],
             ['cashflow', 'Cash flow'],
             ['balancesheet', 'Balance sheet'],
+            ['credit', 'Credit'],
+            ['tax', 'Tax'],
             ['schedules', 'Email schedules'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
@@ -378,6 +406,22 @@ export default function Page() {
         )}
         {tab === 'stores' && (
           <button onClick={() => download('xlsx', 'sales_by_store')}>Export Excel</button>
+        )}
+        {tab === 'credit' && (
+          <>
+            <button onClick={() => download('xlsx', 'credit_aging', { kind: 'receivable' })}>
+              AR aging Excel
+            </button>
+            <button onClick={() => download('xlsx', 'credit_aging', { kind: 'payable' })}>
+              AP aging Excel
+            </button>
+          </>
+        )}
+        {tab === 'tax' && (
+          <>
+            <button onClick={() => download('xlsx', 'tax')}>Tax Excel</button>
+            <button onClick={() => download('xlsx', 'tax_filing')}>Filing pack Excel</button>
+          </>
         )}
       </div>
       )}
@@ -936,6 +980,109 @@ export default function Page() {
               </table>
             </div>
           ))}
+        </>
+      )}
+
+      {tab === 'credit' && data && (
+        <>
+          <p className="muted">
+            Credit aging surfaces the same AR/AP engine as the Credit module (no parallel report).{' '}
+            <a href="/credit">Open Credit module →</a>
+          </p>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">AR total due</div>
+              <div className="kpi">{data.ar?.total_due ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">AP total due</div>
+              <div className="kpi">{data.ap?.total_due ?? 0}</div>
+            </div>
+          </div>
+          <h3 style={{ marginTop: 16 }}>Receivables (parties)</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Total due</th>
+                <th>Balance</th>
+                <th>Limit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.ar?.parties || []).slice(0, 25).map((p: any) => (
+                <tr key={`ar-${p.party_id}`}>
+                  <td>{p.name}</td>
+                  <td>{p.total_due}</td>
+                  <td>{p.balance}</td>
+                  <td>{p.credit_limit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <h3 style={{ marginTop: 16 }}>Payables (parties)</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Supplier</th>
+                <th>Total due</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.ap?.parties || []).slice(0, 25).map((p: any) => (
+                <tr key={`ap-${p.party_id}`}>
+                  <td>{p.name}</td>
+                  <td>{p.total_due}</td>
+                  <td>{p.balance}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'tax' && data && (
+        <>
+          <p className="muted">
+            Tax report and filing pack use the same endpoints as Tax Management.{' '}
+            <a href="/tax">Open Tax module →</a>
+          </p>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Output tax</div>
+              <div className="kpi">{data.tax?.output_tax ?? data.filing?.output_tax ?? '—'}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Input tax</div>
+              <div className="kpi">{data.tax?.input_tax ?? data.filing?.input_tax ?? '—'}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Net payable</div>
+              <div className="kpi">
+                {data.tax?.net_tax_payable ?? data.filing?.net_tax_payable ?? '—'}
+              </div>
+            </div>
+          </div>
+          <h3 style={{ marginTop: 16 }}>Filing boxes</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Box</th>
+                <th>Label</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.filing?.filing_boxes?.boxes || data.filing?.boxes || []).map((b: any) => (
+                <tr key={`box-${b.box}`}>
+                  <td>{b.box}</td>
+                  <td>{b.label}</td>
+                  <td>{b.amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </>
       )}
 

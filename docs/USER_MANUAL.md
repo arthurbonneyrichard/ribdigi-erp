@@ -981,7 +981,18 @@ Open **Reports → Purchases** (optional date range):
 - **Trial Balance:** Account balance verification
 - **Balance Sheet:** Assets, liabilities, and equity snapshot
 
-### 12.7 Scheduling Reports
+### 12.7 Credit & Tax (Reports packaging)
+
+Stage 16 R2 surfaces Credit and Tax inside **Reports** without a second engine:
+
+| Tab | Source | Full module |
+|-----|--------|-------------|
+| **Reports → Credit** | AR/AP aging from `/credit/aging` (export `credit_aging`) | **Credit** sidebar |
+| **Reports → Tax** | `/reports/tax` + `/reports/tax/filing` (export `tax` / `tax_filing`) | **Tax** sidebar |
+
+Use Reports for a quick aging or tax snapshot/export; open the Credit or Tax module for payments, statements, rate setup, and jurisdiction filing workbooks.
+
+### 12.8 Scheduling Reports
 
 1. Generate any report
 2. Click **Schedule**
