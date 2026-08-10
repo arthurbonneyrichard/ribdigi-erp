@@ -69,6 +69,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Credit + Tax Reports packaging (Stage 16 R2: `test_credit_tax_reports_r2.py`)
 - [x] Transfer history / consolidated ops reporting (Stage 16 M2: `test_transfer_history_m2.py`)
 - [x] Notification channel delivery (Stage 16 N2: `test_notification_channel_delivery_n2.py`)
+- [x] Stage 16 fidelity sync (D1: `test_stage16_fidelity_d1.py`, `docs/STAGE_16_FIDELITY.md`)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)

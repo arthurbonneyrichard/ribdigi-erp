@@ -719,20 +719,20 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Manage multiple retail/service locations.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create stores with unique code, name, location
-  - [ ] Assign store manager and staff
-  - [ ] Store-specific inventory view
-  - [ ] Store-specific sales reporting
-  - [ ] Consolidated reporting across all stores
+  - [x] Create stores with unique code, name, location — Stage 1 C8 / `POST /stores`
+  - [ ] Assign store manager and staff — Partial: `stores.manager_id` assigned; dedicated user↔store staff membership deferred (ADR-005)
+  - [x] Store-specific inventory view — Stage 16 M1 (`GET /stores/{id}/inventory`)
+  - [x] Store-specific sales reporting — Stage 4 M1 (`GET /stores/{id}/sales`)
+  - [x] Consolidated reporting across all stores — Stage 4/16 (`GET /reports/sales/by-store`; Stage 16 M2 `GET /reports/transfers`)
 
 #### BR-13.2 Inter-Store Transfers
 - **Description:** Move stock between stores.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create transfer request with source store, destination store, products, quantities
-  - [ ] Approval workflow (source store manager → destination store manager)
-  - [ ] Track transfer status: Draft, Requested, In Transit, Received, Cancelled
-  - [ ] Auto-update inventory at both stores on receipt confirmation
+  - [x] Create transfer request with source store, destination store, products, quantities — Stage 4 T1 / Stage 16 M1 (`POST /stores/transfers`)
+  - [x] Approval workflow (source store manager → destination store manager) — Stage 4 T1 (`TRANSFER_SHIP_FORBIDDEN` / `TRANSFER_RECEIVE_FORBIDDEN`)
+  - [x] Track transfer status: Draft, Requested, In Transit, Received, Cancelled — Stage 2/4 / Stage 16 M1
+  - [x] Auto-update inventory at both stores on receipt confirmation — Stage 16 M1 (warehouse qty + `stock_movements` `transfer_out`/`transfer_in`)
   - [x] Transfer history and reporting — Stage 16 M2 (`GET /reports/transfers`, list filters on `/stores/transfers` + `/inventory/stock-transfers`, export `transfer_history`, Reports → Transfers)
 
 ---
@@ -794,13 +794,13 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Automated alerts for business events.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Low Stock:** When product reaches reorder level
-  - [ ] **New Orders:** When sales order is created
-  - [ ] **Purchase Received:** When GRN is approved
-  - [ ] **Payment Due:** When invoice/bill approaches due date
-  - [ ] **Credit Limit Reached:** When customer exceeds credit threshold
-  - [ ] **Shift Variance:** When cash reconciliation shows discrepancy
-  - [ ] **Expense Approval Required:** When expense exceeds threshold
+  - [x] **Low Stock:** When product reaches reorder level — Stage 16 N1 (`scan_low_stock` / `low_stock`)
+  - [x] **New Orders:** When sales order is created — Stage 16 N1 / Stage 4 N1 (`new_order`)
+  - [x] **Purchase Received:** When GRN is approved — Stage 16 N1 (`purchase_received` on GRN post)
+  - [x] **Payment Due:** When invoice/bill approaches due date — Stage 1 `scan_payment_due` + Celery `/notifications/scan-due`
+  - [x] **Credit Limit Reached:** When customer exceeds credit threshold — Stage 16 N1 (`credit_limit` on invoice post ≥80% utilization)
+  - [x] **Shift Variance:** When cash reconciliation shows discrepancy — Stage 16 N1 (`shift_variance`; prefs suppress)
+  - [x] **Expense Approval Required:** When expense exceeds threshold — `expense_approval` (`test_expense_approval_notify.py`)
 
 #### BR-15.2 Notification Channels
 - **Description:** Multi-channel alert delivery.

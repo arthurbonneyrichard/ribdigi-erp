@@ -911,16 +911,18 @@ Use the **Store Selector** in the top navigation bar to switch context. Your das
 1. Go to **Multi-Store → Transfers → + New Transfer**
 2. Select **From Store** and **To Store**
 3. Add products and quantities
-4. Click **Request Transfer**
-5. The receiving store manager gets a notification
-6. They review and click **Receive** (or reject with reason)
-7. Stock updates automatically at both locations
+4. Click **Request Transfer** (status becomes **Requested**)
+5. The **source** store manager ships the transfer (**In Transit**); destination manager cannot ship when dual-manager gates apply
+6. The **destination** store manager reviews and clicks **Receive** (or an authorized user **Cancels** before receive)
+7. Stock updates automatically at both store warehouses; movements appear in inventory reports
+
+See also **Reports → Transfers** for consolidated transfer history (Stage 16 M2). Evidence: `docs/STAGE_16_FIDELITY.md`.
 
 ### 11.3 Consolidated vs. Store-Specific Reports
 
-- **Store-Specific:** Select a single store in the report filters
-- **Consolidated:** Select "All Stores" to see combined data
-- **Comparison:** Some reports allow side-by-side store comparison
+- **Store-Specific:** Select a single store in report filters (or open store sales from Multi-Store)
+- **Consolidated:** Select **All stores** / omit store filter for combined totals
+- **By store:** Sales by store (`GET /reports/sales/by-store`) lists each location’s revenue in a table — not a dual-pane layout
 
 ---
 
@@ -1024,12 +1026,17 @@ Click the **🔔 bell icon** in the top navigation bar.
 **Notification Categories:**
 | Icon | Type | Example |
 |------|------|---------|
-| 📦 | Inventory | "Product XYZ is below reorder level" |
-| 🛒 | Sales | "New sales order #SO-1024 received" |
-| 🛍️ | Purchase | "GRN received for PO #PO-558" |
-| 💰 | Payment | "Invoice #INV-2045 is overdue by 5 days" |
-| ⚠️ | Credit | "Customer ABC has reached 90% of credit limit" |
+| 📦 | Inventory / Low stock | "Product XYZ is below reorder level" |
+| 🛒 | Sales / New order | "New sales order #SO-1024 received" |
+| 🛍️ | Purchase received | "GRN received for PO #PO-558" |
+| 💰 | Payment due | "Invoice #INV-2045 is overdue by 5 days" |
+| ⚠️ | Credit limit | "Customer ABC has reached 90% of credit limit" |
+| 📊 | Shift variance | Cash drawer variance on POS session close |
+| 🔁 | Transfer | Inter-store transfer shipped |
+| ✅ | Expense approval | Expense pending approval above threshold |
 | 🔔 | System | "Scheduled backup completed" |
+
+Stage 16 N1 proves emission for outline buckets (low stock, new order, credit, purchase received, shift variance, transfer). See `docs/STAGE_16_FIDELITY.md`.
 
 ### 13.2 Managing Notification Preferences
 

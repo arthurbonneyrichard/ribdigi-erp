@@ -1185,6 +1185,8 @@ Status flow: `draft` → `requested` → `in_transit` → `received` (or `cancel
 
 **Dual-manager approval (Stage 4 T1 / BR-13.2):** When the source store has `manager_id`, only that user may ship (`403 TRANSFER_SHIP_FORBIDDEN` otherwise). When the destination store has `manager_id`, only that user may receive (`403 TRANSFER_RECEIVE_FORBIDDEN`). `company_admin` / `super_admin` may override either action; override writes audit action `transfer_manager_override`. Warehouse-only transfers (null store ids) skip this gate. Serialized transfers include `from_store_manager_id` / `to_store_manager_id`.
 
+**Stock chain (Stage 16 M1):** Ship deducts source warehouse stock and writes `stock_movements` (`transfer_out`, `reference_type=stock_transfer`). Receive adds destination warehouse stock (`transfer_in`). Insufficient source qty → `409 INSUFFICIENT_WAREHOUSE_STOCK`; transfer stays `requested` with no movements. Evidence: `test_multistore_transfer_chain_m1.py`.
+
 **Create Transfer:**
 ```json
 {
@@ -1255,14 +1257,16 @@ Preference keys include `new_order`, `low_stock`, `purchase_received`, `payment_
 
 ```json
 {
-  "low_stock": { "dashboard": true, "email": true, "sms": false },
+  "low_stock": { "dashboard": true, "email": false, "sms": false },
   "new_order": { "dashboard": true, "email": false, "sms": false },
-  "payment_due": { "dashboard": true, "email": true, "sms": true },
-  "credit_limit": { "dashboard": true, "email": true, "sms": true }
+  "payment_due": { "dashboard": true, "email": true, "sms": false },
+  "credit_limit": { "dashboard": true, "email": false, "sms": false }
 }
 ```
 
-**Channel delivery (Stage 16 N2):** After the dashboard notification is written, `create_notification` best-effort sends email/SMS to recipients with that channel enabled for the category. Broadcast alerts (`user_id` null) target active `company_admin` / `super_admin`. Outline categories default email/SMS **off**. SMTP unset → email `mode=console` outbox attempt; Twilio unset → SMS `mode=console`. Carrier `delivered` is only recorded for real SMTP/Twilio sends.
+Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_received`, `shift_variance`, `transfer`) default **email/sms false**; enable per user via this API. `payment_due` / `expense_approval` default email on.
+
+**Channel delivery (Stage 16 N2):** After the dashboard notification is written, `create_notification` best-effort sends email/SMS to recipients with that channel enabled for the category. Broadcast alerts (`user_id` null) target active `company_admin` / `super_admin`. SMTP unset → email `mode=console` outbox attempt; Twilio unset → SMS `mode=console`. Carrier `delivered` is only recorded for real SMTP/Twilio sends.
 ---
 
 ## 16. AI Business Assistant

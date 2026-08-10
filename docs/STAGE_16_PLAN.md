@@ -53,7 +53,7 @@ Notifications
 | **R2** | Credit + Tax report packaging fidelity (Reports outline ↔ existing APIs/UI) | P1 | COMPLETE |
 | **M2** | Transfer history / consolidated multi-store ops reporting | P1 | COMPLETE |
 | **N2** | Channel delivery hardening (email/SMS prefs for key categories) | P1 | COMPLETE |
-| **D1** | Spec / BR-13–15 / readiness fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-13–15 / readiness fidelity sync | P2 | COMPLETE |
 | **H16x** | Stage 16 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -103,8 +103,8 @@ Notifications
 
 ## D1 acceptance criteria
 
-- [ ] BR-13/14/15, API, readiness, user manual aligned — `docs/STAGE_16_FIDELITY.md`.
-- [ ] Guard test: `backend/tests/test_stage16_fidelity_d1.py`.
+- [x] BR-13/14/15, API, readiness, user manual aligned — `docs/STAGE_16_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage16_fidelity_d1.py`.
 
 ## H16x acceptance criteria
 
@@ -112,4 +112,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-M1–N2 complete. Pending D1 → H16x.
+M1–D1 complete. Pending H16x.
