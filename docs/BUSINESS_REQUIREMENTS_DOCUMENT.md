@@ -842,11 +842,12 @@ Fidelity sync: Stage 22 D1 — `docs/STAGE_22_FIDELITY.md` (`test_stage22_fideli
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] Restore from backup archive (guarded `confirm_text=RESTORE`; media rehydrate Stage 10 B1) — Stage 18 D1 / Stage 5 B1
-  - [ ] Restore to new tenant (for testing) — blocked by design for MVP (cross-tenant restore denied)
+  - [ ] Restore to new tenant (for testing) — blocked by design for MVP (cross-tenant restore denied; Stage 23 B1 foreign backup → 404)
   - [x] Restore validation (checksum verification + integrity proof)
   - [ ] Point-in-time recovery (if WAL archiving enabled) — deferred post-MVP
+  - [x] Logical DR drill automation evidence (Stage 23 B1: `test_logical_dr_drill_b1.py` / `stage23_b1_logical_drill.json`)
 
-Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
+Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`. Stage 23 B1 DR drill gate — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`.
 
 ---
 

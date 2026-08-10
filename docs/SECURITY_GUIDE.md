@@ -682,7 +682,7 @@ The MVP includes AI capabilities across 10 modules. Security controls include:
 - [ ] Daily review of security alerts and failed login attempts
 - [ ] Weekly vulnerability scan of dependencies
 - [ ] Monthly penetration test of authentication flows
-- [x] Quarterly logical backup restore drill procedure documented + automated proof (Stage 5 B1; infra WAL/PITR drill post-MVP)
+- [x] Quarterly logical backup restore drill procedure documented + automated proof (Stage 5 B1 + Stage 23 B1 commercial MVP gate `test_logical_dr_drill_b1.py` / `stage23_b1_logical_drill.json`; infra WAL/PITR drill post-MVP)
 - [ ] Quarterly access review (user roles and permissions)
 - [ ] Annual third-party security audit
 - [ ] Continuous monitoring of audit logs for anomalies

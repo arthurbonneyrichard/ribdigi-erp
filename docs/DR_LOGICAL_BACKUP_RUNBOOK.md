@@ -1,9 +1,10 @@
 # Disaster Recovery Runbook — Logical Tenant Backup (`.ribbak`)
 
-**Scope:** Stage 5 B1 + Stage 10 B1 (media) + Stage 18 B1 (schedule / retention / failure notify) + Stage 19 R1 (LAUNCH §5 packaging evidence) — encrypted logical tenant backup / guarded restore  
+**Scope:** Stage 5 B1 + Stage 10 B1 (media) + Stage 18 B1 (schedule / retention / failure notify) + Stage 19 R1 (LAUNCH §5 packaging evidence) + Stage 23 B1 (commercial MVP DR drill gate evidence) — encrypted logical tenant backup / guarded restore  
 **Out of scope (post-MVP):** PostgreSQL `pg_dump` / WAL archiving, S3 offsite PITR, schema-per-tenant isolation (ADR-001)
 
-Stage 19 R1 automated packaging check: `backend/tests/test_reliability_cache_r1.py` (asserts this runbook + dry-run / `confirm_text=RESTORE` / WAL-PITR deferral).
+Stage 19 R1 automated packaging check: `backend/tests/test_reliability_cache_r1.py` (asserts this runbook + dry-run / `confirm_text=RESTORE` / WAL-PITR deferral).  
+Stage 23 B1 commercial MVP gate proof: `backend/tests/test_logical_dr_drill_b1.py` → evidence artifact `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json` (create → dry-run → apply → verify + foreign-tenant 404).
 
 ## Purpose
 
@@ -40,7 +41,7 @@ Infrastructure PITR targets in older docs remain **aspirational** until WAL/S3 w
 7. **Audit** — confirm `restore_dry_run` / `restore_apply` / `restore_verify` events under `module=backup`.
 8. **Pass criteria** — `proof.ok == true`, spot-check UI (catalog / customer), no cross-tenant leakage.
 
-Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/tests/test_backup_media_b1.py` (Stage 10 B1 media), `backend/tests/test_backup_schedule_b1.py` (Stage 18 B1 schedule / retention / failure notify).
+Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/tests/test_backup_media_b1.py` (Stage 10 B1 media), `backend/tests/test_backup_schedule_b1.py` (Stage 18 B1 schedule / retention / failure notify), `backend/tests/test_logical_dr_drill_b1.py` (Stage 23 B1 commercial MVP drill gate + evidence artifact).
 
 ## Schedule, retention, and failure alerts (Stage 18 B1)
 
@@ -69,3 +70,5 @@ Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/te
 ## Sign-off
 
 Record date, operator, `backup_id`, checksum, dry-run/apply/verify outcomes, and any mismatches in the ops incident or change log after each quarterly drill.
+
+Stage 23 B1 CI/harness evidence: when `test_logical_dr_drill_b1.py` passes, it writes `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json` with `passed`, `backup_id`, checksum, proof flags, and `wal_pitr_deferred=true`.

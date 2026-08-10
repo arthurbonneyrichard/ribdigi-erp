@@ -83,7 +83,8 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 - [ ] Kubernetes production deployment reviewed.
 - [ ] Load/performance tests meet documented targets.
   - Partial (Stage 5 L1 + Stage 18 T1): baseline scripts + targets in `docs/LOAD_TEST_BASELINE.md`; httpx harness (`backend/loadtest/`, `python -m loadtest.run_baseline --smoke --output …`); optional Locust staging file; ASGI smoke tests; Stage 18 T1 evidence artifact `/opt/cursor/artifacts/loadtest/stage18_t1_baseline_smoke.json` (`test_loadtest_evidence_t1.py`); OWASP expand for Stage 6–17 surfaces (`test_owasp_suite_t1.py`); launch §4 smoke expense→JE / TB / backup verify-dry-run (`test_launch_smoke_t1.py`). Remaining: operator staging capacity run at ~1000 VU / p95 under 500ms recorded for launch sign-off; Redis app cache / PgBouncer still parked; vendor ZAP-in-CI.
-- [ ] Disaster recovery drill passes.
+- [x] Disaster recovery drill passes.
+  - Complete (MVP logical): Stage 23 B1 automated quarterly drill evidence — create → corrupt → dry-run → guarded `confirm_text=RESTORE` apply → verify proof + audits; foreign-tenant backup restore/verify/download → 404; durable artifact `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json` (`test_logical_dr_drill_b1.py`; runbook `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`). Remaining post-MVP: infrastructure WAL / pg_dump / S3 offsite PITR drill.
 
 ### AI
 - [ ] AI provider configured securely.

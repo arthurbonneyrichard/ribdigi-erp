@@ -26,7 +26,11 @@ def test_g1_plan_marks_complete() -> None:
     assert "| **G1** |" in PLAN
     assert "COMPLETE" in PLAN
     assert "test_mvp_gate_closure_g1.py" in PLAN
-    assert "G1 complete" in PLAN or "F1–C1–I1–G1 complete" in PLAN
+    assert (
+        "G1 complete" in PLAN
+        or "F1–C1–I1–G1 complete" in PLAN
+        or "F1–C1–I1–G1–B1 complete" in PLAN
+    )
 
 
 def test_isolation_and_lifecycle_mvp_complete() -> None:
@@ -61,7 +65,7 @@ def test_expenses_accounting_tax_reports_mvp_complete() -> None:
 
 
 def test_deferred_ops_remain_open_or_partial() -> None:
-    """G1 must not fake-complete ops items that Stage 23 B1 / post-MVP still own."""
-    assert "- [ ] Disaster recovery drill passes." in READINESS
+    """G1 must not fake-complete ops items that remain post-MVP / still Partial."""
+    assert "- [ ] Point-in-time recovery/WAL strategy complete." in READINESS
     assert "Partial" in READINESS  # inventory / sales / purchasing / ops still Partial
     assert "WAL" in READINESS or "PITR" in READINESS

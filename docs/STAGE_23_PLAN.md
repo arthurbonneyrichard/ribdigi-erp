@@ -41,7 +41,7 @@ Fidelity closeout
 | **C1** | Financial comparative fidelity (P&L / cash-flow / BS) | P0 | COMPLETE |
 | **I1** | Isolation matrix residual coverage | P1 | COMPLETE |
 | **G1** | Commercial MVP gate closure (readiness honesty) | P1 | COMPLETE |
-| **B1** | Logical DR drill automation evidence | P1 | PENDING |
+| **B1** | Logical DR drill automation evidence | P1 | COMPLETE |
 | **D1** | Spec / BR-14 / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
 | **H23x** | Stage 23 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -93,10 +93,19 @@ Fidelity closeout
 - [x] Automated proof: `backend/tests/test_mvp_gate_closure_g1.py`.
 - [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan synced (Stage 23 G1).
 
-## B1–H23x acceptance criteria
+## B1 acceptance criteria
+
+- [x] Automated logical DR drill: create → corrupt → dry-run → blocked bad confirm → apply `RESTORE` → verify proof + audits.
+- [x] Foreign-tenant backup restore / verify / download → 404 (no cross-tenant restore).
+- [x] Durable evidence artifact `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json`.
+- [x] PRODUCTION_READINESS Disaster recovery drill gate Complete (MVP); Remaining WAL/PITR only.
+- [x] Automated proof: `backend/tests/test_logical_dr_drill_b1.py`.
+- [x] Runbook / launch / roadmap synced (Stage 23 B1).
+
+## D1–H23x acceptance criteria
 
 Filled when each workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-051 open. F1–C1–I1–G1 complete; B1 next. Stages 1–22 remain frozen for their scopes.
+Plan authored; ADR-051 open. F1–C1–I1–G1–B1 complete; D1 next. Stages 1–22 remain frozen for their scopes.
