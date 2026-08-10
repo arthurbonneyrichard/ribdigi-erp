@@ -174,6 +174,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 21 exit (2026-08-10):** T1, I1, O1, C1, U1, V1, N1, D1, H21x met — `docs/STAGE_21_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_048_STAGE21_FREEZE.md`. Fidelity: `docs/STAGE_21_FIDELITY.md`.
 
+**Stage 22 open (2026-08-10):** Expenses, Ledger, Credit & Tax Surface Fidelity track approved — `docs/ADR_049_STAGE22_OPEN.md` + `docs/STAGE_22_PLAN.md` (expenses → ledger → credit/tax).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -754,7 +756,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 21 closed (`docs/STAGE_21_EXIT_CRITERIA.md`, ADR-048). Stages 1–21 remain frozen for their scopes until a new track is opened via CONTINUE/NEXT + open ADR.
+**Active delivery plan:** Stage 22 open (`docs/STAGE_22_PLAN.md`, ADR-049). Stages 1–21 remain frozen for their scopes.
 
 ### 6.2 Features
 
