@@ -887,18 +887,18 @@ Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
 - **Description:** Product data access and management.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] CRUD operations for products, categories, brands, units
-  - [ ] Bulk import/export
-  - [ ] Stock level queries
-  - [ ] Barcode lookup
+  - [x] CRUD operations for products, categories, brands, units — Stage 19 P1 (`/products`, `/catalog/categories|brands|units`; product soft-deactivate via `PATCH is_active=false`; `test_products_customers_api_p1.py`)
+  - [x] Bulk import/export — Stage 19 P1: CSV import (`GET/POST /products/import[/template]`); list/report packaging (`GET /products`, inventory report exports); dedicated catalog CSV export deferred
+  - [x] Stock level queries — Stage 19 P1 (`GET /products/{id}` `stock_qty`, `GET /products/{id}/warehouse-stock`, low-stock/report surfaces)
+  - [x] Barcode lookup — Stage 19 P1 (`GET /inventory/products/lookup`)
 
 #### BR-18.3 Customers API
 - **Description:** Customer data access.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] CRUD operations for customers and customer groups
-  - [ ] Balance inquiry
-  - [ ] Purchase history
+  - [x] CRUD operations for customers and customer groups — Stage 19 P1 (`/customers`, `/customers/groups`; soft-deactivate via `DELETE`)
+  - [x] Balance inquiry — Stage 19 P1 (`balance` on customer GET/list; deeper credit statement/outstanding under `credit:read`)
+  - [x] Purchase history — Stage 19 P1 (`GET /customers/{id}/history`)
 
 #### BR-18.4 Sales API
 - **Description:** Sales transaction API.

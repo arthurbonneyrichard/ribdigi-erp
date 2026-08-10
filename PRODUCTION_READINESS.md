@@ -25,6 +25,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 ### Identity & security
 - [x] Login/logout/refresh token flow complete.
   - Stage 19 K1: live JWT login/refresh rotation + API-key regression + tenant-scoped rate-limit headers (`test_auth_api_fidelity_k1.py`; BR-18.1).
+  - Stage 19 P1: products/catalog CRUD + import + stock/barcode lookup and customers/groups/balance/history via JWT + X-API-Key reads (`test_products_customers_api_p1.py`; BR-18.2–18.3).
 - [x] Email verification and password reset complete.
   - Tokens issued; SMTP delivery with console fallback in dev; production requires `SMTP_HOST` + `SMTP_FROM_EMAIL` when `EMAIL_ENABLED=true`; tenants may override SMTP via encrypted `PATCH /settings/email`. Login blocked until email verified (`EMAIL_NOT_VERIFIED` + `POST /auth/resend-verification`). Authenticated `POST /auth/change-password` revokes other sessions.
 - [x] 2FA/TOTP complete for required roles.

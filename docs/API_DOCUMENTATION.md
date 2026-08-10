@@ -397,10 +397,15 @@ Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a produc
 **Create:** `POST /catalog/units`
 
 ### 5.4 Products
-**List:** `GET /products?category_id=&brand_id=&low_stock=true`  
+**List:** `GET /products`  
 **Create:** `POST /products`  
 **Get:** `GET /products/{product_id}`  
-**Update:** `PATCH /products/{product_id}` (set `is_active=false` to soft-deactivate)
+**Update:** `PATCH /products/{product_id}` (set `is_active=false` to soft-deactivate)  
+**Import:** `GET /products/import/template`, `POST /products/import?dry_run=true|false`  
+**Warehouse stock:** `GET /products/{product_id}/warehouse-stock`  
+**Barcode lookup:** `GET /inventory/products/lookup?q=&barcode=`
+
+Stage 19 P1 proves products/catalog CRUD + import + stock/barcode surfaces via JWT and X-API-Key reads — `test_products_customers_api_p1.py` (BR-18.2). Dedicated catalog CSV export deferred (list/report packaging covers export needs for MVP).
 
 Stage 17 A1 domain audit (`module=inventory`): `product_create` (details.after snapshot); `product_update` / soft-delete `product_deactivate` with `before`/`after` field diffs; stock ops emit `stock_{movement_type}` with qty before/after. Evidence: `test_inventory_audit_a1.py`.
 
@@ -675,9 +680,13 @@ Supplier payments: `POST /suppliers/{id}/payments` (credit module). Attachment: 
 ### 7.1 Customers
 **List:** `GET /customers`  
 **Create:** `POST /customers`  
-**Get:** `GET /customers/{customer_id}`  
+**Get:** `GET /customers/{customer_id}` (includes `balance`)  
 **Update:** `PATCH /customers/{customer_id}`  
-**Delete:** `DELETE /customers/{customer_id}`
+**Delete:** `DELETE /customers/{customer_id}` (soft-deactivate → `status=inactive`)  
+**History:** `GET /customers/{customer_id}/history`  
+**Outstanding:** `GET /customers/{customer_id}/outstanding` (`credit:read`)
+
+Stage 19 P1 proves customers/groups CRUD + balance + history via JWT and X-API-Key sales reads — `test_products_customers_api_p1.py` (BR-18.3).
 
 **Create Customer:**
 ```json
@@ -686,16 +695,18 @@ Supplier payments: `POST /suppliers/{id}/payments` (credit module). Attachment: 
   "email": "walkin@example.com",
   "phone": "+1-555-0300",
   "address": "789 Customer Lane",
-  "customer_group": "retail",
-  "credit_limit": 500.00,
-  "opening_balance": 0.00,
-  "tax_id": ""
+  "party_type": "registered",
+  "customer_group_id": "group_uuid",
+  "credit_limit": 500.00
 }
 ```
 
 ### 7.2 Customer Groups
 **List:** `GET /customers/groups`  
-**Create:** `POST /customers/groups`
+**Create:** `POST /customers/groups`  
+**Get:** `GET /customers/groups/{group_id}`  
+**Update:** `PATCH /customers/groups/{group_id}`  
+**Delete:** `DELETE /customers/groups/{group_id}`
 
 ### 7.3 Quotations
 **List:** `GET /sales/quotations`  
@@ -1033,7 +1044,7 @@ Same `as_of_date` semantics as trial balance; response includes `as_of`, assets/
 ## 11. Credit Management
 
 ### 11.1 Customer Credit
-**Get Credit Info:** `GET /customers/{customer_id}/credit`
+**Get Credit Info:** use customer `balance` on `GET /customers/{customer_id}` plus `GET /credit/customers/{customer_id}/statement` (`credit:read`) — there is no `GET /customers/{customer_id}/credit` route.
 
 **Response:**
 ```json

@@ -40,7 +40,7 @@ Operator reliability
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **K1** | Auth API fidelity (BR-18.1) | P0 | COMPLETE |
-| **P1** | Products + Customers API fidelity (BR-18.2–18.3) | P0 | PENDING |
+| **P1** | Products + Customers API fidelity (BR-18.2–18.3) | P0 | COMPLETE |
 | **S1** | Sales + Purchases API fidelity (BR-18.4–18.5) | P0 | PENDING |
 | **A1** | API standards fidelity (BR-18.6) | P0 | PENDING |
 | **U1** | Auth & session BR-19 fidelity sync | P0 | PENDING |
@@ -68,8 +68,8 @@ Operator reliability
 
 ## P1 acceptance criteria
 
-- [ ] Products/categories/brands/units CRUD + import + stock/barcode lookup and customers/groups CRUD + balance/history proven via JWT (and `X-API-Key` where permitted); BR-18.2–18.3 synced with evidence.
-- [ ] Automated proof: `backend/tests/test_products_customers_api_p1.py`.
+- [x] Products/categories/brands/units CRUD + import + stock/barcode lookup and customers/groups CRUD + balance/history proven via JWT (and `X-API-Key` where permitted); BR-18.2–18.3 synced with evidence.
+- [x] Automated proof: `backend/tests/test_products_customers_api_p1.py`.
 
 ## S1 acceptance criteria
 
@@ -107,4 +107,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-K1 complete. Pending P1 → H19x. Stages 1–18 remain frozen for their scopes.
+K1–P1 complete. Pending S1 → H19x. Stages 1–18 remain frozen for their scopes.
