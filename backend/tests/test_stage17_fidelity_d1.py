@@ -22,10 +22,11 @@ def test_stage17_fidelity_note_and_plan():
     assert "test_low_stock_reorder_l1.py" in fidelity
     assert "test_inventory_audit_a1.py" in fidelity
     assert "test_stage17_fidelity_d1.py" in fidelity
+    assert "test_stage17_exit_h17x.py" in fidelity or "H17x" in fidelity
+    assert "ADR-040" in fidelity or "exit met" in fidelity.lower()
     assert "INSUFFICIENT_WAREHOUSE_STOCK" in fidelity
     assert "multi-bin" in fidelity.lower() or "FIFO" in fidelity
     assert "ADR-039" in fidelity or "ADR_039" in fidelity
-    assert "H17x" in fidelity
 
     plan = _read("docs/STAGE_17_PLAN.md")
     assert "| **D1**" in plan and "COMPLETE" in plan
@@ -33,8 +34,10 @@ def test_stage17_fidelity_note_and_plan():
     for ws in ("C1", "S1", "S2", "W1", "L1", "A1", "D1"):
         assert f"| **{ws}**" in plan
         assert "COMPLETE" in plan
-    assert "| **H17x**" in plan and "PENDING" in plan
-    assert "C1–D1 complete" in plan or "Pending H17x" in plan
+    assert "| **H17x**" in plan and "COMPLETE" in plan
+    assert "Closed" in plan or "exit met" in plan.lower() or "ADR-040" in plan
+    assert "STAGE_17_EXIT_CRITERIA.md" in plan
+    assert "ADR-040" in plan or "ADR_040" in plan
 
 
 def test_stage17_br_checkboxes_synced():
@@ -95,6 +98,7 @@ def test_stage17_api_manual_security_launch():
     assert "test_inventory_audit_a1.py" in launch
     assert "test_stage17_fidelity_d1.py" in launch
     assert "STAGE_17_FIDELITY.md" in launch
+    assert "test_stage17_exit_h17x.py" in launch
 
 
 def test_stage17_readiness_and_roadmap():
@@ -110,3 +114,5 @@ def test_stage17_readiness_and_roadmap():
     assert "Stage 17 D1" in roadmap
     assert "ADR_039_STAGE17_OPEN.md" in roadmap
     assert "STAGE_17_PLAN.md" in roadmap
+    assert "STAGE_17_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_040_STAGE17_FREEZE.md" in roadmap

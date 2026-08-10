@@ -1,8 +1,9 @@
 # Stage 17 Fidelity Notes — Inventory Catalog & Stock Ops
 
-**Status:** Closed with Stage 17 D1; exit pending H17x / freeze ADR  
+**Status:** Closed with Stage 17 D1; exit met (H17x / ADR-040)  
 **Surface:** Inventory → Catalog → Stock Ops → Warehouse → Low Stock  
-**Open ADR:** [ADR-039](ADR_039_STAGE17_OPEN.md)  
+**Open ADR (historical):** [ADR-039](ADR_039_STAGE17_OPEN.md)  
+**Exit:** [STAGE_17_EXIT_CRITERIA.md](STAGE_17_EXIT_CRITERIA.md) · [ADR-040](ADR_040_STAGE17_FREEZE.md)  
 **Plan:** [STAGE_17_PLAN.md](STAGE_17_PLAN.md)
 
 Stage 17 proves commercial-MVP fidelity on the existing Inventory engine (Stage 2 I1–I6) — BR-5.1–5.5 live API/UI evidence, warehouse transfer + low-stock reorder-PO, and product/stock domain audit — **not** multi-bin, FIFO/LIFO/WA, ADR-005 user↔store membership, WebSocket push, or greenfield Inventory.
@@ -33,7 +34,7 @@ Stage 17 proves commercial-MVP fidelity on the existing Inventory engine (Stage 
 | **L1** | `test_low_stock_reorder_l1.py` — traffic lights; `suggested_order_qty`; draft reorder-PO; store reorder-policy | BR-5.4 warehouse reorder; BR-5.5 | — |
 | **A1** | `test_inventory_audit_a1.py` — product create/update/deactivate before/after; `stock_*` qty audits | BR-17.1 Product Changes | — |
 | **D1** | This note + `test_stage17_fidelity_d1.py` | BR-5.1–5.5 + API + readiness + USER_MANUAL | — |
-| **H17x** | `STAGE_17_EXIT_CRITERIA.md` + freeze ADR (when started) | Stage 17 exit + freeze | Next track needs open ADR |
+| **H17x** | `STAGE_17_EXIT_CRITERIA.md`; ADR-040; `test_stage17_exit_h17x.py` | Stage 17 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -46,6 +47,7 @@ Stage 17 proves commercial-MVP fidelity on the existing Inventory engine (Stage 
 - `backend/tests/test_stock_integrity_i5.py` (BR-5.3 movement before/after + filters)
 - `backend/tests/test_stage2_inventory_ops.py` (movement date filters; reorder-PO Stage 2)
 - `backend/tests/test_stage17_fidelity_d1.py`
+- `backend/tests/test_stage17_exit_h17x.py`
 
 ## Spec sync targets
 
@@ -56,7 +58,8 @@ Stage 17 proves commercial-MVP fidelity on the existing Inventory engine (Stage 
 - `docs/USER_MANUAL.md` — §3 Inventory (C1–L1)
 - `docs/DEVELOPMENT_ROADMAP.md` — Stage 17 D1 note
 - `docs/LAUNCH_CHECKLIST.md` — C1–A1 / D1 evidence
-- `docs/STAGE_17_PLAN.md` — D1 COMPLETE; H17x pending
+- `docs/STAGE_17_PLAN.md` — Closed (H17x / ADR-040)
+- `docs/STAGE_17_EXIT_CRITERIA.md` · `docs/ADR_040_STAGE17_FREEZE.md`
 
 ## Deferred (not Stage 17)
 

@@ -1,9 +1,10 @@
 # Stage 17 Plan — Inventory Catalog & Stock Ops Fidelity
 
-**Status:** Open  
+**Status:** Closed — exit met (H17x / ADR-040)  
 **Base:** Inventory → Catalog → Stock Ops → Warehouse → Low Stock  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-039](ADR_039_STAGE17_OPEN.md)
+**Open ADR (historical):** [ADR-039](ADR_039_STAGE17_OPEN.md)  
+**Exit:** [STAGE_17_EXIT_CRITERIA.md](STAGE_17_EXIT_CRITERIA.md) · [ADR-040](ADR_040_STAGE17_FREEZE.md) · [STAGE_17_FIDELITY.md](STAGE_17_FIDELITY.md)
 
 Stage 17 closes commercial-MVP fidelity on the Inventory surface after Stage 16 freeze. The Stage 2 catalog/stock engine already exists (I1–I6). This track proves BR-5.1–5.5 end-to-end with live APIs/UI evidence and docs sync — **not** multi-bin, FIFO/LIFO, or greenfield Inventory.
 
@@ -36,7 +37,7 @@ Inventory
 | **L1** | Low-stock indicators + suggested order qty + reorder-PO | P1 | COMPLETE |
 | **A1** | Inventory domain audit closeout (product/stock mutations) | P1 | COMPLETE |
 | **D1** | Spec / BR-5.1–5.5 / readiness fidelity sync | P2 | COMPLETE |
-| **H17x** | Stage 17 exit criteria + freeze ADR | Exit | PENDING |
+| **H17x** | Stage 17 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -87,8 +88,10 @@ Inventory
 
 ## H17x acceptance criteria
 
-See workstream table; filled when exit workstream starts.
+- [x] `docs/STAGE_17_EXIT_CRITERIA.md` lists C1–A1, D1, H17x COMPLETE with evidence tests and deferred scope.
+- [x] Freeze ADR accepted: `docs/ADR_040_STAGE17_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage17_exit_h17x.py`.
 
 ## Sign-off
 
-C1–D1 complete. Pending H17x.
+Stage 17 exit **met**. Scope frozen under ADR-040. Stages 1–16 remain frozen for their scopes. Next delivery track requires an explicit open ADR with a **distinct** product outline (Multi-Store / Reports / Notifications already closed under Stage 16 / ADR-038).

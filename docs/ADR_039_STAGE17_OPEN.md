@@ -29,3 +29,7 @@ Stage 2 already delivered advanced catalog/stock ops (I1–I6; ADR-010). Stage 9
 
 - Agents may implement Stage 17 plan items without reopening Stage 1–16 feature scope.
 - Stage 17 exit requires `docs/STAGE_17_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Amendment (2026-08-10)
+
+Stage 17 exit met and scope frozen — see [ADR-040](ADR_040_STAGE17_FREEZE.md) and [STAGE_17_EXIT_CRITERIA.md](STAGE_17_EXIT_CRITERIA.md).
