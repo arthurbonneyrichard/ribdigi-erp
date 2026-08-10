@@ -188,6 +188,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 23 I1 (2026-08-10):** Isolation matrix residual — liquid accounts/transfers, expense categories/recurring, report dimensions, mismatched header (`test_isolation_matrix_i1.py`).
 
+**Stage 23 G1 (2026-08-10):** Commercial MVP gate closure — readiness honesty flips for isolation, lifecycle, expenses, accounting, tax, reports (`test_mvp_gate_closure_g1.py`); Remaining deferred-only (ADR-001/002, Open Banking, e-file, FIFO/LIFO/WA).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -768,7 +770,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 23 open (`docs/STAGE_23_PLAN.md`, ADR-051) — F1–C1–I1 complete; G1 next. Stages 1–22 remain frozen for their scopes.
+**Active delivery plan:** Stage 23 open (`docs/STAGE_23_PLAN.md`, ADR-051) — F1–C1–I1–G1 complete; B1 next. Stages 1–22 remain frozen for their scopes.
 
 ### 6.2 Features
 

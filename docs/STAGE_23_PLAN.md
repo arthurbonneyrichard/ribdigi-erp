@@ -40,7 +40,7 @@ Fidelity closeout
 | **F1** | Balance sheet + financial dimension filters (BR-14.5) | P0 | COMPLETE |
 | **C1** | Financial comparative fidelity (P&L / cash-flow / BS) | P0 | COMPLETE |
 | **I1** | Isolation matrix residual coverage | P1 | COMPLETE |
-| **G1** | Commercial MVP gate closure (readiness honesty) | P1 | PENDING |
+| **G1** | Commercial MVP gate closure (readiness honesty) | P1 | COMPLETE |
 | **B1** | Logical DR drill automation evidence | P1 | PENDING |
 | **D1** | Spec / BR-14 / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
 | **H23x** | Stage 23 exit criteria + freeze ADR | Exit | PENDING |
@@ -85,10 +85,18 @@ Fidelity closeout
 - [x] Automated proof: `backend/tests/test_isolation_matrix_i1.py`.
 - [x] PRODUCTION_READINESS / SECURITY_GUIDE / launch synced (schema-per-tenant remains deferred ADR-001).
 
-## G1–H23x acceptance criteria
+## G1 acceptance criteria
+
+- [x] Cross-tenant isolation + tenant lifecycle gates marked Complete (MVP) with Remaining limited to ADR-001 / ADR-002 / WYSIWYG.
+- [x] Expenses / Accounting / Tax / Reports gates marked Complete (MVP); Remaining only Open Banking, tax e-file, extra jurisdictions / FIFO-LIFO-WA.
+- [x] No fake-complete of still-Partial inventory/sales/purchasing/POS/multi-store or ops WAL/PITR/monitoring/K8s/load/DR drill.
+- [x] Automated proof: `backend/tests/test_mvp_gate_closure_g1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan synced (Stage 23 G1).
+
+## B1–H23x acceptance criteria
 
 Filled when each workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-051 open. F1–C1–I1 complete; G1 next. Stages 1–22 remain frozen for their scopes.
+Plan authored; ADR-051 open. F1–C1–I1–G1 complete; B1 next. Stages 1–22 remain frozen for their scopes.

@@ -311,6 +311,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Cross-Tenant Prevention** | Foreign-id and mismatched-header proofs in isolation matrix |
 | **Launch smoke coverage** | Stage 18 S1 extends matrix for API keys, webhooks, OCR-apply, stock counts, warehouse transfers, quotations/orders, product warehouse-stock (`test_isolation_matrix_s1.py`; base `test_tenant_isolation_matrix.py`) |
 | **Finance/report residual** | Stage 23 I1 extends matrix for liquid accounts/transfers, expense categories/recurring, branch + report dimension filters, mismatched header on financial reports (`test_isolation_matrix_i1.py`) |
+| **MVP gate honesty** | Stage 23 G1 marks shared-schema isolation Complete for MVP; schema-per-tenant remains deferred (ADR-001); evidence `test_mvp_gate_closure_g1.py` |
 
 ### 7.3 Tenant Lifecycle Security
 
