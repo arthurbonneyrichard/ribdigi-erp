@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -16,6 +16,7 @@ TRANSFER_SUBMITTABLE = {"draft"}
 TRANSFER_SHIPPABLE = {"requested", "draft"}
 TRANSFER_RECEIVABLE = {"in_transit"}
 TRANSFER_CANCELLABLE = {"draft", "requested", "in_transit"}
+TRANSFER_HISTORY_SCOPES = frozenset({"all", "inter_store", "warehouse"})
 
 
 async def next_transfer_number(db: AsyncSession, tenant_id: str) -> str:
@@ -549,6 +550,101 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
             }
             for i in items
         ],
+    }
+
+
+async def list_transfers_filtered(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    store_id: str | None = None,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    scope: str = "all",
+    limit: int = 100,
+) -> list[m.StockTransfer]:
+    """Filtered stock transfer list (inter-store + warehouse) for ops and reports."""
+    scope_key = (scope or "all").strip().lower()
+    if scope_key not in TRANSFER_HISTORY_SCOPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"scope must be one of: {sorted(TRANSFER_HISTORY_SCOPES)}",
+        )
+    lim = max(1, min(int(limit or 100), 500))
+    stmt = select(m.StockTransfer).where(m.StockTransfer.tenant_id == tenant_id)
+    if status:
+        stmt = stmt.where(m.StockTransfer.status == status.strip().lower())
+    if store_id:
+        stmt = stmt.where(
+            or_(
+                m.StockTransfer.from_store_id == store_id,
+                m.StockTransfer.to_store_id == store_id,
+            )
+        )
+    if from_date:
+        stmt = stmt.where(m.StockTransfer.created_at >= from_date)
+    if to_date:
+        stmt = stmt.where(m.StockTransfer.created_at <= to_date)
+    if scope_key == "inter_store":
+        stmt = stmt.where(
+            m.StockTransfer.from_store_id.is_not(None),
+            m.StockTransfer.to_store_id.is_not(None),
+        )
+    elif scope_key == "warehouse":
+        stmt = stmt.where(
+            or_(
+                m.StockTransfer.from_store_id.is_(None),
+                m.StockTransfer.to_store_id.is_(None),
+            )
+        )
+    stmt = stmt.order_by(m.StockTransfer.created_at.desc()).limit(lim)
+    return list((await db.execute(stmt)).scalars().all())
+
+
+async def transfer_history(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    store_id: str | None = None,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    scope: str = "all",
+    limit: int = 200,
+) -> dict:
+    """Consolidated transfer history report (BR-13.2) — Stage 16 M2."""
+    rows = await list_transfers_filtered(
+        db,
+        tenant_id,
+        status=status,
+        store_id=store_id,
+        from_date=from_date,
+        to_date=to_date,
+        scope=scope,
+        limit=limit,
+    )
+    transfers = [await serialize_transfer(db, t) for t in rows]
+    by_status: dict[str, int] = {}
+    qty_requested = 0.0
+    qty_shipped = 0.0
+    qty_received = 0.0
+    for t in transfers:
+        by_status[t["status"]] = by_status.get(t["status"], 0) + 1
+        for item in t.get("items") or []:
+            qty_requested += float(item.get("quantity") or 0)
+            qty_shipped += float(item.get("shipped_qty") or 0)
+            qty_received += float(item.get("received_qty") or 0)
+    return {
+        "scope": (scope or "all").strip().lower(),
+        "status": status,
+        "store_id": store_id,
+        "count": len(transfers),
+        "by_status": by_status,
+        "total_qty_requested": round(qty_requested, 3),
+        "total_qty_shipped": round(qty_shipped, 3),
+        "total_qty_received": round(qty_received, 3),
+        "transfers": transfers,
     }
 
 

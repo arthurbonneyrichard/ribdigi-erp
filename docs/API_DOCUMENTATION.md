@@ -1129,6 +1129,12 @@ Government templates are **manual filing workbooks only** — they do not e-file
 
 Packages existing `/credit/aging` into the Reports export surface (no parallel Credit engine). Default `kind=receivable`. Reports UI Credit tab links to `/credit`.
 
+### 12.4 Transfer history export (Stage 16 M2)
+**Report:** `GET /reports/transfers`  
+**Export:** `GET /reports/export?report_type=transfer_history&format=csv|xlsx|pdf&status=&store_id=&scope=all|inter_store|warehouse&from_date=&to_date=&limit=`  
+
+Consolidated inter-store + warehouse transfer history (same `StockTransfer` records as `/stores/transfers`). Reports UI **Transfers** tab.
+
 ---
 
 ## 13. Multi-Store Management
@@ -1165,13 +1171,15 @@ Returns store metadata, aggregated `summary` (invoice/POS counts and revenue), a
 Global UI store context (Shell switcher) is client-side only (`localStorage` key `selected_store_id`); it does not send a store header to the API.
 
 ### 13.4 Inter-Store Transfers
-**List:** `GET /stores/transfers`  
+**List:** `GET /stores/transfers` — optional filters: `status`, `store_id` (from or to), `from_date`, `to_date`, `scope=all|inter_store|warehouse`, `limit` (Stage 16 M2)  
 **Create:** `POST /stores/transfers`  
 **Get:** `GET /stores/transfers/{transfer_id}`  
 **Submit:** `POST /stores/transfers/{transfer_id}/submit`  
 **Ship:** `POST /stores/transfers/{transfer_id}/ship`  
 **Receive:** `POST /stores/transfers/{transfer_id}/receive`  
 **Cancel:** `POST /stores/transfers/{transfer_id}/cancel`
+
+**Transfer history report (Stage 16 M2):** `GET /reports/transfers?status=&store_id=&from_date=&to_date=&scope=all|inter_store|warehouse&limit=` — consolidated counts/`by_status`/qty totals + serialized transfers. Export: `report_type=transfer_history` via `/reports/export`. Reports UI **Transfers** tab.
 
 Status flow: `draft` → `requested` → `in_transit` → `received` (or `cancelled`).
 

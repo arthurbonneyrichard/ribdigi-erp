@@ -992,7 +992,20 @@ Stage 16 R2 surfaces Credit and Tax inside **Reports** without a second engine:
 
 Use Reports for a quick aging or tax snapshot/export; open the Credit or Tax module for payments, statements, rate setup, and jurisdiction filing workbooks.
 
-### 12.8 Scheduling Reports
+### 12.8 Transfer history (Stage 16 M2)
+
+**Reports → Transfers** shows consolidated stock transfer history (inter-store and warehouse scopes) from the same transfer records used in Stores / Inventory:
+
+| Control | Purpose |
+|---------|---------|
+| Date range / store | Narrow history |
+| Scope | `all`, `inter_store`, or `warehouse` |
+| Status | Draft → received / cancelled |
+| Export | CSV / Excel / PDF (`transfer_history`) |
+
+Open **Stores** for create / ship / receive actions.
+
+### 12.9 Scheduling Reports
 
 1. Generate any report
 2. Click **Schedule**

@@ -8491,6 +8491,9 @@ async def reports_export(
     category_id: str | None = None,
     jurisdiction: str | None = None,
     kind: str | None = None,
+    status: str | None = None,
+    scope: str | None = None,
+    limit: int | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8510,6 +8513,9 @@ async def reports_export(
         category_id=category_id,
         jurisdiction=jurisdiction,
         kind=kind,
+        status=status,
+        scope=scope,
+        limit=limit,
     )
     return Response(
         content=content,
@@ -8778,6 +8784,32 @@ async def report_low_stock(
     return env(
         await reports_svc.inventory_low_stock(
             db, claims["tenant_id"], store_id=store_id, warehouse_id=warehouse_id
+        )
+    )
+
+
+@api.get("/reports/transfers")
+async def report_transfer_history(
+    status: str | None = None,
+    store_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    scope: str = "all",
+    limit: int = 200,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 16 M2 — consolidated stock transfer history (inter-store + warehouse)."""
+    return env(
+        await stores_svc.transfer_history(
+            db,
+            claims["tenant_id"],
+            status=status,
+            store_id=store_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            scope=scope,
+            limit=limit,
         )
     )
 
@@ -9689,17 +9721,25 @@ async def update_inventory_settings(
 
 @api.get("/stores/transfers")
 async def list_transfers(
+    status: str | None = None,
+    store_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    scope: str = "all",
+    limit: int = 100,
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.StockTransfer)
-            .where(m.StockTransfer.tenant_id == claims["tenant_id"])
-            .order_by(m.StockTransfer.created_at.desc())
-            .limit(100)
-        )
-    ).scalars().all()
+    rows = await stores_svc.list_transfers_filtered(
+        db,
+        claims["tenant_id"],
+        status=status,
+        store_id=store_id,
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        scope=scope,
+        limit=limit,
+    )
     return env([await stores_svc.serialize_transfer(db, t) for t in rows])
 
 
@@ -9896,16 +9936,25 @@ async def update_warehouse(
 
 @api.get("/inventory/stock-transfers")
 async def list_inventory_stock_transfers(
+    status: str | None = None,
+    store_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    scope: str = "all",
+    limit: int = 200,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.StockTransfer)
-            .where(m.StockTransfer.tenant_id == claims["tenant_id"])
-            .order_by(m.StockTransfer.created_at.desc())
-        )
-    ).scalars().all()
+    rows = await stores_svc.list_transfers_filtered(
+        db,
+        claims["tenant_id"],
+        status=status,
+        store_id=store_id,
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        scope=scope,
+        limit=limit,
+    )
     return env([await stores_svc.serialize_transfer(db, row) for row in rows])
 
 

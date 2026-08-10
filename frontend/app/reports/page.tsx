@@ -21,6 +21,7 @@ type Tab =
   | 'balancesheet'
   | 'credit'
   | 'tax'
+  | 'transfers'
   | 'schedules';
 const REPORT_TABS: Tab[] = [
   'summary',
@@ -36,6 +37,7 @@ const REPORT_TABS: Tab[] = [
   'balancesheet',
   'credit',
   'tax',
+  'transfers',
   'schedules',
 ];
 
@@ -53,6 +55,7 @@ const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   balancesheet: 'balance_sheet',
   credit: 'credit_aging',
   tax: 'tax',
+  transfers: 'transfer_history',
 };
 
 const REPORT_TYPES = [
@@ -79,6 +82,7 @@ const REPORT_TYPES = [
   'tax_filing_gh',
   'tax_filing_ke',
   'tax_filing_ng',
+  'transfer_history',
 ];
 
 export default function Page() {
@@ -87,6 +91,8 @@ export default function Page() {
   const [toDate, setToDate] = useState('');
   const [storeId, setStoreId] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [transferScope, setTransferScope] = useState('all');
+  const [transferStatus, setTransferStatus] = useState('');
   const [stores, setStores] = useState<{ id: string; code: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<any>(null);
@@ -168,6 +174,17 @@ export default function Page() {
         setData({ tax: taxReport.data, filing: filing.data });
         return;
       }
+      if (nextTab === 'transfers') {
+        const r = await api(
+          `/reports/transfers${qs({
+            store_id: storeId,
+            scope: transferScope,
+            status: transferStatus,
+          })}`
+        );
+        setData(r.data);
+        return;
+      }
       const r = await api(path);
       if (nextTab === 'sales') {
         const [daily, monthly] = await Promise.all([
@@ -233,6 +250,10 @@ export default function Page() {
       if (toDate) params.set('as_of_date', toDate);
       if (storeId) params.set('store_id', storeId);
       if (categoryId) params.set('category_id', categoryId);
+      if (tab === 'transfers') {
+        if (transferScope) params.set('scope', transferScope);
+        if (transferStatus) params.set('status', transferStatus);
+      }
       Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
@@ -325,7 +346,8 @@ export default function Page() {
     <Shell>
       <h1>Reports & Analytics</h1>
       <p className="muted">
-        Sales, inventory, purchases, expenses, financials, credit aging, and tax — plus email schedules
+        Sales, inventory, purchases, expenses, financials, credit, tax, and transfer history — plus email
+        schedules
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -346,6 +368,7 @@ export default function Page() {
             ['balancesheet', 'Balance sheet'],
             ['credit', 'Credit'],
             ['tax', 'Tax'],
+            ['transfers', 'Transfers'],
             ['schedules', 'Email schedules'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
@@ -359,7 +382,7 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        {(tab === 'sales' || tab === 'inventory') && (
+        {(tab === 'sales' || tab === 'inventory' || tab === 'transfers') && (
           <select value={storeId} onChange={(e) => setStoreId(e.target.value)} aria-label="Store filter">
             <option value="">All stores</option>
             {stores.map((s) => (
@@ -368,6 +391,31 @@ export default function Page() {
               </option>
             ))}
           </select>
+        )}
+        {tab === 'transfers' && (
+          <>
+            <select
+              value={transferScope}
+              onChange={(e) => setTransferScope(e.target.value)}
+              aria-label="Transfer scope"
+            >
+              <option value="all">All scopes</option>
+              <option value="inter_store">Inter-store</option>
+              <option value="warehouse">Warehouse</option>
+            </select>
+            <select
+              value={transferStatus}
+              onChange={(e) => setTransferStatus(e.target.value)}
+              aria-label="Transfer status"
+            >
+              <option value="">Any status</option>
+              <option value="draft">Draft</option>
+              <option value="requested">Requested</option>
+              <option value="in_transit">In transit</option>
+              <option value="received">Received</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </>
         )}
         {tab === 'sales' && (
           <select
@@ -422,6 +470,9 @@ export default function Page() {
             <button onClick={() => download('xlsx', 'tax')}>Tax Excel</button>
             <button onClick={() => download('xlsx', 'tax_filing')}>Filing pack Excel</button>
           </>
+        )}
+        {tab === 'transfers' && (
+          <button onClick={() => download('xlsx', 'transfer_history')}>Transfers Excel</button>
         )}
       </div>
       )}
@@ -1079,6 +1130,54 @@ export default function Page() {
                   <td>{b.box}</td>
                   <td>{b.label}</td>
                   <td>{b.amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'transfers' && data && (
+        <>
+          <p className="muted">
+            Consolidated transfer history for inter-store and warehouse moves (BR-13.2).{' '}
+            <a href="/stores">Open Stores →</a>
+          </p>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Transfers</div>
+              <div className="kpi">{data.count ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Qty requested</div>
+              <div className="kpi">{data.total_qty_requested ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Qty received</div>
+              <div className="kpi">{data.total_qty_received ?? 0}</div>
+            </div>
+          </div>
+          <h3 style={{ marginTop: 16 }}>Transfer history</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Status</th>
+                <th>From store</th>
+                <th>To store</th>
+                <th>Items</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.transfers || []).map((t: any) => (
+                <tr key={t.id}>
+                  <td>{t.transfer_number}</td>
+                  <td>{t.status}</td>
+                  <td>{t.from_store_id || '—'}</td>
+                  <td>{t.to_store_id || '—'}</td>
+                  <td>{(t.items || []).length}</td>
+                  <td>{t.created_at ? String(t.created_at).slice(0, 19) : '—'}</td>
                 </tr>
               ))}
             </tbody>

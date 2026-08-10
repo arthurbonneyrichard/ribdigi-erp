@@ -45,6 +45,7 @@ EXPORTABLE = frozenset(
         "tax_filing_gh",
         "tax_filing_ke",
         "tax_filing_ng",
+        "transfer_history",
     }
 )
 
@@ -495,6 +496,52 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         title = titles.get(report_type, "Government VAT Return")
         return rows or [{"note": "no rows"}], lines, title
 
+    if report_type == "transfer_history":
+        transfers = payload.get("transfers") or []
+        rows = []
+        for t in transfers:
+            items = t.get("items") or []
+            rows.append(
+                {
+                    "id": t.get("id"),
+                    "transfer_number": t.get("transfer_number"),
+                    "from_store_id": t.get("from_store_id"),
+                    "to_store_id": t.get("to_store_id"),
+                    "from_warehouse_id": t.get("from_warehouse_id"),
+                    "to_warehouse_id": t.get("to_warehouse_id"),
+                    "status": t.get("status"),
+                    "notes": t.get("notes"),
+                    "created_by": t.get("created_by"),
+                    "created_at": t.get("created_at"),
+                    "shipped_at": t.get("shipped_at"),
+                    "received_at": t.get("received_at"),
+                    "item_count": len(items),
+                    "qty_requested": sum(float(i.get("quantity") or 0) for i in items),
+                    "qty_shipped": sum(float(i.get("shipped_qty") or 0) for i in items),
+                    "qty_received": sum(float(i.get("received_qty") or 0) for i in items),
+                }
+            )
+        summary = {
+            k: payload.get(k)
+            for k in (
+                "scope",
+                "status",
+                "store_id",
+                "count",
+                "total_qty_requested",
+                "total_qty_shipped",
+                "total_qty_received",
+            )
+            if k in payload
+        }
+        by_status = payload.get("by_status") or {}
+        lines = _kv_lines(summary) + [f"status {k}: {v}" for k, v in by_status.items()]
+        lines += [
+            f"{r.get('transfer_number')}: {r.get('status')} qty={r.get('qty_requested')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no transfers"}], lines, "Transfer History"
+
     raise HTTPException(status_code=400, detail=f"Unsupported report type: {report_type}")
 
 
@@ -527,6 +574,9 @@ async def build_report_payload(
     category_id: str | None = None,
     jurisdiction: str | None = None,
     kind: str | None = None,
+    status: str | None = None,
+    scope: str | None = None,
+    limit: int | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -641,6 +691,19 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             jurisdiction=jurisdiction or "NG",
+        )
+    if report_type == "transfer_history":
+        from app import stores as stores_svc
+
+        return await stores_svc.transfer_history(
+            db,
+            tenant_id,
+            status=status,
+            store_id=store_id,
+            from_date=fd,
+            to_date=td,
+            scope=scope or "all",
+            limit=int(limit or 200),
         )
     raise HTTPException(status_code=400, detail="Unhandled report type")
 

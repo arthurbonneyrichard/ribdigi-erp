@@ -733,7 +733,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Approval workflow (source store manager → destination store manager)
   - [ ] Track transfer status: Draft, Requested, In Transit, Received, Cancelled
   - [ ] Auto-update inventory at both stores on receipt confirmation
-  - [ ] Transfer history and reporting
+  - [x] Transfer history and reporting — Stage 16 M2 (`GET /reports/transfers`, list filters on `/stores/transfers` + `/inventory/stock-transfers`, export `transfer_history`, Reports → Transfers)
 
 ---
 

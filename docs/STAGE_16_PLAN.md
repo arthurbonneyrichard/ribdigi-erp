@@ -51,7 +51,7 @@ Notifications
 | **N1** | Notification emission proof matrix (low stock, sales, credit, operational) | P0 | COMPLETE |
 | **R1** | Reports suite fidelity (Sales / Inventory / Low Stock / Purchasing / Expenses / Financial / Store Performance) | P0 | COMPLETE |
 | **R2** | Credit + Tax report packaging fidelity (Reports outline ↔ existing APIs/UI) | P1 | COMPLETE |
-| **M2** | Transfer history / consolidated multi-store ops reporting | P1 | PENDING |
+| **M2** | Transfer history / consolidated multi-store ops reporting | P1 | COMPLETE |
 | **N2** | Channel delivery hardening (email/SMS prefs for key categories) | P1 | PENDING |
 | **D1** | Spec / BR-13–15 / readiness fidelity sync | P2 | PENDING |
 | **H16x** | Stage 16 exit criteria + freeze ADR | Exit | PENDING |
@@ -93,8 +93,8 @@ Notifications
 
 ## M2 acceptance criteria
 
-- [ ] Transfer history / consolidated ops view or report/export from existing inter-store (and optionally warehouse) transfers — not multi-bin.
-- [ ] Automated proof for list/filter/export path chosen.
+- [x] Transfer history / consolidated ops view or report/export from existing inter-store (and optionally warehouse) transfers — not multi-bin.
+- [x] Automated proof for list/filter/export path chosen: `backend/tests/test_transfer_history_m2.py` (`GET /stores/transfers` filters, `GET /reports/transfers`, export `transfer_history`, Reports → Transfers tab).
 
 ## N2 acceptance criteria
 
@@ -112,4 +112,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-M1–R2 complete. Pending M2 → … → H16x.
+M1–M2 complete. Pending N2 → D1 → H16x.
