@@ -43,3 +43,7 @@ BR-5–21 largely already have Stage 11–20 evidence. Remaining commercial-MVP 
 - Agents may implement Stage 21 plan items without reopening Stage 1–20 feature scope.
 - Stage 21 exit requires `docs/STAGE_21_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
 - Shared-schema + `tenant_id` isolation (ADR-001) remains the MVP isolation model; BR-1.4 “separate schemas/databases” stays deferred.
+
+## Amendment (2026-08-10)
+
+Stage 21 exit criteria met and scope frozen — see [STAGE_21_EXIT_CRITERIA.md](STAGE_21_EXIT_CRITERIA.md) and [ADR-048](ADR_048_STAGE21_FREEZE.md). This open ADR is historical; Stage 21 feature delivery is closed under ADR-048.

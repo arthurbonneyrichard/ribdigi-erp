@@ -30,12 +30,13 @@ def test_stage21_fidelity_note_and_plan():
 
     plan = _read("docs/STAGE_21_PLAN.md")
     assert "STAGE_21_FIDELITY.md" in plan
-    for ws in ("T1", "I1", "O1", "C1", "U1", "V1", "N1", "D1"):
+    for ws in ("T1", "I1", "O1", "C1", "U1", "V1", "N1", "D1", "H21x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}**" in ln][0]
         assert "COMPLETE" in line, ws
-    h21 = [ln for ln in plan.splitlines() if "| **H21x**" in ln][0]
-    assert "PENDING" in h21
     assert "ADR-047" in plan or "ADR_047" in plan
+    assert "ADR-048" in plan or "ADR_048" in plan or "Closed" in plan
+    assert "STAGE_21_EXIT_CRITERIA.md" in plan
+    assert "test_stage21_exit_h21x.py" in fidelity or "ADR-048" in fidelity or "ADR_048" in fidelity
 
 
 def test_stage21_br_1_to_4_checkboxes_synced():

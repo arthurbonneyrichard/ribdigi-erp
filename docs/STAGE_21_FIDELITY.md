@@ -1,8 +1,9 @@
 # Stage 21 Fidelity Notes — Tenant Lifecycle, Org & Dashboard
 
-**Status:** Closed with Stage 21 D1; exit pending (H21x)  
+**Status:** Closed with Stage 21 D1; exit met (H21x / ADR-048)  
 **Surface:** Tenant lifecycle → Org & administration → Identity shell → Executive dashboard  
-**Open ADR:** [ADR-047](ADR_047_STAGE21_OPEN.md)  
+**Open ADR (historical):** [ADR-047](ADR_047_STAGE21_OPEN.md)  
+**Exit:** [STAGE_21_EXIT_CRITERIA.md](STAGE_21_EXIT_CRITERIA.md) · [ADR-048](ADR_048_STAGE21_FREEZE.md)  
 **Plan:** [STAGE_21_PLAN.md](STAGE_21_PLAN.md)
 
 Stage 21 proves commercial-MVP foundation fidelity (BR-1–4) on existing Stage 1 / 18 / 19 tenant, org, users, dashboard, and notification engines — **not** paid billing (ADR-002), schema-per-tenant (ADR-001), i18n packs (ADR-006), user↔store membership (ADR-005), hard-delete archival (ADR-003), Kubernetes/Helm, Grafana/PagerDuty, WAL/S3 PITR, PgBouncer, certified 1000-VU, vendor pen test, WebSocket realtime, Open Banking, tax e-file, richer WYSIWYG designer, or reopening Stages 1–20.
@@ -33,7 +34,7 @@ Stage 21 proves commercial-MVP foundation fidelity (BR-1–4) on existing Stage 
 | **V1** | `test_dashboard_kpis_v1.py` — KPI cards, DoD/MoM, low/OOS/expiring, recent/top/charts | BR-4.1–4.3 | — |
 | **N1** | `test_dashboard_notifications_n1.py` — unread, groups, mark read/unread, 90-day history | BR-4.4 | WebSocket realtime |
 | **D1** | This note + `test_stage21_fidelity_d1.py` | BR-1–4 + tenancy readiness + USER_MANUAL / API / launch §§1–2 | — |
-| **H21x** | Exit criteria + freeze ADR (not yet) | Stage 21 exit + freeze | Create at close |
+| **H21x** | `STAGE_21_EXIT_CRITERIA.md`; ADR-048; `test_stage21_exit_h21x.py` | Stage 21 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -45,6 +46,7 @@ Stage 21 proves commercial-MVP foundation fidelity (BR-1–4) on existing Stage 
 - `backend/tests/test_dashboard_kpis_v1.py`
 - `backend/tests/test_dashboard_notifications_n1.py`
 - `backend/tests/test_stage21_fidelity_d1.py`
+- `backend/tests/test_stage21_exit_h21x.py`
 
 ## Spec sync targets
 
@@ -54,7 +56,8 @@ Stage 21 proves commercial-MVP foundation fidelity (BR-1–4) on existing Stage 
 - `PRODUCTION_READINESS.md` — Platform & tenancy + identity/dashboard/notifications
 - `docs/DEVELOPMENT_ROADMAP.md` — Stage 21 D1
 - `docs/LAUNCH_CHECKLIST.md` — §§1–2 operator rows + T1–N1 / D1 evidence
-- `docs/STAGE_21_PLAN.md` — D1 COMPLETE; H21x pending
+- `docs/STAGE_21_PLAN.md` — Closed (H21x / ADR-048)
+- `docs/STAGE_21_EXIT_CRITERIA.md` · `docs/ADR_048_STAGE21_FREEZE.md`
 - `docs/ADR_047_STAGE21_OPEN.md`
 
 ## Deferred (not Stage 21)

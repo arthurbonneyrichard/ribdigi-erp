@@ -170,7 +170,9 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 21 open (2026-08-10):** Tenant Lifecycle, Org & Dashboard Fidelity track approved — `docs/ADR_047_STAGE21_OPEN.md` + `docs/STAGE_21_PLAN.md` (tenant lifecycle → org/admin → identity shell → executive dashboard).
 
-**Stage 21 D1 (2026-08-10):** Spec / BR-1–4 / readiness / USER_MANUAL / API / launch §§1–2 fidelity sync — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`). H21x exit pending.
+**Stage 21 D1 (2026-08-10):** Spec / BR-1–4 / readiness / USER_MANUAL / API / launch §§1–2 fidelity sync — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`).
+
+**Stage 21 exit (2026-08-10):** T1, I1, O1, C1, U1, V1, N1, D1, H21x met — `docs/STAGE_21_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_048_STAGE21_FREEZE.md`. Fidelity: `docs/STAGE_21_FIDELITY.md`.
 
 ### 2.2 Features
 
@@ -752,7 +754,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 21 open (`docs/STAGE_21_PLAN.md`, ADR-047); D1 fidelity `docs/STAGE_21_FIDELITY.md`; H21x pending. Stages 1–20 remain frozen for their scopes.
+**Active delivery plan:** Stage 21 closed (`docs/STAGE_21_EXIT_CRITERIA.md`, ADR-048). Stages 1–21 remain frozen for their scopes until a new track is opened via CONTINUE/NEXT + open ADR.
 
 ### 6.2 Features
 
