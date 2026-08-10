@@ -1,9 +1,10 @@
 # Stage 16 Plan — Multi-Store / Reports / Notifications Fidelity
 
-**Status:** Open  
+**Status:** Closed — exit met (H16x / ADR-038)  
 **Base:** Multi-Store → Reports → Notifications  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-037](ADR_037_STAGE16_OPEN.md)
+**Open ADR (historical):** [ADR-037](ADR_037_STAGE16_OPEN.md)  
+**Exit:** [STAGE_16_EXIT_CRITERIA.md](STAGE_16_EXIT_CRITERIA.md) · [ADR-038](ADR_038_STAGE16_FREEZE.md) · [STAGE_16_FIDELITY.md](STAGE_16_FIDELITY.md)
 
 Stage 16 closes commercial-MVP fidelity on the Multi-Store / Reports / Notifications surface after Stage 15 freeze. Engines already exist (Stages 1–4 / 9 / 14). This track proves transfer→stock chains, notification emission coverage, report suite alignment to BR-13–15 and the product outline, and docs sync — **not** multi-bin, WebSocket push, FIFO/LIFO, or greenfield Multi-Store.
 
@@ -54,7 +55,7 @@ Notifications
 | **M2** | Transfer history / consolidated multi-store ops reporting | P1 | COMPLETE |
 | **N2** | Channel delivery hardening (email/SMS prefs for key categories) | P1 | COMPLETE |
 | **D1** | Spec / BR-13–15 / readiness fidelity sync | P2 | COMPLETE |
-| **H16x** | Stage 16 exit criteria + freeze ADR | Exit | PENDING |
+| **H16x** | Stage 16 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -108,8 +109,10 @@ Notifications
 
 ## H16x acceptance criteria
 
-See workstream table; filled when exit workstream starts.
+- [x] `docs/STAGE_16_EXIT_CRITERIA.md` lists M1–N2, D1, H16x COMPLETE with evidence tests and deferred scope.
+- [x] Freeze ADR accepted: `docs/ADR_038_STAGE16_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage16_exit_h16x.py`.
 
 ## Sign-off
 
-M1–D1 complete. Pending H16x.
+Stage 16 exit **met**. Scope frozen under ADR-038. Stages 1–15 remain frozen for their scopes. Next delivery track requires an explicit open ADR.

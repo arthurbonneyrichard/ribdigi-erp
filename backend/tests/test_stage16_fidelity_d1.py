@@ -23,17 +23,21 @@ def test_stage16_fidelity_note_and_plan():
     assert "test_transfer_history_m2.py" in fidelity
     assert "test_notification_channel_delivery_n2.py" in fidelity
     assert "test_stage16_fidelity_d1.py" in fidelity
+    assert "test_stage16_exit_h16x.py" in fidelity or "H16x" in fidelity
+    assert "ADR-038" in fidelity or "exit met" in fidelity.lower()
     assert "ADR-005" in fidelity or "multi-bin" in fidelity.lower()
     assert "WebSocket" in fidelity
 
     plan = _read("docs/STAGE_16_PLAN.md")
     assert "| **D1**" in plan and "COMPLETE" in plan
     assert "STAGE_16_FIDELITY.md" in plan
-    for ws in ("M1", "N1", "R1", "R2", "M2", "N2", "D1"):
+    for ws in ("M1", "N1", "R1", "R2", "M2", "N2", "D1", "H16x"):
         assert f"| **{ws}**" in plan
     assert "COMPLETE" in plan
-    assert "| **H16x**" in plan and "PENDING" in plan
-    assert "Pending H16x" in plan or "pending H16x" in plan.lower()
+    assert "| **H16x**" in plan and "COMPLETE" in plan
+    assert "Closed" in plan or "exit met" in plan.lower() or "ADR-038" in plan
+    assert "STAGE_16_EXIT_CRITERIA.md" in plan
+    assert "ADR-038" in plan or "ADR_038" in plan
 
 
 def test_stage16_br_checkboxes_synced():
@@ -93,6 +97,7 @@ def test_stage16_readiness_and_roadmap():
     assert "test_multistore_transfer_chain_m1.py" in pr
     assert "test_notification_channel_delivery_n2.py" in pr
     assert "N2/D1/H16x" not in pr  # N2 no longer listed as remaining open fidelity WS
+    assert "STAGE_16_EXIT_CRITERIA.md" in pr or "ADR-038" in pr or "ADR_038" in pr
     assert "H16x" in pr
 
     roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
@@ -100,3 +105,6 @@ def test_stage16_readiness_and_roadmap():
     assert "Stage 16 D1" in roadmap
     assert "ADR_037_STAGE16_OPEN.md" in roadmap
     assert "STAGE_16_PLAN.md" in roadmap
+    assert "STAGE_16_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_038_STAGE16_FREEZE.md" in roadmap
+    assert "Stage 16 exit" in roadmap

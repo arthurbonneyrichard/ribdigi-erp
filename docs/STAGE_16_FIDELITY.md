@@ -1,8 +1,9 @@
 # Stage 16 Fidelity Notes — Multi-Store / Reports / Notifications
 
-**Status:** Closed with Stage 16 D1; exit pending H16x  
+**Status:** Closed with Stage 16 D1; exit met (H16x / ADR-038)  
 **Surface:** Multi-Store → Reports → Notifications  
-**Open ADR:** [ADR-037](ADR_037_STAGE16_OPEN.md)  
+**Open ADR (historical):** [ADR-037](ADR_037_STAGE16_OPEN.md)  
+**Exit:** [STAGE_16_EXIT_CRITERIA.md](STAGE_16_EXIT_CRITERIA.md) · [ADR-038](ADR_038_STAGE16_FREEZE.md)  
 **Plan:** [STAGE_16_PLAN.md](STAGE_16_PLAN.md)
 
 Stage 16 proves commercial-MVP fidelity on an existing Multi-Store / Reports / Notifications surface — transfer→stock chains, notification emission + channels, report suite alignment to BR-13–15 — **not** multi-bin, WebSocket push, FIFO/LIFO, or ADR-005 user↔store membership.
@@ -31,7 +32,8 @@ Stage 16 proves commercial-MVP fidelity on an existing Multi-Store / Reports / N
 | **R2** | `test_credit_tax_reports_r2.py` — Reports Credit/Tax tabs; export `credit_aging` / `tax*` | Outline Credit/Tax packaging | Tax e-file portals |
 | **M2** | `test_transfer_history_m2.py` — filters; `GET /reports/transfers`; export `transfer_history`; Reports → Transfers | BR-13.2 history | — |
 | **N2** | `test_notification_channel_delivery_n2.py` — prefs; console email/SMS attempts; pref-off skip | BR-15.2 | No fake carrier `delivered` |
-| **D1** | This note + `test_stage16_fidelity_d1.py` | BR-13/14/15 + API + readiness + USER_MANUAL | **H16x** freeze |
+| **D1** | This note + `test_stage16_fidelity_d1.py` | BR-13/14/15 + API + readiness + USER_MANUAL | — |
+| **H16x** | `STAGE_16_EXIT_CRITERIA.md`; ADR-038; `test_stage16_exit_h16x.py` | Stage 16 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -45,6 +47,7 @@ Stage 16 proves commercial-MVP fidelity on an existing Multi-Store / Reports / N
 - `backend/tests/test_store_sales_context_m1.py` (Stage 4 M1)
 - `backend/tests/test_expense_approval_notify.py` (BR-15.1 expense approval)
 - `backend/tests/test_stage16_fidelity_d1.py`
+- `backend/tests/test_stage16_exit_h16x.py`
 
 ## Spec sync targets
 
@@ -52,9 +55,10 @@ Stage 16 proves commercial-MVP fidelity on an existing Multi-Store / Reports / N
 - `docs/API_DOCUMENTATION.md` — §§13–15 (M1 chain; N2 channel delivery)
 - `PRODUCTION_READINESS.md` — multi-store / reports / notifications bullets
 - `docs/USER_MANUAL.md` — §§11–13
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 16 D1 note
-- `docs/LAUNCH_CHECKLIST.md` — M1–N2 / D1 evidence
-- `docs/STAGE_16_PLAN.md` — D1 COMPLETE
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 16 D1 / H16x notes
+- `docs/LAUNCH_CHECKLIST.md` — M1–N2 / D1 / H16x evidence
+- `docs/STAGE_16_PLAN.md` — Closed (H16x / ADR-038)
+- `docs/STAGE_16_EXIT_CRITERIA.md` · `docs/ADR_038_STAGE16_FREEZE.md`
 
 ## Deferred (not Stage 16)
 
