@@ -654,9 +654,11 @@ Store Manager reviews & approves/rejects
    - **Payee**
    - **Reference Number** (receipt number, cheque number)
    - **Description**
-   - **Branch/Department** (for multi-location tracking)
+   - **Store** and **Department** (optional org dimensions; Stage 14 E2)
 3. **Attach Receipt:** Upload photo or PDF of receipt
 4. Click **Submit**
+
+> **Category GL:** Under **Expenses → Categories**, link each category to an expense Chart of Accounts account so approvals post to the right GL (Stage 14 E1; unmapped categories use Operating Expenses `6000`).
 
 > **OCR Tip:** Attach a receipt, run **OCR suggest**, review the fields, then **Apply** (`confirm=true`). Nothing is written until you confirm (Stage 10 A1).
 
@@ -669,6 +671,8 @@ If the expense exceeds your company's approval threshold:
 3. Approver reviews and clicks **Approve** or **Reject** with comments
 4. Approved expenses are posted to accounting automatically
 
+> **Audit:** Submit / auto-approve / level-approve / final approve / reject write domain audit events (`expense_submitted`, `expense_auto_approved`, `expense_level_approved`, `expense_approved`, `expense_rejected`) — Stage 14 A3.
+
 ### 7.3 Recurring Expenses
 
 For regular payments like rent or subscriptions:
@@ -678,6 +682,7 @@ For regular payments like rent or subscriptions:
    - **Frequency:** Daily, Weekly, Monthly, Yearly
    - **Start Date** and **End Date** (optional)
    - **Amount** and **Category**
+   - **Store** / **Department** (carried into generated expenses; Stage 14 E2)
 3. System auto-generates expense entries on schedule
 4. You can skip or modify individual occurrences
 
@@ -720,7 +725,7 @@ The COA is the backbone of your accounting. RIBDIGI comes pre-loaded with an ind
 For adjustments, accruals, and corrections:
 
 1. Go to **Accounting → Ledger**
-2. Under **Manual journal**, enter description and debit/credit account codes + amount
+2. Under **Manual journal**, enter description, optional **Store**, and debit/credit account codes + amount
 3. Ensure the entry balances (system validates totals)
 4. Click **Post**
 5. In **Recent journals**, use **Upload** to attach a supporting document (PDF/image). Use **Download** / **Remove** to manage it later. Use **Unpost** only while the fiscal period is open.
@@ -779,19 +784,25 @@ For adjustments, accruals, and corrections:
 #### Profit & Loss (P&L)
 - **Go to:** Accounting → Reports → Profit & Loss
 - **Shows:** Revenue − Cost of Goods Sold = Gross Profit; Gross Profit − Expenses = Net Profit
-- **Filters:** Date range, branch, store
+- **Filters:** Date range, store (Stage 14 A1 — journals tagged with store)
 - **Export:** PDF, Excel
 
 #### Cash Flow Statement
 - **Go to:** Accounting → Reports → Cash Flow
 - **Shows:** Operating, Investing, and Financing activities
+- **Filters:** Date range, store (Stage 14 A1)
 - Identifies cash inflows and outflows
 
 #### Trial Balance
 - **Go to:** Accounting → Reports → Trial Balance
 - **Shows:** All accounts with debit and credit balances
+- **As of:** Optional date rebuilds balances from posted journals through that day (Stage 14 A2)
 - **Validation:** Total Debits must equal Total Credits
 - Used for period-end verification
+
+#### Balance Sheet
+- **Go to:** Reports → Balance Sheet
+- **As of:** Same point-in-time `as_of` semantics as trial balance (Stage 14 A2)
 
 ---
 
@@ -817,7 +828,7 @@ For adjustments, accruals, and corrections:
    - Amount
    - Date
    - Payment method
-   - Allocate to specific invoices or auto-allocate (oldest first)
+   - Allocate to a specific invoice or **Auto** (oldest first) — Credit UI picker sends the document id (Stage 14 R1)
 4. Click **Save**
 
 #### Customer Statement
@@ -850,6 +861,7 @@ For adjustments, accruals, and corrections:
    - **Type:** VAT, GST, Sales Tax
    - **Applicability:** All products or specific categories
 4. Set as **Default** if applicable
+5. **Edit** or **Deactivate** an existing rate anytime (Stage 14 T1). Deactivating clears default.
 
 ### 10.2 Tax on Transactions
 
@@ -868,7 +880,7 @@ Tax is automatically calculated on:
 
 ### 10.3 Tax Reports
 
-1. Go to **Tax** (or **Reports**) and set the period
+1. Go to **Tax** (or **Reports**) and set the period — use **month / quarter / year** presets or a custom date range (Stage 14 T1)
 2. System shows:
    - **Output Tax:** Tax collected on sales
    - **Input Tax:** Tax paid on purchases

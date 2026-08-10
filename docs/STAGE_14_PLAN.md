@@ -26,7 +26,7 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 | **T1** | Tax rate lifecycle (edit/deactivate) + report period helpers | P1 | COMPLETE |
 | **R1** | Credit UI: allocate payment to selected invoice/bill | P1 | COMPLETE |
 | **A3** | Finance domain audit closeout (expense approve/reject) | P1 | COMPLETE |
-| **D1** | Spec / BR-9/10/12 / readiness fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-9/10/12 / readiness fidelity sync | P2 | COMPLETE |
 | **H14x** | Stage 14 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -93,10 +93,15 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 - [x] Final/auto approve still yields `journal_posted` with `source_type=expense`.
 - [x] Automated proof: `backend/tests/test_expense_audit_a3.py`.
 
-## D1–H14x
+## D1 acceptance criteria
 
-See workstream table; detailed ACs filled when each workstream starts.
+- [x] BR-9/10/11/12, API §§9–12, DB, security, readiness, user manual, launch checklist aligned — `docs/STAGE_14_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage14_fidelity_d1.py`.
+
+## H14x acceptance criteria
+
+See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-E1–R1 and A3 complete. Pending D1 → H14x.
+E1–E2, A1–A3, T1, R1, D1 complete. Pending H14x.

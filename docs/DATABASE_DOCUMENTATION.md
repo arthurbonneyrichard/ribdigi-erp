@@ -888,6 +888,7 @@ CREATE TABLE expense_categories (
     tenant_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
+    account_id UUID REFERENCES accounts(id),  -- Stage 14 E1: expense GL for approve posting
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(tenant_id, name)
@@ -905,6 +906,8 @@ CREATE TABLE expenses (
     reference VARCHAR(100),
     description TEXT,
     branch_id UUID,
+    store_id UUID REFERENCES stores(id),           -- Stage 14 E2
+    department_id UUID REFERENCES departments(id), -- Stage 14 E2
     attachments JSONB,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'paid')),
     is_recurring BOOLEAN DEFAULT FALSE,
@@ -926,6 +929,8 @@ CREATE TABLE recurring_expenses (
     end_date DATE,
     next_run_date DATE,
     description TEXT,
+    store_id UUID REFERENCES stores(id),           -- Stage 14 E2
+    department_id UUID REFERENCES departments(id), -- Stage 14 E2
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -963,6 +968,7 @@ CREATE TABLE journal_entries (
     description TEXT,
     source_type VARCHAR(50),   -- e.g. manual, opening_balance, grn, expense
     source_id UUID,
+    store_id UUID REFERENCES stores(id),  -- Stage 14 A1: multi-store P&L / cash-flow filter
     total_debit DECIMAL(15,4) NOT NULL,
     total_credit DECIMAL(15,4) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'posted',  -- posted | unposted

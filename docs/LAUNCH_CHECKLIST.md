@@ -47,6 +47,13 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] POS sale with stock deduction + receipt (Stage 12 C2: `test_pos_chain_c2.py`)
 - [x] POS insufficient-stock sale leaves no orphans (Stage 13 H1: `test_pos_sale_atomicity_h1.py`)
 - [x] POS multi-tender + receipt send + cash-portion drawer + close (Stage 13 H2: `test_pos_execution_chain_h2.py`)
+- [x] Expense category → COA → approve → TB/P&L/cash-flow (Stage 14 E1: `test_expense_coa_chain_e1.py`)
+- [x] Expense store/department dims (Stage 14 E2: `test_expense_org_dimensions_e2.py`)
+- [x] Journal store dimension + store-filtered P&L/cash-flow (Stage 14 A1: `test_journal_store_dimension_a1.py`)
+- [x] Trial balance / balance sheet `as_of_date` (Stage 14 A2: `test_trial_balance_as_of_a2.py`)
+- [x] Tax rate PATCH/deactivate + period helpers (Stage 14 T1: `test_tax_rate_lifecycle_t1.py`)
+- [x] Credit UI allocate to invoice/bill (Stage 14 R1: `test_credit_payment_allocate_r1.py`)
+- [x] Expense approve/reject domain audit (Stage 14 A3: `test_expense_audit_a3.py`)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)

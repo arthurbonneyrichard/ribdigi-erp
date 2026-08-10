@@ -434,6 +434,7 @@ All security-relevant events are captured in an immutable audit log:
 - Tenant status changes
 - Backup and restore operations
 - AI assistant queries (anonymized where possible)
+- Expense workflow domain audit (Stage 14 A3): `expense_submitted`, `expense_auto_approved`, `expense_level_approved`, `expense_approved`, `expense_rejected` (`module=expenses`; reject includes reason)
 
 ### 10.2 Audit Log Schema
 

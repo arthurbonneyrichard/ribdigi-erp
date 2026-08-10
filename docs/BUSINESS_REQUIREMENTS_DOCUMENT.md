@@ -558,8 +558,8 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Expense date, category, amount, payment method, reference number
   - [ ] Payee name
   - [ ] Description/notes
-  - [ ] Assign to branch/department
-  - [ ] Link to chart of accounts for auto-posting
+  - [x] Assign to store/department (Stage 14 E2 — `store_id` + `department_id` on expenses and recurring templates; list filters)
+  - [x] Link to chart of accounts for auto-posting (Stage 14 E1 — `expense_categories.account_id`; fallback Operating Expenses `6000`)
 
 #### BR-9.3 Expense Approval
 - **Description:** Control spending through approval workflows.
@@ -645,9 +645,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Standard financial statements.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit; filterable by date range, branch
-  - [ ] **Cash Flow:** Operating, investing, financing activities
-  - [ ] **Trial Balance:** All accounts with debit/credit balances; validation that total debits = total credits
+  - [x] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit; filterable by date range and store (Stage 14 A1 — `store_id` on journals / P&L)
+  - [x] **Cash Flow:** Operating, investing, financing activities (Stage 3 A3 + Stage 14 A1 store filter)
+  - [x] **Trial Balance:** All accounts with debit/credit balances; validation that total debits = total credits; point-in-time `as_of_date` (Stage 14 A2; balance sheet same)
   - [ ] Export to PDF and Excel
 
 ---
@@ -662,7 +662,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Block sales that exceed credit limit (with override permission)
   - [ ] Display outstanding balance on customer profile
   - [ ] Record payment collections with date, amount, method, reference
-  - [ ] Allocate payments to specific invoices or auto-allocate (oldest first)
+  - [x] Allocate payments to specific invoices or auto-allocate (oldest first) — Stage 14 R1 Credit UI + API `sales_invoice_id` / supplier `purchase_invoice_id`
   - [ ] Customer statement generation (all transactions + balance)
 
 #### BR-11.2 Supplier Credit
@@ -683,7 +683,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [ ] Add tax types (VAT, GST, Sales Tax, etc.)
-  - [ ] Configure tax rates (percentage)
+  - [x] Configure tax rates (percentage) — create + Stage 14 T1 `PATCH /tax/rates/{id}` edit/deactivate (`is_active`; clears default)
   - [ ] Set tax applicability (inclusive/exclusive pricing)
   - [x] Product-category-specific tax rules (Stage 10 T1 — category `tax_rate_id`, parent walk)
   - [ ] Compound tax (tax on tax) support
@@ -704,7 +704,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Output tax summary (tax collected on sales)
   - [ ] Input tax summary (tax paid on purchases)
   - [ ] Net tax payable/refundable
-  - [ ] Tax report by period (monthly, quarterly, annually)
+  - [x] Tax report by period (monthly, quarterly, annually) — Stage 14 T1 `period` + `year`/`month`/`quarter` on `/reports/tax` and filing
   - [x] Export in government filing format (manual GH GRA / NG FIRS / KE KRA workbooks; portal e-file deferred — Stage 10 T2)
 
 ---

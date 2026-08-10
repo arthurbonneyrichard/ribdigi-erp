@@ -128,6 +128,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 14 open (2026-08-10):** Finance Closeout Chain Fidelity track approved — `docs/ADR_033_STAGE14_OPEN.md` + `docs/STAGE_14_PLAN.md` (Expenses → Accounting → Credit → Tax).
 
+**Stage 14 D1 (2026-08-10):** Spec / BR / readiness fidelity sync — `docs/STAGE_14_FIDELITY.md` (E1–E2, A1–A3, T1, R1 documented; H14x pending).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |

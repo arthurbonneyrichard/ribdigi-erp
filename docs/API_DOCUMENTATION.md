@@ -883,17 +883,23 @@ Successful send records domain audit `pos_receipt_sent` (`module=pos`, `entity=p
 
 ### 9.1 Expense Categories
 **List:** `GET /expenses/categories`  
-**Create:** `POST /expenses/categories`
+**Create:** `POST /expenses/categories`  
+**Update:** `PATCH /expenses/categories/{category_id}`
+
+Create/update accept optional `account_id` (tenant expense-type COA; Stage 14 E1). Serialize includes `account_id`, `account_code`, `account_name`. Clear mapping with `clear_account: true` on PATCH. Invalid non-expense account → `400 INVALID_EXPENSE_ACCOUNT`.
 
 ### 9.2 Expenses
-**List:** `GET /expenses`  
+**List:** `GET /expenses?store_id=&department_id=`  
 **Create:** `POST /expenses`  
 **Get:** `GET /expenses/{expense_id}`  
 **Update:** `PATCH /expenses/{expense_id}`  
 **Approve:** `POST /expenses/{expense_id}/approve`  
+**Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }`  
 **Delete:** `DELETE /expenses/{expense_id}`  
 **OCR suggest:** `POST /expenses/{expense_id}/ocr-suggest` — requires `expenses:write`  
 **OCR apply (Stage 10 A1):** `POST /expenses/{expense_id}/ocr-apply` — requires `expenses:write`
+
+Create/update accept optional `store_id`, `department_id`, `payee` (Stage 14 E2). Foreign store/department → `404`. Approve/reject emit domain audit `expense_approved` / `expense_rejected` (`module=expenses`); submit pending → `expense_submitted`; under-threshold → `expense_auto_approved`; mid-level → `expense_level_approved` (Stage 14 A3). Final/auto approve also posts `journal_posted` with `source_type=expense`.
 
 ```json
 {
@@ -915,19 +921,22 @@ Successful send records domain audit `pos_receipt_sent` (`module=pos`, `entity=p
 {
   "category_id": "exp_cat_001",
   "amount": 150.00,
-  "date": "2026-08-07",
+  "expense_date": "2026-08-07",
   "payment_method": "bank_transfer",
   "reference": "UTIL-001",
+  "payee": "City Power",
   "description": "Monthly electricity bill",
-  "attachments": ["https://cdn.ribdigi.com/docs/bill.pdf"],
-  "branch_id": "br_001",
-  "recurring": false
+  "store_id": "store_001",
+  "department_id": "dept_001"
 }
 ```
 
 ### 9.3 Recurring Expenses
 **List:** `GET /expenses/recurring`  
-**Create:** `POST /expenses/recurring`
+**Create:** `POST /expenses/recurring`  
+**Update:** `PATCH /expenses/recurring/{id}`
+
+Templates carry optional `store_id` / `department_id` into generated expenses (Stage 14 E2).
 
 **Create Recurring:**
 ```json
@@ -959,7 +968,7 @@ Successful send records domain audit `pos_receipt_sent` (`module=pos`, `entity=p
 **Opening balance body:** `{ "amount", "description?" }` — natural-side amount (assets/expenses debit; liability/equity/income credit). Posts balanced journal against system account `3900` Opening Balances Equity (`source_type=opening_balance`). Duplicate posted opening balance → `409 OPENING_BALANCE_EXISTS`.
 
 ### 10.2 Journal Entries
-**List:** `GET /accounting/journal-entries`  
+**List:** `GET /accounting/journal-entries?store_id=`  
 **Create:** `POST /accounting/journal-entries`  
 **Get:** `GET /accounting/journal-entries/{entry_id}`  
 **Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost`  
@@ -967,7 +976,7 @@ Successful send records domain audit `pos_receipt_sent` (`module=pos`, `entity=p
 **Download attachment:** `GET /accounting/journal-entries/{entry_id}/attachment` — requires `accounting:read`  
 **Delete attachment:** `DELETE /accounting/journal-entries/{entry_id}/attachment` — requires `accounting:write`  
 
-Journal payloads include `attachment_url` and `has_attachment`. Upload replaces any prior stored object for the entry. Download returns `404` when none is stored.
+Journal payloads include `attachment_url`, `has_attachment`, and optional `store_id` (Stage 14 A1). Manual create accepts `store_id` (tenant-scoped 404). Auto-post from expense / sales invoice / POS sets store when known. List filter `store_id` returns matching entries only. Upload replaces any prior stored object for the entry. Download returns `404` when none is stored.
 
 Unpost reverses account balances and sets status `unposted`. Allowed only when `entry_date` is in the tenant’s open fiscal year (`fiscal_year_start` MM-DD). Returns `409` with `FISCAL_PERIOD_CLOSED`, `JOURNAL_NOT_POSTED`, or `JOURNAL_RECONCILED` when blocked.
 
@@ -1000,15 +1009,21 @@ Unpost reverses account balances and sets status `unposted`. Allowed only when `
 Query: `from_date`, `to_date` (ISO date), `include_unposted` (default false). Returns account metadata, `opening_balance` (activity before `from_date`), `closing_balance`, `total_debit` / `total_credit`, and `transactions[]` with `entry_number`, `entry_date`, debit/credit, and running `balance` on the account’s natural side (assets/expenses: debit−credit; liability/equity/income: credit−debit). Requires `accounting:read`.
 
 ### 10.4 Financial Reports
-**Profit & Loss:** `GET /reports/profit-loss?from_date=&to_date=` (also `GET /accounting/profit-loss`)  
+**Profit & Loss:** `GET /reports/profit-loss?from_date=&to_date=&store_id=` (also `GET /accounting/profit-loss`)  
 
-Returns period totals from **posted** journal lines: `revenue`, `cogs`, `gross_profit`, `operating_expenses`, `other_income`, `income`, `expense`, `net_profit`, plus per-account `bucket`.
+Returns period totals from **posted** journal lines: `revenue`, `cogs`, `gross_profit`, `operating_expenses`, `other_income`, `income`, `expense`, `net_profit`, plus per-account `bucket`. Optional `store_id` filters journals by store dimension (Stage 14 A1).
 
-**Cash Flow:** `GET /reports/cash-flow?from_date=&to_date=`  
+**Cash Flow:** `GET /reports/cash-flow?from_date=&to_date=&store_id=`  
 
-Liquid (cash/bank) movements classified as `operating` / `investing` / `financing` / `transfer` by journal `source_type`. Includes `opening_cash`, `closing_cash`, `net_change` (excludes cash↔bank transfers).
+Liquid (cash/bank) movements classified as `operating` / `investing` / `financing` / `transfer` by journal `source_type`. Includes `opening_cash`, `closing_cash`, `net_change` (excludes cash↔bank transfers). Optional `store_id` (Stage 14 A1).
 
-**Trial Balance:** `GET /reports/trial-balance?as_of_date=`
+**Trial Balance:** `GET /reports/trial-balance?as_of_date=` (also `GET /accounting/trial-balance`)  
+
+When `as_of_date` is set, balances are rebuilt from **posted** journal lines with `entry_date` through that day; omit for live account balances. Response includes `as_of` (Stage 14 A2).
+
+**Balance Sheet:** `GET /reports/balance-sheet?as_of_date=`  
+
+Same `as_of_date` semantics as trial balance; response includes `as_of`, assets/liabilities/equity, and `balanced` (Stage 14 A2). Export `trial_balance` / `balance_sheet` accept `as_of_date`.
 
 ---
 
@@ -1041,17 +1056,20 @@ Liquid (cash/bank) movements classified as `operating` / `investing` / `financin
 
 Returns open AR invoices (`posted` / `partial` / `sent` / `overdue` with balance > 0): `{ invoice_id, invoice_number, amount, due_date, status, document_type: "sales_invoice" }`. Requires `credit:read`; 404 if customer missing.
 
-**Record Payment:** `POST /customers/{customer_id}/payments`
+**Record Payment:** `POST /customers/{customer_id}/payments` (alias `POST /sales/payments`)
 
 ```json
 {
+  "customer_id": "cust_001",
   "amount": 100.00,
   "payment_method": "cash",
-  "date": "2026-08-07",
+  "sales_invoice_id": "inv_001",
   "reference": "RCP-001",
   "notes": "Partial payment for INV-001"
 }
 ```
+
+Optional `sales_invoice_id` allocates to that invoice only; omit to auto-allocate oldest-first (Stage 14 R1 Credit UI). Wrong customer → `400`.
 
 ### 11.2 Supplier Credit
 **Get Outstanding Bills (Stage 8 S2):** `GET /suppliers/{supplier_id}/outstanding`
@@ -1062,29 +1080,37 @@ Returns `{ supplier_id, supplier_name, as_of, total_due, overdue_total, upcoming
 
 **Record Payment:** `POST /suppliers/{supplier_id}/payments`
 
+Optional `purchase_invoice_id` and/or `purchase_order_id`; omit both to auto-allocate oldest open bills then POs (Stage 14 R1).
+
 ---
 
 ## 12. Tax Management
 
 ### 12.1 Tax Rates
-**List:** `GET /taxes/rates`  
-**Create:** `POST /taxes/rates`  
-**Get:** `GET /taxes/rates/{rate_id}`
+**List:** `GET /tax/rates?active_only=` (alias `GET /taxes/rates`)  
+**Create:** `POST /tax/rates`  
+**Get:** `GET /tax/rates/{rate_id}`  
+**Update (Stage 14 T1):** `PATCH /tax/rates/{rate_id}` — name/rate/type/mode/components/flags; `is_active: false` deactivates and clears default  
+**Set default:** `POST /tax/rates/{rate_id}/default`
 
 **Create Tax Rate:**
 ```json
 {
   "name": "Standard VAT",
   "rate": 10.0,
-  "type": "vat",
+  "tax_type": "vat",
+  "pricing_mode": "exclusive",
   "is_default": true,
   "is_active": true
 }
 ```
 
 ### 12.2 Tax Reports
-**Endpoint:** `GET /reports/tax?from_date=&to_date=&tax_type=vat`  
-**Filing pack:** `GET /reports/tax/filing?from_date=&to_date=&jurisdiction=` — jurisdiction-neutral boxes plus optional government mapping when supported (`GH`, `NG`, `KE`)  
+**Endpoint:** `GET /reports/tax?from_date=&to_date=&period=&year=&month=&quarter=`  
+**Filing pack:** `GET /reports/tax/filing?from_date=&to_date=&period=&year=&month=&quarter=&jurisdiction=` — jurisdiction-neutral boxes plus optional government mapping when supported (`GH`, `NG`, `KE`)  
+
+`period=monthly|quarterly|annually` resolves bounds from `year` / `month` / `quarter` (defaults to current UTC period). Response includes `period`, `period_year`, `period_month`, `period_quarter` when a preset is used (Stage 14 T1). Explicit `from_date`/`to_date` still work when `period` is omitted.
+
 **Exports:** `tax_filing`, `tax_filing_gh`, `tax_filing_ng`, `tax_filing_ke` via `/reports/export`  
 
 Government templates are **manual filing workbooks only** — they do not e-file to GRA, FIRS, or KRA iTax portals (Stage 10 T2).
