@@ -18,6 +18,29 @@ INVOICE_PRINT_TEMPLATES = frozenset({"a4", "thermal_80", "thermal_58"})
 INVOICE_PRINT_FORMATS = frozenset({"text", "pdf", "html"})
 
 
+def calc_sale_line_amounts(
+    spec,
+    quantity: float,
+    unit_price: float,
+    discount: float = 0,
+) -> tuple[float, float, float, float]:
+    """Return (line_sub, line_tax, line_total, discount) with tax on net after line discount.
+
+    Stage 12 C1 — aligns quotations/orders/invoices with POS and Stage 11 PO math.
+    """
+    qty = float(quantity or 0)
+    unit = float(unit_price or 0)
+    disc = round(float(discount or 0), 2)
+    if disc < 0:
+        raise HTTPException(status_code=400, detail="Line discount must be >= 0")
+    gross_before = round(qty * unit, 2)
+    if disc > gross_before + 1e-9:
+        raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
+    taxable = round(gross_before - disc, 2)
+    line_sub, line_tax, line_total = spec.compute_amounts(taxable)
+    return float(line_sub), float(line_tax), float(line_total), disc
+
+
 def invoice_payment_status(total: float, paid: float, *, previous_status: str | None = None) -> str:
     total_f = float(total or 0)
     paid_f = float(paid or 0)
@@ -619,10 +642,12 @@ async def create_sales_invoice(
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-        line_amount = float(item["quantity"]) * float(unit_price)
-        line_sub, line_tax, line_total = spec.compute_amounts(line_amount)
-        discount = float(item.get("discount") or 0)
-        line_total = max(line_total - discount, 0)
+        line_sub, line_tax, line_total, discount = calc_sale_line_amounts(
+            spec,
+            item["quantity"],
+            unit_price,
+            item.get("discount") or 0,
+        )
         subtotal += line_sub
         if spec.is_reverse_charge:
             reverse_charge_tax += line_tax

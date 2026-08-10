@@ -13,6 +13,7 @@ from app.inventory import apply_stock_change
 from app.sales import (
     INVOICE_PRINT_FORMATS,
     INVOICE_PRINT_TEMPLATES,
+    calc_sale_line_amounts,
     create_sales_invoice,
     get_customer,
     get_invoice,
@@ -55,8 +56,10 @@ async def _prepare_lines(
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-        line_sub, line_tax, line_total = spec.compute_amounts(qty * unit)
-        line_total = max(line_total - discount, 0)
+        # Stage 12 C1 — tax on net after line discount (same as POS / invoices).
+        line_sub, line_tax, line_total, discount = calc_sale_line_amounts(
+            spec, qty, unit, discount
+        )
         subtotal += line_sub
         if not spec.is_reverse_charge:
             tax_total += line_tax

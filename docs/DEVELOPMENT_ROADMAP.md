@@ -118,6 +118,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 11 exit (2026-08-10):** C1, C2, A1, D1, H11x met — `docs/STAGE_11_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_028_STAGE11_FREEZE.md`. Fidelity: `docs/STAGE_11_FIDELITY.md`.
 
+**Stage 12 open (2026-08-10):** Order-to-Cash & POS Chain Fidelity track approved — `docs/ADR_029_STAGE12_OPEN.md` + `docs/STAGE_12_PLAN.md` (Customers → Sales → Invoices → Payments → POS).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -691,7 +693,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 11 closed (ADR-028 freeze). Stages 1–11 remain frozen until CONTINUE opens the next track.
+**Active delivery plan:** Stage 12 open (ADR-029) — C1 → C2 → A1 → D1 → H12x. Stages 1–11 remain frozen.
 
 ### 6.2 Features
 

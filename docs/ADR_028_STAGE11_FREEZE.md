@@ -20,3 +20,7 @@ Stage 11 Purchase-to-Pay Chain Fidelity (C1, C2, A1, D1, H11x) delivered GRN/PI 
 - Agents treat Stage 11 C1, C2, A1, D1, H11x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–10 freezes remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 12 via the Order-to-Cash / POS chain scope after Stage 11 freeze. Stage 12 track is open under [ADR-029](ADR_029_STAGE12_OPEN.md) + [STAGE_12_PLAN.md](STAGE_12_PLAN.md). Stage 11 feature scope remains frozen (bugfixes / security / tests / docs only).
