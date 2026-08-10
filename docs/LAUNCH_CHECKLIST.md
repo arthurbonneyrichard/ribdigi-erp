@@ -62,6 +62,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Live sales tax → report → filing (Stage 15 T1: `test_sales_tax_filing_t1.py`)
 - [x] Sales invoice/return domain audit (Stage 15 A1: `test_sales_audit_a1.py`)
 - [x] Stage 15 fidelity sync (D1: `test_stage15_fidelity_d1.py`, `docs/STAGE_15_FIDELITY.md`)
+- [x] Stage 15 exit + freeze (H15x: `test_stage15_exit_h15x.py`, ADR-036)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)

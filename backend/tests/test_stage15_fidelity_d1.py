@@ -28,7 +28,9 @@ def test_stage15_fidelity_note_and_plan():
     assert "STAGE_15_FIDELITY.md" in plan
     assert "| **C1**" in plan and "COMPLETE" in plan
     assert "| **A1**" in plan and "COMPLETE" in plan
-    assert "| **H15x**" in plan and "PENDING" in plan
+    assert "| **H15x**" in plan and "COMPLETE" in plan
+    assert "ADR-036" in plan or "STAGE_15_EXIT_CRITERIA.md" in plan
+    assert "Closed" in plan or "exit met" in plan.lower() or "ADR-036" in plan
 
 
 def test_stage15_api_and_security_docs():
@@ -79,8 +81,12 @@ def test_stage15_readiness_and_roadmap():
     assert "test_sales_tax_filing_t1.py" in pr
     assert "sales_return_posted" in pr
     assert "invoice_posted" in pr
+    assert "STAGE_15_EXIT_CRITERIA.md" in pr or "ADR-036" in pr
 
     roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
     assert "STAGE_15_FIDELITY.md" in roadmap
     assert "Stage 15 D1" in roadmap
+    assert "Stage 15 exit" in roadmap
+    assert "ADR_036_STAGE15_FREEZE.md" in roadmap
     assert "ADR_035_STAGE15_OPEN.md" in roadmap
+    assert "STAGE_16_PLAN.md" in roadmap or "ADR_037_STAGE16_OPEN.md" in roadmap

@@ -1,6 +1,6 @@
 # Stage 15 Fidelity Notes — Sales Inventory–Ledger Chain
 
-**Status:** Closed with Stage 15 D1  
+**Status:** Closed with Stage 15 D1; exit met (H15x / ADR-036)  
 **Chain:** Sales → Inventory → Customer balance → Tax → Accounting → Audit
 
 ## Corrections applied
@@ -23,6 +23,7 @@
 - `backend/tests/test_sales_tax_filing_t1.py`
 - `backend/tests/test_sales_audit_a1.py`
 - `backend/tests/test_stage15_fidelity_d1.py`
+- `backend/tests/test_stage15_exit_h15x.py`
 
 ## Spec sync targets
 

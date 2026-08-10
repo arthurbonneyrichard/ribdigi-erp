@@ -1,9 +1,10 @@
 # Stage 15 Plan — Sales Inventory–Ledger Chain Fidelity
 
-**Status:** Open  
+**Status:** Closed — exit met (H15x / ADR-036)  
 **Base:** Sales → Inventory → Customer balance → Tax → Accounting → Audit  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-035](ADR_035_STAGE15_OPEN.md)
+**Open ADR (historical):** [ADR-035](ADR_035_STAGE15_OPEN.md)  
+**Exit:** [STAGE_15_EXIT_CRITERIA.md](STAGE_15_EXIT_CRITERIA.md) · [ADR-036](ADR_036_STAGE15_FREEZE.md) · [STAGE_15_FIDELITY.md](STAGE_15_FIDELITY.md)
 
 Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 14 freeze. OTC/POS and Credit engines already exist (Stages 12–13 / 8). This track proves invoice→stock→AR→tax→journal→audit end-to-end, adds standard-cost COGS/Inventory GL, hardens post atomicity and returns, and syncs docs — **not** Open Banking, tax e-file, FIFO/LIFO, or greenfield Sales.
 
@@ -26,7 +27,7 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 | **T1** | Sales-path tax → filing from live invoice post | P1 | COMPLETE |
 | **A1** | Sales-path domain audit closeout (`sales_return_posted`, enrich `invoice_posted`) | P1 | COMPLETE |
 | **D1** | Spec / BR-5/7/10/12/17 / readiness fidelity sync | P2 | COMPLETE |
-| **H15x** | Stage 15 exit criteria + freeze ADR | Exit | PENDING |
+| **H15x** | Stage 15 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -83,8 +84,10 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 
 ## H15x acceptance criteria
 
-See workstream table; filled when exit workstream starts.
+- [x] `docs/STAGE_15_EXIT_CRITERIA.md` lists C1–A1, D1, H15x COMPLETE with evidence.
+- [x] Freeze ADR-036 accepted; Stage 16 may open only via explicit amendment / open ADR.
+- [x] Guard test: `backend/tests/test_stage15_exit_h15x.py`.
 
 ## Sign-off
 
-C1–D1 complete. Pending H15x (exit criteria + freeze ADR).
+C1–D1 and H15x complete. Stage 15 frozen (ADR-036).

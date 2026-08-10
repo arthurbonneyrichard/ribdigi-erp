@@ -136,6 +136,10 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 15 D1 (2026-08-10):** Spec / BR / readiness fidelity sync — `docs/STAGE_15_FIDELITY.md`.
 
+**Stage 15 exit (2026-08-10):** C1, I1, H1, R1, T1, A1, D1, H15x met — `docs/STAGE_15_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_036_STAGE15_FREEZE.md`. Fidelity: `docs/STAGE_15_FIDELITY.md`.
+
+**Stage 16 open (2026-08-10):** Multi-Store / Reports / Notifications Fidelity track approved — `docs/ADR_037_STAGE16_OPEN.md` + `docs/STAGE_16_PLAN.md` (Warehouses → Stock per location → Transfers → Transfer receiving → Central management; Reports suite; Notification alerts).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -709,7 +713,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 15 open (`docs/STAGE_15_PLAN.md`, ADR-035). Stages 1–14 remain frozen for their scopes.
+**Active delivery plan:** Stage 16 open (`docs/STAGE_16_PLAN.md`, ADR-037). Stages 1–15 remain frozen for their scopes.
 
 ### 6.2 Features
 
