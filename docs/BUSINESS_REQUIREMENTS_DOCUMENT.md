@@ -140,30 +140,30 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Allow new companies to register as tenants on the platform.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] User can register with company name, email, password, industry type
-  - [ ] System validates email uniqueness
-  - [ ] System auto-creates isolated tenant database/schema
-  - [ ] System sends email verification link
-  - [ ] Tenant status defaults to "Trial"
+  - [x] User can register with company name, email, password, industry type — Stage 21 T1 (`POST /tenants`; `test_tenant_lifecycle_t1.py`)
+  - [x] System validates email uniqueness — Stage 21 T1 (unique tenant slug; admin email unique per tenant via `users` constraint; login is tenant-scoped)
+  - [x] System auto-creates isolated tenant database/schema — Stage 21 T1 (shared-schema + `tenant_id` + `seed_tenant_defaults`; schema-per-tenant deferred ADR-001)
+  - [x] System sends email verification link — Stage 21 T1 (`email_verify` token + `POST /auth/verify-email`; console/SMTP send path)
+  - [x] Tenant status defaults to "Trial" — Stage 21 T1 (`status=trial` + `trial_ends_at`)
 
 #### BR-1.2 Company Profile
 - **Description:** Tenant administrators can configure company identity and operational settings.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Upload and display company logo
-  - [ ] Edit company name, address, phone, email, website
-  - [ ] Configure fiscal year start date
-  - [ ] Set default currency and time zone
-  - [ ] Select industry from predefined list (Retail, Pharmacy, Restaurant, Bakery, Wholesale, Manufacturing)
+  - [x] Upload and display company logo — Stage 21 T1 (`POST/GET /tenants/me/logo`)
+  - [x] Edit company name, address, phone, email, website — Stage 21 T1 (`PATCH /tenants/me`)
+  - [x] Configure fiscal year start date — Stage 21 T1 (`fiscal_year_start`)
+  - [x] Set default currency and time zone — Stage 21 T1 (`currency` / `timezone`)
+  - [x] Select industry from predefined list (Retail, Pharmacy, Restaurant, Bakery, Wholesale, Manufacturing) — Stage 21 T1 (`VALID_INDUSTRIES`)
 
 #### BR-1.3 Subscription Plan Management
 - **Description:** Track and manage tenant subscription lifecycle.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Support statuses: Trial, Active, Suspended
-  - [ ] Automatic trial expiration notification (7 days, 3 days, 1 day before)
-  - [ ] Grace period handling for suspended tenants (read-only access)
-  - [ ] Upgrade/downgrade plan capability
+  - [x] Support statuses: Trial, Active, Suspended — Stage 21 T1 (`trial` / `active` / `suspended`; also `grace`)
+  - [x] Automatic trial expiration notification (7 days, 3 days, 1 day before) — Stage 21 T1 (`process_trial_lifecycle` billing notifications)
+  - [x] Grace period handling for suspended tenants (read-only access) — Stage 21 T1 (`status=grace` → `TENANT_READ_ONLY` on writes; self-activate restores access)
+  - [x] Upgrade/downgrade plan capability — Stage 21 T1 (`plan_code` metadata; billing deferred ADR-002 — no payment processed)
 
 #### BR-1.4 Data Isolation
 - **Description:** Ensure complete data separation between tenants.

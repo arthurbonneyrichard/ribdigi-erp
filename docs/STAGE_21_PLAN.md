@@ -42,7 +42,7 @@ Fidelity closeout
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **T1** | Tenant registration & lifecycle (BR-1.1–1.3) | P0 | PENDING |
+| **T1** | Tenant registration & lifecycle (BR-1.1–1.3) | P0 | COMPLETE |
 | **I1** | Isolation & tenant init seeds (BR-1.4–1.5) | P0 | PENDING |
 | **O1** | Org units fidelity (BR-2.2–2.5) | P0 | PENDING |
 | **C1** | Company / currency / tax setup (BR-2.1, 2.6, 2.8) | P1 | PENDING |
@@ -69,10 +69,10 @@ Fidelity closeout
 
 ## T1 acceptance criteria
 
-- [ ] Tenant register (company/email/password/industry), email uniqueness, trial default, verification path proven.
-- [ ] Company profile + subscription statuses (Trial/Active/Suspended) + grace/read-only where already implemented proven.
-- [ ] Automated proof: `backend/tests/test_tenant_lifecycle_t1.py`.
-- [ ] BR-1.1–1.3 synced with evidence.
+- [x] Tenant register (company/email/password/industry), email uniqueness, trial default, verification path proven.
+- [x] Company profile + subscription statuses (Trial/Active/Suspended) + grace/read-only where already implemented proven.
+- [x] Automated proof: `backend/tests/test_tenant_lifecycle_t1.py`.
+- [x] BR-1.1–1.3 synced with evidence.
 
 ## I1 acceptance criteria
 
@@ -123,4 +123,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-Stage 21 open (ADR-047). Pending T1 → H21x. Stages 1–20 remain frozen for their scopes.
+T1 complete. Pending I1 → H21x. Stages 1–20 remain frozen for their scopes.
