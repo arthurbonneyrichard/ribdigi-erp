@@ -21,3 +21,7 @@ Stage 23 Reports Dimension & Commercial MVP Gate Fidelity (F1, C1, I1, G1, B1, D
 - Agents treat Stage 23 F1, C1, I1, G1, B1, D1, H23x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP (inventory / sales / POS / purchasing / monitoring / WAL / AI provider remain Partial where open).
 - Stage 1–22 freezes remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 24 (Commerce & Ops Gate Fidelity) after Stage 23 freeze via CONTINUE/NEXT — see [ADR-053](ADR_053_STAGE24_OPEN.md) and [STAGE_24_PLAN.md](STAGE_24_PLAN.md). Stage 23 feature scope remains frozen; Stage 24 does not reopen F1–D1 / H23x.
