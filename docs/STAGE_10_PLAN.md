@@ -1,9 +1,9 @@
 # Stage 10 Plan — Tax Fidelity & Document Workflow Closeout
 
-**Status:** Open  
+**Status:** Closed — exit met; freeze [ADR-026](ADR_026_STAGE10_FREEZE.md)  
 **Base:** BR-12.1 / tax + document workflow fidelity after Stage 9 freeze  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Exit:** `docs/STAGE_10_EXIT_CRITERIA.md` (at close)
+**Exit:** [STAGE_10_EXIT_CRITERIA.md](STAGE_10_EXIT_CRITERIA.md)
 
 Stage 10 closes commercial-MVP tax depth and human-confirmed document apply holes. It is **not** Kubernetes, WAL/PITR, vendor pen test, tax portal e-file, or FIFO/LIFO.
 
@@ -22,7 +22,7 @@ Stage 10 closes commercial-MVP tax depth and human-confirmed document apply hole
 | **T2** | Additional tax filing template beyond GH/NG | P1 | COMPLETE |
 | **A1** | Human-confirmed OCR/document apply-to-draft | P1 | COMPLETE |
 | **B1** | Include uploaded media in logical backup/restore | P2 | COMPLETE |
-| **H10x** | Stage 10 exit criteria + freeze ADR | Exit | PENDING |
+| **H10x** | Stage 10 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -59,9 +59,9 @@ Stage 10 closes commercial-MVP tax depth and human-confirmed document apply hole
 
 ## H10x acceptance criteria
 
-- [ ] `docs/STAGE_10_EXIT_CRITERIA.md` records T1/T2/A1/B1/H10x COMPLETE with evidence.
-- [ ] Scope freeze ADR accepted; automated guard test present.
+- [x] `docs/STAGE_10_EXIT_CRITERIA.md` records T1/T2/A1/B1/H10x COMPLETE with evidence.
+- [x] Scope freeze ADR-026 accepted; automated guard test `backend/tests/test_stage10_exit_h10x.py`.
 
 ## Sign-off
 
-Stage 10 remains open until H10x exit criteria and freeze ADR are recorded.
+Stage 10 exit is met. Feature scope is frozen under ADR-026 (bugfixes / security / tests / docs only until CONTINUE opens the next track).

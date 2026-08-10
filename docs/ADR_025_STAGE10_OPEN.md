@@ -21,3 +21,7 @@ Remaining commercial-MVP gaps include product-category tax rules (BR-12.1), an a
 
 - Agents may implement Stage 10 plan items without reopening Stage 1–9 feature scope.
 - Stage 10 exit requires `docs/STAGE_10_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Closure (2026-08-09)
+
+Stage 10 P0/P1/P2 workstreams T1, T2, A1, B1, H10x met exit criteria (`docs/STAGE_10_EXIT_CRITERIA.md`). Feature scope is frozen under [ADR-026](ADR_026_STAGE10_FREEZE.md). This open ADR remains historical; new Stage 10 feature work is not permitted except bugfixes / security / tests / docs.
