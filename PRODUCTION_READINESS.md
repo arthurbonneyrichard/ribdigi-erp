@@ -31,6 +31,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
   - Stage 19 U1: BR-19 auth/2FA/sessions fidelity (`test_auth_session_br19_u1.py`).
   - Stage 19 C1: BR-20 company/settings fidelity — legal/logo/formats/SMTP/numbering/print templates (`test_company_settings_br20_c1.py`; WYSIWYG designer deferred).
   - Stage 19 R1: LAUNCH §5 reliability — Redis cache soft-fail, permissions invalidation, Celery beat matrix, admin jobs dry-run, logical DR runbook (`test_reliability_cache_r1.py`; `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`).
+  - Stage 19 D1: BR-18–20 / SECURITY_GUIDE / API docs / readiness / launch §§1–5 fidelity (`docs/STAGE_19_FIDELITY.md`, `test_stage19_fidelity_d1.py`).
 - [x] Email verification and password reset complete.
   - Tokens issued; SMTP delivery with console fallback in dev; production requires `SMTP_HOST` + `SMTP_FROM_EMAIL` when `EMAIL_ENABLED=true`; tenants may override SMTP via encrypted `PATCH /settings/email`. Login blocked until email verified (`EMAIL_NOT_VERIFIED` + `POST /auth/resend-verification`). Authenticated `POST /auth/change-password` revokes other sessions.
 - [x] 2FA/TOTP complete for required roles.

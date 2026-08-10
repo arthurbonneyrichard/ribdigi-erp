@@ -1000,6 +1000,8 @@ Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
   - [x] Invoice template selection and customization — Stage 19 C1 (`invoice_print_template` a4/thermal_*)
   - [x] Header/footer customization with company branding — Stage 19 C1 (`document_header` / `document_footer`)
 
+Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
+
 ---
 
 ### 4.21 AI Business Assistant

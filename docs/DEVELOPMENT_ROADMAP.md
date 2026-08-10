@@ -158,6 +158,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 19 open (2026-08-10):** API, Settings & Operator Reliability Fidelity track approved — `docs/ADR_043_STAGE19_OPEN.md` + `docs/STAGE_19_PLAN.md` (API surface → Company & security settings → Operator reliability).
 
+**Stage 19 D1 (2026-08-10):** Spec / BR-18–20 / readiness / launch fidelity sync — `docs/STAGE_19_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -731,7 +733,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 19 open (`docs/STAGE_19_PLAN.md`, ADR-043). Stages 1–18 remain frozen for their scopes.
+**Active delivery plan:** Stage 19 open (`docs/STAGE_19_PLAN.md`, ADR-043); D1 fidelity `docs/STAGE_19_FIDELITY.md`. Stages 1–18 remain frozen for their scopes. H19x exit/freeze pending.
 
 ### 6.2 Features
 

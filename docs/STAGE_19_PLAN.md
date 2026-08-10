@@ -46,7 +46,7 @@ Operator reliability
 | **U1** | Auth & session BR-19 fidelity sync | P0 | COMPLETE |
 | **C1** | Company/settings BR-20 fidelity sync | P1 | COMPLETE |
 | **R1** | Reliability & cache (LAUNCH §5) | P0 | COMPLETE |
-| **D1** | Spec / BR-18–20 / readiness / launch fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-18–20 / readiness / launch fidelity sync | P2 | COMPLETE |
 | **H19x** | Stage 19 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -98,8 +98,8 @@ Operator reliability
 
 ## D1 acceptance criteria
 
-- [ ] BR-18–20, SECURITY_GUIDE / API docs, readiness, launch checklist §§1–5 aligned — `docs/STAGE_19_FIDELITY.md`.
-- [ ] Guard test: `backend/tests/test_stage19_fidelity_d1.py`.
+- [x] BR-18–20, SECURITY_GUIDE / API docs, readiness, launch checklist §§1–5 aligned — `docs/STAGE_19_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage19_fidelity_d1.py`.
 
 ## H19x acceptance criteria
 
@@ -107,4 +107,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-K1–P1–S1–A1–U1–C1–R1 complete. Pending D1 → H19x. Stages 1–18 remain frozen for their scopes.
+K1–P1–S1–A1–U1–C1–R1–D1 complete. Pending H19x exit/freeze. Stages 1–18 remain frozen for their scopes.

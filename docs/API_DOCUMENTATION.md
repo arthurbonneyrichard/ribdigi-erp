@@ -38,7 +38,7 @@
 
 ## 1. API Standards
 
-Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6).
+Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5.
 
 ### 1.1 Request Format
 - All requests and responses use **JSON**.
