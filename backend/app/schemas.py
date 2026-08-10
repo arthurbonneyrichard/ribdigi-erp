@@ -546,6 +546,7 @@ class ExpenseCreate(BaseModel):
     reference: str | None = None
     payee: str | None = None
     store_id: str | None = None
+    department_id: str | None = None
     expense_date: datetime | None = None
 
 
@@ -558,6 +559,10 @@ class ExpenseUpdate(BaseModel):
     reference: str | None = None
     payee: str | None = None
     expense_date: datetime | None = None
+    store_id: str | None = None
+    department_id: str | None = None
+    clear_store: bool = False
+    clear_department: bool = False
 
 
 class ExpenseOcrApply(BaseModel):
@@ -602,6 +607,8 @@ class RecurringExpenseCreate(BaseModel):
     frequency: str = "monthly"
     payment_method: str = "bank_transfer"
     payee: str | None = None
+    store_id: str | None = None
+    department_id: str | None = None
 
 
 class RecurringExpenseUpdate(BaseModel):

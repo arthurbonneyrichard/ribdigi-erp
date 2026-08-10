@@ -24,6 +24,8 @@ type Expense = {
   payment_method: string;
   payee?: string;
   reference?: string;
+  store_id?: string | null;
+  department_id?: string | null;
   status: string;
   rejection_reason?: string;
   has_attachment?: boolean;
@@ -32,6 +34,8 @@ type Expense = {
   approval_steps_required?: number;
   awaiting_level?: number | null;
 };
+type OrgStore = { id: string; code?: string; name: string };
+type OrgDepartment = { id: string; code?: string; name: string };
 
 type Recurring = {
   id: string;
@@ -65,6 +69,12 @@ export default function Page() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
+  const [stores, setStores] = useState<OrgStore[]>([]);
+  const [departments, setDepartments] = useState<OrgDepartment[]>([]);
+  const [storeId, setStoreId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [filterStoreId, setFilterStoreId] = useState('');
+  const [filterDepartmentId, setFilterDepartmentId] = useState('');
   const [reference, setReference] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [recAmount, setRecAmount] = useState('100');
@@ -73,6 +83,8 @@ export default function Page() {
   const [recFrequency, setRecFrequency] = useState('monthly');
   const [recCategoryId, setRecCategoryId] = useState('');
   const [recPaymentMethod, setRecPaymentMethod] = useState('bank_transfer');
+  const [recStoreId, setRecStoreId] = useState('');
+  const [recDepartmentId, setRecDepartmentId] = useState('');
   const [modifyNextId, setModifyNextId] = useState<string | null>(null);
   const [modifyNextAmount, setModifyNextAmount] = useState('');
   const [modifyNextDescription, setModifyNextDescription] = useState('');
@@ -98,18 +110,27 @@ export default function Page() {
   const [editAccountId, setEditAccountId] = useState('');
 
   async function refresh() {
-    const [exp, cats, settings, liquid, rec, bud, accounts] = await Promise.all([
-      api('/expenses'),
-      api('/expenses/categories'),
-      api('/expenses/settings'),
-      api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
-      api('/expenses/recurring').catch(() => ({ data: [] })),
-      api('/expenses/budgets').catch(() => ({ data: null })),
-      api('/accounting/accounts').catch(() => ({ data: [] })),
-    ]);
+    const params = new URLSearchParams();
+    if (filterStoreId) params.set('store_id', filterStoreId);
+    if (filterDepartmentId) params.set('department_id', filterDepartmentId);
+    const expQs = params.toString() ? `?${params.toString()}` : '';
+    const [exp, cats, settings, liquid, rec, bud, accounts, storeRows, deptRows] =
+      await Promise.all([
+        api(`/expenses${expQs}`),
+        api('/expenses/categories'),
+        api('/expenses/settings'),
+        api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
+        api('/expenses/recurring').catch(() => ({ data: [] })),
+        api('/expenses/budgets').catch(() => ({ data: null })),
+        api('/accounting/accounts').catch(() => ({ data: [] })),
+        api('/stores').catch(() => ({ data: [] })),
+        api('/departments').catch(() => ({ data: [] })),
+      ]);
     setRows(exp.data || []);
     setCategories(cats.data || []);
     setLiquidAccounts(liquid.data || []);
+    setStores(storeRows.data || []);
+    setDepartments(deptRows.data || []);
     setRecurring(rec.data || []);
     setBudgets(bud.data || null);
     const coa = (accounts.data || []) as CoaAccount[];
@@ -123,7 +144,7 @@ export default function Page() {
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
-  }, []);
+  }, [filterStoreId, filterDepartmentId]);
 
   async function createExpense() {
     setError('');
@@ -139,6 +160,8 @@ export default function Page() {
           payment_method: paymentMethod,
           liquid_account_id: liquidAccountId || null,
           reference: reference || undefined,
+          store_id: storeId || null,
+          department_id: departmentId || null,
         }),
       });
       setMessage(`Expense ${r.data.status}: ${r.data.amount}`);
@@ -350,6 +373,8 @@ export default function Page() {
           payee: recPayee || undefined,
           frequency: recFrequency,
           payment_method: recPaymentMethod,
+          store_id: recStoreId || null,
+          department_id: recDepartmentId || null,
         }),
       });
       setMessage('Recurring expense created');
@@ -642,6 +667,24 @@ export default function Page() {
             <option value="card">Card</option>
             <option value="cheque">Cheque</option>
           </select>
+          <select value={recStoreId} onChange={(e) => setRecStoreId(e.target.value)}>
+            <option value="">Store (optional)</option>
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code ? `${s.code} — ` : ''}
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <select value={recDepartmentId} onChange={(e) => setRecDepartmentId(e.target.value)}>
+            <option value="">Department (optional)</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.code ? `${d.code} — ` : ''}
+                {d.name}
+              </option>
+            ))}
+          </select>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" onClick={createRecurring}>
               Add recurring
@@ -827,7 +870,50 @@ export default function Page() {
               </option>
             ))}
           </select>
+          <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+            <option value="">Store (optional)</option>
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code ? `${s.code} — ` : ''}
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+            <option value="">Department (optional)</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.code ? `${d.code} — ` : ''}
+                {d.name}
+              </option>
+            ))}
+          </select>
           <button onClick={createExpense}>Submit expense</button>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Filter expenses</h3>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <select value={filterStoreId} onChange={(e) => setFilterStoreId(e.target.value)}>
+            <option value="">All stores</option>
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filterDepartmentId}
+            onChange={(e) => setFilterDepartmentId(e.target.value)}
+          >
+            <option value="">All departments</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -895,6 +981,8 @@ export default function Page() {
           <tr>
             <th>Category</th>
             <th>Payee</th>
+            <th>Store</th>
+            <th>Dept</th>
             <th>Description</th>
             <th>Amount</th>
             <th>Status</th>
@@ -908,6 +996,13 @@ export default function Page() {
             <tr key={r.id}>
               <td>{r.category}</td>
               <td>{r.payee || '—'}</td>
+              <td className="muted">
+                {stores.find((s) => s.id === r.store_id)?.name || (r.store_id ? '—' : '—')}
+              </td>
+              <td className="muted">
+                {departments.find((d) => d.id === r.department_id)?.name ||
+                  (r.department_id ? '—' : '—')}
+              </td>
               <td>{r.description}</td>
               <td>{r.amount}</td>
               <td>{r.status}</td>

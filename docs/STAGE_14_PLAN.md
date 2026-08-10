@@ -20,7 +20,7 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **E1** | Category → COA posting + expense→approve→journal→TB/P&L/cash-flow E2E | P0 | COMPLETE |
-| **E2** | Expense org dimensions (department + store UI) | P0 | PENDING |
+| **E2** | Expense org dimensions (department + store UI) | P0 | COMPLETE |
 | **A1** | Dimensional journals + store-filtered P&L/cash-flow | P0 | PENDING |
 | **A2** | Point-in-time trial balance / balance sheet `as_of` | P0 | PENDING |
 | **T1** | Tax rate lifecycle (edit/deactivate) + report period helpers | P1 | PENDING |

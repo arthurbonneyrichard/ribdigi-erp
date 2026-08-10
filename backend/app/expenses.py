@@ -559,6 +559,7 @@ def serialize_expense(expense: m.Expense, actions: list[m.ExpenseApprovalAction]
         "reference": expense.reference,
         "payee": expense.payee,
         "store_id": expense.store_id,
+        "department_id": getattr(expense, "department_id", None),
         "status": expense.status,
         "created_by": expense.created_by,
         "approved_by": expense.approved_by,
@@ -611,6 +612,31 @@ async def resolve_category(
     return None, name
 
 
+async def resolve_org_dimensions(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str | None,
+    department_id: str | None,
+) -> tuple[str | None, str | None]:
+    """Validate optional store/department are tenant-scoped (404 on foreign ids)."""
+    resolved_store = None
+    resolved_dept = None
+    if store_id:
+        from app.stores import get_store
+
+        store = await get_store(db, tenant_id, store_id)
+        resolved_store = store.id
+    if department_id:
+        from app.org_units import get_department
+
+        dept = await get_department(db, tenant_id, department_id)
+        if not bool(dept.is_active):
+            raise HTTPException(status_code=409, detail="Department is not active")
+        resolved_dept = dept.id
+    return resolved_store, resolved_dept
+
+
 async def get_expense(db: AsyncSession, tenant_id: str, expense_id: str) -> m.Expense:
     expense = (
         await db.execute(
@@ -661,6 +687,7 @@ async def create_expense(
     reference: str | None = None,
     payee: str | None = None,
     store_id: str | None = None,
+    department_id: str | None = None,
     expense_date: datetime | None = None,
 ) -> m.Expense:
     await ensure_default_categories(db, tenant_id)
@@ -684,10 +711,9 @@ async def create_expense(
             outflow=True,
         )
 
-    if store_id:
-        from app.stores import get_store
-
-        await get_store(db, tenant_id, store_id)
+    resolved_store, resolved_dept = await resolve_org_dimensions(
+        db, tenant_id=tenant_id, store_id=store_id, department_id=department_id
+    )
 
     expense = m.Expense(
         tenant_id=tenant_id,
@@ -700,7 +726,8 @@ async def create_expense(
         liquid_account_id=liquid_account_id,
         reference=reference,
         payee=payee,
-        store_id=store_id,
+        store_id=resolved_store,
+        department_id=resolved_dept,
         status="pending" if needs_approval else "approved",
         created_by=user_id,
         approved_by=None if needs_approval else user_id,
@@ -867,6 +894,10 @@ async def update_expense(
     payment_method: str | None = None,
     category_id: str | None = None,
     category: str | None = None,
+    store_id: str | None = None,
+    department_id: str | None = None,
+    clear_store: bool = False,
+    clear_department: bool = False,
 ) -> m.Expense:
     """Update editable fields on a pending (or rejected) expense. Does not auto-apply OCR."""
     expense = await get_expense(db, tenant_id, expense_id)
@@ -877,8 +908,19 @@ async def update_expense(
 
     provided = any(
         x is not None
-        for x in (amount, description, payee, reference, expense_date, payment_method, category_id, category)
-    )
+        for x in (
+            amount,
+            description,
+            payee,
+            reference,
+            expense_date,
+            payment_method,
+            category_id,
+            category,
+            store_id,
+            department_id,
+        )
+    ) or clear_store or clear_department
     if not provided:
         raise HTTPException(status_code=400, detail="No expense fields provided")
 
@@ -907,6 +949,21 @@ async def update_expense(
         expense.expense_date = expense_date
     if payment_method is not None:
         expense.payment_method = payment_method.strip() or expense.payment_method
+
+    if clear_store:
+        expense.store_id = None
+    elif store_id is not None:
+        resolved_store, _ = await resolve_org_dimensions(
+            db, tenant_id=tenant_id, store_id=store_id, department_id=None
+        )
+        expense.store_id = resolved_store
+    if clear_department:
+        expense.department_id = None
+    elif department_id is not None:
+        _, resolved_dept = await resolve_org_dimensions(
+            db, tenant_id=tenant_id, store_id=None, department_id=department_id
+        )
+        expense.department_id = resolved_dept
 
     if amount is not None:
         new_amount = round(float(amount), 2)
@@ -988,12 +1045,17 @@ async def create_recurring(
     category: str | None = None,
     payment_method: str = "bank_transfer",
     payee: str | None = None,
+    store_id: str | None = None,
+    department_id: str | None = None,
     start_date: datetime | None = None,
     end_date: datetime | None = None,
 ) -> m.RecurringExpense:
     await ensure_default_categories(db, tenant_id)
     cat_id, cat_name = await resolve_category(
         db, tenant_id, category_id=category_id, category=category
+    )
+    resolved_store, resolved_dept = await resolve_org_dimensions(
+        db, tenant_id=tenant_id, store_id=store_id, department_id=department_id
     )
     start = start_date or datetime.utcnow()
     row = m.RecurringExpense(
@@ -1005,6 +1067,8 @@ async def create_recurring(
         frequency=(frequency or "monthly").lower(),
         payment_method=payment_method or "bank_transfer",
         payee=payee,
+        store_id=resolved_store,
+        department_id=resolved_dept,
         start_date=start,
         end_date=end_date,
         next_run_at=start,
@@ -1026,6 +1090,8 @@ def serialize_recurring(row: m.RecurringExpense) -> dict:
         "frequency": row.frequency,
         "payment_method": row.payment_method,
         "payee": row.payee,
+        "store_id": getattr(row, "store_id", None),
+        "department_id": getattr(row, "department_id", None),
         "next_run_at": row.next_run_at,
         "end_date": row.end_date,
         "is_active": row.is_active,
@@ -1150,6 +1216,8 @@ async def generate_due_recurring(
             category=row.category,
             payment_method=row.payment_method,
             payee=row.payee,
+            store_id=getattr(row, "store_id", None),
+            department_id=getattr(row, "department_id", None),
             reference=f"REC-{row.id[:8]}",
             expense_date=now,
         )

@@ -7058,6 +7058,8 @@ async def create_recurring_expense(
         category=payload.category,
         payment_method=payload.payment_method,
         payee=payload.payee,
+        store_id=payload.store_id,
+        department_id=payload.department_id,
     )
     await db.commit()
     return env(expenses_svc.serialize_recurring(row), "Recurring expense created")
@@ -7105,12 +7107,21 @@ async def generate_recurring_expenses(
 
 
 @api.get("/expenses")
-async def expenses(claims=Depends(require_permission("expenses", "read")), db: AsyncSession = Depends(get_db)):
+async def expenses(
+    store_id: str | None = None,
+    department_id: str | None = None,
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
     stmt = (
         select(m.Expense)
         .where(m.Expense.tenant_id == claims["tenant_id"])
         .order_by(m.Expense.created_at.desc())
     )
+    if store_id:
+        stmt = stmt.where(m.Expense.store_id == store_id)
+    if department_id:
+        stmt = stmt.where(m.Expense.department_id == department_id)
     stmt = apply_created_by_scope(stmt, m.Expense, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await expenses_svc.serialize_expense_full(db, e) for e in rows])
@@ -7134,6 +7145,7 @@ async def add_expense(
         reference=payload.reference,
         payee=payload.payee,
         store_id=payload.store_id,
+        department_id=payload.department_id,
         liquid_account_id=payload.liquid_account_id,
         expense_date=payload.expense_date,
     )
@@ -7174,6 +7186,10 @@ async def patch_expense(
         payment_method=payload.payment_method,
         category_id=payload.category_id,
         category=payload.category,
+        store_id=payload.store_id,
+        department_id=payload.department_id,
+        clear_store=bool(payload.clear_store),
+        clear_department=bool(payload.clear_department),
     )
     await audit_svc.record_event(
         db,
@@ -7183,7 +7199,12 @@ async def patch_expense(
         action="expense_update",
         entity="expense",
         entity_id=expense.id,
-        details={"status": expense.status, "amount": float(expense.amount)},
+        details={
+            "status": expense.status,
+            "amount": float(expense.amount),
+            "store_id": expense.store_id,
+            "department_id": expense.department_id,
+        },
     )
     await db.commit()
     return env(await expenses_svc.serialize_expense_full(db, expense), "Expense updated")

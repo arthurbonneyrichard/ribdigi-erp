@@ -533,6 +533,10 @@ class Expense(Base):
     reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
     payee: Mapped[str | None] = mapped_column(String(150), nullable=True)
     store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
+    # Stage 14 E2 — optional department assignment (branch via department.branch_id)
+    department_id: Mapped[str | None] = mapped_column(
+        ForeignKey("departments.id"), nullable=True, index=True
+    )
     status: Mapped[str] = mapped_column(String(30), default="pending", index=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -570,6 +574,10 @@ class RecurringExpense(Base):
     frequency: Mapped[str] = mapped_column(String(20), default="monthly")
     payment_method: Mapped[str] = mapped_column(String(40), default="bank_transfer")
     payee: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    department_id: Mapped[str | None] = mapped_column(
+        ForeignKey("departments.id"), nullable=True, index=True
+    )
     start_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     next_run_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
