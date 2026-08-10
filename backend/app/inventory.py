@@ -721,6 +721,81 @@ async def apply_stock_change(
     return product
 
 
+async def assert_outbound_lines_stock_available(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    items: list[dict],
+) -> None:
+    """Fail-fast stock check before creating payments/journals for an outbound sale.
+
+    Aggregates requested qty per product (+ optional variant) so multi-line carts
+    cannot bypass the check line-by-line. Raises 409 INSUFFICIENT_STOCK with the
+    same structured detail shape as ``apply_stock_change``. Warehouse-scoped
+    enforcement remains on the authoritative ``apply_line_items_stock`` path.
+    """
+    if not items:
+        return
+    needed: dict[tuple[str, str | None], float] = {}
+    for item in items:
+        product_id = item.get("product_id")
+        qty = float(item.get("quantity") or 0)
+        variant_id = item.get("variant_id") or None
+        if not product_id or qty <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Each line item needs product_id and positive quantity",
+            )
+        key = (str(product_id), str(variant_id) if variant_id else None)
+        needed[key] = needed.get(key, 0.0) + qty
+
+    for (product_id, variant_id), qty in needed.items():
+        product = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.id == product_id,
+                    m.Product.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        on_hand = float(product.stock_qty or 0)
+        reserved = float(product.reserved_qty or 0)
+        avail = available_qty(on_hand, reserved)
+        if qty > avail + 1e-9:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "INSUFFICIENT_STOCK",
+                    "message": f"Insufficient available stock for {product.sku}",
+                    "on_hand": on_hand,
+                    "reserved": reserved,
+                    "available": avail,
+                    "requested": qty,
+                },
+            )
+        if variant_id:
+            from app.catalog import get_variant
+
+            variant = await get_variant(db, tenant_id, variant_id)
+            if variant.product_id != product.id:
+                raise HTTPException(
+                    status_code=400, detail="Variant does not belong to product"
+                )
+            v_avail = float(variant.stock_qty or 0)
+            if qty > v_avail + 1e-9:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "INSUFFICIENT_STOCK",
+                        "message": f"Insufficient variant stock for {variant.sku}",
+                        "available": v_avail,
+                        "requested": qty,
+                    },
+                )
+
+
 async def apply_line_items_stock(
     db: AsyncSession,
     *,

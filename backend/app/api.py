@@ -9,7 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.db import get_db
-from app.inventory import apply_line_items_stock, apply_stock_change
+from app.inventory import (
+    apply_line_items_stock,
+    apply_stock_change,
+    assert_outbound_lines_stock_available,
+)
 from app.rbac import (
     RECORD_SCOPE_KEY,
     VALID_ROLES,
@@ -6567,6 +6571,13 @@ async def pos_sale(
                 module="pos",
                 record_audit=False,
             )
+
+    # Stage 13 H1 — fail-fast before Transaction / payments / journal are created.
+    await assert_outbound_lines_stock_available(
+        db,
+        tenant_id=claims["tenant_id"],
+        items=items,
+    )
 
     ref = f"POS_SALE-{datetime.utcnow():%Y%m%d%H%M%S%f}"
     body = payload.model_dump()
