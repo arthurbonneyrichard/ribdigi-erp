@@ -23,3 +23,7 @@ Remaining commercial-MVP gaps include GRN valuation ignoring PO line discounts, 
 
 - Agents may implement Stage 11 plan items without reopening Stage 1–10 feature scope.
 - Stage 11 exit requires `docs/STAGE_11_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Closure (2026-08-10)
+
+Stage 11 workstreams C1, C2, A1, D1, H11x met exit criteria (`docs/STAGE_11_EXIT_CRITERIA.md`). Feature scope is frozen under [ADR-028](ADR_028_STAGE11_FREEZE.md). This open ADR remains historical; new Stage 11 feature work is not permitted except bugfixes / security / tests / docs.

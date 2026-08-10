@@ -393,64 +393,64 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Vendor relationship and information management.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Supplier Profile:** Name, code, type, category, status
-  - [ ] **Contact Details:** Multiple contacts with name, phone, email, designation
-  - [ ] **Supplier Balance:** Real-time outstanding payable balance
-  - [ ] **Payment Terms:** Credit period, discount terms
-  - [ ] **Supplier History:** Purchase history, return history, payment history
+  - [x] **Supplier Profile:** Name, code, type, category, status
+  - [x] **Contact Details:** Multiple contacts with name, phone, email, designation
+  - [x] **Supplier Balance:** Real-time outstanding payable balance (Stage 11 C1: GRN discount/tax-aware)
+  - [x] **Payment Terms:** Credit period, discount terms
+  - [x] **Supplier History:** Purchase history, return history, payment history
 
 #### BR-6.2 Purchase Request (PR)
 - **Description:** Internal requisition for goods.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create PR with product, quantity, preferred supplier, required date, requesting department
-  - [ ] PR approval workflow (Inventory Officer → Store Manager → Company Admin)
-  - [ ] Status tracking: Draft, Pending, Approved, Rejected, Converted to PO
-  - [ ] Convert approved PR to Purchase Order with one click
+  - [x] Create PR with product, quantity, preferred supplier, required date, requesting department
+  - [x] PR approval workflow (Inventory Officer → Store Manager → Company Admin)
+  - [x] Status tracking: Draft, Pending, Approved, Rejected, Converted to PO
+  - [x] Convert approved PR to Purchase Order with one click
 
 #### BR-6.3 Purchase Order (PO)
 - **Description:** Formal order placed with suppliers.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Create PO from PR or directly
-  - [ ] PO number auto-generation with configurable prefix
-  - [ ] Product lines with quantity, unit price, tax, discount, total
-  - [ ] Supplier selection and delivery address
-  - [ ] PO status: Draft, Sent, Partially Received, Fully Received, Cancelled
-  - [ ] Print/email PO to supplier
-  - [ ] PO amendment tracking
+  - [x] Create PO from PR or directly
+  - [x] PO number auto-generation with configurable prefix
+  - [x] Product lines with quantity, unit price, tax, discount, total
+  - [x] Supplier selection and delivery address
+  - [x] PO status: Draft, Sent, Partially Received, Fully Received, Cancelled
+  - [x] Print/email PO to supplier
+  - [x] PO amendment tracking
 
 #### BR-6.4 Goods Received Note (GRN)
 - **Description:** Record goods received against PO.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Create GRN referencing PO
-  - [ ] Record received quantity (may differ from ordered)
-  - [ ] Record batch numbers and expiry dates
-  - [ ] Handle partial receipts (multiple GRNs per PO)
-  - [ ] Auto-update inventory on GRN approval
-  - [ ] Handle rejected/damaged goods with reason
+  - [x] Create GRN referencing PO
+  - [x] Record received quantity (may differ from ordered)
+  - [x] Record batch numbers and expiry dates
+  - [x] Handle partial receipts (multiple GRNs per PO)
+  - [x] Auto-update inventory on GRN post (create posts immediately; no separate draft approval)
+  - [x] Handle rejected/damaged goods with reason
 
 #### BR-6.5 Purchase Invoice
 - **Description:** Supplier billing and payable recording.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Create invoice from GRN or manually
-  - [ ] Invoice number, date, due date
-  - [ ] Line items with quantity, rate, tax, discount
-  - [ ] Attach supplier invoice document (PDF/image)
-  - [ ] Status: Draft, Approved, Paid, Partially Paid, Overdue
-  - [ ] Auto-update Accounts Payable
+  - [x] Create invoice from GRN or manually
+  - [x] Invoice number, date, due date
+  - [x] Line items with quantity, rate, tax, discount (Stage 11 C1 tax-on-net-after-discount)
+  - [x] Attach supplier invoice document (PDF/image)
+  - [x] Status: Draft, Approved, Paid, Partially Paid, Overdue
+  - [x] Auto-update Accounts Payable (GRN posts AP; GRN-linked PI does not double-post; Stage 11 C2 RC self-assess)
 
 #### BR-6.6 Purchase Return
 - **Description:** Return goods to suppliers.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create return referencing original PO/GRN
-  - [ ] Record return reason (damaged, wrong item, expiry, quality issue)
-  - [ ] Deduct returned quantity from inventory
-  - [ ] Generate debit note
-  - [ ] Update supplier balance
+  - [x] Create return referencing original PO/GRN
+  - [x] Record return reason (damaged, wrong item, expiry, quality issue)
+  - [x] Deduct returned quantity from inventory
+  - [x] Generate debit note
+  - [x] Update supplier balance
 
 ---
 

@@ -1,9 +1,10 @@
 # Stage 11 Plan — Purchase-to-Pay Chain Fidelity
 
-**Status:** Open  
+**Status:** Closed — exit met; freeze [ADR-028](ADR_028_STAGE11_FREEZE.md)  
 **Base:** PO → GRN → Inventory → Supplier balance → Accounting → Audit trail  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Exit:** `docs/STAGE_11_EXIT_CRITERIA.md` (at close)
+**Exit:** [STAGE_11_EXIT_CRITERIA.md](STAGE_11_EXIT_CRITERIA.md)  
+**Fidelity:** [STAGE_11_FIDELITY.md](STAGE_11_FIDELITY.md)
 
 Stage 11 closes end-to-end purchasing chain fidelity after Stage 10 freeze. It is **not** Kubernetes, WAL/PITR, vendor pen test, Open Banking, FIFO/LIFO, or PO Kanban.
 
@@ -20,9 +21,9 @@ Stage 11 closes end-to-end purchasing chain fidelity after Stage 10 freeze. It i
 |----|------------|----------|---------|
 | **C1** | Chain E2E + GRN valuation fidelity (discount/tax) + AP aging vs received | P0 | COMPLETE |
 | **C2** | GRN-linked PI reverse-charge / AP closeout | P1 | COMPLETE |
-| **A1** | Purchasing audit closeout (payment, PI cancel, GRN→journal assertions) | P1 | PENDING |
-| **D1** | Spec / BR / readiness fidelity sync for BR-6.x chain | P2 | PENDING |
-| **H11x** | Stage 11 exit criteria + freeze ADR | Exit | PENDING |
+| **A1** | Purchasing audit closeout (payment, PI cancel, GRN→journal assertions) | P1 | COMPLETE |
+| **D1** | Spec / BR / readiness fidelity sync for BR-6.x chain | P2 | COMPLETE |
+| **H11x** | Stage 11 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -47,18 +48,18 @@ Stage 11 closes end-to-end purchasing chain fidelity after Stage 10 freeze. It i
 
 ## A1 acceptance criteria
 
-- [ ] Domain audit for supplier payment and PI cancel (at minimum).
-- [ ] Tests assert `grn_posted` + inventory/journal linkage on the chain.
+- [x] Domain audit `supplier_payment_recorded` + `purchase_invoice_cancelled`; richer `grn_posted` balance details.
+- [x] Tests assert `grn_posted` + `journal_posted` (source_type=grn) + payment/cancel hash chain (`test_purchasing_audit_a1.py`).
 
 ## D1 acceptance criteria
 
-- [ ] BR-6.x / API / readiness / launch checklist aligned with C1–A1 evidence.
+- [x] BR-6.x / API / readiness / launch checklist aligned — `docs/STAGE_11_FIDELITY.md`.
 
 ## H11x acceptance criteria
 
-- [ ] `docs/STAGE_11_EXIT_CRITERIA.md` records C1/C2/A1/D1/H11x COMPLETE with evidence.
-- [ ] Scope freeze ADR accepted; automated guard test present.
+- [x] `docs/STAGE_11_EXIT_CRITERIA.md` records C1/C2/A1/D1/H11x COMPLETE with evidence.
+- [x] Scope freeze ADR-028 accepted; automated guard test `backend/tests/test_stage11_exit_h11x.py`.
 
 ## Sign-off
 
-Stage 11 remains open until H11x exit criteria and freeze ADR are recorded.
+Stage 11 exit is met. Feature scope is frozen under ADR-028 (bugfixes / security / tests / docs only until CONTINUE opens the next track).

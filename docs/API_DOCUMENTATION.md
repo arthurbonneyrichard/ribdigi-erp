@@ -624,11 +624,10 @@ Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a produc
 **Create:** `POST /purchasing/grn`  
 **Get:** `GET /purchasing/grn/{grn_id}`
 
-**Create GRN:**
+**Create GRN** (posts immediately — stock ↑, supplier balance ↑, Dr 1200 / Cr 2000):
 ```json
 {
-  "po_id": "po_001",
-  "received_date": "2026-08-10",
+  "purchase_order_id": "po_001",
   "warehouse_id": "wh_001",
   "items": [
     {
@@ -636,12 +635,16 @@ Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a produc
       "received_qty": 100,
       "accepted_qty": 98,
       "rejected_qty": 2,
-      "rejection_reason": "Damaged packaging"
+      "rejection_reason": "Damaged packaging",
+      "batch_number": "LOT-1",
+      "expiry_date": "2027-01-01T00:00:00"
     }
   ],
   "notes": "Delivery received in good condition"
 }
 ```
+
+Accepted value uses PO line discount + tax math (Stage 11 C1). Uninvoiced AP aging uses received value, not full PO total.
 
 ### 6.5 Purchase Invoice
 **List:** `GET /purchasing/invoices`  

@@ -42,7 +42,7 @@ Use this list before promoting a staging build to production. Check items only w
 ## 4. Core ERP smoke (real tenant data)
 
 - [ ] Product create + stock-in + movement visible
-- [ ] Supplier → PO → GRN → purchase invoice → supplier payment
+- [x] Supplier → PO → GRN → purchase invoice → supplier payment (Stage 11 C1 automated: `test_purchasing_chain_c1.py`)
 - [ ] Customer → quotation/order/invoice → payment (credit limit gate if used)
 - [ ] POS sale with stock deduction + receipt
 - [ ] Expense create → approve → journal
