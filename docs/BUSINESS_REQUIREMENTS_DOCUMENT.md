@@ -790,7 +790,7 @@ Fidelity sync: Stage 22 D1 — `docs/STAGE_22_FIDELITY.md` (`test_stage22_fideli
   - [x] All reports filterable by date range, branch, store — Stage 23 F1 (`store_id`/`branch_id` on `GET /reports/balance-sheet`, P&L, cash-flow + Reports UI; `test_financial_report_filters_f1.py`); date on sales/P&L/cash-flow already Stage 14/16
   - [x] Comparative reports (current period vs previous period) — Stage 4/16 R1 sales daily/monthly `change_pct` / prior period; Stage 23 C1 financial `compare=true` on P&L / cash-flow / balance sheet (`test_financial_comparative_c1.py`)
 
-Fidelity sync: Stage 16 R1 suite — prior BR-14.1/14.4/14.5. Stage 23 D1 — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`) for BR-14.5 filters/comparative + commercial MVP gate docs.
+Fidelity sync: Stage 16 R1 suite — prior BR-14.1/14.4/14.5. Stage 23 D1/H23x — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`), exit `docs/STAGE_23_EXIT_CRITERIA.md`, freeze ADR-052 for BR-14.5 filters/comparative + commercial MVP gate docs.
 
 ---
 
