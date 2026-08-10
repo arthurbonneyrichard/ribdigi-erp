@@ -38,7 +38,7 @@
 
 ## 1. API Standards
 
-Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21.
+Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21. Stage 21 D1 tenant/org/dashboard fidelity sync: `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`) — BR-1–4.
 
 ### 1.1 Request Format
 - All requests and responses use **JSON**.
@@ -223,6 +223,8 @@ Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions a
 
 ### 3.2 Get Tenant Profile
 **Endpoint:** `GET /tenants/{tenant_id}`
+
+**Current tenant (Stage 21 T1/C1):** `GET /tenants/me` / `PATCH /tenants/me` — company admin / super_admin profile (legal name, registration/tax IDs, billing/shipping/warehouse addresses, contact person, currency, logo via `/tenants/me/logo`). Evidence: `test_tenant_lifecycle_t1.py`, `test_company_currency_tax_c1.py`.
 
 ### 3.3 Update Tenant Profile
 **Endpoint:** `PATCH /tenants/{tenant_id}`
@@ -1239,13 +1241,19 @@ Export types: `purchases_pending_orders`, `purchases_returns` (plus existing `pu
 
 ## 15. Notifications
 
+Stage 21 N1/D1 proves BR-4.4 panel fidelity — unread count, groups, mark read/unread, 90-day history (`test_dashboard_notifications_n1.py`; `docs/STAGE_21_FIDELITY.md`). WebSocket realtime remains deferred.
+
 ### 15.1 List Notifications
 **Endpoint:** `GET /notifications?status=unread&category=&group=`
 
-Groups: `stock`, `orders`, `payments`, `system`. Category `new_order` (Stage 4 N1 / BR-15.1) belongs to group `orders` and is emitted when a sales order is created or confirmed.
+Groups: `stock`, `orders`, `payments`, `system`. Category `new_order` (Stage 4 N1 / BR-15.1) belongs to group `orders` and is emitted when a sales order is created or confirmed. List applies a **90-day** `created_at` cutoff (`HISTORY_DAYS`).
+
+**Unread count:** `GET /notifications/unread-count` → `{ count }`.
 
 ### 15.2 Mark as Read
-**Endpoint:** `PATCH /notifications/{notification_id}/read`
+**Endpoint:** `PATCH /notifications/{notification_id}/read`  
+**Mark unread:** `PATCH /notifications/{notification_id}/unread`  
+**Mark all read:** `POST /notifications/read-all`
 
 ### 15.3 Notification Settings
 **Endpoint:** `GET /notifications/settings`  
@@ -1428,6 +1436,9 @@ Read models and resolved permissions may be served from Redis (`CACHE_BACKEND=au
 | Endpoint / path | Key pattern | TTL |
 |-----------------|-------------|-----|
 | `GET /dashboard` | `ribdigi:cache:dashboard:{tenant_id}:summary` | 5 min |
+
+**Executive dashboard (Stage 21 V1/D1):** `GET /dashboard` returns KPI totals, inventory alerts (`low_stock` / `out_of_stock` / `expiring_batches`), period compare (`daily_revenue` / `yesterday_revenue` / `dod_change_pct` + MoM), `recent_sales` (≤10), `top_products`, `daily_revenue_series` (30) / `monthly_revenue_series` (12), and `kpi_links`. Evidence: `test_dashboard_kpis_v1.py`.
+
 | `GET /products` | `ribdigi:cache:products:{tenant_id}:all` | 10 min |
 | `GET /catalog/categories` | `…:categories:flat` / `…:categories:tree` | 10 min |
 | Auth claims / `GET /me` | `ribdigi:cache:perms:{tenant_id}:{user_id}` | 1 hour (`CACHE_PERMISSIONS_TTL_SECONDS`) |

@@ -328,6 +328,8 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Mark as read/unread — Stage 21 N1 (`PATCH /notifications/{id}/read|unread`)
   - [x] Notification history (last 90 days) — Stage 21 N1 (list cutoff `HISTORY_DAYS=90`; older excluded)
 
+Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`).
+
 ---
 
 ### 4.5 Inventory Management

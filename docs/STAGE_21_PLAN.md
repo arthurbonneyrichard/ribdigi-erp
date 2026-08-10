@@ -49,7 +49,7 @@ Fidelity closeout
 | **U1** | Users & roles fidelity (BR-3) | P1 | COMPLETE |
 | **V1** | Dashboard KPIs & visualizations (BR-4.1–4.3) | P1 | COMPLETE |
 | **N1** | Dashboard notifications panel (BR-4.4) | P1 | COMPLETE |
-| **D1** | Spec / BR-1–4 / readiness / launch §§1–2 fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-1–4 / readiness / launch §§1–2 fidelity sync | P2 | COMPLETE |
 | **H21x** | Stage 21 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -114,8 +114,8 @@ Fidelity closeout
 
 ## D1 acceptance criteria
 
-- [ ] BR-1–4, tenancy readiness, USER_MANUAL / API / launch §§1–2 aligned — `docs/STAGE_21_FIDELITY.md`.
-- [ ] Guard test: `backend/tests/test_stage21_fidelity_d1.py`.
+- [x] BR-1–4, tenancy readiness, USER_MANUAL / API / launch §§1–2 aligned — `docs/STAGE_21_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage21_fidelity_d1.py`.
 
 ## H21x acceptance criteria
 
@@ -123,4 +123,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-T1–N1 complete. Pending D1 → H21x. Stages 1–20 remain frozen for their scopes.
+T1–D1 complete. Pending H21x exit + freeze. Stages 1–20 remain frozen for their scopes.

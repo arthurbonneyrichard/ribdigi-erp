@@ -70,6 +70,8 @@ If you're setting up RIBDIGI for the first time:
    - Review the pre-loaded accounts based on your industry
    - Adjust opening balances if migrating mid-year
 
+Stage 21 (ADR-047) proves tenant lifecycle, org units, users/roles, and executive dashboard fidelity — see `docs/STAGE_21_FIDELITY.md`.
+
 ### 1.3 Understanding the Interface
 
 #### Main Navigation Sidebar
@@ -126,8 +128,10 @@ The Dashboard is your command center — a real-time snapshot of your business h
 | **Customers** | Total active customers | Customer list |
 | **Suppliers** | Total active suppliers | Supplier list |
 | **Products** | Total products in catalog | Product list |
+| **Today / Yesterday Revenue** | Day-over-day (DoD %) compare | Sales report |
+| **Month / Prior Month Revenue** | Month-over-month (MoM %) compare | Sales report |
 
-> **Color Indicators:** Green = trending up vs. last period | Red = trending down
+> **Period compare:** Cards show Today vs Yesterday (DoD %) and This Month vs Last Month (MoM %). Click any KPI card to open the related module or report (`kpi_links`).
 
 ### 2.2 Inventory Alerts
 
@@ -144,15 +148,9 @@ The Dashboard is your command center — a real-time snapshot of your business h
 
 ### 2.4 Notifications Panel
 
-Click the **🔔 bell icon** to see:
-- Low stock alerts
-- New orders received
-- Purchase goods received
-- Payment due reminders
-- Credit limit warnings
-- System announcements
+Click the **🔔 bell icon** to see unread alerts grouped as **stock**, **orders**, **payments**, and **system** (for example low stock, new orders, payment due, security/system notices). History covers the last **90 days**.
 
-> **Mark as Read:** Click the checkmark or "Mark All as Read" to clear notifications.
+> **Mark as Read:** Open **Notifications** to mark individual items read/unread or mark all as read. Stage 21 N1/D1 — `docs/STAGE_21_FIDELITY.md`.
 
 ---
 
@@ -1010,7 +1008,7 @@ Click the **🔔 bell icon** in the top navigation bar.
 | ✅ | Expense approval | Expense pending approval above threshold |
 | 🔔 | System | "Scheduled backup completed" |
 
-Stage 16 N1 proves emission for outline buckets (low stock, new order, credit, purchase received, shift variance, transfer). See `docs/STAGE_16_FIDELITY.md`.
+Stage 16 N1 proves emission for outline buckets (low stock, new order, credit, purchase received, shift variance, transfer). See `docs/STAGE_16_FIDELITY.md`. Stage 21 N1/D1 proves panel fidelity (unread count, groups, mark read/unread, 90-day history) — `docs/STAGE_21_FIDELITY.md`.
 
 ### 13.2 Managing Notification Preferences
 
