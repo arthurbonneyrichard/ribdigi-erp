@@ -44,6 +44,44 @@ def _calc_po_line_amounts(
         raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
     net, tax, gross = compute_tax_amounts(gross_before - disc, rate, "exclusive")
     return float(net), float(tax), float(gross), disc
+
+
+def _calc_partial_po_line_amounts(
+    quantity: float,
+    unit_price: float,
+    tax_rate: float,
+    line_discount: float,
+    ordered_qty: float,
+) -> tuple[float, float, float, float]:
+    """Scale absolute PO line discount by qty/ordered for partial GRN / PI lines (Stage 11 C1)."""
+    ordered = float(ordered_qty or 0)
+    qty = float(quantity or 0)
+    disc = float(line_discount or 0)
+    scaled = round(disc * (qty / ordered), 2) if ordered > 0 and disc > 0 else 0.0
+    return _calc_po_line_amounts(qty, unit_price, tax_rate, scaled)
+
+
+async def po_received_accepted_value(
+    db: AsyncSession, tenant_id: str, purchase_order_id: str
+) -> float:
+    """Economic AP value of accepted GRN qty on a PO (discount + tax aware)."""
+    items = await list_po_items(db, tenant_id, purchase_order_id)
+    total = 0.0
+    for item in items:
+        received = float(item.received_qty or 0)
+        if received <= 0:
+            continue
+        _, _, line_total, _ = _calc_partial_po_line_amounts(
+            received,
+            float(item.unit_price or 0),
+            float(item.tax_rate or 0),
+            float(item.discount or 0),
+            float(item.quantity or 0),
+        )
+        total += line_total
+    return round(total, 2)
+
+
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
 
 # BR-6.2: Inventory Officer creates → Store Manager → (high value) Company Admin
@@ -1356,9 +1394,14 @@ async def create_grn(
                     notes=f"GRN {grn.grn_number}",
                 )
             po_item.received_qty = float(po_item.received_qty or 0) + accepted_qty
-            accepted_value += accepted_qty * float(po_item.unit_price) * (
-                1 + float(po_item.tax_rate or 0) / 100.0
+            _, _, line_total, _ = _calc_partial_po_line_amounts(
+                accepted_qty,
+                float(po_item.unit_price or 0),
+                float(po_item.tax_rate or 0),
+                float(po_item.discount or 0),
+                float(po_item.quantity or 0),
             )
+            accepted_value += line_total
 
         db.add(
             m.GoodsReceiptItem(
@@ -1380,6 +1423,7 @@ async def create_grn(
     updated_items = await list_po_items(db, tenant_id, po.id)
     po.status = derive_po_status(updated_items)
     po.updated_at = datetime.utcnow()
+    accepted_value = round(float(accepted_value), 2)
 
     if post_supplier_balance and accepted_value > 0:
         supplier = await get_supplier(db, tenant_id, po.supplier_id)
@@ -2250,8 +2294,10 @@ async def _prepare_invoice_lines(
         unit = float(item.get("unit_price") if item.get("unit_price") is not None else product.cost_price or 0)
         rate = float(item.get("tax_rate") or 0)
         discount = float(item.get("discount") or 0)
-        line_sub, line_tax, line_total = compute_line_total(qty, unit, rate)
-        line_total = max(line_total - discount, 0)
+        # Stage 11 C1 — same tax-on-net-after-discount math as PO / GRN valuation.
+        line_sub, line_tax, line_total, discount = _calc_po_line_amounts(
+            qty, unit, rate, discount
+        )
         subtotal += line_sub
         tax_total += line_tax
         prepared.append(
@@ -2264,7 +2310,7 @@ async def _prepare_invoice_lines(
                 "line_total": line_total,
             }
         )
-    return subtotal, tax_total, subtotal + tax_total, prepared
+    return round(subtotal, 2), round(tax_total, 2), round(subtotal + tax_total, 2), prepared
 
 
 async def create_purchase_invoice(
@@ -2315,13 +2361,20 @@ async def create_purchase_invoice(
                 if qty <= 0:
                     continue
                 poi = po_items.get(gi.po_item_id)
+                ordered = float(poi.quantity or 0) if poi else 0
+                line_disc = float(poi.discount or 0) if poi else 0
+                scaled_disc = (
+                    round(line_disc * (qty / ordered), 2)
+                    if poi and ordered > 0 and line_disc > 0
+                    else 0.0
+                )
                 items.append(
                     {
                         "product_id": gi.product_id,
                         "quantity": qty,
                         "unit_price": float(poi.unit_price) if poi else 0,
                         "tax_rate": float(poi.tax_rate or 0) if poi else 0,
-                        "discount": 0,
+                        "discount": scaled_disc,
                     }
                 )
     elif purchase_order_id:

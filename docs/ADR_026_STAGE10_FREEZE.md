@@ -20,3 +20,7 @@ Stage 10 Tax Fidelity & Document Workflow Closeout (T1, T2, A1, B1, H10x) delive
 - Agents treat Stage 10 T1, T2, A1, B1, H10x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–9 freezes (ADR-008, ADR-010, ADR-012, ADR-014, ADR-016, ADR-018, ADR-020, ADR-022, ADR-024) remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 11 via the Purchase-to-Pay chain scope after Stage 10 freeze. Stage 11 track is open under [ADR-027](ADR_027_STAGE11_OPEN.md) + [STAGE_11_PLAN.md](STAGE_11_PLAN.md). Stage 10 feature scope remains frozen (bugfixes / security / tests / docs only).

@@ -293,10 +293,14 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
             }
         )
 
+    # Stage 11 C1 — uninvoiced AP exposure = accepted GRN value (not full PO total).
+    from app.purchasing import po_received_accepted_value
+
     for po in orders:
         if po.id in invoiced_po_ids:
             continue
-        due = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        received_value = await po_received_accepted_value(db, tenant_id, po.id)
+        due = max(float(received_value) - float(po.paid_amount or 0), 0)
         if due <= 0:
             continue
         days = days_overdue(as_of, po.due_date, po.created_at)
@@ -314,6 +318,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "party_name": row["name"],
                 "due_date": po.due_date,
                 "balance_due": due,
+                "received_value": received_value,
                 "days_overdue": days,
                 "bucket": bucket,
             }
