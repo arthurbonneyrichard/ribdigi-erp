@@ -290,21 +290,20 @@ Controls CRUD operations on specific entities:
 
 ### 7.1 Tenant Isolation Strategy
 
-RIBDIGI ERP implements **Schema-per-Tenant** isolation for the MVP:
+RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema-per-tenant remains a deferred post-MVP option.
 
-- Each tenant receives a dedicated PostgreSQL schema
-- Shared `public` schema contains only tenant registry and global configuration
-- Tenant context determined by `X-Tenant-ID` header validated against JWT
-- SQLAlchemy dynamically sets `search_path` per request
+- All tenant business tables carry `tenant_id` with query filters on every protected path
+- Tenant context from JWT (and validated `X-Tenant-ID` when present); header mismatch → `403`
+- Foreign resource IDs from another tenant → `404` (no existence leak)
 
 ### 7.2 Isolation Guarantees
 
 | Guarantee | Implementation |
 |-----------|----------------|
-| **Data Separation** | Schema-level isolation; no shared tables for tenant data |
-| **Query Enforcement** | Middleware injects `tenant_id` filter on every query |
-| **Resource Quotas** | Per-tenant database connection limits and storage caps |
-| **Cross-Tenant Prevention** | Foreign keys and constraints scoped to tenant schema |
+| **Data Separation** | Shared schema with mandatory `tenant_id` on tenant-owned rows |
+| **Query Enforcement** | Service/API layer scopes selects/updates by `claims["tenant_id"]` |
+| **Cross-Tenant Prevention** | Foreign-id and mismatched-header proofs in isolation matrix |
+| **Launch smoke coverage** | Stage 18 S1 extends matrix for API keys, webhooks, OCR-apply, stock counts, warehouse transfers, quotations/orders, product warehouse-stock (`test_isolation_matrix_s1.py`; base `test_tenant_isolation_matrix.py`) |
 
 ### 7.3 Tenant Lifecycle Security
 

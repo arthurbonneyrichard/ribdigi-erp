@@ -48,7 +48,7 @@ Performance testing
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **S1** | Tenant isolation matrix completeness (MVP write/read paths) | P0 | PENDING |
+| **S1** | Tenant isolation matrix completeness (MVP write/read paths) | P0 | COMPLETE |
 | **A1** | Security hardening fidelity (RBAC / session / audit BR-17 sync + sensitive-path proof) | P0 | PENDING |
 | **B1** | Backup schedule / retention / failure notify + restore drill evidence | P0 | PENDING |
 | **I1** | Cross-module integrity (inventory Σ movements · accounting TB/GL · POS money-path) | P0 | PENDING |
@@ -73,8 +73,8 @@ Performance testing
 
 ## S1 acceptance criteria
 
-- [ ] Isolation matrix covers MVP tenant-owned resources used in launch smoke (foreign-id / header-mismatch proofs); no schema-per-tenant.
-- [ ] Automated proof.
+- [x] Isolation matrix covers MVP tenant-owned resources used in launch smoke (foreign-id / header-mismatch proofs); no schema-per-tenant.
+- [x] Automated proof: `backend/tests/test_isolation_matrix_s1.py` (extends `test_tenant_isolation_matrix.py` for API keys, webhooks, OCR-apply, stock counts, warehouse transfers, quotations/orders, product surfaces).
 
 ## A1 acceptance criteria
 
@@ -117,4 +117,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-Stage 18 open under ADR-041. Pending S1 → … → H18x. Stages 1–17 remain frozen for their scopes.
+S1 complete. Pending A1 → … → H18x. Stages 1–17 remain frozen for their scopes.
