@@ -601,11 +601,11 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
 - **Description:** Financial account structure.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Predefined COA based on industry template
-  - [ ] Account types: Asset, Liability, Equity, Income, Expense
-  - [ ] Account code hierarchy (e.g., 1000-Assets, 1100-Current Assets)
-  - [ ] Add/edit accounts (non-system accounts)
-  - [ ] Opening balance entry
+  - [x] Predefined COA based on industry template — Stage 22 C1 (`GET /accounting/accounts` seeds `DEFAULT_ACCOUNTS`; industry-agnostic system COA for MVP — same seed for all industries; `test_coa_fidelity_c1.py`)
+  - [x] Account types: Asset, Liability, Equity, Income, Expense — Stage 22 C1 (`ACCOUNT_TYPES` on seeded + custom accounts)
+  - [x] Account code hierarchy (e.g., 1000-Assets, 1100-Current Assets) — Stage 22 C1 (code bands + `parent_id` / `?tree=true`)
+  - [x] Add/edit accounts (non-system accounts) — Stage 22 C1 (`POST`/`PATCH /accounting/accounts`; system accounts `409 SYSTEM_ACCOUNT`)
+  - [x] Opening balance entry — Stage 22 C1 (`POST /accounting/accounts/{id}/opening-balance`)
 
 #### BR-10.2 Journal Entries
 - **Description:** Manual accounting transactions.
