@@ -132,6 +132,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 14 exit (2026-08-10):** E1, E2, A1, A2, T1, R1, A3, D1, H14x met — `docs/STAGE_14_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_034_STAGE14_FREEZE.md`. Fidelity: `docs/STAGE_14_FIDELITY.md`.
 
+**Stage 15 open (2026-08-10):** Sales Inventory–Ledger Chain Fidelity track approved — `docs/ADR_035_STAGE15_OPEN.md` + `docs/STAGE_15_PLAN.md` (Sales → Inventory → Customer balance → Tax → Accounting → Audit).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -705,7 +707,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 14 closed (`docs/STAGE_14_EXIT_CRITERIA.md`, ADR-034). Stages 1–14 remain frozen for their scopes until CONTINUE opens the next track.
+**Active delivery plan:** Stage 15 open (`docs/STAGE_15_PLAN.md`, ADR-035). Stages 1–14 remain frozen for their scopes.
 
 ### 6.2 Features
 

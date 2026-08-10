@@ -20,3 +20,7 @@ Stage 14 Finance Closeout Chain Fidelity (E1, E2, A1, A2, T1, R1, A3, D1, H14x) 
 - Agents treat Stage 14 E1–E2, A1–A3, T1, R1, D1, H14x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–13 freezes remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 15 (Sales Inventory–Ledger Chain Fidelity) after Stage 14 freeze — see [ADR-035](ADR_035_STAGE15_OPEN.md) and [STAGE_15_PLAN.md](STAGE_15_PLAN.md). Stage 14 feature scope remains frozen; Stage 15 does not reopen E1–E2 / A1–A3 / T1 / R1 / D1 / H14x.
