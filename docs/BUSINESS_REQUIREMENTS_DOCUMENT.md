@@ -806,10 +806,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Multi-channel alert delivery.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Dashboard:** In-app notification bell with badge count
-  - [ ] **Email:** SMTP integration; HTML email templates
-  - [ ] **SMS:** SMS gateway integration (Twilio, regional providers)
-  - [ ] User preference for channel per notification type
+  - [x] **Dashboard:** In-app notification bell with badge count — Stage 1 / Stage 16 N1
+  - [x] **Email:** SMTP integration; HTML email templates — Stage 16 N2 (`create_notification` → `send_notification_email`; console when SMTP unset)
+  - [x] **SMS:** SMS gateway integration (Twilio, regional providers) — Stage 16 N2 (`send_notification_sms`; console when Twilio unset)
+  - [x] User preference for channel per notification type — Stage 16 N2 (`GET/PATCH /notifications/settings`; outline categories opt-in)
 
 ---
 

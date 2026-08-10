@@ -1033,7 +1033,7 @@ Click the **🔔 bell icon** in the top navigation bar.
 
 ### 13.2 Managing Notification Preferences
 
-1. Go to **Settings → Notifications**
+1. Go to **Settings → Notifications** (or **Notifications** preferences)
 2. For each notification type, choose channels:
    - **Dashboard:** In-app notification
    - **Email:** Send to registered email
@@ -1041,6 +1041,8 @@ Click the **🔔 bell icon** in the top navigation bar.
 3. Click **Save Preferences**
 
 > **Note:** SMS notifications may incur additional charges based on your subscription plan.
+
+**Stage 16 N2:** Outline alert types (`low_stock`, `new_order`, `credit_limit`, `purchase_received`, `shift_variance`, `transfer`) default to **dashboard only**. Turn on Email/SMS per type for company admins (broadcast alerts) or for yourself (targeted alerts such as shift variance). Delivery uses tenant SMTP / Twilio when configured; otherwise the platform records a console send attempt (dev) — it does not claim carrier delivery without a real SMTP/Twilio call. Profile **phone** is required for SMS.
 
 ---
 

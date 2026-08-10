@@ -52,7 +52,7 @@ Notifications
 | **R1** | Reports suite fidelity (Sales / Inventory / Low Stock / Purchasing / Expenses / Financial / Store Performance) | P0 | COMPLETE |
 | **R2** | Credit + Tax report packaging fidelity (Reports outline ↔ existing APIs/UI) | P1 | COMPLETE |
 | **M2** | Transfer history / consolidated multi-store ops reporting | P1 | COMPLETE |
-| **N2** | Channel delivery hardening (email/SMS prefs for key categories) | P1 | PENDING |
+| **N2** | Channel delivery hardening (email/SMS prefs for key categories) | P1 | COMPLETE |
 | **D1** | Spec / BR-13–15 / readiness fidelity sync | P2 | PENDING |
 | **H16x** | Stage 16 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -98,8 +98,8 @@ Notifications
 
 ## N2 acceptance criteria
 
-- [ ] Email and/or SMS delivery path proven for at least two outline categories with user channel preferences respected (console/Twilio fallbacks OK in test).
-- [ ] Automated proof: channel prefs + send attempt recorded (no fake “delivered to carrier” success).
+- [x] Email and/or SMS delivery path proven for at least two outline categories with user channel preferences respected (console/Twilio fallbacks OK in test).
+- [x] Automated proof: channel prefs + send attempt recorded (no fake “delivered to carrier” success) — `backend/tests/test_notification_channel_delivery_n2.py` (`new_order` email, `low_stock` email+SMS console outboxes; pref-off skips send).
 
 ## D1 acceptance criteria
 
@@ -112,4 +112,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-M1–M2 complete. Pending N2 → D1 → H16x.
+M1–N2 complete. Pending D1 → H16x.

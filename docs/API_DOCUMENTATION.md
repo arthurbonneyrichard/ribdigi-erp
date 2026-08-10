@@ -1251,7 +1251,7 @@ Groups: `stock`, `orders`, `payments`, `system`. Category `new_order` (Stage 4 N
 **Endpoint:** `GET /notifications/settings`  
 **Update:** `PATCH /notifications/settings`
 
-Preference keys include `new_order`, `low_stock`, `purchase_received`, `payment_due`, `credit_limit`, and other default categories. Each key has `dashboard` / `email` / `sms` booleans.
+Preference keys include `new_order`, `low_stock`, `purchase_received`, `payment_due`, `credit_limit`, `shift_variance`, `transfer`, and other default categories. Each key has `dashboard` / `email` / `sms` booleans.
 
 ```json
 {
@@ -1262,6 +1262,7 @@ Preference keys include `new_order`, `low_stock`, `purchase_received`, `payment_
 }
 ```
 
+**Channel delivery (Stage 16 N2):** After the dashboard notification is written, `create_notification` best-effort sends email/SMS to recipients with that channel enabled for the category. Broadcast alerts (`user_id` null) target active `company_admin` / `super_admin`. Outline categories default email/SMS **off**. SMTP unset → email `mode=console` outbox attempt; Twilio unset → SMS `mode=console`. Carrier `delivered` is only recorded for real SMTP/Twilio sends.
 ---
 
 ## 16. AI Business Assistant
