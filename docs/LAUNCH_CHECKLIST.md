@@ -109,8 +109,9 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] AI customer + security fidelity (Stage 20 U1: `test_ai_customer_security_u1.py` — churn/best/promos + login/txn alerts + notify)
 - [x] Stage 20 fidelity sync (D1: `test_stage20_fidelity_d1.py`, `docs/STAGE_20_FIDELITY.md`)
 - [x] Stage 20 exit + freeze (H20x: `test_stage20_exit_h20x.py`, ADR-046)
-- [ ] Stage 21 Tenant Lifecycle, Org & Dashboard Fidelity (open: `docs/STAGE_21_PLAN.md`, ADR-047) — T1 complete; I1 next
+- [ ] Stage 21 Tenant Lifecycle, Org & Dashboard Fidelity (open: `docs/STAGE_21_PLAN.md`, ADR-047) — T1–I1 complete; O1 next
 - [x] Tenant registration & lifecycle fidelity (Stage 21 T1: `test_tenant_lifecycle_t1.py` — register/verify/trial, profile/logo, statuses/reminders/grace/plan)
+- [x] Tenant isolation & init seeds fidelity (Stage 21 I1: `test_tenant_isolation_seeds_i1.py` — cross-tenant isolation, seed_tenant_defaults, tenant-scoped backup)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1

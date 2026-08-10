@@ -43,7 +43,7 @@ Fidelity closeout
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **T1** | Tenant registration & lifecycle (BR-1.1–1.3) | P0 | COMPLETE |
-| **I1** | Isolation & tenant init seeds (BR-1.4–1.5) | P0 | PENDING |
+| **I1** | Isolation & tenant init seeds (BR-1.4–1.5) | P0 | COMPLETE |
 | **O1** | Org units fidelity (BR-2.2–2.5) | P0 | PENDING |
 | **C1** | Company / currency / tax setup (BR-2.1, 2.6, 2.8) | P1 | PENDING |
 | **U1** | Users & roles fidelity (BR-3) | P1 | PENDING |
@@ -76,11 +76,11 @@ Fidelity closeout
 
 ## I1 acceptance criteria
 
-- [ ] Cross-tenant isolation + API tenant context validation proven (shared-schema `tenant_id`; not separate DBs).
-- [ ] Registration/init seeds COA / tax / UoM / expense categories proven.
-- [ ] Tenant-scoped backup path regression where applicable.
-- [ ] Automated proof: `backend/tests/test_tenant_isolation_seeds_i1.py`.
-- [ ] BR-1.4–1.5 synced with evidence (ADR-001 honesty on isolation model).
+- [x] Cross-tenant isolation + API tenant context validation proven (shared-schema `tenant_id`; not separate DBs).
+- [x] Registration/init seeds COA / tax / UoM / expense categories proven.
+- [x] Tenant-scoped backup path regression where applicable.
+- [x] Automated proof: `backend/tests/test_tenant_isolation_seeds_i1.py`.
+- [x] BR-1.4–1.5 synced with evidence (ADR-001 honesty on isolation model).
 
 ## O1 acceptance criteria
 
@@ -123,4 +123,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-T1 complete. Pending I1 → H21x. Stages 1–20 remain frozen for their scopes.
+T1–I1 complete. Pending O1 → H21x. Stages 1–20 remain frozen for their scopes.

@@ -169,20 +169,20 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Ensure complete data separation between tenants.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Tenant A cannot access Tenant B data under any circumstance
-  - [ ] Database-level isolation (separate schemas or databases)
-  - [ ] API requests include tenant context validation
-  - [ ] Backup operations are tenant-scoped
+  - [x] Tenant A cannot access Tenant B data under any circumstance — Stage 21 I1 (`test_tenant_isolation_seeds_i1.py`; product list + foreign invoice 404)
+  - [x] Database-level isolation (separate schemas or databases) — Stage 21 I1 (MVP shared-schema + `tenant_id` per ADR-001; schema-per-tenant deferred)
+  - [x] API requests include tenant context validation — Stage 21 I1 (JWT `tenant_id` + mismatched `X-Tenant-ID` → 403 Cross-tenant)
+  - [x] Backup operations are tenant-scoped — Stage 21 I1 (`GET/POST /backup`; foreign backup id 404)
 
 #### BR-1.5 Tenant Database Initialization
 - **Description:** Automated setup of tenant-specific database with seed data.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Auto-create schema/tables on registration
-  - [ ] Seed default chart of accounts based on industry
-  - [ ] Seed default tax rates
-  - [ ] Seed default units of measure
-  - [ ] Seed default expense categories
+  - [x] Auto-create schema/tables on registration — Stage 21 I1 (`POST /tenants` → `seed_tenant_defaults` on shared schema)
+  - [x] Seed default chart of accounts based on industry — Stage 21 I1 (`ensure_default_accounts`; industry-agnostic system COA for MVP)
+  - [x] Seed default tax rates — Stage 21 I1 (default VAT tax rate on registration)
+  - [x] Seed default units of measure — Stage 21 I1 (`ensure_default_catalog` UoM)
+  - [x] Seed default expense categories — Stage 21 I1 (`ensure_default_categories`)
 
 ---
 
