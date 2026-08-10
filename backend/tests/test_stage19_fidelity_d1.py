@@ -22,19 +22,22 @@ def test_stage19_fidelity_note_and_plan():
     assert "test_company_settings_br20_c1.py" in fidelity
     assert "test_reliability_cache_r1.py" in fidelity
     assert "test_stage19_fidelity_d1.py" in fidelity
+    assert "test_stage19_exit_h19x.py" in fidelity or "H19x" in fidelity
     assert "DR_LOGICAL_BACKUP_RUNBOOK.md" in fidelity
     assert "ADR-043" in fidelity or "ADR_043" in fidelity
+    assert "ADR-044" in fidelity or "exit met" in fidelity.lower()
     assert "H19x" in fidelity
     assert "Kubernetes" in fidelity or "WAL" in fidelity or "1000-VU" in fidelity
     assert "WYSIWYG" in fidelity or "cursor pagination" in fidelity.lower()
 
     plan = _read("docs/STAGE_19_PLAN.md")
     assert "STAGE_19_FIDELITY.md" in plan
-    for ws in ("K1", "P1", "S1", "A1", "U1", "C1", "R1", "D1"):
+    for ws in ("K1", "P1", "S1", "A1", "U1", "C1", "R1", "D1", "H19x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}**" in ln][0]
         assert "COMPLETE" in line, ws
-    h19_line = [ln for ln in plan.splitlines() if "| **H19x**" in ln][0]
-    assert "PENDING" in h19_line
+    assert "Closed" in plan or "exit met" in plan.lower() or "ADR-044" in plan
+    assert "STAGE_19_EXIT_CRITERIA.md" in plan
+    assert "ADR-044" in plan or "ADR_044" in plan
     assert "ADR-043" in plan or "ADR_043" in plan
 
 
@@ -107,6 +110,7 @@ def test_stage19_security_api_launch_checklist():
     assert "test_reliability_cache_r1.py" in launch
     assert "test_stage19_fidelity_d1.py" in launch
     assert "STAGE_19_FIDELITY.md" in launch
+    assert "test_stage19_exit_h19x.py" in launch
     section5 = launch.split("## 5. Reliability & cache")[1].split("## 6.")[0]
     assert "[x] Dashboard / catalog cache soft-fails if Redis blips" in section5
     assert "[x] Permissions cache invalidates after role / record_scope change" in section5
@@ -122,10 +126,13 @@ def test_stage19_readiness_and_roadmap():
     assert "test_auth_session_br19_u1.py" in pr
     assert "test_company_settings_br20_c1.py" in pr
     assert "test_reliability_cache_r1.py" in pr
-    assert "ADR-043" in pr or "ADR_043" in pr or "STAGE_19_PLAN.md" in pr
+    assert "STAGE_19_EXIT_CRITERIA.md" in pr or "ADR-044" in pr or "ADR_044" in pr
 
     roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
     assert "STAGE_19_FIDELITY.md" in roadmap
     assert "Stage 19 D1" in roadmap
     assert "ADR_043_STAGE19_OPEN.md" in roadmap
     assert "STAGE_19_PLAN.md" in roadmap
+    assert "STAGE_19_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_044_STAGE19_FREEZE.md" in roadmap
+    assert "Stage 19 exit" in roadmap

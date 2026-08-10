@@ -160,6 +160,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 19 D1 (2026-08-10):** Spec / BR-18–20 / readiness / launch fidelity sync — `docs/STAGE_19_FIDELITY.md`.
 
+**Stage 19 exit (2026-08-10):** K1, P1, S1, A1, U1, C1, R1, D1, H19x met — `docs/STAGE_19_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_044_STAGE19_FREEZE.md`. Fidelity: `docs/STAGE_19_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -733,7 +735,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 19 open (`docs/STAGE_19_PLAN.md`, ADR-043); D1 fidelity `docs/STAGE_19_FIDELITY.md`. Stages 1–18 remain frozen for their scopes. H19x exit/freeze pending.
+**Active delivery plan:** Stage 19 closed (`docs/STAGE_19_EXIT_CRITERIA.md`, ADR-044). Stages 1–19 remain frozen for their scopes. Stage 20+ requires an open ADR after explicit CONTINUE/NEXT.
 
 ### 6.2 Features
 

@@ -1,9 +1,10 @@
 # Stage 19 Plan — API, Settings & Operator Reliability Fidelity
 
-**Status:** Open  
+**Status:** Closed — exit met (H19x / ADR-044)  
 **Base:** API surface → Company & security settings → Operator reliability  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-043](ADR_043_STAGE19_OPEN.md)
+**Open ADR (historical):** [ADR-043](ADR_043_STAGE19_OPEN.md)  
+**Exit:** [STAGE_19_EXIT_CRITERIA.md](STAGE_19_EXIT_CRITERIA.md) · [ADR-044](ADR_044_STAGE19_FREEZE.md) · [STAGE_19_FIDELITY.md](STAGE_19_FIDELITY.md)
 
 Stage 19 closes commercial-MVP API / settings / operator-reliability fidelity after Stage 18 freeze. Auth, API keys, webhooks, domain APIs, company settings, Redis cache, Celery jobs, and logical backup engines already exist (Stages 1 / 5 / 6 / 7 / 11–13). This track proves BR-18–20 and launch §5 with live evidence and docs sync — **not** Kubernetes, WAL/PITR, Grafana, certified 1000-VU, or greenfield APIs.
 
@@ -47,7 +48,7 @@ Operator reliability
 | **C1** | Company/settings BR-20 fidelity sync | P1 | COMPLETE |
 | **R1** | Reliability & cache (LAUNCH §5) | P0 | COMPLETE |
 | **D1** | Spec / BR-18–20 / readiness / launch fidelity sync | P2 | COMPLETE |
-| **H19x** | Stage 19 exit criteria + freeze ADR | Exit | PENDING |
+| **H19x** | Stage 19 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -103,8 +104,10 @@ Operator reliability
 
 ## H19x acceptance criteria
 
-See workstream table; filled when exit workstream starts.
+- [x] `docs/STAGE_19_EXIT_CRITERIA.md` lists K1–D1 / H19x COMPLETE with evidence; deferred infra remains out of scope.
+- [x] Freeze ADR accepted: `docs/ADR_044_STAGE19_FREEZE.md`.
+- [x] Guard test: `backend/tests/test_stage19_exit_h19x.py`.
 
 ## Sign-off
 
-K1–P1–S1–A1–U1–C1–R1–D1 complete. Pending H19x exit/freeze. Stages 1–18 remain frozen for their scopes.
+K1–P1–S1–A1–U1–C1–R1–D1–H19x complete. Stage 19 closed (ADR-044). Stages 1–18 remain frozen for their scopes. Stage 20+ requires a new open ADR after explicit CONTINUE/NEXT.

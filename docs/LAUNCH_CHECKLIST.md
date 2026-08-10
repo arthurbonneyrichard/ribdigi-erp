@@ -89,7 +89,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] CI + production Compose/env fidelity (Stage 18 C1: `test_ci_prod_config_c1.py`, `.env.production.example`, `docker-compose.prod.yml`; no K8s deploy)
 - [x] Stage 18 fidelity sync (D1: `test_stage18_fidelity_d1.py`, `docs/STAGE_18_FIDELITY.md`)
 - [x] Stage 18 exit + freeze (H18x: `test_stage18_exit_h18x.py`, ADR-042)
-- [ ] Stage 19 API / Settings / Operator Reliability (open: `docs/STAGE_19_PLAN.md`, ADR-043) — K1–D1 complete; H19x next
+- [x] Stage 19 API / Settings / Operator Reliability (closed: `docs/STAGE_19_PLAN.md`, ADR-044) — K1–D1 / H19x complete
 - [x] Auth API fidelity (Stage 19 K1: `test_auth_api_fidelity_k1.py` — JWT login/refresh, API keys, tenant-scoped rate-limit headers)
 - [x] Products + Customers API fidelity (Stage 19 P1: `test_products_customers_api_p1.py` — catalog CRUD/import/stock/barcode + customers/groups/balance/history; X-API-Key reads)
 - [x] Sales + Purchases API fidelity (Stage 19 S1: `test_sales_purchases_api_s1.py` — quote/order/invoice/payment/return/POS + PR/PO/GRN/PI/supplier payment; X-API-Key reads)
@@ -98,6 +98,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Company/settings BR-20 fidelity (Stage 19 C1: `test_company_settings_br20_c1.py` — legal/logo/formats/SMTP/numbering/templates)
 - [x] Reliability & cache LAUNCH §5 (Stage 19 R1: `test_reliability_cache_r1.py` — Redis soft-fail, perms invalidation, beat matrix, jobs dry-run, logical DR runbook)
 - [x] Stage 19 fidelity sync (D1: `test_stage19_fidelity_d1.py`, `docs/STAGE_19_FIDELITY.md`)
+- [x] Stage 19 exit + freeze (H19x: `test_stage19_exit_h19x.py`, ADR-044)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1

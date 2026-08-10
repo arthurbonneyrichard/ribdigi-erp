@@ -1,8 +1,9 @@
 # Stage 19 Fidelity Notes — API, Settings & Operator Reliability
 
-**Status:** Closed with Stage 19 D1; exit pending (H19x)  
+**Status:** Closed with Stage 19 D1; exit met (H19x / ADR-044)  
 **Surface:** API surface → Company & security settings → Operator reliability  
-**Open ADR:** [ADR-043](ADR_043_STAGE19_OPEN.md)  
+**Open ADR (historical):** [ADR-043](ADR_043_STAGE19_OPEN.md)  
+**Exit:** [STAGE_19_EXIT_CRITERIA.md](STAGE_19_EXIT_CRITERIA.md) · [ADR-044](ADR_044_STAGE19_FREEZE.md)  
 **Plan:** [STAGE_19_PLAN.md](STAGE_19_PLAN.md)
 
 Stage 19 proves commercial-MVP API / settings / operator-reliability fidelity on existing Stage 1 / 5 / 6 / 7 / 11–13 engines — BR-18–20 checkbox sync with live evidence, LAUNCH §5 reliability proofs, and logical DR packaging — **not** Kubernetes/Helm, Grafana/PagerDuty, WAL/S3 PITR, PgBouncer, certified 1000-VU, vendor pen test, paid billing, schema-per-tenant, ADR-005, multi-bin, FIFO, WebSocket, Open Banking, tax e-file, Prophet/LLM, cursor pagination, or richer WYSIWYG template designer.
@@ -32,7 +33,7 @@ Stage 19 proves commercial-MVP API / settings / operator-reliability fidelity on
 | **C1** | `test_company_settings_br20_c1.py` — legal/logo/formats/SMTP/numbering/templates/header-footer | BR-20.1–20.4 | Richer WYSIWYG designer |
 | **R1** | `test_reliability_cache_r1.py` + `DR_LOGICAL_BACKUP_RUNBOOK.md` — Redis soft-fail, perms invalidation, beat matrix, jobs dry-run | LAUNCH §5 | WAL/PITR; Grafana/PagerDuty |
 | **D1** | This note + `test_stage19_fidelity_d1.py` | BR-18–20 + SECURITY_GUIDE + API docs + readiness + launch §§1–5 | — |
-| **H19x** | Pending — `STAGE_19_EXIT_CRITERIA.md` + freeze ADR | Stage 19 exit + freeze | Next track needs open ADR |
+| **H19x** | `STAGE_19_EXIT_CRITERIA.md`; ADR-044; `test_stage19_exit_h19x.py` | Stage 19 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -44,17 +45,19 @@ Stage 19 proves commercial-MVP API / settings / operator-reliability fidelity on
 - `backend/tests/test_company_settings_br20_c1.py`
 - `backend/tests/test_reliability_cache_r1.py`
 - `backend/tests/test_stage19_fidelity_d1.py`
+- `backend/tests/test_stage19_exit_h19x.py`
 
 ## Spec sync targets
 
 - `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-18.1–18.6, BR-19.1–19.3, BR-20.1–20.4
 - `docs/SECURITY_GUIDE.md` — Stage 19 K1 / U1 password-lockout honesty / D1
 - `docs/API_DOCUMENTATION.md` — Stage 19 K1 / P1 / S1 / A1 (+ D1 cite)
-- `PRODUCTION_READINESS.md` — API / Identity / Reliability bullets + Stage 19 D1
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 19 D1 note
-- `docs/LAUNCH_CHECKLIST.md` — K1–R1 / D1 evidence; §5 Reliability & cache
+- `PRODUCTION_READINESS.md` — API / Identity / Reliability bullets + Stage 19 D1 / H19x
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 19 D1 / H19x notes
+- `docs/LAUNCH_CHECKLIST.md` — K1–R1 / D1 / H19x evidence; §5 Reliability & cache
 - `docs/DR_LOGICAL_BACKUP_RUNBOOK.md` — Stage 19 R1 packaging
-- `docs/STAGE_19_PLAN.md` — D1 COMPLETE; H19x PENDING
+- `docs/STAGE_19_PLAN.md` — Closed (H19x / ADR-044)
+- `docs/STAGE_19_EXIT_CRITERIA.md` · `docs/ADR_044_STAGE19_FREEZE.md`
 - `docs/ADR_043_STAGE19_OPEN.md`
 
 ## Deferred (not Stage 19)
