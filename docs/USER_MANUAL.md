@@ -246,15 +246,13 @@ Use **Inventory → Stock ops → Opening stock** (`add` or `set`). Set mode can
 
 #### Stock Count (Physical Inventory)
 
-1. Go to **Inventory → Stock Count → + New Count**
-2. Select **Warehouse**
-3. Choose count method:
-   - **Full Count:** All products
-   - **Partial Count:** Specific categories or products
-   - **Cycle Count:** Random sample
-4. Enter actual quantities for each product
-5. System highlights variances
-6. Click **Generate Adjustment** to create stock adjustment for variances
+Stage 17 S2: create a count, enter counted quantities, **Complete & post variances** (writes immutable `adjustment` movements), then download the variance CSV/PDF report.
+
+1. Go to **Inventory → Stock counts**
+2. Create a count for a **Warehouse** (optionally limit to selected products)
+3. Enter **counted** quantities; the UI shows line variance vs system expected qty
+4. Click **Complete & post variances** — non-zero variances adjust product and warehouse stock
+5. Download **variance CSV/PDF** (available after complete)
 
 ### 3.3 Managing Warehouses
 
