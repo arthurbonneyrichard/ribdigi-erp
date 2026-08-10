@@ -688,11 +688,11 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
 - **Description:** Define and apply tax rules.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Add tax types (VAT, GST, Sales Tax, etc.)
+  - [x] Add tax types (VAT, GST, Sales Tax, etc.) — Stage 22 T1 (`POST /tax/rates` `tax_type`; `test_tax_config_fidelity_t1.py`)
   - [x] Configure tax rates (percentage) — create + Stage 14 T1 `PATCH /tax/rates/{id}` edit/deactivate (`is_active`; clears default)
-  - [ ] Set tax applicability (inclusive/exclusive pricing)
+  - [x] Set tax applicability (inclusive/exclusive pricing) — Stage 22 T1 (`pricing_mode` on rates + `POST /tax/calculate`)
   - [x] Product-category-specific tax rules (Stage 10 T1 — category `tax_rate_id`, parent walk)
-  - [ ] Compound tax (tax on tax) support
+  - [x] Compound tax (tax on tax) support — Stage 22 T1 (`components` with `basis: compound` on rates / calculate)
 
 #### BR-12.2 Automatic Tax Calculation
 - **Description:** Real-time tax computation on transactions.

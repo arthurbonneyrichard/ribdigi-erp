@@ -47,7 +47,7 @@ Fidelity closeout
 | **B1** | Cash/bank, recon, cheques fidelity (BR-10.3) | P1 | COMPLETE |
 | **P1** | AR/AP aging, payments, overdue + financial export (BR-10.4–10.6) | P1 | COMPLETE |
 | **R1** | Customer credit surface fidelity (BR-11.1) | P1 | COMPLETE |
-| **T1** | Tax configuration fidelity (BR-12.1) | P1 | PENDING |
+| **T1** | Tax configuration fidelity (BR-12.1) | P1 | COMPLETE |
 | **D1** | Spec / BR-9–12 / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
 | **H22x** | Stage 22 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -106,9 +106,9 @@ Fidelity closeout
 
 ## T1 acceptance criteria
 
-- [ ] Tax types, inclusive/exclusive pricing mode, compound tax proven.
-- [ ] Automated proof: `backend/tests/test_tax_config_fidelity_t1.py`.
-- [ ] BR-12.1 remaining ACs synced (rates/category/calc/reports already Stage 10/14/15/21 — cite).
+- [x] Tax types, inclusive/exclusive pricing mode, compound tax proven.
+- [x] Automated proof: `backend/tests/test_tax_config_fidelity_t1.py`.
+- [x] BR-12.1 remaining ACs synced (rates/category/calc/reports already Stage 10/14/15/21 — cite).
 
 ## D1 acceptance criteria
 
@@ -121,4 +121,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-E1–R1 complete. Pending T1 → H22x. Stages 1–21 remain frozen for their scopes.
+E1–T1 complete. Pending D1 → H22x. Stages 1–21 remain frozen for their scopes.
