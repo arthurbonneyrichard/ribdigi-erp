@@ -21,3 +21,7 @@ Stage 22 Expenses, Ledger, Credit & Tax Surface Fidelity (E1, A1, C1, B1, P1, R1
 - Agents treat Stage 22 E1, A1, C1, B1, P1, R1, T1, D1, H22x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP (paid billing / schema-per-tenant / Open Banking / tax e-file / monitoring / WAL remain Partial where open).
 - Stage 1–21 freezes remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 23 (Reports Dimension & Commercial MVP Gate Fidelity) after Stage 22 freeze via CONTINUE/NEXT — see [ADR-051](ADR_051_STAGE23_OPEN.md) and [STAGE_23_PLAN.md](STAGE_23_PLAN.md). Stage 22 feature scope remains frozen; Stage 23 does not reopen E1–D1 / H22x.

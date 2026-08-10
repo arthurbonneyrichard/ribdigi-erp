@@ -59,7 +59,9 @@ def test_stage16_br_checkboxes_synced():
     assert "[x] **Expense Approval Required:**" in br
     assert "[x] **Email:**" in br
     assert "[x] **SMS:**" in br
-    assert "Partial: date on sales" in br or "balance sheet store/branch filters deferred" in br
+    # BR-14.5 filter AC closed in Stage 23 F1 (was Partial after Stage 16).
+    assert "All reports filterable" in br
+    assert "Stage 23 F1" in br or "Stage 16 R1" in br
 
 
 def test_stage16_api_manual_launch():

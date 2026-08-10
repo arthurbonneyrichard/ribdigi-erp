@@ -971,6 +971,49 @@ async def resolve_journal_store_id(
     return store.id
 
 
+async def resolve_journal_dimension_ids(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+) -> tuple[str | None, str | None, list[str] | None]:
+    """Resolve optional store/branch journal filters.
+
+    Returns ``(store_id, branch_id, store_ids)`` where ``store_ids`` is:
+    - ``None`` — no dimension filter
+    - ``list`` — filter journals to those store ids (may be empty)
+    """
+    from app.org_units import get_branch
+    from app.stores import get_store
+
+    resolved_branch: str | None = None
+    resolved_store: str | None = None
+    if branch_id:
+        branch = await get_branch(db, tenant_id, branch_id)
+        resolved_branch = branch.id
+    if store_id:
+        store = await get_store(db, tenant_id, store_id)
+        resolved_store = store.id
+        if resolved_branch and store.branch_id != resolved_branch:
+            raise HTTPException(
+                status_code=400,
+                detail="STORE_BRANCH_MISMATCH: Store does not belong to the selected branch",
+            )
+        return resolved_store, resolved_branch, [resolved_store]
+    if resolved_branch:
+        stores = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.branch_id == resolved_branch,
+                )
+            )
+        ).scalars().all()
+        return None, resolved_branch, [s.id for s in stores]
+    return None, None, None
+
+
 async def post_journal_entry(
     db: AsyncSession,
     *,
@@ -1794,17 +1837,21 @@ async def account_balances_through(
     tenant_id: str,
     *,
     as_of: datetime | None = None,
+    store_ids: list[str] | None = None,
 ) -> tuple[list[m.Account], dict[str, float]]:
-    """Natural-side balances per account; as_of uses posted journals through that instant."""
+    """Natural-side balances per account; as_of / store_ids rebuild from posted journals."""
     accounts = (
         await db.execute(
             select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
         )
     ).scalars().all()
-    if as_of is None:
+    if as_of is None and store_ids is None:
         return accounts, {a.id: float(a.balance or 0) for a in accounts}
 
     balances = {a.id: 0.0 for a in accounts}
+    if store_ids is not None and len(store_ids) == 0:
+        return accounts, balances
+
     stmt = (
         select(m.JournalEntryLine, m.Account)
         .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
@@ -1813,9 +1860,12 @@ async def account_balances_through(
             m.JournalEntryLine.tenant_id == tenant_id,
             m.JournalEntry.tenant_id == tenant_id,
             m.JournalEntry.status == "posted",
-            m.JournalEntry.entry_date <= as_of,
         )
     )
+    if as_of is not None:
+        stmt = stmt.where(m.JournalEntry.entry_date <= as_of)
+    if store_ids is not None:
+        stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
     for line, account in (await db.execute(stmt)).all():
         balances[account.id] = round(
             float(balances.get(account.id, 0.0))
@@ -1888,11 +1938,12 @@ async def profit_and_loss(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> dict:
-    """Period P&L from posted journal lines (optional date range / store)."""
+    """Period P&L from posted journal lines (optional date range / store / branch)."""
     await ensure_default_accounts(db, tenant_id)
-    resolved_store = await resolve_journal_store_id(
-        db, tenant_id=tenant_id, store_id=store_id
+    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+        db, tenant_id=tenant_id, store_id=store_id, branch_id=branch_id
     )
 
     stmt = (
@@ -1910,8 +1961,11 @@ async def profit_and_loss(
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
-    if resolved_store:
-        stmt = stmt.where(m.JournalEntry.store_id == resolved_store)
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.JournalEntry.store_id.in_([]))
 
     rows = (await db.execute(stmt)).all()
     by_account: dict[str, dict] = {}
@@ -1954,6 +2008,7 @@ async def profit_and_loss(
         "from_date": from_date.date().isoformat() if from_date else None,
         "to_date": to_date.date().isoformat() if to_date else None,
         "store_id": resolved_store,
+        "branch_id": resolved_branch,
         "revenue": revenue,
         "other_income": other_income,
         "cogs": cogs,

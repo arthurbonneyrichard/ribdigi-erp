@@ -1314,13 +1314,14 @@ async def cash_flow(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> dict:
     """Cash flow from cash + bank GL accounts, split into O/I/F activities."""
-    from app.accounting import ensure_default_accounts, resolve_journal_store_id
+    from app.accounting import ensure_default_accounts, resolve_journal_dimension_ids
 
     await ensure_default_accounts(db, tenant_id)
-    resolved_store = await resolve_journal_store_id(
-        db, tenant_id=tenant_id, store_id=store_id
+    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+        db, tenant_id=tenant_id, store_id=store_id, branch_id=branch_id
     )
     liquid = (
         await db.execute(
@@ -1349,6 +1350,7 @@ async def cash_flow(
             "from_date": from_date.date().isoformat() if from_date else None,
             "to_date": to_date.date().isoformat() if to_date else None,
             "store_id": resolved_store,
+            "branch_id": resolved_branch,
             "inflows": 0,
             "outflows": 0,
             "net": 0,
@@ -1376,8 +1378,11 @@ async def cash_flow(
                 m.JournalEntry.entry_date < from_date,
             )
         )
-        if resolved_store:
-            open_stmt = open_stmt.where(m.JournalEntry.store_id == resolved_store)
+        if store_ids is not None:
+            if store_ids:
+                open_stmt = open_stmt.where(m.JournalEntry.store_id.in_(store_ids))
+            else:
+                open_stmt = open_stmt.where(m.JournalEntry.store_id.in_([]))
         for line, _entry in (await db.execute(open_stmt)).all():
             opening_cash += float(line.debit or 0) - float(line.credit or 0)
 
@@ -1394,8 +1399,11 @@ async def cash_flow(
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
-    if resolved_store:
-        stmt = stmt.where(m.JournalEntry.store_id == resolved_store)
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.JournalEntry.store_id.in_([]))
     rows = (await db.execute(stmt.order_by(m.JournalEntry.entry_date.asc()))).all()
 
     sections = {
@@ -1447,6 +1455,7 @@ async def cash_flow(
         "from_date": from_date.date().isoformat() if from_date else None,
         "to_date": to_date.date().isoformat() if to_date else None,
         "store_id": resolved_store,
+        "branch_id": resolved_branch,
         "inflows": round(inflows, 2),
         "outflows": round(outflows, 2),
         "net": period_net,
@@ -1467,11 +1476,18 @@ async def balance_sheet(
     tenant_id: str,
     *,
     as_of: datetime | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> dict:
-    """Point-in-time balance sheet; optional as_of from posted journals through that date."""
-    from app.accounting import account_balances_through
+    """Point-in-time balance sheet; optional as_of / store / branch from posted journals."""
+    from app.accounting import account_balances_through, resolve_journal_dimension_ids
 
-    accounts, bal_by_id = await account_balances_through(db, tenant_id, as_of=as_of)
+    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+        db, tenant_id=tenant_id, store_id=store_id, branch_id=branch_id
+    )
+    accounts, bal_by_id = await account_balances_through(
+        db, tenant_id, as_of=as_of, store_ids=store_ids
+    )
 
     def rows_for(account_type: str) -> list[dict]:
         return [
@@ -1506,6 +1522,8 @@ async def balance_sheet(
     total_equity = round(sum(r["balance"] for r in equity), 2)
     return {
         "as_of": (as_of or datetime.utcnow()).date().isoformat(),
+        "store_id": resolved_store,
+        "branch_id": resolved_branch,
         "assets": assets,
         "liabilities": liabilities,
         "equity": equity,

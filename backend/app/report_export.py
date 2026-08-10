@@ -571,6 +571,7 @@ async def build_report_payload(
     month: int | None = None,
     warehouse_id: str | None = None,
     store_id: str | None = None,
+    branch_id: str | None = None,
     category_id: str | None = None,
     jurisdiction: str | None = None,
     kind: str | None = None,
@@ -642,15 +643,33 @@ async def build_report_payload(
     if report_type == "expenses_summary":
         return await reports_svc.expenses_summary(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "cash_flow":
-        return await reports_svc.cash_flow(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.cash_flow(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id,
+            branch_id=branch_id,
+        )
     if report_type == "trial_balance":
         return await accounting_svc.trial_balance(db, tenant_id, as_of=as_of)
     if report_type == "profit_loss":
         return await accounting_svc.profit_and_loss(
-            db, tenant_id, from_date=fd, to_date=td
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id,
+            branch_id=branch_id,
         )
     if report_type == "balance_sheet":
-        return await reports_svc.balance_sheet(db, tenant_id, as_of=as_of)
+        return await reports_svc.balance_sheet(
+            db,
+            tenant_id,
+            as_of=as_of,
+            store_id=store_id,
+            branch_id=branch_id,
+        )
     if report_type == "credit_aging":
         from app import credit as credit_svc
 

@@ -787,8 +787,8 @@ Fidelity sync: Stage 22 D1 — `docs/STAGE_22_FIDELITY.md` (`test_stage22_fideli
   - [x] **Profit & Loss Statement** — Stage 16 R1 (`GET /reports/profit-loss`; store filter Stage 14 A1)
   - [x] **Cash Flow Statement** — Stage 16 R1 (`GET /reports/cash-flow`)
   - [x] **Balance Sheet (Assets = Liabilities + Equity)** — Stage 16 R1 (`GET /reports/balance-sheet`; `as_of_date` Stage 14 A2)
-  - [ ] All reports filterable by date range, branch, store — Partial: date on sales/P&L/cash-flow; store on P&L/cash-flow/JE; balance sheet store/branch filters deferred
-  - [x] Comparative reports (current period vs previous period) — Stage 4/16 R1 sales daily/monthly `change_pct` / prior period; full financial comparative deferred
+  - [x] All reports filterable by date range, branch, store — Stage 23 F1 (`store_id`/`branch_id` on `GET /reports/balance-sheet`, P&L, cash-flow + Reports UI; `test_financial_report_filters_f1.py`); date on sales/P&L/cash-flow already Stage 14/16
+  - [x] Comparative reports (current period vs previous period) — Stage 4/16 R1 sales daily/monthly `change_pct` / prior period; full financial comparative deferred (Stage 23 C1)
 
 ---
 

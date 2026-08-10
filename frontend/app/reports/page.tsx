@@ -90,10 +90,12 @@ export default function Page() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [storeId, setStoreId] = useState('');
+  const [branchId, setBranchId] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [transferScope, setTransferScope] = useState('all');
   const [transferStatus, setTransferStatus] = useState('');
-  const [stores, setStores] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [stores, setStores] = useState<{ id: string; code: string; name: string; branch_id?: string | null }[]>([]);
+  const [branches, setBranches] = useState<{ id: string; code: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
@@ -123,12 +125,19 @@ export default function Page() {
   useEffect(() => {
     Promise.all([
       api('/stores').catch(() => ({ data: [] })),
+      api('/branches').catch(() => ({ data: [] })),
       api('/catalog/categories').catch(() => ({ data: [] })),
-    ]).then(([s, c]) => {
+    ]).then(([s, b, c]) => {
       setStores(s.data || []);
+      setBranches(b.data || []);
       setCategories(c.data || []);
     });
   }, []);
+
+  const financialTab = tab === 'pnl' || tab === 'cashflow' || tab === 'balancesheet';
+  const storeOptions = branchId
+    ? stores.filter((s) => s.branch_id === branchId)
+    : stores;
 
   async function load(nextTab: Tab = tab) {
     setLoading(true);
@@ -153,10 +162,18 @@ export default function Page() {
       if (nextTab === 'inventory') path = '/reports/inventory/low-stock';
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
       if (nextTab === 'expenses') path = `/reports/expenses/summary${qs()}`;
-      if (nextTab === 'pnl') path = `/reports/profit-loss${qs({ store_id: storeId })}`;
-      if (nextTab === 'cashflow') path = `/reports/cash-flow${qs({ store_id: storeId })}`;
+      if (nextTab === 'pnl') {
+        path = `/reports/profit-loss${qs({ store_id: storeId, branch_id: branchId })}`;
+      }
+      if (nextTab === 'cashflow') {
+        path = `/reports/cash-flow${qs({ store_id: storeId, branch_id: branchId })}`;
+      }
       if (nextTab === 'balancesheet') {
-        path = `/reports/balance-sheet${qs({ as_of_date: toDate })}`;
+        path = `/reports/balance-sheet${qs({
+          as_of_date: toDate,
+          store_id: storeId,
+          branch_id: branchId,
+        })}`;
       }
       if (nextTab === 'credit') {
         const [ar, ap] = await Promise.all([
@@ -249,6 +266,7 @@ export default function Page() {
       if (toDate) params.set('to_date', toDate);
       if (toDate) params.set('as_of_date', toDate);
       if (storeId) params.set('store_id', storeId);
+      if (branchId) params.set('branch_id', branchId);
       if (categoryId) params.set('category_id', categoryId);
       if (tab === 'transfers') {
         if (transferScope) params.set('scope', transferScope);
@@ -382,10 +400,27 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        {(tab === 'sales' || tab === 'inventory' || tab === 'transfers') && (
+        {financialTab && (
+          <select
+            value={branchId}
+            onChange={(e) => {
+              setBranchId(e.target.value);
+              setStoreId('');
+            }}
+            aria-label="Branch filter"
+          >
+            <option value="">All branches</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.code} — {b.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {(tab === 'sales' || tab === 'inventory' || tab === 'transfers' || financialTab) && (
           <select value={storeId} onChange={(e) => setStoreId(e.target.value)} aria-label="Store filter">
             <option value="">All stores</option>
-            {stores.map((s) => (
+            {storeOptions.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.code} — {s.name}
               </option>

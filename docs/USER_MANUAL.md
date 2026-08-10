@@ -767,15 +767,15 @@ For adjustments, accruals, and corrections:
 ### 8.6 Financial Reports
 
 #### Profit & Loss (P&L)
-- **Go to:** Accounting → Reports → Profit & Loss
+- **Go to:** Accounting → Reports → Profit & Loss (or **Reports → P&L**)
 - **Shows:** Revenue − Cost of Goods Sold = Gross Profit; Gross Profit − Expenses = Net Profit
-- **Filters:** Date range, store (Stage 14 A1 — journals tagged with store)
+- **Filters:** Date range, store, branch (Stage 14 A1 store; Stage 23 F1 branch)
 - **Export:** PDF, Excel (Stage 22 P1 `/reports/export`)
 
 #### Cash Flow Statement
-- **Go to:** Accounting → Reports → Cash Flow
+- **Go to:** Accounting → Reports → Cash Flow (or **Reports → Cash flow**)
 - **Shows:** Operating, Investing, and Financing activities
-- **Filters:** Date range, store (Stage 14 A1)
+- **Filters:** Date range, store, branch (Stage 14 A1 / Stage 23 F1)
 - Identifies cash inflows and outflows
 
 #### Trial Balance
@@ -789,6 +789,7 @@ For adjustments, accruals, and corrections:
 #### Balance Sheet
 - **Go to:** Reports → Balance Sheet
 - **As of:** Same point-in-time `as_of` semantics as trial balance (Stage 14 A2)
+- **Filters:** Store and branch (Stage 23 F1 — rebuilds from posted journals tagged with store)
 
 ---
 

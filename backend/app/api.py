@@ -8453,6 +8453,7 @@ async def get_profit_loss(
     from_date: str | None = None,
     to_date: str | None = None,
     store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8467,6 +8468,7 @@ async def get_profit_loss(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             store_id=store_id,
+            branch_id=branch_id,
         )
     )
 
@@ -8476,10 +8478,11 @@ async def report_profit_loss(
     from_date: str | None = None,
     to_date: str | None = None,
     store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_profit_loss(from_date, to_date, store_id, claims, db)
+    return await get_profit_loss(from_date, to_date, store_id, branch_id, claims, db)
 
 
 @api.get("/reports/trial-balance")
@@ -8496,6 +8499,7 @@ async def report_cash_flow(
     from_date: str | None = None,
     to_date: str | None = None,
     store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8506,6 +8510,7 @@ async def report_cash_flow(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             store_id=store_id,
+            branch_id=branch_id,
         )
     )
 
@@ -8513,6 +8518,8 @@ async def report_cash_flow(
 @api.get("/reports/balance-sheet")
 async def report_balance_sheet(
     as_of_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8521,6 +8528,8 @@ async def report_balance_sheet(
             db,
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+            store_id=store_id,
+            branch_id=branch_id,
         )
     )
 
@@ -8537,6 +8546,7 @@ async def reports_export(
     month: int | None = None,
     warehouse_id: str | None = None,
     store_id: str | None = None,
+    branch_id: str | None = None,
     category_id: str | None = None,
     jurisdiction: str | None = None,
     kind: str | None = None,
@@ -8559,6 +8569,7 @@ async def reports_export(
         month=month,
         warehouse_id=warehouse_id,
         store_id=store_id,
+        branch_id=branch_id,
         category_id=category_id,
         jurisdiction=jurisdiction,
         kind=kind,
