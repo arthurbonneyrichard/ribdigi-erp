@@ -375,6 +375,8 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 
 ## 5. Inventory & Products
 
+Stage 17 C1 proves catalog fidelity for BR-5.1 (categories tree, brands+logo, UoM conversion, variants, barcode generate, multi-image primary, batch/expiry via stock-in) — `test_catalog_fidelity_c1.py`; plan `docs/STAGE_17_PLAN.md`.
+
 ### 5.1 Product Categories
 **List:** `GET /catalog/categories` (`?tree=true` for nested tree)  
 **Create:** `POST /catalog/categories` — body `{ code, name, parent_id?, tax_rate_id? }`  

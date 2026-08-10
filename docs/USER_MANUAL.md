@@ -158,6 +158,8 @@ Click the **🔔 bell icon** to see:
 
 ## 3. Inventory Management
 
+Stage 17 (ADR-039) proves catalog and stock-ops fidelity on the existing Inventory engine — see `docs/STAGE_17_PLAN.md`. Catalog surfaces live under **Inventory** (categories tree, brands, units, variants, barcodes, images, batches).
+
 ### 3.1 Managing Products
 
 #### Adding a New Product

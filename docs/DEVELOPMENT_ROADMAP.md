@@ -144,6 +144,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 16 exit (2026-08-10):** M1, N1, R1, R2, M2, N2, D1, H16x met — `docs/STAGE_16_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_038_STAGE16_FREEZE.md`. Fidelity: `docs/STAGE_16_FIDELITY.md`.
 
+**Stage 17 open (2026-08-10):** Inventory Catalog & Stock Ops Fidelity track approved — `docs/ADR_039_STAGE17_OPEN.md` + `docs/STAGE_17_PLAN.md` (Catalog → Stock Ops → Warehouse → Low Stock).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -717,7 +719,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 16 exit met (`docs/STAGE_16_EXIT_CRITERIA.md`, ADR-038). Stages 1–16 remain frozen for their scopes. Next track requires an explicit open ADR.
+**Active delivery plan:** Stage 17 open (`docs/STAGE_17_PLAN.md`, ADR-039). Stages 1–16 remain frozen for their scopes.
 
 ### 6.2 Features
 

@@ -21,3 +21,7 @@ Stage 16 Multi-Store / Reports / Notifications Fidelity (M1, N1, R1, R2, M2, N2,
 - Agents treat Stage 16 M1, N1, R1, R2, M2, N2, D1, H16x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP (multi-store remains Partial while multi-bin / ADR-005 are open).
 - Stage 1–15 freezes remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 17 (Inventory Catalog & Stock Ops Fidelity) after Stage 16 freeze — see [ADR-039](ADR_039_STAGE17_OPEN.md) and [STAGE_17_PLAN.md](STAGE_17_PLAN.md). Stage 16 feature scope remains frozen; Stage 17 does not reopen M1–N2 / D1 / H16x.

@@ -336,15 +336,15 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Comprehensive product information management.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Categories:** Hierarchical category tree (parent/child), category code
-  - [ ] **Brands:** Brand name, logo, description
-  - [ ] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios
-  - [ ] **Product Variants:** Size, color, flavor, dosage (pharmacy) variants with unique SKUs
-  - [ ] **SKU:** Auto-generated or manual SKU assignment
-  - [ ] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes
-  - [ ] **Images:** Multiple product images with primary image designation
-  - [ ] **Product Details:** Name, description, cost price, selling price, tax rate, category, brand, unit, weight, dimensions
-  - [ ] **Batch/Expiry:** Batch number, manufacturing date, expiry date (critical for pharmacy and food)
+  - [x] **Categories:** Hierarchical category tree (parent/child), category code — Stage 17 C1 (`GET /catalog/categories?tree=true`)
+  - [x] **Brands:** Brand name, logo, description — Stage 17 C1 (`POST /catalog/brands`, logo upload)
+  - [x] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios — Stage 17 C1 / Stage 2 I6 (`/catalog/units/convert`)
+  - [x] **Product Variants:** Size, color, flavor, dosage (pharmacy) variants with unique SKUs — Stage 17 C1
+  - [x] **SKU:** Auto-generated or manual SKU assignment — Stage 17 C1 (manual SKU on create/variant)
+  - [x] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes — Stage 17 C1 (`/barcode/generate`)
+  - [x] **Images:** Multiple product images with primary image designation — Stage 17 C1 (`/products/{id}/images`)
+  - [x] **Product Details:** Name, cost price, selling price, tax rate, category, brand, unit, weight, dimensions — Stage 17 C1 (create with FKs + weight/dims; Stage 2 I6)
+  - [x] **Batch/Expiry:** Batch number, manufacturing date, expiry date (critical for pharmacy and food) — Stage 17 C1 (`POST /inventory/stock-in` + `/products/{id}/batches`)
 
 #### BR-5.2 Stock Operations
 - **Description:** All inventory movement transactions.
