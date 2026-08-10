@@ -631,21 +631,21 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
 - **Description:** Track money owed by customers.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Auto-generation from sales invoices
-  - [ ] Customer aging report (0-30, 31-60, 61-90, 90+ days)
-  - [ ] Payment recording against invoices
-  - [ ] Partial payment support
-  - [ ] Overdue notification automation
+  - [x] Auto-generation from sales invoices — Stage 22 P1 (`POST /sales/invoices/{id}/post` → AR journal `sales_invoice`; `test_ar_ap_export_p1.py`)
+  - [x] Customer aging report (0-30, 31-60, 61-90, 90+ days) — Stage 22 P1 (`GET /credit/aging?kind=receivable` buckets `current`/`1_30`/`31_60`/`61_90`/`90_plus`)
+  - [x] Payment recording against invoices — Stage 22 P1 (`POST /sales/payments` + `sales_invoice_id`)
+  - [x] Partial payment support — Stage 22 P1 (partial `paid_amount` / status)
+  - [x] Overdue notification automation — Stage 22 P1 (`POST /notifications/scan-due` → `payment_due` on sales invoices)
 
 #### BR-10.5 Accounts Payable (AP)
 - **Description:** Track money owed to suppliers.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Auto-generation from purchase invoices
-  - [ ] Supplier aging report
-  - [ ] Payment recording against bills
-  - [ ] Partial payment support
-  - [ ] Due date notifications
+  - [x] Auto-generation from purchase invoices — Stage 22 P1 (GRN AP journal + PI from GRN; `test_ar_ap_export_p1.py`)
+  - [x] Supplier aging report — Stage 22 P1 (`GET /credit/aging?kind=payable`)
+  - [x] Payment recording against bills — Stage 22 P1 (`POST /suppliers/{id}/payments` + `purchase_invoice_id`)
+  - [x] Partial payment support — Stage 22 P1 (partial bill `paid_amount`)
+  - [x] Due date notifications — Stage 22 P1 (`scan_payment_due` includes purchase invoices → `payment_due` / `purchase_invoice`; + payment-schedule)
 
 #### BR-10.6 Financial Reports
 - **Description:** Standard financial statements.
@@ -654,7 +654,7 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
   - [x] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit; filterable by date range and store (Stage 14 A1 — `store_id` on journals / P&L; Stage 15 I1 sale COGS posts to `5000`)
   - [x] **Cash Flow:** Operating, investing, financing activities (Stage 3 A3 + Stage 14 A1 store filter)
   - [x] **Trial Balance:** All accounts with debit/credit balances; validation that total debits = total credits; point-in-time `as_of_date` (Stage 14 A2; balance sheet same)
-  - [ ] Export to PDF and Excel
+  - [x] Export to PDF and Excel — Stage 22 P1 (`GET /reports/export` `profit_loss`/`trial_balance` as `pdf` + `xlsx`; `test_ar_ap_export_p1.py`)
 
 ---
 

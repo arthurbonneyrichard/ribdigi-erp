@@ -45,7 +45,7 @@ Fidelity closeout
 | **A1** | Expense approval & recurring fidelity (BR-9.3, 9.5) | P0 | COMPLETE |
 | **C1** | COA fidelity (BR-10.1) | P0 | COMPLETE |
 | **B1** | Cash/bank, recon, cheques fidelity (BR-10.3) | P1 | COMPLETE |
-| **P1** | AR/AP aging, payments, overdue + financial export (BR-10.4–10.6) | P1 | PENDING |
+| **P1** | AR/AP aging, payments, overdue + financial export (BR-10.4–10.6) | P1 | COMPLETE |
 | **R1** | Customer credit surface fidelity (BR-11.1) | P1 | PENDING |
 | **T1** | Tax configuration fidelity (BR-12.1) | P1 | PENDING |
 | **D1** | Spec / BR-9–12 / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
@@ -94,9 +94,9 @@ Fidelity closeout
 
 ## P1 acceptance criteria
 
-- [ ] AR/AP auto from invoices, aging, payments/partial, overdue/due notifications, financial PDF/Excel export proven.
-- [ ] Automated proof: `backend/tests/test_ar_ap_export_p1.py`.
-- [ ] BR-10.4–10.6 synced with evidence (P&L/TB/cash-flow already Stage 3/14/15 — export focus for 10.6).
+- [x] AR/AP auto from invoices, aging, payments/partial, overdue/due notifications, financial PDF/Excel export proven.
+- [x] Automated proof: `backend/tests/test_ar_ap_export_p1.py`.
+- [x] BR-10.4–10.6 synced with evidence (P&L/TB/cash-flow already Stage 3/14/15 — export focus for 10.6).
 
 ## R1 acceptance criteria
 
@@ -121,4 +121,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-E1–B1 complete. Pending P1 → H22x. Stages 1–21 remain frozen for their scopes.
+E1–P1 complete. Pending R1 → H22x. Stages 1–21 remain frozen for their scopes.
