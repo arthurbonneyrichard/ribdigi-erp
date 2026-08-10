@@ -21,3 +21,7 @@ Stage 19 API, Settings & Operator Reliability Fidelity (K1, P1, S1, A1, U1, C1, 
 - Agents treat Stage 19 K1, P1, S1, A1, U1, C1, R1, D1, H19x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP (monitoring/load/WAL remain Partial while Grafana/1000-VU/PITR are open).
 - Stage 1–18 freezes remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 20 (AI Business Assistant Fidelity) after Stage 19 freeze via CONTINUE/NEXT — see [ADR-045](ADR_045_STAGE20_OPEN.md) and [STAGE_20_PLAN.md](STAGE_20_PLAN.md). Stage 19 feature scope remains frozen; Stage 20 does not reopen K1–D1 / H19x.
