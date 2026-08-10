@@ -523,9 +523,10 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Cart Management:** Add, remove, update quantity, apply discounts
   - [x] **Discounts:** Fixed amount per-item or cart-level (percentage UI polish deferred)
   - [x] **Customer Selection:** Quick customer lookup or walk-in default
-  - [x] **Multiple Payment Methods:** Cash, Card, Digital Wallet, Credit (for registered customers); split tender
-  - [x] **Receipt Printing:** Thermal printer support; digital receipt via email/SMS
-  - [x] **Cash Drawer:** Auto-open on cash payment; manual open with reason
+  - [x] **Multiple Payment Methods:** Cash, Card, Digital Wallet, Credit (for registered customers); split tender (Stage 13 H2 multi-tender E2E)
+  - [x] **Receipt Printing:** Thermal printer support; digital receipt via email/SMS (`pos_receipt_sent` audit — Stage 13 H2)
+  - [x] **Cash Drawer:** Auto-open on cash payment or any cash tender in a split; manual open with reason (Stage 13 H2)
+  - [x] **Atomic stock guard:** Insufficient stock → `409 INSUFFICIENT_STOCK`; no orphan sale/payment/journal (Stage 13 H1)
 
 #### BR-8.2 Shift Management
 - **Description:** Cashier accountability and reconciliation.
@@ -536,6 +537,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Cash Reconciliation:** System sales vs actual cash; variance reporting
   - [x] **Shift Report:** Sales summary, payment breakdown (`GET .../report`; Stage 12 C2)
   - [x] Prevent new transactions until shift is opened
+  - [x] Failed sale (e.g. insufficient stock) leaves session totals unchanged (Stage 13 H1)
 
 ---
 
@@ -894,10 +896,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Sales transaction API.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create quotations, sales orders, invoices
-  - [ ] Record payments
-  - [ ] Sales return processing
-  - [ ] POS transaction submission
+  - [x] Create quotations, sales orders, invoices (Stage 12 C1)
+  - [x] Record payments (Stage 12 C1)
+  - [x] Sales return processing
+  - [x] POS transaction submission (Stage 12 C2 / Stage 13 H1–H2: sale, split tender, receipt send, stock, journal)
 
 #### BR-18.5 Purchases API
 - **Description:** Procurement API.

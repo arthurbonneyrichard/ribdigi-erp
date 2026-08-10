@@ -826,12 +826,18 @@ Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Mi
 **Get Current Session:** `GET /pos/sessions/current`
 
 ### 8.2 POS Sale
-**Create Sale:** `POST /pos/sales`
+**Create Sale:** `POST /pos/sales` — requires `pos:write`
 
 Single tender: set `payment_method` (`cash`|`card`|`wallet`|`credit`|`other`).  
 Split tender: set `payments[]` with `{ "payment_method", "amount", "reference?", "liquid_account_id?" }` summing to the computed sale total (`PAYMENT_TOTAL_MISMATCH` if not). Response includes `payments` rows and `payment_method` (`split` when multiple). Credit portion only increases customer AR balance.
 
 Credit tender (full or split portion) enforces the same credit-limit gate as invoice post. Optional body fields: `credit_limit_override` (bool), `credit_override_reason` (string). Same `CREDIT_LIMIT_*` error codes and audit action apply.
+
+**Stock integrity (Stage 13 H1):** Aggregated line quantities are checked before the sale transaction is created. Insufficient available stock returns `409` with `detail.code = INSUFFICIENT_STOCK`. No `Transaction`, `PosPayment`, or `pos_sale` journal is committed; open session totals are unchanged.
+
+**Drawer (Stage 13 H2):** When any tender is `cash` (`has_cash_tender`), the response may include `drawer` (mock/network/browser_bridge pulse per store settings). Card/wallet-only splits omit `drawer`.
+
+**Domain audit:** successful sale records `pos_sale_completed`.
 
 ```json
 {
@@ -855,13 +861,21 @@ Credit tender (full or split portion) enforces the same credit-limit gate as inv
 ### 8.3 Product Search
 **Endpoint:** `GET /pos/products/search?q=flour&barcode=8901234567890`
 
-### 8.4 Receipt Printing
-**Endpoint:** `GET /pos/sales/{sale_id}/receipt`
+### 8.4 Receipt Printing & Send
+**Get receipt:** `GET /pos/sales/{sale_id}/receipt` — requires `pos:read`
 
-**Query Params:** `?template=thermal&format=pdf`
+**Query Params:** `format=json|text|pdf` (default `json`); `paper=thermal_80|thermal_58` (tenant default when omitted). JSON includes thermal `text` plus ESC/POS drawer kick bytes (`drawer_kick_base64` / `drawer_kick_hex`).
+
+**Send digital receipt (Stage 13 H2):** `POST /pos/sales/{sale_id}/receipt/send` — requires `pos:write`
+
+**Query Params:** `channel=email|sms` (default `email`); `to` optional recipient (defaults to cashier email/phone); `paper` optional.
+
+Successful send records domain audit `pos_receipt_sent` (`module=pos`, `entity=pos_sale`). Email/SMS uses SMTP/Twilio when configured, otherwise console mode in non-production.
 
 ### 8.5 Cash Drawer
-**Endpoint:** `GET /pos/sessions/{session_id}/drawer`
+**Summary:** `GET /pos/sessions/{session_id}/drawer` — requires `pos:read`  
+**Manual open:** `POST /pos/sessions/{session_id}/drawer/open` — requires `pos:write`  
+**Store settings:** `PATCH /stores/{store_id}/drawer` — `drawer_mode` `none|mock|network|browser_bridge`, `drawer_open_on_cash`, optional `drawer_host`/`drawer_port`
 
 ---
 

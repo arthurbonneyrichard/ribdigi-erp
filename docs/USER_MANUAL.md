@@ -475,7 +475,11 @@ The POS module is designed for fast, intuitive checkout at retail counters.
 
 4. Click **Complete Sale**
 5. Receipt prints automatically (if printer connected)
-6. Digital receipt can be emailed/SMSed to customer
+6. Digital receipt can be emailed/SMSed to customer (send is audited as `pos_receipt_sent`)
+
+> **Stock:** If any cart line exceeds available stock, the sale is rejected (`INSUFFICIENT_STOCK`). Nothing is recorded — no sale, payments, or accounting entry — and your shift totals stay unchanged (Stage 13 H1).
+>
+> **Cash drawer:** Opens automatically when the sale includes any cash tender (including split payments). Card/wallet-only splits do not pulse the drawer (Stage 13 H2).
 
 > **Keyboard Shortcuts:**
 > - `F2` — Search product

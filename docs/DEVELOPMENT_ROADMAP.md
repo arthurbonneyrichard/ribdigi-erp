@@ -480,8 +480,8 @@ Build the revenue-generating side of the platform: customer management, sales pi
 ### 4.7 Deliverables
 
 - [ ] Complete sales pipeline: Quotation → Order → Invoice → Payment → Return
-- [ ] Fully functional POS with barcode support, discounts, split payments, receipts
-- [ ] Shift management with cash reconciliation
+- [x] Fully functional POS with barcode support, discounts, split payments, receipts (Stage 12 C2 / Stage 13 H1–H2; USB/serial drivers deferred)
+- [x] Shift management with cash reconciliation (Stage 12 C2 / A1)
 - [ ] Expense tracking with approval workflow and receipt attachments
 - [ ] Double-entry accounting with Chart of Accounts, Journal Entries, AR/AP
 - [ ] Financial reports: P&L, Cash Flow, Trial Balance

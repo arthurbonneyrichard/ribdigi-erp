@@ -20,7 +20,7 @@ Stage 13 hardens the POS sale execution path after Stage 12 freeze. Stage 12 alr
 |----|------------|----------|---------|
 | **H1** | Atomic sale integrity (stock-fail → no orphans; success → stock + JE + audit) | P0 | COMPLETE |
 | **H2** | Multi-tender + receipt send + drawer on cash portion | P0 | COMPLETE |
-| **D1** | Spec / BR-8 / readiness fidelity sync for POS execution chain | P2 | PENDING |
+| **D1** | Spec / BR-8 / readiness fidelity sync for POS execution chain | P2 | COMPLETE |
 | **H13x** | Stage 13 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -47,7 +47,8 @@ Stage 13 hardens the POS sale execution path after Stage 12 freeze. Stage 12 alr
 
 ## D1 acceptance criteria
 
-- [ ] BR-8 / API / readiness / launch checklist aligned — `docs/STAGE_13_FIDELITY.md`.
+- [x] BR-8 / API / readiness / launch checklist aligned — `docs/STAGE_13_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage13_fidelity_d1.py`.
 
 ## H13x acceptance criteria
 
@@ -55,4 +56,4 @@ Stage 13 hardens the POS sale execution path after Stage 12 freeze. Stage 12 alr
 
 ## Sign-off
 
-H1 and H2 complete. Pending D1 → H13x.
+H1, H2, and D1 complete. Pending H13x exit + freeze.
