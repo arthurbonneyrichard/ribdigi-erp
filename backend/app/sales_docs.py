@@ -1238,6 +1238,42 @@ async def post_return(
         invoice=invoice,
     )
 
+    from app import audit as audit_svc
+
+    restock_qty = round(
+        sum(
+            float(i.quantity or 0)
+            for i in items
+            if ret.restock and (getattr(i, "condition", None) or "sellable") == "sellable"
+        ),
+        3,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="sales_return_posted",
+        entity="sales_return",
+        entity_id=ret.id,
+        details={
+            "return_number": ret.return_number,
+            "credit_note_number": ret.credit_note_number,
+            "sales_invoice_id": invoice.id,
+            "invoice_number": invoice.invoice_number,
+            "customer_id": ret.customer_id,
+            "customer_balance": float(customer.balance or 0),
+            "total": float(ret.total_amount),
+            "total_base": ret_base,
+            "tax_amount": float(ret.tax_amount or 0),
+            "restock": bool(ret.restock),
+            "restock_qty": restock_qty,
+            "store_id": getattr(invoice, "store_id", None),
+            "warehouse_id": warehouse_id,
+            "line_count": len(items),
+        },
+        module="sales",
+    )
+
     from app.notifications import create_notification
 
     await create_notification(

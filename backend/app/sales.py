@@ -878,6 +878,9 @@ async def post_sales_invoice(
         entity_id=invoice.id,
     )
     from app import audit as audit_svc
+    from app.fx import doc_rate, to_base
+
+    stock_qty = round(sum(float(i.quantity or 0) for i in items), 3)
     await audit_svc.record_event(
         db,
         tenant_id=tenant_id,
@@ -885,8 +888,23 @@ async def post_sales_invoice(
         action="invoice_posted",
         entity="sales_invoice",
         entity_id=invoice.id,
-        details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
-        module='sales',
+        details={
+            "invoice_number": invoice.invoice_number,
+            "total": float(invoice.total_amount),
+            "total_base": to_base(float(invoice.total_amount), doc_rate(invoice)),
+            "subtotal": float(invoice.subtotal or 0),
+            "tax_amount": float(invoice.tax_amount or 0),
+            "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
+            "currency": getattr(invoice, "currency", None) or "",
+            "exchange_rate": float(getattr(invoice, "exchange_rate", None) or 1),
+            "customer_id": invoice.customer_id,
+            "customer_balance": float(customer.balance or 0),
+            "store_id": getattr(invoice, "store_id", None),
+            "stock_qty_out": stock_qty,
+            "line_count": len(items),
+            "warehouse_id": warehouse_id,
+        },
+        module="sales",
     )
     return invoice
 

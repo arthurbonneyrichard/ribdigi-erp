@@ -24,7 +24,7 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 | **H1** | Invoice post atomicity (stock preflight; no partial AR/JE) | P0 | COMPLETE |
 | **R1** | Sales return chain fidelity (warehouse restock, AR/tax/COGS, store) | P1 | COMPLETE |
 | **T1** | Sales-path tax → filing from live invoice post | P1 | COMPLETE |
-| **A1** | Sales-path domain audit closeout (`sales_return_posted`, enrich `invoice_posted`) | P1 | PENDING |
+| **A1** | Sales-path domain audit closeout (`sales_return_posted`, enrich `invoice_posted`) | P1 | COMPLETE |
 | **D1** | Spec / BR-5/7/10/12/17 / readiness fidelity sync | P2 | PENDING |
 | **H15x** | Stage 15 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -71,13 +71,20 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 
 ## A1 acceptance criteria
 
-- [ ] Emit `sales_return_posted`; enrich `invoice_posted` (stock/tax/AR); keep `journal_posted` linkage.
-- [ ] Automated proof: `backend/tests/test_sales_audit_a1.py`.
+- [x] Emit `sales_return_posted` with return/credit note, restock, customer balance, store/warehouse.
+- [x] Enrich `invoice_posted` with tax, stock qty out, customer balance, currency/FX, store.
+- [x] Keep `journal_posted` linkage for `sales_invoice` / `sales_return` sources.
+- [x] Automated proof: `backend/tests/test_sales_audit_a1.py`.
 
-## D1–H15x
+## D1 acceptance criteria
 
-See workstream table; detailed ACs filled when each workstream starts.
+- [ ] BR-5/7/10/12/17, API, readiness, user manual aligned — `docs/STAGE_15_FIDELITY.md`.
+- [ ] Guard test: `backend/tests/test_stage15_fidelity_d1.py`.
+
+## H15x acceptance criteria
+
+See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1, I1, H1, R1, and T1 complete. Pending A1 → D1 → H15x.
+C1–A1 complete. Pending D1 → H15x.
