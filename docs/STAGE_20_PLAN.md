@@ -47,7 +47,7 @@ Fidelity closeout
 | **L1** | Low-stock prediction (BR-21.4) | P0 | COMPLETE |
 | **S1** | Sales analysis (BR-21.5) | P1 | COMPLETE |
 | **R1** | NL report generator (BR-21.7) | P1 | COMPLETE |
-| **U1** | Customer + security AI (BR-21.9–21.10) | P1 | PENDING |
+| **U1** | Customer + security AI (BR-21.9–21.10) | P1 | COMPLETE |
 | **D1** | Spec / BR-21 / readiness / Phase 4 fidelity sync | P2 | PENDING |
 | **H20x** | Stage 20 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -103,9 +103,9 @@ Fidelity closeout
 
 ## U1 acceptance criteria
 
-- [ ] Customer churn/best/promos + security login/txn alerts proven.
-- [ ] Automated proof: `backend/tests/test_ai_customer_security_u1.py`.
-- [ ] BR-21.9–21.10 synced with evidence.
+- [x] Customer churn/best/promos + security login/txn alerts proven.
+- [x] Automated proof: `backend/tests/test_ai_customer_security_u1.py`.
+- [x] BR-21.9–21.10 synced with evidence.
 
 ## D1 acceptance criteria
 
@@ -118,4 +118,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1–I1–V1–L1–S1–R1 complete. Pending U1 → H20x. Stages 1–19 remain frozen for their scopes.
+C1–I1–V1–L1–S1–R1–U1 complete. Pending D1 → H20x. Stages 1–19 remain frozen for their scopes.

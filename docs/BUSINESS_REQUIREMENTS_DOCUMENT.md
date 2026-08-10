@@ -1080,17 +1080,17 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
 - **Description:** Customer intelligence.
 - **Priority:** Low
 - **Acceptance Criteria:**
-  - [ ] Customer churn risk scoring
-  - [ ] Best customer identification
-  - [ ] Personalized promotion suggestions
+  - [x] Customer churn risk scoring — Stage 20 U1 (`GET /ai/customers/insights` `churn_risks`; `test_ai_customer_security_u1.py`)
+  - [x] Best customer identification — Stage 20 U1 (`best_customers`)
+  - [x] Personalized promotion suggestions — Stage 20 U1 (`promotion_suggestions`; also `POST /ai/customer/assist`)
 
 #### BR-21.10 AI Security Monitor (Basic)
 - **Description:** Behavioral security analysis.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Detect unusual login patterns (time, location, device)
-  - [ ] Flag suspicious transaction patterns
-  - [ ] Alert admins on potential fraud indicators
+  - [x] Detect unusual login patterns (time, location, device) — Stage 20 U1 (`GET /ai/security/alerts` `unusual_login_ip` / `unusual_login_device`)
+  - [x] Flag suspicious transaction patterns — Stage 20 U1 (`suspicious_transaction_burst`)
+  - [x] Alert admins on potential fraud indicators — Stage 20 U1 (`notify=true` → security `Notification`)
 
 ---
 
