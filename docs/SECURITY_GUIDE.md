@@ -331,11 +331,13 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 ### 8.1 Authentication API
 
 **Endpoints:**
-- `POST /auth/login` — Rate limited: 5 attempts per IP per minute
-- `POST /auth/refresh` — Requires valid refresh token
-- `POST /auth/password-reset-request` — Rate limited: 3 requests per email per hour
+- `POST /auth/login` — JWT access + refresh (Stage 19 K1); rate limited via auth bucket
+- `POST /auth/refresh` — Rotates session; old refresh revoked (Stage 19 K1); auth rate-limit class
+- `POST /auth/password-reset-request` — Rate limited via auth bucket
 - `POST /auth/password-reset` — Token single-use, 1-hour expiry
-- `POST /auth/2fa/verify` — Rate limited: 3 attempts per minute
+- `POST /auth/2fa/verify` — Rate limited via auth bucket
+
+Evidence: `test_auth_api_fidelity_k1.py` (BR-18.1).
 
 ### 8.2 API Security Controls
 
@@ -351,19 +353,16 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 
 ### 8.3 Rate Limiting
 
-| Tier | Requests/Minute | Burst | Enforced By |
-|------|----------------|-------|-------------|
-| Trial | 60 | 10 | Redis + API Gateway |
-| Basic | 120 | 20 | Redis + API Gateway |
-| Professional | 300 | 50 | Redis + API Gateway |
-| Enterprise | Unlimited | 100 | API Gateway only |
+MVP (Stage 5 S1 / Stage 19 K1): Redis or in-memory sliding window keyed by `{client_ip}:{auth|api}:{X-Tenant-ID|anon}`. Caps from `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_AUTH_PER_MINUTE` (auth paths include login + refresh). Plan-tier tables deferred post-MVP.
 
 **Rate Limit Headers:**
 ```
 X-RateLimit-Limit: 120
 X-RateLimit-Remaining: 119
-X-RateLimit-Reset: 1691415060
+X-RateLimit-Backend: memory|redis
 ```
+
+Evidence: `test_production_security_s1.py`, `test_auth_api_fidelity_k1.py` (tenant bucket isolation).
 
 ### 8.4 API Versioning
 

@@ -878,10 +878,10 @@ Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
 - **Description:** Secure API access.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] OAuth2 / JWT token generation
-  - [ ] Token refresh endpoint
-  - [x] API key support for service integrations (Stage 6 K1: `POST/GET/DELETE /api-keys`, `X-API-Key` auth)
-  - [ ] Rate limiting per tenant
+  - [x] OAuth2 / JWT token generation — Stage 19 K1 (`POST /auth/login` → Bearer JWT access + refresh; `test_auth_api_fidelity_k1.py`)
+  - [x] Token refresh endpoint — Stage 19 K1 (`POST /auth/refresh` rotates session; old refresh → 401)
+  - [x] API key support for service integrations (Stage 6 K1: `POST/GET/DELETE /api-keys`, `X-API-Key` auth; Stage 19 K1 regression)
+  - [x] Rate limiting per tenant — Stage 19 K1 / Stage 5 S1: sliding-window by client IP + auth|api class + `X-Tenant-ID` scope; `X-RateLimit-Limit`/`Remaining`/`Backend` (+ `Retry-After` on 429); plan-tier caps deferred
 
 #### BR-18.2 Products API
 - **Description:** Product data access and management.

@@ -39,7 +39,7 @@ Operator reliability
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **K1** | Auth API fidelity (BR-18.1) | P0 | PENDING |
+| **K1** | Auth API fidelity (BR-18.1) | P0 | COMPLETE |
 | **P1** | Products + Customers API fidelity (BR-18.2–18.3) | P0 | PENDING |
 | **S1** | Sales + Purchases API fidelity (BR-18.4–18.5) | P0 | PENDING |
 | **A1** | API standards fidelity (BR-18.6) | P0 | PENDING |
@@ -63,8 +63,8 @@ Operator reliability
 
 ## K1 acceptance criteria
 
-- [ ] JWT login / refresh / rate-limit headers proven for API access; API-key path remains green; BR-18.1 checkboxes synced only with evidence.
-- [ ] Automated proof: `backend/tests/test_auth_api_fidelity_k1.py`.
+- [x] JWT login / refresh / rate-limit headers proven for API access; API-key path remains green; BR-18.1 checkboxes synced only with evidence.
+- [x] Automated proof: `backend/tests/test_auth_api_fidelity_k1.py`.
 
 ## P1 acceptance criteria
 
@@ -107,4 +107,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-Stage 19 open (ADR-043). Pending K1 → H19x. Stages 1–18 remain frozen for their scopes.
+K1 complete. Pending P1 → H19x. Stages 1–18 remain frozen for their scopes.

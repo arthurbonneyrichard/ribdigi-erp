@@ -95,7 +95,7 @@ List endpoints support cursor-based pagination:
 
 ## 2. Authentication
 
-RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
+RIBDIGI ERP uses **JWT (JSON Web Tokens)** with password-grant login (OAuth2 resource-owner style). Stage 19 K1 proves `POST /auth/login`, `POST /auth/refresh` (rotation), API keys, and rate-limit headers (`test_auth_api_fidelity_k1.py`).
 
 ### 2.1 Login
 **Endpoint:** `POST /auth/login`
@@ -131,10 +131,12 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 ### 2.2 Refresh Token
 **Endpoint:** `POST /auth/refresh`
 
+Rotates the session: validates the refresh token hash against `auth_sessions`, revokes the old session, and issues a new access + refresh pair. Reusing the old refresh token returns `401`. (Stage 19 K1)
+
 **Request:**
 ```json
 {
-  "refresh_token": "eyJhbGciOiJIUzI1NiIs..."
+  "refresh_token": "…"
 }
 ```
 
@@ -1418,21 +1420,18 @@ Dashboard/catalog invalidated on product/catalog/stock mutations, POS sale, invo
 
 ## 19. Rate Limits
 
-API requests are rate-limited per tenant:
+API requests are rate-limited with a sliding window (Stage 5 S1 / Stage 19 K1). Keys are `{client_ip}:{auth|api}:{X-Tenant-ID|anon}` so tenants sharing an egress IP do not share the same bucket. Caps come from env (`RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_AUTH_PER_MINUTE`); subscription plan-tier tables are deferred post-MVP.
 
-| Tier | Requests/Minute | Requests/Hour | Burst |
-|------|----------------|---------------|-------|
-| Trial | 60 | 1,000 | 10 |
-| Basic | 120 | 5,000 | 20 |
-| Professional | 300 | 15,000 | 50 |
-| Enterprise | Unlimited | Unlimited | 100 |
+Auth-class paths (stricter `RATE_LIMIT_AUTH_PER_MINUTE`) include login, refresh, 2FA verify, password-reset, email verify, and tenant registration.
 
 **Rate Limit Headers:**
 ```
 X-RateLimit-Limit: 120
 X-RateLimit-Remaining: 119
-X-RateLimit-Reset: 1691415060
+X-RateLimit-Backend: memory|redis
 ```
+
+On `429 RATE_LIMIT_EXCEEDED`, responses also include `Retry-After`. Evidence: `test_production_security_s1.py`, `test_auth_api_fidelity_k1.py`.
 
 ---
 
