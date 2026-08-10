@@ -509,6 +509,10 @@ class ExpenseCategory(Base):
     code: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(120))
     budget_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    # Stage 14 E1 — optional COA debit account for approved expenses in this category
+    account_id: Mapped[str | None] = mapped_column(
+        ForeignKey("accounts.id"), nullable=True, index=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 

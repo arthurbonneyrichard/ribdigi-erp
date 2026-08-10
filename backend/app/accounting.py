@@ -1517,6 +1517,39 @@ async def post_expense_journal(
         liquid_account_id=getattr(expense, "liquid_account_id", None),
         outflow=True,
     )
+    # Stage 14 E1 — debit mapped category COA when set; else Operating Expenses 6000
+    debit_line: dict = {
+        "account_code": "6000",
+        "debit": amount,
+        "credit": 0,
+        "description": expense.category,
+    }
+    if getattr(expense, "category_id", None):
+        cat = (
+            await db.execute(
+                select(m.ExpenseCategory).where(
+                    m.ExpenseCategory.id == expense.category_id,
+                    m.ExpenseCategory.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if cat and cat.account_id:
+            mapped = (
+                await db.execute(
+                    select(m.Account).where(
+                        m.Account.id == cat.account_id,
+                        m.Account.tenant_id == tenant_id,
+                        m.Account.is_active == True,  # noqa: E712
+                    )
+                )
+            ).scalar_one_or_none()
+            if mapped and (mapped.account_type or "").strip().lower() == "expense":
+                debit_line = {
+                    "account_id": mapped.id,
+                    "debit": amount,
+                    "credit": 0,
+                    "description": expense.category or mapped.name,
+                }
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1526,7 +1559,7 @@ async def post_expense_journal(
         source_type="expense",
         source_id=expense.id,
         lines=[
-            {"account_code": "6000", "debit": amount, "credit": 0, "description": expense.category},
+            debit_line,
             {
                 "account_code": liquid_code,
                 "debit": 0,

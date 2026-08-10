@@ -6914,7 +6914,12 @@ async def list_expense_categories(
             .order_by(m.ExpenseCategory.name)
         )
     ).scalars().all()
-    return env([expenses_svc.serialize_category(c) for c in rows])
+    return env(
+        [
+            await expenses_svc.serialize_category_rich(db, claims["tenant_id"], c)
+            for c in rows
+        ]
+    )
 
 
 @api.post("/expenses/categories")
@@ -6923,11 +6928,15 @@ async def create_expense_category(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    account = await expenses_svc.resolve_expense_gl_account(
+        db, tenant_id=claims["tenant_id"], account_id=payload.account_id
+    )
     cat = m.ExpenseCategory(
         tenant_id=claims["tenant_id"],
         code=payload.code.strip().upper(),
         name=payload.name.strip(),
         budget_amount=payload.budget_amount,
+        account_id=account.id if account else None,
     )
     db.add(cat)
     try:
@@ -6935,7 +6944,10 @@ async def create_expense_category(
     except Exception as exc:
         await db.rollback()
         raise HTTPException(status_code=409, detail="Category code already exists") from exc
-    return env(expenses_svc.serialize_category(cat), "Expense category created")
+    return env(
+        await expenses_svc.serialize_category_rich(db, claims["tenant_id"], cat),
+        "Expense category created",
+    )
 
 
 @api.patch("/expenses/categories/{category_id}")
@@ -6952,9 +6964,14 @@ async def update_expense_category(
         name=payload.name,
         budget_amount=payload.budget_amount,
         is_active=payload.is_active,
+        account_id=payload.account_id,
+        clear_account=bool(payload.clear_account),
     )
     await db.commit()
-    return env(expenses_svc.serialize_category(cat), "Expense category updated")
+    return env(
+        await expenses_svc.serialize_category_rich(db, claims["tenant_id"], cat),
+        "Expense category updated",
+    )
 
 
 @api.get("/expenses/budgets")

@@ -6,7 +6,16 @@ import { api } from '../../lib/api';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-type Category = { id: string; code: string; name: string; budget_amount: number };
+type Category = {
+  id: string;
+  code: string;
+  name: string;
+  budget_amount: number;
+  account_id?: string | null;
+  account_code?: string | null;
+  account_name?: string | null;
+};
+type CoaAccount = { id: string; code: string; name: string; account_type: string };
 type Expense = {
   id: string;
   category: string;
@@ -82,23 +91,29 @@ export default function Page() {
   const [newCatCode, setNewCatCode] = useState('');
   const [newCatName, setNewCatName] = useState('');
   const [newCatBudget, setNewCatBudget] = useState('0');
+  const [newCatAccountId, setNewCatAccountId] = useState('');
+  const [expenseAccounts, setExpenseAccounts] = useState<CoaAccount[]>([]);
   const [editBudgetId, setEditBudgetId] = useState<string | null>(null);
   const [editBudgetAmount, setEditBudgetAmount] = useState('');
+  const [editAccountId, setEditAccountId] = useState('');
 
   async function refresh() {
-    const [exp, cats, settings, liquid, rec, bud] = await Promise.all([
+    const [exp, cats, settings, liquid, rec, bud, accounts] = await Promise.all([
       api('/expenses'),
       api('/expenses/categories'),
       api('/expenses/settings'),
       api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
       api('/expenses/recurring').catch(() => ({ data: [] })),
       api('/expenses/budgets').catch(() => ({ data: null })),
+      api('/accounting/accounts').catch(() => ({ data: [] })),
     ]);
     setRows(exp.data || []);
     setCategories(cats.data || []);
     setLiquidAccounts(liquid.data || []);
     setRecurring(rec.data || []);
     setBudgets(bud.data || null);
+    const coa = (accounts.data || []) as CoaAccount[];
+    setExpenseAccounts(coa.filter((a) => (a.account_type || '').toLowerCase() === 'expense'));
     setThreshold(settings.data?.expense_approval_threshold ?? 100);
     setL2Threshold(settings.data?.expense_l2_threshold ?? 1000);
     setLevels(settings.data?.levels || []);
@@ -406,12 +421,14 @@ export default function Page() {
           code: newCatCode,
           name: newCatName,
           budget_amount: Number(newCatBudget) || 0,
+          account_id: newCatAccountId || null,
         }),
       });
       setMessage('Category created');
       setNewCatCode('');
       setNewCatName('');
       setNewCatBudget('0');
+      setNewCatAccountId('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -423,13 +440,19 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
+      const body: Record<string, unknown> = {
+        budget_amount: Number(editBudgetAmount) || 0,
+      };
+      if (editAccountId) body.account_id = editAccountId;
+      else body.clear_account = true;
       await api(`/expenses/categories/${editBudgetId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ budget_amount: Number(editBudgetAmount) || 0 }),
+        body: JSON.stringify(body),
       });
-      setMessage('Category budget updated');
+      setMessage('Category budget / GL updated');
       setEditBudgetId(null);
       setEditBudgetAmount('');
+      setEditAccountId('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -449,13 +472,14 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Categories &amp; budgets</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Allocate monthly budgets per category; variance uses approved spend in the current period
+          Allocate monthly budgets and optional GL accounts per category; variance uses approved spend
+          in the current period
           {budgets?.from_date
             ? ` (${new Date(budgets.from_date).toLocaleDateString()} – ${new Date(
                 budgets.to_date
               ).toLocaleDateString()})`
             : ''}
-          .
+          . Unmapped categories post to Operating Expenses (6000).
         </p>
         <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>
           <input
@@ -473,26 +497,43 @@ export default function Page() {
             onChange={(e) => setNewCatBudget(e.target.value)}
             placeholder="Budget amount"
           />
+          <select value={newCatAccountId} onChange={(e) => setNewCatAccountId(e.target.value)}>
+            <option value="">GL account (default 6000)</option>
+            {expenseAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.code} — {a.name}
+              </option>
+            ))}
+          </select>
           <button type="button" onClick={createCategory}>
             Add category
           </button>
         </div>
         {editBudgetId && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
               value={editBudgetAmount}
               onChange={(e) => setEditBudgetAmount(e.target.value)}
               placeholder="Budget"
               style={{ width: 120 }}
             />
+            <select value={editAccountId} onChange={(e) => setEditAccountId(e.target.value)}>
+              <option value="">GL: default 6000</option>
+              {expenseAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.code} — {a.name}
+                </option>
+              ))}
+            </select>
             <button type="button" onClick={saveCategoryBudget}>
-              Save budget
+              Save
             </button>
             <button
               type="button"
               onClick={() => {
                 setEditBudgetId(null);
                 setEditBudgetAmount('');
+                setEditAccountId('');
               }}
             >
               Cancel
@@ -503,6 +544,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Category</th>
+              <th>GL</th>
               <th>Budget</th>
               <th>Spent</th>
               <th>Pending</th>
@@ -512,11 +554,18 @@ export default function Page() {
           </thead>
           <tbody>
             {(budgets?.categories || categories.map((c) => ({ ...c, spent: 0, pending: 0, variance: c.budget_amount }))).map(
-              (c: any) => (
+              (c: any) => {
+                const meta = categories.find((x) => x.id === c.id);
+                const gl =
+                  meta?.account_code ||
+                  (meta?.account_id ? meta.account_id.slice(0, 8) : null) ||
+                  '6000';
+                return (
                 <tr key={c.id}>
                   <td>
                     {c.name} <span className="muted">({c.code})</span>
                   </td>
+                  <td className="muted">{gl}</td>
                   <td>{c.budget_amount}</td>
                   <td>{c.spent ?? '—'}</td>
                   <td>{c.pending ?? '—'}</td>
@@ -530,13 +579,15 @@ export default function Page() {
                       onClick={() => {
                         setEditBudgetId(c.id);
                         setEditBudgetAmount(String(c.budget_amount ?? 0));
+                        setEditAccountId(meta?.account_id || '');
                       }}
                     >
-                      Set budget
+                      Edit
                     </button>
                   </td>
                 </tr>
-              )
+              );
+              }
             )}
           </tbody>
         </table>

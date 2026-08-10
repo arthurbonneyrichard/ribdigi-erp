@@ -20,3 +20,7 @@ Stage 13 POS Sale Execution Chain Hardening (H1, H2, D1, H13x) delivered fail-fa
 - Agents treat Stage 13 H1, H2, D1, H13x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
 - Stage 1–12 freezes remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 14 (Finance Closeout Chain Fidelity) after Stage 13 freeze — see [ADR-033](ADR_033_STAGE14_OPEN.md) and [STAGE_14_PLAN.md](STAGE_14_PLAN.md). Stage 13 feature scope remains frozen; Stage 14 does not reopen H1/H2/D1/H13x.

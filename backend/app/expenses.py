@@ -231,14 +231,59 @@ async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
     await db.flush()
 
 
-def serialize_category(cat: m.ExpenseCategory) -> dict:
-    return {
+async def resolve_expense_gl_account(
+    db: AsyncSession, *, tenant_id: str, account_id: str | None
+) -> m.Account | None:
+    """Validate optional category GL account (must be tenant expense-type, active)."""
+    if not account_id:
+        return None
+    from app.accounting import get_tenant_account
+
+    account = await get_tenant_account(db, tenant_id, account_id)
+    if (account.account_type or "").strip().lower() != "expense":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_EXPENSE_ACCOUNT",
+                "message": "Expense category account must be an expense-type COA account",
+                "account_id": account_id,
+                "account_type": account.account_type,
+            },
+        )
+    if not bool(account.is_active):
+        raise HTTPException(status_code=400, detail="Expense category account is inactive")
+    return account
+
+
+def serialize_category(cat: m.ExpenseCategory, account: m.Account | None = None) -> dict:
+    out = {
         "id": cat.id,
         "code": cat.code,
         "name": cat.name,
         "budget_amount": float(cat.budget_amount or 0),
+        "account_id": cat.account_id,
         "is_active": bool(cat.is_active),
     }
+    if account is not None:
+        out["account_code"] = account.code
+        out["account_name"] = account.name
+    return out
+
+
+async def serialize_category_rich(
+    db: AsyncSession, tenant_id: str, cat: m.ExpenseCategory
+) -> dict:
+    account = None
+    if cat.account_id:
+        account = (
+            await db.execute(
+                select(m.Account).where(
+                    m.Account.id == cat.account_id,
+                    m.Account.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+    return serialize_category(cat, account=account)
 
 
 async def update_category(
@@ -249,6 +294,8 @@ async def update_category(
     name: str | None = None,
     budget_amount: float | None = None,
     is_active: bool | None = None,
+    account_id: str | None = None,
+    clear_account: bool = False,
 ) -> m.ExpenseCategory:
     cat = (
         await db.execute(
@@ -271,6 +318,13 @@ async def update_category(
         cat.budget_amount = round(float(budget_amount), 2)
     if is_active is not None:
         cat.is_active = bool(is_active)
+    if clear_account:
+        cat.account_id = None
+    elif account_id is not None:
+        account = await resolve_expense_gl_account(
+            db, tenant_id=tenant_id, account_id=account_id
+        )
+        cat.account_id = account.id if account else None
     await db.flush()
     return cat
 
