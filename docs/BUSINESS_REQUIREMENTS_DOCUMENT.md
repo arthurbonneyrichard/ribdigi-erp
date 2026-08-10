@@ -664,12 +664,12 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
 - **Description:** Manage customer credit sales and collections.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Set per-customer credit limit
-  - [ ] Block sales that exceed credit limit (with override permission)
-  - [ ] Display outstanding balance on customer profile
-  - [ ] Record payment collections with date, amount, method, reference
+  - [x] Set per-customer credit limit — Stage 22 R1 (`PATCH /customers/{id}/credit-limit`; `test_customer_credit_r1.py`)
+  - [x] Block sales that exceed credit limit (with override permission) — Stage 22 R1 (`CREDIT_LIMIT_EXCEEDED` on invoice post; override via `credit_limit_override` + reason + `credit:approve`)
+  - [x] Display outstanding balance on customer profile — Stage 22 R1 (`GET /customers/{id}` `balance`; `/customers/{id}/outstanding`)
+  - [x] Record payment collections with date, amount, method, reference — Stage 22 R1 (`POST /customers/{id}/payments` amount/method/reference)
   - [x] Allocate payments to specific invoices or auto-allocate (oldest first) — Stage 14 R1 Credit UI + API `sales_invoice_id` / supplier `purchase_invoice_id`
-  - [ ] Customer statement generation (all transactions + balance)
+  - [x] Customer statement generation (all transactions + balance) — Stage 22 R1 (`GET /credit/customers/{id}/statement` invoices + payments + balance)
 
 #### BR-11.2 Supplier Credit
 - **Description:** Manage supplier payable tracking.
