@@ -1019,10 +1019,10 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
 - **Description:** Automated anomaly detection and recommendations.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Highlight unusual sales drops or spikes
-  - [ ] Flag expense anomalies
-  - [ ] Suggest actions ("Restock Product Y — sales up 40% this week")
-  - [ ] Weekly insight digest email
+  - [x] Highlight unusual sales drops or spikes — Stage 20 I1 (`sales_wow` / `sales_mom` cards; `GET /ai/insights`; `test_ai_insights_fidelity_i1.py`)
+  - [x] Flag expense anomalies — Stage 20 I1 (`expense_spike` / `expense_vs_sales`)
+  - [x] Suggest actions ("Restock Product Y — sales up 40% this week") — Stage 20 I1 (`restock_suggestion` / card `action`)
+  - [x] Weekly insight digest email — Stage 20 I1 (`publish_insights` → `Weekly AI Insight Digest` + `ai_insight` email prefs; Celery `generate_ai_insights`)
 
 #### BR-21.3 Smart Inventory Intelligence
 - **Description:** AI-powered inventory optimization.

@@ -99,8 +99,9 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Reliability & cache LAUNCH §5 (Stage 19 R1: `test_reliability_cache_r1.py` — Redis soft-fail, perms invalidation, beat matrix, jobs dry-run, logical DR runbook)
 - [x] Stage 19 fidelity sync (D1: `test_stage19_fidelity_d1.py`, `docs/STAGE_19_FIDELITY.md`)
 - [x] Stage 19 exit + freeze (H19x: `test_stage19_exit_h19x.py`, ADR-044)
-- [ ] Stage 20 AI Business Assistant Fidelity (open: `docs/STAGE_20_PLAN.md`, ADR-045) — C1 complete; I1 next
+- [ ] Stage 20 AI Business Assistant Fidelity (open: `docs/STAGE_20_PLAN.md`, ADR-045) — C1–I1 complete; V1 next
 - [x] AI ERP chat fidelity (Stage 20 C1: `test_ai_chat_fidelity_c1.py` — NL Q&A, draft-PO command, role gates, history)
+- [x] AI dashboard insights fidelity (Stage 20 I1: `test_ai_insights_fidelity_i1.py` — sales/expense anomalies, restock actions, weekly digest)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1
