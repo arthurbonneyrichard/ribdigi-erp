@@ -81,6 +81,16 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("report_schedules", m.ReportSchedule),
 ]
 
+# Stage 10 B1 — DB columns that hold tenant-scoped media keys (bytes in payload.media).
+MEDIA_FIELD_SOURCES: list[tuple[str, str]] = [
+    ("brands", "logo_url"),
+    ("products", "image_url"),
+    ("product_images", "storage_key"),
+    ("expenses", "attachment_url"),
+    ("purchase_invoices", "attachment_url"),
+    ("journal_entries", "attachment_url"),
+]
+
 
 def backup_root() -> Path:
     root = Path(settings.BACKUP_DIR)
@@ -197,6 +207,94 @@ async def update_settings(
     return row
 
 
+def _is_managed_media_key(key: str | None, tenant_id: str) -> bool:
+    """True for tenant-scoped storage keys (not external http(s) URLs)."""
+    if not key or not isinstance(key, str):
+        return False
+    if "://" in key or ".." in key or key.startswith(("/", "\\")):
+        return False
+    normalized = key.replace("\\", "/")
+    return normalized.startswith(f"{tenant_id}/")
+
+
+def collect_media_objects(
+    tenant_id: str,
+    datasets: dict[str, list],
+    *,
+    tenant_logo_url: str | None = None,
+) -> tuple[dict[str, dict[str, Any]], dict[str, int]]:
+    """Read uploaded media bytes for keys referenced by backup datasets (Stage 10 B1)."""
+    from app import storage as storage_svc
+
+    keys: set[str] = set()
+    if _is_managed_media_key(tenant_logo_url, tenant_id):
+        keys.add(tenant_logo_url.replace("\\", "/"))
+    for dataset_name, field in MEDIA_FIELD_SOURCES:
+        for row in datasets.get(dataset_name) or []:
+            val = (row or {}).get(field)
+            if _is_managed_media_key(val, tenant_id):
+                keys.add(str(val).replace("\\", "/"))
+
+    media: dict[str, dict[str, Any]] = {}
+    missing: list[str] = []
+    for key in sorted(keys):
+        try:
+            obj = storage_svc.read_object(key, tenant_id=tenant_id)
+        except HTTPException:
+            missing.append(key)
+            continue
+        data = obj.data
+        media[key] = {
+            "content_type": obj.content_type,
+            "size": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "data_b64": base64.b64encode(data).decode("ascii"),
+        }
+    counts = {
+        "media_objects": len(media),
+        "media_keys_referenced": len(keys),
+        "media_missing": len(missing),
+    }
+    return media, counts
+
+
+def apply_media_restore(tenant_id: str, media: dict | None) -> dict[str, Any]:
+    """Write media blobs from a backup payload back into object storage (Stage 10 B1)."""
+    from app import storage as storage_svc
+
+    restored = 0
+    skipped = 0
+    errors: list[dict[str, str]] = []
+    for key, meta in (media or {}).items():
+        if not _is_managed_media_key(key, tenant_id):
+            skipped += 1
+            continue
+        try:
+            storage_svc.validate_key(key, tenant_id=tenant_id)
+            raw_b64 = (meta or {}).get("data_b64")
+            if not raw_b64:
+                errors.append({"key": key, "error": "missing_data"})
+                continue
+            data = base64.b64decode(raw_b64)
+            expected = (meta or {}).get("sha256")
+            if expected and hashlib.sha256(data).hexdigest() != expected:
+                errors.append({"key": key, "error": "sha256_mismatch"})
+                continue
+            content_type = (meta or {}).get("content_type") or storage_svc.content_type_for_key(
+                key
+            )
+            storage_svc._put_bytes(key, data, content_type)
+            restored += 1
+        except Exception as exc:  # noqa: BLE001 — collect per-object failures
+            errors.append({"key": key, "error": str(exc)[:200]})
+    return {
+        "media_restored": restored,
+        "media_skipped": skipped,
+        "media_error_count": len(errors),
+        "media_errors": errors[:20],
+    }
+
+
 async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict, dict[str, int]]:
     tenant = await db.get(m.Tenant, tenant_id)
     if not tenant:
@@ -211,6 +309,12 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
         datasets[name] = [row_to_dict(r) for r in rows]
         counts[name] = len(datasets[name])
 
+    logo_url = getattr(tenant, "logo_url", None)
+    media, media_counts = collect_media_objects(
+        tenant_id, datasets, tenant_logo_url=logo_url
+    )
+    counts.update(media_counts)
+
     payload = {
         "format": FORMAT_NAME,
         "version": FORMAT_VERSION,
@@ -222,6 +326,7 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
             "industry": tenant.industry,
             "currency": tenant.currency,
             "status": tenant.status,
+            "logo_url": logo_url,
             "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
             "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
             "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
@@ -236,6 +341,7 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
         },
         "created_at": datetime.utcnow().isoformat(),
         "datasets": datasets,
+        "media": media,
     }
     return payload, counts
 
@@ -399,6 +505,8 @@ async def validate_restore_payload(payload: dict, tenant_id: str) -> dict:
         )
     datasets = payload.get("datasets") or {}
     counts = {name: len(datasets.get(name) or []) for name, _ in DATASET_SPECS}
+    media = payload.get("media") or {}
+    counts["media_objects"] = len(media)
     unknown = sorted(set(datasets.keys()) - {name for name, _ in DATASET_SPECS})
     return {
         "valid": True,
@@ -408,6 +516,7 @@ async def validate_restore_payload(payload: dict, tenant_id: str) -> dict:
         "record_counts": counts,
         "unknown_datasets": unknown,
         "company_name": (payload.get("tenant") or {}).get("company_name"),
+        "media_objects": len(media),
     }
 
 
@@ -484,6 +593,33 @@ async def prove_restore_integrity(
                     break
         by_dataset[name] = {"checked": dataset_checked, "mismatches": dataset_bad}
 
+    from app import storage as storage_svc
+
+    media = payload.get("media") or {}
+    media_checked = 0
+    media_bad = 0
+    for key, meta in list(media.items())[:sample_limit]:
+        if not _is_managed_media_key(key, tenant_id):
+            continue
+        media_checked += 1
+        checked += 1
+        try:
+            obj = storage_svc.read_object(key, tenant_id=tenant_id)
+            expected = (meta or {}).get("sha256")
+            if expected and hashlib.sha256(obj.data).hexdigest() != expected:
+                media_bad += 1
+                mismatches.append(
+                    {
+                        "dataset": "media",
+                        "id": key,
+                        "error": "sha256_mismatch",
+                    }
+                )
+        except HTTPException:
+            media_bad += 1
+            mismatches.append({"dataset": "media", "id": key, "error": "missing"})
+    by_dataset["media"] = {"checked": media_checked, "mismatches": media_bad}
+
     return {
         "ok": len(mismatches) == 0,
         "checked": checked,
@@ -546,7 +682,18 @@ async def apply_restore(db: AsyncSession, tenant_id: str, payload: dict) -> dict
         restored[name] = count
         await db.flush()
 
+    # Rehydrate company logo key on the tenant row when present in the snapshot.
+    tenant_snap = payload.get("tenant") or {}
+    logo_url = tenant_snap.get("logo_url")
+    if _is_managed_media_key(logo_url, tenant_id):
+        tenant = await db.get(m.Tenant, tenant_id)
+        if tenant:
+            tenant.logo_url = logo_url
+            await db.flush()
+
+    media_report = apply_media_restore(tenant_id, payload.get("media"))
     report["restored"] = restored
+    report["media"] = media_report
     report["applied"] = True
     return report
 

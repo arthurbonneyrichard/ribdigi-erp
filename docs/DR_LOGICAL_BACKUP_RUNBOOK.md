@@ -38,7 +38,7 @@ Infrastructure PITR targets in older docs remain **aspirational** until WAL/S3 w
 7. **Audit** — confirm `restore_dry_run` / `restore_apply` / `restore_verify` events under `module=backup`.
 8. **Pass criteria** — `proof.ok == true`, spot-check UI (catalog / customer), no cross-tenant leakage.
 
-Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`.
+Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/tests/test_backup_media_b1.py` (Stage 10 B1 media).
 
 ## Important restore semantics
 
@@ -46,6 +46,7 @@ Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`.
 - Cross-tenant restore is blocked (`tenant_id` must match).
 - Users / sessions / RBAC roles are **not** fully covered by logical datasets; treat identity recovery separately if needed.
 - Wrong encryption key → decrypt failure (400); tampered archive → checksum failure (400).
+- **Media (Stage 10 B1):** `.ribbak` inner payload includes optional `media` map keyed by storage key (`content_type`, `size`, `sha256`, `data_b64`) for tenant-scoped uploads referenced by company/brand logos, product images, expense receipts, purchase-invoice attachments, and journal supporting documents. Apply restore writes those bytes back to `STORAGE_BACKEND` after row upsert. External `http(s)://` URLs are not archived. Missing files at backup time are counted as `media_missing` and omitted (backup still succeeds). Older archives without `media` remain restorable (DB-only).
 
 ## Failure / escalation
 

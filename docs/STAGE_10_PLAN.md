@@ -21,7 +21,7 @@ Stage 10 closes commercial-MVP tax depth and human-confirmed document apply hole
 | **T1** | Category-level tax rules (product → category → default) | P0 | COMPLETE |
 | **T2** | Additional tax filing template beyond GH/NG | P1 | COMPLETE |
 | **A1** | Human-confirmed OCR/document apply-to-draft | P1 | COMPLETE |
-| **B1** | Include uploaded media in logical backup/restore | P2 | PENDING |
+| **B1** | Include uploaded media in logical backup/restore | P2 | COMPLETE |
 | **H10x** | Stage 10 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -54,8 +54,8 @@ Stage 10 closes commercial-MVP tax depth and human-confirmed document apply hole
 
 ## B1 acceptance criteria
 
-- [ ] Logical `.ribbak` backup/restore includes uploaded media objects (or documented keys + restore).
-- [ ] Automated tests cover media round-trip or manifest inclusion.
+- [x] Logical `.ribbak` payload includes `media` blobs (base64 + sha256) for tenant-scoped keys from logos, product images, expense/PI/journal attachments; restore rehydrates via storage.
+- [x] Automated tests in `backend/tests/test_backup_media_b1.py` (round-trip + external URL skip).
 
 ## H10x acceptance criteria
 
