@@ -813,10 +813,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** On-demand data protection.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] One-click backup initiation by Super Admin
-  - [ ] Backup includes database, uploaded files, configurations
-  - [ ] Download backup archive
-  - [ ] Backup encryption
+  - [x] One-click backup initiation by Super Admin
+  - [x] Backup includes database, uploaded files, configurations (Stage 10 B1: `.ribbak` `media` map for tenant-scoped uploads)
+  - [x] Download backup archive
+  - [x] Backup encryption
 
 #### BR-16.2 Scheduled Backup
 - **Description:** Automated data protection.
@@ -831,10 +831,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Disaster recovery capability.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Restore from backup archive
-  - [ ] Restore to new tenant (for testing)
-  - [ ] Restore validation (checksum verification)
-  - [ ] Point-in-time recovery (if WAL archiving enabled)
+  - [x] Restore from backup archive (guarded `confirm_text=RESTORE`; media rehydrate Stage 10 B1)
+  - [ ] Restore to new tenant (for testing) — blocked by design for MVP (cross-tenant restore denied)
+  - [x] Restore validation (checksum verification + integrity proof)
+  - [ ] Point-in-time recovery (if WAL archiving enabled) — deferred post-MVP
 
 ---
 
