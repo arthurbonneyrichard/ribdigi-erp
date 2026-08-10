@@ -52,6 +52,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Use CI smoke defaults (health only, small concurrency)",
     )
     parser.add_argument("--json", action="store_true", help="Print JSON report only")
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="Write JSON evidence report to this path (Stage 18 T1 artifact)",
+    )
     args = parser.parse_args(argv)
 
     scenarios = args.scenarios
@@ -80,6 +85,12 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
     payload = report.to_dict()
+    if args.output:
+        from pathlib import Path
+
+        out = Path(args.output)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     if args.json:
         print(json.dumps(payload, indent=2))
     else:
@@ -95,6 +106,8 @@ def main(argv: list[str] | None = None) -> int:
             print("Failures:")
             for f in payload["failures"]:
                 print(f"  ! {f}")
+        if args.output:
+            print(f"  evidence={args.output}")
     return 0 if report.passed else 1
 
 

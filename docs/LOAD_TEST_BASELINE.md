@@ -69,6 +69,22 @@ Scale toward 1000 users only on sized staging infra with rate limits tuned (`RAT
 
 `backend/tests/test_loadtest_baseline_l1.py` runs the harness against the ASGI test app (health + authenticated products/dashboard) and asserts zero errors under smoke concurrency.
 
+### Stage 18 T1 — evidence artifact path
+
+CI / agent runs write a JSON evidence file for launch fidelity:
+
+| Path | Contents |
+|------|----------|
+| `/opt/cursor/artifacts/loadtest/stage18_t1_baseline_smoke.json` | Smoke baseline report (`passed`, scenario stats, p50/p95) |
+
+Also supported by the CLI:
+
+```bash
+python -m loadtest.run_baseline --smoke --output /opt/cursor/artifacts/loadtest/stage18_t1_baseline_smoke.json
+```
+
+Automated proof: `backend/tests/test_loadtest_evidence_t1.py`. This is **harness evidence**, not a certified 1000-VU capacity certificate (still deferred).
+
 ## Sign-off checklist (staging)
 
 1. [ ] Rate limits documented for the run (or temporarily raised on staging).

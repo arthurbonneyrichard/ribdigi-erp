@@ -53,7 +53,7 @@ Performance testing
 | **B1** | Backup schedule / retention / failure notify + restore drill evidence | P0 | COMPLETE |
 | **I1** | Cross-module integrity (inventory Σ movements · accounting TB/GL · POS money-path) | P0 | COMPLETE |
 | **L1** | Structured request/error logging + health/metrics monitoring hooks (MVP-lite) | P0 | COMPLETE |
-| **T1** | Testing fidelity (OWASP expand · load evidence · launch E2E smoke) | P0 | PENDING |
+| **T1** | Testing fidelity (OWASP expand · load evidence · launch E2E smoke) | P0 | COMPLETE |
 | **C1** | CI + production configuration fidelity (no K8s deploy) | P1 | PENDING |
 | **D1** | Spec / BR-16–17 / readiness / launch fidelity sync | P2 | PENDING |
 | **H18x** | Stage 18 exit criteria + freeze ADR | Exit | PENDING |
@@ -98,8 +98,8 @@ Performance testing
 
 ## T1 acceptance criteria
 
-- [ ] OWASP suite extended for Stage 6–17 surfaces; load-test baseline evidence artifact path; launch checklist §4 rows automated where feasible (expense→JE, TB, backup verify/dry-run).
-- [ ] Automated proof.
+- [x] OWASP suite extended for Stage 6–17 surfaces; load-test baseline evidence artifact path; launch checklist §4 rows automated where feasible (expense→JE, TB, backup verify/dry-run).
+- [x] Automated proof: `test_owasp_suite_t1.py`, `test_loadtest_evidence_t1.py`, `test_launch_smoke_t1.py` (evidence under `/opt/cursor/artifacts/loadtest/`).
 
 ## C1 acceptance criteria
 
@@ -117,4 +117,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-S1–A1–B1–I1–L1 complete. Pending T1 → … → H18x. Stages 1–17 remain frozen for their scopes.
+S1–A1–B1–I1–L1–T1 complete. Pending C1 → D1 → H18x. Stages 1–17 remain frozen for their scopes.
