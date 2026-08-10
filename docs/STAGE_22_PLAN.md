@@ -1,9 +1,10 @@
 # Stage 22 Plan — Expenses, Ledger, Credit & Tax Surface Fidelity
 
-**Status:** Open  
+**Status:** Closed — exit met (H22x / ADR-050)  
 **Base:** Expenses fidelity → Accounting ledger → Credit & tax surface → Fidelity closeout  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-049](ADR_049_STAGE22_OPEN.md)
+**Open ADR (historical):** [ADR-049](ADR_049_STAGE22_OPEN.md)  
+**Exit:** [STAGE_22_EXIT_CRITERIA.md](STAGE_22_EXIT_CRITERIA.md) · [ADR-050](ADR_050_STAGE22_FREEZE.md) · [STAGE_22_FIDELITY.md](STAGE_22_FIDELITY.md)
 
 Stage 22 closes commercial-MVP finance-surface fidelity after Stage 21 freeze. Expense, COA, cash/bank/recon/cheques, AR/AP, customer credit, and tax engines already exist (Stages 3 / 8 / 10 / 14 / 15). This track proves remaining unchecked BR-9–12 ACs with live evidence and docs sync — **not** paid billing, schema-per-tenant, i18n packs, Open Banking, tax e-file portals, K8s/WAL/PITR, Grafana, certified 1000-VU, or reopening Stages 1–21.
 
@@ -49,7 +50,7 @@ Fidelity closeout
 | **R1** | Customer credit surface fidelity (BR-11.1) | P1 | COMPLETE |
 | **T1** | Tax configuration fidelity (BR-12.1) | P1 | COMPLETE |
 | **D1** | Spec / BR-9–12 / readiness / USER_MANUAL / API fidelity sync | P2 | COMPLETE |
-| **H22x** | Stage 22 exit criteria + freeze ADR | Exit | PENDING |
+| **H22x** | Stage 22 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -117,8 +118,11 @@ Fidelity closeout
 
 ## H22x acceptance criteria
 
-See workstream table; filled when exit workstream starts.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for E1–D1 / H22x — `docs/STAGE_22_EXIT_CRITERIA.md`.
+- [x] Scope freeze ADR accepted — `docs/ADR_050_STAGE22_FREEZE.md`.
+- [x] Guard test: `backend/tests/test_stage22_exit_h22x.py`.
+- [x] Launch / roadmap / readiness cite exit + freeze.
 
 ## Sign-off
 
-E1–T1 and D1 complete. H22x next. Stages 1–21 remain frozen for their scopes.
+Stage 22 exit met (E1–D1 / H22x). Scope frozen under ADR-050. Stages 1–21 remain frozen for their scopes. Next delivery track requires an explicit open ADR after CONTINUE/NEXT.

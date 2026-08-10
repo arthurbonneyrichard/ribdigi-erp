@@ -1,9 +1,10 @@
 # Stage 22 Fidelity Notes — Expenses, Ledger, Credit & Tax Surface
 
-**Status:** Open after D1; exit pending (H22x)  
+**Status:** Closed with Stage 22 D1; exit met (H22x / ADR-050)  
 **Surface:** Expenses fidelity → Accounting ledger → Credit & tax surface → Fidelity closeout  
-**Open ADR:** [ADR-049](ADR_049_STAGE22_OPEN.md)  
-**Plan:** [STAGE_22_PLAN.md](STAGE_22_PLAN.md)
+**Open ADR (historical):** [ADR-049](ADR_049_STAGE22_OPEN.md)  
+**Plan:** [STAGE_22_PLAN.md](STAGE_22_PLAN.md)  
+**Exit:** [STAGE_22_EXIT_CRITERIA.md](STAGE_22_EXIT_CRITERIA.md) · [ADR-050](ADR_050_STAGE22_FREEZE.md)
 
 Stage 22 proves remaining commercial-MVP finance-surface fidelity (BR-9–12) on existing Stage 3 / 8 / 10 / 14 / 15 expense, accounting, credit, and tax engines — **not** paid billing (ADR-002), schema-per-tenant (ADR-001), i18n packs (ADR-006), user↔store membership (ADR-005), hard-delete archival (ADR-003), Open Banking, tax e-file portals, Kubernetes/Helm, Grafana/PagerDuty, WAL/S3 PITR, PgBouncer, certified 1000-VU, vendor pen test, WebSocket realtime, or reopening Stages 1–21.
 
@@ -37,7 +38,7 @@ Stage 22 proves remaining commercial-MVP finance-surface fidelity (BR-9–12) on
 | **R1** | `test_customer_credit_r1.py` — limit, block+override, balance, collections, statement | BR-11.1 | — (allocate Stage 14) |
 | **T1** | `test_tax_config_fidelity_t1.py` — tax types, inclusive/exclusive, compound | BR-12.1 | Tax e-file portals |
 | **D1** | This note + `test_stage22_fidelity_d1.py` | BR-9–12 + finance readiness + USER_MANUAL / API / launch | — |
-| **H22x** | Pending exit + freeze ADR | Stage 22 exit | Next track needs open ADR |
+| **H22x** | `STAGE_22_EXIT_CRITERIA.md`; ADR-050; `test_stage22_exit_h22x.py` | Stage 22 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -49,6 +50,7 @@ Stage 22 proves remaining commercial-MVP finance-surface fidelity (BR-9–12) on
 - `backend/tests/test_customer_credit_r1.py`
 - `backend/tests/test_tax_config_fidelity_t1.py`
 - `backend/tests/test_stage22_fidelity_d1.py`
+- `backend/tests/test_stage22_exit_h22x.py`
 
 ## Spec sync targets
 
@@ -56,9 +58,10 @@ Stage 22 proves remaining commercial-MVP finance-surface fidelity (BR-9–12) on
 - `docs/API_DOCUMENTATION.md` — §§9–12 expenses / accounting / credit / tax + Stage 22 D1 cite
 - `docs/USER_MANUAL.md` — §§7–10 expense / accounting / credit / tax
 - `PRODUCTION_READINESS.md` — Expenses / Accounting / Credit / Tax bullets
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 22 D1
-- `docs/LAUNCH_CHECKLIST.md` — E1–T1 / D1 evidence
-- `docs/STAGE_22_PLAN.md` — Open (H22x pending)
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 22 D1 / H22x exit
+- `docs/LAUNCH_CHECKLIST.md` — E1–T1 / D1 / H22x evidence
+- `docs/STAGE_22_PLAN.md` — Closed (H22x / ADR-050)
+- `docs/STAGE_22_EXIT_CRITERIA.md` · `docs/ADR_050_STAGE22_FREEZE.md`
 - `docs/ADR_049_STAGE22_OPEN.md`
 
 ## Deferred (not Stage 22)
