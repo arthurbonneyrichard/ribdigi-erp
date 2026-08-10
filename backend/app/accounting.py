@@ -1243,11 +1243,24 @@ async def post_sales_return_journal(
     tenant_id: str,
     user_id: str,
     sales_return: m.SalesReturn,
+    invoice: m.SalesInvoice | None = None,
 ) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
-    revenue = float(sales_return.subtotal or 0)
-    tax = float(sales_return.tax_amount or 0)
-    total = float(sales_return.total_amount)
+    from app.fx import doc_rate, to_base
+
+    if invoice is None:
+        invoice = (
+            await db.execute(
+                select(m.SalesInvoice).where(
+                    m.SalesInvoice.id == sales_return.sales_invoice_id,
+                    m.SalesInvoice.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+    rate = doc_rate(invoice) if invoice is not None else 1.0
+    revenue = to_base(float(sales_return.subtotal or 0), rate)
+    tax = to_base(float(sales_return.tax_amount or 0), rate)
+    total = to_base(float(sales_return.total_amount), rate)
     lines = [
         {"account_code": "4000", "debit": max(revenue, 0), "credit": 0, "description": "Sales return"},
         {"account_code": "1100", "debit": 0, "credit": total, "description": "AR credit"},
@@ -1279,6 +1292,7 @@ async def post_sales_return_journal(
         reference=sales_return.credit_note_number or sales_return.return_number,
         source_type="sales_return",
         source_id=sales_return.id,
+        store_id=getattr(invoice, "store_id", None) if invoice is not None else None,
         lines=lines,
     )
 

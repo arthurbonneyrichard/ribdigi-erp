@@ -1156,6 +1156,16 @@ async def post_return(
     if not items:
         raise HTTPException(status_code=400, detail="Cannot post empty return")
 
+    invoice = await get_invoice(db, tenant_id, ret.sales_invoice_id)
+    from app.fx import doc_rate, to_base
+
+    warehouse_id = None
+    if invoice.store_id:
+        from app.stores import warehouse_for_store
+
+        wh = await warehouse_for_store(db, tenant_id, invoice.store_id)
+        warehouse_id = wh.id
+
     for item in items:
         if ret.restock and item.condition == "sellable":
             qty = float(item.quantity)
@@ -1170,6 +1180,7 @@ async def post_return(
                 reference_id=ret.id,
                 notes=f"Return {ret.return_number}",
                 variant_id=item.variant_id,
+                warehouse_id=warehouse_id,
             )
             if item.variant_id:
                 variant = await get_variant(db, tenant_id, item.variant_id)
@@ -1192,10 +1203,12 @@ async def post_return(
                 module='sales',
             )
 
+    # Customer balances are base currency; invoice/return amounts are document currency.
+    ret_base = to_base(float(ret.total_amount), doc_rate(invoice))
     customer = await get_customer(db, tenant_id, ret.customer_id)
-    customer.balance = max(float(customer.balance or 0) - float(ret.total_amount), 0)
+    customer.balance = max(float(customer.balance or 0) - ret_base, 0)
 
-    invoice = await get_invoice(db, tenant_id, ret.sales_invoice_id)
+    # paid_amount stays in document currency (same units as invoice.total_amount).
     invoice.paid_amount = min(
         float(invoice.total_amount),
         float(invoice.paid_amount or 0) + float(ret.total_amount),
@@ -1217,7 +1230,13 @@ async def post_return(
 
     from app.accounting import post_sales_return_journal
 
-    await post_sales_return_journal(db, tenant_id=tenant_id, user_id=user_id, sales_return=ret)
+    await post_sales_return_journal(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        sales_return=ret,
+        invoice=invoice,
+    )
 
     from app.notifications import create_notification
 

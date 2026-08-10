@@ -22,7 +22,7 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 | **C1** | Invoice chain proof (stock movement → AR → tax report → JE lines) | P0 | COMPLETE |
 | **I1** | Standard-cost COGS + Inventory GL on sale (/POS helper) + return reverse | P0 | COMPLETE |
 | **H1** | Invoice post atomicity (stock preflight; no partial AR/JE) | P0 | COMPLETE |
-| **R1** | Sales return chain fidelity (warehouse restock, AR/tax/COGS, store) | P1 | PENDING |
+| **R1** | Sales return chain fidelity (warehouse restock, AR/tax/COGS, store) | P1 | COMPLETE |
 | **T1** | Sales-path tax → filing from live invoice post | P1 | PENDING |
 | **A1** | Sales-path domain audit closeout (`sales_return_posted`, enrich `invoice_posted`) | P1 | PENDING |
 | **D1** | Spec / BR-5/7/10/12/17 / readiness fidelity sync | P2 | PENDING |
@@ -58,13 +58,20 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 
 ## R1 acceptance criteria
 
-- [ ] Restock to invoice/store warehouse; AR credit (FX-safe); tax reverse JE + `store_id`; COGS reverse; credit note E2E.
-- [ ] Automated proof: `backend/tests/test_sales_return_chain_r1.py`.
+- [x] Restock to invoice store warehouse (`warehouse_id` on stock_in movements).
+- [x] Customer AR credit uses `to_base` via invoice `exchange_rate`; invoice `paid_amount` stays in doc currency.
+- [x] Return journal: tax reverse `2100`, COGS reverse, `store_id` from invoice; credit note allocated.
+- [x] Automated proof: `backend/tests/test_sales_return_chain_r1.py`.
 
-## T1–H15x
+## T1 acceptance criteria
+
+- [ ] HTTP-posted invoice (incl. reverse-charge memo when applicable) feeds `/reports/tax` and filing boxes — not planted DB rows only.
+- [ ] Automated proof: `backend/tests/test_sales_tax_filing_t1.py`.
+
+## A1–H15x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-C1, I1, and H1 complete. Pending R1 → T1 → A1 → D1 → H15x.
+C1, I1, H1, and R1 complete. Pending T1 → A1 → D1 → H15x.
