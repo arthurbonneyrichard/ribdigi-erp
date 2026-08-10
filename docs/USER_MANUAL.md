@@ -237,12 +237,13 @@ Use **Inventory → Stock ops → Opening stock** (`add` or `set`). Set mode can
 
 #### Stock Transfer (Between Warehouses)
 
-1. Go to **Inventory → Stock Transfer → + New Transfer**
+Stage 17 W1: use **Inventory → Transfers** for inter-warehouse moves (`/inventory/stock-transfers`). Ship deducts source warehouse stock; receive adds destination; consolidated product qty is unchanged. Dual-manager gates apply to **inter-store** transfers (`/stores/transfers`), not warehouse-only moves.
+
+1. Go to **Inventory → Transfers → + New Transfer**
 2. Select **Source Warehouse** and **Destination Warehouse**
-3. Add products and quantities
-4. Click **Request Transfer**
-5. The destination warehouse manager will receive a notification to **Approve & Receive**
-6. Once received, stock moves automatically
+3. Add products and quantities; submit
+4. **Ship** (source) then **Receive** (destination)
+5. Stock and `stock_movements` (`transfer_out` / `transfer_in`) update automatically
 
 #### Stock Count (Physical Inventory)
 
@@ -256,13 +257,9 @@ Stage 17 S2: create a count, enter counted quantities, **Complete & post varianc
 
 ### 3.3 Managing Warehouses
 
-1. Go to **Inventory → Warehouses**
-2. View stock levels per warehouse
-3. Click a warehouse to see:
-   - Total products
-   - Stock value
-   - Low stock items
-   - Recent movements
+1. Go to **Inventory** and open a product’s **warehouse stock** grid (`GET /products/{id}/warehouse-stock`) or warehouse list
+2. View stock levels per warehouse (quantity / reserved / available)
+3. Use **Transfers** for rebalancing between warehouses
 
 ### 3.4 Low Stock Alerts
 

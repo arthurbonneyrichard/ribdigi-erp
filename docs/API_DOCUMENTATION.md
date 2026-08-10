@@ -442,19 +442,23 @@ Stage 17 S1 proves stock-in → warehouse qty + `stock_movements`, adjustment re
 
 **Stock Transfer:** `POST /inventory/stock-transfers`
 
+Stage 17 W1: inter-warehouse create → submit/ship → receive updates `WarehouseStock` and writes `transfer_out`/`transfer_in` movements (`reference_type=stock_transfer`). Per-product grid: `GET /products/{id}/warehouse-stock`. Insufficient source qty on ship → `409 INSUFFICIENT_WAREHOUSE_STOCK` (stays `requested`). Evidence: `test_warehouse_transfer_chain_w1.py`.
+
 ```json
 {
-  "product_id": "prod_001",
   "from_warehouse_id": "wh_001",
   "to_warehouse_id": "wh_002",
-  "quantity": 50,
-  "status": "pending",
-  "notes": "Transfer to branch warehouse"
+  "submit": true,
+  "notes": "Transfer to branch warehouse",
+  "items": [{ "product_id": "prod_001", "quantity": 50 }]
 }
 ```
 
-**Update Transfer Status:** `PATCH /inventory/stock-transfers/{transfer_id}`
+**List:** `GET /inventory/stock-transfers` (filters: `status`, `store_id`, dates, `scope`, `limit`)  
+**Submit / Ship / Receive / Cancel:** `POST /inventory/stock-transfers/{transfer_id}/submit|ship|receive|cancel`  
+(No status PATCH — use action POSTs.)
 
+**Update Transfer Status:** `PATCH /inventory/stock-transfers/{transfer_id}` — **deprecated / not implemented**; use action POSTs above.
 ### 5.6 Stock Count
 
 Stage 17 S2 proves create → enter counted qty → complete (posts `adjustment` movements with `reference_type=stock_count`) → variance report export — `test_stock_count_chain_s2.py`.

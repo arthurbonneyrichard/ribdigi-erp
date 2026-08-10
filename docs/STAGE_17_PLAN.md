@@ -32,7 +32,7 @@ Inventory
 | **C1** | Catalog fidelity proof (categories/brands/UoM/variants/barcode/images/batch-expiry) | P0 | COMPLETE |
 | **S1** | Stock ops chain (stock-in → movements → warehouse qty; adjust reasons; opening stock) | P0 | COMPLETE |
 | **S2** | Stock count → variance report → post adjustments | P0 | COMPLETE |
-| **W1** | Warehouse stock grid + inter-warehouse transfer ship/receive chain | P1 | PENDING |
+| **W1** | Warehouse stock grid + inter-warehouse transfer ship/receive chain | P1 | COMPLETE |
 | **L1** | Low-stock indicators + suggested order qty + reorder-PO | P1 | PENDING |
 | **A1** | Inventory domain audit closeout (product/stock mutations) | P1 | PENDING |
 | **D1** | Spec / BR-5.1–5.5 / readiness fidelity sync | P2 | PENDING |
@@ -67,8 +67,8 @@ Inventory
 
 ## W1 acceptance criteria
 
-- [ ] Per-product warehouse stock view + inter-warehouse transfer ship/receive updates qty/movements (extend Stage 2 / Stage 16 patterns; not multi-bin).
-- [ ] Automated proof.
+- [x] Per-product warehouse stock view + inter-warehouse transfer ship/receive updates qty/movements (extend Stage 2 / Stage 16 patterns; not multi-bin).
+- [x] Automated proof: `backend/tests/test_warehouse_transfer_chain_w1.py`.
 
 ## L1 acceptance criteria
 
@@ -91,4 +91,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1–S2 complete. Pending W1 → … → H17x.
+C1–W1 complete. Pending L1 → … → H17x.

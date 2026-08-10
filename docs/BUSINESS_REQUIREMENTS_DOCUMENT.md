@@ -353,7 +353,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Stock In:** Record incoming stock with reference (purchase order, transfer, adjustment), quantity, batch, expiry, warehouse — Stage 17 S1 (`POST /inventory/stock-in` → warehouse qty + `stock_movements`; GRN sets `reference_type=grn`)
   - [x] **Stock Out:** Record outgoing stock with reference (sales, transfer, adjustment, damage), quantity, warehouse — Stage 15 C1/H1 sales invoice `stock_movements` (`reference_type=sales_invoice`); aggregated post preflight
   - [x] **Stock Adjustment:** Correct stock discrepancies with reason (damage, theft, expiry, found, lost) — Stage 17 S1 / Stage 2 I2 (`POST /inventory/adjust/{id}`; `INVALID_ADJUSTMENT_REASON`)
-  - [ ] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow
+  - [x] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow — Stage 17 W1 (`POST /inventory/stock-transfers` → ship/receive; `transfer_out`/`transfer_in` movements)
   - [x] **Opening Stock:** Initialize stock levels for new products or fiscal year start — Stage 17 S1 (`POST /inventory/opening-stock`; `movement_type=opening_stock`)
   - [x] **Stock Count:** Physical count reconciliation with system stock; variance report generation — Stage 17 S2 (`POST /inventory/stock-counts` → patch items → complete posts `adjustment` movements; `GET .../variance-report`)
 
@@ -370,9 +370,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Warehouse-specific inventory visibility.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] View stock levels per warehouse
+  - [x] View stock levels per warehouse — Stage 17 W1 (`GET /products/{id}/warehouse-stock`)
   - [ ] Warehouse-specific reorder levels
-  - [ ] Transfer stock between warehouses
+  - [x] Transfer stock between warehouses — Stage 17 W1 (ship/receive qty + movements)
   - [x] Warehouse-wise stock valuation (Stage 9 R2 — qty × `cost_price`)
 
 #### BR-5.5 Low Stock Management
