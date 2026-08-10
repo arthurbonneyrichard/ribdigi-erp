@@ -38,7 +38,7 @@
 
 ## 1. API Standards
 
-Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21. Stage 21 D1/H21x tenant/org/dashboard fidelity + exit: `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`), `docs/STAGE_21_EXIT_CRITERIA.md`, ADR-048 (`test_stage21_exit_h21x.py`) — BR-1–4. Stage 22 D1/H22x expenses/ledger/credit/tax fidelity + exit: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`), `docs/STAGE_22_EXIT_CRITERIA.md`, ADR-050 (`test_stage22_exit_h22x.py`) — BR-9–12. Stage 23 open (ADR-051): Reports Dimension & Commercial MVP Gate — F1 financial `store_id`/`branch_id` filters (`test_financial_report_filters_f1.py`, `docs/STAGE_23_PLAN.md`).
+Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21. Stage 21 D1/H21x tenant/org/dashboard fidelity + exit: `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`), `docs/STAGE_21_EXIT_CRITERIA.md`, ADR-048 (`test_stage21_exit_h21x.py`) — BR-1–4. Stage 22 D1/H22x expenses/ledger/credit/tax fidelity + exit: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`), `docs/STAGE_22_EXIT_CRITERIA.md`, ADR-050 (`test_stage22_exit_h22x.py`) — BR-9–12. Stage 23 open (ADR-051): Reports Dimension & Commercial MVP Gate — F1 financial `store_id`/`branch_id` filters (`test_financial_report_filters_f1.py`); C1 financial comparative `compare=true` (`test_financial_comparative_c1.py`, `docs/STAGE_23_PLAN.md`).
 
 ### 1.1 Request Format
 - All requests and responses use **JSON**.
@@ -1029,23 +1029,23 @@ Unpost reverses account balances and sets status `unposted`. Allowed only when `
 Query: `from_date`, `to_date` (ISO date), `include_unposted` (default false). Returns account metadata, `opening_balance` (activity before `from_date`), `closing_balance`, `total_debit` / `total_credit`, and `transactions[]` with `entry_number`, `entry_date`, debit/credit, and running `balance` on the account’s natural side (assets/expenses: debit−credit; liability/equity/income: credit−debit). Requires `accounting:read`.
 
 ### 10.4 Financial Reports
-**Profit & Loss:** `GET /reports/profit-loss?from_date=&to_date=&store_id=&branch_id=` (also `GET /accounting/profit-loss`)  
+**Profit & Loss:** `GET /reports/profit-loss?from_date=&to_date=&store_id=&branch_id=&compare=` (also `GET /accounting/profit-loss`)  
 
-Returns period totals from **posted** journal lines: `revenue`, `cogs`, `gross_profit`, `operating_expenses`, `other_income`, `income`, `expense`, `net_profit`, plus per-account `bucket`. Optional `store_id` / `branch_id` filter journals by store dimension (Stage 14 A1 store; Stage 23 F1 branch). Foreign store/branch → `404`. Store not in branch → `400 STORE_BRANCH_MISMATCH`.
+Returns period totals from **posted** journal lines: `revenue`, `cogs`, `gross_profit`, `operating_expenses`, `other_income`, `income`, `expense`, `net_profit`, plus per-account `bucket`. Optional `store_id` / `branch_id` filter journals by store dimension (Stage 14 A1 store; Stage 23 F1 branch). Foreign store/branch → `404`. Store not in branch → `400 STORE_BRANCH_MISMATCH`. Stage 23 C1: `compare=true` adds `comparison` with equal-length prior period + per-metric `current` / `prior` / `change_pct` (defaults to current calendar month when dates omitted).
 
-**Cash Flow:** `GET /reports/cash-flow?from_date=&to_date=&store_id=&branch_id=`  
+**Cash Flow:** `GET /reports/cash-flow?from_date=&to_date=&store_id=&branch_id=&compare=`  
 
-Liquid (cash/bank) movements classified as `operating` / `investing` / `financing` / `transfer` by journal `source_type`. Includes `opening_cash`, `closing_cash`, `net_change` (excludes cash↔bank transfers). Optional `store_id` / `branch_id` (Stage 14 A1 / Stage 23 F1).
+Liquid (cash/bank) movements classified as `operating` / `investing` / `financing` / `transfer` by journal `source_type`. Includes `opening_cash`, `closing_cash`, `net_change` (excludes cash↔bank transfers). Optional `store_id` / `branch_id` (Stage 14 A1 / Stage 23 F1). Stage 23 C1: `compare=true` prior-period `comparison` block (same semantics as P&L).
 
 **Trial Balance:** `GET /reports/trial-balance?as_of_date=` (also `GET /accounting/trial-balance`)  
 
 When `as_of_date` is set, balances are rebuilt from **posted** journal lines with `entry_date` through that day; omit for live account balances. Response includes `as_of` (Stage 14 A2).
 
-**Balance Sheet (Stage 23 F1):** `GET /reports/balance-sheet?as_of_date=&store_id=&branch_id=`  
+**Balance Sheet (Stage 23 F1/C1):** `GET /reports/balance-sheet?as_of_date=&store_id=&branch_id=&compare=`  
 
-Same `as_of_date` semantics as trial balance; response includes `as_of`, `store_id`, `branch_id`, assets/liabilities/equity, and `balanced`. With store/branch filters, balances rebuild from posted journals (tenant live balances are not store-scoped). Empty branch (no stores) returns a zeroed balanced sheet. Export `trial_balance` / `balance_sheet` accept `as_of_date` + `store_id` / `branch_id`.
+Same `as_of_date` semantics as trial balance; response includes `as_of`, `store_id`, `branch_id`, assets/liabilities/equity, and `balanced`. With store/branch filters, balances rebuild from posted journals (tenant live balances are not store-scoped). Empty branch (no stores) returns a zeroed balanced sheet. Stage 23 C1: `compare=true` compares against the same calendar day one month earlier (`comparison.mode=prior_as_of`).
 
-**Export (Stage 22 P1 / Stage 23 F1):** `GET /reports/export?report_type=profit_loss|trial_balance|balance_sheet|cash_flow&format=pdf|xlsx` (also CSV where supported) with optional `store_id` / `branch_id`. AR/AP aging via `GET /credit/aging?kind=receivable|payable`.
+**Export (Stage 22 P1 / Stage 23 F1/C1):** `GET /reports/export?report_type=profit_loss|trial_balance|balance_sheet|cash_flow&format=pdf|xlsx` (also CSV where supported) with optional `store_id` / `branch_id` / `compare`. AR/AP aging via `GET /credit/aging?kind=receivable|payable`.
 
 ---
 

@@ -184,6 +184,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 23 F1 (2026-08-10):** Balance sheet + financial `store_id`/`branch_id` filters — `test_financial_report_filters_f1.py` (BR-14.5).
 
+**Stage 23 C1 (2026-08-10):** Financial comparative P&L / cash-flow / balance sheet — `test_financial_comparative_c1.py` (BR-14.5).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -764,7 +766,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 23 open (`docs/STAGE_23_PLAN.md`, ADR-051) — F1 complete (`test_financial_report_filters_f1.py`); C1 next. Stages 1–22 remain frozen for their scopes.
+**Active delivery plan:** Stage 23 open (`docs/STAGE_23_PLAN.md`, ADR-051) — F1–C1 complete; I1 next. Stages 1–22 remain frozen for their scopes.
 
 ### 6.2 Features
 

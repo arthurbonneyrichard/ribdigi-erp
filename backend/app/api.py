@@ -8454,21 +8454,23 @@ async def get_profit_loss(
     to_date: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    compare: bool = False,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.accounting import ensure_default_accounts, profit_and_loss
+    from app.accounting import ensure_default_accounts
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
     return env(
-        await profit_and_loss(
+        await reports_svc.profit_loss_with_optional_compare(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             store_id=store_id,
             branch_id=branch_id,
+            compare=compare,
         )
     )
 
@@ -8479,10 +8481,13 @@ async def report_profit_loss(
     to_date: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    compare: bool = False,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_profit_loss(from_date, to_date, store_id, branch_id, claims, db)
+    return await get_profit_loss(
+        from_date, to_date, store_id, branch_id, compare, claims, db
+    )
 
 
 @api.get("/reports/trial-balance")
@@ -8500,17 +8505,19 @@ async def report_cash_flow(
     to_date: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    compare: bool = False,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     return env(
-        await reports_svc.cash_flow(
+        await reports_svc.cash_flow_with_optional_compare(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             store_id=store_id,
             branch_id=branch_id,
+            compare=compare,
         )
     )
 
@@ -8520,16 +8527,18 @@ async def report_balance_sheet(
     as_of_date: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    compare: bool = False,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     return env(
-        await reports_svc.balance_sheet(
+        await reports_svc.balance_sheet_with_optional_compare(
             db,
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
             store_id=store_id,
             branch_id=branch_id,
+            compare=compare,
         )
     )
 
@@ -8553,6 +8562,7 @@ async def reports_export(
     status: str | None = None,
     scope: str | None = None,
     limit: int | None = None,
+    compare: bool = False,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8576,6 +8586,7 @@ async def reports_export(
         status=status,
         scope=scope,
         limit=limit,
+        compare=compare,
     )
     return Response(
         content=content,

@@ -38,7 +38,7 @@ Fidelity closeout
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **F1** | Balance sheet + financial dimension filters (BR-14.5) | P0 | COMPLETE |
-| **C1** | Financial comparative fidelity (P&L / cash-flow / BS) | P0 | PENDING |
+| **C1** | Financial comparative fidelity (P&L / cash-flow / BS) | P0 | COMPLETE |
 | **I1** | Isolation matrix residual coverage | P1 | PENDING |
 | **G1** | Commercial MVP gate closure (readiness honesty) | P1 | PENDING |
 | **B1** | Logical DR drill automation evidence | P1 | PENDING |
@@ -67,10 +67,19 @@ Fidelity closeout
 - [x] Automated proof: `backend/tests/test_financial_report_filters_f1.py`.
 - [x] BR-14.5 filter AC synced with Stage 23 F1 evidence.
 
-## C1–H23x acceptance criteria
+## C1 acceptance criteria
+
+- [x] `compare=true` on P&L / cash-flow returns equal-length prior-period metrics + `change_pct`.
+- [x] `compare=true` on balance sheet returns prior month-end `as_of` metrics + `change_pct`.
+- [x] Reports UI requests compare and surfaces prior / change on financial tabs.
+- [x] Export includes comparison metrics when `compare=true`.
+- [x] Automated proof: `backend/tests/test_financial_comparative_c1.py`.
+- [x] BR-14.5 comparative AC synced (no longer deferred).
+
+## I1–H23x acceptance criteria
 
 Filled when each workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-051 open. F1 complete; C1 next. Stages 1–22 remain frozen for their scopes.
+Plan authored; ADR-051 open. F1–C1 complete; I1 next. Stages 1–22 remain frozen for their scopes.

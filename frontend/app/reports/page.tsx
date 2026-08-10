@@ -163,16 +163,25 @@ export default function Page() {
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
       if (nextTab === 'expenses') path = `/reports/expenses/summary${qs()}`;
       if (nextTab === 'pnl') {
-        path = `/reports/profit-loss${qs({ store_id: storeId, branch_id: branchId })}`;
+        path = `/reports/profit-loss${qs({
+          store_id: storeId,
+          branch_id: branchId,
+          compare: 'true',
+        })}`;
       }
       if (nextTab === 'cashflow') {
-        path = `/reports/cash-flow${qs({ store_id: storeId, branch_id: branchId })}`;
+        path = `/reports/cash-flow${qs({
+          store_id: storeId,
+          branch_id: branchId,
+          compare: 'true',
+        })}`;
       }
       if (nextTab === 'balancesheet') {
         path = `/reports/balance-sheet${qs({
           as_of_date: toDate,
           store_id: storeId,
           branch_id: branchId,
+          compare: 'true',
         })}`;
       }
       if (nextTab === 'credit') {
@@ -267,6 +276,7 @@ export default function Page() {
       if (toDate) params.set('as_of_date', toDate);
       if (storeId) params.set('store_id', storeId);
       if (branchId) params.set('branch_id', branchId);
+      if (financialTab) params.set('compare', 'true');
       if (categoryId) params.set('category_id', categoryId);
       if (tab === 'transfers') {
         if (transferScope) params.set('scope', transferScope);
@@ -923,6 +933,15 @@ export default function Page() {
             <div className="card">
               <div className="muted">Revenue</div>
               <div className="kpi">{data.revenue ?? data.income}</div>
+              {data.comparison?.metrics?.revenue && (
+                <div className="muted">
+                  Prior {data.comparison.metrics.revenue.prior} (
+                  {data.comparison.metrics.revenue.change_pct == null
+                    ? 'n/a'
+                    : `${data.comparison.metrics.revenue.change_pct}%`}
+                  )
+                </div>
+              )}
             </div>
             <div className="card">
               <div className="muted">COGS</div>
@@ -939,10 +958,22 @@ export default function Page() {
             <div className="card">
               <div className="muted">Net profit</div>
               <div className="kpi">{data.net_profit}</div>
+              {data.comparison?.metrics?.net_profit && (
+                <div className="muted">
+                  Prior {data.comparison.metrics.net_profit.prior} (
+                  {data.comparison.metrics.net_profit.change_pct == null
+                    ? 'n/a'
+                    : `${data.comparison.metrics.net_profit.change_pct}%`}
+                  )
+                </div>
+              )}
             </div>
           </div>
           <p className="muted" style={{ marginTop: 8 }}>
             Period: {data.from_date || 'all'} → {data.to_date || 'all'}
+            {data.comparison
+              ? ` · vs prior ${data.comparison.from_date} → ${data.comparison.to_date}`
+              : ''}
           </p>
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
@@ -998,6 +1029,16 @@ export default function Page() {
           <p className="muted" style={{ marginTop: 8 }}>
             Transfers (cash↔bank): {data.transfers?.net ?? 0} · Period: {data.from_date || 'all'} →{' '}
             {data.to_date || 'all'}
+            {data.comparison
+              ? ` · vs prior ${data.comparison.from_date} → ${data.comparison.to_date}`
+              : ''}
+            {data.comparison?.metrics?.net_change
+              ? ` · net_change ${
+                  data.comparison.metrics.net_change.change_pct == null
+                    ? 'n/a'
+                    : `${data.comparison.metrics.net_change.change_pct}%`
+                }`
+              : ''}
           </p>
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
@@ -1028,11 +1069,21 @@ export default function Page() {
         <>
           <p className="muted" style={{ marginBottom: 8 }}>
             As of {data.as_of || '—'} (set To date above as the as-of date)
+            {data.comparison?.as_of ? ` · vs prior as of ${data.comparison.as_of}` : ''}
           </p>
           <div className="grid">
             <div className="card">
               <div className="muted">Total assets</div>
               <div className="kpi">{data.total_assets}</div>
+              {data.comparison?.metrics?.total_assets && (
+                <div className="muted">
+                  Prior {data.comparison.metrics.total_assets.prior} (
+                  {data.comparison.metrics.total_assets.change_pct == null
+                    ? 'n/a'
+                    : `${data.comparison.metrics.total_assets.change_pct}%`}
+                  )
+                </div>
+              )}
             </div>
             <div className="card">
               <div className="muted">Liabilities + equity</div>

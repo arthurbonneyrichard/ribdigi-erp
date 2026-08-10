@@ -770,12 +770,14 @@ For adjustments, accruals, and corrections:
 - **Go to:** Accounting → Reports → Profit & Loss (or **Reports → P&L**)
 - **Shows:** Revenue − Cost of Goods Sold = Gross Profit; Gross Profit − Expenses = Net Profit
 - **Filters:** Date range, store, branch (Stage 14 A1 store; Stage 23 F1 branch)
+- **Compare:** Current period vs equal-length prior period with `%` change (Stage 23 C1)
 - **Export:** PDF, Excel (Stage 22 P1 `/reports/export`)
 
 #### Cash Flow Statement
 - **Go to:** Accounting → Reports → Cash Flow (or **Reports → Cash flow**)
 - **Shows:** Operating, Investing, and Financing activities
 - **Filters:** Date range, store, branch (Stage 14 A1 / Stage 23 F1)
+- **Compare:** Prior-period totals + `%` change (Stage 23 C1)
 - Identifies cash inflows and outflows
 
 #### Trial Balance
@@ -790,6 +792,7 @@ For adjustments, accruals, and corrections:
 - **Go to:** Reports → Balance Sheet
 - **As of:** Same point-in-time `as_of` semantics as trial balance (Stage 14 A2)
 - **Filters:** Store and branch (Stage 23 F1 — rebuilds from posted journals tagged with store)
+- **Compare:** vs same calendar day one month earlier (Stage 23 C1)
 
 ---
 

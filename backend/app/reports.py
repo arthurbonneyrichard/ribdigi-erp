@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -9,6 +10,244 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+
+
+def metric_change_pct(current: float, prior: float) -> float | None:
+    """Percent change vs prior; ``None`` when prior is zero (same as sales comparative)."""
+    if not prior:
+        return None
+    return round(((float(current) - float(prior)) / float(prior)) * 100, 2)
+
+
+def prior_period_bounds(from_date: datetime, to_date: datetime) -> tuple[datetime, datetime]:
+    """Equal-length period immediately before ``from_date``..``to_date`` (inclusive days)."""
+    start = from_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_day = to_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    span_days = max((end_day - start).days + 1, 1)
+    prior_end_day = start - timedelta(days=1)
+    prior_start = prior_end_day - timedelta(days=span_days - 1)
+    prior_end = prior_end_day.replace(hour=23, minute=59, second=59, microsecond=999999)
+    return prior_start, prior_end
+
+
+def prior_as_of_date(as_of: datetime) -> datetime:
+    """Same calendar day one month earlier (day clamped to month length)."""
+    y, m, d = as_of.year, as_of.month, as_of.day
+    if m == 1:
+        y, m = y - 1, 12
+    else:
+        m -= 1
+    d = min(d, calendar.monthrange(y, m)[1])
+    return as_of.replace(year=y, month=m, day=d)
+
+
+def resolve_compare_period(
+    from_date: datetime | None, to_date: datetime | None
+) -> tuple[datetime, datetime]:
+    """Effective current period for comparative reports (defaults to current calendar month)."""
+    if from_date and to_date:
+        start = from_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = to_date
+        if end.hour == 0 and end.minute == 0 and end.second == 0 and end.microsecond == 0:
+            end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return start, end
+    if to_date and not from_date:
+        start, month_end = month_bounds(to_date.year, to_date.month)
+        end = min(to_date, month_end)
+        if end.hour == 0 and end.minute == 0 and end.second == 0:
+            end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return start, end
+    if from_date and not to_date:
+        start = from_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        _, month_end = month_bounds(from_date.year, from_date.month)
+        return start, month_end
+    now = datetime.utcnow()
+    return month_bounds(now.year, now.month)
+
+
+def build_comparison(
+    *,
+    mode: str,
+    prior_meta: dict,
+    current_metrics: dict[str, float],
+    prior_metrics: dict[str, float],
+) -> dict:
+    metrics = {}
+    for key, cur in current_metrics.items():
+        pri = float(prior_metrics.get(key) or 0)
+        cur_f = float(cur or 0)
+        metrics[key] = {
+            "current": cur_f,
+            "prior": pri,
+            "change_pct": metric_change_pct(cur_f, pri),
+        }
+    return {"mode": mode, **prior_meta, "metrics": metrics}
+
+
+PNL_COMPARE_KEYS = (
+    "revenue",
+    "cogs",
+    "gross_profit",
+    "operating_expenses",
+    "net_profit",
+)
+CASH_FLOW_COMPARE_KEYS = (
+    "opening_cash",
+    "closing_cash",
+    "net_change",
+    "inflows",
+    "outflows",
+)
+BALANCE_SHEET_COMPARE_KEYS = (
+    "total_assets",
+    "total_liabilities",
+    "total_equity",
+    "total_liabilities_and_equity",
+)
+
+
+def _pick_metrics(payload: dict, keys: tuple[str, ...]) -> dict[str, float]:
+    return {k: float(payload.get(k) or 0) for k in keys}
+
+
+async def profit_loss_with_optional_compare(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None,
+    to_date: datetime | None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    compare: bool = False,
+) -> dict:
+    from app.accounting import profit_and_loss
+
+    if not compare:
+        return await profit_and_loss(
+            db,
+            tenant_id,
+            from_date=from_date,
+            to_date=to_date,
+            store_id=store_id,
+            branch_id=branch_id,
+        )
+    cur_from, cur_to = resolve_compare_period(from_date, to_date)
+    prior_from, prior_to = prior_period_bounds(cur_from, cur_to)
+    current = await profit_and_loss(
+        db,
+        tenant_id,
+        from_date=cur_from,
+        to_date=cur_to,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    prior = await profit_and_loss(
+        db,
+        tenant_id,
+        from_date=prior_from,
+        to_date=prior_to,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    current["comparison"] = build_comparison(
+        mode="prior_period",
+        prior_meta={
+            "from_date": prior_from.date().isoformat(),
+            "to_date": prior_to.date().isoformat(),
+        },
+        current_metrics=_pick_metrics(current, PNL_COMPARE_KEYS),
+        prior_metrics=_pick_metrics(prior, PNL_COMPARE_KEYS),
+    )
+    return current
+
+
+async def cash_flow_with_optional_compare(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None,
+    to_date: datetime | None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    compare: bool = False,
+) -> dict:
+    if not compare:
+        return await cash_flow(
+            db,
+            tenant_id,
+            from_date=from_date,
+            to_date=to_date,
+            store_id=store_id,
+            branch_id=branch_id,
+        )
+    cur_from, cur_to = resolve_compare_period(from_date, to_date)
+    prior_from, prior_to = prior_period_bounds(cur_from, cur_to)
+    current = await cash_flow(
+        db,
+        tenant_id,
+        from_date=cur_from,
+        to_date=cur_to,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    prior = await cash_flow(
+        db,
+        tenant_id,
+        from_date=prior_from,
+        to_date=prior_to,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    current["comparison"] = build_comparison(
+        mode="prior_period",
+        prior_meta={
+            "from_date": prior_from.date().isoformat(),
+            "to_date": prior_to.date().isoformat(),
+        },
+        current_metrics=_pick_metrics(current, CASH_FLOW_COMPARE_KEYS),
+        prior_metrics=_pick_metrics(prior, CASH_FLOW_COMPARE_KEYS),
+    )
+    return current
+
+
+async def balance_sheet_with_optional_compare(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    as_of: datetime | None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    compare: bool = False,
+) -> dict:
+    if not compare:
+        return await balance_sheet(
+            db, tenant_id, as_of=as_of, store_id=store_id, branch_id=branch_id
+        )
+    current_as_of = as_of or datetime.utcnow().replace(
+        hour=23, minute=59, second=59, microsecond=999999
+    )
+    prior_as_of = prior_as_of_date(current_as_of)
+    current = await balance_sheet(
+        db,
+        tenant_id,
+        as_of=current_as_of,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    prior = await balance_sheet(
+        db,
+        tenant_id,
+        as_of=prior_as_of,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    current["comparison"] = build_comparison(
+        mode="prior_as_of",
+        prior_meta={"as_of": prior_as_of.date().isoformat()},
+        current_metrics=_pick_metrics(current, BALANCE_SHEET_COMPARE_KEYS),
+        prior_metrics=_pick_metrics(prior, BALANCE_SHEET_COMPARE_KEYS),
+    )
+    return current
 
 
 def parse_date(value: str | datetime | None, *, end_of_day: bool = False) -> datetime | None:

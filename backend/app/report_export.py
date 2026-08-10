@@ -57,7 +57,16 @@ def to_csv(rows: list[dict[str, Any]], fieldnames: list[str] | None = None) -> s
         writer = csv.DictWriter(buf, fieldnames=headers, extrasaction="ignore")
         writer.writeheader()
         return buf.getvalue()
-    headers = fieldnames or list(rows[0].keys())
+    if fieldnames:
+        headers = fieldnames
+    else:
+        headers: list[str] = []
+        seen: set[str] = set()
+        for row in rows:
+            for key in row.keys():
+                if key not in seen:
+                    seen.add(key)
+                    headers.append(key)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=headers, extrasaction="ignore")
     writer.writeheader()
@@ -339,6 +348,17 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
     if report_type == "cash_flow":
         lines_data = payload.get("lines") or []
         rows = [dict(x) for x in lines_data] if lines_data else [dict(payload)]
+        comparison = payload.get("comparison") or {}
+        for metric, vals in (comparison.get("metrics") or {}).items():
+            rows.append(
+                {
+                    "section": "comparison",
+                    "metric": metric,
+                    "current": vals.get("current"),
+                    "prior": vals.get("prior"),
+                    "change_pct": vals.get("change_pct"),
+                }
+            )
         summary = {
             k: payload.get(k)
             for k in (
@@ -357,10 +377,20 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             block = payload.get(section) or {}
             if isinstance(block, dict):
                 summary[f"{section}_net"] = block.get("net")
-        pdf = _kv_lines(summary) + [
+        pdf = _kv_lines(summary)
+        if comparison:
+            pdf.append(
+                f"Compare prior {comparison.get('from_date')} → {comparison.get('to_date')}"
+            )
+            for metric, vals in (comparison.get("metrics") or {}).items():
+                pdf.append(
+                    f"  {metric}: current={vals.get('current')} prior={vals.get('prior')} "
+                    f"change_pct={vals.get('change_pct')}"
+                )
+        pdf.extend(
             f"{r.get('date')} [{r.get('activity')}]: +{r.get('inflow')} -{r.get('outflow')} {r.get('description')}"
             for r in lines_data[:40]
-        ]
+        )
         return rows, pdf, "Cash Flow"
 
     if report_type == "trial_balance":
@@ -371,6 +401,17 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
     if report_type == "profit_loss":
         accounts = payload.get("accounts") or []
         rows = [dict(x) for x in accounts] if accounts else [dict(payload)]
+        comparison = payload.get("comparison") or {}
+        for metric, vals in (comparison.get("metrics") or {}).items():
+            rows.append(
+                {
+                    "section": "comparison",
+                    "metric": metric,
+                    "current": vals.get("current"),
+                    "prior": vals.get("prior"),
+                    "change_pct": vals.get("change_pct"),
+                }
+            )
         lines = _kv_lines(
             {
                 k: payload.get(k)
@@ -388,10 +429,20 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
                 )
                 if k in payload
             }
-        ) + [
+        )
+        if comparison:
+            lines.append(
+                f"Compare prior {comparison.get('from_date')} → {comparison.get('to_date')}"
+            )
+            for metric, vals in (comparison.get("metrics") or {}).items():
+                lines.append(
+                    f"  {metric}: current={vals.get('current')} prior={vals.get('prior')} "
+                    f"change_pct={vals.get('change_pct')}"
+                )
+        lines.extend(
             f"{r.get('code')} {r.get('name')} [{r.get('bucket')}]: {r.get('balance')}"
             for r in accounts[:50]
-        ]
+        )
         return rows, lines, "Profit and Loss"
 
     if report_type == "balance_sheet":
@@ -399,7 +450,28 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         for section in ("assets", "liabilities", "equity"):
             for item in payload.get(section) or []:
                 rows.append({"section": section, **dict(item)})
-        lines = _kv_lines(payload)
+        comparison = payload.get("comparison") or {}
+        for metric, vals in (comparison.get("metrics") or {}).items():
+            rows.append(
+                {
+                    "section": "comparison",
+                    "metric": metric,
+                    "current": vals.get("current"),
+                    "prior": vals.get("prior"),
+                    "change_pct": vals.get("change_pct"),
+                }
+            )
+        lines = _kv_lines(
+            {k: v for k, v in payload.items() if k != "comparison" and not isinstance(v, (list, dict))}
+        )
+        if comparison:
+            lines.append(
+                f"Compare prior as_of {comparison.get('as_of')}: "
+                + ", ".join(
+                    f"{k} {v.get('change_pct')}%"
+                    for k, v in (comparison.get("metrics") or {}).items()
+                )
+            )
         for section in ("assets", "liabilities", "equity"):
             lines.append(f"-- {section.upper()} --")
             for item in payload.get(section) or []:
@@ -578,6 +650,7 @@ async def build_report_payload(
     status: str | None = None,
     scope: str | None = None,
     limit: int | None = None,
+    compare: bool = False,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -643,32 +716,35 @@ async def build_report_payload(
     if report_type == "expenses_summary":
         return await reports_svc.expenses_summary(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "cash_flow":
-        return await reports_svc.cash_flow(
+        return await reports_svc.cash_flow_with_optional_compare(
             db,
             tenant_id,
             from_date=fd,
             to_date=td,
             store_id=store_id,
             branch_id=branch_id,
+            compare=compare,
         )
     if report_type == "trial_balance":
         return await accounting_svc.trial_balance(db, tenant_id, as_of=as_of)
     if report_type == "profit_loss":
-        return await accounting_svc.profit_and_loss(
+        return await reports_svc.profit_loss_with_optional_compare(
             db,
             tenant_id,
             from_date=fd,
             to_date=td,
             store_id=store_id,
             branch_id=branch_id,
+            compare=compare,
         )
     if report_type == "balance_sheet":
-        return await reports_svc.balance_sheet(
+        return await reports_svc.balance_sheet_with_optional_compare(
             db,
             tenant_id,
             as_of=as_of,
             store_id=store_id,
             branch_id=branch_id,
+            compare=compare,
         )
     if report_type == "credit_aging":
         from app import credit as credit_svc

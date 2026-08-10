@@ -133,8 +133,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Tax configuration fidelity (Stage 22 T1: `test_tax_config_fidelity_t1.py` — tax types, inclusive/exclusive, compound tax)
 - [x] Stage 22 fidelity sync (D1: `test_stage22_fidelity_d1.py`, `docs/STAGE_22_FIDELITY.md` — BR-9–12 + finance readiness + USER_MANUAL / API / launch)
 - [x] Stage 22 exit + freeze (H22x: `test_stage22_exit_h22x.py`, ADR-050)
-- [ ] Stage 23 Reports Dimension & Commercial MVP Gate Fidelity (open: `docs/STAGE_23_PLAN.md`, ADR-051) — F1 complete; C1 next
+- [ ] Stage 23 Reports Dimension & Commercial MVP Gate Fidelity (open: `docs/STAGE_23_PLAN.md`, ADR-051) — F1–C1 complete; I1 next
 - [x] Financial report dimension filters (Stage 23 F1: `test_financial_report_filters_f1.py` — balance sheet / P&L / cash-flow `store_id` + `branch_id`)
+- [x] Financial comparative fidelity (Stage 23 C1: `test_financial_comparative_c1.py` — P&L / cash-flow / BS `compare=true` prior period + change_pct)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1
