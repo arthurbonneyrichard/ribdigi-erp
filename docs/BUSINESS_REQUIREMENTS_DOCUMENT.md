@@ -323,10 +323,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Centralized notification stream.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Display unread notification count
-  - [ ] Categorized notifications (stock, orders, payments, system)
-  - [ ] Mark as read/unread
-  - [ ] Notification history (last 90 days)
+  - [x] Display unread notification count — Stage 21 N1 (`GET /notifications/unread-count`; `test_dashboard_notifications_n1.py`)
+  - [x] Categorized notifications (stock, orders, payments, system) — Stage 21 N1 (`group` field + `GET /notifications?group=`)
+  - [x] Mark as read/unread — Stage 21 N1 (`PATCH /notifications/{id}/read|unread`)
+  - [x] Notification history (last 90 days) — Stage 21 N1 (list cutoff `HISTORY_DAYS=90`; older excluded)
 
 ---
 
