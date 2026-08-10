@@ -1037,10 +1037,10 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
 - **Description:** Predictive stockout prevention.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Predict stockouts 7–14 days in advance
-  - [ ] Consider sales velocity, seasonality, lead time
-  - [ ] Confidence score on predictions
-  - [ ] Auto-generate purchase suggestions
+  - [x] Predict stockouts 7–14 days in advance — Stage 20 L1 (`GET /ai/inventory/low-stock-prediction` `horizon_days=14`; `test_ai_low_stock_prediction_l1.py`)
+  - [x] Consider sales velocity, seasonality, lead time — Stage 20 L1 (`velocity_per_day` / `seasonality_factor` / `lead_time_days`)
+  - [x] Confidence score on predictions — Stage 20 L1 (`confidence` on prediction rows)
+  - [x] Auto-generate purchase suggestions — Stage 20 L1 (`suggested_order_qty`; also notify path in `test_ai_low_stock_prediction.py`)
 
 #### BR-21.5 AI Sales Analysis
 - **Description:** Deep sales pattern recognition.
