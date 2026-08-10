@@ -48,7 +48,7 @@ Fidelity closeout
 | **S1** | Sales analysis (BR-21.5) | P1 | COMPLETE |
 | **R1** | NL report generator (BR-21.7) | P1 | COMPLETE |
 | **U1** | Customer + security AI (BR-21.9–21.10) | P1 | COMPLETE |
-| **D1** | Spec / BR-21 / readiness / Phase 4 fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-21 / readiness / Phase 4 fidelity sync | P2 | COMPLETE |
 | **H20x** | Stage 20 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -109,8 +109,8 @@ Fidelity closeout
 
 ## D1 acceptance criteria
 
-- [ ] BR-21, AI readiness, Phase 4 / USER_MANUAL / API docs aligned — `docs/STAGE_20_FIDELITY.md`.
-- [ ] Guard test: `backend/tests/test_stage20_fidelity_d1.py`.
+- [x] BR-21, AI readiness, Phase 4 / USER_MANUAL / API docs aligned — `docs/STAGE_20_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage20_fidelity_d1.py`.
 
 ## H20x acceptance criteria
 
@@ -118,4 +118,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1–I1–V1–L1–S1–R1–U1 complete. Pending D1 → H20x. Stages 1–19 remain frozen for their scopes.
+C1–I1–V1–L1–S1–R1–U1–D1 complete. Pending H20x. Stages 1–19 remain frozen for their scopes. Fidelity: `docs/STAGE_20_FIDELITY.md`.

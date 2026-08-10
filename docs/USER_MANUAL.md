@@ -1029,9 +1029,11 @@ Stage 16 N1 proves emission for outline buckets (low stock, new order, credit, p
 
 ## 14. AI Business Assistant
 
+Commercial-MVP AI surfaces (Stage 20) use deterministic, tenant-scoped rules — not an external LLM. See `docs/STAGE_20_FIDELITY.md`.
+
 ### 14.1 AI ERP Chat Assistant
 
-Access the AI assistant via the **🤖 floating button** on the bottom-right of any screen.
+Open **AI Assistant** from the app navigation (or the AI page). Chat history is kept per user within your company.
 
 **What you can ask:**
 
@@ -1039,7 +1041,7 @@ Access the AI assistant via the **🤖 floating button** on the bottom-right of 
 |------|----------------|
 | **Data Queries** | "What were my total sales last month?"<br>"Show me low stock items"<br>"Who is my top customer?" |
 | **Reports** | "Generate a monthly sales report"<br>"Show me profit and loss for Q2" |
-| **Actions** | "Create a purchase request for 100 units of Product X"<br>"Send a payment reminder to Customer Y" |
+| **Actions** | "Create a purchase order for 50 units of Product X" (draft PO only when you have purchasing write) |
 | **Insights** | "Why did sales drop this week?"<br>"What products should I restock?" |
 
 **Tips for best results:**
@@ -1049,28 +1051,35 @@ Access the AI assistant via the **🤖 floating button** on the bottom-right of 
 
 ### 14.2 AI Dashboard Insights
 
-On your dashboard, look for **💡 Insight Cards** that highlight:
+On your dashboard / AI insights view, look for insight cards that highlight:
 - Unusual sales patterns (spikes or drops)
-- Inventory recommendations
+- Inventory restock recommendations
 - Expense anomalies
-- Customer behavior changes
+- Weekly digest email when insight email preferences are enabled
 
-Click **"View Details"** on any insight card to see the full analysis.
+### 14.3 Inventory intelligence & low-stock prediction
 
-### 14.3 AI Low Stock Prediction
+Demand forecast (7 / 30 / 90 days), seasonality, dead stock, and stockout prediction (typically **7–14 days** ahead) use sales velocity, seasonality factors, and supplier lead time.
 
-Instead of waiting for stock to hit reorder level, the AI predicts stockouts **7–14 days in advance** based on:
-- Historical sales velocity
-- Seasonal trends
-- Lead time from suppliers
-
-Go to **Inventory → AI Predictions** to see:
-- Predicted stockout date
-- Recommended order quantity
-- Confidence score
+On the AI / inventory prediction views you can see:
+- Predicted stockout date and confidence
+- Recommended / suggested order quantity
+- Dead-stock candidates
 - One-click **Create draft PO** from low-stock / prediction suggestions (`POST /inventory/low-stock/reorder-po`)
 
-### 14.4 AI Document Assistant
+### 14.4 Sales analysis & NL reports
+
+**Sales analysis** (`/ai/sales/analysis` via the AI page) shows trend forecast, RFM customer segments, products frequently bought together, and peak hour/day patterns.
+
+**Natural-language reports:** ask e.g. “Show me monthly sales for Q2”, preview rows, export CSV/PDF, and save the prompt as a reusable template.
+
+### 14.5 Customer & security AI
+
+**Customer insights** surface best customers, churn-risk scores, and promotion suggestions. Use customer assist for balance / portfolio questions.
+
+**Security monitor** (requires security read) flags unusual login IP/device patterns and rapid sensitive transaction bursts; enabling notify creates unread security notifications for admins.
+
+### 14.6 AI Document Assistant
 
 When applying receipt or supplier-invoice OCR to a draft:
 1. Upload the attachment on the expense or draft purchase invoice
@@ -1079,7 +1088,7 @@ When applying receipt or supplier-invoice OCR to a draft:
 4. Click **Apply** — the API requires `confirm: true` (no silent auto-write)
 5. Continue approval / submit as usual
 
-Purchase-invoice OCR apply works only while the invoice is still **draft**.
+Purchase-invoice OCR apply works only while the invoice is still **draft**. PO OCR apply remains deferred.
 
 ---
 

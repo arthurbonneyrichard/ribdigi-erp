@@ -164,6 +164,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 20 open (2026-08-10):** AI Business Assistant Fidelity track approved — `docs/ADR_045_STAGE20_OPEN.md` + `docs/STAGE_20_PLAN.md` (AI assistant surface → Inventory & sales intelligence → Customer & security AI).
 
+**Stage 20 D1 (2026-08-10):** Spec / BR-21 / readiness / Phase 4 / USER_MANUAL / API fidelity sync — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`). H20x exit pending.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -637,16 +639,23 @@ Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven 
 | `/notifications` | GET | List notifications |
 | `/notifications/{id}/read` | PATCH | Mark read |
 | `/notifications/settings` | GET/PATCH | Notification preferences |
-| `/ai/chat` | POST | AI chat assistant |
-| `/ai/insights` | GET | Dashboard insights |
+| `/ai/chat` | POST | AI chat assistant (Stage 20 C1) |
+| `/ai/chat/history` | GET | Chat history |
+| `/ai/insights` | GET | Dashboard insights (Stage 20 I1) |
 | `/ai/inventory/predictions` | GET | Inventory predictions |
-| `/ai/inventory/low-stock-prediction` | GET | Low stock prediction |
-| `/ai/sales/analysis` | GET | Sales analysis |
-| `/ai/expenses/analysis` | GET | Expense analysis |
-| `/ai/reports/generate` | POST | AI report generation |
-| `/ai/documents/analyze` | POST | Document OCR analysis |
-| `/ai/customer/assist` | POST | Customer AI assistant |
-| `/ai/security/alerts` | GET | AI security alerts |
+| `/ai/inventory/demand-forecast` | GET | Demand 7/30/90 + reorder (Stage 20 V1) |
+| `/ai/inventory/dead-stock` | GET | Dead stock (Stage 20 V1) |
+| `/ai/inventory/low-stock-prediction` | GET | Low stock prediction (Stage 20 L1) |
+| `/ai/sales/analysis` | GET | Sales analysis (Stage 20 S1) |
+| `/ai/expenses/analysis` | GET | Expense analysis (BR-21.6 / Stage 10) |
+| `/ai/reports/generate` | POST | AI report generation (+ `?export=true`) (Stage 20 R1) |
+| `/ai/reports/templates` | GET/POST | Saved NL report templates (Stage 20 R1) |
+| `/ai/documents/analyze` | POST | Document OCR analysis (BR-21.8 / Stage 10) |
+| `/ai/customer/assist` | POST | Customer AI assistant (Stage 20 U1) |
+| `/ai/customers/insights` | GET | Churn / best / promos (Stage 20 U1) |
+| `/ai/security/alerts` | GET | AI security alerts (Stage 20 U1) |
+
+Stage 20 D1 fidelity: `docs/STAGE_20_FIDELITY.md`.
 
 ### 5.5 UI Requirements
 

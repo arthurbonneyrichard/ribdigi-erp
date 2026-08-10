@@ -38,7 +38,7 @@
 
 ## 1. API Standards
 
-Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5.
+Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21.
 
 ### 1.1 Request Format
 - All requests and responses use **JSON**.
@@ -1269,8 +1269,12 @@ Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_re
 
 ## 16. AI Business Assistant
 
+Stage 20 D1 proves BR-21 commercial-MVP AI fidelity on rule-based `/ai/*` engines — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`). External LLM / Prophet upgrades remain deferred.
+
 ### 16.1 AI ERP Chat Assistant
-**Endpoint:** `POST /ai/chat`
+**Endpoint:** `POST /ai/chat`  
+**History:** `GET /ai/chat/history`  
+**Permission:** `ai:read` (commands that write require the matching module write, e.g. `purchasing:write` for draft PO)
 
 **Request:**
 ```json
@@ -1295,34 +1299,37 @@ Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_re
 ```
 
 ### 16.2 AI Dashboard Insights
-**Endpoint:** `GET /ai/insights?type=sales&period=monthly`
+**Endpoint:** `GET /ai/insights`  
+Returns sales/expense anomaly cards, restock suggestions; weekly digest is published via Celery/`publish_insights` when email prefs allow.
 
 ### 16.3 Smart Inventory Intelligence
-**Endpoint:** `GET /ai/inventory/predictions`
+**Endpoints:**  
+- `GET /ai/inventory/predictions` — combined forecast + low-stock summary  
+- `GET /ai/inventory/demand-forecast` — 7/30/90 demand + reorder + seasonality  
+- `GET /ai/inventory/dead-stock` — idle stock identification
 
 ### 16.4 AI Low Stock Prediction
-**Endpoint:** `GET /ai/inventory/low-stock-prediction?days_ahead=30`
+**Endpoint:** `GET /ai/inventory/low-stock-prediction?horizon_days=14&lead_time_days=7&lookback_days=30&at_risk_only=true`
 
 ### 16.5 AI Sales Analysis
-**Endpoint:** `GET /ai/sales/analysis?from_date=&to_date=`
+**Endpoint:** `GET /ai/sales/analysis?from_date=&to_date=&lookback_days=90`  
+Returns `trend` (incl. 7/14/30 forecast), `rfm`, `product_affinity`, `peaks`.
 
 ### 16.6 AI Expense Analysis
 **Endpoint:** `GET /ai/expenses/analysis?from_date=&to_date=`
 
 ### 16.7 AI Report Generator
-**Endpoint:** `POST /ai/reports/generate`
+**Endpoint:** `POST /ai/reports/generate` (optional `?export=true` for file download)  
+**Templates:** `GET/POST /ai/reports/templates`, `DELETE /ai/reports/templates/{template_id}`
 
 ```json
 {
-  "report_type": "sales",
-  "period": "last_month",
-  "format": "pdf",
-  "filters": {
-    "store_id": "st_001",
-    "category_id": "cat_001"
-  }
+  "prompt": "Show me monthly sales for Q2 2026",
+  "format": "csv"
 }
 ```
+
+Reuse a saved template with `{ "template_id": "…" }`. Export sets `Content-Disposition` attachment.
 
 ### 16.8 AI Document Assistant
 **Endpoint:** `POST /ai/documents/analyze`
@@ -1336,8 +1343,12 @@ Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_re
 }
 ```
 
+Human-confirmed OCR apply to expense/PI drafts uses the Stage 10 `ocr-apply` paths (`confirm: true`); PO OCR apply remains deferred.
+
 ### 16.9 AI Customer Assistant
-**Endpoint:** `POST /ai/customer/assist`
+**Endpoints:**  
+- `POST /ai/customer/assist` — NL assist for a customer or portfolio query  
+- `GET /ai/customers/insights` — `best_customers`, `churn_risks`, `promotion_suggestions`
 
 ```json
 {
@@ -1347,7 +1358,8 @@ Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_re
 ```
 
 ### 16.10 AI Security Monitor
-**Endpoint:** `GET /ai/security/alerts`
+**Endpoint:** `GET /ai/security/alerts?lookback_hours=72&notify=false`  
+`notify=true` creates unread `category=security` notifications for high-score alerts. Requires `security:read`.
 
 ---
 

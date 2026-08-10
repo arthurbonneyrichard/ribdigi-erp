@@ -1055,10 +1055,10 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
 - **Description:** Intelligent cost management.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [x] Expense categorization from receipt OCR (suggest + Stage 10 A1 confirmed apply)
-  - [x] Budget variance alerts
-  - [x] Unusual expense pattern detection
-  - [x] Cost optimization suggestions
+  - [x] Expense categorization from receipt OCR (suggest + Stage 10 A1 confirmed apply) — Stage 20 D1 regression (`GET /ai/expenses/analysis`; `test_ai_sales_expenses.py`)
+  - [x] Budget variance alerts — Stage 10 / Stage 20 D1
+  - [x] Unusual expense pattern detection — Stage 10 / Stage 20 D1
+  - [x] Cost optimization suggestions — Stage 10 / Stage 20 D1
 
 #### BR-21.7 AI Report Generator
 - **Description:** Natural language to report.
@@ -1072,9 +1072,9 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
 - **Description:** Intelligent document processing.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [x] OCR extraction from invoices, receipts (suggest + Stage 10 A1 confirmed apply to expense/PI draft; PO OCR deferred)
-  - [x] Auto-match extracted data to system records (`/ai/documents/analyze`)
-  - [x] Data validation and discrepancy flagging
+  - [x] OCR extraction from invoices, receipts (suggest + Stage 10 A1 confirmed apply to expense/PI draft; PO OCR deferred) — Stage 20 D1 regression
+  - [x] Auto-match extracted data to system records (`/ai/documents/analyze`) — Stage 10 / Stage 20 D1
+  - [x] Data validation and discrepancy flagging — Stage 10 / Stage 20 D1
 
 #### BR-21.9 AI Customer Assistant (Basic)
 - **Description:** Customer intelligence.
@@ -1091,6 +1091,8 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
   - [x] Detect unusual login patterns (time, location, device) — Stage 20 U1 (`GET /ai/security/alerts` `unusual_login_ip` / `unusual_login_device`)
   - [x] Flag suspicious transaction patterns — Stage 20 U1 (`suspicious_transaction_burst`)
   - [x] Alert admins on potential fraud indicators — Stage 20 U1 (`notify=true` → security `Notification`)
+
+Fidelity sync: Stage 20 D1 — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`).
 
 ---
 
