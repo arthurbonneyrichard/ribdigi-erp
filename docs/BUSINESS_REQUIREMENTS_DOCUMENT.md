@@ -1064,9 +1064,9 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
 - **Description:** Natural language to report.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Generate reports from text prompts ("Show me monthly sales for Q2")
-  - [ ] Export generated reports
-  - [ ] Save report templates for reuse
+  - [x] Generate reports from text prompts ("Show me monthly sales for Q2") — Stage 20 R1 (`POST /ai/reports/generate`; `test_ai_report_generator_r1.py`)
+  - [x] Export generated reports — Stage 20 R1 (`POST /ai/reports/generate?export=true` csv/pdf)
+  - [x] Save report templates for reuse — Stage 20 R1 (`POST/GET /ai/reports/templates` + generate via `template_id`)
 
 #### BR-21.8 AI Document Assistant
 - **Description:** Intelligent document processing.

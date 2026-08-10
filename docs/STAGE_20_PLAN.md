@@ -46,7 +46,7 @@ Fidelity closeout
 | **V1** | Smart inventory intelligence (BR-21.3) | P0 | COMPLETE |
 | **L1** | Low-stock prediction (BR-21.4) | P0 | COMPLETE |
 | **S1** | Sales analysis (BR-21.5) | P1 | COMPLETE |
-| **R1** | NL report generator (BR-21.7) | P1 | PENDING |
+| **R1** | NL report generator (BR-21.7) | P1 | COMPLETE |
 | **U1** | Customer + security AI (BR-21.9–21.10) | P1 | PENDING |
 | **D1** | Spec / BR-21 / readiness / Phase 4 fidelity sync | P2 | PENDING |
 | **H20x** | Stage 20 exit criteria + freeze ADR | Exit | PENDING |
@@ -97,9 +97,9 @@ Fidelity closeout
 
 ## R1 acceptance criteria
 
-- [ ] NL report generate + export + saved templates proven.
-- [ ] Automated proof: `backend/tests/test_ai_report_generator_r1.py`.
-- [ ] BR-21.7 synced with evidence.
+- [x] NL report generate + export + saved templates proven.
+- [x] Automated proof: `backend/tests/test_ai_report_generator_r1.py`.
+- [x] BR-21.7 synced with evidence.
 
 ## U1 acceptance criteria
 
@@ -118,4 +118,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1–I1–V1–L1–S1 complete. Pending R1 → H20x. Stages 1–19 remain frozen for their scopes.
+C1–I1–V1–L1–S1–R1 complete. Pending U1 → H20x. Stages 1–19 remain frozen for their scopes.
