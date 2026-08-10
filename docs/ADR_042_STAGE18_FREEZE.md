@@ -21,3 +21,7 @@ Stage 18 Launch Integrity & Ops Fidelity (S1, A1, B1, I1, L1, T1, C1, D1, H18x) 
 - Agents treat Stage 18 S1, A1, B1, I1, L1, T1, C1, D1, H18x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP (monitoring/load remain Partial while Grafana/1000-VU/WAL are open).
 - Stage 1–17 freezes remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 19 (API, Settings & Operator Reliability Fidelity) after Stage 18 freeze via CONTINUE/NEXT — see [ADR-043](ADR_043_STAGE19_OPEN.md) and [STAGE_19_PLAN.md](STAGE_19_PLAN.md). Stage 18 feature scope remains frozen; Stage 19 does not reopen S1–D1 / H18x.

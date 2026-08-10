@@ -89,6 +89,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] CI + production Compose/env fidelity (Stage 18 C1: `test_ci_prod_config_c1.py`, `.env.production.example`, `docker-compose.prod.yml`; no K8s deploy)
 - [x] Stage 18 fidelity sync (D1: `test_stage18_fidelity_d1.py`, `docs/STAGE_18_FIDELITY.md`)
 - [x] Stage 18 exit + freeze (H18x: `test_stage18_exit_h18x.py`, ADR-042)
+- [ ] Stage 19 API / Settings / Operator Reliability (open: `docs/STAGE_19_PLAN.md`, ADR-043) — K1 next
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1

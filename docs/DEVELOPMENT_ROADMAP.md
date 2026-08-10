@@ -156,6 +156,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 18 exit (2026-08-10):** S1, A1, B1, I1, L1, T1, C1, D1, H18x met — `docs/STAGE_18_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_042_STAGE18_FREEZE.md`. Fidelity: `docs/STAGE_18_FIDELITY.md`.
 
+**Stage 19 open (2026-08-10):** API, Settings & Operator Reliability Fidelity track approved — `docs/ADR_043_STAGE19_OPEN.md` + `docs/STAGE_19_PLAN.md` (API surface → Company & security settings → Operator reliability).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -729,7 +731,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 18 closed — exit met (`docs/STAGE_18_EXIT_CRITERIA.md`, ADR-042); fidelity `docs/STAGE_18_FIDELITY.md`. Stages 1–18 remain frozen for their scopes. Next track requires an open ADR + distinct product outline.
+**Active delivery plan:** Stage 19 open (`docs/STAGE_19_PLAN.md`, ADR-043). Stages 1–18 remain frozen for their scopes.
 
 ### 6.2 Features
 
