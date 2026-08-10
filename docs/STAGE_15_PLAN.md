@@ -20,7 +20,7 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **C1** | Invoice chain proof (stock movement → AR → tax report → JE lines) | P0 | COMPLETE |
-| **I1** | Standard-cost COGS + Inventory GL on sale (/POS helper) + return reverse | P0 | PENDING |
+| **I1** | Standard-cost COGS + Inventory GL on sale (/POS helper) + return reverse | P0 | COMPLETE |
 | **H1** | Invoice post atomicity (stock preflight; no partial AR/JE) | P0 | PENDING |
 | **R1** | Sales return chain fidelity (warehouse restock, AR/tax/COGS, store) | P1 | PENDING |
 | **T1** | Sales-path tax → filing from live invoice post | P1 | PENDING |
@@ -44,14 +44,20 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 
 ## I1 acceptance criteria
 
-- [ ] `post_sales_invoice_journal` (and shared POS helper path) posts Dr COGS `5000` / Cr Inventory `1200` at qty × standard `cost_price` when cost > 0.
-- [ ] Sales return reverse restores Inventory and credits COGS for restocked lines.
-- [ ] Automated proof: `backend/tests/test_sales_cogs_inventory_i1.py`.
+- [x] `post_sales_invoice_journal` (and shared POS helper path) posts Dr COGS `5000` / Cr Inventory `1200` at qty × standard `cost_price` when cost > 0.
+- [x] Sales return reverse restores Inventory and credits COGS for restocked sellable lines.
+- [x] Zero cost skips COGS/Inventory lines; P&L `cogs` reflects posted COGS.
+- [x] Automated proof: `backend/tests/test_sales_cogs_inventory_i1.py`.
 
-## H1–H15x
+## H1 acceptance criteria
+
+- [ ] Insufficient stock on invoice post → structured 409; no AR bump, no JE, invoice stays draft, no partial stock movements.
+- [ ] Automated proof: `backend/tests/test_sales_invoice_atomicity_h1.py`.
+
+## R1–H15x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-C1 complete. Pending I1 → H1 → R1 → T1 → A1 → D1 → H15x.
+C1 and I1 complete. Pending H1 → R1 → T1 → A1 → D1 → H15x.

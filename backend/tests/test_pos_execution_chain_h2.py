@@ -129,7 +129,8 @@ async def test_multi_tender_receipt_send_drawer_close(client, db_session, monkey
         )
     ).scalars().all()
     assert len(jes) == 1
-    assert float(jes[0].total_debit) == pytest.approx(100)
+    # Sale total 100 + COGS 1 (qty 1 × cost_price 1) — Stage 15 I1
+    assert float(jes[0].total_debit) == pytest.approx(101)
 
     cur = await ac.get("/api/v1/pos/sessions/current", headers=headers)
     assert cur.status_code == 200

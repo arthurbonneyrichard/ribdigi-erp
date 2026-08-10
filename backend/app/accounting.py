@@ -1111,6 +1111,85 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
     }
 
 
+async def unit_standard_cost(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    product_id: str | None,
+    variant_id: str | None = None,
+) -> float:
+    """Standard cost from variant (if set) else product; tenant-scoped."""
+    if not product_id:
+        return 0.0
+    if variant_id:
+        variant = await db.get(m.ProductVariant, variant_id)
+        if variant and variant.tenant_id == tenant_id:
+            cost = float(variant.cost_price or 0)
+            if cost > 0:
+                return cost
+    product = await db.get(m.Product, product_id)
+    if product and product.tenant_id == tenant_id:
+        return max(float(product.cost_price or 0), 0.0)
+    return 0.0
+
+
+async def standard_cost_cogs_for_lines(
+    db: AsyncSession,
+    tenant_id: str,
+    lines: list,
+) -> float:
+    """Sum qty × standard cost for invoice/POS/return line dicts or ORM rows."""
+    total = 0.0
+    for line in lines:
+        if isinstance(line, dict):
+            qty = float(line.get("quantity") or 0)
+            product_id = line.get("product_id")
+            variant_id = line.get("variant_id")
+        else:
+            qty = float(getattr(line, "quantity", 0) or 0)
+            product_id = getattr(line, "product_id", None)
+            variant_id = getattr(line, "variant_id", None)
+        if qty <= 0 or not product_id:
+            continue
+        unit = await unit_standard_cost(
+            db, tenant_id, product_id=str(product_id), variant_id=str(variant_id) if variant_id else None
+        )
+        if unit > 0:
+            total += qty * unit
+    return round(total, 2)
+
+
+def cogs_inventory_journal_lines(cogs: float, *, reverse: bool = False) -> list[dict]:
+    """Dr COGS 5000 / Cr Inventory 1200 (sale), or reverse for restocked returns."""
+    amount = round(float(cogs or 0), 2)
+    if amount <= 0:
+        return []
+    if reverse:
+        return [
+            {
+                "account_code": "1200",
+                "debit": amount,
+                "credit": 0,
+                "description": "Inventory restock",
+            },
+            {
+                "account_code": "5000",
+                "debit": 0,
+                "credit": amount,
+                "description": "COGS reverse",
+            },
+        ]
+    return [
+        {"account_code": "5000", "debit": amount, "credit": 0, "description": "COGS"},
+        {
+            "account_code": "1200",
+            "debit": 0,
+            "credit": amount,
+            "description": "Inventory out",
+        },
+    ]
+
+
 async def post_sales_invoice_journal(
     db: AsyncSession,
     *,
@@ -1133,6 +1212,18 @@ async def post_sales_invoice_journal(
         lines.append({"account_code": "2100", "debit": 0, "credit": tax, "description": "Tax"})
     if revenue < 0:
         raise HTTPException(status_code=400, detail="Invoice revenue after discount cannot be negative")
+
+    items = (
+        await db.execute(
+            select(m.SalesInvoiceItem).where(
+                m.SalesInvoiceItem.tenant_id == tenant_id,
+                m.SalesInvoiceItem.sales_invoice_id == invoice.id,
+            )
+        )
+    ).scalars().all()
+    cogs = await standard_cost_cogs_for_lines(db, tenant_id, list(items))
+    lines.extend(cogs_inventory_journal_lines(cogs))
+
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1163,6 +1254,23 @@ async def post_sales_return_journal(
     ]
     if tax > 0:
         lines.append({"account_code": "2100", "debit": tax, "credit": 0, "description": "Tax reverse"})
+
+    # Reverse COGS/Inventory only for restocked sellable lines (Stage 15 I1).
+    if getattr(sales_return, "restock", True):
+        items = (
+            await db.execute(
+                select(m.SalesReturnItem).where(
+                    m.SalesReturnItem.tenant_id == tenant_id,
+                    m.SalesReturnItem.sales_return_id == sales_return.id,
+                )
+            )
+        ).scalars().all()
+        restock_lines = [
+            it for it in items if (getattr(it, "condition", None) or "sellable") == "sellable"
+        ]
+        cogs = await standard_cost_cogs_for_lines(db, tenant_id, restock_lines)
+        lines.extend(cogs_inventory_journal_lines(cogs, reverse=True))
+
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1645,6 +1753,10 @@ async def post_pos_sale_journal(
         lines.append(
             {"account_code": "2100", "debit": 0, "credit": tax, "description": "Tax payable"}
         )
+    payload_items = list((tx.payload or {}).get("items") or [])
+    cogs = await standard_cost_cogs_for_lines(db, tenant_id, payload_items)
+    lines.extend(cogs_inventory_journal_lines(cogs))
+
     store_id = None
     if getattr(tx, "session_id", None):
         session = await db.get(m.PosSession, tx.session_id)

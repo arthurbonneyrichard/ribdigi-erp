@@ -132,14 +132,15 @@ async def test_invoice_stock_ar_tax_journal_chain(client, db_session):
         if j.get("source_type") == "sales_invoice" and j.get("source_id") == invoice_id
     ]
     assert len(inv_jes) == 1
-    assert float(inv_jes[0]["total_debit"]) == pytest.approx(46)
+    # AR 46 + COGS 10 (10 × seed cost_price 1) — Stage 15 I1
+    assert float(inv_jes[0]["total_debit"]) == pytest.approx(56)
 
     detail = await ac.get(
         f"/api/v1/accounting/journal-entries/{inv_jes[0]['id']}", headers=headers
     )
     assert detail.status_code == 200, detail.text
     lines = detail.json()["data"]["lines"]
-    assert len(lines) >= 3
+    assert len(lines) >= 5
 
     account_ids = {ln["account_id"] for ln in lines}
     accounts = (
@@ -161,6 +162,10 @@ async def test_invoice_stock_ar_tax_journal_chain(client, db_session):
     assert "1100" in by_code
     assert "4000" in by_code
     assert "2100" in by_code
+    assert "5000" in by_code
+    assert "1200" in by_code
     assert sum(float(ln["debit"]) for ln in by_code["1100"]) == pytest.approx(46)
     assert sum(float(ln["credit"]) for ln in by_code["4000"]) == pytest.approx(40)
     assert sum(float(ln["credit"]) for ln in by_code["2100"]) == pytest.approx(6)
+    assert sum(float(ln["debit"]) for ln in by_code["5000"]) == pytest.approx(10)
+    assert sum(float(ln["credit"]) for ln in by_code["1200"]) == pytest.approx(10)

@@ -241,7 +241,8 @@ async def test_pos_sale_success_commits_stock_journal_audit(client, db_session):
         )
     ).scalars().all()
     assert len(jes) == 1
-    assert float(jes[0].total_debit) == pytest.approx(expected_total)
+    # Sale total + COGS (qty 2 × cost_price 1) — Stage 15 I1
+    assert float(jes[0].total_debit) == pytest.approx(expected_total + 2)
 
     audits = await ac.get(
         "/api/v1/audit-logs",

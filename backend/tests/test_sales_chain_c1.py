@@ -137,7 +137,8 @@ async def test_customer_quote_order_invoice_payment_chain(client, db_session):
         if j.get("source_type") == "sales_invoice" and j.get("source_id") == invoice_id
     ]
     assert len(inv_jes) == 1
-    assert float(inv_jes[0]["total_debit"]) == pytest.approx(46)
+    # AR/tax/revenue 46 + standard-cost COGS (10 × cost_price 1) — Stage 15 I1
+    assert float(inv_jes[0]["total_debit"]) == pytest.approx(56)
 
     pay = await ac.post(
         "/api/v1/sales/payments",

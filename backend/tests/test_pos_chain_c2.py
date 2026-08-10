@@ -110,7 +110,8 @@ async def test_pos_shift_sale_receipt_stock_close(client, db_session):
         if j.get("source_type") == "pos_sale" and j.get("source_id") == sale_id
     ]
     assert len(pos_jes) == 1
-    assert float(pos_jes[0]["total_debit"]) == pytest.approx(200)
+    # Sale total 200 + COGS 2 (qty 2 × cost_price 1) — Stage 15 I1
+    assert float(pos_jes[0]["total_debit"]) == pytest.approx(202)
 
     cur = await ac.get("/api/v1/pos/sessions/current", headers=headers)
     assert cur.status_code == 200
