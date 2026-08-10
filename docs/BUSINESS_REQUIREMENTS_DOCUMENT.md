@@ -1046,10 +1046,10 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
 - **Description:** Deep sales pattern recognition.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Sales trend forecasting
-  - [ ] Customer segmentation (RFM analysis)
-  - [ ] Product affinity analysis (frequently bought together)
-  - [ ] Peak hour/day predictions
+  - [x] Sales trend forecasting — Stage 20 S1 (`GET /ai/sales/analysis` `trend.forecast_totals` 7/14/30; `test_ai_sales_analysis_s1.py`)
+  - [x] Customer segmentation (RFM analysis) — Stage 20 S1 (`rfm.customers` / `segment_counts`)
+  - [x] Product affinity analysis (frequently bought together) — Stage 20 S1 (`product_affinity.pairs`)
+  - [x] Peak hour/day predictions — Stage 20 S1 (`peaks.peak_hour` / `peak_weekday`)
 
 #### BR-21.6 AI Expense Analysis
 - **Description:** Intelligent cost management.
