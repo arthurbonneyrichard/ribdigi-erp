@@ -49,7 +49,7 @@ Performance testing
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **S1** | Tenant isolation matrix completeness (MVP write/read paths) | P0 | COMPLETE |
-| **A1** | Security hardening fidelity (RBAC / session / audit BR-17 sync + sensitive-path proof) | P0 | PENDING |
+| **A1** | Security hardening fidelity (RBAC / session / audit BR-17 sync + sensitive-path proof) | P0 | COMPLETE |
 | **B1** | Backup schedule / retention / failure notify + restore drill evidence | P0 | PENDING |
 | **I1** | Cross-module integrity (inventory Σ movements · accounting TB/GL · POS money-path) | P0 | PENDING |
 | **L1** | Structured request/error logging + health/metrics monitoring hooks (MVP-lite) | P0 | PENDING |
@@ -78,8 +78,8 @@ Performance testing
 
 ## A1 acceptance criteria
 
-- [ ] RBAC / session / audit paths proven against BR-17 where engines already exist; sensitive ops still hash-chained; BR checkbox drift closed only with evidence.
-- [ ] Automated proof.
+- [x] RBAC / session / audit paths proven against BR-17 where engines already exist; sensitive ops still hash-chained; BR checkbox drift closed only with evidence.
+- [x] Automated proof: `backend/tests/test_security_hardening_a1.py`.
 
 ## B1 acceptance criteria
 
@@ -117,4 +117,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-S1 complete. Pending A1 → … → H18x. Stages 1–17 remain frozen for their scopes.
+S1–A1 complete. Pending B1 → … → H18x. Stages 1–17 remain frozen for their scopes.

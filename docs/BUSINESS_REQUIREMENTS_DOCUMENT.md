@@ -850,21 +850,21 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Immutable record of system activities.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Login/Logout:** Timestamp, IP address, device, success/failure
+  - [x] **Login/Logout:** Timestamp, IP address, device, success/failure — Stage 18 A1 (`login` / `login_failed` / `logout` / `idle_logout`; `module=auth`)
   - [x] **Product Changes:** Create, update, delete with before/after values — Stage 17 A1 (`product_create` / `product_update` / soft-delete `product_deactivate`; stock mutations `stock_*` with before/after qty)
   - [x] **Sales:** Invoice creation, modification, cancellation — Stage 15 A1 enriched `invoice_posted` + `sales_return_posted`
-  - [ ] **Purchases:** PO, GRN, invoice changes
-  - [ ] **User Activity:** Permission changes, role assignments, deletions
-  - [ ] **Financial:** Journal entry posting, account modifications
+  - [x] **Purchases:** PO, GRN, invoice changes — Stage 18 A1 / Stage 11 A1 (`po_created` / `grn_posted` / PI approve; hash-chained)
+  - [x] **User Activity:** Permission changes, role assignments, deletions — Stage 18 A1 (`user_created` / `user_updated` role / `user_deactivated`)
+  - [x] **Financial:** Journal entry posting, account modifications — Stage 18 A1 / Stage 1 financial ops (`journal_posted` + hash verify)
 
 #### BR-17.2 Audit Log Management
 - **Description:** Search and retention of audit data.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Filter by user, module, action type, date range
-  - [ ] Export audit logs (CSV, PDF)
-  - [ ] Tamper-proof storage (append-only, hashed)
-  - [ ] Retention policy: minimum 7 years for financial records
+  - [x] Filter by user, module, action type, date range — Stage 18 A1 (`GET /audit-logs` params)
+  - [x] Export audit logs (CSV, PDF) — Stage 18 A1 (`GET /audit-logs/export`)
+  - [x] Tamper-proof storage (append-only, hashed) — Stage 18 A1 / Stage 1 G19 (`GET /audit-logs/verify`)
+  - [x] Retention policy: minimum 7 years for financial records — Stage 18 A1 / Stage 1 G20 (`GET /audit-logs/retention`)
 
 ---
 

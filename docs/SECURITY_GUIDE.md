@@ -436,6 +436,7 @@ All security-relevant events are captured in an immutable audit log:
 - Expense workflow domain audit (Stage 14 A3): `expense_submitted`, `expense_auto_approved`, `expense_level_approved`, `expense_approved`, `expense_rejected` (`module=expenses`; reject includes reason)
 - Sales path domain audit (Stage 15 A1): enriched `invoice_posted` (stock/tax/AR) and `sales_return_posted` (`module=sales`); linked `journal_posted` for `source_type=sales_invoice|sales_return`
 - Inventory path domain audit (Stage 17 A1): `product_create`, `product_update` / soft-delete `product_deactivate` with before/after field diffs (`module=inventory`); stock mutations via `stock_{movement_type}` (`before`/`after` qty, warehouse, reason)
+- Security hardening fidelity (Stage 18 A1): `login` / `login_failed` / `logout` / `idle_logout`; `user_created` / `user_updated` / `user_deactivated`; purchases `po_created` / `grn_posted`; `journal_posted`; BR-17.2 filter/export/verify/retention (`test_security_hardening_a1.py`)
 
 ### 10.2 Audit Log Schema
 
