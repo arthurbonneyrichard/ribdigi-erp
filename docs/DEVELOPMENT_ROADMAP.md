@@ -186,6 +186,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 23 C1 (2026-08-10):** Financial comparative P&L / cash-flow / balance sheet — `test_financial_comparative_c1.py` (BR-14.5).
 
+**Stage 23 I1 (2026-08-10):** Isolation matrix residual — liquid accounts/transfers, expense categories/recurring, report dimensions, mismatched header (`test_isolation_matrix_i1.py`).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -766,7 +768,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 23 open (`docs/STAGE_23_PLAN.md`, ADR-051) — F1–C1 complete; I1 next. Stages 1–22 remain frozen for their scopes.
+**Active delivery plan:** Stage 23 open (`docs/STAGE_23_PLAN.md`, ADR-051) — F1–C1–I1 complete; G1 next. Stages 1–22 remain frozen for their scopes.
 
 ### 6.2 Features
 

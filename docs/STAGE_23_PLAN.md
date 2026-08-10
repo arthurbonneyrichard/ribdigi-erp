@@ -39,7 +39,7 @@ Fidelity closeout
 |----|------------|----------|---------|
 | **F1** | Balance sheet + financial dimension filters (BR-14.5) | P0 | COMPLETE |
 | **C1** | Financial comparative fidelity (P&L / cash-flow / BS) | P0 | COMPLETE |
-| **I1** | Isolation matrix residual coverage | P1 | PENDING |
+| **I1** | Isolation matrix residual coverage | P1 | COMPLETE |
 | **G1** | Commercial MVP gate closure (readiness honesty) | P1 | PENDING |
 | **B1** | Logical DR drill automation evidence | P1 | PENDING |
 | **D1** | Spec / BR-14 / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
@@ -76,10 +76,19 @@ Fidelity closeout
 - [x] Automated proof: `backend/tests/test_financial_comparative_c1.py`.
 - [x] BR-14.5 comparative AC synced (no longer deferred).
 
-## I1–H23x acceptance criteria
+## I1 acceptance criteria
+
+- [x] Foreign liquid accounts / transfers → 404; list excludes other-tenant codes.
+- [x] Foreign expense categories / recurring → 404; lists exclude foreign ids.
+- [x] Foreign branch + report `store_id`/`branch_id` on BS/P&L/cash-flow → 404.
+- [x] Mismatched `X-Tenant-ID` on financial reports / liquid accounts / expense budgets → 403.
+- [x] Automated proof: `backend/tests/test_isolation_matrix_i1.py`.
+- [x] PRODUCTION_READINESS / SECURITY_GUIDE / launch synced (schema-per-tenant remains deferred ADR-001).
+
+## G1–H23x acceptance criteria
 
 Filled when each workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-051 open. F1–C1 complete; I1 next. Stages 1–22 remain frozen for their scopes.
+Plan authored; ADR-051 open. F1–C1–I1 complete; G1 next. Stages 1–22 remain frozen for their scopes.
