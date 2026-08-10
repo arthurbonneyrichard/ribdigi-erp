@@ -224,7 +224,7 @@ Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions a
 ### 3.2 Get Tenant Profile
 **Endpoint:** `GET /tenants/{tenant_id}`
 
-**Current tenant (Stage 21 T1/C1):** `GET /tenants/me` / `PATCH /tenants/me` — company admin / super_admin profile (legal name, registration/tax IDs, billing/shipping/warehouse addresses, contact person, currency, logo via `/tenants/me/logo`). Evidence: `test_tenant_lifecycle_t1.py`, `test_company_currency_tax_c1.py`.
+**Current tenant (Stage 21 T1/C1):** `GET /tenants/me` / `PATCH /tenants/me` — company admin / super_admin profile (legal name, registration/tax IDs, billing/shipping/warehouse addresses, contact person, currency, logo via `/tenants/me/logo`). `document_numbering` + `document_numbering_preview` cover sales/purchase series including order, return, credit note, debit note (Stage 24 N1: `test_document_numbering_n1.py`). Evidence: `test_tenant_lifecycle_t1.py`, `test_company_currency_tax_c1.py`.
 
 ### 3.3 Update Tenant Profile
 **Endpoint:** `PATCH /tenants/{tenant_id}`

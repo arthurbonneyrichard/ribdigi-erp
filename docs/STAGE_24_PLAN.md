@@ -37,7 +37,7 @@ Fidelity closeout
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **N1** | Shared document numbering series fidelity | P0 | PENDING |
+| **N1** | Shared document numbering series fidelity | P0 | COMPLETE |
 | **G1** | Commerce gates closure (Inv / Purch / Sales / POS / Multi-store) | P0 | PENDING |
 | **O1** | Ops Redis/Celery + AI MVP gate honesty | P1 | PENDING |
 | **D1** | Spec / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
@@ -58,10 +58,18 @@ Fidelity closeout
 - Richer WYSIWYG template designer; restore-to-new-tenant
 - Reopening Stages 1–23 frozen feature scopes
 
-## N1–H24x acceptance criteria
+## N1 acceptance criteria
+
+- [x] `document_numbering` configure + preview covers all `DOC_KEYS` (invoice / PI / PO / GRN / quote / order / return / credit note / purchase return / debit note).
+- [x] Live allocation honors configured prefixes for quotation, sales order, sales invoice, sales return, credit note, PO, GRN.
+- [x] Unknown document type rejected by numbering merge (`400`).
+- [x] Automated proof: `backend/tests/test_document_numbering_n1.py`.
+- [x] BR-20.4 / launch / roadmap / readiness Sales Remaining cite Stage 24 N1.
+
+## G1–H24x acceptance criteria
 
 Filled when each workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-053 open. N1 next. Stages 1–23 remain frozen for their scopes.
+Plan authored; ADR-053 open. N1 complete; G1 next. Stages 1–23 remain frozen for their scopes.

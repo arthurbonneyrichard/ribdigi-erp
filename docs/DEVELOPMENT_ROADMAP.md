@@ -198,6 +198,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 24 open (2026-08-10):** Commerce & Ops Gate Fidelity track approved — `docs/ADR_053_STAGE24_OPEN.md` + `docs/STAGE_24_PLAN.md` (numbering → commerce/ops/AI gate honesty).
 
+**Stage 24 N1 (2026-08-10):** Shared document numbering series fidelity — configure/preview all `DOC_KEYS`; live QT/SO/INV/SR/CN/PO/GRN allocation (`test_document_numbering_n1.py`).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -778,7 +780,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 24 open (`docs/STAGE_24_PLAN.md`, ADR-053) — N1 next. Stages 1–23 remain frozen for their scopes.
+**Active delivery plan:** Stage 24 open (`docs/STAGE_24_PLAN.md`, ADR-053) — N1 complete; G1 next. Stages 1–23 remain frozen for their scopes.
 
 ### 6.2 Features
 

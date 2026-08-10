@@ -1133,7 +1133,8 @@ Go to **Settings → Formatting** to set:
 
 ### 15.3 Invoice & Receipt Templates
 
-Go to **Settings → Templates** to customize:
+Go to **Settings → Templates** (or Company numbering) to customize:
+- Document numbering series for invoices, POs, GRNs, quotations, sales orders, sales returns / credit notes, purchase returns / debit notes (Stage 24 N1)
 - Invoice numbering prefix (e.g., "INV-2026-")
 - Receipt template (thermal or A4)
 - Header/footer text

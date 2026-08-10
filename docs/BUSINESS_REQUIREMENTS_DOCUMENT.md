@@ -1003,11 +1003,12 @@ Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) — Stage 19 C1 (`document_numbering` + preview)
   - [x] Configure PO, GRN, quotation numbering — Stage 19 C1 (`purchase_order` / `goods_receipt` / `sales_quotation` series)
+  - [x] Configure sales order, sales return, credit note, purchase return, debit note series — Stage 24 N1 (`sales_order` / `sales_return` / `sales_credit_note` / `purchase_return` / `purchase_debit_note`; live allocate proof `test_document_numbering_n1.py`)
   - [x] Receipt template selection and customization — Stage 19 C1 (`receipt_print_template` thermal_80/thermal_58; richer WYSIWYG designer deferred)
   - [x] Invoice template selection and customization — Stage 19 C1 (`invoice_print_template` a4/thermal_*)
   - [x] Header/footer customization with company branding — Stage 19 C1 (`document_header` / `document_footer`)
 
-Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
+Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`. Stage 24 N1 shared series — `test_document_numbering_n1.py`.
 
 ---
 
