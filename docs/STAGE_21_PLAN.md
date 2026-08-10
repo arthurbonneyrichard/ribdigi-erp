@@ -45,7 +45,7 @@ Fidelity closeout
 | **T1** | Tenant registration & lifecycle (BR-1.1–1.3) | P0 | COMPLETE |
 | **I1** | Isolation & tenant init seeds (BR-1.4–1.5) | P0 | COMPLETE |
 | **O1** | Org units fidelity (BR-2.2–2.5) | P0 | COMPLETE |
-| **C1** | Company / currency / tax setup (BR-2.1, 2.6, 2.8) | P1 | PENDING |
+| **C1** | Company / currency / tax setup (BR-2.1, 2.6, 2.8) | P1 | COMPLETE |
 | **U1** | Users & roles fidelity (BR-3) | P1 | PENDING |
 | **V1** | Dashboard KPIs & visualizations (BR-4.1–4.3) | P1 | PENDING |
 | **N1** | Dashboard notifications panel (BR-4.4) | P1 | PENDING |
@@ -90,9 +90,9 @@ Fidelity closeout
 
 ## C1 acceptance criteria
 
-- [ ] Company legal/tax/multi-address/contact + currency/FX + tax rates/default/category applicability proven.
-- [ ] Automated proof: `backend/tests/test_company_currency_tax_c1.py`.
-- [ ] BR-2.1 / 2.6 / 2.8 synced with evidence (BR-2.7 deferred packs remain ADR-006).
+- [x] Company legal/tax/multi-address/contact + currency/FX + tax rates/default/category applicability proven.
+- [x] Automated proof: `backend/tests/test_company_currency_tax_c1.py`.
+- [x] BR-2.1 / 2.6 / 2.8 synced with evidence (BR-2.7 deferred packs remain ADR-006).
 
 ## U1 acceptance criteria
 
@@ -123,4 +123,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-T1–O1 complete. Pending C1 → H21x. Stages 1–20 remain frozen for their scopes.
+T1–C1 complete. Pending U1 → H21x. Stages 1–20 remain frozen for their scopes.

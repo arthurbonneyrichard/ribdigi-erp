@@ -192,9 +192,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Centralized company details editable by Company Admin.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] CRUD operations on company legal name, registration number, tax ID
-  - [ ] Multiple address support (billing, shipping, warehouse)
-  - [ ] Contact person designation
+  - [x] CRUD operations on company legal name, registration number, tax ID — Stage 21 C1 (`PATCH/GET /tenants/me` `legal_name`/`registration_number`/`tax_registration_number`; create via tenant registration; `test_company_currency_tax_c1.py`)
+  - [x] Multiple address support (billing, shipping, warehouse) — Stage 21 C1 (typed fields `billing_address`/`shipping_address`/`warehouse_address`; not multi-row address entity CRUD)
+  - [x] Contact person designation — Stage 21 C1 (`contact_person_name`/`email`/`phone`)
 
 #### BR-2.2 Branch Management
 - **Description:** Manage multiple business branches under one tenant.
@@ -235,26 +235,26 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Multi-currency support for international operations.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Add currencies with exchange rates
-  - [ ] Set base currency
-  - [ ] Auto-update exchange rates (manual or API)
-  - [ ] Transaction-level currency selection
+  - [x] Add currencies with exchange rates — Stage 21 C1 (`PUT /credit/exchange-rates/{code}`; `test_company_currency_tax_c1.py`)
+  - [x] Set base currency — Stage 21 C1 (`PATCH /tenants/me` `currency`; listed as `base_currency` on exchange-rates)
+  - [x] Auto-update exchange rates (manual or API) — Stage 21 C1 (manual PUT + `POST …/refresh` provider + `fx_auto_refresh` settings)
+  - [x] Transaction-level currency selection — Stage 21 C1 (`POST /sales/invoices` `currency`/`exchange_rate`)
 
 #### BR-2.7 Language Configuration
 - **Description:** UI language preferences.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Switch UI language per user
-  - [ ] MVP supports English; framework for i18n
+  - [ ] Switch UI language per user — deferred ADR-006 (i18n packs); English MVP + scaffold only
+  - [ ] MVP supports English; framework for i18n — deferred ADR-006 (English shipped; pack expansion out of Stage 21)
 
 #### BR-2.8 Tax Configuration
 - **Description:** Configure tax rules applicable to the business.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Add multiple tax rates (VAT, GST, etc.)
-  - [ ] Set default tax rate
-  - [ ] Tax applicability by product category
-  - [ ] Compound tax support
+  - [x] Add multiple tax rates (VAT, GST, etc.) — Stage 21 C1 (`POST /tax/rates` `tax_type` vat/gst; `test_company_currency_tax_c1.py`)
+  - [x] Set default tax rate — Stage 21 C1 (`POST /tax/rates/{id}/default` + `is_default` on create)
+  - [x] Tax applicability by product category — Stage 21 C1 (`POST /catalog/categories` `tax_rate_id`)
+  - [x] Compound tax support — Stage 21 C1 (`components` net/compound legs + `/tax/calculate`)
 
 ---
 
