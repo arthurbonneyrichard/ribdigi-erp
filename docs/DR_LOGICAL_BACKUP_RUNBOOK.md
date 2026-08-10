@@ -1,7 +1,9 @@
 # Disaster Recovery Runbook — Logical Tenant Backup (`.ribbak`)
 
-**Scope:** Stage 5 B1 + Stage 10 B1 (media) + Stage 18 B1 (schedule / retention / failure notify) — encrypted logical tenant backup / guarded restore  
+**Scope:** Stage 5 B1 + Stage 10 B1 (media) + Stage 18 B1 (schedule / retention / failure notify) + Stage 19 R1 (LAUNCH §5 packaging evidence) — encrypted logical tenant backup / guarded restore  
 **Out of scope (post-MVP):** PostgreSQL `pg_dump` / WAL archiving, S3 offsite PITR, schema-per-tenant isolation (ADR-001)
+
+Stage 19 R1 automated packaging check: `backend/tests/test_reliability_cache_r1.py` (asserts this runbook + dry-run / `confirm_text=RESTORE` / WAL-PITR deferral).
 
 ## Purpose
 

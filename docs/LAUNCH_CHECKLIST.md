@@ -89,23 +89,24 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] CI + production Compose/env fidelity (Stage 18 C1: `test_ci_prod_config_c1.py`, `.env.production.example`, `docker-compose.prod.yml`; no K8s deploy)
 - [x] Stage 18 fidelity sync (D1: `test_stage18_fidelity_d1.py`, `docs/STAGE_18_FIDELITY.md`)
 - [x] Stage 18 exit + freeze (H18x: `test_stage18_exit_h18x.py`, ADR-042)
-- [ ] Stage 19 API / Settings / Operator Reliability (open: `docs/STAGE_19_PLAN.md`, ADR-043) — K1–C1 complete; R1 next
+- [ ] Stage 19 API / Settings / Operator Reliability (open: `docs/STAGE_19_PLAN.md`, ADR-043) — K1–R1 complete; D1 next
 - [x] Auth API fidelity (Stage 19 K1: `test_auth_api_fidelity_k1.py` — JWT login/refresh, API keys, tenant-scoped rate-limit headers)
 - [x] Products + Customers API fidelity (Stage 19 P1: `test_products_customers_api_p1.py` — catalog CRUD/import/stock/barcode + customers/groups/balance/history; X-API-Key reads)
 - [x] Sales + Purchases API fidelity (Stage 19 S1: `test_sales_purchases_api_s1.py` — quote/order/invoice/payment/return/POS + PR/PO/GRN/PI/supplier payment; X-API-Key reads)
 - [x] API standards fidelity (Stage 19 A1: `test_api_standards_a1.py` — env envelope, `/api/v1`, limit lists, OpenAPI, webhooks; BR-18.6)
 - [x] Auth & session BR-19 fidelity (Stage 19 U1: `test_auth_session_br19_u1.py` — bcrypt/policy/lockout/verify/reset/TOTP/sessions/idle)
 - [x] Company/settings BR-20 fidelity (Stage 19 C1: `test_company_settings_br20_c1.py` — legal/logo/formats/SMTP/numbering/templates)
+- [x] Reliability & cache LAUNCH §5 (Stage 19 R1: `test_reliability_cache_r1.py` — Redis soft-fail, perms invalidation, beat matrix, jobs dry-run, logical DR runbook)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1
 
 ## 5. Reliability & cache
 
-- [ ] Dashboard / catalog cache soft-fails if Redis blips (`CACHE_ENABLED` as intended)
-- [ ] Permissions cache invalidates after role / record_scope change
-- [ ] Celery beat schedules include: low-stock, payment-due, quotation-expiry, recurring expenses, backups, report emails, FX refresh, bank feed sync, webhook retries, AI jobs (if enabled)
-- [ ] Admin `GET /jobs` + manual `POST /jobs/{name}/run` works for an operator dry-run
+- [x] Dashboard / catalog cache soft-fails if Redis blips (`CACHE_ENABLED` as intended) — Stage 19 R1 (`test_reliability_cache_r1.py`)
+- [x] Permissions cache invalidates after role / record_scope change — Stage 19 R1 (`test_reliability_cache_r1.py`)
+- [x] Celery beat schedules include: low-stock, payment-due, quotation-expiry, recurring expenses, backups, report emails, FX refresh, bank feed sync, webhook retries, AI jobs (if enabled) — Stage 19 R1 (`test_reliability_cache_r1.py`)
+- [x] Admin `GET /jobs` + manual `POST /jobs/{name}/run` works for an operator dry-run — Stage 19 R1 (`test_reliability_cache_r1.py`; logical DR packaging: `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`)
 
 ## 6. Explicitly deferred (do not block Stage 7 exit)
 

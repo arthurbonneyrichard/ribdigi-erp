@@ -45,7 +45,7 @@ Operator reliability
 | **A1** | API standards fidelity (BR-18.6) | P0 | COMPLETE |
 | **U1** | Auth & session BR-19 fidelity sync | P0 | COMPLETE |
 | **C1** | Company/settings BR-20 fidelity sync | P1 | COMPLETE |
-| **R1** | Reliability & cache (LAUNCH §5) | P0 | PENDING |
+| **R1** | Reliability & cache (LAUNCH §5) | P0 | COMPLETE |
 | **D1** | Spec / BR-18–20 / readiness / launch fidelity sync | P2 | PENDING |
 | **H19x** | Stage 19 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -93,8 +93,8 @@ Operator reliability
 
 ## R1 acceptance criteria
 
-- [ ] Dashboard/catalog cache soft-fails on Redis blip; permissions cache invalidates on role/`record_scope` change; Celery beat schedule matrix + admin `GET/POST /jobs` dry-run automated; logical DR drill packaging documented (no WAL/PITR).
-- [ ] Automated proof: `backend/tests/test_reliability_cache_r1.py`.
+- [x] Dashboard/catalog cache soft-fails on Redis blip; permissions cache invalidates on role/`record_scope` change; Celery beat schedule matrix + admin `GET/POST /jobs` dry-run automated; logical DR drill packaging documented (no WAL/PITR).
+- [x] Automated proof: `backend/tests/test_reliability_cache_r1.py`.
 
 ## D1 acceptance criteria
 
@@ -107,4 +107,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-K1–P1–S1–A1–U1–C1 complete. Pending R1 → H19x. Stages 1–18 remain frozen for their scopes.
+K1–P1–S1–A1–U1–C1–R1 complete. Pending D1 → H19x. Stages 1–18 remain frozen for their scopes.
