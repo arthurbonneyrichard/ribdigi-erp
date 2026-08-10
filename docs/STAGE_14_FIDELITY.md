@@ -1,6 +1,6 @@
 # Stage 14 Fidelity Notes — Finance Closeout Chain
 
-**Status:** Closed with Stage 14 D1  
+**Status:** Closed with Stage 14 D1; exit met (H14x / ADR-034)  
 **Chain:** Expenses → Accounting (COA, JE, GL, TB, P&L, Cash Flow) → Credit → Tax
 
 ## Corrections applied
@@ -25,6 +25,7 @@
 - `backend/tests/test_credit_payment_allocate_r1.py`
 - `backend/tests/test_expense_audit_a3.py`
 - `backend/tests/test_stage14_fidelity_d1.py`
+- `backend/tests/test_stage14_exit_h14x.py`
 
 ## Spec sync targets
 

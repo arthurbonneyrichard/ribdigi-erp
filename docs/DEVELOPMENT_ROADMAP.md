@@ -128,7 +128,9 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 14 open (2026-08-10):** Finance Closeout Chain Fidelity track approved — `docs/ADR_033_STAGE14_OPEN.md` + `docs/STAGE_14_PLAN.md` (Expenses → Accounting → Credit → Tax).
 
-**Stage 14 D1 (2026-08-10):** Spec / BR / readiness fidelity sync — `docs/STAGE_14_FIDELITY.md` (E1–E2, A1–A3, T1, R1 documented; H14x pending).
+**Stage 14 D1 (2026-08-10):** Spec / BR / readiness fidelity sync — `docs/STAGE_14_FIDELITY.md`.
+
+**Stage 14 exit (2026-08-10):** E1, E2, A1, A2, T1, R1, A3, D1, H14x met — `docs/STAGE_14_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_034_STAGE14_FREEZE.md`. Fidelity: `docs/STAGE_14_FIDELITY.md`.
 
 ### 2.2 Features
 
@@ -703,7 +705,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 14 open (`docs/STAGE_14_PLAN.md`, ADR-033). Stages 1–13 remain frozen for their scopes.
+**Active delivery plan:** Stage 14 closed (`docs/STAGE_14_EXIT_CRITERIA.md`, ADR-034). Stages 1–14 remain frozen for their scopes until CONTINUE opens the next track.
 
 ### 6.2 Features
 

@@ -54,6 +54,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Tax rate PATCH/deactivate + period helpers (Stage 14 T1: `test_tax_rate_lifecycle_t1.py`)
 - [x] Credit UI allocate to invoice/bill (Stage 14 R1: `test_credit_payment_allocate_r1.py`)
 - [x] Expense approve/reject domain audit (Stage 14 A3: `test_expense_audit_a3.py`)
+- [x] Stage 14 exit + freeze (H14x: `test_stage14_exit_h14x.py`, ADR-034)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)

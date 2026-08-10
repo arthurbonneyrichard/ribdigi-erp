@@ -27,7 +27,8 @@ def test_stage14_fidelity_note_and_plan():
     assert "STAGE_14_FIDELITY.md" in plan
     assert "| **E1**" in plan and "COMPLETE" in plan
     assert "| **A3**" in plan and "COMPLETE" in plan
-    assert "| **H14x**" in plan and "PENDING" in plan
+    assert "| **H14x**" in plan and "COMPLETE" in plan
+    assert "ADR-034" in plan or "STAGE_14_EXIT_CRITERIA.md" in plan
 
 
 def test_stage14_api_and_database_docs():
@@ -81,13 +82,16 @@ def test_stage14_br_security_manual_launch():
 def test_stage14_readiness_and_roadmap():
     pr = _read("PRODUCTION_READINESS.md")
     assert "STAGE_14_FIDELITY.md" in pr
-    assert "Stage 14 E1" in pr
-    assert "Stage 14 A1" in pr
-    assert "Stage 14 A2" in pr
-    assert "Stage 14 T1" in pr
-    assert "Stage 14 R1" in pr
-    assert "Stage 14 A3" in pr
+    assert "Stage 14 COMPLETE" in pr or "ADR-034" in pr
+    assert "expense_categories.account_id" in pr or "E1 category" in pr
+    assert "journal_entries.store_id" in pr or "as_of_date" in pr
+    assert "PATCH /tax/rates/{id}" in pr or "period=monthly|quarterly|annually" in pr
+    assert "sales_invoice_id" in pr
+    assert "expense_submitted" in pr
+    assert "STAGE_14_EXIT_CRITERIA.md" in pr or "ADR-034" in pr
 
     roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
     assert "STAGE_14_FIDELITY.md" in roadmap
     assert "Stage 14 D1" in roadmap
+    assert "Stage 14 exit" in roadmap
+    assert "ADR_034_STAGE14_FREEZE.md" in roadmap
