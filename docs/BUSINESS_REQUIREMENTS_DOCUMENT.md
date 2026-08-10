@@ -921,13 +921,13 @@ Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
 - **Description:** Consistent API design.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] RESTful design with standard HTTP methods
-  - [ ] JSON request/response format
-  - [ ] Standard error response structure
-  - [ ] Pagination for list endpoints
-  - [ ] Versioning (/api/v1/)
-  - [ ] OpenAPI/Swagger documentation auto-generated
-  - [x] Webhook support for event subscriptions (Stage 6 W1: HMAC-signed outbound webhooks)
+  - [x] RESTful design with standard HTTP methods — Stage 19 A1 (`GET/POST/PATCH` under `/api/v1`; `test_api_standards_a1.py`)
+  - [x] JSON request/response format — Stage 19 A1 (`application/json` + `env()` success envelope)
+  - [x] Standard error response structure — Stage 19 A1 (FastAPI `detail` + rate-limit envelope; see API_DOCUMENTATION §1.2)
+  - [x] Pagination for list endpoints — Stage 19 A1 (`limit` on high-volume lists e.g. audit-logs; full-array lists for catalog/parties; cursor deferred)
+  - [x] Versioning (/api/v1/) — Stage 19 A1 (router prefix `/api/v1`)
+  - [x] OpenAPI/Swagger documentation auto-generated — Stage 19 A1 (`/openapi.json`, `/docs` when not production)
+  - [x] Webhook support for event subscriptions (Stage 6 W1: HMAC-signed outbound webhooks; Stage 19 A1 regression)
 
 ---
 
