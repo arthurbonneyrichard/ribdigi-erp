@@ -350,11 +350,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** All inventory movement transactions.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Stock In:** Record incoming stock with reference (purchase order, transfer, adjustment), quantity, batch, expiry, warehouse
+  - [x] **Stock In:** Record incoming stock with reference (purchase order, transfer, adjustment), quantity, batch, expiry, warehouse — Stage 17 S1 (`POST /inventory/stock-in` → warehouse qty + `stock_movements`; GRN sets `reference_type=grn`)
   - [x] **Stock Out:** Record outgoing stock with reference (sales, transfer, adjustment, damage), quantity, warehouse — Stage 15 C1/H1 sales invoice `stock_movements` (`reference_type=sales_invoice`); aggregated post preflight
-  - [ ] **Stock Adjustment:** Correct stock discrepancies with reason (damage, theft, expiry, found, lost)
+  - [x] **Stock Adjustment:** Correct stock discrepancies with reason (damage, theft, expiry, found, lost) — Stage 17 S1 / Stage 2 I2 (`POST /inventory/adjust/{id}`; `INVALID_ADJUSTMENT_REASON`)
   - [ ] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow
-  - [ ] **Opening Stock:** Initialize stock levels for new products or fiscal year start
+  - [x] **Opening Stock:** Initialize stock levels for new products or fiscal year start — Stage 17 S1 (`POST /inventory/opening-stock`; `movement_type=opening_stock`)
   - [ ] **Stock Count:** Physical count reconciliation with system stock; variance report generation
 
 #### BR-5.3 Stock Movement History

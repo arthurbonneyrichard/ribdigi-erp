@@ -30,7 +30,7 @@ Inventory
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **C1** | Catalog fidelity proof (categories/brands/UoM/variants/barcode/images/batch-expiry) | P0 | COMPLETE |
-| **S1** | Stock ops chain (stock-in → movements → warehouse qty; adjust reasons; opening stock) | P0 | PENDING |
+| **S1** | Stock ops chain (stock-in → movements → warehouse qty; adjust reasons; opening stock) | P0 | COMPLETE |
 | **S2** | Stock count → variance report → post adjustments | P0 | PENDING |
 | **W1** | Warehouse stock grid + inter-warehouse transfer ship/receive chain | P1 | PENDING |
 | **L1** | Low-stock indicators + suggested order qty + reorder-PO | P1 | PENDING |
@@ -57,8 +57,8 @@ Inventory
 
 ## S1 acceptance criteria
 
-- [ ] Stock-in → warehouse qty + `stock_movements`; adjustment with reason codes; opening stock path proven.
-- [ ] Automated proof for chosen ops chain.
+- [x] Stock-in → warehouse qty + `stock_movements`; adjustment with reason codes; opening stock path proven.
+- [x] Automated proof for chosen ops chain: `backend/tests/test_stock_ops_chain_s1.py`.
 
 ## S2 acceptance criteria
 
@@ -91,4 +91,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1 complete. Pending S1 → … → H17x.
+C1–S1 complete. Pending S2 → … → H17x.

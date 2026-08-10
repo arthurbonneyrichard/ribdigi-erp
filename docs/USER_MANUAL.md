@@ -209,6 +209,21 @@ Stage 17 (ADR-039) proves catalog and stock-ops fidelity on the existing Invento
 
 ### 3.2 Stock Operations
 
+Use **Inventory → Stock ops** for stock-in, stock-out, adjustments (reason codes: damage, theft, expiry, found, lost, other), and **opening stock** (add/set; set cannot reduce — use adjust or stock count). Stage 17 S1 proves warehouse qty + movement persistence for this path (`docs/STAGE_17_PLAN.md`).
+
+#### Recording Stock In
+
+1. Go to **Inventory → Stock ops**
+2. Select product (or scan barcode)
+3. Enter quantity and optional warehouse / batch / expiry
+4. Confirm — system updates product and warehouse balances and writes an immutable movement
+
+#### Stock Adjustments
+
+1. Choose **Adjust** with a signed quantity
+2. Select a **reason** (required)
+3. Save — movement type `adjustment` records reason and notes
+
 #### Stock In (Receiving Goods)
 
 Use this when:

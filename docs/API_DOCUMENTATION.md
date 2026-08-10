@@ -428,46 +428,17 @@ Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a produc
 
 ### 5.5 Stock Operations
 
-**Stock In:** `POST /inventory/stock-in`
+Stage 17 S1 proves stock-in → warehouse qty + `stock_movements`, adjustment reason codes, and opening stock — `test_stock_ops_chain_s1.py`.
 
-```json
-{
-  "product_id": "prod_001",
-  "variant_id": "var_001",
-  "warehouse_id": "wh_001",
-  "quantity": 100,
-  "unit_cost": 8.50,
-  "reference_type": "purchase",
-  "reference_id": "po_001",
-  "notes": "Initial stock from PO-001"
-}
-```
+**Stock In:** `POST /inventory/stock-in` — body `{ product_id, quantity, warehouse_id?, notes?, variant_id?, batch_number?, manufacturing_date?, expiry_date? }`
 
-**Stock Out:** `POST /inventory/stock-out`
+**Stock Out:** `POST /inventory/stock-out` — same shape; optional `batch_id` (FEFO if omitted)
 
-```json
-{
-  "product_id": "prod_001",
-  "variant_id": "var_001",
-  "warehouse_id": "wh_001",
-  "quantity": 5,
-  "reference_type": "sale",
-  "reference_id": "inv_001",
-  "notes": "Sold via invoice INV-001"
-}
-```
+**Stock Adjustment:** `POST /inventory/adjust/{product_id}` — body `{ quantity` (signed delta), `reason` (`damage|theft|expiry|found|lost|other`), `notes?`, `warehouse_id?` }. Invalid reason → `400 INVALID_ADJUSTMENT_REASON`.
 
-**Stock Adjustment:** `POST /inventory/stock-adjustments`
+**Opening Stock:** `POST /inventory/opening-stock` — single or `items[]`; `mode=add|set`; writes `movement_type=opening_stock` / `reference_type=opening_stock`.
 
-```json
-{
-  "product_id": "prod_001",
-  "warehouse_id": "wh_001",
-  "adjustment_qty": -2,
-  "reason": "damaged",
-  "notes": "Water damage during storage"
-}
-```
+**Warehouse stock view:** `GET /products/{product_id}/warehouse-stock`
 
 **Stock Transfer:** `POST /inventory/stock-transfers`
 
