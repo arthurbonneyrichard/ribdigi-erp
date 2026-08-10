@@ -41,9 +41,9 @@ Stage 13 hardens the POS sale execution path after Stage 12 freeze. Stage 12 alr
 
 ## H2 acceptance criteria
 
-- [ ] One E2E: open session → multi-tender (cash + non-cash) → stock → receipt → journal → close.
-- [ ] Receipt send happy path with domain audit (or documented existing audit).
-- [ ] Drawer pulse when split includes a cash portion (`has_cash_tender`).
+- [x] One E2E: open session → multi-tender (cash + non-cash) → stock → receipt → journal → close.
+- [x] Receipt send happy path with domain audit (`pos_receipt_sent`).
+- [x] Drawer pulse when split includes a cash portion (`has_cash_tender`); no pulse without cash.
 
 ## D1 acceptance criteria
 
@@ -55,4 +55,4 @@ Stage 13 hardens the POS sale execution path after Stage 12 freeze. Stage 12 alr
 
 ## Sign-off
 
-Pending H1 → H2 → D1 → H13x.
+H1 and H2 complete. Pending D1 → H13x.
