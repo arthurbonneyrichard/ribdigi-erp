@@ -6812,6 +6812,8 @@ async def pos_receipt_send(
     text = receipts_svc.render_thermal_text(receipt, paper=paper)
     channel = (channel or "email").lower()
 
+    from app import audit as audit_svc
+
     if channel == "email":
         user = await db.get(m.User, claims["sub"])
         recipient = to or (user.email if user else None)
@@ -6823,9 +6825,26 @@ async def pos_receipt_send(
             text_body=text,
             html_body=f"<pre style=\"font-family:monospace\">{text}</pre>",
         )
-        await db.commit()
         if not result.sent and result.mode == "smtp":
             raise HTTPException(status_code=502, detail=result.error or "Email send failed")
+        # Stage 13 H2 — domain audit after successful digital receipt send
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims.get("sub"),
+            action="pos_receipt_sent",
+            entity="pos_sale",
+            entity_id=sale_id,
+            details={
+                "channel": "email",
+                "to": recipient,
+                "mode": result.mode,
+                "reference": receipt.get("reference"),
+                "total": float(receipt.get("total") or 0),
+            },
+            module="pos",
+        )
+        await db.commit()
         return env(
             {"channel": "email", "to": recipient, "sent": result.sent, "mode": result.mode},
             "Receipt emailed",
@@ -6842,9 +6861,25 @@ async def pos_receipt_send(
             f"via {receipt.get('payment_method')}"
         )
         result = await sms_svc.send_sms(to=recipient, body=body)
-        await db.commit()
         if not result.sent and result.mode == "twilio":
             raise HTTPException(status_code=502, detail=result.error or "SMS send failed")
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims.get("sub"),
+            action="pos_receipt_sent",
+            entity="pos_sale",
+            entity_id=sale_id,
+            details={
+                "channel": "sms",
+                "to": result.recipients,
+                "mode": result.mode,
+                "reference": receipt.get("reference"),
+                "total": float(receipt.get("total") or 0),
+            },
+            module="pos",
+        )
+        await db.commit()
         return env(
             {
                 "channel": "sms",

@@ -19,7 +19,7 @@ Stage 13 hardens the POS sale execution path after Stage 12 freeze. Stage 12 alr
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **H1** | Atomic sale integrity (stock-fail → no orphans; success → stock + JE + audit) | P0 | COMPLETE |
-| **H2** | Multi-tender + receipt send + drawer on cash portion | P0 | PENDING |
+| **H2** | Multi-tender + receipt send + drawer on cash portion | P0 | COMPLETE |
 | **D1** | Spec / BR-8 / readiness fidelity sync for POS execution chain | P2 | PENDING |
 | **H13x** | Stage 13 exit criteria + freeze ADR | Exit | PENDING |
 
