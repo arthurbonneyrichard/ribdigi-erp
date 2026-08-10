@@ -107,6 +107,9 @@ class Settings(BaseSettings):
     CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES: int = 1440
     # Stage 5 H5 — Prometheus-text /metrics (full Grafana stack deferred)
     METRICS_ENABLED: bool = True
+    # Stage 18 L1 — structured JSON request/error logs (MVP-lite)
+    REQUEST_LOG_ENABLED: bool = True
+    LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 

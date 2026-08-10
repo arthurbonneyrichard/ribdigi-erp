@@ -79,8 +79,9 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Inventory domain audit (Stage 17 A1: `test_inventory_audit_a1.py`)
 - [x] Stage 17 fidelity sync (D1: `test_stage17_fidelity_d1.py`, `docs/STAGE_17_FIDELITY.md`)
 - [x] Stage 17 exit + freeze (H17x: `test_stage17_exit_h17x.py`, ADR-040)
-- [ ] Stage 18 Launch Integrity & Ops (open: `docs/STAGE_18_PLAN.md`, ADR-041) — S1/A1/B1/I1 complete; L1 next
+- [ ] Stage 18 Launch Integrity & Ops (open: `docs/STAGE_18_PLAN.md`, ADR-041) — S1/A1/B1/I1/L1 complete; T1 next
 - [x] Cross-module integrity: inventory Σ movements · TB/GL · POS money-path (Stage 18 I1: `test_cross_module_integrity_i1.py`)
+- [x] Structured request logs + health/metrics hooks (Stage 18 L1: `test_request_logging_l1.py`, `docs/OPS_MONITORING_MVP.md`)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)

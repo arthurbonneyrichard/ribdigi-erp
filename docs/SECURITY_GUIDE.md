@@ -470,10 +470,11 @@ All security-relevant events are captured in an immutable audit log:
 
 ### 10.4 Application Logging
 
-- **Framework:** Structured JSON logging (Python `structlog`)
-- **Levels:** DEBUG, INFO, WARNING, ERROR, CRITICAL
-- **Sensitive Data:** Automatically redacted using regex patterns
-- **Aggregation:** Centralized via Fluentd/Fluent Bit to Elasticsearch or cloud logging
+- **MVP (Stage 18 L1):** Structured JSON request/error logs via `RequestLoggingMiddleware` (`ribdigi.request` logger). Fields: `request_id`, `tenant_id`, `user_id`, `status`, `latency_ms`, safe `error_code`. Correlation header `X-Request-ID`. See `docs/OPS_MONITORING_MVP.md`.
+- **Levels:** DEBUG, INFO, WARNING, ERROR, CRITICAL (`LOG_LEVEL`)
+- **Sensitive Data:** Request bodies and secrets are not written to access logs; only safe error codes
+- **Monitoring hooks:** `GET /api/v1/health` / `health/ready` and Prometheus-text `GET /api/v1/metrics` (Stage 5 H5). Full Grafana/PagerDuty deferred.
+- **Audit trail:** Financial/security events remain on the hash-chained audit log (BR-17), not access logs.
 
 ---
 

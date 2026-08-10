@@ -7,10 +7,18 @@ from app.config import settings
 from app.audit_middleware import AuditMutationMiddleware
 from app.db import SessionLocal
 from app.middleware import MetricsMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
+from app.request_logging import RequestLoggingMiddleware
 from app.security_runtime import is_production, openapi_enabled
+import logging
 
 is_prod = is_production()
 _docs = openapi_enabled()
+
+# Stage 18 L1 — apply LOG_LEVEL for structured request logger (and root if unset).
+_level = getattr(logging, str(settings.LOG_LEVEL or "INFO").upper(), logging.INFO)
+logging.getLogger("ribdigi.request").setLevel(_level)
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=_level)
 
 app = FastAPI(
     title="RIBDIGI BUSINESS ERP API",
@@ -38,6 +46,7 @@ cors_kwargs = {
         "Content-Type",
         "X-Tenant-ID",
         "X-API-Key",
+        "X-Request-ID",
         "Accept",
         "Origin",
     ],
@@ -46,10 +55,13 @@ cors_kwargs = {
         "X-RateLimit-Remaining",
         "X-RateLimit-Backend",
         "Retry-After",
+        "X-Request-ID",
     ],
     "max_age": 600,
 }
 app.add_middleware(CORSMiddleware, **cors_kwargs)
+# Outer logging so latency includes rate-limit / audit middleware and X-Request-ID is always set.
+app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(api)
 # Used by AuditMutationMiddleware (overridable in tests via app.state.session_factory).
