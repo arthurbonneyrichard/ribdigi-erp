@@ -26,8 +26,6 @@ def test_g1_plan_marks_complete() -> None:
     assert "| **G1** |" in PLAN
     assert "COMPLETE" in PLAN
     assert "test_mvp_gate_closure_g1.py" in PLAN
-    assert "| **G1** |" in PLAN and "COMPLETE" in PLAN
-    assert "test_mvp_gate_closure_g1.py" in PLAN
 
 
 def test_isolation_and_lifecycle_mvp_complete() -> None:
