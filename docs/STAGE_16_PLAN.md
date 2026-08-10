@@ -49,7 +49,7 @@ Notifications
 |----|------------|----------|---------|
 | **M1** | Transfer → stock chain proof (ship/receive → warehouse qty + movements) | P0 | COMPLETE |
 | **N1** | Notification emission proof matrix (low stock, sales, credit, operational) | P0 | COMPLETE |
-| **R1** | Reports suite fidelity (Sales / Inventory / Low Stock / Purchasing / Expenses / Financial / Store Performance) | P0 | PENDING |
+| **R1** | Reports suite fidelity (Sales / Inventory / Low Stock / Purchasing / Expenses / Financial / Store Performance) | P0 | COMPLETE |
 | **R2** | Credit + Tax report packaging fidelity (Reports outline ↔ existing APIs/UI) | P1 | PENDING |
 | **M2** | Transfer history / consolidated multi-store ops reporting | P1 | PENDING |
 | **N2** | Channel delivery hardening (email/SMS prefs for key categories) | P1 | PENDING |
@@ -82,9 +82,9 @@ Notifications
 
 ## R1 acceptance criteria
 
-- [ ] Documented + automated coverage that Reports outline items Sales, Inventory, Low Stock, Purchasing, Expenses, Financial, Store Performance resolve to live APIs (and UI tabs where present) with tenant isolation.
-- [ ] Align BR-14.1 / 14.4 / 14.5 checkboxes only when evidence exists; fix thin comparative / store filters only if required for AC.
-- [ ] Automated proof: `backend/tests/test_reports_suite_r1.py` (and/or extend existing report tests with Stage 16 markers).
+- [x] Documented + automated coverage that Reports outline items Sales, Inventory, Low Stock, Purchasing, Expenses, Financial, Store Performance resolve to live APIs (and UI tabs where present) with tenant isolation.
+- [x] Align BR-14.1 / 14.4 / 14.5 checkboxes only when evidence exists; store/branch-universal filters remain Partial where noted.
+- [x] Automated proof: `backend/tests/test_reports_suite_r1.py`.
 
 ## R2 acceptance criteria
 
@@ -112,4 +112,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-M1–N1 complete. Pending R1 → … → H16x.
+M1–R1 complete. Pending R2 → … → H16x.

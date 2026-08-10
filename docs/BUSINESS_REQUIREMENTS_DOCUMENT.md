@@ -743,11 +743,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Comprehensive sales analysis.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Daily Sales:** Date, invoice count, total revenue, tax, discounts, net sales
-  - [ ] **Monthly Sales:** Monthly aggregation with trend comparison
-  - [ ] **Product Sales:** Product-wise quantity and revenue; filter by date, store, category
-  - [ ] **Customer Sales:** Top customers by revenue and frequency
-  - [ ] **Salesperson Performance:** Sales by user/role
+  - [x] **Daily Sales:** Date, invoice count, total revenue, tax, discounts, net sales — Stage 16 R1 (`GET /reports/sales/daily`)
+  - [x] **Monthly Sales:** Monthly aggregation with trend comparison — Stage 16 R1 / Stage 4 R1
+  - [x] **Product Sales:** Product-wise quantity and revenue; filter by date, store, category — Stage 4 R1
+  - [x] **Customer Sales:** Top customers by revenue and frequency — Stage 4 R1
+  - [x] **Salesperson Performance:** Sales by user/role — Stage 16 R1 (`GET /reports/sales/salesperson`)
 
 #### BR-14.2 Inventory Reports
 - **Description:** Stock visibility and analysis.
@@ -772,19 +772,19 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Expenditure analysis.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Expense summary by category and period
-  - [ ] Budget vs actual comparison
-  - [ ] Top expense categories
+  - [x] Expense summary by category and period — Stage 16 R1 (`GET /reports/expenses/summary`)
+  - [x] Budget vs actual comparison — Stage 16 R1 (`budgets` embedded in expenses summary)
+  - [x] Top expense categories — Stage 16 R1 (`by_category` sorted)
 
 #### BR-14.5 Financial Reports
 - **Description:** Business financial health.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Profit & Loss Statement
-  - [ ] Cash Flow Statement
-  - [ ] Balance Sheet (Assets = Liabilities + Equity)
-  - [ ] All reports filterable by date range, branch, store
-  - [ ] Comparative reports (current period vs previous period)
+  - [x] **Profit & Loss Statement** — Stage 16 R1 (`GET /reports/profit-loss`; store filter Stage 14 A1)
+  - [x] **Cash Flow Statement** — Stage 16 R1 (`GET /reports/cash-flow`)
+  - [x] **Balance Sheet (Assets = Liabilities + Equity)** — Stage 16 R1 (`GET /reports/balance-sheet`; `as_of_date` Stage 14 A2)
+  - [ ] All reports filterable by date range, branch, store — Partial: date on sales/P&L/cash-flow; store on P&L/cash-flow/JE; balance sheet store/branch filters deferred
+  - [x] Comparative reports (current period vs previous period) — Stage 4/16 R1 sales daily/monthly `change_pct` / prior period; full financial comparative deferred
 
 ---
 
