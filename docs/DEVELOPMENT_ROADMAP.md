@@ -192,6 +192,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 23 B1 (2026-08-10):** Logical DR drill automation evidence — create → dry-run → guarded restore → verify + foreign-tenant 404; artifact `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json` (`test_logical_dr_drill_b1.py`); WAL/PITR deferred.
 
+**Stage 23 D1 (2026-08-10):** Spec / BR-14 / readiness / USER_MANUAL / API fidelity sync — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`); open ADR `docs/ADR_051_STAGE23_OPEN.md`; plan `docs/STAGE_23_PLAN.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -772,7 +774,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 23 open (`docs/STAGE_23_PLAN.md`, ADR-051) — F1–C1–I1–G1–B1 complete; D1 next. Stages 1–22 remain frozen for their scopes.
+**Active delivery plan:** Stage 23 open (`docs/STAGE_23_PLAN.md`, ADR-051) — F1–D1 complete; H23x next (`docs/STAGE_23_FIDELITY.md`). Stages 1–22 remain frozen for their scopes.
 
 ### 6.2 Features
 

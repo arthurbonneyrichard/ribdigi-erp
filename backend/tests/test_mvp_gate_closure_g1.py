@@ -30,6 +30,7 @@ def test_g1_plan_marks_complete() -> None:
         "G1 complete" in PLAN
         or "F1–C1–I1–G1 complete" in PLAN
         or "F1–C1–I1–G1–B1 complete" in PLAN
+        or "F1–C1–I1–G1–B1–D1 complete" in PLAN
     )
 
 

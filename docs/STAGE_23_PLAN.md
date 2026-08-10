@@ -42,7 +42,7 @@ Fidelity closeout
 | **I1** | Isolation matrix residual coverage | P1 | COMPLETE |
 | **G1** | Commercial MVP gate closure (readiness honesty) | P1 | COMPLETE |
 | **B1** | Logical DR drill automation evidence | P1 | COMPLETE |
-| **D1** | Spec / BR-14 / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-14 / readiness / USER_MANUAL / API fidelity sync | P2 | COMPLETE |
 | **H23x** | Stage 23 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -102,10 +102,19 @@ Fidelity closeout
 - [x] Automated proof: `backend/tests/test_logical_dr_drill_b1.py`.
 - [x] Runbook / launch / roadmap synced (Stage 23 B1).
 
-## D1–H23x acceptance criteria
+## D1 acceptance criteria
 
-Filled when each workstream starts.
+- [x] `docs/STAGE_23_FIDELITY.md` maps F1–B1 evidence → BR-14 / readiness / DR gates and deferred items.
+- [x] BR-14.5 + BR-16.3 fidelity cites include Stage 23 D1 / `STAGE_23_FIDELITY.md`.
+- [x] USER_MANUAL §§8.6 / 12 financial filters/compare + Settings backup/DR synced.
+- [x] API docs financial reports + Backup & Logical Restore + Stage 23 D1 cite.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP cite Stage 23 D1.
+- [x] Automated proof: `backend/tests/test_stage23_fidelity_d1.py`.
+
+## H23x acceptance criteria
+
+Filled when exit workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-051 open. F1–C1–I1–G1–B1 complete; D1 next. Stages 1–22 remain frozen for their scopes.
+Plan authored; ADR-051 open. F1–C1–I1–G1–B1–D1 complete; H23x next (`docs/STAGE_23_FIDELITY.md`). Stages 1–22 remain frozen for their scopes.

@@ -187,6 +187,6 @@ def test_dr_gate_runbook_and_plan_cite_stage23_b1() -> None:
     assert "test_logical_dr_drill_b1.py" in runbook
     assert "WAL" in runbook or "PITR" in runbook
 
-    assert "| **B1** |" in plan
-    assert "COMPLETE" in plan
+    b1_line = [ln for ln in plan.splitlines() if "| **B1** |" in ln][0]
+    assert "COMPLETE" in b1_line
     assert "test_logical_dr_drill_b1.py" in plan

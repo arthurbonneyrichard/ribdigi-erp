@@ -918,6 +918,8 @@ See also **Reports → Transfers** for consolidated transfer history (Stage 16 M
 
 ## 12. Reports
 
+Stage 23 D1 proves financial report store/branch filters and comparative P&L / cash-flow / balance sheet — see `docs/STAGE_23_FIDELITY.md`. Sales/inventory/purchase/expense suite fidelity remains Stage 16 (`docs/STAGE_16_FIDELITY.md`).
+
 ### 12.1 Accessing Reports
 
 Go to **Reports** from the main sidebar. Reports are organized by category:
@@ -968,10 +970,14 @@ Open **Reports → Purchases** (optional date range):
 
 ### 12.6 Financial Reports
 
-- **Profit & Loss:** Business profitability
-- **Cash Flow:** Cash movement analysis
-- **Trial Balance:** Account balance verification
-- **Balance Sheet:** Assets, liabilities, and equity snapshot
+| Report | Filters | Compare |
+|--------|---------|---------|
+| **Profit & Loss** | Date range, store, branch (Stage 23 F1) | Prior equal-length period + `%` (Stage 23 C1) |
+| **Cash Flow** | Date range, store, branch | Prior period + `%` |
+| **Trial Balance** | Optional `as of` date | — |
+| **Balance Sheet** | `as of`, store, branch (rebuilds from journals) | Same calendar day one month earlier |
+
+Export supports store/branch and `compare` when generating PDF/Excel. Details also under **Accounting → Reports** (§8.6).
 
 ### 12.7 Credit & Tax (Reports packaging)
 
@@ -1140,6 +1146,17 @@ Go to **Settings → Email** to configure:
 - SMTP server for sending emails
 - Default sender name and email
 - Email templates for invoices, quotations, and notifications
+
+### 15.5 Backup & logical restore (Company Admin)
+
+Go to **Admin → Backup** (or Settings backup panel) to:
+1. **Create** an encrypted tenant `.ribbak` archive (manual or scheduled daily/weekly)
+2. **Download** with checksum header when needed for off-server storage
+3. **Dry-run restore** to validate the archive without writing
+4. **Apply restore** only with explicit confirmation text `RESTORE` (never a soft yes)
+5. **Verify** post-restore integrity proof against live data
+
+Foreign-tenant archives cannot be restored into your company. Infrastructure WAL / point-in-time recovery remains a platform ops concern outside this logical MVP drill — see `docs/DR_LOGICAL_BACKUP_RUNBOOK.md` and Stage 23 B1/D1 in `docs/STAGE_23_FIDELITY.md`.
 
 ---
 

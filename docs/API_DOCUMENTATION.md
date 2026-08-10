@@ -38,7 +38,7 @@
 
 ## 1. API Standards
 
-Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21. Stage 21 D1/H21x tenant/org/dashboard fidelity + exit: `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`), `docs/STAGE_21_EXIT_CRITERIA.md`, ADR-048 (`test_stage21_exit_h21x.py`) — BR-1–4. Stage 22 D1/H22x expenses/ledger/credit/tax fidelity + exit: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`), `docs/STAGE_22_EXIT_CRITERIA.md`, ADR-050 (`test_stage22_exit_h22x.py`) — BR-9–12. Stage 23 open (ADR-051): Reports Dimension & Commercial MVP Gate — F1 financial `store_id`/`branch_id` filters (`test_financial_report_filters_f1.py`); C1 financial comparative `compare=true` (`test_financial_comparative_c1.py`); I1 isolation residual (`test_isolation_matrix_i1.py`); G1 commercial MVP gate closure (`test_mvp_gate_closure_g1.py`); B1 logical DR drill evidence (`test_logical_dr_drill_b1.py`, `docs/STAGE_23_PLAN.md`).
+Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21. Stage 21 D1/H21x tenant/org/dashboard fidelity + exit: `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`), `docs/STAGE_21_EXIT_CRITERIA.md`, ADR-048 (`test_stage21_exit_h21x.py`) — BR-1–4. Stage 22 D1/H22x expenses/ledger/credit/tax fidelity + exit: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`), `docs/STAGE_22_EXIT_CRITERIA.md`, ADR-050 (`test_stage22_exit_h22x.py`) — BR-9–12. Stage 23 open (ADR-051): Reports Dimension & Commercial MVP Gate — F1 financial `store_id`/`branch_id` filters (`test_financial_report_filters_f1.py`); C1 financial comparative `compare=true` (`test_financial_comparative_c1.py`); I1 isolation residual (`test_isolation_matrix_i1.py`); G1 commercial MVP gate closure (`test_mvp_gate_closure_g1.py`); B1 logical DR drill evidence (`test_logical_dr_drill_b1.py`); D1 fidelity sync (`docs/STAGE_23_FIDELITY.md`, `test_stage23_fidelity_d1.py`, `docs/STAGE_23_PLAN.md`) — BR-14.
 
 ### 1.1 Request Format
 - All requests and responses use **JSON**.
@@ -1227,6 +1227,8 @@ Status flow: `draft` → `requested` → `in_transit` → `received` (or `cancel
 
 ## 14. Reports
 
+Stage 23 D1 fidelity for BR-14.5 financial filters/comparative + MVP gate docs: `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`). Financial endpoints also documented under §10.4.
+
 ### 14.1 Sales Reports
 **Daily Sales:** `GET /reports/sales/daily?date=` — includes `previous_day_revenue` and `change_pct` vs prior day.  
 **Monthly Sales:** `GET /reports/sales/monthly?month=&year=` — includes `previous_month_revenue` and `change_pct`.  
@@ -1256,6 +1258,9 @@ Export types: `purchases_pending_orders`, `purchases_returns` (plus existing `pu
 
 ### 14.4 Expense Reports
 **Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=`
+
+### 14.5 Financial Reports (Stage 23 F1/C1)
+See §10.4 for `GET /reports/profit-loss`, `/reports/cash-flow`, `/reports/balance-sheet`, `/reports/trial-balance` with `store_id` / `branch_id` / `compare` and export packaging.
 
 ---
 
@@ -1529,6 +1534,22 @@ On `429 RATE_LIMIT_EXCEEDED`, responses also include `Retry-After`. Evidence: `t
 | `CREDIT_LIMIT_EXCEEDED` | Customer credit limit reached |
 | `DUPLICATE_ENTRY` | Resource already exists |
 | `RATE_LIMIT_EXCEEDED` | Too many requests |
+
+---
+
+## Backup & Logical Restore
+
+Stage 5 / 10 / 18 / 23 B1 — encrypted tenant `.ribbak` archives. Requires `company_admin` or `super_admin`. Runbook: `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`. Stage 23 D1 cite: `docs/STAGE_23_FIDELITY.md`.
+
+**Settings:** `GET/PATCH /backup/settings` — `enabled`, `frequency` (`daily`|`weekly`), `retention_count`, `hour_utc`  
+**Create:** `POST /backup` — returns `id`, `checksum_sha256`, `filename`  
+**List / get / download:** `GET /backup`, `GET /backup/{backup_id}`, `GET /backup/{backup_id}/download` (`X-Checksum-SHA256`)  
+**Run due:** `POST /backup/run-due` — schedule runner (`ran` / `reason`; never fake success on failure)  
+**Verify:** `POST /backup/{backup_id}/verify` — integrity proof vs live data  
+**Restore:** `POST /backup/{backup_id}/restore`  
+- Dry-run: `{"dry_run": true}`  
+- Apply: `{"dry_run": false, "confirm": true, "confirm_text": "RESTORE"}` (any other `confirm_text` → `400`)  
+Foreign-tenant `backup_id` → `404`. WAL / pg_dump / S3 PITR deferred post-MVP. Evidence: `test_logical_dr_drill_b1.py`.
 
 ---
 
