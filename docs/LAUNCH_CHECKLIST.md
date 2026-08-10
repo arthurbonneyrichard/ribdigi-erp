@@ -79,7 +79,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Inventory domain audit (Stage 17 A1: `test_inventory_audit_a1.py`)
 - [x] Stage 17 fidelity sync (D1: `test_stage17_fidelity_d1.py`, `docs/STAGE_17_FIDELITY.md`)
 - [x] Stage 17 exit + freeze (H17x: `test_stage17_exit_h17x.py`, ADR-040)
-- [ ] Stage 18 Launch Integrity & Ops (open: `docs/STAGE_18_PLAN.md`, ADR-041) — S1–D1 complete; H18x next
+- [x] Stage 18 Launch Integrity & Ops (closed: `docs/STAGE_18_PLAN.md`, exit `docs/STAGE_18_EXIT_CRITERIA.md`, ADR-042)
 - [x] Tenant isolation matrix launch-smoke (Stage 18 S1: `test_isolation_matrix_s1.py`)
 - [x] RBAC / session / BR-17 audit hardening (Stage 18 A1: `test_security_hardening_a1.py`)
 - [x] Backup schedule / retention / failure notify (Stage 18 B1: `test_backup_schedule_b1.py`; runbook `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`)
@@ -88,6 +88,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] OWASP expand · load evidence · launch E2E smoke (Stage 18 T1: `test_owasp_suite_t1.py`, `test_loadtest_evidence_t1.py`, `test_launch_smoke_t1.py`)
 - [x] CI + production Compose/env fidelity (Stage 18 C1: `test_ci_prod_config_c1.py`, `.env.production.example`, `docker-compose.prod.yml`; no K8s deploy)
 - [x] Stage 18 fidelity sync (D1: `test_stage18_fidelity_d1.py`, `docs/STAGE_18_FIDELITY.md`)
+- [x] Stage 18 exit + freeze (H18x: `test_stage18_exit_h18x.py`, ADR-042)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1

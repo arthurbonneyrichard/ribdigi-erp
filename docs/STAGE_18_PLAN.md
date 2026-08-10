@@ -1,9 +1,10 @@
 # Stage 18 Plan — Launch Integrity & Ops Fidelity
 
-**Status:** Open  
+**Status:** Closed — exit met (H18x / ADR-042)  
 **Base:** Security → Backup/Restore → Data integrity → Logging/Monitoring → Test & deploy hygiene  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-041](ADR_041_STAGE18_OPEN.md)
+**Open ADR (historical):** [ADR-041](ADR_041_STAGE18_OPEN.md)  
+**Exit:** [STAGE_18_EXIT_CRITERIA.md](STAGE_18_EXIT_CRITERIA.md) · [ADR-042](ADR_042_STAGE18_FREEZE.md) · [STAGE_18_FIDELITY.md](STAGE_18_FIDELITY.md)
 
 Stage 18 closes commercial-MVP launch integrity after Stage 17 freeze. Security, backup, audit, health, load harness, and domain integrity engines already exist (Stages 1 / 5 / 7 / 10–17). This track proves remaining gaps with live evidence and docs sync — **not** Kubernetes, WAL/PITR, vendor pen test, or certified 1000-VU.
 
@@ -56,7 +57,7 @@ Performance testing
 | **T1** | Testing fidelity (OWASP expand · load evidence · launch E2E smoke) | P0 | COMPLETE |
 | **C1** | CI + production configuration fidelity (no K8s deploy) | P1 | COMPLETE |
 | **D1** | Spec / BR-16–17 / readiness / launch fidelity sync | P2 | COMPLETE |
-| **H18x** | Stage 18 exit criteria + freeze ADR | Exit | PENDING |
+| **H18x** | Stage 18 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -113,8 +114,10 @@ Performance testing
 
 ## H18x acceptance criteria
 
-See workstream table; filled when exit workstream starts.
+- [x] `docs/STAGE_18_EXIT_CRITERIA.md` lists S1–D1 / H18x COMPLETE with no CRITICAL/MISSING rows.
+- [x] Freeze ADR accepted: `docs/ADR_042_STAGE18_FREEZE.md`.
+- [x] Guard test: `backend/tests/test_stage18_exit_h18x.py`.
 
 ## Sign-off
 
-S1–A1–B1–I1–L1–T1–C1–D1 complete. Pending H18x. Stages 1–17 remain frozen for their scopes. Fidelity: `docs/STAGE_18_FIDELITY.md`.
+S1–A1–B1–I1–L1–T1–C1–D1–H18x complete. Exit met; Stage 18 frozen (ADR-042). Stages 1–17 remain frozen for their scopes. Fidelity: `docs/STAGE_18_FIDELITY.md`.

@@ -1,8 +1,9 @@
 # Stage 18 Fidelity Notes — Launch Integrity & Ops
 
-**Status:** D1 complete; pending H18x / freeze ADR  
+**Status:** Closed with Stage 18 D1; exit met (H18x / ADR-042)  
 **Surface:** Security hardening → Backup/Restore → Cross-module integrity → Logging/Monitoring → Test & deploy hygiene  
-**Open ADR:** [ADR-041](ADR_041_STAGE18_OPEN.md)  
+**Open ADR (historical):** [ADR-041](ADR_041_STAGE18_OPEN.md)  
+**Exit:** [STAGE_18_EXIT_CRITERIA.md](STAGE_18_EXIT_CRITERIA.md) · [ADR-042](ADR_042_STAGE18_FREEZE.md)  
 **Plan:** [STAGE_18_PLAN.md](STAGE_18_PLAN.md)
 
 Stage 18 proves commercial-MVP launch integrity on existing Stage 1 / 5 / 7 / 10–17 engines — isolation matrix completeness, BR-16/17 fidelity, backup schedule/retention/failure notify, cross-module integrity, structured request logs + health/metrics hooks, OWASP/load/launch smoke evidence, and CI/prod-config fidelity — **not** Kubernetes/Helm, Grafana/PagerDuty, WAL/S3 PITR, PgBouncer, certified 1000-VU, vendor pen test, paid billing, schema-per-tenant, ADR-005, multi-bin, FIFO, WebSocket, Open Banking, or tax e-file.
@@ -34,7 +35,7 @@ Stage 18 proves commercial-MVP launch integrity on existing Stage 1 / 5 / 7 / 10
 | **T1** | `test_owasp_suite_t1.py`, `test_loadtest_evidence_t1.py`, `test_launch_smoke_t1.py` — OWASP Stage 6–17; load evidence artifact; expense→JE / TB / backup smoke | Launch test fidelity | Certified 1000-VU; vendor ZAP |
 | **C1** | `test_ci_prod_config_c1.py` — CI marker pytest + frontend build; `.env.production.example`; `docker-compose.prod.yml` | Prod config fidelity | K8s/Helm deploy |
 | **D1** | This note + `test_stage18_fidelity_d1.py` | BR-16/17 + SECURITY_GUIDE + readiness + launch | — |
-| **H18x** | Pending — `STAGE_18_EXIT_CRITERIA.md` + freeze ADR | Stage 18 exit + freeze | Next track needs open ADR |
+| **H18x** | `STAGE_18_EXIT_CRITERIA.md`; ADR-042; `test_stage18_exit_h18x.py` | Stage 18 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -50,16 +51,18 @@ Stage 18 proves commercial-MVP launch integrity on existing Stage 1 / 5 / 7 / 10
 - `backend/tests/test_launch_smoke_t1.py`
 - `backend/tests/test_ci_prod_config_c1.py`
 - `backend/tests/test_stage18_fidelity_d1.py`
+- `backend/tests/test_stage18_exit_h18x.py`
 
 ## Spec sync targets
 
 - `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16.1–16.3, BR-17.1–17.2
 - `docs/SECURITY_GUIDE.md` — Stage 18 S1 / A1 / L1
-- `PRODUCTION_READINESS.md` — isolation / backup / audit / monitoring / load / CI bullets + Stage 18 D1
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 18 D1 note
-- `docs/LAUNCH_CHECKLIST.md` — S1–C1 / D1 evidence
+- `PRODUCTION_READINESS.md` — isolation / backup / audit / monitoring / load / CI bullets + Stage 18 D1 / H18x
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 18 D1 / H18x notes
+- `docs/LAUNCH_CHECKLIST.md` — S1–C1 / D1 / H18x evidence
 - `docs/OPS_MONITORING_MVP.md` · `docs/DR_LOGICAL_BACKUP_RUNBOOK.md` · `docs/LOAD_TEST_BASELINE.md`
-- `docs/STAGE_18_PLAN.md` — D1 complete; H18x pending
+- `docs/STAGE_18_PLAN.md` — Closed (H18x / ADR-042)
+- `docs/STAGE_18_EXIT_CRITERIA.md` · `docs/ADR_042_STAGE18_FREEZE.md`
 - `docs/ADR_041_STAGE18_OPEN.md`
 
 ## Deferred (not Stage 18)

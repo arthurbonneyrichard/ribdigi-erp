@@ -38,3 +38,7 @@ Stages 1 / 5 / 7 / 10 already delivered isolation, RBAC, sessions, audit (G19/G2
 
 - Agents may implement Stage 18 plan items without reopening Stage 1–17 feature scope.
 - Stage 18 exit requires `docs/STAGE_18_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Amendment (2026-08-10)
+
+Stage 18 exit is met (`docs/STAGE_18_EXIT_CRITERIA.md`); scope freeze recorded in [ADR-042](ADR_042_STAGE18_FREEZE.md). This open ADR remains historical; Stage 18 feature scope is frozen.

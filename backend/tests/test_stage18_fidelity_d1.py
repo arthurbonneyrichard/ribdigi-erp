@@ -24,8 +24,10 @@ def test_stage18_fidelity_note_and_plan():
     assert "test_launch_smoke_t1.py" in fidelity
     assert "test_ci_prod_config_c1.py" in fidelity
     assert "test_stage18_fidelity_d1.py" in fidelity
+    assert "test_stage18_exit_h18x.py" in fidelity or "H18x" in fidelity
     assert "OPS_MONITORING_MVP.md" in fidelity
     assert "ADR-041" in fidelity or "ADR_041" in fidelity
+    assert "ADR-042" in fidelity or "exit met" in fidelity.lower()
     assert "H18x" in fidelity
     assert "Kubernetes" in fidelity or "WAL" in fidelity or "1000-VU" in fidelity
 
@@ -33,15 +35,15 @@ def test_stage18_fidelity_note_and_plan():
     assert "STAGE_18_FIDELITY.md" in plan
     for ws in ("S1", "A1", "B1", "I1", "L1", "T1", "C1", "D1"):
         assert f"| **{ws}**" in plan
-        # Each feature row must be COMPLETE (H18x may still be PENDING)
-        assert f"| **{ws}**" in plan
     assert "| **D1**" in plan and "COMPLETE" in plan
-    assert "| **H18x**" in plan
-    assert "PENDING" in plan  # H18x still open until exit
+    assert "| **H18x**" in plan and "COMPLETE" in plan
+    assert "Closed" in plan or "exit met" in plan.lower() or "ADR-042" in plan
+    assert "STAGE_18_EXIT_CRITERIA.md" in plan
+    assert "ADR-042" in plan or "ADR_042" in plan
     d1_line = [ln for ln in plan.splitlines() if "| **D1**" in ln][0]
     assert "COMPLETE" in d1_line
     h18_line = [ln for ln in plan.splitlines() if "| **H18x**" in ln][0]
-    assert "PENDING" in h18_line or "Exit" in h18_line
+    assert "COMPLETE" in h18_line
 
 
 def test_stage18_br_checkboxes_synced():
@@ -88,7 +90,7 @@ def test_stage18_security_launch_checklist():
     assert "test_ci_prod_config_c1.py" in launch
     assert "test_stage18_fidelity_d1.py" in launch
     assert "STAGE_18_FIDELITY.md" in launch
-    assert "H18x next" in launch or "H18x" in launch
+    assert "test_stage18_exit_h18x.py" in launch
 
 
 def test_stage18_readiness_and_roadmap():
@@ -102,9 +104,13 @@ def test_stage18_readiness_and_roadmap():
     assert "test_request_logging_l1.py" in pr
     assert "test_ci_prod_config_c1.py" in pr
     assert "OPS_MONITORING_MVP.md" in pr
+    assert "STAGE_18_EXIT_CRITERIA.md" in pr or "ADR-042" in pr or "ADR_042" in pr
 
     roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
     assert "STAGE_18_FIDELITY.md" in roadmap
     assert "Stage 18 D1" in roadmap
     assert "ADR_041_STAGE18_OPEN.md" in roadmap
     assert "STAGE_18_PLAN.md" in roadmap
+    assert "STAGE_18_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_042_STAGE18_FREEZE.md" in roadmap
+    assert "Stage 18 exit" in roadmap

@@ -437,7 +437,7 @@ All security-relevant events are captured in an immutable audit log:
 - Sales path domain audit (Stage 15 A1): enriched `invoice_posted` (stock/tax/AR) and `sales_return_posted` (`module=sales`); linked `journal_posted` for `source_type=sales_invoice|sales_return`
 - Inventory path domain audit (Stage 17 A1): `product_create`, `product_update` / soft-delete `product_deactivate` with before/after field diffs (`module=inventory`); stock mutations via `stock_{movement_type}` (`before`/`after` qty, warehouse, reason)
 - Security hardening fidelity (Stage 18 A1): `login` / `login_failed` / `logout` / `idle_logout`; `user_created` / `user_updated` / `user_deactivated`; purchases `po_created` / `grn_posted`; `journal_posted`; BR-17.2 filter/export/verify/retention (`test_security_hardening_a1.py`)
-- Stage 18 D1 fidelity sync: BR-16/17 + readiness + launch checklist — `docs/STAGE_18_FIDELITY.md` (`test_stage18_fidelity_d1.py`)
+- Stage 18 D1 fidelity sync: BR-16/17 + readiness + launch checklist — `docs/STAGE_18_FIDELITY.md` (`test_stage18_fidelity_d1.py`); exit met H18x / ADR-042 (`test_stage18_exit_h18x.py`)
 
 ### 10.2 Audit Log Schema
 
