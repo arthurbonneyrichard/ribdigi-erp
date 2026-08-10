@@ -18,6 +18,8 @@ export default function Page() {
   const [payMethod, setPayMethod] = useState('cash');
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
+  const [allocateKey, setAllocateKey] = useState(''); // '' = auto oldest-first
+  const [openDocs, setOpenDocs] = useState<any[]>([]);
   const [creditLimit, setCreditLimit] = useState('');
   const [applyEarly, setApplyEarly] = useState(true);
   const [epPct, setEpPct] = useState('2');
@@ -62,14 +64,50 @@ export default function Page() {
     setPaymentSchedule(null);
     setOutstanding(null);
     setOutstandingPartyName('');
+    setAllocateKey('');
+    setOpenDocs([]);
     refresh().catch((err) => setError(err.message));
   }, [kind]);
+
+  useEffect(() => {
+    setAllocateKey('');
+    if (!partyId) {
+      setOpenDocs([]);
+      return;
+    }
+    loadOpenDocs(partyId).catch(() => setOpenDocs([]));
+  }, [partyId, kind]);
 
   function clearDetailPanels() {
     setStatement(null);
     setPaymentSchedule(null);
     setOutstanding(null);
     setOutstandingPartyName('');
+  }
+
+  function docKey(row: any): string {
+    if (kind === 'receivable' && row.invoice_id) return `si:${row.invoice_id}`;
+    if (row.purchase_invoice_id) return `pi:${row.purchase_invoice_id}`;
+    if (row.purchase_order_id) return `po:${row.purchase_order_id}`;
+    return '';
+  }
+
+  function docLabel(row: any): string {
+    const num = row.invoice_number || row.po_number || row.invoice_id || row.purchase_invoice_id || 'Doc';
+    const due = row.amount != null ? ` · due ${row.amount}` : '';
+    const typ = row.document_type || (kind === 'receivable' ? 'sales_invoice' : 'bill');
+    return `${num} (${typ}${due})`;
+  }
+
+  async function loadOpenDocs(id: string = partyId) {
+    if (!id) {
+      setOpenDocs([]);
+      return;
+    }
+    const path =
+      kind === 'receivable' ? `/customers/${id}/outstanding` : `/suppliers/${id}/outstanding`;
+    const r = await api(path);
+    setOpenDocs(Array.isArray(r.data) ? r.data : []);
   }
 
   async function loadStatement() {
@@ -99,7 +137,9 @@ export default function Page() {
       const r = await api(path);
       const party = (kind === 'receivable' ? customers : suppliers).find((p) => p.id === partyId);
       clearDetailPanels();
-      setOutstanding(Array.isArray(r.data) ? r.data : []);
+      const rows = Array.isArray(r.data) ? r.data : [];
+      setOutstanding(rows);
+      setOpenDocs(rows);
       setOutstandingPartyName(party?.name || 'Selected party');
     } catch (err: any) {
       setError(err.message);
@@ -122,6 +162,10 @@ export default function Page() {
     if (!partyId || !payAmount) return;
     setError('');
     try {
+      const selected = allocateKey
+        ? openDocs.find((d) => docKey(d) === allocateKey) ||
+          (outstanding || []).find((d) => docKey(d) === allocateKey)
+        : null;
       if (kind === 'receivable') {
         await api(`/customers/${partyId}/payments`, {
           method: 'POST',
@@ -132,6 +176,7 @@ export default function Page() {
             apply_early_discount: applyEarly,
             liquid_account_id: liquidAccountId || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
+            sales_invoice_id: selected?.invoice_id || null,
           }),
         });
       } else {
@@ -144,16 +189,25 @@ export default function Page() {
             apply_early_discount: applyEarly,
             liquid_account_id: liquidAccountId || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
+            purchase_invoice_id: selected?.purchase_invoice_id || null,
+            purchase_order_id:
+              !selected?.purchase_invoice_id && selected?.purchase_order_id
+                ? selected.purchase_order_id
+                : null,
           }),
         });
       }
       setMessage(
-        applyEarly && epEnabled
-          ? 'Payment recorded (early discount applied when eligible)'
-          : 'Payment recorded (oldest open docs first)',
+        selected
+          ? `Payment recorded against ${docLabel(selected)}`
+          : applyEarly && epEnabled
+            ? 'Payment recorded (early discount applied when eligible; oldest open docs first)'
+            : 'Payment recorded (oldest open docs first)',
       );
       setPayAmount('');
+      setAllocateKey('');
       await refresh();
+      await loadOpenDocs();
       await loadStatement();
     } catch (err: any) {
       setError(err.message);
@@ -360,7 +414,7 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <button type="button" onClick={loadOutstanding}>
               Outstanding
             </button>
@@ -370,6 +424,24 @@ export default function Page() {
                 Payment schedule
               </button>
             )}
+            <select
+              value={allocateKey}
+              onChange={(e) => setAllocateKey(e.target.value)}
+              aria-label="Allocate payment to document"
+              style={{ minWidth: 220 }}
+              title="Leave as Auto to apply oldest open documents first"
+            >
+              <option value="">Auto — oldest open docs first</option>
+              {openDocs.map((row) => {
+                const key = docKey(row);
+                if (!key) return null;
+                return (
+                  <option key={key} value={key}>
+                    {docLabel(row)}
+                  </option>
+                );
+              })}
+            </select>
             <input
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
@@ -403,6 +475,10 @@ export default function Page() {
             />
             <button onClick={recordPayment}>Pay</button>
           </div>
+          <p className="muted" style={{ marginTop: 6 }}>
+            Allocate to a selected invoice/bill, or leave Auto for oldest-first. Click an outstanding
+            row to select it.
+          </p>
           {(kind === 'receivable' || kind === 'payable') && (
             <label className="muted" style={{ display: 'block', marginTop: 8 }}>
               <input
@@ -472,32 +548,50 @@ export default function Page() {
                 <th>Due</th>
                 <th>Status</th>
                 <th>Amount</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {outstanding.map((row: any, idx: number) => (
-                <tr
-                  key={
-                    row.invoice_id ||
-                    row.purchase_invoice_id ||
-                    row.purchase_order_id ||
-                    `out-${idx}`
-                  }
-                >
-                  <td>
-                    {row.invoice_number || row.po_number || row.purchase_invoice_id || '—'}
-                  </td>
-                  <td className="muted">{row.document_type || (kind === 'receivable' ? 'sales_invoice' : '—')}</td>
-                  <td>
-                    {row.due_date ? String(row.due_date).replace('T', ' ').slice(0, 10) : '—'}
-                  </td>
-                  <td>{row.status}</td>
-                  <td>{row.amount}</td>
-                </tr>
-              ))}
+              {outstanding.map((row: any, idx: number) => {
+                const key = docKey(row);
+                const selected = key && key === allocateKey;
+                return (
+                  <tr
+                    key={key || `out-${idx}`}
+                    style={selected ? { background: 'rgba(16, 185, 129, 0.12)' } : undefined}
+                  >
+                    <td>
+                      {row.invoice_number || row.po_number || row.purchase_invoice_id || '—'}
+                    </td>
+                    <td className="muted">
+                      {row.document_type || (kind === 'receivable' ? 'sales_invoice' : '—')}
+                    </td>
+                    <td>
+                      {row.due_date ? String(row.due_date).replace('T', ' ').slice(0, 10) : '—'}
+                    </td>
+                    <td>{row.status}</td>
+                    <td>{row.amount}</td>
+                    <td>
+                      {key ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAllocateKey(key);
+                            setPayAmount(String(row.amount ?? ''));
+                          }}
+                        >
+                          {selected ? 'Selected' : 'Allocate'}
+                        </button>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
               {!outstanding.length && (
                 <tr>
-                  <td colSpan={5} className="muted">
+                  <td colSpan={6} className="muted">
                     No outstanding bills
                   </td>
                 </tr>

@@ -24,7 +24,7 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 | **A1** | Dimensional journals + store-filtered P&L/cash-flow | P0 | COMPLETE |
 | **A2** | Point-in-time trial balance / balance sheet `as_of` | P0 | COMPLETE |
 | **T1** | Tax rate lifecycle (edit/deactivate) + report period helpers | P1 | COMPLETE |
-| **R1** | Credit UI: allocate payment to selected invoice/bill | P1 | PENDING |
+| **R1** | Credit UI: allocate payment to selected invoice/bill | P1 | COMPLETE |
 | **A3** | Finance domain audit closeout (expense approve/reject) | P1 | PENDING |
 | **D1** | Spec / BR-9/10/12 / readiness fidelity sync | P2 | PENDING |
 | **H14x** | Stage 14 exit criteria + freeze ADR | Exit | PENDING |
@@ -79,10 +79,17 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 - [x] Tax UI: edit/deactivate, month/quarter/year presets.
 - [x] Automated proof: `backend/tests/test_tax_rate_lifecycle_t1.py`.
 
-## R1–H14x
+## R1 acceptance criteria
+
+- [x] Credit UI: allocate payment to selected open AR invoice or AP bill/PO (or Auto oldest-first).
+- [x] Pay payload sends `sales_invoice_id` / `purchase_invoice_id` / `purchase_order_id` when selected; omit for auto-allocate.
+- [x] Outstanding table row action selects document + fills amount.
+- [x] Automated proof: `backend/tests/test_credit_payment_allocate_r1.py` (explicit vs auto for AR and AP).
+
+## A3–H14x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-E1–A2 and T1 complete. Pending R1 → A3 → D1 → H14x.
+E1–T1 and R1 complete. Pending A3 → D1 → H14x.
