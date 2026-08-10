@@ -34,9 +34,9 @@ Stage 12 closes commercial-MVP order-to-cash and POS chain fidelity after Stage 
 
 ## C1 acceptance criteria
 
-- [ ] Quote/order/invoice line math: tax on net after line discount (`calc_sale_line_amounts`).
-- [ ] Automated E2E: customer → quotation → order → confirm → invoice → post → payment (stock, AR, journal, audit).
-- [ ] Unit coverage for discounted line totals.
+- [x] Quote/order/invoice line math: tax on net after line discount (`calc_sale_line_amounts`).
+- [x] Automated E2E: customer → quotation → order → confirm → invoice → post → payment (stock, AR, journal, audit).
+- [x] Unit coverage for discounted line totals (`test_sales_chain_c1.py`).
 
 ## C2 acceptance criteria
 
