@@ -1,9 +1,10 @@
 # Stage 23 Fidelity Notes — Reports Dimension & Commercial MVP Gate
 
-**Status:** Open (D1 complete; H23x next)  
+**Status:** Closed with Stage 23 D1; exit met (H23x / ADR-052)  
 **Surface:** Reports dimension fidelity → Commercial MVP gate closure → Fidelity closeout  
-**Open ADR:** [ADR-051](ADR_051_STAGE23_OPEN.md)  
-**Plan:** [STAGE_23_PLAN.md](STAGE_23_PLAN.md)
+**Open ADR (historical):** [ADR-051](ADR_051_STAGE23_OPEN.md)  
+**Plan:** [STAGE_23_PLAN.md](STAGE_23_PLAN.md)  
+**Exit:** [STAGE_23_EXIT_CRITERIA.md](STAGE_23_EXIT_CRITERIA.md) · [ADR-052](ADR_052_STAGE23_FREEZE.md)
 
 Stage 23 proves remaining commercial-MVP report-dimension and readiness-gate fidelity after Stage 22 freeze — **not** paid billing (ADR-002), schema-per-tenant (ADR-001), i18n packs (ADR-006), user↔store membership (ADR-005), hard-delete archival (ADR-003), Open Banking, tax e-file portals, Kubernetes/Helm, Grafana/PagerDuty/SIEM, WAL/S3 PITR, PgBouncer, certified 1000-VU, vendor pen test, WebSocket realtime, multi-bin, FIFO/LIFO/WA, or reopening Stages 1–22.
 
@@ -27,8 +28,8 @@ Stage 23 proves remaining commercial-MVP report-dimension and readiness-gate fid
 | **I1** | `test_isolation_matrix_i1.py` — liquid/expense/report dimensions + mismatched header | Tenancy isolation residual | Schema-per-tenant (ADR-001) |
 | **G1** | `test_mvp_gate_closure_g1.py` — readiness Complete (MVP) flips | Launch gates honesty | Deferred ADRs / Open Banking / e-file / FIFO-LIFO-WA |
 | **B1** | `test_logical_dr_drill_b1.py` — create/dry-run/RESTORE/verify + foreign 404; `stage23_b1_logical_drill.json` | BR-16.3 + DR drill gate | WAL / pg_dump / S3 PITR |
-| **D1** | This note + `test_stage23_fidelity_d1.py` | BR-14 + readiness + USER_MANUAL / API / launch | H23x exit |
-| **H23x** | Pending — `STAGE_23_EXIT_CRITERIA.md` + freeze ADR | Stage 23 exit + freeze | — |
+| **D1** | This note + `test_stage23_fidelity_d1.py` | BR-14 + readiness + USER_MANUAL / API / launch | — |
+| **H23x** | `STAGE_23_EXIT_CRITERIA.md`; ADR-052; `test_stage23_exit_h23x.py` | Stage 23 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -38,6 +39,7 @@ Stage 23 proves remaining commercial-MVP report-dimension and readiness-gate fid
 - `backend/tests/test_mvp_gate_closure_g1.py`
 - `backend/tests/test_logical_dr_drill_b1.py`
 - `backend/tests/test_stage23_fidelity_d1.py`
+- `backend/tests/test_stage23_exit_h23x.py`
 
 ## Spec sync targets
 
@@ -47,9 +49,10 @@ Stage 23 proves remaining commercial-MVP report-dimension and readiness-gate fid
 - `PRODUCTION_READINESS.md` — Reports / isolation / DR drill Completes + Stage 23 D1 cite
 - `docs/DEVELOPMENT_ROADMAP.md` — Stage 23 D1
 - `docs/LAUNCH_CHECKLIST.md` — F1–B1 / D1 evidence
-- `docs/STAGE_23_PLAN.md` — D1 COMPLETE; H23x next
+- `docs/STAGE_23_PLAN.md` — Closed (H23x / ADR-052)
+- `docs/STAGE_23_EXIT_CRITERIA.md` · `docs/ADR_052_STAGE23_FREEZE.md`
 - `docs/DR_LOGICAL_BACKUP_RUNBOOK.md` — Stage 23 B1 evidence
-- `docs/SECURITY_GUIDE.md` — I1 residual + G1 / B1 cites
+- `docs/SECURITY_GUIDE.md` — I1 residual + G1 / B1 / D1 cites
 - `docs/ADR_051_STAGE23_OPEN.md`
 
 ## Deferred (not Stage 23)

@@ -25,15 +25,16 @@ def test_stage23_fidelity_note_and_plan():
     assert "store_id" in fidelity and "branch_id" in fidelity
     assert "WAL" in fidelity or "PITR" in fidelity
     assert "H23x" in fidelity
+    assert "ADR-052" in fidelity or "ADR_052" in fidelity or "exit met" in fidelity.lower()
 
     plan = _read("docs/STAGE_23_PLAN.md")
     assert "STAGE_23_FIDELITY.md" in plan
-    for ws in ("F1", "C1", "I1", "G1", "B1", "D1"):
+    for ws in ("F1", "C1", "I1", "G1", "B1", "D1", "H23x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}**" in ln][0]
         assert "COMPLETE" in line, ws
-    assert "H23x" in plan and "PENDING" in plan
     assert "ADR-051" in plan or "ADR_051" in plan
-    assert "D1 complete" in plan or "H23x next" in plan
+    assert "ADR-052" in plan or "ADR_052" in plan
+    assert "Closed" in plan or "exit met" in plan.lower()
 
 
 def test_stage23_br_14_and_dr_checkboxes_synced():

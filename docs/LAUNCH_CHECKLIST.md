@@ -133,13 +133,14 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Tax configuration fidelity (Stage 22 T1: `test_tax_config_fidelity_t1.py` — tax types, inclusive/exclusive, compound tax)
 - [x] Stage 22 fidelity sync (D1: `test_stage22_fidelity_d1.py`, `docs/STAGE_22_FIDELITY.md` — BR-9–12 + finance readiness + USER_MANUAL / API / launch)
 - [x] Stage 22 exit + freeze (H22x: `test_stage22_exit_h22x.py`, ADR-050)
-- [ ] Stage 23 Reports Dimension & Commercial MVP Gate Fidelity (open: `docs/STAGE_23_PLAN.md`, ADR-051) — F1–D1 complete; H23x next
+- [x] Stage 23 Reports Dimension & Commercial MVP Gate Fidelity (closed: `docs/STAGE_23_PLAN.md`, ADR-052) — F1–D1 / H23x complete
 - [x] Financial report dimension filters (Stage 23 F1: `test_financial_report_filters_f1.py` — balance sheet / P&L / cash-flow `store_id` + `branch_id`)
 - [x] Financial comparative fidelity (Stage 23 C1: `test_financial_comparative_c1.py` — P&L / cash-flow / BS `compare=true` prior period + change_pct)
 - [x] Isolation matrix residual (Stage 23 I1: `test_isolation_matrix_i1.py` — liquid accounts/transfers, expense categories/recurring, report dimensions, mismatched header)
 - [x] Commercial MVP gate closure (Stage 23 G1: `test_mvp_gate_closure_g1.py` — isolation/lifecycle/expenses/accounting/tax/reports Complete MVP; Remaining deferred-only)
 - [x] Logical DR drill automation evidence (Stage 23 B1: `test_logical_dr_drill_b1.py` — create/dry-run/RESTORE/verify + foreign 404; artifact `stage23_b1_logical_drill.json`; WAL/PITR deferred)
 - [x] Stage 23 fidelity sync (D1: `test_stage23_fidelity_d1.py`, `docs/STAGE_23_FIDELITY.md` — BR-14 + readiness + USER_MANUAL / API / launch)
+- [x] Stage 23 exit + freeze (H23x: `test_stage23_exit_h23x.py`, `docs/STAGE_23_EXIT_CRITERIA.md`, ADR-052)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1
