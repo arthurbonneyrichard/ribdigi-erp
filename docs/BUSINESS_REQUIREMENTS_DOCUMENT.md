@@ -264,21 +264,21 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Full lifecycle management of user accounts.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Create user with name, email, phone, role, branch/store assignment *(branch + department yes; dedicated user↔store membership deferred — `docs/ADR_005_USER_STORE_ASSIGNMENT.md`)*
-  - [ ] Edit user details and assignments
-  - [x] Soft delete (deactivate) user
+  - [x] Create user with name, email, phone, role, branch/store assignment — Stage 21 U1 (`POST /users` name/email/phone/role/`branch_id`/`department_id`; dedicated user↔store membership deferred — `docs/ADR_005_USER_STORE_ASSIGNMENT.md`; `test_users_roles_u1.py`)
+  - [x] Edit user details and assignments — Stage 21 U1 (`PATCH /users/{id}` name/phone/role/org/`record_scope`)
+  - [x] Soft delete (deactivate) user — Stage 21 U1 (`DELETE /users/{id}` → `is_active=false`; row retained)
   - [ ] Hard delete with data archival option *(deferred post-MVP; see `docs/ADR_003_USER_DELETE_POLICY.md`)*
-  - [x] Activate/deactivate toggle
-  - [x] Bulk user import via CSV
+  - [x] Activate/deactivate toggle — Stage 21 U1 (`PATCH` `is_active` + soft DELETE)
+  - [x] Bulk user import via CSV — Stage 21 U1 (`GET /users/import/template` + `POST /users/import`)
 
 #### BR-3.2 Role Management
 - **Description:** Predefined and custom role definitions.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Predefined roles: Super Admin, Company Admin, Store Manager, Sales Officer, Inventory Officer, Accountant, Cashier
-  - [ ] Each role has default permission set
-  - [ ] Custom role creation capability
-  - [ ] Role assignment to users
+  - [x] Predefined roles: Super Admin, Company Admin, Store Manager, Sales Officer, Inventory Officer, Accountant, Cashier — Stage 21 U1 (`GET /roles` system catalog; `test_users_roles_u1.py`)
+  - [x] Each role has default permission set — Stage 21 U1 (`ROLE_PERMISSIONS` + catalog `permissions`/`record_scope`)
+  - [x] Custom role creation capability — Stage 21 U1 (`POST /roles` + `PUT /roles/{slug}/permissions`)
+  - [x] Role assignment to users — Stage 21 U1 (`POST/PATCH /users` `role` = system or custom slug)
 
 #### BR-3.3 Permission System
 - **Description:** Granular access control across three dimensions.
@@ -287,7 +287,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Module Permissions:** Grant/deny access to entire modules (Inventory, Sales, etc.)
   - [x] **Menu Permissions:** Control visibility of specific menu items and submenus *(Stage 1: menu item visibility = module `read`/`write`; see `docs/ADR_004_MENU_PERMISSIONS.md`)*
   - [x] **Record Permissions:** Control CRUD operations on individual records (own records, department records, all records)
-  - [ ] Permission inheritance from role with user-level override capability
+  - [x] Permission inheritance from role with user-level override capability — Stage 21 U1 (role→user permission snapshot + custom-role sync; user-level `record_scope` override via `PATCH /users`; per-user module grant/deny API not shipped)
 
 ---
 

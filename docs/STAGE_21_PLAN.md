@@ -46,7 +46,7 @@ Fidelity closeout
 | **I1** | Isolation & tenant init seeds (BR-1.4–1.5) | P0 | COMPLETE |
 | **O1** | Org units fidelity (BR-2.2–2.5) | P0 | COMPLETE |
 | **C1** | Company / currency / tax setup (BR-2.1, 2.6, 2.8) | P1 | COMPLETE |
-| **U1** | Users & roles fidelity (BR-3) | P1 | PENDING |
+| **U1** | Users & roles fidelity (BR-3) | P1 | COMPLETE |
 | **V1** | Dashboard KPIs & visualizations (BR-4.1–4.3) | P1 | PENDING |
 | **N1** | Dashboard notifications panel (BR-4.4) | P1 | PENDING |
 | **D1** | Spec / BR-1–4 / readiness / launch §§1–2 fidelity sync | P2 | PENDING |
@@ -96,9 +96,9 @@ Fidelity closeout
 
 ## U1 acceptance criteria
 
-- [ ] User CRUD/import/activate + predefined/custom roles + permission inheritance/override (where implemented) proven.
-- [ ] Automated proof: `backend/tests/test_users_roles_u1.py`.
-- [ ] BR-3 synced with evidence (ADR-003/005 deferred items remain deferred).
+- [x] User CRUD/import/activate + predefined/custom roles + permission inheritance/override (where implemented) proven.
+- [x] Automated proof: `backend/tests/test_users_roles_u1.py`.
+- [x] BR-3 synced with evidence (ADR-003/005 deferred items remain deferred).
 
 ## V1 acceptance criteria
 
@@ -123,4 +123,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-T1–C1 complete. Pending U1 → H21x. Stages 1–20 remain frozen for their scopes.
+T1–U1 complete. Pending V1 → H21x. Stages 1–20 remain frozen for their scopes.
