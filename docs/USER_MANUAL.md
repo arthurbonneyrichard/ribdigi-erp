@@ -209,69 +209,31 @@ Stage 17 (ADR-039) proves catalog and stock-ops fidelity on the existing Invento
 
 ### 3.2 Stock Operations
 
-Use **Inventory → Stock ops** for stock-in, stock-out, adjustments (reason codes: damage, theft, expiry, found, lost, other), and **opening stock** (add/set; set cannot reduce — use adjust or stock count). Stage 17 S1 proves warehouse qty + movement persistence for this path (`docs/STAGE_17_PLAN.md`).
-
-#### Recording Stock In
-
-1. Go to **Inventory → Stock ops**
-2. Select product (or scan barcode)
-3. Enter quantity and optional warehouse / batch / expiry
-4. Confirm — system updates product and warehouse balances and writes an immutable movement
-
-#### Stock Adjustments
-
-1. Choose **Adjust** with a signed quantity
-2. Select a **reason** (required)
-3. Save — movement type `adjustment` records reason and notes
+Stage 17 S1 proves stock-in → warehouse quantity + `stock_movements`, adjustment reason codes (`damage|theft|expiry|found|lost|other`), and opening stock via **Inventory → Stock ops** (`docs/STAGE_17_PLAN.md`).
 
 #### Stock In (Receiving Goods)
 
-Use this when:
-- Goods arrive from a supplier (linked to PO/GRN)
-- Stock is returned by a customer
-- Found during stock count
+Use this when goods arrive from a supplier (PO/GRN), returns, or found stock.
 
-**Steps:**
-1. Go to **Inventory → Stock In → + New Stock In**
-2. Select **Reference Type**: Purchase Order, Transfer, or Adjustment
-3. Select the **Warehouse** receiving the stock
-4. Add products:
-   - Scan barcode or search by name/SKU
-   - Enter quantity received
-   - Enter batch and expiry (if applicable)
-5. Click **Submit**
-6. Stock is immediately updated
+1. Go to **Inventory → Stock ops**
+2. Choose **Stock in**, select product (or scan barcode), warehouse, quantity, optional batch/expiry
+3. Confirm — product and warehouse balances update; an immutable movement is written
 
 #### Stock Out (Issuing Goods)
 
-Use this when:
-- Goods are sold (usually auto-generated from sales invoice)
-- Goods are transferred to another warehouse
-- Goods are damaged or expired
-
-**Steps:**
-1. Go to **Inventory → Stock Out → + New Stock Out**
-2. Select **Reference Type**: Sales, Transfer, Damage, Expiry
-3. Select the **Warehouse**
-4. Add products and quantities
-5. Add reason for stock out
-6. Click **Submit**
+Use for manual issues (sales usually auto-deduct). Same **Stock ops** tab → **Stock out**.
 
 #### Stock Adjustment
 
-Use this to correct discrepancies between physical and system stock:
+1. Go to **Inventory → Stock ops** → **Adjust**
+2. Enter a signed quantity and a **reason** (Damage, Theft, Found, Lost, Expiry, Other)
+3. Confirm — movement type `adjustment` stores reason and notes
 
-1. Go to **Inventory → Stock Adjustment → + New Adjustment**
-2. Select **Warehouse**
-3. Add products with:
-   - **System Quantity** (auto-filled, read-only)
-   - **Physical Quantity** (what you counted)
-   - **Difference** (auto-calculated)
-   - **Reason**: Damage, Theft, Found, Lost, Expiry, Other
-4. Attach supporting documents if needed
-5. Click **Submit**
+> **Important:** Stock adjustments affect inventory balances. Large adjustments may require manager review.
 
-> **Important:** Stock adjustments affect your accounting. Large adjustments may require manager approval.
+#### Opening Stock
+
+Use **Inventory → Stock ops → Opening stock** (`add` or `set`). Set mode cannot reduce stock — use adjust or stock count instead.
 
 #### Stock Transfer (Between Warehouses)
 

@@ -73,6 +73,7 @@ Use this list before promoting a staging build to production. Check items only w
 - [x] Stage 16 exit + freeze (H16x: `test_stage16_exit_h16x.py`, ADR-038)
 - [x] Catalog fidelity proof (Stage 17 C1: `test_catalog_fidelity_c1.py`)
 - [x] Stock ops chain (Stage 17 S1: `test_stock_ops_chain_s1.py`)
+- [x] Stock count variance chain (Stage 17 S2: `test_stock_count_chain_s2.py`)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)

@@ -456,24 +456,16 @@ Stage 17 S1 proves stock-in → warehouse qty + `stock_movements`, adjustment re
 **Update Transfer Status:** `PATCH /inventory/stock-transfers/{transfer_id}`
 
 ### 5.6 Stock Count
-**Create:** `POST /inventory/stock-counts`  
-**List:** `GET /inventory/stock-counts`  
-**Get:** `GET /inventory/stock-counts/{count_id}`  
-**Complete:** `POST /inventory/stock-counts/{count_id}/complete`
 
-**Request:**
-```json
-{
-  "warehouse_id": "wh_001",
-  "products": [
-    {
-      "product_id": "prod_001",
-      "expected_qty": 100,
-      "actual_qty": 98
-    }
-  ]
-}
-```
+Stage 17 S2 proves create → enter counted qty → complete (posts `adjustment` movements with `reference_type=stock_count`) → variance report export — `test_stock_count_chain_s2.py`.
+
+**Create:** `POST /inventory/stock-counts` — `{ warehouse_id, notes?, product_ids? }` → `status=draft`  
+**List:** `GET /inventory/stock-counts`  
+**Get:** `GET /inventory/stock-counts/{count_id}` — includes items + line `variance`  
+**Update counts:** `PATCH /inventory/stock-counts/{count_id}/items` — `{ items: [{ product_id, counted_qty, notes? }] }` (draft only)  
+**Complete:** `POST /inventory/stock-counts/{count_id}/complete` — posts non-zero variances; `status=completed`  
+**Cancel:** `POST /inventory/stock-counts/{count_id}/cancel` — draft only → `cancelled`  
+**Variance report:** `GET /inventory/stock-counts/{count_id}/variance-report?format=csv|pdf|json` — requires `completed` (`409 COUNT_NOT_COMPLETED` otherwise)
 
 ### 5.7 Stock Movement History
 **Endpoint:** `GET /inventory/movements?product_id=&warehouse_id=&from_date=&to_date=`

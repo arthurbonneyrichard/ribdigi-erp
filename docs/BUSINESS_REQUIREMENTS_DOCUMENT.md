@@ -355,7 +355,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Stock Adjustment:** Correct stock discrepancies with reason (damage, theft, expiry, found, lost) — Stage 17 S1 / Stage 2 I2 (`POST /inventory/adjust/{id}`; `INVALID_ADJUSTMENT_REASON`)
   - [ ] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow
   - [x] **Opening Stock:** Initialize stock levels for new products or fiscal year start — Stage 17 S1 (`POST /inventory/opening-stock`; `movement_type=opening_stock`)
-  - [ ] **Stock Count:** Physical count reconciliation with system stock; variance report generation
+  - [x] **Stock Count:** Physical count reconciliation with system stock; variance report generation — Stage 17 S2 (`POST /inventory/stock-counts` → patch items → complete posts `adjustment` movements; `GET .../variance-report`)
 
 #### BR-5.3 Stock Movement History
 - **Description:** Complete audit trail of all inventory changes.
