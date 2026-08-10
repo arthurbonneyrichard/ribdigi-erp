@@ -25,7 +25,7 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 | **A2** | Point-in-time trial balance / balance sheet `as_of` | P0 | COMPLETE |
 | **T1** | Tax rate lifecycle (edit/deactivate) + report period helpers | P1 | COMPLETE |
 | **R1** | Credit UI: allocate payment to selected invoice/bill | P1 | COMPLETE |
-| **A3** | Finance domain audit closeout (expense approve/reject) | P1 | PENDING |
+| **A3** | Finance domain audit closeout (expense approve/reject) | P1 | COMPLETE |
 | **D1** | Spec / BR-9/10/12 / readiness fidelity sync | P2 | PENDING |
 | **H14x** | Stage 14 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -86,10 +86,17 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 - [x] Outstanding table row action selects document + fills amount.
 - [x] Automated proof: `backend/tests/test_credit_payment_allocate_r1.py` (explicit vs auto for AR and AP).
 
-## A3–H14x
+## A3 acceptance criteria
+
+- [x] Domain audit events: `expense_submitted`, `expense_auto_approved`, `expense_level_approved`, `expense_approved`, `expense_rejected` (`module=expenses`).
+- [x] Emitted from expense service (create/approve/reject/edit auto-approve), with integrity hash.
+- [x] Final/auto approve still yields `journal_posted` with `source_type=expense`.
+- [x] Automated proof: `backend/tests/test_expense_audit_a3.py`.
+
+## D1–H14x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-E1–T1 and R1 complete. Pending A3 → D1 → H14x.
+E1–R1 and A3 complete. Pending D1 → H14x.

@@ -739,6 +739,8 @@ async def create_expense(
     db.add(expense)
     await db.flush()
 
+    from app import audit as audit_svc
+
     if needs_approval:
         await notify_expense_approvers(
             db,
@@ -753,6 +755,21 @@ async def create_expense(
             ),
             exclude_user_ids={user_id},
         )
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="expense_submitted",
+            entity="expense",
+            entity_id=expense.id,
+            details={
+                "category": cat_name,
+                "amount": float(expense.amount),
+                "approval_steps_required": steps,
+                "threshold": float(auto_t),
+            },
+            module="expenses",
+        )
     else:
         await _record_action(
             db,
@@ -766,6 +783,21 @@ async def create_expense(
         from app.accounting import post_expense_journal
 
         await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="expense_auto_approved",
+            entity="expense",
+            entity_id=expense.id,
+            details={
+                "category": cat_name,
+                "amount": float(expense.amount),
+                "threshold": float(auto_t),
+                "reason": "under_threshold",
+            },
+            module="expenses",
+        )
     return expense
 
 
@@ -811,6 +843,8 @@ async def approve_expense(
         comment=comment,
     )
 
+    from app import audit as audit_svc
+
     if step < required:
         expense.approval_step = step + 1
         expense.approval_comment = comment or f"Level {step} approved; awaiting level {step + 1}"
@@ -826,6 +860,22 @@ async def approve_expense(
             ),
             exclude_user_ids={user_id, expense.created_by} if expense.created_by else {user_id},
         )
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="expense_level_approved",
+            entity="expense",
+            entity_id=expense.id,
+            details={
+                "category": expense.category,
+                "amount": float(expense.amount),
+                "step": step,
+                "next_step": step + 1,
+                "comment": comment,
+            },
+            module="expenses",
+        )
         await db.flush()
         return expense
 
@@ -839,6 +889,21 @@ async def approve_expense(
     from app.accounting import post_expense_journal
 
     await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="expense_approved",
+        entity="expense",
+        entity_id=expense.id,
+        details={
+            "category": expense.category,
+            "amount": float(expense.amount),
+            "steps": required,
+            "comment": comment,
+        },
+        module="expenses",
+    )
     await db.flush()
     return expense
 
@@ -876,6 +941,23 @@ async def reject_expense(
     expense.approved_by = user_id
     expense.approved_at = datetime.utcnow()
     expense.rejection_reason = reason.strip()
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="expense_rejected",
+        entity="expense",
+        entity_id=expense.id,
+        details={
+            "category": expense.category,
+            "amount": float(expense.amount),
+            "reason": expense.rejection_reason,
+            "step": step,
+        },
+        module="expenses",
+    )
     await db.flush()
     return expense
 
@@ -991,8 +1073,23 @@ async def update_expense(
                     comment="Auto-approved under threshold after edit",
                 )
                 from app.accounting import post_expense_journal
+                from app import audit as audit_svc
 
                 await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+                await audit_svc.record_event(
+                    db,
+                    tenant_id=tenant_id,
+                    user_id=user_id,
+                    action="expense_auto_approved",
+                    entity="expense",
+                    entity_id=expense.id,
+                    details={
+                        "category": expense.category,
+                        "amount": float(expense.amount),
+                        "reason": "under_threshold_after_edit",
+                    },
+                    module="expenses",
+                )
             else:
                 expense.approval_steps_required = steps
                 expense.approval_step = 1
@@ -1019,8 +1116,23 @@ async def update_expense(
                     comment="Auto-approved under threshold after edit",
                 )
                 from app.accounting import post_expense_journal
+                from app import audit as audit_svc
 
                 await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+                await audit_svc.record_event(
+                    db,
+                    tenant_id=tenant_id,
+                    user_id=user_id,
+                    action="expense_auto_approved",
+                    entity="expense",
+                    entity_id=expense.id,
+                    details={
+                        "category": expense.category,
+                        "amount": float(expense.amount),
+                        "reason": "under_threshold_after_edit",
+                    },
+                    module="expenses",
+                )
             else:
                 expense.status = "pending"
                 expense.approval_steps_required = steps
