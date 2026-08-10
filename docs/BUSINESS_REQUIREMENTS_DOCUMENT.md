@@ -828,10 +828,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Automated data protection.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Configurable schedule (daily, weekly)
-  - [ ] Retention policy (keep last N backups)
-  - [ ] Backup storage to S3-compatible storage
-  - [ ] Failure alerts to admin
+  - [x] Configurable schedule (daily, weekly) — Stage 18 B1 (`PATCH /backup/settings` + `POST /backup/run-due` + Celery `run-due-backups`)
+  - [x] Retention policy (keep last N backups) — Stage 18 B1 (`prune_retention` after successful create)
+  - [ ] Backup storage to S3-compatible storage — deferred post-MVP (local `BACKUP_DIR` for `.ribbak`; WAL/S3 PITR out of Stage 18)
+  - [x] Failure alerts to admin — Stage 18 B1 (`Backup failed` system notification; no fake success on schedule failure)
 
 #### BR-16.3 Database Restore
 - **Description:** Disaster recovery capability.

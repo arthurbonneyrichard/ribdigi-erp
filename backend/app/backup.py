@@ -395,6 +395,53 @@ def decrypt_archive(file_bytes: bytes, expected_file_checksum: str | None = None
     return payload
 
 
+async def notify_backup_failure(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    error_message: str,
+    backup_id: str | None = None,
+) -> m.Notification | None:
+    """Surface backup failure to tenant admins (dashboard + preferred channels)."""
+    from app.notifications import create_notification
+
+    try:
+        return await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="system",
+            title="Backup failed",
+            message=(error_message or "Backup failed")[:500],
+            entity_type="backup_job" if backup_id else "backup",
+            entity_id=backup_id,
+        )
+    except Exception:  # noqa: BLE001 — never mask the original backup failure
+        return None
+
+
+async def _persist_backup_failure(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    job: m.BackupJob,
+    error_message: str,
+) -> None:
+    """Mark job failed, notify admins, and commit so evidence survives request rollback."""
+    job.status = "failed"
+    job.error_message = (error_message or "Backup failed")[:500]
+    await db.flush()
+    await notify_backup_failure(
+        db,
+        tenant_id=tenant_id,
+        backup_id=job.id,
+        error_message=job.error_message,
+    )
+    try:
+        await db.commit()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 async def create_backup(
     db: AsyncSession,
     *,
@@ -440,15 +487,16 @@ async def create_backup(
         await prune_retention(db, tenant_id, settings_row.retention_count)
         await db.flush()
         return job
-    except HTTPException:
-        job.status = "failed"
-        job.error_message = "Backup failed"
-        await db.flush()
+    except HTTPException as exc:
+        detail = exc.detail if isinstance(exc.detail, str) else "Backup failed"
+        await _persist_backup_failure(
+            db, tenant_id=tenant_id, job=job, error_message=detail
+        )
         raise
     except Exception as exc:
-        job.status = "failed"
-        job.error_message = str(exc)[:500]
-        await db.flush()
+        await _persist_backup_failure(
+            db, tenant_id=tenant_id, job=job, error_message=str(exc)
+        )
         raise HTTPException(status_code=500, detail=f"Backup failed: {exc}") from exc
 
 
@@ -780,13 +828,34 @@ async def run_scheduled_backup_if_due(
             return {"ran": False, "reason": "already_ran", "tenant_id": tenant_id}
     if now.hour < int(row.hour_utc or 0) and row.last_run_at:
         return {"ran": False, "reason": "before_hour", "tenant_id": tenant_id}
-    ensure_backup_dir_writable()
-    job = await create_backup(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        notes="scheduled",
-    )
+    try:
+        ensure_backup_dir_writable()
+    except HTTPException as exc:
+        detail = exc.detail if isinstance(exc.detail, str) else "Backup directory not writable"
+        await notify_backup_failure(
+            db, tenant_id=tenant_id, error_message=detail, backup_id=None
+        )
+        return {
+            "ran": False,
+            "reason": "dir_not_writable",
+            "tenant_id": tenant_id,
+            "detail": detail[:500],
+        }
+    try:
+        job = await create_backup(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            notes="scheduled",
+        )
+    except HTTPException as exc:
+        detail = exc.detail if isinstance(exc.detail, str) else "Backup failed"
+        return {
+            "ran": False,
+            "reason": "failed",
+            "tenant_id": tenant_id,
+            "detail": detail[:500],
+        }
     return {
         "ran": True,
         "reason": "created",

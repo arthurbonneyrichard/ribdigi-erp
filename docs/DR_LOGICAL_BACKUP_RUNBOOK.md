@@ -1,6 +1,6 @@
 # Disaster Recovery Runbook — Logical Tenant Backup (`.ribbak`)
 
-**Scope:** Stage 5 B1 — encrypted logical tenant backup / guarded restore  
+**Scope:** Stage 5 B1 + Stage 10 B1 (media) + Stage 18 B1 (schedule / retention / failure notify) — encrypted logical tenant backup / guarded restore  
 **Out of scope (post-MVP):** PostgreSQL `pg_dump` / WAL archiving, S3 offsite PITR, schema-per-tenant isolation (ADR-001)
 
 ## Purpose
@@ -38,7 +38,15 @@ Infrastructure PITR targets in older docs remain **aspirational** until WAL/S3 w
 7. **Audit** — confirm `restore_dry_run` / `restore_apply` / `restore_verify` events under `module=backup`.
 8. **Pass criteria** — `proof.ok == true`, spot-check UI (catalog / customer), no cross-tenant leakage.
 
-Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/tests/test_backup_media_b1.py` (Stage 10 B1 media).
+Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/tests/test_backup_media_b1.py` (Stage 10 B1 media), `backend/tests/test_backup_schedule_b1.py` (Stage 18 B1 schedule / retention / failure notify).
+
+## Schedule, retention, and failure alerts (Stage 18 B1)
+
+1. **Configure** — `PATCH /api/v1/backup/settings` with `enabled`, `frequency` (`daily`|`weekly`), `retention_count` (1–365), `hour_utc` (0–23).
+2. **Due runner** — `POST /api/v1/backup/run-due` (admin) or Celery beat `run-due-backups`. Returns `ran`/`reason` (`schedule_disabled` | `already_ran` | `before_hour` | `created` | `failed` | `dir_not_writable`). A failed schedule run returns `ran=false` — never a fake success.
+3. **Retention** — after each successful backup, older completed jobs beyond `retention_count` are deleted (files + rows).
+4. **Failure notify** — failed create persists `BackupJob.status=failed` and creates a tenant `system` notification titled **Backup failed** (visible to admins). Disk-not-writable on schedule also notifies.
+5. **Storage** — MVP archives land under local `BACKUP_DIR` (encrypted `.ribbak`). S3-compatible offsite archive remains post-MVP with WAL/PITR.
 
 ## Important restore semantics
 

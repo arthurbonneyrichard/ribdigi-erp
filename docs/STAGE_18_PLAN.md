@@ -50,7 +50,7 @@ Performance testing
 |----|------------|----------|---------|
 | **S1** | Tenant isolation matrix completeness (MVP write/read paths) | P0 | COMPLETE |
 | **A1** | Security hardening fidelity (RBAC / session / audit BR-17 sync + sensitive-path proof) | P0 | COMPLETE |
-| **B1** | Backup schedule / retention / failure notify + restore drill evidence | P0 | PENDING |
+| **B1** | Backup schedule / retention / failure notify + restore drill evidence | P0 | COMPLETE |
 | **I1** | Cross-module integrity (inventory Σ movements · accounting TB/GL · POS money-path) | P0 | PENDING |
 | **L1** | Structured request/error logging + health/metrics monitoring hooks (MVP-lite) | P0 | PENDING |
 | **T1** | Testing fidelity (OWASP expand · load evidence · launch E2E smoke) | P0 | PENDING |
@@ -83,8 +83,8 @@ Performance testing
 
 ## B1 acceptance criteria
 
-- [ ] Backup schedule (daily/weekly) + retention prune proven; failure surfaces an admin notification (no fake success); restore dry-run / verify path remains green; DR drill evidence path documented.
-- [ ] Automated proof.
+- [x] Backup schedule (daily/weekly) + retention prune proven; failure surfaces an admin notification (no fake success); restore dry-run / verify path remains green; DR drill evidence path documented (`docs/DR_LOGICAL_BACKUP_RUNBOOK.md`).
+- [x] Automated proof: `backend/tests/test_backup_schedule_b1.py` (plus existing `test_backup_restore_proof_b1.py`).
 
 ## I1 acceptance criteria
 
@@ -117,4 +117,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-S1–A1 complete. Pending B1 → … → H18x. Stages 1–17 remain frozen for their scopes.
+S1–A1–B1 complete. Pending I1 → … → H18x. Stages 1–17 remain frozen for their scopes.
