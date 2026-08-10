@@ -1028,10 +1028,10 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
 - **Description:** AI-powered inventory optimization.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Demand forecasting per product (7-day, 30-day, 90-day)
-  - [ ] Optimal reorder quantity recommendations
-  - [ ] Seasonality detection
-  - [ ] Dead stock identification
+  - [x] Demand forecasting per product (7-day, 30-day, 90-day) — Stage 20 V1 (`GET /ai/inventory/demand-forecast`; `test_ai_inventory_intel_v1.py`)
+  - [x] Optimal reorder quantity recommendations — Stage 20 V1 (`optimal_reorder_qty` on forecast rows)
+  - [x] Seasonality detection — Stage 20 V1 (`seasonality` / `seasonality_factor`; sales_velocity_v1)
+  - [x] Dead stock identification — Stage 20 V1 (`GET /ai/inventory/dead-stock`)
 
 #### BR-21.4 AI Low Stock Prediction
 - **Description:** Predictive stockout prevention.

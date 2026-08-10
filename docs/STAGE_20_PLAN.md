@@ -43,7 +43,7 @@ Fidelity closeout
 |----|------------|----------|---------|
 | **C1** | AI ERP chat fidelity (BR-21.1) | P0 | COMPLETE |
 | **I1** | Dashboard insights + weekly digest (BR-21.2) | P0 | COMPLETE |
-| **V1** | Smart inventory intelligence (BR-21.3) | P0 | PENDING |
+| **V1** | Smart inventory intelligence (BR-21.3) | P0 | COMPLETE |
 | **L1** | Low-stock prediction (BR-21.4) | P0 | PENDING |
 | **S1** | Sales analysis (BR-21.5) | P1 | PENDING |
 | **R1** | NL report generator (BR-21.7) | P1 | PENDING |
@@ -79,9 +79,9 @@ Fidelity closeout
 
 ## V1 acceptance criteria
 
-- [ ] Demand forecast (7/30/90), reorder qty, seasonality, dead stock proven on live stock/sales data.
-- [ ] Automated proof: `backend/tests/test_ai_inventory_intel_v1.py`.
-- [ ] BR-21.3 synced with evidence.
+- [x] Demand forecast (7/30/90), reorder qty, seasonality, dead stock proven on live stock/sales data.
+- [x] Automated proof: `backend/tests/test_ai_inventory_intel_v1.py`.
+- [x] BR-21.3 synced with evidence.
 
 ## L1 acceptance criteria
 
@@ -118,4 +118,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-C1–I1 complete. Pending V1 → H20x. Stages 1–19 remain frozen for their scopes.
+C1–I1–V1 complete. Pending L1 → H20x. Stages 1–19 remain frozen for their scopes.
