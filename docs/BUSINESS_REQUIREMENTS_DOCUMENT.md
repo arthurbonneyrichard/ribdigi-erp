@@ -297,27 +297,27 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** At-a-glance business metrics.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Display: Total Sales, Total Purchases, Total Expenses, Total Customers, Total Suppliers, Total Products
-  - [ ] Real-time or near-real-time updates (within 5 minutes)
-  - [ ] Period comparison (Today vs Yesterday, This Month vs Last Month)
-  - [ ] Click-through to detailed reports
+  - [x] Display: Total Sales, Total Purchases, Total Expenses, Total Customers, Total Suppliers, Total Products — Stage 21 V1 (`GET /dashboard`; `test_dashboard_kpis_v1.py`)
+  - [x] Real-time or near-real-time updates (within 5 minutes) — Stage 21 V1 (`CACHE_DASHBOARD_TTL_SECONDS` ≤ 300 + tenant cache invalidation)
+  - [x] Period comparison (Today vs Yesterday, This Month vs Last Month) — Stage 21 V1 (`daily_revenue`/`yesterday_revenue`/`dod_change_pct` + `monthly_revenue`/`prior_month_revenue`/`mom_change_pct`)
+  - [x] Click-through to detailed reports — Stage 21 V1 (`kpi_links` → sales/purchasing/expenses/inventory/reports)
 
 #### BR-4.2 Inventory Alerts
 - **Description:** Visual indicators for inventory issues.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Low stock products count with quick link
-  - [ ] Out-of-stock products count
-  - [ ] Expiring products (pharmacy/food) count
+  - [x] Low stock products count with quick link — Stage 21 V1 (`low_stock` + `kpi_links.low_stock`)
+  - [x] Out-of-stock products count — Stage 21 V1 (`out_of_stock`)
+  - [x] Expiring products (pharmacy/food) count — Stage 21 V1 (`expiring_batches` next 30 days)
 
 #### BR-4.3 Sales Visualization
 - **Description:** Charts and trends for sales performance.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Recent sales list (last 10 transactions)
-  - [ ] Top products by revenue and quantity
-  - [ ] Daily revenue line chart (last 30 days)
-  - [ ] Monthly revenue bar chart (last 12 months)
+  - [x] Recent sales list (last 10 transactions) — Stage 21 V1 (`recent_sales` POS+invoice merge ≤10)
+  - [x] Top products by revenue and quantity — Stage 21 V1 (`top_products` ranked by revenue with `quantity`/`revenue`)
+  - [x] Daily revenue line chart (last 30 days) — Stage 21 V1 (`daily_revenue_series` length 30)
+  - [x] Monthly revenue bar chart (last 12 months) — Stage 21 V1 (`monthly_revenue_series` length 12)
 
 #### BR-4.4 Notifications Panel
 - **Description:** Centralized notification stream.

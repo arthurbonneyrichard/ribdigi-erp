@@ -18,6 +18,8 @@ type Dash = {
   customers?: number;
   suppliers?: number;
   daily_revenue?: number;
+  yesterday_revenue?: number;
+  dod_change_pct?: number | null;
   monthly_revenue?: number;
   prior_month_revenue?: number;
   mom_change_pct?: number | null;
@@ -108,6 +110,18 @@ export default function Page() {
       href: links.expiring_batches,
     },
     { key: 'daily_revenue', label: 'Today Revenue', value: d.daily_revenue ?? 0, href: links.daily_revenue },
+    {
+      key: 'yesterday_revenue',
+      label: 'Yesterday Revenue',
+      value: d.yesterday_revenue ?? 0,
+      href: links.yesterday_revenue,
+    },
+    {
+      key: 'dod_change_pct',
+      label: 'DoD %',
+      value: d.dod_change_pct == null ? '—' : `${n(d.dod_change_pct)}%`,
+      href: links.dod_change_pct,
+    },
     { key: 'monthly_revenue', label: 'Month Revenue', value: d.monthly_revenue ?? 0, href: links.monthly_revenue },
     {
       key: 'prior_month_revenue',

@@ -2455,6 +2455,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     now = datetime.utcnow()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_start = day_start - timedelta(days=1)
     if month_start.month == 1:
         prior_month_start = month_start.replace(year=month_start.year - 1, month=12)
     else:
@@ -2525,6 +2526,14 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             m.Transaction.created_at >= day_start,
         )
     )
+    yesterday_revenue = await scalar(
+        select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+            m.Transaction.tenant_id == tid,
+            m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+            m.Transaction.created_at >= yesterday_start,
+            m.Transaction.created_at < day_start,
+        )
+    )
     monthly_revenue = await scalar(
         select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
             m.Transaction.tenant_id == tid,
@@ -2548,6 +2557,14 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             m.SalesInvoice.posted_at >= day_start,
         )
     )
+    inv_yesterday = await scalar(
+        select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+            m.SalesInvoice.tenant_id == tid,
+            m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+            m.SalesInvoice.posted_at >= yesterday_start,
+            m.SalesInvoice.posted_at < day_start,
+        )
+    )
     inv_monthly = await scalar(
         select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
             m.SalesInvoice.tenant_id == tid,
@@ -2564,8 +2581,12 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         )
     )
     daily_revenue = float(daily_revenue) + float(inv_daily)
+    yesterday_revenue = float(yesterday_revenue) + float(inv_yesterday)
     monthly_revenue = float(monthly_revenue) + float(inv_monthly)
     prior_month_revenue = float(prior_month_revenue) + float(inv_prior)
+    dod_change_pct = None
+    if yesterday_revenue > 0:
+        dod_change_pct = round(((daily_revenue - yesterday_revenue) / yesterday_revenue) * 100, 2)
     mom_change_pct = None
     if prior_month_revenue > 0:
         mom_change_pct = round(((monthly_revenue - prior_month_revenue) / prior_month_revenue) * 100, 2)
@@ -2671,6 +2692,8 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         "customers": customers,
         "suppliers": suppliers,
         "daily_revenue": daily_revenue,
+        "yesterday_revenue": yesterday_revenue,
+        "dod_change_pct": dod_change_pct,
         "monthly_revenue": monthly_revenue,
         "prior_month_revenue": prior_month_revenue,
         "mom_change_pct": mom_change_pct,
@@ -2678,7 +2701,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         "top_products": top_products,
         "daily_revenue_series": chart_series["daily_revenue_series"],
         "monthly_revenue_series": chart_series["monthly_revenue_series"],
-        # BR-4.1 click-through targets (Stage 1 F17)
+        # BR-4.1 click-through targets (Stage 1 F17 / Stage 21 V1)
         "kpi_links": {
             "total_sales": "/sales?tab=invoices",
             "total_purchases": "/purchasing?tab=invoices",
@@ -2690,6 +2713,8 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "out_of_stock": "/inventory?tab=lowstock",
             "expiring_batches": "/inventory?tab=expiry",
             "daily_revenue": "/reports?tab=sales",
+            "yesterday_revenue": "/reports?tab=sales",
+            "dod_change_pct": "/reports?tab=sales",
             "monthly_revenue": "/reports?tab=sales",
             "prior_month_revenue": "/reports?tab=sales",
             "mom_change_pct": "/reports?tab=sales",

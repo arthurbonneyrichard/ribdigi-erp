@@ -47,7 +47,7 @@ Fidelity closeout
 | **O1** | Org units fidelity (BR-2.2–2.5) | P0 | COMPLETE |
 | **C1** | Company / currency / tax setup (BR-2.1, 2.6, 2.8) | P1 | COMPLETE |
 | **U1** | Users & roles fidelity (BR-3) | P1 | COMPLETE |
-| **V1** | Dashboard KPIs & visualizations (BR-4.1–4.3) | P1 | PENDING |
+| **V1** | Dashboard KPIs & visualizations (BR-4.1–4.3) | P1 | COMPLETE |
 | **N1** | Dashboard notifications panel (BR-4.4) | P1 | PENDING |
 | **D1** | Spec / BR-1–4 / readiness / launch §§1–2 fidelity sync | P2 | PENDING |
 | **H21x** | Stage 21 exit criteria + freeze ADR | Exit | PENDING |
@@ -102,9 +102,9 @@ Fidelity closeout
 
 ## V1 acceptance criteria
 
-- [ ] KPI cards, MoM/period compare, low/OOS/expiring alerts, recent sales / top products / revenue charts proven.
-- [ ] Automated proof: `backend/tests/test_dashboard_kpis_v1.py`.
-- [ ] BR-4.1–4.3 synced with evidence.
+- [x] KPI cards, MoM/period compare, low/OOS/expiring alerts, recent sales / top products / revenue charts proven.
+- [x] Automated proof: `backend/tests/test_dashboard_kpis_v1.py`.
+- [x] BR-4.1–4.3 synced with evidence.
 
 ## N1 acceptance criteria
 
@@ -123,4 +123,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-T1–U1 complete. Pending V1 → H21x. Stages 1–20 remain frozen for their scopes.
+T1–V1 complete. Pending N1 → H21x. Stages 1–20 remain frozen for their scopes.
