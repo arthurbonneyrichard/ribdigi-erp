@@ -819,7 +819,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** On-demand data protection.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [x] One-click backup initiation by Super Admin
+  - [x] One-click backup initiation by Super Admin — Stage 18 D1 / Stage 5 B1
   - [x] Backup includes database, uploaded files, configurations (Stage 10 B1: `.ribbak` `media` map for tenant-scoped uploads)
   - [x] Download backup archive
   - [x] Backup encryption
@@ -837,10 +837,12 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Disaster recovery capability.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [x] Restore from backup archive (guarded `confirm_text=RESTORE`; media rehydrate Stage 10 B1)
+  - [x] Restore from backup archive (guarded `confirm_text=RESTORE`; media rehydrate Stage 10 B1) — Stage 18 D1 / Stage 5 B1
   - [ ] Restore to new tenant (for testing) — blocked by design for MVP (cross-tenant restore denied)
   - [x] Restore validation (checksum verification + integrity proof)
   - [ ] Point-in-time recovery (if WAL archiving enabled) — deferred post-MVP
+
+Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
 
 ---
 
@@ -865,6 +867,8 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Export audit logs (CSV, PDF) — Stage 18 A1 (`GET /audit-logs/export`)
   - [x] Tamper-proof storage (append-only, hashed) — Stage 18 A1 / Stage 1 G19 (`GET /audit-logs/verify`)
   - [x] Retention policy: minimum 7 years for financial records — Stage 18 A1 / Stage 1 G20 (`GET /audit-logs/retention`)
+
+Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
 
 ---
 

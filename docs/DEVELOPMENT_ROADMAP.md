@@ -152,6 +152,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 18 open (2026-08-10):** Launch Integrity & Ops Fidelity track approved — `docs/ADR_041_STAGE18_OPEN.md` + `docs/STAGE_18_PLAN.md` (Security → Backup/Restore → Data integrity → Logging/Monitoring → Test & deploy hygiene).
 
+**Stage 18 D1 (2026-08-10):** Spec / BR-16–17 / readiness / launch fidelity sync — `docs/STAGE_18_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -725,7 +727,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 18 open (`docs/STAGE_18_PLAN.md`, ADR-041). Stages 1–17 remain frozen for their scopes.
+**Active delivery plan:** Stage 18 open (`docs/STAGE_18_PLAN.md`, ADR-041); D1 fidelity `docs/STAGE_18_FIDELITY.md`. Stages 1–17 remain frozen for their scopes.
 
 ### 6.2 Features
 

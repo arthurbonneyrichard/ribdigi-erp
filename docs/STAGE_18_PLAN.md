@@ -55,7 +55,7 @@ Performance testing
 | **L1** | Structured request/error logging + health/metrics monitoring hooks (MVP-lite) | P0 | COMPLETE |
 | **T1** | Testing fidelity (OWASP expand · load evidence · launch E2E smoke) | P0 | COMPLETE |
 | **C1** | CI + production configuration fidelity (no K8s deploy) | P1 | COMPLETE |
-| **D1** | Spec / BR-16–17 / readiness / launch fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR-16–17 / readiness / launch fidelity sync | P2 | COMPLETE |
 | **H18x** | Stage 18 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -108,8 +108,8 @@ Performance testing
 
 ## D1 acceptance criteria
 
-- [ ] BR-16/17, SECURITY_GUIDE, readiness, launch checklist aligned — `docs/STAGE_18_FIDELITY.md`.
-- [ ] Guard test: `backend/tests/test_stage18_fidelity_d1.py`.
+- [x] BR-16/17, SECURITY_GUIDE, readiness, launch checklist aligned — `docs/STAGE_18_FIDELITY.md`.
+- [x] Guard test: `backend/tests/test_stage18_fidelity_d1.py`.
 
 ## H18x acceptance criteria
 
@@ -117,4 +117,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-S1–A1–B1–I1–L1–T1–C1 complete. Pending D1 → H18x. Stages 1–17 remain frozen for their scopes.
+S1–A1–B1–I1–L1–T1–C1–D1 complete. Pending H18x. Stages 1–17 remain frozen for their scopes. Fidelity: `docs/STAGE_18_FIDELITY.md`.
