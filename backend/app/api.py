@@ -8189,19 +8189,21 @@ async def cancel_cheque_api(
 
 @api.get("/accounting/journal-entries")
 async def list_journals(
+    store_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
 
-    rows = (
-        await db.execute(
-            select(m.JournalEntry)
-            .where(m.JournalEntry.tenant_id == claims["tenant_id"])
-            .order_by(m.JournalEntry.created_at.desc())
-            .limit(100)
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.JournalEntry)
+        .where(m.JournalEntry.tenant_id == claims["tenant_id"])
+        .order_by(m.JournalEntry.created_at.desc())
+        .limit(100)
+    )
+    if store_id:
+        stmt = stmt.where(m.JournalEntry.store_id == store_id)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await accounting_svc.serialize_journal(db, e) for e in rows])
 
 
@@ -8240,6 +8242,7 @@ async def create_journal(
         user_id=claims["sub"],
         description=payload.description,
         reference=payload.reference,
+        store_id=payload.store_id,
         lines=[ln.model_dump() for ln in payload.lines],
     )
     await db.commit()
@@ -8392,6 +8395,7 @@ async def get_trial_balance(
 async def get_profit_loss(
     from_date: str | None = None,
     to_date: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8405,6 +8409,7 @@ async def get_profit_loss(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=store_id,
         )
     )
 
@@ -8413,10 +8418,11 @@ async def get_profit_loss(
 async def report_profit_loss(
     from_date: str | None = None,
     to_date: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_profit_loss(from_date, to_date, claims, db)
+    return await get_profit_loss(from_date, to_date, store_id, claims, db)
 
 
 @api.get("/reports/trial-balance")
@@ -8431,6 +8437,7 @@ async def report_trial_balance(
 async def report_cash_flow(
     from_date: str | None = None,
     to_date: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8440,6 +8447,7 @@ async def report_cash_flow(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=store_id,
         )
     )
 

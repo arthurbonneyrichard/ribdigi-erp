@@ -21,7 +21,7 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 |----|------------|----------|---------|
 | **E1** | Category → COA posting + expense→approve→journal→TB/P&L/cash-flow E2E | P0 | COMPLETE |
 | **E2** | Expense org dimensions (department + store UI) | P0 | COMPLETE |
-| **A1** | Dimensional journals + store-filtered P&L/cash-flow | P0 | PENDING |
+| **A1** | Dimensional journals + store-filtered P&L/cash-flow | P0 | COMPLETE |
 | **A2** | Point-in-time trial balance / balance sheet `as_of` | P0 | PENDING |
 | **T1** | Tax rate lifecycle (edit/deactivate) + report period helpers | P1 | PENDING |
 | **R1** | Credit UI: allocate payment to selected invoice/bill | P1 | PENDING |
@@ -55,10 +55,18 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 - [x] Expenses UI: store/department pickers, filters, table columns.
 - [x] Tests: `backend/tests/test_expense_org_dimensions_e2.py`.
 
-## A1–H14x
+## A1 acceptance criteria
+
+- [x] `journal_entries.store_id` (nullable FK → `stores.id`); Alembic migration.
+- [x] Auto-post from expense / sales invoice / POS sets store when known; manual create accepts `store_id` (tenant-scoped 404).
+- [x] `GET` journal-entries, accounting/reports P&L, and cash-flow filter by `store_id`.
+- [x] Accounting UI: store on manual post, P&L filter, journal list filter + column; Reports UI passes store for P&L/cash-flow.
+- [x] Automated proof: `backend/tests/test_journal_store_dimension_a1.py`.
+
+## A2–H14x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-E1 and E2 complete. Pending A1 → A2 → T1 → R1 → A3 → D1 → H14x.
+E1, E2, and A1 complete. Pending A2 → T1 → R1 → A3 → D1 → H14x.

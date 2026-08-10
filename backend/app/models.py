@@ -1169,6 +1169,10 @@ class JournalEntry(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     source_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    # Stage 14 A1 — optional store dimension for store-filtered statements
+    store_id: Mapped[str | None] = mapped_column(
+        ForeignKey("stores.id"), nullable=True, index=True
+    )
     total_debit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_credit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     status: Mapped[str] = mapped_column(String(20), default="posted")

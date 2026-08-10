@@ -140,8 +140,8 @@ export default function Page() {
       if (nextTab === 'inventory') path = '/reports/inventory/low-stock';
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
       if (nextTab === 'expenses') path = `/reports/expenses/summary${qs()}`;
-      if (nextTab === 'pnl') path = `/reports/profit-loss${qs()}`;
-      if (nextTab === 'cashflow') path = `/reports/cash-flow${qs()}`;
+      if (nextTab === 'pnl') path = `/reports/profit-loss${qs({ store_id: storeId })}`;
+      if (nextTab === 'cashflow') path = `/reports/cash-flow${qs({ store_id: storeId })}`;
       if (nextTab === 'balancesheet') path = '/reports/balance-sheet';
       const r = await api(path);
       if (nextTab === 'sales') {

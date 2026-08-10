@@ -55,6 +55,10 @@ export default function Page() {
   const [obAmount, setObAmount] = useState('100');
   const [pnlFrom, setPnlFrom] = useState('');
   const [pnlTo, setPnlTo] = useState('');
+  const [pnlStoreId, setPnlStoreId] = useState('');
+  const [stores, setStores] = useState<any[]>([]);
+  const [journalStoreId, setJournalStoreId] = useState('');
+  const [manualStoreId, setManualStoreId] = useState('');
   const [accountTx, setAccountTx] = useState<any | null>(null);
   const [txFrom, setTxFrom] = useState('');
   const [txTo, setTxTo] = useState('');
@@ -75,18 +79,23 @@ export default function Page() {
     const pnlQs = new URLSearchParams();
     if (pnlFrom) pnlQs.set('from_date', pnlFrom);
     if (pnlTo) pnlQs.set('to_date', pnlTo);
+    if (pnlStoreId) pnlQs.set('store_id', pnlStoreId);
     const pnlPath = pnlQs.toString()
       ? `/accounting/profit-loss?${pnlQs}`
       : '/accounting/profit-loss';
-    const [a, j, t, p, liq, stmts, chq, conns] = await Promise.all([
+    const journalQs = journalStoreId
+      ? `/accounting/journal-entries?store_id=${encodeURIComponent(journalStoreId)}`
+      : '/accounting/journal-entries';
+    const [a, j, t, p, liq, stmts, chq, conns, storeRows] = await Promise.all([
       api('/accounting/accounts'),
-      api('/accounting/journal-entries'),
+      api(journalQs),
       api('/accounting/trial-balance'),
       api(pnlPath),
       api('/accounting/liquid-accounts'),
       api('/accounting/bank-statements'),
       api('/accounting/cheques'),
       api('/accounting/bank-connections').catch(() => ({ data: [] })),
+      api('/stores').catch(() => ({ data: [] })),
     ]);
     setAccounts(a.data || []);
     setJournals(j.data || []);
@@ -96,6 +105,7 @@ export default function Page() {
     setStatements(stmts.data || []);
     setCheques(chq.data || []);
     setConnections(conns.data || []);
+    setStores(storeRows.data || []);
     if (!reconAccountId && liq.data?.length) setReconAccountId(liq.data[0].id);
     if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
     if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
@@ -118,6 +128,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           description,
+          store_id: manualStoreId || null,
           lines: [
             { account_code: debitCode, debit: value, credit: 0 },
             { account_code: creditCode, debit: 0, credit: value },
@@ -691,6 +702,18 @@ export default function Page() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description"
               />
+              <select
+                value={manualStoreId}
+                onChange={(e) => setManualStoreId(e.target.value)}
+                aria-label="Journal store"
+              >
+                <option value="">No store</option>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+              </select>
               <input
                 value={debitCode}
                 onChange={(e) => setDebitCode(e.target.value)}
@@ -864,6 +887,18 @@ export default function Page() {
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <input type="date" value={pnlFrom} onChange={(e) => setPnlFrom(e.target.value)} />
                 <input type="date" value={pnlTo} onChange={(e) => setPnlTo(e.target.value)} />
+                <select
+                  value={pnlStoreId}
+                  onChange={(e) => setPnlStoreId(e.target.value)}
+                  aria-label="P&L store filter"
+                >
+                  <option value="">All stores</option>
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.code} — {s.name}
+                    </option>
+                  ))}
+                </select>
                 <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
                   Apply
                 </button>
@@ -878,11 +913,29 @@ export default function Page() {
           </div>
 
           <h3 style={{ marginTop: 16 }}>Recent journals</h3>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+            <select
+              value={journalStoreId}
+              onChange={(e) => setJournalStoreId(e.target.value)}
+              aria-label="Journal store filter"
+            >
+              <option value="">All stores</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
+                </option>
+              ))}
+            </select>
+            <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
+              Apply filter
+            </button>
+          </div>
           <table className="table">
             <thead>
               <tr>
                 <th>Entry</th>
                 <th>Description</th>
+                <th>Store</th>
                 <th>Source</th>
                 <th>Status</th>
                 <th>Debit</th>
@@ -896,6 +949,11 @@ export default function Page() {
                 <tr key={j.id}>
                   <td>{j.entry_number}</td>
                   <td>{j.description}</td>
+                  <td>
+                    {j.store_id
+                      ? stores.find((s) => s.id === j.store_id)?.code || j.store_id
+                      : '—'}
+                  </td>
                   <td>{j.source_type || 'manual'}</td>
                   <td>{j.status || 'posted'}</td>
                   <td>{j.total_debit}</td>

@@ -1089,6 +1089,7 @@ class JournalLineCreate(BaseModel):
 class JournalCreate(BaseModel):
     description: str
     reference: str | None = None
+    store_id: str | None = None
     lines: list[JournalLineCreate] = Field(min_length=2)
 
 

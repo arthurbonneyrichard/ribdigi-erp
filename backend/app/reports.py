@@ -1242,11 +1242,15 @@ async def cash_flow(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    store_id: str | None = None,
 ) -> dict:
     """Cash flow from cash + bank GL accounts, split into O/I/F activities."""
-    from app.accounting import ensure_default_accounts
+    from app.accounting import ensure_default_accounts, resolve_journal_store_id
 
     await ensure_default_accounts(db, tenant_id)
+    resolved_store = await resolve_journal_store_id(
+        db, tenant_id=tenant_id, store_id=store_id
+    )
     liquid = (
         await db.execute(
             select(m.Account).where(
@@ -1273,6 +1277,7 @@ async def cash_flow(
         return {
             "from_date": from_date.date().isoformat() if from_date else None,
             "to_date": to_date.date().isoformat() if to_date else None,
+            "store_id": resolved_store,
             "inflows": 0,
             "outflows": 0,
             "net": 0,
@@ -1300,6 +1305,8 @@ async def cash_flow(
                 m.JournalEntry.entry_date < from_date,
             )
         )
+        if resolved_store:
+            open_stmt = open_stmt.where(m.JournalEntry.store_id == resolved_store)
         for line, _entry in (await db.execute(open_stmt)).all():
             opening_cash += float(line.debit or 0) - float(line.credit or 0)
 
@@ -1316,6 +1323,8 @@ async def cash_flow(
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
+    if resolved_store:
+        stmt = stmt.where(m.JournalEntry.store_id == resolved_store)
     rows = (await db.execute(stmt.order_by(m.JournalEntry.entry_date.asc()))).all()
 
     sections = {
@@ -1366,6 +1375,7 @@ async def cash_flow(
     return {
         "from_date": from_date.date().isoformat() if from_date else None,
         "to_date": to_date.date().isoformat() if to_date else None,
+        "store_id": resolved_store,
         "inflows": round(inflows, 2),
         "outflows": round(outflows, 2),
         "net": period_net,

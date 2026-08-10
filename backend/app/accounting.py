@@ -959,6 +959,18 @@ async def unpost_journal_entry(
     return entry
 
 
+async def resolve_journal_store_id(
+    db: AsyncSession, *, tenant_id: str, store_id: str | None
+) -> str | None:
+    """Validate optional store dimension (tenant-scoped 404)."""
+    if not store_id:
+        return None
+    from app.stores import get_store
+
+    store = await get_store(db, tenant_id, store_id)
+    return store.id
+
+
 async def post_journal_entry(
     db: AsyncSession,
     *,
@@ -969,6 +981,7 @@ async def post_journal_entry(
     reference: str | None = None,
     source_type: str | None = None,
     source_id: str | None = None,
+    store_id: str | None = None,
 ) -> m.JournalEntry:
     if len(lines) < 2:
         raise HTTPException(status_code=400, detail="Journal entry requires at least two lines")
@@ -992,6 +1005,7 @@ async def post_journal_entry(
 
     total_debit = sum(x["debit"] for x in normalized)
     total_credit = sum(x["credit"] for x in normalized)
+    resolved_store = await resolve_journal_store_id(db, tenant_id=tenant_id, store_id=store_id)
 
     entry = m.JournalEntry(
         tenant_id=tenant_id,
@@ -1000,6 +1014,7 @@ async def post_journal_entry(
         description=description,
         source_type=source_type,
         source_id=source_id,
+        store_id=resolved_store,
         total_debit=total_debit,
         total_credit=total_credit,
         status="posted",
@@ -1074,6 +1089,7 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
         "description": entry.description,
         "source_type": entry.source_type,
         "source_id": entry.source_id,
+        "store_id": getattr(entry, "store_id", None),
         "total_debit": float(entry.total_debit),
         "total_credit": float(entry.total_credit),
         "status": entry.status,
@@ -1125,6 +1141,7 @@ async def post_sales_invoice_journal(
         reference=invoice.invoice_number,
         source_type="sales_invoice",
         source_id=invoice.id,
+        store_id=getattr(invoice, "store_id", None),
         lines=lines,
     )
 
@@ -1558,6 +1575,7 @@ async def post_expense_journal(
         reference=expense.id,
         source_type="expense",
         source_id=expense.id,
+        store_id=getattr(expense, "store_id", None),
         lines=[
             debit_line,
             {
@@ -1627,6 +1645,11 @@ async def post_pos_sale_journal(
         lines.append(
             {"account_code": "2100", "debit": 0, "credit": tax, "description": "Tax payable"}
         )
+    store_id = None
+    if getattr(tx, "session_id", None):
+        session = await db.get(m.PosSession, tx.session_id)
+        if session and session.tenant_id == tenant_id:
+            store_id = session.store_id
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1635,6 +1658,7 @@ async def post_pos_sale_journal(
         reference=tx.reference,
         source_type="pos_sale",
         source_id=tx.id,
+        store_id=store_id,
         lines=lines,
     )
 
@@ -1695,9 +1719,13 @@ async def profit_and_loss(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    store_id: str | None = None,
 ) -> dict:
-    """Period P&L from posted journal lines (optional date range)."""
+    """Period P&L from posted journal lines (optional date range / store)."""
     await ensure_default_accounts(db, tenant_id)
+    resolved_store = await resolve_journal_store_id(
+        db, tenant_id=tenant_id, store_id=store_id
+    )
 
     stmt = (
         select(m.JournalEntryLine, m.Account, m.JournalEntry)
@@ -1714,6 +1742,8 @@ async def profit_and_loss(
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
+    if resolved_store:
+        stmt = stmt.where(m.JournalEntry.store_id == resolved_store)
 
     rows = (await db.execute(stmt)).all()
     by_account: dict[str, dict] = {}
@@ -1755,6 +1785,7 @@ async def profit_and_loss(
     return {
         "from_date": from_date.date().isoformat() if from_date else None,
         "to_date": to_date.date().isoformat() if to_date else None,
+        "store_id": resolved_store,
         "revenue": revenue,
         "other_income": other_income,
         "cogs": cogs,
