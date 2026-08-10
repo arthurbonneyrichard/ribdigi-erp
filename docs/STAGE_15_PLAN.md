@@ -21,7 +21,7 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 |----|------------|----------|---------|
 | **C1** | Invoice chain proof (stock movement → AR → tax report → JE lines) | P0 | COMPLETE |
 | **I1** | Standard-cost COGS + Inventory GL on sale (/POS helper) + return reverse | P0 | COMPLETE |
-| **H1** | Invoice post atomicity (stock preflight; no partial AR/JE) | P0 | PENDING |
+| **H1** | Invoice post atomicity (stock preflight; no partial AR/JE) | P0 | COMPLETE |
 | **R1** | Sales return chain fidelity (warehouse restock, AR/tax/COGS, store) | P1 | PENDING |
 | **T1** | Sales-path tax → filing from live invoice post | P1 | PENDING |
 | **A1** | Sales-path domain audit closeout (`sales_return_posted`, enrich `invoice_posted`) | P1 | PENDING |
@@ -51,13 +51,20 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 
 ## H1 acceptance criteria
 
-- [ ] Insufficient stock on invoice post → structured 409; no AR bump, no JE, invoice stays draft, no partial stock movements.
-- [ ] Automated proof: `backend/tests/test_sales_invoice_atomicity_h1.py`.
+- [x] Insufficient stock on invoice post → structured 409 `INSUFFICIENT_STOCK`; no AR bump, no JE, invoice stays draft, no partial stock movements.
+- [x] Aggregated multi-line preflight (same product lines cannot bypass line-by-line).
+- [x] Success path still commits stock + AR + journal.
+- [x] Automated proof: `backend/tests/test_sales_invoice_atomicity_h1.py`.
 
-## R1–H15x
+## R1 acceptance criteria
+
+- [ ] Restock to invoice/store warehouse; AR credit (FX-safe); tax reverse JE + `store_id`; COGS reverse; credit note E2E.
+- [ ] Automated proof: `backend/tests/test_sales_return_chain_r1.py`.
+
+## T1–H15x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-C1 and I1 complete. Pending H1 → R1 → T1 → A1 → D1 → H15x.
+C1, I1, and H1 complete. Pending R1 → T1 → A1 → D1 → H15x.

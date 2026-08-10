@@ -792,6 +792,24 @@ async def post_sales_invoice(
             user_id=user_id,
         )
 
+    # Stage 15 H1 — aggregated fail-fast before stock-out / AR / journal.
+    # On 409 the request session rolls back (no commit), so reservation consume
+    # and any prior work in this post are undone.
+    from app.inventory import assert_outbound_lines_stock_available
+
+    await assert_outbound_lines_stock_available(
+        db,
+        tenant_id=tenant_id,
+        items=[
+            {
+                "product_id": item.product_id,
+                "quantity": float(item.quantity),
+                "variant_id": item.variant_id,
+            }
+            for item in items
+        ],
+    )
+
     for item in items:
         if warehouse_id:
             await allocate_unlocated_stock(
