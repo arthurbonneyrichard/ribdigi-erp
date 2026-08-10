@@ -553,17 +553,17 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
 - **Description:** Classify business expenditures.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Predefined categories (Rent, Utilities, Salaries, Transportation, Marketing, etc.)
-  - [ ] Custom category creation
-  - [ ] Category-based budget allocation
+  - [x] Predefined categories (Rent, Utilities, Salaries, Transportation, Marketing, etc.) — Stage 22 E1 (`ensure_default_categories` RENT/UTIL/SAL/TRANS/MKT/SUP/MISC; `test_expense_categories_entry_e1.py`)
+  - [x] Custom category creation — Stage 22 E1 (`POST /expenses/categories`)
+  - [x] Category-based budget allocation — Stage 22 E1 (`PATCH` `budget_amount` + `GET /expenses/budgets`)
 
 #### BR-9.2 Expense Entry
 - **Description:** Record business expenses.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Expense date, category, amount, payment method, reference number
-  - [ ] Payee name
-  - [ ] Description/notes
+  - [x] Expense date, category, amount, payment method, reference number — Stage 22 E1 (`POST /expenses` `expense_date`/`category_id`/`amount`/`payment_method`/`reference`; `test_expense_categories_entry_e1.py`)
+  - [x] Payee name — Stage 22 E1 (`payee`)
+  - [x] Description/notes — Stage 22 E1 (`description` field; no separate notes column)
   - [x] Assign to store/department (Stage 14 E2 — `store_id` + `department_id` on expenses and recurring templates; list filters)
   - [x] Link to chart of accounts for auto-posting (Stage 14 E1 — `expense_categories.account_id`; fallback Operating Expenses `6000`)
 

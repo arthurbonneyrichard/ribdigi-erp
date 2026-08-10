@@ -41,7 +41,7 @@ Fidelity closeout
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **E1** | Expense categories & entry fidelity (BR-9.1–9.2) | P0 | PENDING |
+| **E1** | Expense categories & entry fidelity (BR-9.1–9.2) | P0 | COMPLETE |
 | **A1** | Expense approval & recurring fidelity (BR-9.3, 9.5) | P0 | PENDING |
 | **C1** | COA fidelity (BR-10.1) | P0 | PENDING |
 | **B1** | Cash/bank, recon, cheques fidelity (BR-10.3) | P1 | PENDING |
@@ -68,10 +68,10 @@ Fidelity closeout
 
 ## E1 acceptance criteria
 
-- [ ] Predefined + custom expense categories and category budget allocation proven.
-- [ ] Expense entry fields (date/category/amount/method/reference/payee/description) proven.
-- [ ] Automated proof: `backend/tests/test_expense_categories_entry_e1.py`.
-- [ ] BR-9.1–9.2 synced with evidence (store/dept already Stage 14 — cite, do not re-scope).
+- [x] Predefined + custom expense categories and category budget allocation proven.
+- [x] Expense entry fields (date/category/amount/method/reference/payee/description) proven.
+- [x] Automated proof: `backend/tests/test_expense_categories_entry_e1.py`.
+- [x] BR-9.1–9.2 synced with evidence (store/dept already Stage 14 — cite, do not re-scope).
 
 ## A1 acceptance criteria
 
@@ -121,4 +121,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-Stage 22 open. Pending E1 → H22x. Stages 1–21 remain frozen for their scopes.
+E1 complete. Pending A1 → H22x. Stages 1–21 remain frozen for their scopes.
