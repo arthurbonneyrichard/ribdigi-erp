@@ -200,36 +200,36 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Manage multiple business branches under one tenant.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create/edit/delete branches
-  - [ ] Assign branch code and manager
-  - [ ] Branch-specific address and contact
-  - [ ] Deactivate branch without data loss
+  - [x] Create/edit/delete branches — Stage 21 O1 (`POST/PATCH /branches`; soft-deactivate via `is_active`, hard delete deferred ADR-003; `test_org_units_o1.py`)
+  - [x] Assign branch code and manager — Stage 21 O1 (`code` + `manager_id`)
+  - [x] Branch-specific address and contact — Stage 21 O1 (`address`, `phone`, `email`)
+  - [x] Deactivate branch without data loss — Stage 21 O1 (`is_active=false` retains manager/address on list)
 
 #### BR-2.3 Store Management
 - **Description:** Configure retail/service outlets.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create stores with name, code, location
-  - [ ] Assign store manager
-  - [ ] Configure store operating hours
-  - [ ] Link store to branch and warehouse
+  - [x] Create stores with name, code, location — Stage 21 O1 (`POST /stores` name/code/address)
+  - [x] Assign store manager — Stage 21 O1 (`manager_id`)
+  - [x] Configure store operating hours — Stage 21 O1 (`operating_hours` JSON)
+  - [x] Link store to branch and warehouse — Stage 21 O1 (`branch_id` + auto `warehouse_id`/`WH-{code}`)
 
 #### BR-2.4 Warehouse Setup
 - **Description:** Configure storage locations for inventory.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create multiple warehouses
-  - [ ] Define warehouse type (retail, bulk, cold storage, etc.)
-  - [ ] Assign warehouse manager
-  - [ ] Configure warehouse address and capacity
+  - [x] Create multiple warehouses — Stage 21 O1 (store-linked + `POST /warehouses`; `test_org_units_o1.py`)
+  - [x] Define warehouse type (retail, bulk, cold storage, etc.) — Stage 21 O1 (`warehouse_type` ∈ retail/main/cold/bulk/transit)
+  - [x] Assign warehouse manager — Stage 21 O1 (`manager_id`)
+  - [x] Configure warehouse address and capacity — Stage 21 O1 (`address`, `capacity`)
 
 #### BR-2.5 Department Setup
 - **Description:** Organizational structure configuration.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Create departments (Sales, Inventory, Accounting, etc.)
-  - [ ] Assign department head
-  - [ ] Department-based reporting filters
+  - [x] Create departments (Sales, Inventory, Accounting, etc.) — Stage 21 O1 (`POST /departments`)
+  - [x] Assign department head — Stage 21 O1 (`head_user_id`)
+  - [x] Department-based reporting filters — Stage 21 O1 (`GET /expenses?department_id=`; department record-scope elsewhere)
 
 #### BR-2.6 Currency Setup
 - **Description:** Multi-currency support for international operations.

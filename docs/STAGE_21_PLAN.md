@@ -44,7 +44,7 @@ Fidelity closeout
 |----|------------|----------|---------|
 | **T1** | Tenant registration & lifecycle (BR-1.1–1.3) | P0 | COMPLETE |
 | **I1** | Isolation & tenant init seeds (BR-1.4–1.5) | P0 | COMPLETE |
-| **O1** | Org units fidelity (BR-2.2–2.5) | P0 | PENDING |
+| **O1** | Org units fidelity (BR-2.2–2.5) | P0 | COMPLETE |
 | **C1** | Company / currency / tax setup (BR-2.1, 2.6, 2.8) | P1 | PENDING |
 | **U1** | Users & roles fidelity (BR-3) | P1 | PENDING |
 | **V1** | Dashboard KPIs & visualizations (BR-4.1–4.3) | P1 | PENDING |
@@ -84,9 +84,9 @@ Fidelity closeout
 
 ## O1 acceptance criteria
 
-- [ ] Branches / stores / warehouses / departments CRUD + deactivate-without-loss + manager/hours/type attrs proven.
-- [ ] Automated proof: `backend/tests/test_org_units_o1.py`.
-- [ ] BR-2.2–2.5 synced with evidence.
+- [x] Branches / stores / warehouses / departments CRUD + deactivate-without-loss + manager/hours/type attrs proven.
+- [x] Automated proof: `backend/tests/test_org_units_o1.py`.
+- [x] BR-2.2–2.5 synced with evidence.
 
 ## C1 acceptance criteria
 
@@ -123,4 +123,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-T1–I1 complete. Pending O1 → H21x. Stages 1–20 remain frozen for their scopes.
+T1–O1 complete. Pending C1 → H21x. Stages 1–20 remain frozen for their scopes.
