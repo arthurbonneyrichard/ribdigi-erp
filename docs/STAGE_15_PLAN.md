@@ -19,7 +19,7 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **C1** | Invoice chain proof (stock movement → AR → tax report → JE lines) | P0 | PENDING |
+| **C1** | Invoice chain proof (stock movement → AR → tax report → JE lines) | P0 | COMPLETE |
 | **I1** | Standard-cost COGS + Inventory GL on sale (/POS helper) + return reverse | P0 | PENDING |
 | **H1** | Invoice post atomicity (stock preflight; no partial AR/JE) | P0 | PENDING |
 | **R1** | Sales return chain fidelity (warehouse restock, AR/tax/COGS, store) | P1 | PENDING |
@@ -39,13 +39,19 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 
 ## C1 acceptance criteria
 
-- [ ] Post sales invoice proves `stock_movements` with `reference_type=sales_invoice`, customer balance increase (base), tax report output includes the invoice, and JE lines hit AR `1100` / Revenue `4000` / Tax `2100` as applicable.
-- [ ] Automated proof beyond Stage 12 qty/total-only checks: `backend/tests/test_sales_inventory_ledger_chain_c1.py`.
+- [x] Post sales invoice proves `stock_movements` with `reference_type=sales_invoice`, customer balance increase (base), tax report output includes the invoice, and JE lines hit AR `1100` / Revenue `4000` / Tax `2100` as applicable.
+- [x] Automated proof beyond Stage 12 qty/total-only checks: `backend/tests/test_sales_inventory_ledger_chain_c1.py`.
 
-## I1–H15x
+## I1 acceptance criteria
+
+- [ ] `post_sales_invoice_journal` (and shared POS helper path) posts Dr COGS `5000` / Cr Inventory `1200` at qty × standard `cost_price` when cost > 0.
+- [ ] Sales return reverse restores Inventory and credits COGS for restocked lines.
+- [ ] Automated proof: `backend/tests/test_sales_cogs_inventory_i1.py`.
+
+## H1–H15x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-Track open under ADR-035. Pending C1 → … → H15x.
+C1 complete. Pending I1 → H1 → R1 → T1 → A1 → D1 → H15x.
