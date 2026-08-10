@@ -44,7 +44,7 @@ Operator reliability
 | **S1** | Sales + Purchases API fidelity (BR-18.4–18.5) | P0 | COMPLETE |
 | **A1** | API standards fidelity (BR-18.6) | P0 | COMPLETE |
 | **U1** | Auth & session BR-19 fidelity sync | P0 | COMPLETE |
-| **C1** | Company/settings BR-20 fidelity sync | P1 | PENDING |
+| **C1** | Company/settings BR-20 fidelity sync | P1 | COMPLETE |
 | **R1** | Reliability & cache (LAUNCH §5) | P0 | PENDING |
 | **D1** | Spec / BR-18–20 / readiness / launch fidelity sync | P2 | PENDING |
 | **H19x** | Stage 19 exit criteria + freeze ADR | Exit | PENDING |
@@ -88,8 +88,8 @@ Operator reliability
 
 ## C1 acceptance criteria
 
-- [ ] Legal/logo/formats/SMTP/numbering/print templates proven; BR-20 synced; richer WYSIWYG designer stays deferred.
-- [ ] Automated proof: `backend/tests/test_company_settings_br20_c1.py`.
+- [x] Legal/logo/formats/SMTP/numbering/print templates proven; BR-20 synced; richer WYSIWYG designer stays deferred.
+- [x] Automated proof: `backend/tests/test_company_settings_br20_c1.py`.
 
 ## R1 acceptance criteria
 
@@ -107,4 +107,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-K1–P1–S1–A1–U1 complete. Pending C1 → H19x. Stages 1–18 remain frozen for their scopes.
+K1–P1–S1–A1–U1–C1 complete. Pending R1 → H19x. Stages 1–18 remain frozen for their scopes.

@@ -970,35 +970,35 @@ Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
 - **Description:** Global company settings.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Edit legal name, address, contact, tax ID
-  - [ ] Upload company logo (used on invoices, receipts)
+  - [x] Edit legal name, address, contact, tax ID — Stage 19 C1 (`PATCH /tenants/me` legal/address/contact/`tax_registration_number`; `test_company_settings_br20_c1.py`)
+  - [x] Upload company logo (used on invoices, receipts) — Stage 19 C1 (`POST/GET /tenants/me/logo`)
 
 #### BR-20.2 Formatting
 - **Description:** Regional display preferences.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Date format selection (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)
-  - [ ] Number format (decimal separator, thousand separator)
-  - [ ] Time format (12h / 24h)
+  - [x] Date format selection (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD) — Stage 19 C1 (`tenants.date_format`)
+  - [x] Number format (decimal separator, thousand separator) — Stage 19 C1 (`1,234.56` / `1.234,56` / `1 234.56`)
+  - [x] Time format (12h / 24h) — Stage 19 C1 (`tenants.time_format`)
 
 #### BR-20.3 Email Settings
 - **Description:** SMTP configuration for outbound emails.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] SMTP host, port, username, password
-  - [ ] TLS/SSL encryption
-  - [ ] Test email functionality
-  - [ ] Default sender name and email
+  - [x] SMTP host, port, username, password — Stage 19 C1 (`PATCH /settings/email`; password encrypted, never returned)
+  - [x] TLS/SSL encryption — Stage 19 C1 (`smtp_use_tls` / `smtp_use_ssl`)
+  - [x] Test email functionality — Stage 19 C1 (`POST /settings/email/test`)
+  - [x] Default sender name and email — Stage 19 C1 (`smtp_from_name` / `smtp_from_email`)
 
 #### BR-20.4 Numbering & Templates
 - **Description:** Document customization.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Configure invoice numbering prefix and series (e.g., INV-2026-0001)
-  - [ ] Configure PO, GRN, quotation numbering
-  - [ ] Receipt template selection and customization
-  - [ ] Invoice template selection and customization
-  - [ ] Header/footer customization with company branding
+  - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) — Stage 19 C1 (`document_numbering` + preview)
+  - [x] Configure PO, GRN, quotation numbering — Stage 19 C1 (`purchase_order` / `goods_receipt` / `sales_quotation` series)
+  - [x] Receipt template selection and customization — Stage 19 C1 (`receipt_print_template` thermal_80/thermal_58; richer WYSIWYG designer deferred)
+  - [x] Invoice template selection and customization — Stage 19 C1 (`invoice_print_template` a4/thermal_*)
+  - [x] Header/footer customization with company branding — Stage 19 C1 (`document_header` / `document_footer`)
 
 ---
 
