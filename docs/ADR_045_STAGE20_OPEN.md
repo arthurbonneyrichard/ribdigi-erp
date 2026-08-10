@@ -41,3 +41,7 @@ BR-21.6 (expense analysis) and BR-21.8 (document assistant OCR apply) are alread
 
 - Agents may implement Stage 20 plan items without reopening Stage 1–19 feature scope.
 - Stage 20 exit requires `docs/STAGE_20_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Close-out (2026-08-10)
+
+Stage 20 exit met — see [STAGE_20_EXIT_CRITERIA.md](STAGE_20_EXIT_CRITERIA.md) and freeze [ADR-046](ADR_046_STAGE20_FREEZE.md). This open ADR is historical; Stage 20 feature scope is frozen.

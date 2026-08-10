@@ -164,7 +164,9 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 20 open (2026-08-10):** AI Business Assistant Fidelity track approved — `docs/ADR_045_STAGE20_OPEN.md` + `docs/STAGE_20_PLAN.md` (AI assistant surface → Inventory & sales intelligence → Customer & security AI).
 
-**Stage 20 D1 (2026-08-10):** Spec / BR-21 / readiness / Phase 4 / USER_MANUAL / API fidelity sync — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`). H20x exit pending.
+**Stage 20 D1 (2026-08-10):** Spec / BR-21 / readiness / Phase 4 / USER_MANUAL / API fidelity sync — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`).
+
+**Stage 20 exit (2026-08-10):** C1, I1, V1, L1, S1, R1, U1, D1, H20x met — `docs/STAGE_20_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_046_STAGE20_FREEZE.md`. Fidelity: `docs/STAGE_20_FIDELITY.md`.
 
 ### 2.2 Features
 
@@ -746,7 +748,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 20 open (`docs/STAGE_20_PLAN.md`, ADR-045). Stages 1–19 remain frozen for their scopes.
+**Active delivery plan:** Stage 20 closed (`docs/STAGE_20_PLAN.md`, ADR-046). Stages 1–20 remain frozen for their scopes. Stage 21+ requires a new open ADR after CONTINUE/NEXT.
 
 ### 6.2 Features
 
