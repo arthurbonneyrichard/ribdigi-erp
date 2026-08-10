@@ -41,7 +41,7 @@ Operator reliability
 |----|------------|----------|---------|
 | **K1** | Auth API fidelity (BR-18.1) | P0 | COMPLETE |
 | **P1** | Products + Customers API fidelity (BR-18.2–18.3) | P0 | COMPLETE |
-| **S1** | Sales + Purchases API fidelity (BR-18.4–18.5) | P0 | PENDING |
+| **S1** | Sales + Purchases API fidelity (BR-18.4–18.5) | P0 | COMPLETE |
 | **A1** | API standards fidelity (BR-18.6) | P0 | PENDING |
 | **U1** | Auth & session BR-19 fidelity sync | P0 | PENDING |
 | **C1** | Company/settings BR-20 fidelity sync | P1 | PENDING |
@@ -73,8 +73,8 @@ Operator reliability
 
 ## S1 acceptance criteria
 
-- [ ] Sales + Purchases API surfaces proven (extend Stage 12/11 chain evidence); remaining BR-18.4–18.5 boxes synced with evidence.
-- [ ] Automated proof: `backend/tests/test_sales_purchases_api_s1.py`.
+- [x] Sales + Purchases API surfaces proven (extend Stage 12/11 chain evidence); remaining BR-18.4–18.5 boxes synced with evidence.
+- [x] Automated proof: `backend/tests/test_sales_purchases_api_s1.py`.
 
 ## A1 acceptance criteria
 
@@ -107,4 +107,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-K1–P1 complete. Pending S1 → H19x. Stages 1–18 remain frozen for their scopes.
+K1–P1–S1 complete. Pending A1 → H19x. Stages 1–18 remain frozen for their scopes.

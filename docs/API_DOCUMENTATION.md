@@ -540,7 +540,10 @@ Omitting `quantity` uses the product suggested order qty; omitting `unit_price` 
 
 ---
 
-## 6. Purchasing & Suppliers
+## 6. Purchasing
+
+Stage 19 S1 purchasing fidelity: `test_sales_purchases_api_s1.py` (BR-18.5).
+ & Suppliers
 
 ### 6.1 Suppliers
 **List:** `GET /suppliers`  
@@ -676,6 +679,9 @@ Supplier payments: `POST /suppliers/{id}/payments` (credit module). Attachment: 
 ---
 
 ## 7. Sales & Customers
+
+Stage 19 S1 proves sales quotations/orders/invoices/payments/returns/POS and purchasing suppliers/PR/PO/GRN/PI/payments via JWT (+ X-API-Key reads) — `test_sales_purchases_api_s1.py` (BR-18.4–18.5).
+
 
 ### 7.1 Customers
 **List:** `GET /customers`  

@@ -904,18 +904,18 @@ Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
 - **Description:** Sales transaction API.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [x] Create quotations, sales orders, invoices (Stage 12 C1)
-  - [x] Record payments (Stage 12 C1)
-  - [x] Sales return processing
-  - [x] POS transaction submission (Stage 12 C2 / Stage 13 H1–H2: sale, split tender, receipt send, stock, journal)
+  - [x] Create quotations, sales orders, invoices — Stage 19 S1 / Stage 12 C1 (`/sales/quotations` → `convert-order` → confirm → `convert-invoice` → post; `test_sales_purchases_api_s1.py`)
+  - [x] Record payments — Stage 19 S1 / Stage 12 C1 (`POST /sales/payments`)
+  - [x] Sales return processing — Stage 19 S1 / Stage 15 R1 (`POST /sales/returns`; post chain in `test_sales_return_chain_r1.py`)
+  - [x] POS transaction submission — Stage 19 S1 / Stage 12 C2 / Stage 13 H1–H2 (`POST /pos/sessions/open`, `POST /pos/sales`)
 
 #### BR-18.5 Purchases API
 - **Description:** Procurement API.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create purchase requests, orders, GRNs, invoices
-  - [ ] Supplier management
-  - [ ] Payment recording
+  - [x] Create purchase requests, orders, GRNs, invoices — Stage 19 S1 / Stage 11 C1 (`/purchasing/requests` → convert, `/purchasing/orders` → send → GRN → PI approve; `test_sales_purchases_api_s1.py`)
+  - [x] Supplier management — Stage 19 S1 (`GET/POST/PATCH /suppliers`)
+  - [x] Payment recording — Stage 19 S1 / Stage 11 C1 (`POST /suppliers/{id}/payments`)
 
 #### BR-18.6 API Standards
 - **Description:** Consistent API design.
