@@ -2893,6 +2893,19 @@ async def add_product(
             reference_id=product.id,
             notes="Opening stock on product create",
         )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="product_create",
+        entity="product",
+        entity_id=product.id,
+        details={
+            "sku": product.sku,
+            "after": catalog_meta_svc.product_audit_snapshot(product),
+        },
+    )
     await db.commit()
     await db.refresh(product)
     await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
@@ -2939,6 +2952,9 @@ async def patch_product(
     data = payload.model_dump(exclude_unset=True)
     if not data:
         return env(catalog_meta_svc.serialize_product(product), "No changes")
+
+    before_snap = catalog_meta_svc.product_audit_snapshot(product)
+    was_active = bool(product.is_active)
 
     if any(k in data for k in ("category_id", "brand_id", "unit_id", "category")):
         category_id, brand_id, unit_id, category_label = await catalog_meta_svc.resolve_product_refs(
@@ -3006,15 +3022,23 @@ async def patch_product(
         elif key == "is_active" and value is not None:
             product.is_active = bool(value)
 
+    after_snap = catalog_meta_svc.product_audit_snapshot(product)
+    before_diff, after_diff = catalog_meta_svc.product_audit_diff(before_snap, after_snap)
+    deactivated = was_active and not bool(product.is_active)
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         module="inventory",
-        action="product_update",
+        action="product_deactivate" if deactivated else "product_update",
         entity="product",
         entity_id=product.id,
-        details={"sku": product.sku, "fields": sorted(payload.model_dump(exclude_unset=True).keys())},
+        details={
+            "sku": product.sku,
+            "fields": sorted(payload.model_dump(exclude_unset=True).keys()),
+            "before": before_diff,
+            "after": after_diff,
+        },
     )
     await db.commit()
     await db.refresh(product)

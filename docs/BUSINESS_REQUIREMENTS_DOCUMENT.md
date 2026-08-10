@@ -851,7 +851,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [ ] **Login/Logout:** Timestamp, IP address, device, success/failure
-  - [ ] **Product Changes:** Create, update, delete with before/after values
+  - [x] **Product Changes:** Create, update, delete with before/after values — Stage 17 A1 (`product_create` / `product_update` / soft-delete `product_deactivate`; stock mutations `stock_*` with before/after qty)
   - [x] **Sales:** Invoice creation, modification, cancellation — Stage 15 A1 enriched `invoice_posted` + `sales_return_posted`
   - [ ] **Purchases:** PO, GRN, invoice changes
   - [ ] **User Activity:** Permission changes, role assignments, deletions

@@ -128,6 +128,48 @@ def serialize_product(row: m.Product) -> dict:
     }
 
 
+# BR-17.1 Product Changes — fields captured on domain audit before/after
+_PRODUCT_AUDIT_FIELDS = (
+    "name",
+    "sku",
+    "barcode",
+    "category",
+    "category_id",
+    "brand_id",
+    "unit_id",
+    "cost_price",
+    "selling_price",
+    "minimum_stock",
+    "reorder_level",
+    "weight",
+    "length",
+    "width",
+    "height",
+    "tax_rate_id",
+    "tax_exempt",
+    "tracks_batches",
+    "is_active",
+)
+
+
+def product_audit_snapshot(row: m.Product) -> dict:
+    """Serializable product fields for audit before/after (BR-17.1)."""
+    data = serialize_product(row)
+    return {k: data.get(k) for k in _PRODUCT_AUDIT_FIELDS}
+
+
+def product_audit_diff(before: dict, after: dict) -> tuple[dict, dict]:
+    """Return only keys that changed between two product audit snapshots."""
+    changed_before: dict = {}
+    changed_after: dict = {}
+    keys = set(before) | set(after)
+    for key in sorted(keys):
+        if before.get(key) != after.get(key):
+            changed_before[key] = before.get(key)
+            changed_after[key] = after.get(key)
+    return changed_before, changed_after
+
+
 async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
     existing_units = (
         await db.execute(select(m.UnitOfMeasure.id).where(m.UnitOfMeasure.tenant_id == tenant_id).limit(1))
