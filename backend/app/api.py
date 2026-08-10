@@ -6669,6 +6669,28 @@ async def pos_sale(
         payments=payments,
     )
 
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        action="pos_sale_completed",
+        entity="pos_sale",
+        entity_id=tx.id,
+        details={
+            "reference": ref,
+            "session_id": session.id,
+            "total": float(tx.total or 0),
+            "tax": float(tx.tax or 0),
+            "discount_amount": cart_discount,
+            "payment_method": payment_method,
+            "party_id": payload.party_id,
+            "sale_count_after": int(session.sale_count or 0),
+        },
+        module="pos",
+    )
+
     from app import cash_drawer as cash_drawer_svc
 
     drawer = await cash_drawer_svc.maybe_open_on_cash_sale(

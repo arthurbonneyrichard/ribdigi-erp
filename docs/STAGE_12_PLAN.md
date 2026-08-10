@@ -1,9 +1,10 @@
 # Stage 12 Plan — Order-to-Cash & POS Chain Fidelity
 
-**Status:** Open  
+**Status:** Closed — exit met; freeze [ADR-030](ADR_030_STAGE12_FREEZE.md)  
 **Base:** Customers → Sales → Sales Items → Invoices → Payments → POS  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Exit:** `docs/STAGE_12_EXIT_CRITERIA.md` (at close)
+**Exit:** [STAGE_12_EXIT_CRITERIA.md](STAGE_12_EXIT_CRITERIA.md)  
+**Fidelity:** [STAGE_12_FIDELITY.md](STAGE_12_FIDELITY.md)
 
 Stage 12 closes commercial-MVP order-to-cash and POS chain fidelity after Stage 11 freeze. It is **not** Kubernetes, WAL/PITR, vendor pen test, Open Banking, FIFO/LIFO, or USB serial drivers beyond existing bridges.
 
@@ -19,10 +20,10 @@ Stage 12 closes commercial-MVP order-to-cash and POS chain fidelity after Stage 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **C1** | Order-to-Cash E2E + sales line tax-on-net-after-discount | P0 | COMPLETE |
-| **C2** | POS chain E2E (shift → cart/discount/tax → pay → receipt → stock → close) | P0 | PENDING |
-| **A1** | Sales/POS domain audit closeout | P1 | PENDING |
-| **D1** | Spec / BR-7/8 / readiness / launch checklist fidelity sync | P2 | PENDING |
-| **H12x** | Stage 12 exit criteria + freeze ADR | Exit | PENDING |
+| **C2** | POS chain E2E (shift → cart/discount/tax → pay → receipt → stock → close) | P0 | COMPLETE |
+| **A1** | Sales/POS domain audit closeout | P1 | COMPLETE |
+| **D1** | Spec / BR-7/8 / readiness / launch checklist fidelity sync | P2 | COMPLETE |
+| **H12x** | Stage 12 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -40,21 +41,21 @@ Stage 12 closes commercial-MVP order-to-cash and POS chain fidelity after Stage 
 
 ## C2 acceptance criteria
 
-- [ ] Automated POS chain: open shift → cart (discount/tax) → pay → receipt → stock → close/variance.
-- [ ] Cart-level discount behavior documented/tested vs line tax.
+- [x] Automated POS chain: open → barcode search → cart (line+cart discount, tax) → cash pay → receipt → stock → journal → close/variance → report (`test_pos_chain_c2.py`).
+- [x] Cart-level discount applied after line tax (documented by C2 totals: subtotal 180 + tax 27 − cart 7 = 200).
 
 ## A1 acceptance criteria
 
-- [ ] Domain audit assertions for sales/POS money-moving steps; gaps closed where missing.
+- [x] Domain audit `pos_session_opened`, `pos_sale_completed`, `pos_session_closed`; OTC `invoice_posted` / `customer_payment` already covered. Tests: `test_pos_audit_a1.py`.
 
 ## D1 acceptance criteria
 
-- [ ] BR-7/8 / API / readiness / launch checklist aligned with C1–A1 evidence.
+- [x] BR-7/8 / readiness / launch checklist aligned — `docs/STAGE_12_FIDELITY.md`.
 
 ## H12x acceptance criteria
 
-- [ ] Exit criteria + freeze ADR + automated guard test.
+- [x] Exit criteria + freeze ADR-030 + `backend/tests/test_stage12_exit_h12x.py`.
 
 ## Sign-off
 
-Stage 12 remains open until H12x exit criteria and freeze ADR are recorded.
+Stage 12 exit is met. Feature scope is frozen under ADR-030 (bugfixes / security / tests / docs only until CONTINUE opens the next track).

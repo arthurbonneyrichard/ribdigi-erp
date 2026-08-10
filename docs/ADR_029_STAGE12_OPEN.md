@@ -23,3 +23,7 @@ Remaining commercial-MVP gaps include sales line tax applied before discount (un
 
 - Agents may implement Stage 12 plan items without reopening Stage 1–11 feature scope.
 - Stage 12 exit requires `docs/STAGE_12_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Closure (2026-08-10)
+
+Stage 12 workstreams C1, C2, A1, D1, H12x met exit criteria (`docs/STAGE_12_EXIT_CRITERIA.md`). Feature scope is frozen under [ADR-030](ADR_030_STAGE12_FREEZE.md). This open ADR remains historical; new Stage 12 feature work is not permitted except bugfixes / security / tests / docs.

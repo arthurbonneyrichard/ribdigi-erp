@@ -126,6 +126,22 @@ async def open_session(
     )
     db.add(session)
     await db.flush()
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="pos_session_opened",
+        entity="pos_session",
+        entity_id=session.id,
+        details={
+            "session_number": session.session_number,
+            "store_id": store_id,
+            "opening_cash": cash,
+        },
+        module="pos",
+    )
     return session
 
 
@@ -318,6 +334,26 @@ async def close_session(
             entity_type="pos_session",
             entity_id=session.id,
         )
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="pos_session_closed",
+        entity="pos_session",
+        entity_id=session.id,
+        details={
+            "session_number": session.session_number,
+            "opening_cash": float(session.opening_cash or 0),
+            "cash_sales": float(session.cash_sales or 0),
+            "expected_cash": expected,
+            "actual_cash": actual,
+            "variance": variance,
+            "sale_count": int(session.sale_count or 0),
+        },
+        module="pos",
+    )
     await db.flush()
     return session
 

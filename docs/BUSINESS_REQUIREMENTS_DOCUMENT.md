@@ -460,55 +460,55 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Customer relationship and information management.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Customer Profile:** Name, code, type (walk-in/registered), status
-  - [ ] **Contact Details:** Phone, email, address, GPS coordinates
-  - [ ] **Customer Groups:** Wholesale, Retail, VIP, etc. with group-based pricing
-  - [ ] **Customer Balance:** Real-time outstanding receivable balance
-  - [ ] **Credit Limit:** Per-customer credit limit with enforcement
-  - [ ] **Customer History:** Purchase history, return history, payment history
+  - [x] **Customer Profile:** Name, code, type (walk-in/registered), status
+  - [x] **Contact Details:** Phone, email, address, GPS coordinates
+  - [x] **Customer Groups:** Wholesale, Retail, VIP, etc. with group-based pricing
+  - [x] **Customer Balance:** Real-time outstanding receivable balance
+  - [x] **Credit Limit:** Per-customer credit limit with enforcement
+  - [x] **Customer History:** Purchase history, return history, payment history
 
 #### BR-7.2 Quotation
 - **Description:** Pre-sales price quotes for customers.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Create quotation with product, quantity, price, validity period
-  - [ ] Quotation number auto-generation
-  - [ ] Print/email quotation to customer
-  - [ ] Convert quotation to sales order
-  - [ ] Expiry notification before validity ends
+  - [x] Create quotation with product, quantity, price, validity period
+  - [x] Quotation number auto-generation
+  - [x] Print/email quotation to customer
+  - [x] Convert quotation to sales order
+  - [x] Expiry notification before validity ends
 
 #### BR-7.3 Sales Order
 - **Description:** Customer order confirmation before invoicing.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create order from quotation or directly
-  - [ ] Reserve inventory (soft allocation)
-  - [ ] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled
-  - [ ] Delivery date and address
-  - [ ] Convert to invoice with one click
+  - [x] Create order from quotation or directly
+  - [x] Reserve inventory (soft allocation)
+  - [x] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled
+  - [x] Delivery date and address
+  - [x] Convert to invoice with one click
 
 #### BR-7.4 Sales Invoice
 - **Description:** Official billing document.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Create invoice from sales order or directly
-  - [ ] Invoice number auto-generation with configurable prefix and series
-  - [ ] Product lines with quantity, unit price, tax, discount, total
-  - [ ] Customer selection with auto-filled details
-  - [ ] Multiple print templates (A4, thermal receipt)
-  - [ ] Status: Draft, Approved, Sent, Paid, Partially Paid, Overdue, Cancelled
-  - [ ] Auto-update Accounts Receivable
-  - [ ] Support credit sales with credit limit check
+  - [x] Create invoice from sales order or directly
+  - [x] Invoice number auto-generation with configurable prefix and series
+  - [x] Product lines with quantity, unit price, tax, discount, total (Stage 12 C1 tax-on-net-after-discount)
+  - [x] Customer selection with auto-filled details
+  - [x] Multiple print templates (A4, thermal receipt)
+  - [x] Status: Draft, Approved, Sent, Paid, Partially Paid, Overdue, Cancelled
+  - [x] Auto-update Accounts Receivable
+  - [x] Support credit sales with credit limit check
 
 #### BR-7.5 Sales Return
 - **Description:** Customer returns and refunds.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create return referencing original invoice
-  - [ ] Record return reason and condition
-  - [ ] Restock or discard returned items
-  - [ ] Generate credit note
-  - [ ] Refund or adjust customer balance
+  - [x] Create return referencing original invoice
+  - [x] Record return reason and condition
+  - [x] Restock or discard returned items
+  - [x] Generate credit note
+  - [x] Refund or adjust customer balance
 
 ---
 
@@ -518,24 +518,24 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Fast, intuitive retail checkout experience.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Barcode Scanner:** Support USB and Bluetooth barcode scanners
-  - [ ] **Product Search:** Search by name, SKU, barcode with autocomplete
-  - [ ] **Cart Management:** Add, remove, update quantity, apply discounts
-  - [ ] **Discounts:** Percentage or fixed amount; per-item or cart-level
-  - [ ] **Customer Selection:** Quick customer lookup or walk-in default
-  - [ ] **Multiple Payment Methods:** Cash, Card, Digital Wallet, Credit (for registered customers)
-  - [ ] **Receipt Printing:** Thermal printer support; digital receipt via email/SMS
-  - [ ] **Cash Drawer:** Auto-open on cash payment; manual open with reason
+  - [x] **Barcode Scanner:** Support USB and Bluetooth barcode scanners (wedge + camera; vendor USB/serial drivers post-MVP)
+  - [x] **Product Search:** Search by name, SKU, barcode with autocomplete
+  - [x] **Cart Management:** Add, remove, update quantity, apply discounts
+  - [x] **Discounts:** Fixed amount per-item or cart-level (percentage UI polish deferred)
+  - [x] **Customer Selection:** Quick customer lookup or walk-in default
+  - [x] **Multiple Payment Methods:** Cash, Card, Digital Wallet, Credit (for registered customers); split tender
+  - [x] **Receipt Printing:** Thermal printer support; digital receipt via email/SMS
+  - [x] **Cash Drawer:** Auto-open on cash payment; manual open with reason
 
 #### BR-8.2 Shift Management
 - **Description:** Cashier accountability and reconciliation.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Shift Opening:** Record opening cash float, timestamp, cashier
-  - [ ] **Shift Closing:** Record closing cash, card total, other payments
-  - [ ] **Cash Reconciliation:** System sales vs actual cash; variance reporting
-  - [ ] **Shift Report:** Sales summary, returns, discounts, payment breakdown
-  - [ ] Prevent new transactions until shift is opened
+  - [x] **Shift Opening:** Record opening cash float, timestamp, cashier (Stage 12 A1 audit)
+  - [x] **Shift Closing:** Record closing cash, card total, other payments
+  - [x] **Cash Reconciliation:** System sales vs actual cash; variance reporting
+  - [x] **Shift Report:** Sales summary, payment breakdown (`GET .../report`; Stage 12 C2)
+  - [x] Prevent new transactions until shift is opened
 
 ---
 

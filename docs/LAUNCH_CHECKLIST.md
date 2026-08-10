@@ -43,8 +43,8 @@ Use this list before promoting a staging build to production. Check items only w
 
 - [ ] Product create + stock-in + movement visible
 - [x] Supplier → PO → GRN → purchase invoice → supplier payment (Stage 11 C1 automated: `test_purchasing_chain_c1.py`)
-- [ ] Customer → quotation/order/invoice → payment (credit limit gate if used)
-- [ ] POS sale with stock deduction + receipt
+- [x] Customer → quotation/order/invoice → payment (Stage 12 C1: `test_sales_chain_c1.py`)
+- [x] POS sale with stock deduction + receipt (Stage 12 C2: `test_pos_chain_c2.py`)
 - [ ] Expense create → approve → journal
 - [ ] Trial balance / P&L readable for the fiscal period
 - [ ] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore)
