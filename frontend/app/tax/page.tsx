@@ -18,33 +18,50 @@ type TaxRate = {
   is_active: boolean;
 };
 
+function isoDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
 export default function Page() {
   const [rows, setRows] = useState<TaxRate[]>([]);
   const [report, setReport] = useState<any>(null);
   const [filing, setFiling] = useState<any>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [periodPreset, setPeriodPreset] = useState('');
   const [name, setName] = useState('Standard VAT');
   const [rate, setRate] = useState('15');
   const [taxType, setTaxType] = useState('vat');
   const [pricingMode, setPricingMode] = useState('exclusive');
   const [reverseCharge, setReverseCharge] = useState(false);
   const [componentsJson, setComponentsJson] = useState('');
+  const [editId, setEditId] = useState<string | null>(null);
   const [calcAmount, setCalcAmount] = useState('100');
   const [calcResult, setCalcResult] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  function qs() {
+  function qs(presetOverride?: string) {
     const params = new URLSearchParams();
-    if (fromDate) params.set('from_date', fromDate);
-    if (toDate) params.set('to_date', toDate);
+    const preset = presetOverride ?? periodPreset;
+    if (preset === 'monthly' || preset === 'quarterly' || preset === 'annually') {
+      params.set('period', preset);
+      const now = new Date();
+      params.set('year', String(now.getUTCFullYear()));
+      if (preset === 'monthly') params.set('month', String(now.getUTCMonth() + 1));
+      if (preset === 'quarterly') {
+        params.set('quarter', String(Math.floor(now.getUTCMonth() / 3) + 1));
+      }
+    } else {
+      if (fromDate) params.set('from_date', fromDate);
+      if (toDate) params.set('to_date', toDate);
+    }
     const s = params.toString();
     return s ? `?${s}` : '';
   }
 
-  async function refresh() {
-    const q = qs();
+  async function refresh(presetOverride?: string) {
+    const q = qs(presetOverride);
     const [rates, taxReport, filingPack] = await Promise.all([
       api('/tax/rates'),
       api(`/reports/tax${q}`),
@@ -53,13 +70,46 @@ export default function Page() {
     setRows(rates.data || []);
     setReport(taxReport.data);
     setFiling(filingPack.data);
+    if (taxReport.data?.from_date) {
+      const fd = String(taxReport.data.from_date).slice(0, 10);
+      if (fd) setFromDate(fd);
+    }
+    if (taxReport.data?.to_date) {
+      const td = String(taxReport.data.to_date).slice(0, 10);
+      if (td) setToDate(td);
+    }
   }
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
 
-  async function createRate() {
+  function applyPeriod(kind: 'monthly' | 'quarterly' | 'annually') {
+    setPeriodPreset(kind);
+    refresh(kind).catch((err) => setError(err.message));
+  }
+
+  function resetForm() {
+    setEditId(null);
+    setName('Standard VAT');
+    setRate('15');
+    setTaxType('vat');
+    setPricingMode('exclusive');
+    setReverseCharge(false);
+    setComponentsJson('');
+  }
+
+  function startEdit(r: TaxRate) {
+    setEditId(r.id);
+    setName(r.name);
+    setRate(String(r.rate));
+    setTaxType(r.tax_type);
+    setPricingMode(r.pricing_mode);
+    setReverseCharge(!!r.is_reverse_charge);
+    setComponentsJson(r.components?.length ? JSON.stringify(r.components) : '');
+  }
+
+  async function saveRate() {
     setError('');
     setMessage('');
     try {
@@ -68,22 +118,37 @@ export default function Page() {
         components = JSON.parse(componentsJson);
         if (!Array.isArray(components)) throw new Error('Components must be a JSON array');
       }
-      await api('/tax/rates', {
-        method: 'POST',
-        body: JSON.stringify({
-          name,
-          rate: Number(rate),
-          tax_type: taxType,
-          pricing_mode: pricingMode,
-          components,
-          is_reverse_charge: reverseCharge,
-          is_default: rows.length === 0,
-          is_active: true,
-        }),
-      });
-      setMessage('Tax rate created');
-      setComponentsJson('');
-      setReverseCharge(false);
+      if (editId) {
+        await api(`/tax/rates/${editId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            name,
+            rate: Number(rate),
+            tax_type: taxType,
+            pricing_mode: pricingMode,
+            components,
+            clear_components: !components,
+            is_reverse_charge: reverseCharge,
+          }),
+        });
+        setMessage('Tax rate updated');
+      } else {
+        await api('/tax/rates', {
+          method: 'POST',
+          body: JSON.stringify({
+            name,
+            rate: Number(rate),
+            tax_type: taxType,
+            pricing_mode: pricingMode,
+            components,
+            is_reverse_charge: reverseCharge,
+            is_default: rows.length === 0,
+            is_active: true,
+          }),
+        });
+        setMessage('Tax rate created');
+      }
+      resetForm();
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -95,6 +160,20 @@ export default function Page() {
     try {
       await api(`/tax/rates/${id}/default`, { method: 'POST' });
       setMessage('Default rate updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setActive(id: string, is_active: boolean) {
+    setError('');
+    try {
+      await api(`/tax/rates/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active }),
+      });
+      setMessage(is_active ? 'Tax rate activated' : 'Tax rate deactivated');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -175,19 +254,53 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Period</h3>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => {
+              setPeriodPreset('');
+              setFromDate(e.target.value);
+            }}
+          />
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => {
+              setPeriodPreset('');
+              setToDate(e.target.value);
+            }}
+          />
+          <button type="button" onClick={() => applyPeriod('monthly')}>
+            This month
+          </button>
+          <button type="button" onClick={() => applyPeriod('quarterly')}>
+            This quarter
+          </button>
+          <button type="button" onClick={() => applyPeriod('annually')}>
+            This year
+          </button>
           <button
-            onClick={() => refresh().catch((err) => setError(err.message))}
+            onClick={() => {
+              setPeriodPreset('');
+              refresh().catch((err) => setError(err.message));
+            }}
           >
             Apply
           </button>
         </div>
+        {report?.period && (
+          <p className="muted" style={{ marginTop: 8 }}>
+            Preset: {report.period}
+            {report.period_year != null ? ` ${report.period_year}` : ''}
+            {report.period_month != null ? `-${String(report.period_month).padStart(2, '0')}` : ''}
+            {report.period_quarter != null ? ` Q${report.period_quarter}` : ''}
+          </p>
+        )}
       </div>
 
       <div className="grid">
         <div className="card">
-          <h3>Create rate</h3>
+          <h3>{editId ? 'Edit rate' : 'Create rate'}</h3>
           <div style={{ display: 'grid', gap: 8 }}>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" />
@@ -215,7 +328,16 @@ export default function Page() {
               rows={3}
               placeholder='[{"code":"cgst","name":"CGST","rate":9,"basis":"net"},{"code":"sgst","name":"SGST","rate":9,"basis":"net"}]'
             />
-            <button onClick={createRate}>Add rate</button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={saveRate}>
+                {editId ? 'Save changes' : 'Add rate'}
+              </button>
+              {editId && (
+                <button type="button" onClick={resetForm}>
+                  Cancel edit
+                </button>
+              )}
+            </div>
           </div>
         </div>
         <div className="card">
@@ -362,9 +484,23 @@ export default function Page() {
               </td>
               <td>{String(r.is_default)}</td>
               <td>{String(r.is_active)}</td>
-              <td>
-                {!r.is_default && (
-                  <button onClick={() => makeDefault(r.id)}>Set default</button>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => startEdit(r)}>
+                  Edit
+                </button>
+                {!r.is_default && r.is_active && (
+                  <button type="button" onClick={() => makeDefault(r.id)}>
+                    Set default
+                  </button>
+                )}
+                {r.is_active ? (
+                  <button type="button" onClick={() => setActive(r.id, false)}>
+                    Deactivate
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setActive(r.id, true)}>
+                    Activate
+                  </button>
                 )}
               </td>
             </tr>

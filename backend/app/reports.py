@@ -42,6 +42,77 @@ def month_bounds(year: int, month: int) -> tuple[datetime, datetime]:
     return start, end
 
 
+def quarter_bounds(year: int, quarter: int) -> tuple[datetime, datetime]:
+    if quarter not in (1, 2, 3, 4):
+        raise ValueError("quarter must be 1–4")
+    start_month = (quarter - 1) * 3 + 1
+    start = datetime(year, start_month, 1)
+    if quarter == 4:
+        end = datetime(year + 1, 1, 1) - timedelta(microseconds=1)
+    else:
+        end = datetime(year, start_month + 3, 1) - timedelta(microseconds=1)
+    return start, end
+
+
+def year_bounds(year: int) -> tuple[datetime, datetime]:
+    start = datetime(year, 1, 1)
+    end = datetime(year + 1, 1, 1) - timedelta(microseconds=1)
+    return start, end
+
+
+def resolve_report_period(
+    *,
+    period: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    quarter: int | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    ref: datetime | None = None,
+) -> tuple[datetime | None, datetime | None, dict]:
+    """Resolve monthly/quarterly/annual bounds or explicit from/to dates (Stage 14 T1)."""
+    from fastapi import HTTPException
+
+    ref_dt = ref or datetime.utcnow()
+    meta: dict = {
+        "period": None,
+        "year": None,
+        "month": None,
+        "quarter": None,
+    }
+    if period:
+        kind = period.strip().lower()
+        if kind in {"month", "monthly"}:
+            y = int(year or ref_dt.year)
+            m = int(month or ref_dt.month)
+            if m < 1 or m > 12:
+                raise HTTPException(status_code=400, detail="month must be 1–12")
+            start, end = month_bounds(y, m)
+            meta.update({"period": "monthly", "year": y, "month": m})
+            return start, end, meta
+        if kind in {"quarter", "quarterly"}:
+            y = int(year or ref_dt.year)
+            if quarter is None:
+                q = (ref_dt.month - 1) // 3 + 1
+            else:
+                q = int(quarter)
+            if q not in (1, 2, 3, 4):
+                raise HTTPException(status_code=400, detail="quarter must be 1–4")
+            start, end = quarter_bounds(y, q)
+            meta.update({"period": "quarterly", "year": y, "quarter": q})
+            return start, end, meta
+        if kind in {"year", "annual", "annually"}:
+            y = int(year or ref_dt.year)
+            start, end = year_bounds(y)
+            meta.update({"period": "annually", "year": y})
+            return start, end, meta
+        raise HTTPException(
+            status_code=400,
+            detail="period must be monthly, quarterly, or annually",
+        )
+    return parse_date(from_date), parse_date(to_date, end_of_day=True), meta
+
+
 async def _sales_totals_for_bounds(
     db: AsyncSession, tenant_id: str, start: datetime, end: datetime
 ) -> dict:

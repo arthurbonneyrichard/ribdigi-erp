@@ -153,6 +153,7 @@ from app.schemas import (
     SupplierPaymentCreate,
     TaxCalculateRequest,
     TaxCreate,
+    TaxUpdate,
     TenantCreate,
     TenantProfileUpdate,
     TenantSuspendRequest,
@@ -9223,14 +9224,19 @@ async def supplier_payment(
 
 
 @api.get("/tax/rates")
-async def taxes(claims=Depends(require_permission("tax", "read")), db: AsyncSession = Depends(get_db)):
-    rows = (
-        await db.execute(
-            select(m.TaxRate)
-            .where(m.TaxRate.tenant_id == claims["tenant_id"])
-            .order_by(m.TaxRate.name)
-        )
-    ).scalars().all()
+async def taxes(
+    active_only: bool = False,
+    claims=Depends(require_permission("tax", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = (
+        select(m.TaxRate)
+        .where(m.TaxRate.tenant_id == claims["tenant_id"])
+        .order_by(m.TaxRate.name)
+    )
+    if active_only:
+        stmt = stmt.where(m.TaxRate.is_active == True)  # noqa: E712
+    rows = (await db.execute(stmt)).scalars().all()
     return env([tax_svc.serialize_tax_rate(r) for r in rows])
 
 
@@ -9263,6 +9269,23 @@ async def get_tax_rate(
 ):
     rate = await tax_svc.get_tax_rate(db, claims["tenant_id"], rate_id)
     return env(tax_svc.serialize_tax_rate(rate))
+
+
+@api.patch("/tax/rates/{rate_id}")
+async def update_tax_rate_api(
+    rate_id: str,
+    payload: TaxUpdate,
+    claims=Depends(require_permission("tax", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    rate = await tax_svc.update_tax_rate(
+        db,
+        tenant_id=claims["tenant_id"],
+        rate_id=rate_id,
+        **payload.model_dump(),
+    )
+    await db.commit()
+    return env(tax_svc.serialize_tax_rate(rate), "Tax rate updated")
 
 
 @api.post("/tax/rates/{rate_id}/default")
@@ -9335,39 +9358,74 @@ async def calculate_tax(
 async def reports_tax(
     from_date: str | None = None,
     to_date: str | None = None,
+    period: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    quarter: int | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(
-        await tax_svc.tax_report(
-            db,
-            claims["tenant_id"],
-            from_date=reports_svc.parse_date(from_date),
-            to_date=reports_svc.parse_date(to_date, end_of_day=True),
-        )
+    fd, td, meta = reports_svc.resolve_report_period(
+        period=period,
+        year=year,
+        month=month,
+        quarter=quarter,
+        from_date=from_date,
+        to_date=to_date,
     )
+    data = await tax_svc.tax_report(
+        db,
+        claims["tenant_id"],
+        from_date=fd,
+        to_date=td,
+    )
+    data["period"] = meta.get("period")
+    data["period_year"] = meta.get("year")
+    data["period_month"] = meta.get("month")
+    data["period_quarter"] = meta.get("quarter")
+    return env(data)
 
 
 @api.get("/reports/tax/filing")
 async def reports_tax_filing(
     from_date: str | None = None,
     to_date: str | None = None,
+    period: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    quarter: int | None = None,
     jurisdiction: str | None = None,
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import tax_filings as tax_filings_svc
 
-    fd = reports_svc.parse_date(from_date)
-    td = reports_svc.parse_date(to_date, end_of_day=True)
+    fd, td, meta = reports_svc.resolve_report_period(
+        period=period,
+        year=year,
+        month=month,
+        quarter=quarter,
+        from_date=from_date,
+        to_date=to_date,
+    )
+
+    def _with_period(pack: dict) -> dict:
+        pack["period"] = meta.get("period")
+        pack["period_year"] = meta.get("year")
+        pack["period_month"] = meta.get("month")
+        pack["period_quarter"] = meta.get("quarter")
+        return pack
+
     if jurisdiction:
         return env(
-            await tax_filings_svc.government_filing_pack(
-                db,
-                claims["tenant_id"],
-                from_date=fd,
-                to_date=td,
-                jurisdiction=jurisdiction,
+            _with_period(
+                await tax_filings_svc.government_filing_pack(
+                    db,
+                    claims["tenant_id"],
+                    from_date=fd,
+                    to_date=td,
+                    jurisdiction=jurisdiction,
+                )
             )
         )
     # Default: neutral pack + government section for tenant jurisdiction when supported
@@ -9375,12 +9433,14 @@ async def reports_tax_filing(
     juris = (getattr(tenant, "tax_jurisdiction", None) or "GH").upper() if tenant else "GH"
     try:
         return env(
-            await tax_filings_svc.government_filing_pack(
-                db,
-                claims["tenant_id"],
-                from_date=fd,
-                to_date=td,
-                jurisdiction=juris,
+            _with_period(
+                await tax_filings_svc.government_filing_pack(
+                    db,
+                    claims["tenant_id"],
+                    from_date=fd,
+                    to_date=td,
+                    jurisdiction=juris,
+                )
             )
         )
     except HTTPException as exc:
@@ -9391,13 +9451,17 @@ async def reports_tax_filing(
             pack["jurisdiction"] = juris
             pack["government"] = None
             pack["supported_jurisdictions"] = tax_filings_svc.list_supported()
-            return env(pack)
+            return env(_with_period(pack))
         raise
 
 
 @api.get("/taxes/rates")
-async def taxes_alias(claims=Depends(require_permission("tax", "read")), db: AsyncSession = Depends(get_db)):
-    return await taxes(claims, db)
+async def taxes_alias(
+    active_only: bool = False,
+    claims=Depends(require_permission("tax", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await taxes(active_only=active_only, claims=claims, db=db)
 
 
 @api.get("/stores")

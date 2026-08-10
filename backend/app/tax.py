@@ -282,6 +282,71 @@ async def clear_default_flags(db: AsyncSession, tenant_id: str) -> None:
         row.is_default = False
 
 
+async def update_tax_rate(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    rate_id: str,
+    name: str | None = None,
+    rate: float | None = None,
+    tax_type: str | None = None,
+    pricing_mode: str | None = None,
+    components: list[dict] | None = None,
+    clear_components: bool = False,
+    is_reverse_charge: bool | None = None,
+    is_default: bool | None = None,
+    is_active: bool | None = None,
+) -> m.TaxRate:
+    """Edit or deactivate a tax rate (Stage 14 T1)."""
+    row = await get_tax_rate(db, tenant_id, rate_id)
+    if name is not None:
+        name_norm = name.strip()
+        if not name_norm:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        row.name = name_norm
+    if tax_type is not None:
+        row.tax_type = tax_type.strip() or row.tax_type
+    if pricing_mode is not None:
+        mode = pricing_mode.strip().lower()
+        if mode not in {"exclusive", "inclusive"}:
+            raise HTTPException(status_code=400, detail="pricing_mode must be exclusive or inclusive")
+        row.pricing_mode = mode
+    if is_reverse_charge is not None:
+        row.is_reverse_charge = bool(is_reverse_charge)
+
+    if clear_components:
+        row.components = None
+        if rate is not None:
+            row.rate = round(float(rate), 4)
+    elif components is not None:
+        comps = normalize_components(components)
+        if comps:
+            row.components = comps
+            row.rate = effective_rate_from_components(comps, rate if rate is not None else float(row.rate or 0))
+        else:
+            row.components = None
+            if rate is not None:
+                row.rate = round(float(rate), 4)
+    elif rate is not None:
+        row.rate = round(float(rate), 4)
+
+    if is_active is not None:
+        row.is_active = bool(is_active)
+        if not row.is_active:
+            row.is_default = False
+
+    if is_default is not None:
+        if is_default:
+            await clear_default_flags(db, tenant_id)
+            row.is_default = True
+            row.is_active = True
+        else:
+            row.is_default = False
+
+    await db.flush()
+    return row
+
+
 def tax_spec_from_rate(rate: m.TaxRate) -> TaxSpec:
     comps = normalize_components(rate.components) if rate.components else None
     rate_pct = float(rate.rate)

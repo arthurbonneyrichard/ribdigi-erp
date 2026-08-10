@@ -746,6 +746,20 @@ class TaxCreate(BaseModel):
     is_active: bool = True
 
 
+class TaxUpdate(BaseModel):
+    """Partial update for tax rate lifecycle (Stage 14 T1)."""
+
+    name: str | None = None
+    rate: float | None = Field(default=None, ge=0)
+    tax_type: str | None = None
+    pricing_mode: str | None = None
+    components: list[dict] | None = None
+    clear_components: bool = False
+    is_reverse_charge: bool | None = None
+    is_default: bool | None = None
+    is_active: bool | None = None
+
+
 class TaxCalculateRequest(BaseModel):
     amount: float = Field(gt=0)
     rate: float | None = None

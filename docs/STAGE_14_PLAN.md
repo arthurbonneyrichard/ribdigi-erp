@@ -23,7 +23,7 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 | **E2** | Expense org dimensions (department + store UI) | P0 | COMPLETE |
 | **A1** | Dimensional journals + store-filtered P&L/cash-flow | P0 | COMPLETE |
 | **A2** | Point-in-time trial balance / balance sheet `as_of` | P0 | COMPLETE |
-| **T1** | Tax rate lifecycle (edit/deactivate) + report period helpers | P1 | PENDING |
+| **T1** | Tax rate lifecycle (edit/deactivate) + report period helpers | P1 | COMPLETE |
 | **R1** | Credit UI: allocate payment to selected invoice/bill | P1 | PENDING |
 | **A3** | Finance domain audit closeout (expense approve/reject) | P1 | PENDING |
 | **D1** | Spec / BR-9/10/12 / readiness fidelity sync | P2 | PENDING |
@@ -71,10 +71,18 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 - [x] Accounting UI: trial balance as-of date; Reports UI: balance sheet uses To date as as-of.
 - [x] Automated proof: `backend/tests/test_trial_balance_as_of_a2.py`.
 
-## T1–H14x
+## T1 acceptance criteria
+
+- [x] `TaxUpdate` + `PATCH /tax/rates/{id}` edit name/rate/type/mode/components/flags; deactivate clears default.
+- [x] `GET /tax/rates?active_only=` filter; resolve paths already skip inactive rates.
+- [x] Period helpers: `quarter_bounds` / `year_bounds` / `resolve_report_period` wired to tax report + filing (`period=monthly|quarterly|annually`).
+- [x] Tax UI: edit/deactivate, month/quarter/year presets.
+- [x] Automated proof: `backend/tests/test_tax_rate_lifecycle_t1.py`.
+
+## R1–H14x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-E1, E2, A1, and A2 complete. Pending T1 → R1 → A3 → D1 → H14x.
+E1–A2 and T1 complete. Pending R1 → A3 → D1 → H14x.
