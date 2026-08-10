@@ -41,7 +41,7 @@ Fidelity closeout
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **C1** | AI ERP chat fidelity (BR-21.1) | P0 | PENDING |
+| **C1** | AI ERP chat fidelity (BR-21.1) | P0 | COMPLETE |
 | **I1** | Dashboard insights + weekly digest (BR-21.2) | P0 | PENDING |
 | **V1** | Smart inventory intelligence (BR-21.3) | P0 | PENDING |
 | **L1** | Low-stock prediction (BR-21.4) | P0 | PENDING |
@@ -67,9 +67,9 @@ Fidelity closeout
 
 ## C1 acceptance criteria
 
-- [ ] Natural-language Q&A, role-scoped context, chat history proven; command path only when already safe (no fake writes).
-- [ ] Automated proof: `backend/tests/test_ai_chat_fidelity_c1.py`.
-- [ ] BR-21.1 synced with evidence.
+- [x] Natural-language Q&A, role-scoped context, chat history proven; command path only when already safe (no fake writes).
+- [x] Automated proof: `backend/tests/test_ai_chat_fidelity_c1.py`.
+- [x] BR-21.1 synced with evidence.
 
 ## I1 acceptance criteria
 
@@ -118,4 +118,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-Stage 20 open (ADR-045). Pending C1 → H20x. Stages 1–19 remain frozen for their scopes.
+C1 complete. Pending I1 → H20x. Stages 1–19 remain frozen for their scopes.

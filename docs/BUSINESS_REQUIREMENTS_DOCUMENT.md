@@ -1010,10 +1010,10 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`.
 - **Description:** Natural language interface for ERP operations.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Accept natural language queries ("What is my top selling product this month?")
-  - [ ] Execute commands via chat ("Create a purchase order for 50 units of Product X")
-  - [ ] Context-aware responses based on user role and permissions
-  - [ ] Chat history persistence
+  - [x] Accept natural language queries ("What is my top selling product this month?") — Stage 20 C1 (`POST /ai/chat` rules_v1; `test_ai_chat_fidelity_c1.py`; also `test_ai_chat.py`)
+  - [x] Execute commands via chat ("Create a purchase order for 50 units of Product X") — Stage 20 C1 (draft PO only via `purchasing:write`; no silent send)
+  - [x] Context-aware responses based on user role and permissions — Stage 20 C1 (`ai:read` gate; module read checks; purchasing write deny)
+  - [x] Chat history persistence — Stage 20 C1 (`GET /ai/chat/history` → `AiQuery` per user/tenant)
 
 #### BR-21.2 AI Dashboard Insight
 - **Description:** Automated anomaly detection and recommendations.
