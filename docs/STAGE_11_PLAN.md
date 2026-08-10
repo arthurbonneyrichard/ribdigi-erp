@@ -19,7 +19,7 @@ Stage 11 closes end-to-end purchasing chain fidelity after Stage 10 freeze. It i
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **C1** | Chain E2E + GRN valuation fidelity (discount/tax) + AP aging vs received | P0 | COMPLETE |
-| **C2** | GRN-linked PI reverse-charge / AP closeout | P1 | PENDING |
+| **C2** | GRN-linked PI reverse-charge / AP closeout | P1 | COMPLETE |
 | **A1** | Purchasing audit closeout (payment, PI cancel, GRN→journal assertions) | P1 | PENDING |
 | **D1** | Spec / BR / readiness fidelity sync for BR-6.x chain | P2 | PENDING |
 | **H11x** | Stage 11 exit criteria + freeze ADR | Exit | PENDING |
@@ -42,8 +42,8 @@ Stage 11 closes end-to-end purchasing chain fidelity after Stage 10 freeze. It i
 
 ## C2 acceptance criteria
 
-- [ ] GRN-linked reverse-charge PI posts self-assess tax only (no second Inv/AP).
-- [ ] Automated tests for the RC closeout path.
+- [x] GRN-linked reverse-charge PI posts self-assess tax only (`skip_inventory_ap`; Dr 1300 / Cr 2100).
+- [x] Cancel reverses RC-only; GRN AP/balance untouched. Tests: `backend/tests/test_grn_linked_rc_c2.py`.
 
 ## A1 acceptance criteria
 

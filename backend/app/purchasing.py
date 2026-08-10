@@ -1424,10 +1424,14 @@ async def create_grn(
     po.status = derive_po_status(updated_items)
     po.updated_at = datetime.utcnow()
     accepted_value = round(float(accepted_value), 2)
+    balance_before = None
+    balance_after = None
 
     if post_supplier_balance and accepted_value > 0:
         supplier = await get_supplier(db, tenant_id, po.supplier_id)
-        supplier.balance = float(supplier.balance or 0) + accepted_value
+        balance_before = float(supplier.balance or 0)
+        supplier.balance = balance_before + accepted_value
+        balance_after = float(supplier.balance)
 
     from app.accounting import post_grn_journal
 
@@ -1459,12 +1463,15 @@ async def create_grn(
         entity="goods_receipt",
         entity_id=grn.id,
         details={
-        "grn_number": grn.grn_number,
-        "po_id": po.id,
-        "po_status": po.status,
-        "accepted_value": accepted_value,
+            "grn_number": grn.grn_number,
+            "po_id": po.id,
+            "po_status": po.status,
+            "accepted_value": accepted_value,
+            "supplier_id": po.supplier_id,
+            "supplier_balance_before": balance_before,
+            "supplier_balance_after": balance_after,
         },
-        module='purchasing',
+        module="purchasing",
     )
     return grn
 
@@ -1817,6 +1824,28 @@ async def record_supplier_payment(
         cheque_number=cheque_number,
         bank_name=bank_name,
         cheque_date=cheque_date,
+    )
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="supplier_payment_recorded",
+        entity="supplier_payment",
+        entity_id=payment.id,
+        details={
+            "payment_number": payment.payment_number,
+            "supplier_id": supplier_id,
+            "amount": float(payment.amount),
+            "settlement_base": float(settlement_base),
+            "supplier_balance_after": float(supplier.balance or 0),
+            "purchase_invoice_id": payment.purchase_invoice_id,
+            "purchase_order_id": payment.purchase_order_id,
+            "payment_method": payment.payment_method,
+            "currency": payment.currency,
+        },
+        module="purchasing",
     )
     return payment
 
@@ -2555,7 +2584,27 @@ async def cancel_purchase_invoice(
             purchase_invoice=inv,
             skip_inventory_ap=True,
         )
+    prior_status = inv.status
     inv.status = "cancelled"
     inv.updated_at = datetime.utcnow()
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="purchase_invoice_cancelled",
+        entity="purchase_invoice",
+        entity_id=inv.id,
+        details={
+            "invoice_number": inv.invoice_number,
+            "prior_status": prior_status,
+            "total": float(inv.total_amount or 0),
+            "ap_posted": bool(inv.ap_posted),
+            "goods_receipt_id": inv.goods_receipt_id,
+            "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
+        },
+        module="purchasing",
+    )
     await db.flush()
     return inv
