@@ -57,6 +57,11 @@ def test_stage13_br_launch_and_manual():
 
 def test_stage13_readiness_mentions_delivered_work():
     pr = _read("PRODUCTION_READINESS.md")
-    assert "Stage 13 H1/H2" in pr or "ADR-031" in pr
+    assert (
+        "Stage 13 H1/H2" in pr
+        or "Stage 13 COMPLETE" in pr
+        or "ADR-031" in pr
+        or "ADR-032" in pr
+    )
     assert "STAGE_13_FIDELITY.md" in pr
     assert "pos_receipt_sent" in pr

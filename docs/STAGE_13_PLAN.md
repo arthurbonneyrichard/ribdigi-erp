@@ -1,9 +1,11 @@
 # Stage 13 Plan — POS Sale Execution Chain Hardening
 
-**Status:** Open  
+**Status:** Closed — exit met; freeze [ADR-032](ADR_032_STAGE13_FREEZE.md)  
 **Base:** POS → Sale → Payment → Inventory deduction → Receipt → Accounting → Audit  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-031](ADR_031_STAGE13_OPEN.md)
+**Exit:** [STAGE_13_EXIT_CRITERIA.md](STAGE_13_EXIT_CRITERIA.md)  
+**Fidelity:** [STAGE_13_FIDELITY.md](STAGE_13_FIDELITY.md)  
+**Open ADR (historical):** [ADR-031](ADR_031_STAGE13_OPEN.md)
 
 Stage 13 hardens the POS sale execution path after Stage 12 freeze. Stage 12 already proved cash-path E2E and session/sale audits. This track closes atomicity, multi-tender closeout, and receipt-send proof — **not** greenfield POS, USB/serial drivers, Open Banking, or FIFO/LIFO.
 
@@ -21,7 +23,7 @@ Stage 13 hardens the POS sale execution path after Stage 12 freeze. Stage 12 alr
 | **H1** | Atomic sale integrity (stock-fail → no orphans; success → stock + JE + audit) | P0 | COMPLETE |
 | **H2** | Multi-tender + receipt send + drawer on cash portion | P0 | COMPLETE |
 | **D1** | Spec / BR-8 / readiness fidelity sync for POS execution chain | P2 | COMPLETE |
-| **H13x** | Stage 13 exit criteria + freeze ADR | Exit | PENDING |
+| **H13x** | Stage 13 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -52,8 +54,9 @@ Stage 13 hardens the POS sale execution path after Stage 12 freeze. Stage 12 alr
 
 ## H13x acceptance criteria
 
-- [ ] `docs/STAGE_13_EXIT_CRITERIA.md` + freeze ADR; automated guard test.
+- [x] `docs/STAGE_13_EXIT_CRITERIA.md` records H1/H2/D1/H13x COMPLETE with evidence.
+- [x] Scope freeze ADR-032 accepted; automated guard test `backend/tests/test_stage13_exit_h13x.py`.
 
 ## Sign-off
 
-H1, H2, and D1 complete. Pending H13x exit + freeze.
+Stage 13 exit is met. Feature scope is frozen under ADR-032 (bugfixes / security / tests / docs only until CONTINUE opens the next track).

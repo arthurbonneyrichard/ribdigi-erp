@@ -23,3 +23,7 @@ Stage 12 already delivered cash-path POS E2E and domain audits. Remaining commer
 
 - Agents may implement Stage 13 plan items without reopening Stage 1–12 feature scope.
 - Stage 13 exit requires `docs/STAGE_13_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Closure (2026-08-10)
+
+Stage 13 workstreams H1, H2, D1, H13x met exit criteria (`docs/STAGE_13_EXIT_CRITERIA.md`). Feature scope is frozen under [ADR-032](ADR_032_STAGE13_FREEZE.md). This open ADR remains historical; new Stage 13 feature work is not permitted except bugfixes / security / tests / docs.
