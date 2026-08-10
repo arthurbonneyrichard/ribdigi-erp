@@ -21,3 +21,7 @@ Stage 20 AI Business Assistant Fidelity (C1, I1, V1, L1, S1, R1, U1, D1, H20x) d
 - Agents treat Stage 20 C1, I1, V1, L1, S1, R1, U1, D1, H20x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP (external LLM / Prophet / monitoring / WAL remain Partial where open).
 - Stage 1–19 freezes remain in force for their scopes.
+
+## Amendment (2026-08-10)
+
+Product owner approved opening Stage 21 (Tenant Lifecycle, Org & Dashboard Fidelity) after Stage 20 freeze via CONTINUE/NEXT — see [ADR-047](ADR_047_STAGE21_OPEN.md) and [STAGE_21_PLAN.md](STAGE_21_PLAN.md). Stage 20 feature scope remains frozen; Stage 21 does not reopen C1–D1 / H20x.

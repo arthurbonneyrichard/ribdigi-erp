@@ -168,6 +168,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 20 exit (2026-08-10):** C1, I1, V1, L1, S1, R1, U1, D1, H20x met — `docs/STAGE_20_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_046_STAGE20_FREEZE.md`. Fidelity: `docs/STAGE_20_FIDELITY.md`.
 
+**Stage 21 open (2026-08-10):** Tenant Lifecycle, Org & Dashboard Fidelity track approved — `docs/ADR_047_STAGE21_OPEN.md` + `docs/STAGE_21_PLAN.md` (tenant lifecycle → org/admin → identity shell → executive dashboard).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -748,7 +750,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 20 closed (`docs/STAGE_20_PLAN.md`, ADR-046). Stages 1–20 remain frozen for their scopes. Stage 21+ requires a new open ADR after CONTINUE/NEXT.
+**Active delivery plan:** Stage 21 open (`docs/STAGE_21_PLAN.md`, ADR-047). Stages 1–20 remain frozen for their scopes.
 
 ### 6.2 Features
 
