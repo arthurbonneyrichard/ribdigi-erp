@@ -23,7 +23,7 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 | **I1** | Standard-cost COGS + Inventory GL on sale (/POS helper) + return reverse | P0 | COMPLETE |
 | **H1** | Invoice post atomicity (stock preflight; no partial AR/JE) | P0 | COMPLETE |
 | **R1** | Sales return chain fidelity (warehouse restock, AR/tax/COGS, store) | P1 | COMPLETE |
-| **T1** | Sales-path tax → filing from live invoice post | P1 | PENDING |
+| **T1** | Sales-path tax → filing from live invoice post | P1 | COMPLETE |
 | **A1** | Sales-path domain audit closeout (`sales_return_posted`, enrich `invoice_posted`) | P1 | PENDING |
 | **D1** | Spec / BR-5/7/10/12/17 / readiness fidelity sync | P2 | PENDING |
 | **H15x** | Stage 15 exit criteria + freeze ADR | Exit | PENDING |
@@ -65,13 +65,19 @@ Stage 15 closes commercial-MVP fidelity on the sales→ledger path after Stage 1
 
 ## T1 acceptance criteria
 
-- [ ] HTTP-posted invoice (incl. reverse-charge memo when applicable) feeds `/reports/tax` and filing boxes — not planted DB rows only.
-- [ ] Automated proof: `backend/tests/test_sales_tax_filing_t1.py`.
+- [x] HTTP-posted invoice (incl. reverse-charge memo when applicable) feeds `/reports/tax` and filing boxes — not planted DB rows only.
+- [x] Live posts prove standard output tax, RC box 2a, supply splits (standard/zero/exempt), and schedule document ids.
+- [x] Automated proof: `backend/tests/test_sales_tax_filing_t1.py`.
 
-## A1–H15x
+## A1 acceptance criteria
+
+- [ ] Emit `sales_return_posted`; enrich `invoice_posted` (stock/tax/AR); keep `journal_posted` linkage.
+- [ ] Automated proof: `backend/tests/test_sales_audit_a1.py`.
+
+## D1–H15x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-C1, I1, H1, and R1 complete. Pending T1 → A1 → D1 → H15x.
+C1, I1, H1, R1, and T1 complete. Pending A1 → D1 → H15x.
