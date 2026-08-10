@@ -142,7 +142,9 @@ export default function Page() {
       if (nextTab === 'expenses') path = `/reports/expenses/summary${qs()}`;
       if (nextTab === 'pnl') path = `/reports/profit-loss${qs({ store_id: storeId })}`;
       if (nextTab === 'cashflow') path = `/reports/cash-flow${qs({ store_id: storeId })}`;
-      if (nextTab === 'balancesheet') path = '/reports/balance-sheet';
+      if (nextTab === 'balancesheet') {
+        path = `/reports/balance-sheet${qs({ as_of_date: toDate })}`;
+      }
       const r = await api(path);
       if (nextTab === 'sales') {
         const [daily, monthly] = await Promise.all([
@@ -205,6 +207,7 @@ export default function Page() {
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
+      if (toDate) params.set('as_of_date', toDate);
       if (storeId) params.set('store_id', storeId);
       if (categoryId) params.set('category_id', categoryId);
       const res = await fetch(`${base}/reports/export?${params}`, {
@@ -893,6 +896,9 @@ export default function Page() {
 
       {tab === 'balancesheet' && data && (
         <>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            As of {data.as_of || '—'} (set To date above as the as-of date)
+          </p>
           <div className="grid">
             <div className="card">
               <div className="muted">Total assets</div>

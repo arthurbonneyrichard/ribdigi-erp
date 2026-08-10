@@ -1391,20 +1391,23 @@ async def cash_flow(
     }
 
 
-async def balance_sheet(db: AsyncSession, tenant_id: str) -> dict:
-    """Point-in-time balance sheet from account balances."""
-    accounts = (
-        await db.execute(
-            select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
-        )
-    ).scalars().all()
+async def balance_sheet(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    as_of: datetime | None = None,
+) -> dict:
+    """Point-in-time balance sheet; optional as_of from posted journals through that date."""
+    from app.accounting import account_balances_through
+
+    accounts, bal_by_id = await account_balances_through(db, tenant_id, as_of=as_of)
 
     def rows_for(account_type: str) -> list[dict]:
         return [
             {
                 "code": a.code,
                 "name": a.name,
-                "balance": round(float(a.balance or 0), 2),
+                "balance": round(float(bal_by_id.get(a.id, 0.0)), 2),
             }
             for a in accounts
             if a.account_type == account_type
@@ -1414,8 +1417,12 @@ async def balance_sheet(db: AsyncSession, tenant_id: str) -> dict:
     liabilities = rows_for("liability")
     equity = rows_for("equity")
     # Retained earnings proxy from income - expense (not posted to equity yet)
-    income = sum(float(a.balance or 0) for a in accounts if a.account_type == "income")
-    expense = sum(float(a.balance or 0) for a in accounts if a.account_type == "expense")
+    income = sum(
+        float(bal_by_id.get(a.id, 0.0)) for a in accounts if a.account_type == "income"
+    )
+    expense = sum(
+        float(bal_by_id.get(a.id, 0.0)) for a in accounts if a.account_type == "expense"
+    )
     retained = round(income - expense, 2)
     if abs(retained) > 0.0001:
         equity = [
@@ -1427,7 +1434,7 @@ async def balance_sheet(db: AsyncSession, tenant_id: str) -> dict:
     total_liabilities = round(sum(r["balance"] for r in liabilities), 2)
     total_equity = round(sum(r["balance"] for r in equity), 2)
     return {
-        "as_of": datetime.utcnow().date().isoformat(),
+        "as_of": (as_of or datetime.utcnow()).date().isoformat(),
         "assets": assets,
         "liabilities": liabilities,
         "equity": equity,

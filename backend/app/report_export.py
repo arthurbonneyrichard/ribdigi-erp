@@ -497,6 +497,7 @@ async def build_report_payload(
     from_date: str | None = None,
     to_date: str | None = None,
     date: str | None = None,
+    as_of_date: str | None = None,
     year: int | None = None,
     month: int | None = None,
     warehouse_id: str | None = None,
@@ -512,6 +513,7 @@ async def build_report_payload(
 
     fd = reports_svc.parse_date(from_date)
     td = reports_svc.parse_date(to_date, end_of_day=True)
+    as_of = reports_svc.parse_date(as_of_date, end_of_day=True)
     now = datetime.utcnow()
 
     if report_type == "summary":
@@ -569,13 +571,13 @@ async def build_report_payload(
     if report_type == "cash_flow":
         return await reports_svc.cash_flow(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "trial_balance":
-        return await accounting_svc.trial_balance(db, tenant_id)
+        return await accounting_svc.trial_balance(db, tenant_id, as_of=as_of)
     if report_type == "profit_loss":
         return await accounting_svc.profit_and_loss(
             db, tenant_id, from_date=fd, to_date=td
         )
     if report_type == "balance_sheet":
-        return await reports_svc.balance_sheet(db, tenant_id)
+        return await reports_svc.balance_sheet(db, tenant_id, as_of=as_of)
     if report_type == "tax":
         return await tax_svc.tax_report(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "tax_filing":

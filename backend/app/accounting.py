@@ -1663,17 +1663,57 @@ async def post_pos_sale_journal(
     )
 
 
-async def trial_balance(db: AsyncSession, tenant_id: str) -> dict:
+async def account_balances_through(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    as_of: datetime | None = None,
+) -> tuple[list[m.Account], dict[str, float]]:
+    """Natural-side balances per account; as_of uses posted journals through that instant."""
     accounts = (
         await db.execute(
             select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
         )
     ).scalars().all()
+    if as_of is None:
+        return accounts, {a.id: float(a.balance or 0) for a in accounts}
+
+    balances = {a.id: 0.0 for a in accounts}
+    stmt = (
+        select(m.JournalEntryLine, m.Account)
+        .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntry.status == "posted",
+            m.JournalEntry.entry_date <= as_of,
+        )
+    )
+    for line, account in (await db.execute(stmt)).all():
+        balances[account.id] = round(
+            float(balances.get(account.id, 0.0))
+            + _signed_balance_delta(
+                account.account_type, float(line.debit or 0), float(line.credit or 0)
+            ),
+            2,
+        )
+    return accounts, balances
+
+
+async def trial_balance(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    as_of: datetime | None = None,
+) -> dict:
+    """Trial balance; optional as_of rebuilds balances from posted journals through that date."""
+    accounts, bal_by_id = await account_balances_through(db, tenant_id, as_of=as_of)
     rows = []
     debit_total = 0.0
     credit_total = 0.0
     for account in accounts:
-        bal = float(account.balance or 0)
+        bal = float(bal_by_id.get(account.id, 0.0))
         if account.account_type in {"asset", "expense"}:
             d, c = (bal, 0.0) if bal >= 0 else (0.0, abs(bal))
         else:
@@ -1691,10 +1731,12 @@ async def trial_balance(db: AsyncSession, tenant_id: str) -> dict:
                 "balance": bal,
             }
         )
+    as_of_date = (as_of or datetime.utcnow()).date().isoformat()
     return {
+        "as_of": as_of_date,
         "rows": rows,
-        "total_debit": debit_total,
-        "total_credit": credit_total,
+        "total_debit": round(debit_total, 2),
+        "total_credit": round(credit_total, 2),
         "balanced": abs(debit_total - credit_total) < 0.01,
     }
 

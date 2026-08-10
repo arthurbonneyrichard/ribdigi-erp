@@ -59,6 +59,7 @@ export default function Page() {
   const [stores, setStores] = useState<any[]>([]);
   const [journalStoreId, setJournalStoreId] = useState('');
   const [manualStoreId, setManualStoreId] = useState('');
+  const [tbAsOf, setTbAsOf] = useState('');
   const [accountTx, setAccountTx] = useState<any | null>(null);
   const [txFrom, setTxFrom] = useState('');
   const [txTo, setTxTo] = useState('');
@@ -86,10 +87,13 @@ export default function Page() {
     const journalQs = journalStoreId
       ? `/accounting/journal-entries?store_id=${encodeURIComponent(journalStoreId)}`
       : '/accounting/journal-entries';
+    const tbPath = tbAsOf
+      ? `/accounting/trial-balance?as_of_date=${encodeURIComponent(tbAsOf)}`
+      : '/accounting/trial-balance';
     const [a, j, t, p, liq, stmts, chq, conns, storeRows] = await Promise.all([
       api('/accounting/accounts'),
       api(journalQs),
-      api('/accounting/trial-balance'),
+      api(tbPath),
       api(pnlPath),
       api('/accounting/liquid-accounts'),
       api('/accounting/bank-statements'),
@@ -878,8 +882,20 @@ export default function Page() {
           <div className="grid" style={{ marginTop: 16 }}>
             <div className="card">
               <h3>Trial balance</h3>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                <input
+                  type="date"
+                  value={tbAsOf}
+                  onChange={(e) => setTbAsOf(e.target.value)}
+                  aria-label="Trial balance as of"
+                />
+                <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
+                  Apply
+                </button>
+              </div>
               <p className="muted">
-                Balanced: {String(trial?.balanced)} | Dr {trial?.total_debit} / Cr {trial?.total_credit}
+                As of {trial?.as_of || '—'} · Balanced: {String(trial?.balanced)} | Dr{' '}
+                {trial?.total_debit} / Cr {trial?.total_credit}
               </p>
             </div>
             <div className="card">

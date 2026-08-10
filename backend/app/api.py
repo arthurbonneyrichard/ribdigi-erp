@@ -8381,6 +8381,7 @@ async def delete_journal_attachment(
 
 @api.get("/accounting/trial-balance")
 async def get_trial_balance(
+    as_of_date: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8388,7 +8389,13 @@ async def get_trial_balance(
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
-    return env(await trial_balance(db, claims["tenant_id"]))
+    return env(
+        await trial_balance(
+            db,
+            claims["tenant_id"],
+            as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+        )
+    )
 
 
 @api.get("/accounting/profit-loss")
@@ -8427,10 +8434,11 @@ async def report_profit_loss(
 
 @api.get("/reports/trial-balance")
 async def report_trial_balance(
+    as_of_date: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_trial_balance(claims, db)
+    return await get_trial_balance(as_of_date, claims, db)
 
 
 @api.get("/reports/cash-flow")
@@ -8454,10 +8462,17 @@ async def report_cash_flow(
 
 @api.get("/reports/balance-sheet")
 async def report_balance_sheet(
+    as_of_date: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await reports_svc.balance_sheet(db, claims["tenant_id"]))
+    return env(
+        await reports_svc.balance_sheet(
+            db,
+            claims["tenant_id"],
+            as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+        )
+    )
 
 
 @api.get("/reports/export")
@@ -8467,6 +8482,7 @@ async def reports_export(
     from_date: str | None = None,
     to_date: str | None = None,
     date: str | None = None,
+    as_of_date: str | None = None,
     year: int | None = None,
     month: int | None = None,
     warehouse_id: str | None = None,
@@ -8484,6 +8500,7 @@ async def reports_export(
         from_date=from_date,
         to_date=to_date,
         date=date,
+        as_of_date=as_of_date,
         year=year,
         month=month,
         warehouse_id=warehouse_id,
