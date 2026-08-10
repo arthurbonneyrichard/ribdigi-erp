@@ -47,10 +47,18 @@ Stage 14 closes commercial-MVP finance fidelity after Stage 13 freeze. Engines f
 - [x] Expenses UI: pick GL account on category create/edit.
 - [x] Automated E2E: custom expense COA → category link → expense approve → journal lines → TB / P&L opex / cash-flow operating (`test_expense_coa_chain_e1.py`).
 
-## E2–H14x
+## E2 acceptance criteria
+
+- [x] `expenses.department_id` + `recurring_expenses.store_id` / `department_id` (Alembic).
+- [x] Create/update expense accepts store/department with tenant-scoped 404; list filters `store_id` / `department_id`.
+- [x] Recurring templates carry org dims into generated expenses.
+- [x] Expenses UI: store/department pickers, filters, table columns.
+- [x] Tests: `backend/tests/test_expense_org_dimensions_e2.py`.
+
+## A1–H14x
 
 See workstream table; detailed ACs filled when each workstream starts.
 
 ## Sign-off
 
-E1 complete. Pending E2 → A1 → A2 → T1 → R1 → A3 → D1 → H14x.
+E1 and E2 complete. Pending A1 → A2 → T1 → R1 → A3 → D1 → H14x.
