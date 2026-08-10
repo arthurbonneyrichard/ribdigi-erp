@@ -621,11 +621,11 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
 - **Description:** Track liquid assets.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create cash accounts (petty cash, main cash)
-  - [ ] Create bank accounts with bank name, account number, branch
-  - [ ] Record deposits, withdrawals, transfers between accounts
-  - [ ] Bank reconciliation (system balance vs statement)
-  - [ ] Cheque management (issue, deposit, bounce tracking)
+  - [x] Create cash accounts (petty cash, main cash) — Stage 22 B1 (`POST /accounting/liquid-accounts` kind=cash; system `1000`; `test_cash_bank_recon_b1.py`)
+  - [x] Create bank accounts with bank name, account number, branch — Stage 22 B1 (`kind=bank` + `bank_name`/`account_number`/`bank_branch`)
+  - [x] Record deposits, withdrawals, transfers between accounts — Stage 22 B1 (`POST /accounting/liquid-transfers` deposit/withdrawal/transfer)
+  - [x] Bank reconciliation (system balance vs statement) — Stage 22 B1 (`POST /accounting/bank-statements` → match → complete; Open Banking adapters deferred)
+  - [x] Cheque management (issue, deposit, bounce tracking) — Stage 22 B1 (issued clear + received deposit/bounce via `/accounting/cheques/{id}/*`)
 
 #### BR-10.4 Accounts Receivable (AR)
 - **Description:** Track money owed by customers.

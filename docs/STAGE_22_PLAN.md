@@ -44,7 +44,7 @@ Fidelity closeout
 | **E1** | Expense categories & entry fidelity (BR-9.1–9.2) | P0 | COMPLETE |
 | **A1** | Expense approval & recurring fidelity (BR-9.3, 9.5) | P0 | COMPLETE |
 | **C1** | COA fidelity (BR-10.1) | P0 | COMPLETE |
-| **B1** | Cash/bank, recon, cheques fidelity (BR-10.3) | P1 | PENDING |
+| **B1** | Cash/bank, recon, cheques fidelity (BR-10.3) | P1 | COMPLETE |
 | **P1** | AR/AP aging, payments, overdue + financial export (BR-10.4–10.6) | P1 | PENDING |
 | **R1** | Customer credit surface fidelity (BR-11.1) | P1 | PENDING |
 | **T1** | Tax configuration fidelity (BR-12.1) | P1 | PENDING |
@@ -88,9 +88,9 @@ Fidelity closeout
 
 ## B1 acceptance criteria
 
-- [ ] Cash/bank accounts, deposits/withdrawals/transfers, bank reconciliation, cheque lifecycle proven.
-- [ ] Automated proof: `backend/tests/test_cash_bank_recon_b1.py`.
-- [ ] BR-10.3 synced with evidence (Open Banking adapters remain deferred).
+- [x] Cash/bank accounts, deposits/withdrawals/transfers, bank reconciliation, cheque lifecycle proven.
+- [x] Automated proof: `backend/tests/test_cash_bank_recon_b1.py`.
+- [x] BR-10.3 synced with evidence (Open Banking adapters remain deferred).
 
 ## P1 acceptance criteria
 
@@ -121,4 +121,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-E1–C1 complete. Pending B1 → H22x. Stages 1–21 remain frozen for their scopes.
+E1–B1 complete. Pending P1 → H22x. Stages 1–21 remain frozen for their scopes.
