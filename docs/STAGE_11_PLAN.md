@@ -18,7 +18,7 @@ Stage 11 closes end-to-end purchasing chain fidelity after Stage 10 freeze. It i
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **C1** | Chain E2E + GRN valuation fidelity (discount/tax) + AP aging vs received | P0 | PENDING |
+| **C1** | Chain E2E + GRN valuation fidelity (discount/tax) + AP aging vs received | P0 | COMPLETE |
 | **C2** | GRN-linked PI reverse-charge / AP closeout | P1 | PENDING |
 | **A1** | Purchasing audit closeout (payment, PI cancel, GRN→journal assertions) | P1 | PENDING |
 | **D1** | Spec / BR / readiness fidelity sync for BR-6.x chain | P2 | PENDING |
@@ -35,10 +35,10 @@ Stage 11 closes end-to-end purchasing chain fidelity after Stage 10 freeze. It i
 
 ## C1 acceptance criteria
 
-- [ ] GRN `accepted_value` uses PO line math (discount + tax), scaled for partial qty.
-- [ ] PI created from GRN carries proportional line discount (matches GRN AP).
-- [ ] Uninvoiced AP aging uses received value (not full unordered PO total); zero received → not aged as AP.
-- [ ] Automated E2E: PO → send → GRN → stock ↑ → supplier balance ↑ → GRN journal → PI from GRN (no double AP) → payment → balance ↓.
+- [x] GRN `accepted_value` uses PO line math (discount + tax), scaled for partial qty.
+- [x] PI created from GRN carries proportional line discount; `_prepare_invoice_lines` tax-on-net-after-discount.
+- [x] Uninvoiced AP aging uses received value (not full PO total); zero received → not aged as AP.
+- [x] Automated E2E in `backend/tests/test_purchasing_chain_c1.py`.
 
 ## C2 acceptance criteria
 

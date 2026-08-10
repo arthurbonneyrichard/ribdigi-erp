@@ -2454,8 +2454,18 @@ async def approve_purchase_invoice(
         raise HTTPException(status_code=400, detail="Cannot approve empty invoice")
 
     # GRN path already posted inventory + AP; manual bills post AP now.
+    # Stage 11 C2: GRN-linked reverse charge still needs Dr 1300 / Cr 2100 self-assess.
     if inv.goods_receipt_id:
         inv.ap_posted = False
+        from app.accounting import post_purchase_invoice_journal
+
+        await post_purchase_invoice_journal(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            purchase_invoice=inv,
+            skip_inventory_ap=True,
+        )
     else:
         from app.fx import doc_rate, to_base
 
@@ -2528,6 +2538,22 @@ async def cancel_purchase_invoice(
 
         await post_purchase_invoice_reversal_journal(
             db, tenant_id=tenant_id, user_id=user_id, purchase_invoice=inv
+        )
+    elif (
+        inv.goods_receipt_id
+        and inv.status != "draft"
+        and bool(getattr(inv, "is_reverse_charge", False))
+        and float(getattr(inv, "reverse_charge_tax", 0) or 0) > 0
+    ):
+        # Stage 11 C2 — undo RC self-assess only; GRN still owns Inv/AP + supplier balance.
+        from app.accounting import post_purchase_invoice_reversal_journal
+
+        await post_purchase_invoice_reversal_journal(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            purchase_invoice=inv,
+            skip_inventory_ap=True,
         )
     inv.status = "cancelled"
     inv.updated_at = datetime.utcnow()

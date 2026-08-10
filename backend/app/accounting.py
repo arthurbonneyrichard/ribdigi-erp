@@ -1373,8 +1373,14 @@ async def post_purchase_invoice_journal(
     tenant_id: str,
     user_id: str,
     purchase_invoice: m.PurchaseInvoice,
-) -> m.JournalEntry:
-    """Manual purchase bill: Dr Inventory (+ Input Tax if RC) / Cr AP (+ Tax Payable if RC)."""
+    skip_inventory_ap: bool = False,
+) -> m.JournalEntry | None:
+    """Purchase bill journal.
+
+    Manual path: Dr Inventory (+ Input Tax if RC) / Cr AP (+ Tax Payable if RC).
+    Stage 11 C2 GRN-linked RC: Inv/AP already posted by GRN — post self-assess
+    Dr 1300 / Cr 2100 only when ``skip_inventory_ap`` is true.
+    """
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, to_base
 
@@ -1388,7 +1394,19 @@ async def post_purchase_invoice_journal(
     )
     rc = to_base(float(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate)
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
-    if is_rc:
+    if skip_inventory_ap:
+        if not is_rc:
+            return None
+        lines = [
+            {"account_code": "1300", "debit": rc, "credit": 0, "description": "Input tax (RC)"},
+            {
+                "account_code": "2100",
+                "debit": 0,
+                "credit": rc,
+                "description": "Tax payable (RC self-assess)",
+            },
+        ]
+    elif is_rc:
         lines = [
             {"account_code": "1200", "debit": net, "credit": 0, "description": "Inventory/purchases"},
             {"account_code": "1300", "debit": rc, "credit": 0, "description": "Input tax (RC)"},
@@ -1427,7 +1445,8 @@ async def post_purchase_invoice_reversal_journal(
     tenant_id: str,
     user_id: str,
     purchase_invoice: m.PurchaseInvoice,
-) -> m.JournalEntry:
+    skip_inventory_ap: bool = False,
+) -> m.JournalEntry | None:
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, to_base
 
@@ -1441,7 +1460,15 @@ async def post_purchase_invoice_reversal_journal(
     )
     rc = to_base(float(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate)
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
-    if is_rc:
+    if skip_inventory_ap:
+        # Stage 11 C2 — reverse only RC self-assess posted for GRN-linked invoices.
+        if not is_rc:
+            return None
+        lines = [
+            {"account_code": "2100", "debit": rc, "credit": 0, "description": "Tax payable reverse"},
+            {"account_code": "1300", "debit": 0, "credit": rc, "description": "Input tax reverse"},
+        ]
+    elif is_rc:
         lines = [
             {"account_code": "2000", "debit": net, "credit": 0, "description": "AP reverse"},
             {"account_code": "2100", "debit": rc, "credit": 0, "description": "Tax payable reverse"},
