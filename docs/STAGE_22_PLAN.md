@@ -42,7 +42,7 @@ Fidelity closeout
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **E1** | Expense categories & entry fidelity (BR-9.1–9.2) | P0 | COMPLETE |
-| **A1** | Expense approval & recurring fidelity (BR-9.3, 9.5) | P0 | PENDING |
+| **A1** | Expense approval & recurring fidelity (BR-9.3, 9.5) | P0 | COMPLETE |
 | **C1** | COA fidelity (BR-10.1) | P0 | PENDING |
 | **B1** | Cash/bank, recon, cheques fidelity (BR-10.3) | P1 | PENDING |
 | **P1** | AR/AP aging, payments, overdue + financial export (BR-10.4–10.6) | P1 | PENDING |
@@ -75,10 +75,10 @@ Fidelity closeout
 
 ## A1 acceptance criteria
 
-- [ ] Configurable thresholds / multi-level approval / comments / approver notify proven.
-- [ ] Recurring frequency, auto-generate, notify-before, skip/modify proven.
-- [ ] Automated proof: `backend/tests/test_expense_approval_recurring_a1.py`.
-- [ ] BR-9.3 / 9.5 synced with evidence.
+- [x] Configurable thresholds / multi-level approval / comments / approver notify proven.
+- [x] Recurring frequency, auto-generate, notify-before, skip/modify proven.
+- [x] Automated proof: `backend/tests/test_expense_approval_recurring_a1.py`.
+- [x] BR-9.3 / 9.5 synced with evidence.
 
 ## C1 acceptance criteria
 
@@ -121,4 +121,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-E1 complete. Pending A1 → H22x. Stages 1–21 remain frozen for their scopes.
+E1–A1 complete. Pending C1 → H22x. Stages 1–21 remain frozen for their scopes.

@@ -571,10 +571,10 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
 - **Description:** Control spending through approval workflows.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Configurable approval thresholds (e.g., >$100 requires manager approval)
-  - [ ] Multi-level approval chain
-  - [ ] Approval/rejection with comments
-  - [ ] Email notification to approvers
+  - [x] Configurable approval thresholds (e.g., >$100 requires manager approval) — Stage 22 A1 (`PATCH /expenses/settings` levels / thresholds; `test_expense_approval_recurring_a1.py`)
+  - [x] Multi-level approval chain — Stage 22 A1 (`approval_steps_required` + L1/L2 `POST /expenses/{id}/approve`)
+  - [x] Approval/rejection with comments — Stage 22 A1 (`comment` on approve; `reason`/`comment` on reject; `approval_actions`)
+  - [x] Email notification to approvers — Stage 22 A1 (in-app `expense_approval` on submit) + `test_expense_approval_notify.py` (email channel)
 
 #### BR-9.4 Expense Attachments
 - **Description:** Digital receipt storage.
@@ -588,10 +588,10 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
 - **Description:** Automate regular payments.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Set frequency (daily, weekly, monthly, yearly)
-  - [ ] Auto-generate expense entries
-  - [ ] Notification before auto-generation
-  - [ ] Skip or modify individual occurrences
+  - [x] Set frequency (daily, weekly, monthly, yearly) — Stage 22 A1 (`POST /expenses/recurring` `frequency`; `test_expense_approval_recurring_a1.py`)
+  - [x] Auto-generate expense entries — Stage 22 A1 (`POST /expenses/recurring/generate`)
+  - [x] Notification before auto-generation — Stage 22 A1 (`POST /notifications/scan-due` → `recurring_expense`)
+  - [x] Skip or modify individual occurrences — Stage 22 A1 (`skip_next` / `next_amount` / `next_description` on `PATCH /expenses/recurring/{id}`)
 
 ---
 
