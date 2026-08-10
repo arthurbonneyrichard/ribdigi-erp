@@ -219,3 +219,6 @@ def test_inventory_audit_a1_docs():
     sec = (ROOT / "docs/SECURITY_GUIDE.md").read_text(encoding="utf-8")
     assert "product_create" in sec
     assert "product_deactivate" in sec
+    api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
+    assert "Stage 17 A1" in api
+    assert "product_create" in api

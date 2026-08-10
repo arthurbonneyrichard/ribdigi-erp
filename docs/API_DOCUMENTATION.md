@@ -398,8 +398,9 @@ Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a produc
 **List:** `GET /products?category_id=&brand_id=&low_stock=true`  
 **Create:** `POST /products`  
 **Get:** `GET /products/{product_id}`  
-**Update:** `PATCH /products/{product_id}`  
-**Delete:** `DELETE /products/{product_id}`
+**Update:** `PATCH /products/{product_id}` (set `is_active=false` to soft-deactivate)
+
+Stage 17 A1 domain audit (`module=inventory`): `product_create` (details.after snapshot); `product_update` / soft-delete `product_deactivate` with `before`/`after` field diffs; stock ops emit `stock_{movement_type}` with qty before/after. Evidence: `test_inventory_audit_a1.py`.
 
 **Create Product Request:**
 ```json
