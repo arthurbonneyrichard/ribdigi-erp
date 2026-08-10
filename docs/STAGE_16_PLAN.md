@@ -47,7 +47,7 @@ Notifications
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **M1** | Transfer → stock chain proof (ship/receive → warehouse qty + movements) | P0 | PENDING |
+| **M1** | Transfer → stock chain proof (ship/receive → warehouse qty + movements) | P0 | COMPLETE |
 | **N1** | Notification emission proof matrix (low stock, sales, credit, operational) | P0 | PENDING |
 | **R1** | Reports suite fidelity (Sales / Inventory / Low Stock / Purchasing / Expenses / Financial / Store Performance) | P0 | PENDING |
 | **R2** | Credit + Tax report packaging fidelity (Reports outline ↔ existing APIs/UI) | P1 | PENDING |
@@ -69,9 +69,10 @@ Notifications
 
 ## M1 acceptance criteria
 
-- [ ] Live inter-store transfer create → ship → receive updates source/destination warehouse quantities and writes `stock_movements` (reference transferable to inventory movements report).
-- [ ] Dual-manager ship/receive gates remain enforced (regression guard only; do not rewrite Stage 4 T1).
-- [ ] Automated proof: `backend/tests/test_multistore_transfer_chain_m1.py` (name may match implementation).
+- [x] Live inter-store transfer create → ship → receive updates source/destination warehouse quantities and writes `stock_movements` (reference transferable to inventory movements report).
+- [x] Dual-manager ship/receive gates remain enforced (regression guard only; do not rewrite Stage 4 T1).
+- [x] Insufficient source warehouse stock on ship → `409 INSUFFICIENT_WAREHOUSE_STOCK`; transfer stays `requested`; no movements.
+- [x] Automated proof: `backend/tests/test_multistore_transfer_chain_m1.py`.
 
 ## N1 acceptance criteria
 
@@ -111,4 +112,4 @@ See workstream table; filled when exit workstream starts.
 
 ## Sign-off
 
-Pending M1 → … → H16x.
+M1 complete. Pending N1 → … → H16x.
