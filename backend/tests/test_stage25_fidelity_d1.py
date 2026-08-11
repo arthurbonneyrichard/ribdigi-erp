@@ -26,12 +26,12 @@ def test_stage25_fidelity_note_and_plan():
 
     plan = _read("docs/STAGE_25_PLAN.md")
     assert "STAGE_25_FIDELITY.md" in plan
-    for ws in ("P1", "X1", "B1", "U1", "D1"):
+    for ws in ("P1", "X1", "B1", "U1", "D1", "H25x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}** |" in ln][0]
         assert "COMPLETE" in line, ws
-    assert "H25x" in plan and "PENDING" in plan
-    assert "ADR-055" in plan or "ADR_055" in plan
-    assert "D1 complete" in plan or "H25x next" in plan
+    assert "ADR-056" in plan or "ADR_056" in plan
+    assert "Closed" in plan or "exit met" in plan.lower()
+    assert "ADR-056" in fidelity or "ADR_056" in fidelity or "exit met" in fidelity.lower()
 
 
 def test_stage25_br_21_and_gate_cites():
@@ -78,7 +78,9 @@ def test_stage25_api_user_manual_launch():
     assert "test_ai_business_insights_b1.py" in launch
     assert "test_ai_ui_fidelity_u1.py" in launch
     assert "test_stage25_fidelity_d1.py" in launch
+    assert "test_stage25_exit_h25x.py" in launch
     assert "STAGE_25_FIDELITY.md" in launch
+    assert "STAGE_25_EXIT_CRITERIA.md" in launch or "ADR-056" in launch
 
 
 def test_stage25_readiness_and_roadmap():
@@ -86,6 +88,7 @@ def test_stage25_readiness_and_roadmap():
     assert "STAGE_25_FIDELITY.md" in pr
     assert "test_stage25_fidelity_d1.py" in pr
     assert "Stage 25 D1" in pr
+    assert "STAGE_25_EXIT_CRITERIA.md" in pr or "ADR-056" in pr or "ADR_056" in pr
     assert "Stage 25 P1" in pr or "test_ai_purchases_analysis_p1.py" in pr
     assert "Stage 25 X1" in pr or "test_ai_cross_domain_x1.py" in pr
     assert "- [x] AI functions use real tenant data" in pr
@@ -96,5 +99,8 @@ def test_stage25_readiness_and_roadmap():
     roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
     assert "STAGE_25_FIDELITY.md" in roadmap
     assert "Stage 25 D1" in roadmap
+    assert "Stage 25 exit" in roadmap
     assert "ADR_055_STAGE25_OPEN.md" in roadmap
+    assert "ADR_056_STAGE25_FREEZE.md" in roadmap
     assert "STAGE_25_PLAN.md" in roadmap
+    assert "STAGE_25_EXIT_CRITERIA.md" in roadmap

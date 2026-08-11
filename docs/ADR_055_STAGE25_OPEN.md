@@ -33,3 +33,7 @@ Business Insights
 
 - Agents may implement Stage 25 plan items without reopening Stage 1–24 feature scope.
 - Stage 25 exit requires `docs/STAGE_25_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Amendment (2026-08-11)
+
+Stage 25 exit criteria are met (`docs/STAGE_25_EXIT_CRITERIA.md`) and Stage 25 feature scope is frozen under [ADR-056](ADR_056_STAGE25_FREEZE.md). ADR-055 remains the historical open record for this track.

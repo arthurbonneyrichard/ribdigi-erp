@@ -220,6 +220,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 25 D1 (2026-08-11):** Spec / BR-21.2 / 21.11 / 21.12 / readiness / USER_MANUAL / API fidelity sync — `docs/STAGE_25_FIDELITY.md` (`test_stage25_fidelity_d1.py`); open ADR `docs/ADR_055_STAGE25_OPEN.md`; plan `docs/STAGE_25_PLAN.md`.
 
+**Stage 25 exit (2026-08-11):** P1, X1, B1, U1, D1, H25x met — `docs/STAGE_25_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_056_STAGE25_FREEZE.md`. Fidelity: `docs/STAGE_25_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
