@@ -1,6 +1,6 @@
 # Stage 61 Plan — Commercial Fintech & Supply-Chain Fidelity
 
-**Status:** Open — S1 complete; D1 next  
+**Status:** Open — D1 complete; H61x next  
 **Base:** Embedded Fintech Honesty Pack + Supply Chain Integration Honesty Pack → Commercial Fintech & Supply-Chain Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-127](ADR_127_STAGE61_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Fintech & Supply-Chain Fidelity
 |----|------------|----------|---------|
 | **F1** | Embedded fintech honesty packaging (not live lending / invoice financing Complete) | P0 | COMPLETE |
 | **S1** | Supply chain integration honesty packaging (not live supplier supply-chain integration Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H61x** | Stage 61 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -108,9 +108,9 @@ Commercial Fintech & Supply-Chain Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_61_FIDELITY.md` maps F1–S1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 61 D1.
-- [ ] Automated proof: `backend/tests/test_stage61_fidelity_d1.py` (`docs/STAGE_61_FIDELITY.md`).
+- [x] `docs/STAGE_61_FIDELITY.md` maps F1–S1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 61 D1.
+- [x] Automated proof: `backend/tests/test_stage61_fidelity_d1.py` (`docs/STAGE_61_FIDELITY.md`).
 
 ## H61x acceptance criteria
 
