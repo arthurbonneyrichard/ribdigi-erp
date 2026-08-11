@@ -180,6 +180,8 @@ Authoritative MVP docs:
 - `docs/STAGE_56_PLAN.md` (`backend/tests/test_stage56_open.py`) — Stage 56 open (ADR-117)
 - `docs/IMPLEMENTATION_ONBOARDING_MVP.md` (`backend/tests/test_implementation_onboarding_o1.py`) — Stage 56 O1
 - `docs/GEOGRAPHIC_EXPANSION_MVP.md` (`backend/tests/test_geographic_expansion_g1.py`) — Stage 56 G1
+- `docs/STAGE_56_FIDELITY.md` (`backend/tests/test_stage56_fidelity_d1.py`) — Stage 56 D1
+- `docs/STAGE_56_EXIT_CRITERIA.md` / `docs/ADR_118_STAGE56_FREEZE.md` (`backend/tests/test_stage56_exit_h56x.py`) — Stage 56 H56x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -703,7 +705,7 @@ Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115
 
 H55x met — `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116. Stages 1–55 frozen for Stage 55 feature scope.
 
-## Stage 56 open
+## Stage 56 open (historical)
 
 Commercial Onboarding & Expansion Fidelity — `docs/STAGE_56_PLAN.md`, ADR-117; O1 complete; G1 next.
 
@@ -714,3 +716,11 @@ Commercial Onboarding & Expansion Fidelity — `docs/STAGE_56_PLAN.md`, ADR-117;
 ## Stage 56 G1 — Geographic expansion honesty
 
 `docs/GEOGRAPHIC_EXPANSION_MVP.md` + `ops/mvp/geographic-expansion.json` — packaging Complete; `multi_market_expansion_claimed` / `international_localization_claimed` / `i18n_localization_packs_live` / `geographic_expansion_program_live` remain false.
+
+## Stage 56 D1 — Onboarding & expansion fidelity
+
+`docs/STAGE_56_FIDELITY.md` — maps O1–G1 → readiness / launch / deploy / security (`test_stage56_fidelity_d1.py`).
+
+## Stage 56 exit
+
+H56x met — `docs/STAGE_56_EXIT_CRITERIA.md`, ADR-118. Stages 1–56 frozen for Stage 56 feature scope.
