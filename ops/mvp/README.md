@@ -72,6 +72,7 @@
 | `multi-country-tax.json` | Stage 60 T1 Multi-country tax honesty — `multi_country_tax_engine_claimed: false` / `tax_efile_portal_live_claimed: false` / `gst_vat_sales_tax_compliance_live: false` / `multi_country_tax_program_live: false` |
 | `embedded-fintech.json` | Stage 61 F1 Embedded fintech honesty — `lending_product_live_claimed: false` / `invoice_financing_live_claimed: false` / `embedded_fintech_program_live: false` / `fintech_marketplace_live: false` |
 | `supply-chain-integration.json` | Stage 61 S1 Supply chain integration honesty — `supplier_supply_chain_live_claimed: false` / `supplier_portal_live_claimed: false` / `edi_asn_program_live: false` / `supply_chain_integration_program_live: false` |
+| `iot-integration.json` | Stage 62 I1 IoT integration honesty — `iot_integration_live_claimed: false` / `smart_shelves_live_claimed: false` / `temperature_sensors_live_claimed: false` / `iot_program_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -213,6 +214,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_FIDELITY.md` (`backend/tests/test_stage60_fidelity_d1.py`) — Stage 60 D1
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_62_PLAN.md` (`backend/tests/test_stage62_open.py`) — Stage 62 open (ADR-129)
+- `docs/IOT_INTEGRATION_MVP.md` (`backend/tests/test_iot_integration_i1.py`) — Stage 62 I1
 - `docs/STAGE_61_PLAN.md` (`backend/tests/test_stage61_open.py`) — Stage 61 open (ADR-127)
 - `docs/EMBEDDED_FINTECH_MVP.md` (`backend/tests/test_embedded_fintech_f1.py`) — Stage 61 F1
 - `docs/SUPPLY_CHAIN_INTEGRATION_MVP.md` (`backend/tests/test_supply_chain_integration_s1.py`) — Stage 61 S1
@@ -864,4 +866,8 @@ H61x met — `docs/STAGE_61_EXIT_CRITERIA.md`, ADR-128. Stages 1–61 frozen for
 
 ## Stage 62 open
 
-Commercial IoT & AI Marketplace Fidelity — `docs/STAGE_62_PLAN.md`, ADR-129; Open — I1 next.
+Commercial IoT & AI Marketplace Fidelity — `docs/STAGE_62_PLAN.md`, ADR-129; Open — I1 complete; A1 next.
+
+## Stage 62 I1 — IoT integration honesty
+
+`docs/IOT_INTEGRATION_MVP.md` + `ops/mvp/iot-integration.json` — packaging Complete; `iot_integration_live_claimed` / `smart_shelves_live_claimed` / `temperature_sensors_live_claimed` / `iot_program_live` remain false.

@@ -1,0 +1,155 @@
+{
+  "stage": "62",
+  "workstream": "I1",
+  "doc": "docs/IOT_INTEGRATION_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "e2e_purchase_stock": "ops/mvp/e2e-purchase-stock.json",
+  "e2e_purchase_stock_doc": "docs/E2E_PURCHASE_STOCK_MVP.md",
+  "advanced_manufacturing": "ops/mvp/advanced-manufacturing.json",
+  "advanced_manufacturing_doc": "docs/ADVANCED_MANUFACTURING_MVP.md",
+  "supply_chain_integration": "ops/mvp/supply-chain-integration.json",
+  "supply_chain_integration_doc": "docs/SUPPLY_CHAIN_INTEGRATION_MVP.md",
+  "ops_monitoring_doc": "docs/OPS_MONITORING_MVP.md",
+  "api_integration_commercial": "ops/mvp/api-integration-commercial.json",
+  "api_integration_commercial_doc": "docs/API_INTEGRATION_COMMERCIAL_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage62_plan": "docs/STAGE_62_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "iot_integration_live_claimed": false,
+  "smart_shelves_live_claimed": false,
+  "temperature_sensors_live_claimed": false,
+  "iot_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage62_i1_iot_integration.json",
+  "steps": [
+    {
+      "id": "iot-product-overview",
+      "category": "iot",
+      "title": "Index PRODUCT_OVERVIEW IoT / smart-shelf / temperature-sensor Long-Term themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_62_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "iot-purchase-stock",
+      "category": "ops",
+      "title": "Link purchase-stock / inventory E2E as stock adjacency (not live smart shelves)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/E2E_PURCHASE_STOCK_MVP.md",
+        "ops/mvp/e2e-purchase-stock.json"
+      ],
+      "source": "docs/E2E_PURCHASE_STOCK_MVP.md"
+    },
+    {
+      "id": "iot-manufacturing",
+      "category": "ops",
+      "title": "Link Stage 60 advanced manufacturing as production adjacency (MRP Remaining \u2260 IoT sensors)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADVANCED_MANUFACTURING_MVP.md",
+        "ops/mvp/advanced-manufacturing.json"
+      ],
+      "source": "docs/ADVANCED_MANUFACTURING_MVP.md"
+    },
+    {
+      "id": "iot-supply-chain",
+      "category": "ops",
+      "title": "Link Stage 61 supply-chain integration as supplier adjacency (not IoT device program live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPLY_CHAIN_INTEGRATION_MVP.md",
+        "ops/mvp/supply-chain-integration.json"
+      ],
+      "source": "docs/SUPPLY_CHAIN_INTEGRATION_MVP.md"
+    },
+    {
+      "id": "iot-ops-monitoring",
+      "category": "ops",
+      "title": "Link ops monitoring as telemetry adjacency (health/metrics \u2260 device IoT Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPS_MONITORING_MVP.md",
+        "docs/STAGE_62_PLAN.md"
+      ],
+      "source": "docs/OPS_MONITORING_MVP.md"
+    },
+    {
+      "id": "iot-api-commercial",
+      "category": "commercial",
+      "title": "Link API / integration commercial pack as connector adjacency (not IoT program live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_INTEGRATION_COMMERCIAL_MVP.md",
+        "ops/mvp/api-integration-commercial.json"
+      ],
+      "source": "docs/API_INTEGRATION_COMMERCIAL_MVP.md"
+    },
+    {
+      "id": "iot-roadmap",
+      "category": "iot",
+      "title": "Index DEVELOPMENT_ROADMAP / plan IoT backlog as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/STAGE_62_PLAN.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "iot-plan-honesty",
+      "category": "iot",
+      "title": "Confirm Stage 62 plan explicitly defers live IoT / smart shelves / temperature sensors",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_62_PLAN.md",
+        "docs/IOT_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_62_PLAN.md"
+    },
+    {
+      "id": "iot-smart-shelves-remaining",
+      "category": "honesty",
+      "title": "Live smart shelves Remaining \u2014 packaging \u2260 shipped shelf-sensor surface",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_62_PLAN.md",
+        "docs/IOT_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_62_PLAN.md"
+    },
+    {
+      "id": "iot-temperature-remaining",
+      "category": "honesty",
+      "title": "Live temperature sensors / IoT program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_62_PLAN.md",
+        "docs/IOT_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_62_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live IoT integration Complete",
+    "Live smart shelves Complete",
+    "Live temperature sensors Complete",
+    "IoT program live Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

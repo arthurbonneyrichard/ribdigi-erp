@@ -1393,3 +1393,5 @@ Every feature in every phase must meet:
 **Stage 61 exit (2026-08-11):** F1, S1, D1, H61x met — `docs/STAGE_61_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_128_STAGE61_FREEZE.md`. Fidelity: `docs/STAGE_61_FIDELITY.md`.
 
 **Stage 62 open (2026-08-11):** Commercial IoT & AI Marketplace Fidelity track approved — `docs/ADR_129_STAGE62_OPEN.md` + `docs/STAGE_62_PLAN.md` (IoT integration → AI model marketplace → fidelity).
+
+**Stage 62 I1 (2026-08-11):** IoT integration honesty — `docs/IOT_INTEGRATION_MVP.md`, `ops/mvp/iot-integration.json`, evidence `stage62_i1_iot_integration.json` (`test_iot_integration_i1.py`); live smart shelves / temperature sensors Remaining.
