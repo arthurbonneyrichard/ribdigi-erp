@@ -83,12 +83,21 @@ async def list_connections(db: AsyncSession, tenant_id: str) -> list[m.BankAccou
     )
 
 
+def _is_production() -> bool:
+    return (settings.APP_ENV or "").strip().lower() == "production"
+
+
 def _normalize_provider(provider: str | None) -> str:
     value = (provider or "mock").strip().lower()
     if value not in PROVIDERS:
         raise HTTPException(
             status_code=400,
             detail=f"provider must be one of: {', '.join(sorted(PROVIDERS))}",
+        )
+    if value == "mock" and _is_production():
+        raise HTTPException(
+            status_code=400,
+            detail="The 'mock' bank provider is for development only and is disabled in production. Use 'http_json'.",
         )
     return value
 
@@ -244,6 +253,11 @@ async def fetch_provider_transactions(
     """Return (provider, normalized lines, opening, closing)."""
     provider = (row.provider or "mock").strip().lower()
     if provider == "mock":
+        if _is_production():
+            raise HTTPException(
+                status_code=400,
+                detail="The 'mock' bank provider is disabled in production; reconnect this account with a real 'http_json' feed.",
+            )
         return "mock", _mock_transactions(row, since=since), None, None
     if provider == "http_json":
         return await _fetch_http_json(row, since=since)

@@ -20,6 +20,23 @@ async def _admin_headers(ac, seeded):
     )
 
 
+def test_mock_provider_blocked_in_production(monkeypatch):
+    """The dev-only 'mock' provider (fake feed) must be rejected in production."""
+    from fastapi import HTTPException
+
+    from app import bank_connectors as bc
+
+    monkeypatch.setattr("app.bank_connectors.settings.APP_ENV", "production")
+    with pytest.raises(HTTPException) as exc:
+        bc._normalize_provider("mock")
+    assert exc.value.status_code == 400
+    # a real feed provider stays allowed in production
+    assert bc._normalize_provider("http_json") == "http_json"
+
+    monkeypatch.setattr("app.bank_connectors.settings.APP_ENV", "development")
+    assert bc._normalize_provider("mock") == "mock"
+
+
 @pytest.mark.asyncio
 async def test_mock_bank_connection_sync_and_dedupe(client, monkeypatch):
     monkeypatch.setattr("app.config.settings.BANK_FEED_SYNC_ENABLED", True)
