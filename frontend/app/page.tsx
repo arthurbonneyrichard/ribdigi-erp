@@ -131,6 +131,7 @@ export default function Login() {
 
   return (
     <div className="login">
+      <div className="login-badge" aria-hidden>R</div>
       <h1>RIBDIGI ERP</h1>
       <p className="muted">One ERP Platform. Unlimited Business.</p>
       <form onSubmit={go}>
