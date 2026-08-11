@@ -1422,4 +1422,4 @@ Every feature in every phase must meet:
 
 **Stage 64 exit (2026-08-11):** B1, F1, D1, H64x met — `docs/STAGE_64_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_134_STAGE64_FREEZE.md`. Fidelity: `docs/STAGE_64_FIDELITY.md`. Stage 65 next (not yet opened).
 
-**Stage 65 open (2026-08-11):** Commercial Verticals & Integration Marketplace Fidelity track approved — `docs/ADR_135_STAGE65_OPEN.md` + `docs/STAGE_65_PLAN.md` (industry verticals → third-party integration marketplace → fidelity).
+**Stage 65 open (2026-08-11):** MVP Release Candidate Fidelity track approved — `docs/ADR_135_STAGE65_OPEN.md` + `docs/STAGE_65_PLAN.md` (Development → Internal QA → Staging → Controlled Business Pilot → … → MVP Release Candidate; R1 next).

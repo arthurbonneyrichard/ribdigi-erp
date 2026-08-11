@@ -927,7 +927,7 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 ## Stage 65 open
 
-Commercial Verticals & Integration Marketplace Fidelity — `docs/STAGE_65_PLAN.md`, ADR-135; Open — V1 next.
+MVP Release Candidate Fidelity — `docs/STAGE_65_PLAN.md`, ADR-135; Open — R1 next.
 
 ## Stage 64 exit
 

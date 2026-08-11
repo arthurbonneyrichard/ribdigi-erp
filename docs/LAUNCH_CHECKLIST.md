@@ -182,7 +182,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
-- [x] Stage 65 track opened (ADR-135: `test_stage65_open.py`, `docs/STAGE_65_PLAN.md`) — Commercial Verticals & Integration Marketplace Fidelity; V1 next
+- [x] Stage 65 track opened (ADR-135: `test_stage65_open.py`, `docs/STAGE_65_PLAN.md`) — MVP Release Candidate Fidelity; R1 next
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

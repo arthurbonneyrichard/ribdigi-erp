@@ -30,4 +30,4 @@ Stage 65 opened via ADR-135 (`docs/ADR_135_STAGE65_OPEN.md`).
 
 ## Amendment (2026-08-11)
 
-Product owner approved opening Stage 65 (Commercial Verticals & Integration Marketplace Fidelity) after Stage 64 freeze via CONTINUE/NEXT — see [ADR-135](ADR_135_STAGE65_OPEN.md) and [STAGE_65_PLAN.md](STAGE_65_PLAN.md). Stage 64 feature scope remains frozen; Stage 65 does not reopen B1–D1 / H64x.
+Product owner approved opening Stage 65 (MVP Release Candidate Fidelity — Development → Internal QA → Staging → Controlled Business Pilot → … → MVP Release Candidate) after Stage 64 freeze via CONTINUE/NEXT — see [ADR-135](ADR_135_STAGE65_OPEN.md) and [STAGE_65_PLAN.md](STAGE_65_PLAN.md). Stage 64 feature scope remains frozen; Stage 65 does not reopen B1–D1 / H64x.
