@@ -167,6 +167,7 @@ Authoritative MVP docs:
 - `docs/DIGITAL_MARKETING_MVP.md` (`backend/tests/test_digital_marketing_m1.py`) — Stage 54 M1
 - `docs/DIRECT_SALES_MVP.md` (`backend/tests/test_direct_sales_s1.py`) — Stage 54 S1
 - `docs/STAGE_54_FIDELITY.md` (`backend/tests/test_stage54_fidelity_d1.py`) — Stage 54 D1
+- `docs/STAGE_54_EXIT_CRITERIA.md` / `docs/ADR_114_STAGE54_FREEZE.md` (`backend/tests/test_stage54_exit_h54x.py`) — Stage 54 H54x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -652,7 +653,7 @@ H53x met — `docs/STAGE_53_EXIT_CRITERIA.md`, ADR-112. Stages 1–53 frozen for
 
 ## Stage 54 open
 
-Commercial Go-To-Market Fidelity — `docs/STAGE_54_PLAN.md`, ADR-113; D1 complete; H54x next.
+Commercial Go-To-Market Fidelity — `docs/STAGE_54_PLAN.md`, ADR-113; Closed — exit met (H54x / ADR-114).
 
 ## Stage 54 M1 — Digital marketing / case studies / testimonials honesty
 
@@ -665,3 +666,7 @@ Commercial Go-To-Market Fidelity — `docs/STAGE_54_PLAN.md`, ADR-113; D1 comple
 ## Stage 54 D1 — Fidelity
 
 `docs/STAGE_54_FIDELITY.md` maps M1–S1 → readiness / launch / deploy / security (`test_stage54_fidelity_d1.py`).
+
+## Stage 54 exit
+
+H54x met — `docs/STAGE_54_EXIT_CRITERIA.md`, ADR-114. Stages 1–54 frozen for Stage 54 feature scope.
