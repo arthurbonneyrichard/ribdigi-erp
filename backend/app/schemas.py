@@ -634,6 +634,7 @@ class PosSessionClose(BaseModel):
 class PosSaleCreate(BaseModel):
     session_id: str | None = None
     party_id: str | None = None
+    customer_name: str | None = Field(default=None, max_length=180)
     subtotal: float = 0
     tax: float = 0
     total: float = 0

@@ -51,6 +51,15 @@ def test_thermal_text_contains_totals_and_company():
     assert "22.50" in text
 
 
+def test_thermal_text_includes_optional_customer_name():
+    receipt = _sample_receipt()
+    receipt["customer_name"] = "Ama Mensah"
+    text = render_thermal_text(receipt, paper="80mm")
+    assert "Customer" in text
+    assert "Ama Mensah" in text
+    assert receipt["customer_name"] == "Ama Mensah"
+
+
 def test_thermal_pdf_is_valid_pdf_bytes():
     receipt = _sample_receipt()
     pdf = to_thermal_pdf(receipt, paper="58mm")

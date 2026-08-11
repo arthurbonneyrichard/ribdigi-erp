@@ -25,6 +25,13 @@ function looksLikeBarcode(value: string) {
 
 type CartItem = Product & { quantity: number };
 
+type Customer = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+};
+
 type Session = {
   session_id: string;
   session_number: string;
@@ -141,6 +148,9 @@ export default function Page() {
   const [actualCash, setActualCash] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paper, setPaper] = useState('80mm');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerId, setCustomerId] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<any>(null);
@@ -167,7 +177,22 @@ export default function Page() {
     refreshSession()
       .then(() => browse(''))
       .catch((err) => setError(err.message));
+    api('/customers')
+      .then((r) => setCustomers(r.data || []))
+      .catch(() => setCustomers([]));
   }, [browse]);
+
+  function selectCustomer(id: string) {
+    setCustomerId(id);
+    if (!id) return;
+    const match = customers.find((c) => c.id === id);
+    if (match) setCustomerName(match.name);
+  }
+
+  function clearCustomer() {
+    setCustomerId('');
+    setCustomerName('');
+  }
 
   async function openShift() {
     setError('');
@@ -308,6 +333,11 @@ export default function Page() {
       setError('Cart is empty');
       return;
     }
+    const name = customerName.trim();
+    if (paymentMethod === 'credit' && !customerId) {
+      setError('Select a customer for credit sales');
+      return;
+    }
     const items = cart.map((c) => ({
       product_id: c.product_id || c.id,
       variant_id: c.variant_id || null,
@@ -325,6 +355,8 @@ export default function Page() {
           total: subtotal,
           status: 'completed',
           payment_method: paymentMethod,
+          party_id: customerId || null,
+          customer_name: name || null,
           items,
         }),
       });
@@ -338,8 +370,10 @@ export default function Page() {
             : r.data?.drawer?.error
               ? ` · drawer warn: ${r.data.drawer.error}`
               : '';
-      setMessage(`Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0})${drawerNote}`);
+      const custNote = r.data?.customer_name ? ` · ${r.data.customer_name}` : '';
+      setMessage(`Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0})${custNote}${drawerNote}`);
       setCart([]);
+      clearCustomer();
       await refreshSession();
       await browse(q);
     } catch (err: any) {
@@ -546,6 +580,30 @@ export default function Page() {
               </div>
 
               <label className="tpos-field">
+                <span>Customer {paymentMethod === 'credit' ? '(required)' : '(optional)'}</span>
+                <select value={customerId} onChange={(e) => selectCustomer(e.target.value)}>
+                  <option value="">Walk-in / none</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="tpos-field">
+                <span>Customer name</span>
+                <input
+                  className="tpos-input"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Optional name on receipt"
+                  maxLength={180}
+                  autoComplete="off"
+                />
+              </label>
+
+              <label className="tpos-field">
                 <span>Payment</span>
                 <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                   <option value="cash">Cash</option>
@@ -590,6 +648,7 @@ export default function Page() {
             <h3>Receipt</h3>
             <p>
               {receipt.reference} · Total {receipt.total} · {receipt.payment_method}
+              {receipt.customer_name ? ` · ${receipt.customer_name}` : ''}
             </p>
             <pre className="tpos-receipt-text">{receipt.text}</pre>
             <div className="tpos-receipt-actions">

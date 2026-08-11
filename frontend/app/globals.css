@@ -457,7 +457,8 @@
 .tpos-total span{color:#94a3b8;font-weight:700}
 .tpos-total strong{font-size:28px;color:#fff}
 .tpos-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase}
-.tpos-field select{width:100%;background:#1e293b;border-color:#475569;color:#f8fafc}
+.tpos-field select,.tpos-cart-foot .tpos-input{width:100%;background:#1e293b;border-color:#475569;color:#f8fafc}
+.tpos-cart-foot .tpos-input::placeholder{color:#64748b}
 .tpos-cart-actions{display:flex;gap:8px}
 .tpos-receipt{margin-top:4px}
 .tpos-receipt-text{

@@ -3742,6 +3742,8 @@ async def pos_sale(
         )
     total = round(subtotal + tax_total, 2)
 
+    party = None
+    customer_name = (payload.customer_name or "").strip() or None
     if payload.party_id:
         party = (
             await db.execute(
@@ -3752,21 +3754,32 @@ async def pos_sale(
                 )
             )
         ).scalar_one_or_none()
-        if party and float(party.credit_limit or 0) > 0:
+        if not party:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        if not customer_name:
+            customer_name = party.name
+        if float(party.credit_limit or 0) > 0:
             projected = float(party.balance or 0) + float(total)
             if projected > float(party.credit_limit):
                 raise HTTPException(status_code=409, detail="CREDIT_LIMIT_EXCEEDED")
+    elif payment_method == "credit":
+        raise HTTPException(
+            status_code=400,
+            detail="Select a customer for credit sales",
+        )
 
     ref = f"POS_SALE-{datetime.utcnow():%Y%m%d%H%M%S%f}"
     body = payload.model_dump()
     body.pop("items", None)
     body.pop("session_id", None)
     body.pop("payment_method", None)
+    body.pop("customer_name", None)
     body["payload"] = {
         **(body.get("payload") or {}),
         "items": priced_items,
         "payment_method": payment_method,
         "session_id": session.id,
+        "customer_name": customer_name,
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
@@ -3835,6 +3848,8 @@ async def pos_sale(
         "tax": float(tx.tax),
         "total": float(tx.total),
         "payment_method": payment_method,
+        "customer_name": customer_name,
+        "party_id": payload.party_id,
     }
     if drawer is not None:
         payload_out["drawer"] = drawer

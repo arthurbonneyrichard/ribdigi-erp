@@ -87,6 +87,11 @@ def build_receipt_payload(
                 "variant_id": raw.get("variant_id"),
             }
         )
+    customer_name = payload.get("customer_name")
+    if isinstance(customer_name, str):
+        customer_name = customer_name.strip() or None
+    else:
+        customer_name = None
     return {
         "sale_id": tx.id,
         "reference": tx.reference,
@@ -95,6 +100,7 @@ def build_receipt_payload(
         "company_address": tenant.address if tenant else None,
         "currency": tenant.currency if tenant else "GHS",
         "cashier_name": cashier_name,
+        "customer_name": customer_name,
         "subtotal": float(tx.subtotal or 0),
         "tax": float(tx.tax or 0),
         "total": float(tx.total or 0),
@@ -123,6 +129,8 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         lines.append(_lr("Date", str(created)[:16], width))
     if receipt.get("cashier_name"):
         lines.append(_lr("Cashier", str(receipt["cashier_name"])[: width // 2], width))
+    if receipt.get("customer_name"):
+        lines.append(_lr("Customer", str(receipt["customer_name"])[: width // 2], width))
     lines.append("-" * width)
     for item in receipt.get("items") or []:
         name = str(item.get("name") or "Item")
