@@ -1363,3 +1363,5 @@ Every feature in every phase must meet:
 **Stage 58 exit (2026-08-11):** B1, I1, D1, H58x met — `docs/STAGE_58_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_122_STAGE58_FREEZE.md`. Fidelity: `docs/STAGE_58_FIDELITY.md`.
 
 **Stage 59 open (2026-08-11):** Commercial Channel Extensions Fidelity track approved — `docs/ADR_123_STAGE59_OPEN.md` + `docs/STAGE_59_PLAN.md` (e-commerce integration → CRM commercial → fidelity).
+
+**Stage 59 E1 (2026-08-11):** E-commerce integration honesty — `docs/ECOMMERCE_INTEGRATION_MVP.md`, `ops/mvp/ecommerce-integration.json`, evidence `stage59_e1_ecommerce_integration.json` (`test_ecommerce_integration_e1.py`); live Shopify / WooCommerce Remaining.

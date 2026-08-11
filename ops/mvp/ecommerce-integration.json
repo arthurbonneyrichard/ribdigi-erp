@@ -1,0 +1,158 @@
+{
+  "stage": "59",
+  "workstream": "E1",
+  "doc": "docs/ECOMMERCE_INTEGRATION_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "marketplace_presence": "ops/mvp/marketplace-presence.json",
+  "marketplace_presence_doc": "docs/MARKETPLACE_PRESENCE_MVP.md",
+  "api_integration_commercial": "ops/mvp/api-integration-commercial.json",
+  "api_integration_commercial_doc": "docs/API_INTEGRATION_COMMERCIAL_MVP.md",
+  "digital_marketing": "ops/mvp/digital-marketing.json",
+  "digital_marketing_doc": "docs/DIGITAL_MARKETING_MVP.md",
+  "partner_reseller": "ops/mvp/partner-reseller.json",
+  "partner_reseller_doc": "docs/PARTNER_RESELLER_MVP.md",
+  "direct_sales": "ops/mvp/direct-sales.json",
+  "direct_sales_doc": "docs/DIRECT_SALES_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage59_plan": "docs/STAGE_59_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "shopify_connector_live_claimed": false,
+  "woocommerce_connector_live_claimed": false,
+  "ecommerce_sync_program_live": false,
+  "ecommerce_integration_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage59_e1_ecommerce_integration.json",
+  "steps": [
+    {
+      "id": "ec-product-overview",
+      "category": "ecommerce",
+      "title": "Index PRODUCT_OVERVIEW Shopify / WooCommerce Mid-Term e-commerce themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_59_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "ec-marketplace",
+      "category": "channel",
+      "title": "Link Stage 50 marketplace presence as channel adjacency (not live store connector)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MARKETPLACE_PRESENCE_MVP.md",
+        "ops/mvp/marketplace-presence.json"
+      ],
+      "source": "docs/MARKETPLACE_PRESENCE_MVP.md"
+    },
+    {
+      "id": "ec-api-commercial",
+      "category": "ecommerce",
+      "title": "Link Stage 53 API / integration commercial as connector-fee adjacency (not live Shopify)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_INTEGRATION_COMMERCIAL_MVP.md",
+        "ops/mvp/api-integration-commercial.json"
+      ],
+      "source": "docs/API_INTEGRATION_COMMERCIAL_MVP.md"
+    },
+    {
+      "id": "ec-digital-marketing",
+      "category": "channel",
+      "title": "Link Stage 54 digital marketing as GTM adjacency (not e-commerce sync live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DIGITAL_MARKETING_MVP.md",
+        "ops/mvp/digital-marketing.json"
+      ],
+      "source": "docs/DIGITAL_MARKETING_MVP.md"
+    },
+    {
+      "id": "ec-partner-sales",
+      "category": "channel",
+      "title": "Link Stage 50 partner-reseller / Stage 54 direct sales as channel adjacency (not WooCommerce live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PARTNER_RESELLER_MVP.md",
+        "ops/mvp/partner-reseller.json",
+        "docs/DIRECT_SALES_MVP.md",
+        "ops/mvp/direct-sales.json"
+      ],
+      "source": "docs/PARTNER_RESELLER_MVP.md"
+    },
+    {
+      "id": "ec-roadmap-backlog",
+      "category": "ecommerce",
+      "title": "Index DEVELOPMENT_ROADMAP e-commerce / integration backlog as Remaining source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "ec-plan-honesty",
+      "category": "channel",
+      "title": "Confirm Stage 59 plan explicitly defers live Shopify / WooCommerce connectors",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_59_PLAN.md",
+        "docs/ECOMMERCE_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_59_PLAN.md"
+    },
+    {
+      "id": "ec-shopify-remaining",
+      "category": "honesty",
+      "title": "Live Shopify connector Remaining \u2014 packaging \u2260 production store sync",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_59_PLAN.md",
+        "docs/ECOMMERCE_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_59_PLAN.md"
+    },
+    {
+      "id": "ec-woocommerce-remaining",
+      "category": "honesty",
+      "title": "Live WooCommerce connector Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_59_PLAN.md",
+        "docs/ECOMMERCE_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_59_PLAN.md"
+    },
+    {
+      "id": "ec-sync-remaining",
+      "category": "honesty",
+      "title": "E-commerce sync / catalog bridge program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_59_PLAN.md",
+        "docs/ECOMMERCE_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_59_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live Shopify connector Complete",
+    "Live WooCommerce connector Complete",
+    "E-commerce sync program live Complete",
+    "E-commerce integration program live Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}
