@@ -400,6 +400,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 47 A1** | Customer audit rights honesty — `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md`, `ops/mvp/customer-audit-rights.json` (`test_customer_audit_rights_a1.py`); customer audit executed Remaining |
 | **Stage 47 D1** | Insurance & audit fidelity — `docs/STAGE_47_FIDELITY.md` (`test_stage47_fidelity_d1.py`) maps I1–A1 → readiness / launch / deploy / security |
 | **Stage 47 fidelity** | D1 maps I1–A1 insurance & audit — `docs/STAGE_47_FIDELITY.md` (`test_stage47_fidelity_d1.py`); exit/freeze `docs/STAGE_47_EXIT_CRITERIA.md`, ADR-100 (`test_stage47_exit_h47x.py`); historical open ADR-099; issued COI / customer audit executed / go-live / §7 remain Remaining |
+| **Stage 48 open** | Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101 (`test_stage48_open.py`); Stages 1–47 remain frozen; P1 next |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |

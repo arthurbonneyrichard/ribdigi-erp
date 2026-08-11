@@ -119,6 +119,7 @@ Authoritative MVP docs:
 - `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md` (`backend/tests/test_customer_audit_rights_a1.py`) — Stage 47 A1
 - `docs/STAGE_47_FIDELITY.md` (`backend/tests/test_stage47_fidelity_d1.py`) — Stage 47 D1
 - `docs/STAGE_47_EXIT_CRITERIA.md` / `docs/ADR_100_STAGE47_FREEZE.md` (`backend/tests/test_stage47_exit_h47x.py`) — Stage 47 H47x
+- `docs/STAGE_48_PLAN.md` (`backend/tests/test_stage48_open.py`) — Stage 48 open (ADR-101)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -481,3 +482,7 @@ Commercial Insurance & Audit Fidelity — `docs/STAGE_47_PLAN.md`, ADR-099; Clos
 ## Stage 47 exit
 
 H47x met — `docs/STAGE_47_EXIT_CRITERIA.md`, ADR-100. Stages 1–47 frozen for Stage 47 feature scope.
+
+## Stage 48 open
+
+Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101; P1 next.

@@ -23,3 +23,8 @@ Stage 47 Commercial Insurance & Audit Fidelity delivered cyber insurance / certi
 - Stage 1–46 freezes remain in force for their scopes (Stage 46 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Insurance & audit packaging Complete does **not** mean issued COI, live cyber policy, customer audit executed, on-site audit, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 48 (Commercial Services Fidelity) after Stage 47 freeze via CONTINUE/NEXT — see [ADR-101](ADR_101_STAGE48_OPEN.md) and [STAGE_48_PLAN.md](STAGE_48_PLAN.md). Stage 47 feature scope remains frozen; Stage 48 does not reopen I1–D1 / H47x.
+

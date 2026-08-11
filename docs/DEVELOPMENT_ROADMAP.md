@@ -482,6 +482,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 47 exit (2026-08-11):** I1, A1, D1, H47x met — `docs/STAGE_47_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_100_STAGE47_FREEZE.md`. Fidelity: `docs/STAGE_47_FIDELITY.md`.
 
+**Stage 48 open (2026-08-11):** Commercial Services Fidelity track approved — `docs/ADR_101_STAGE48_OPEN.md` + `docs/STAGE_48_PLAN.md` (professional services/SOW → customer training/cert → fidelity).
+
 
 
 
