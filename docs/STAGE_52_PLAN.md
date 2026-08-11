@@ -1,6 +1,6 @@
 # Stage 52 Plan — Commercial Partnerships & Renewal Fidelity
 
-**Status:** Open — I1 complete; R1 next  
+**Status:** Open — R1 complete; D1 next  
 **Base:** Industry Partnerships Honesty Pack + Subscription Renewal / Annual Discount Honesty Pack → Commercial Partnerships & Renewal Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-109](ADR_109_STAGE52_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Partnerships & Renewal Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **I1** | Industry partnerships honesty packaging (not live industry partnership program / signed association deals Complete) | P0 | COMPLETE |
-| **R1** | Subscription renewal / annual discount honesty packaging (not live annual-discount enforcement / auto-renewal billing Complete) | P0 | PENDING |
+| **R1** | Subscription renewal / annual discount honesty packaging (not live annual-discount enforcement / auto-renewal billing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H52x** | Stage 52 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -83,10 +83,10 @@ Commercial Partnerships & Renewal Fidelity
 
 ## R1 acceptance criteria
 
-- [ ] Subscription renewal / annual discount honesty packaging indexing PRODUCT_OVERVIEW annual billing / auto-renewal themes and Stage 36 billing-deferred adjacency (not claiming live annual-discount enforcement / auto-renewal billing Complete).
-- [ ] Automated proof: `backend/tests/test_subscription_renewal_r1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 52 R1.
+- [x] Subscription renewal / annual discount honesty packaging indexing PRODUCT_OVERVIEW annual billing / auto-renewal themes and Stage 36 billing-deferred adjacency (not claiming live annual-discount enforcement / auto-renewal billing Complete).
+- [x] Automated proof: `backend/tests/test_subscription_renewal_r1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 52 R1.
 
 ## D1 acceptance criteria
 

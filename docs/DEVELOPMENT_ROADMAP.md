@@ -526,6 +526,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 52 I1 (2026-08-11):** Industry partnerships honesty — `docs/INDUSTRY_PARTNERSHIPS_MVP.md`, `ops/mvp/industry-partnerships.json`, evidence `stage52_i1_industry_partnerships.json` (`test_industry_partnerships_i1.py`); live industry partnership program Remaining.
 
+**Stage 52 R1 (2026-08-11):** Subscription renewal / annual discount honesty — `docs/SUBSCRIPTION_RENEWAL_MVP.md`, `ops/mvp/subscription-renewal.json`, evidence `stage52_r1_subscription_renewal.json` (`test_subscription_renewal_r1.py`); live annual-discount enforcement Remaining.
+
 
 
 

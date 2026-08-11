@@ -182,8 +182,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
-- [x] Stage 52 track opened (ADR-109: `test_stage52_open.py`, `docs/STAGE_52_PLAN.md`) — Commercial Partnerships & Renewal Fidelity; I1 complete; R1 next
+- [x] Stage 52 track opened (ADR-109: `test_stage52_open.py`, `docs/STAGE_52_PLAN.md`) — Commercial Partnerships & Renewal Fidelity; R1 complete; D1 next
 - [x] Industry partnerships honesty (Stage 52 I1: `test_industry_partnerships_i1.py` — `docs/INDUSTRY_PARTNERSHIPS_MVP.md`, `ops/mvp/industry-partnerships.json`; evidence `stage52_i1_industry_partnerships.json`; live industry partnership program Remaining)
+- [x] Subscription renewal / annual discount honesty (Stage 52 R1: `test_subscription_renewal_r1.py` — `docs/SUBSCRIPTION_RENEWAL_MVP.md`, `ops/mvp/subscription-renewal.json`; evidence `stage52_r1_subscription_renewal.json`; live annual-discount enforcement Remaining)
 - [x] Stage 51 track opened (ADR-107: `test_stage51_open.py`, `docs/STAGE_51_PLAN.md`)
 - [x] Marketplace presence honesty (Stage 51 M1: `test_marketplace_presence_m1.py` — `docs/MARKETPLACE_PRESENCE_MVP.md`, `ops/mvp/marketplace-presence.json`; evidence `stage51_m1_marketplace_presence.json`; live marketplace listing Remaining)
 - [x] Add-on services honesty (Stage 51 A1: `test_addon_services_a1.py` — `docs/ADDON_SERVICES_MVP.md`, `ops/mvp/addon-services.json`; evidence `stage51_a1_addon_services.json`; live add-on catalog Remaining)

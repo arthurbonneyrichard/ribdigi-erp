@@ -1,0 +1,156 @@
+{
+  "stage": "52",
+  "workstream": "R1",
+  "doc": "docs/SUBSCRIPTION_RENEWAL_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "pricing_transparency": "ops/mvp/pricing-transparency.json",
+  "pricing_transparency_doc": "docs/PRICING_TRANSPARENCY_MVP.md",
+  "industry_partnerships": "ops/mvp/industry-partnerships.json",
+  "industry_partnerships_doc": "docs/INDUSTRY_PARTNERSHIPS_MVP.md",
+  "freemium_trial": "ops/mvp/freemium-trial.json",
+  "freemium_trial_doc": "docs/FREEMIUM_TRIAL_MVP.md",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "deferred_adr_register_doc": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage52_plan": "docs/STAGE_52_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "annual_discount_enforcement_claimed": false,
+  "auto_renewal_billing_live": false,
+  "upgrade_downgrade_live": false,
+  "renewal_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage52_r1_subscription_renewal.json",
+  "steps": [
+    {
+      "id": "sr-product-overview",
+      "category": "renewal",
+      "title": "Index PRODUCT_OVERVIEW annual billing / auto-renewal themes as commercial honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_52_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "sr-billing-deferred",
+      "category": "discount",
+      "title": "Link Stage 36 billing-deferred honesty as auto-renewal billing Remaining adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "sr-pricing-adjacency",
+      "category": "discount",
+      "title": "Link Stage 49 pricing transparency as list-price adjacency (not discount enforcement)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRICING_TRANSPARENCY_MVP.md",
+        "ops/mvp/pricing-transparency.json"
+      ],
+      "source": "docs/PRICING_TRANSPARENCY_MVP.md"
+    },
+    {
+      "id": "sr-industry-adjacency",
+      "category": "renewal",
+      "title": "Link Stage 52 I1 industry partnerships as GTM adjacency (not renewal Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INDUSTRY_PARTNERSHIPS_MVP.md",
+        "ops/mvp/industry-partnerships.json"
+      ],
+      "source": "docs/INDUSTRY_PARTNERSHIPS_MVP.md"
+    },
+    {
+      "id": "sr-trial-adjacency",
+      "category": "renewal",
+      "title": "Link Stage 50 freemium trial as acquisition adjacency (not auto-renewal billing)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FREEMIUM_TRIAL_MVP.md",
+        "ops/mvp/freemium-trial.json"
+      ],
+      "source": "docs/FREEMIUM_TRIAL_MVP.md"
+    },
+    {
+      "id": "sr-deferred-adr",
+      "category": "discount",
+      "title": "Link deferred ADR register / ADR-002 as billing Remaining honesty for renewal charges",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEFERRED_ADR_REGISTER_MVP.md",
+        "ops/mvp/deferred-adr-register.json"
+      ],
+      "source": "docs/DEFERRED_ADR_REGISTER_MVP.md"
+    },
+    {
+      "id": "sr-roadmap-backlog",
+      "category": "renewal",
+      "title": "Index DEVELOPMENT_ROADMAP subscription / monetization backlog as renewal Remaining source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "sr-plan-honesty",
+      "category": "discount",
+      "title": "Confirm Stage 52 plan explicitly defers live annual-discount enforcement / auto-renewal billing",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_52_PLAN.md",
+        "docs/SUBSCRIPTION_RENEWAL_MVP.md"
+      ],
+      "source": "docs/STAGE_52_PLAN.md"
+    },
+    {
+      "id": "sr-discount-remaining",
+      "category": "honesty",
+      "title": "Live annual-discount enforcement Remaining \u2014 packaging \u2260 operating discount engine",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_52_PLAN.md",
+        "docs/SUBSCRIPTION_RENEWAL_MVP.md"
+      ],
+      "source": "docs/STAGE_52_PLAN.md"
+    },
+    {
+      "id": "sr-renewal-remaining",
+      "category": "honesty",
+      "title": "Auto-renewal billing Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_52_PLAN.md",
+        "docs/SUBSCRIPTION_RENEWAL_MVP.md"
+      ],
+      "source": "docs/STAGE_52_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live annual-discount enforcement Complete",
+    "Auto-renewal billing / payment-provider Complete",
+    "Upgrade / downgrade live Complete",
+    "Paid billing Complete (ADR-002)",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}
