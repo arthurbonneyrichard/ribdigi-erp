@@ -514,6 +514,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 51 open (2026-08-11):** Commercial Marketplace & Add-Ons Fidelity track approved — `docs/ADR_107_STAGE51_OPEN.md` + `docs/STAGE_51_PLAN.md` (marketplace → add-ons → fidelity).
 
+**Stage 51 M1 (2026-08-11):** Marketplace presence honesty — `docs/MARKETPLACE_PRESENCE_MVP.md`, `ops/mvp/marketplace-presence.json`, evidence `stage51_m1_marketplace_presence.json` (`test_marketplace_presence_m1.py`); live marketplace listing Remaining.
+
 
 
 

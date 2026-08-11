@@ -1,6 +1,6 @@
 # Stage 51 Plan — Commercial Marketplace & Add-Ons Fidelity
 
-**Status:** Open — M1 next  
+**Status:** Open — M1 complete; A1 next  
 **Base:** Marketplace Presence Honesty Pack + Add-On Services Honesty Pack → Commercial Marketplace & Add-Ons Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-107](ADR_107_STAGE51_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Marketplace & Add-Ons Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **M1** | Marketplace / app-store presence honesty packaging (not live marketplace listing Complete) | P0 | PENDING |
+| **M1** | Marketplace / app-store presence honesty packaging (not live marketplace listing Complete) | P0 | COMPLETE |
 | **A1** | Add-on services honesty packaging (not live add-on catalog / add-on billing Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H51x** | Stage 51 exit criteria + freeze ADR | Exit | PENDING |
@@ -75,10 +75,10 @@ Commercial Marketplace & Add-Ons Fidelity
 
 ## M1 acceptance criteria
 
-- [ ] Marketplace / app-store presence honesty packaging consolidating PRODUCT_OVERVIEW marketplace themes and Stage 49–50 channel / acquisition adjacency (not forging live marketplace listing Complete).
-- [ ] Automated proof: `backend/tests/test_marketplace_presence_m1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 51 M1.
+- [x] Marketplace / app-store presence honesty packaging consolidating PRODUCT_OVERVIEW marketplace themes and Stage 49–50 channel / acquisition adjacency (not forging live marketplace listing Complete).
+- [x] Automated proof: `backend/tests/test_marketplace_presence_m1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 51 M1.
 
 ## A1 acceptance criteria
 
