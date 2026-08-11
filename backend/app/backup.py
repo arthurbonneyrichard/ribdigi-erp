@@ -8,6 +8,7 @@ import hashlib
 import json
 from datetime import datetime
 from decimal import Decimal
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,7 @@ from app.config import settings
 
 FORMAT_NAME = "ribdigi-logical-backup"
 FORMAT_VERSION = 1
+OFFSITE_META_KEY = "__offsite__"
 
 # Restore order respects FK dependencies (parents before children).
 DATASET_SPECS: list[tuple[str, type]] = [
@@ -133,6 +135,11 @@ def row_to_dict(obj: Any) -> dict:
 
 
 def serialize_job(job: m.BackupJob) -> dict:
+    raw_counts = dict(job.record_counts or {})
+    offsite = raw_counts.pop(OFFSITE_META_KEY, None) or {}
+    offsite_uri = None
+    if offsite.get("uploaded") and offsite.get("bucket") and offsite.get("key"):
+        offsite_uri = f"s3://{offsite['bucket']}/{offsite['key']}"
     return {
         "id": job.id,
         "tenant_id": job.tenant_id,
@@ -141,12 +148,76 @@ def serialize_job(job: m.BackupJob) -> dict:
         "size_bytes": job.size_bytes,
         "checksum_sha256": job.checksum_sha256,
         "encrypted": job.encrypted,
-        "record_counts": job.record_counts or {},
+        "record_counts": raw_counts,
         "created_by": job.created_by,
         "created_at": job.created_at,
         "error_message": job.error_message,
         "notes": job.notes,
+        "offsite_uploaded": bool(offsite.get("uploaded")) if offsite else False,
+        "offsite_uri": offsite_uri,
     }
+
+
+def offsite_upload_enabled() -> bool:
+    return bool(getattr(settings, "BACKUP_OFFSITE_UPLOAD_ENABLED", False))
+
+
+@lru_cache(maxsize=1)
+def _backup_offsite_s3_client():
+    """S3 client for .ribbak offsite bucket (does not require media S3_BUCKET)."""
+    try:
+        import boto3
+        from botocore.client import Config
+    except ImportError as exc:
+        raise RuntimeError(
+            "Offsite backup upload requires boto3 (install backend requirements)"
+        ) from exc
+
+    endpoint = (settings.S3_ENDPOINT or settings.S3_ENDPOINT_URL or "").strip() or None
+    access = (settings.S3_ACCESS_KEY or "").strip()
+    secret = (settings.S3_SECRET_KEY or "").strip()
+    region = (settings.S3_REGION or "us-east-1").strip()
+    if not access or not secret:
+        raise RuntimeError(
+            "S3_ACCESS_KEY and S3_SECRET_KEY are required when "
+            "BACKUP_OFFSITE_UPLOAD_ENABLED=true"
+        )
+    addressing = "path" if settings.S3_FORCE_PATH_STYLE else "auto"
+    return boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        aws_access_key_id=access,
+        aws_secret_access_key=secret,
+        region_name=region,
+        config=Config(s3={"addressing_style": addressing}, signature_version="s3v4"),
+    )
+
+
+def reset_backup_offsite_s3_client_cache() -> None:
+    """Test helper: clear cached offsite boto3 client after settings monkeypatch."""
+    clear = getattr(_backup_offsite_s3_client, "cache_clear", None)
+    if callable(clear):
+        clear()
+
+
+def upload_ribbak_offsite(*, tenant_id: str, local_path: Path, filename: str) -> dict:
+    """Upload a local .ribbak to BACKUP_OFFSITE_S3_BUCKET. Raises on misconfig/upload error."""
+    bucket = (settings.BACKUP_OFFSITE_S3_BUCKET or "").strip()
+    if not bucket:
+        raise RuntimeError(
+            "BACKUP_OFFSITE_S3_BUCKET is required when BACKUP_OFFSITE_UPLOAD_ENABLED=true"
+        )
+    prefix = (settings.BACKUP_OFFSITE_S3_PREFIX or "ribdigi/logical/ribbak").strip().strip("/")
+    key = f"{prefix}/{tenant_id}/{filename}"
+    body = local_path.read_bytes()
+    client = _backup_offsite_s3_client()
+    client.put_object(
+        Bucket=bucket,
+        Key=key,
+        Body=body,
+        ContentType="application/octet-stream",
+    )
+    return {"bucket": bucket, "key": key, "bytes": len(body)}
 
 
 def serialize_settings(row: m.BackupSettings) -> dict:
@@ -486,12 +557,40 @@ async def create_backup(
         settings_row.last_run_at = datetime.utcnow()
         await prune_retention(db, tenant_id, settings_row.retention_count)
         await db.flush()
+
+        # Stage 27 B1: opt-in offsite mirror after local write (extends Stage 26 env names).
+        if offsite_upload_enabled():
+            try:
+                meta = upload_ribbak_offsite(
+                    tenant_id=tenant_id, local_path=path, filename=filename
+                )
+                merged = dict(job.record_counts or {})
+                merged[OFFSITE_META_KEY] = {
+                    "uploaded": True,
+                    "bucket": meta["bucket"],
+                    "key": meta["key"],
+                    "bytes": meta["bytes"],
+                }
+                job.record_counts = merged
+                await db.flush()
+            except Exception as exc:
+                # Local .ribbak remains on disk for operator recovery; do not claim success.
+                detail = (
+                    f"Local backup written but offsite upload failed: {exc}"
+                )[:500]
+                await _persist_backup_failure(
+                    db, tenant_id=tenant_id, job=job, error_message=detail
+                )
+                raise HTTPException(status_code=502, detail=detail) from exc
+
         return job
     except HTTPException as exc:
         detail = exc.detail if isinstance(exc.detail, str) else "Backup failed"
-        await _persist_backup_failure(
-            db, tenant_id=tenant_id, job=job, error_message=detail
-        )
+        # Offsite failure already persisted above; avoid double notify/commit.
+        if job.status != "failed":
+            await _persist_backup_failure(
+                db, tenant_id=tenant_id, job=job, error_message=detail
+            )
         raise
     except Exception as exc:
         await _persist_backup_failure(

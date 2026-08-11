@@ -1,7 +1,7 @@
 # Disaster Recovery Runbook — Logical Tenant Backup (`.ribbak`)
 
 **Scope:** Stage 5 B1 + Stage 10 B1 (media) + Stage 18 B1 (schedule / retention / failure notify) + Stage 19 R1 (LAUNCH §5 packaging evidence) + Stage 23 B1 (commercial MVP DR drill gate evidence) — encrypted logical tenant backup / guarded restore  
-**Infrastructure WAL / PITR / S3 offsite:** Stage 26 W1 strategy — see [DR_WAL_PITR_RUNBOOK.md](DR_WAL_PITR_RUNBOOK.md) (`ops/postgres/`, `ops/backup/`, `test_wal_pitr_w1.py`). Operator staging PITR drill execution and automatic `.ribbak` upload from `create_backup` remain Remaining.  
+**Infrastructure WAL / PITR / S3 offsite:** Stage 26 W1 strategy — see [DR_WAL_PITR_RUNBOOK.md](DR_WAL_PITR_RUNBOOK.md) (`ops/postgres/`, `ops/backup/`, `test_wal_pitr_w1.py`). Stage 27 B1 opt-in automatic `.ribbak` upload from `create_backup` (`BACKUP_OFFSITE_UPLOAD_ENABLED`; `test_backup_offsite_b1.py`). Operator staging PITR drill execution remains Remaining.  
 **Out of scope (post-MVP for this logical runbook):** schema-per-tenant isolation (ADR-001); restore-to-new-tenant. Infrastructure WAL/PITR operator staging drill remains Remaining under Stage 26 W1.
 
 Stage 19 R1 automated packaging check: `backend/tests/test_reliability_cache_r1.py` (asserts this runbook + dry-run / `confirm_text=RESTORE` / WAL-PITR deferral).  
@@ -50,7 +50,7 @@ Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/te
 2. **Due runner** — `POST /api/v1/backup/run-due` (admin) or Celery beat `run-due-backups`. Returns `ran`/`reason` (`schedule_disabled` | `already_ran` | `before_hour` | `created` | `failed` | `dir_not_writable`). A failed schedule run returns `ran=false` — never a fake success.
 3. **Retention** — after each successful backup, older completed jobs beyond `retention_count` are deleted (files + rows).
 4. **Failure notify** — failed create persists `BackupJob.status=failed` and creates a tenant `system` notification titled **Backup failed** (visible to admins). Disk-not-writable on schedule also notifies.
-5. **Storage** — MVP archives land under local `BACKUP_DIR` (encrypted `.ribbak`). Stage 26 W1 offsite mirror: `ops/backup/sync-ribbak-offsite.sh.example` → S3-compatible prefix (automatic in-app upload Remaining).
+5. **Storage** — MVP archives land under local `BACKUP_DIR` (encrypted `.ribbak`). Stage 26 W1 offsite mirror: `ops/backup/sync-ribbak-offsite.sh.example` → S3-compatible prefix. Stage 27 B1 opt-in in-app upload: `BACKUP_OFFSITE_UPLOAD_ENABLED` (`test_backup_offsite_b1.py`).
 
 ## Important restore semantics
 

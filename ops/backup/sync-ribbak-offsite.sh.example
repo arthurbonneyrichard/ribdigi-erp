@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Stage 26 W1 — mirror encrypted logical .ribbak archives from BACKUP_DIR to S3-compatible storage.
 # Complements continuous WAL offsite; does not replace guarded restore APIs.
-# Operator template — not executed by CI or the RIBDIGI API create_backup path.
+# Operator template — bulk/cron complement to Stage 27 B1 opt-in in-app upload (BACKUP_OFFSITE_UPLOAD_ENABLED).
+# Not executed by CI. When in-app upload is disabled, this remains the offsite path.
 
 set -euo pipefail
 

@@ -33,7 +33,7 @@ Commercial MVP Release Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **B1** | Automatic `.ribbak` offsite upload fidelity | P0 | PENDING |
+| **B1** | Automatic `.ribbak` offsite upload fidelity | P0 | COMPLETE |
 | **P1** | PgBouncer connection pooling fidelity | P0 | PENDING |
 | **S1** | Security scan / ZAP-in-CI baseline evidence | P0 | PENDING |
 | **L1** | Launch certification pack (operator sign-off evidence) | P1 | PENDING |
@@ -55,11 +55,11 @@ Commercial MVP Release Fidelity
 
 ## B1 acceptance criteria
 
-- [ ] Automatic (or hook-driven) `.ribbak` offsite upload fidelity after `create_backup` — extend Stage 26 `ops/backup/` / backup service (not fake S3 success without evidence).
-- [ ] Failure path does not claim backup success when offsite upload fails (honest Remaining if opt-in only).
-- [ ] Automated proof: `backend/tests/test_backup_offsite_b1.py`.
-- [ ] PRODUCTION_READINESS / BR-16 honesty updated with evidence.
-- [ ] Plan / launch / roadmap cite Stage 27 B1.
+- [x] Automatic (or hook-driven) `.ribbak` offsite upload fidelity after `create_backup` — extend Stage 26 `ops/backup/` / backup service (not fake S3 success without evidence).
+- [x] Failure path does not claim backup success when offsite upload fails (honest Remaining if opt-in only).
+- [x] Automated proof: `backend/tests/test_backup_offsite_b1.py`.
+- [x] PRODUCTION_READINESS / BR-16 honesty updated with evidence.
+- [x] Plan / launch / roadmap cite Stage 27 B1.
 
 ## P1 acceptance criteria
 
@@ -100,4 +100,4 @@ Commercial MVP Release Fidelity
 
 ## Sign-off
 
-Stage 27 open under ADR-059. B1 next. Stages 1–26 remain frozen for their scopes.
+Stage 27 open under ADR-059. B1 complete; P1 next. Stages 1–26 remain frozen for their scopes.

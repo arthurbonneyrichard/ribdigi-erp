@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     S3_FORCE_PATH_STYLE: bool = True
     BACKUP_RETENTION_COUNT: int = 30
     BACKUP_ENCRYPTION_KEY: str = ""
+    # Stage 27 B1 — opt-in auto .ribbak upload after create_backup (Stage 26 env names)
+    BACKUP_OFFSITE_UPLOAD_ENABLED: bool = False
+    BACKUP_OFFSITE_S3_BUCKET: str = ""
+    BACKUP_OFFSITE_S3_PREFIX: str = "ribdigi/logical/ribbak"
     TOTP_ENCRYPTION_KEY: str = ""
     TOTP_ENFORCED_ROLES: str = "company_admin,super_admin"
     WEBAUTHN_RP_ID: str = "localhost"

@@ -5,7 +5,7 @@
 **Evidence:** `backend/tests/test_wal_pitr_w1.py` → `/opt/cursor/artifacts/dr/stage26_w1_wal_pitr_strategy.json`  
 **Configs:** `ops/postgres/`, `ops/backup/`
 
-This runbook documents the **MVP WAL/PITR strategy** and offsite fidelity. It does **not** claim that CI executes `pg_basebackup` / WAL replay, that a managed-cloud PITR product is wired, or that `create_backup` auto-uploads to S3.
+This runbook documents the **MVP WAL/PITR strategy** and offsite fidelity. It does **not** claim that CI executes `pg_basebackup` / WAL replay or that a managed-cloud PITR product is wired. Stage 27 B1 adds opt-in `create_backup` → S3 upload (`BACKUP_OFFSITE_UPLOAD_ENABLED`).
 
 ## Relationship to logical `.ribbak` DR
 
@@ -51,7 +51,7 @@ Optional compose sketch: `ops/backup/docker-compose.wal-drill.example.yml`.
 2. Run `ops/backup/sync-ribbak-offsite.sh.example` on a cron (e.g. hourly) with `BACKUP_OFFSITE_S3_BUCKET` / `BACKUP_OFFSITE_S3_PREFIX`.
 3. Verify object listing matches local `.ribbak` filenames + checksums when sampled.
 
-Automatic in-app upload from `create_backup` remains **Remaining**.
+Stage **27** **B1**: opt-in automatic in-app upload from `create_backup` when `BACKUP_OFFSITE_UPLOAD_ENABLED=true` (bucket `BACKUP_OFFSITE_S3_BUCKET`, prefix `BACKUP_OFFSITE_S3_PREFIX`, credentials via `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_ENDPOINT`). Upload failure marks the job failed and notifies admins (`Backup failed`) — local `.ribbak` is retained. Evidence: `test_backup_offsite_b1.py`. Operator `aws s3 sync` script remains for bulk/cron mirror.
 
 ## Operator PITR drill (staging — not CI)
 
@@ -75,7 +75,7 @@ Automatic in-app upload from `create_backup` remains **Remaining**.
 
 - CI-executed `pg_basebackup` / WAL replay certificate
 - Managed RDS/Aurora continuous PITR product wiring
-- Automatic `.ribbak` upload inside `create_backup`
+- Hosted managed-cloud PITR product automation (operator)
 - Schema-per-tenant restore (ADR-001); restore-to-new-tenant
 - Cross-region replication automation
 
