@@ -1335,3 +1335,5 @@ Every feature in every phase must meet:
 **Stage 56 open (2026-08-11):** Commercial Onboarding & Expansion Fidelity track approved — `docs/ADR_117_STAGE56_OPEN.md` + `docs/STAGE_56_PLAN.md` (implementation/onboarding → geographic expansion → fidelity).
 
 **Stage 56 O1 (2026-08-11):** Implementation & onboarding commercial honesty — `docs/IMPLEMENTATION_ONBOARDING_MVP.md`, `ops/mvp/implementation-onboarding.json`, evidence `stage56_o1_implementation_onboarding.json` (`test_implementation_onboarding_o1.py`); live data-migration fee billing Remaining.
+
+**Stage 56 G1 (2026-08-11):** Geographic expansion honesty — `docs/GEOGRAPHIC_EXPANSION_MVP.md`, `ops/mvp/geographic-expansion.json`, evidence `stage56_g1_geographic_expansion.json` (`test_geographic_expansion_g1.py`); multi-market expansion Remaining.
