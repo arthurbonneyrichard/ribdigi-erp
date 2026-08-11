@@ -1,8 +1,9 @@
 # Stage 68 Fidelity Notes — Platform ↔ Tenant Console Fidelity
 
-**Status:** Open — D1 complete; H68x next  
+**Status:** Closed — exit met (H68x); freeze ADR-143  
 **Surface:** Ribdigi House console → Tenant Company console → Fidelity closeout  
-**Open ADR:** [ADR-142](ADR_142_STAGE68_OPEN.md)  
+**Open ADR (historical):** [ADR-142](ADR_142_STAGE68_OPEN.md)
+**Exit:** [STAGE_68_EXIT_CRITERIA.md](STAGE_68_EXIT_CRITERIA.md) · [ADR-143](ADR_143_STAGE68_FREEZE.md)  
 **Plan:** [STAGE_68_PLAN.md](STAGE_68_PLAN.md)  
 **Prior freeze:** [ADR-141](ADR_141_STAGE67_FREEZE.md) · [STAGE_67_EXIT_CRITERIA.md](STAGE_67_EXIT_CRITERIA.md)  
 **Platform ADR:** [ADR-137](ADR_137_PLATFORM_PRINCIPAL.md)
@@ -24,7 +25,7 @@ Stage 68 proves the owner dual-console product outline after Stage 67 freeze —
 | **H1** | `test_ribdigi_house_console_h1.py` — `RIBDIGI_HOUSE_CONSOLE_MVP.md`, ribdigi-house-console JSON | Owner House path / ADR-137 / ADR-002 | Paid billing; live subscriptions |
 | **T1** | `test_tenant_company_console_t1.py` — `TENANT_COMPANY_CONSOLE_MVP.md`, tenant-company-console JSON | Owner Tenant Company path / Shell / principal isolation | Module re-Complete; demo tenant |
 | **D1** | This note + `test_stage68_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H68x** | `STAGE_68_EXIT_CRITERIA.md`; ADR-143 (planned); `test_stage68_exit_h68x.py` | Stage 68 exit + freeze | Pending exit |
+| **H68x** | `STAGE_68_EXIT_CRITERIA.md`; ADR-143; `test_stage68_exit_h68x.py` | Stage 68 exit + freeze | Stage 69 needs open ADR |
 
 ## Evidence tests
 
@@ -32,6 +33,7 @@ Stage 68 proves the owner dual-console product outline after Stage 67 freeze —
 - `backend/tests/test_tenant_company_console_t1.py`
 - `backend/tests/test_stage68_open.py`
 - `backend/tests/test_stage68_fidelity_d1.py`
+- `backend/tests/test_stage68_exit_h68x.py`
 
 ## Spec sync targets
 
@@ -43,7 +45,8 @@ Stage 68 proves the owner dual-console product outline after Stage 67 freeze —
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 68 H1–T1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 68 H1–T1 / D1 cite
 - `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md` · `docs/TENANT_COMPANY_CONSOLE_MVP.md`
-- `docs/STAGE_68_PLAN.md` — Open — D1 complete; H68x next
+- `docs/STAGE_68_PLAN.md` — Closed — exit met (H68x); freeze ADR-143
+- `docs/STAGE_68_EXIT_CRITERIA.md` · `docs/ADR_143_STAGE68_FREEZE.md`
 - `docs/ADR_142_STAGE68_OPEN.md`
 
 ## Deferred (not Stage 68 D1 blockers)

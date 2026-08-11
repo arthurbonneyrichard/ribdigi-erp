@@ -1,9 +1,10 @@
 # Stage 68 Plan — Platform ↔ Tenant Console Fidelity
 
-**Status:** Open — D1 complete; H68x next  
+**Status:** Closed — exit met (H68x); freeze ADR-143  
 **Base:** Ribdigi House Console Honesty Pack + Tenant Company Console Honesty Pack → Platform ↔ Tenant Console Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-142](ADR_142_STAGE68_OPEN.md)  
+**Open ADR (historical):** [ADR-142](ADR_142_STAGE68_OPEN.md)
+**Exit:** [STAGE_68_EXIT_CRITERIA.md](STAGE_68_EXIT_CRITERIA.md) · [ADR-143](ADR_143_STAGE68_FREEZE.md)  
 **Prior freeze:** [ADR-141](ADR_141_STAGE67_FREEZE.md) · [STAGE_67_EXIT_CRITERIA.md](STAGE_67_EXIT_CRITERIA.md)  
 **Platform ADR:** [ADR-137](ADR_137_PLATFORM_PRINCIPAL.md)
 
@@ -59,7 +60,7 @@ Platform ↔ Tenant Console Fidelity
 | **H1** | Ribdigi House (Platform Owner) console honesty packaging (Tenants → Plans/Billing deferred → Users → Security/Audit/Health/Settings; not paid billing Complete) | P0 | COMPLETE |
 | **T1** | Tenant Company console honesty packaging (POS → Sales → Inventory → Purchasing → Accounting → Expenses → Credit → Tax → Reports → Settings; not re-claiming modules) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H68x** | Stage 68 exit criteria + freeze ADR | Exit | PENDING |
+| **H68x** | Stage 68 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -100,6 +101,8 @@ Platform ↔ Tenant Console Fidelity
 
 ## H68x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for H1–D1 / H68x — `docs/STAGE_68_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_143_STAGE68_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage68_exit_h68x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for H1–D1 / H68x — `docs/STAGE_68_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_143_STAGE68_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage68_exit_h68x.py`.
+
+**Deliverables:** `docs/STAGE_68_EXIT_CRITERIA.md`, `docs/ADR_143_STAGE68_FREEZE.md` (`test_stage68_exit_h68x.py`).
