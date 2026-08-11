@@ -98,6 +98,7 @@ Authoritative MVP docs:
 - `docs/ENCRYPTION_KMS_MVP.md` (`backend/tests/test_encryption_kms_e1.py`) — Stage 44 E1
 - `docs/STAGE_44_FIDELITY.md` (`backend/tests/test_stage44_fidelity_d1.py`) — Stage 44 D1
 - `docs/STAGE_44_EXIT_CRITERIA.md` / `docs/ADR_094_STAGE44_FREEZE.md` (`backend/tests/test_stage44_exit_h44x.py`) — Stage 44 H44x
+- `docs/STAGE_45_PLAN.md` (`backend/tests/test_stage45_open.py`) — Stage 45 open (ADR-095)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -399,4 +400,8 @@ Commercial Data Trust Fidelity — `docs/STAGE_44_PLAN.md`, ADR-093; Closed — 
 
 ## Stage 44 exit
 
-H44x met — `docs/STAGE_44_EXIT_CRITERIA.md`, ADR-094. Stages 1–44 frozen for Stage 44 feature scope; Stage 45+ requires open ADR after CONTINUE/NEXT.
+H44x met — `docs/STAGE_44_EXIT_CRITERIA.md`, ADR-094. Stages 1–44 frozen for Stage 44 feature scope.
+
+## Stage 45 open
+
+Commercial Continuity & Exit Fidelity — `docs/STAGE_45_PLAN.md`, ADR-095; O1 next.

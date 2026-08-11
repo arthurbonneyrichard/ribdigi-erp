@@ -23,3 +23,7 @@ Stage 44 Commercial Data Trust Fidelity delivered data residency / localization 
 - Stage 1–43 freezes remain in force for their scopes (Stage 43 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Data-trust packaging Complete does **not** mean multi-region residency, schema-per-tenant, HSM / live Vault SaaS, customer-managed keys, mTLS mesh, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 45 (Commercial Continuity & Exit Fidelity) after Stage 44 freeze via CONTINUE/NEXT — see [ADR-095](ADR_095_STAGE45_OPEN.md) and [STAGE_45_PLAN.md](STAGE_45_PLAN.md). Stage 44 feature scope remains frozen; Stage 45 does not reopen R1–D1 / H44x.

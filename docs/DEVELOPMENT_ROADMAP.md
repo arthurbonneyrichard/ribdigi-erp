@@ -452,6 +452,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 44 exit (2026-08-11):** R1, E1, D1, H44x met — `docs/STAGE_44_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_094_STAGE44_FREEZE.md`. Fidelity: `docs/STAGE_44_FIDELITY.md`.
 
+**Stage 45 open (2026-08-11):** Commercial Continuity & Exit Fidelity track approved — `docs/ADR_095_STAGE45_OPEN.md` + `docs/STAGE_45_PLAN.md` (RTO/RPO → retention/return → fidelity).
+
 
 
 
