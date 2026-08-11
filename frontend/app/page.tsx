@@ -43,9 +43,10 @@ export default function Login() {
     localStorage.setItem('token', data.access_token);
     if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
     localStorage.setItem('tenant', data.user.tenant_id);
-    if (data.principal || data.user?.principal) {
-      localStorage.setItem('principal', data.principal || data.user.principal);
-    }
+    const principal = data.principal || data.user?.principal || 'tenant';
+    localStorage.setItem('principal', principal);
+    // Stage 87 Z1 — cookie for Next middleware console boundary (readable server-side)
+    document.cookie = `ribdigi_principal=${encodeURIComponent(principal)}; path=/; SameSite=Lax`;
     if (!remember) {
       // Session-only preference marker for future idle logout UX.
       sessionStorage.setItem('ribdigi_session_only', '1');

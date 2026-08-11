@@ -11,8 +11,10 @@ export default function PlatformTenantDetailPage() {
   const id = String(params?.id || '');
   const [row, setRow] = useState<any>(null);
   const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [planCode, setPlanCode] = useState('trial');
+  const [notes, setNotes] = useState('');
 
   async function load() {
     setError('');
@@ -20,6 +22,7 @@ export default function PlatformTenantDetailPage() {
       const r = await api(`/platform/tenants/${id}`);
       setRow(r.data);
       setPlanCode(r.data?.plan_code || 'trial');
+      setNotes(r.data?.platform_notes || '');
     } catch (err: any) {
       setError(err.message || 'Not found');
     }
@@ -58,6 +61,24 @@ export default function PlatformTenantDetailPage() {
     }
   }
 
+  async function saveNotes() {
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      await api(`/platform/tenants/${id}/notes`, {
+        method: 'PATCH',
+        body: JSON.stringify({ platform_notes: notes }),
+      });
+      setMsg('Operator notes saved');
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save notes');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <PlatformShell>
       <p>
@@ -65,6 +86,7 @@ export default function PlatformTenantDetailPage() {
       </p>
       <h1>{row?.company_name || 'Tenant'}</h1>
       {error && <p>{error}</p>}
+      {msg && <p style={{ color: '#047857' }}>{msg}</p>}
       {row && (
         <>
           <div className="grid" style={{ marginTop: 16 }}>
@@ -88,6 +110,12 @@ export default function PlatformTenantDetailPage() {
               <div className="muted">Stores</div>
               <div className="kpi">{row.store_count ?? 0}</div>
             </div>
+            <div className="card">
+              <div className="muted">Last activity</div>
+              <div className="kpi" style={{ fontSize: 16 }}>
+                {row.last_activity_at || '—'}
+              </div>
+            </div>
           </div>
           <div className="card" style={{ marginTop: 16, maxWidth: 420 }}>
             <div className="muted">Plan code (metadata — billing deferred)</div>
@@ -107,6 +135,19 @@ export default function PlatformTenantDetailPage() {
                 Save plan
               </button>
             </div>
+          </div>
+          <div className="card" style={{ marginTop: 16, maxWidth: 640 }}>
+            <div className="muted">House operator notes (not visible on tenant Company profile)</div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={4}
+              style={{ width: '100%', marginTop: 8, padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
+              placeholder="Internal notes for Ribdigi House operators"
+            />
+            <button type="button" disabled={busy} onClick={saveNotes} style={{ marginTop: 8 }}>
+              Save notes
+            </button>
           </div>
           <p className="muted" style={{ marginTop: 16 }}>
             Suspension changes status only — no data wipe. Active sessions are revoked.

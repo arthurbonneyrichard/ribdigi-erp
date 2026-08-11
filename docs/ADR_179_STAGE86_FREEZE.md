@@ -27,4 +27,4 @@ Stage 86 House Provision & Platform Access Ops delivered House tenant provision 
 
 ## Next stage
 
-Stage 87+ requires CONTINUE/NEXT with a distinct product outline and open ADR.
+Stage 87 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-180](ADR_180_STAGE87_OPEN.md) + [STAGE_87_PLAN.md](STAGE_87_PLAN.md) (Platform Audit Export & Chain Verify → House Ops Surface Polish → Console Boundary Hardening → House Integrity & Console Boundary Ops). Stage 87 subsequently froze under [ADR-181](ADR_181_STAGE87_FREEZE.md). Stage 86 feature scope remains frozen.

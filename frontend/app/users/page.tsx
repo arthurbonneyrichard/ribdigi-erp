@@ -252,7 +252,8 @@ export default function Page() {
       <p className="muted">
         Tenant user lifecycle, password reset, and branch/department assignment. Manage custom
         roles at Admin → Roles and permission matrices at Admin → Permissions. Deactivate
-        soft-disables login (no permanent delete in MVP).
+        soft-disables login (ADR-003 — no hard delete / permanent erasure in MVP;
+        hard_delete_claimed: false).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}

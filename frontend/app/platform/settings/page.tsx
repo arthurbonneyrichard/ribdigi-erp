@@ -58,6 +58,11 @@ export default function PlatformSettingsPage() {
     <PlatformShell>
       <h1>Platform settings</h1>
       <p className="muted">Ribdigi House console settings (platform tenant only).</p>
+      <p className="muted" style={{ maxWidth: 640 }}>
+        House settings cover Ribdigi House identity, idle logout, and support contacts — not the
+        full tenant Company profile (addresses, tax, document branding). Customer tenants manage
+        that under Tenant Admin → Company.
+      </p>
       {error && <p>{error}</p>}
       {msg && <p style={{ color: '#047857' }}>{msg}</p>}
       <form onSubmit={save} className="card" style={{ marginTop: 16, maxWidth: 480 }}>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Shell from '../../components/Shell';
+import PlatformShell from '../../components/PlatformShell';
 import { api } from '../../lib/api';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, t } from '../../lib/i18n';
 
@@ -150,6 +151,7 @@ export default function Page() {
   const [webhookEvents, setWebhookEvents] = useState('sale.created,webhook.test');
   const [newWebhookSecret, setNewWebhookSecret] = useState('');
   const [role, setRole] = useState('');
+  const [principal, setPrincipal] = useState('');
 
   async function refresh() {
     const [r, keys, sess, me] = await Promise.all([
@@ -163,6 +165,7 @@ export default function Page() {
     setSessions(sess.data || []);
     const userRole = me.data?.role || r.data?.role || '';
     setRole(userRole);
+    setPrincipal(me.data?.principal || '');
     if (me.data?.locale === 'en' || me.data?.preferred_language === 'en') {
       setLocale('en');
     }
@@ -406,8 +409,11 @@ export default function Page() {
     }
   }
 
+  const ConsoleShell = ({ children }: { children: ReactNode }) =>
+    principal === 'platform' ? <PlatformShell>{children}</PlatformShell> : <Shell>{children}</Shell>;
+
   return (
-    <Shell>
+    <ConsoleShell>
       <h1>Security / 2FA</h1>
       <p className="muted">TOTP authenticator, passkeys, and recovery codes</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -735,6 +741,6 @@ export default function Page() {
           </tbody>
         </table>
       </div>
-    </Shell>
+    </ConsoleShell>
   );
 }

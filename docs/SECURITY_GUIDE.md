@@ -528,6 +528,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 86 A1** | Platform audit Activity depth — filters + `/platform/activity` (`test_platform_audit_activity_a1.py`) |
 | **Stage 86 D1** | House Provision & Platform Access Ops fidelity — `docs/STAGE_86_FIDELITY.md` (`test_stage86_fidelity_d1.py`); maps P1–A1 → readiness / launch / deploy / security |
 | **Stage 86 H86x** | Exit + freeze — `docs/STAGE_86_EXIT_CRITERIA.md`, ADR-179 (`test_stage86_exit_h86x.py`); Stages 1–86 frozen for Stage 86 scope; Stage 87+ requires CONTINUE/NEXT |
+| **Stage 87 open** | House Integrity & Console Boundary Ops — `docs/STAGE_87_PLAN.md`, ADR-180 (`test_stage87_open.py`); Stages 1–86 remain frozen for prior scopes; X1 next historically |
+| **Stage 87 X1** | Platform audit export + chain verify — `GET /platform/audit/export` / `GET /platform/audit/verify` (`test_platform_audit_integrity_x1.py`) |
+| **Stage 87 Y1** | House ops surface polish — health cards, last_activity, operator notes (`test_house_ops_surface_y1.py`) |
+| **Stage 87 Z1** | Console boundary hardening — `ribdigi_principal` cookie + middleware + soft-delete honesty (`test_console_boundary_z1.py`) |
+| **Stage 87 D1** | House Integrity & Console Boundary Ops fidelity — `docs/STAGE_87_FIDELITY.md` (`test_stage87_fidelity_d1.py`); maps X1–Z1 → readiness / launch / deploy / security |
+| **Stage 87 H87x** | Exit + freeze — `docs/STAGE_87_EXIT_CRITERIA.md`, ADR-181 (`test_stage87_exit_h87x.py`); Stages 1–87 frozen for Stage 87 scope; Stage 88+ requires CONTINUE/NEXT |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |

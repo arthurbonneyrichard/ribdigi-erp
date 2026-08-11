@@ -5,12 +5,14 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import PlainTextResponse, Response
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit, health as health_svc, platform as platform_svc
 from app import models as m
+from app import reports as reports_svc
 from app import tenants as tenants_svc
 from app.db import get_db
 from app.platform_const import (
@@ -68,6 +70,10 @@ class PlatformTenantCreate(BaseModel):
 
 class PlatformPlanUpdate(BaseModel):
     plan_code: str
+
+
+class PlatformTenantNotesUpdate(BaseModel):
+    platform_notes: str | None = None
 
 
 class PlatformSettingsUpdate(BaseModel):
@@ -351,6 +357,43 @@ async def platform_set_tenant_plan(
     await db.commit()
     data = await platform_svc.get_customer_tenant(db, tenant_id)
     return env(data, message="plan_code updated (billing deferred)")
+
+
+@router.patch("/tenants/{tenant_id}/notes")
+async def platform_set_tenant_notes(
+    tenant_id: str,
+    payload: PlatformTenantNotesUpdate,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 87 Y1 — House operator notes (not customer company profile)."""
+    if tenant_id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=400, detail="Cannot set notes on the platform tenant here")
+    row = await db.get(m.Tenant, tenant_id)
+    if not row or row.id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    notes = payload.platform_notes
+    if notes is not None:
+        notes = notes.strip() or None
+    prev = getattr(row, "platform_notes", None)
+    row.platform_notes = notes
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.tenant.notes_updated",
+        entity="tenant",
+        entity_id=tenant_id,
+        details={"target_tenant_id": tenant_id, "changed": prev != notes},
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_tenants",
+    )
+    await db.commit()
+    data = await platform_svc.get_customer_tenant(db, tenant_id)
+    return env(data, message="operator notes updated")
 
 
 @router.get("/plans")
@@ -761,3 +804,51 @@ async def platform_activity_alias(
             "alias_of": "/platform/audit",
         }
     )
+
+
+@router.get("/audit/export")
+async def platform_audit_export(
+    claims: dict = Depends(require_platform_permission("platform_audit", "read")),
+    db: AsyncSession = Depends(get_db),
+    module: str | None = Query(None),
+    action: str | None = Query(None),
+    from_date: str | None = Query(None),
+    to_date: str | None = Query(None),
+    format: str = Query("csv"),
+):
+    """Stage 87 X1 — export platform-tenant audit logs (csv/pdf)."""
+    rows = await audit.query_logs(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        module=(module or "").strip() or None,
+        action=(action or "").strip() or None,
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        limit=1000,
+    )
+    chronological = list(reversed(rows))
+    fmt = (format or "csv").strip().lower()
+    if fmt == "pdf":
+        pdf_bytes = audit.to_pdf(chronological)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=platform-audit-logs.pdf"},
+        )
+    if fmt != "csv":
+        raise HTTPException(status_code=400, detail="format must be csv or pdf")
+    csv_text = audit.to_csv(chronological)
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=platform-audit-logs.csv"},
+    )
+
+
+@router.get("/audit/verify")
+async def platform_audit_verify(
+    claims: dict = Depends(require_platform_permission("platform_audit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 87 X1 — verify integrity chain for platform-tenant audit logs."""
+    return env(await audit.verify_chain(db, PLATFORM_TENANT_ID))

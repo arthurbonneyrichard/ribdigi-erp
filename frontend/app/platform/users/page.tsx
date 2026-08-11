@@ -108,6 +108,10 @@ export default function PlatformUsersPage() {
     <PlatformShell>
       <h1>Platform users</h1>
       <p className="muted">Ribdigi House staff on the reserved platform tenant only.</p>
+      <p className="muted">
+        Deactivate soft-disables login (ADR-003 — no hard delete in MVP; hard_delete_claimed:
+        false).
+      </p>
       {error && <p>{error}</p>}
       {msg && <p style={{ color: '#047857' }}>{msg}</p>}
 

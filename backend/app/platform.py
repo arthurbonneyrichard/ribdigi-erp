@@ -408,6 +408,7 @@ async def _enrich_tenant_row(db: AsyncSession, t: m.Tenant) -> dict:
             "store_count": store_count,
             "branch_count": branch_count,
             "last_activity_at": last_activity.isoformat() + "Z" if last_activity else None,
+            "platform_notes": getattr(t, "platform_notes", None),
         }
     )
     return base

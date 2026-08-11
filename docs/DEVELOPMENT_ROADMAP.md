@@ -1645,3 +1645,15 @@ Every feature in every phase must meet:
 **Stage 86 D1 (2026-08-11):** House Provision & Platform Access Ops fidelity sync — `docs/STAGE_86_FIDELITY.md` (`test_stage86_fidelity_d1.py`); maps P1–A1 → readiness / launch / deploy / security.
 
 **Stage 86 exit (2026-08-11):** P1, E1, A1, D1, H86x met — `docs/STAGE_86_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_179_STAGE86_FREEZE.md`. Fidelity: `docs/STAGE_86_FIDELITY.md`.
+
+**Stage 87 open (2026-08-11):** House Integrity & Console Boundary Ops track approved — `docs/ADR_180_STAGE87_OPEN.md` + `docs/STAGE_87_PLAN.md` (Platform Audit Export & Chain Verify → House Ops Surface Polish → Console Boundary Hardening → House Integrity & Console Boundary Ops; X1 next).
+
+**Stage 87 X1 (2026-08-11):** Platform audit export + chain verify — `GET /platform/audit/export` / `GET /platform/audit/verify` (`test_platform_audit_integrity_x1.py`).
+
+**Stage 87 Y1 (2026-08-11):** House ops surface polish — health cards, last_activity UI, operator notes, settings honesty (`test_house_ops_surface_y1.py`).
+
+**Stage 87 Z1 (2026-08-11):** Console boundary hardening — principal cookie + middleware + soft-delete honesty (`test_console_boundary_z1.py`).
+
+**Stage 87 D1 (2026-08-11):** House Integrity & Console Boundary Ops fidelity sync — `docs/STAGE_87_FIDELITY.md` (`test_stage87_fidelity_d1.py`); maps X1–Z1 → readiness / launch / deploy / security.
+
+**Stage 87 exit (2026-08-11):** X1, Y1, Z1, D1, H87x met — `docs/STAGE_87_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_181_STAGE87_FREEZE.md`. Fidelity: `docs/STAGE_87_FIDELITY.md`.

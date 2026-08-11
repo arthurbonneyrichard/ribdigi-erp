@@ -250,6 +250,9 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_87_EXIT_CRITERIA.md` / `docs/ADR_181_STAGE87_FREEZE.md` (`backend/tests/test_stage87_exit_h87x.py`) — Stage 87 H87x
+- `docs/STAGE_87_FIDELITY.md` (`backend/tests/test_stage87_fidelity_d1.py`) — Stage 87 D1
+- `docs/STAGE_87_PLAN.md` (`backend/tests/test_stage87_open.py`) — Stage 87 open (ADR-180)
 - `docs/STAGE_86_EXIT_CRITERIA.md` / `docs/ADR_179_STAGE86_FREEZE.md` (`backend/tests/test_stage86_exit_h86x.py`) — Stage 86 H86x
 - `docs/STAGE_86_FIDELITY.md` (`backend/tests/test_stage86_fidelity_d1.py`) — Stage 86 D1
 - `docs/STAGE_86_PLAN.md` (`backend/tests/test_stage86_open.py`) — Stage 86 open (ADR-178)
@@ -1048,6 +1051,30 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 87 exit
+
+H87x met — `docs/STAGE_87_EXIT_CRITERIA.md`, ADR-181. Stages 1–87 frozen for Stage 87 feature scope.
+
+## Stage 87 D1 — House Integrity & Console Boundary Ops fidelity
+
+`docs/STAGE_87_FIDELITY.md` — maps X1–Z1 → readiness / launch / deploy / security.
+
+## Stage 87 Z1 — Console boundary hardening
+
+`test_console_boundary_z1.py` — principal cookie + middleware + soft-delete honesty.
+
+## Stage 87 Y1 — House ops surface polish
+
+`test_house_ops_surface_y1.py` — health cards, last_activity, operator notes, settings honesty.
+
+## Stage 87 X1 — Platform audit export + chain verify
+
+`test_platform_audit_integrity_x1.py` — `GET /platform/audit/export` / `GET /platform/audit/verify`.
+
+## Stage 87 open
+
+ADR-180 + `docs/STAGE_87_PLAN.md` — House Integrity & Console Boundary Ops.
 
 ## Stage 86 exit
 

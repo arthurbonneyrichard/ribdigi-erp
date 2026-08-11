@@ -14,11 +14,15 @@ type AuditRow = {
   user_id?: string;
 };
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 export default function PlatformAuditPage() {
   const [items, setItems] = useState<AuditRow[]>([]);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [module, setModule] = useState('');
   const [action, setAction] = useState('');
+  const [verify, setVerify] = useState<any>(null);
 
   async function load() {
     setError('');
@@ -37,6 +41,48 @@ export default function PlatformAuditPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function runVerify() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/platform/audit/verify');
+      setVerify(r.data);
+      setMessage(r.data?.valid ? 'Integrity chain valid' : 'Integrity chain broken');
+    } catch (err: any) {
+      setError(err.message || 'Verify failed');
+    }
+  }
+
+  async function exportFmt(fmt: 'csv' | 'pdf') {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const params = new URLSearchParams();
+      if (module.trim()) params.set('module', module.trim());
+      if (action.trim()) params.set('action', action.trim());
+      params.set('format', fmt);
+      const res = await fetch(`${apiBase}/platform/audit/export?${params}`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error(`${fmt.toUpperCase()} export failed`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `platform-audit-logs.${fmt}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage(`${fmt.toUpperCase()} downloaded`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
 
   return (
     <PlatformShell>
@@ -70,8 +116,25 @@ export default function PlatformAuditPage() {
         >
           Filter
         </button>
+        <button type="button" onClick={() => exportFmt('csv')}>
+          Export CSV
+        </button>
+        <button type="button" onClick={() => exportFmt('pdf')}>
+          Export PDF
+        </button>
+        <button type="button" onClick={runVerify}>
+          Verify chain
+        </button>
       </form>
       {error && <p>{error}</p>}
+      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {verify && (
+        <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
+          <p>Valid: {String(verify.valid)}</p>
+          <p>Checked: {verify.checked}</p>
+          {verify.broken_at && <p>Broken at: {verify.broken_at}</p>}
+        </div>
+      )}
       <table className="table" style={{ marginTop: 16 }}>
         <thead>
           <tr>
