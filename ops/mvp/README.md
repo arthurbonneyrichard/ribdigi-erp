@@ -12,6 +12,7 @@
 | `release-notes.json` | Commercial MVP release notes — packaging Complete surfaces + Remaining honesty ≠ production live (Stage 32 N1) |
 | `post-mvp-backlog.json` | Deferred ADR-001–006 + operator Remaining + product deferred index — backlog ≠ implemented Complete (Stage 32 B1) |
 | `residual-risk-register.json` | Stage 33 K1 residual risk — `risks_closed_claimed: false` |
+| `compliance-readiness-register.json` | Stage 33 C1 compliance readiness — `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -24,6 +25,7 @@ Authoritative MVP docs:
 - `docs/RELEASE_NOTES_MVP.md` (`backend/tests/test_release_notes_n1.py`) — Stage 32 N1
 - `docs/POST_MVP_BACKLOG_MVP.md` (`backend/tests/test_post_mvp_backlog_b1.py`) — Stage 32 B1
 - `docs/RESIDUAL_RISK_MVP.md` (`backend/tests/test_residual_risk_k1.py`) — Stage 33 K1
+- `docs/COMPLIANCE_READINESS_MVP.md` (`backend/tests/test_compliance_readiness_c1.py`) — Stage 33 C1
 
 ## Stage 33 K1 — Residual risk register
 
@@ -33,4 +35,12 @@ Indexes residual risks from Stage 26–32 Remaining / deferred honesty. See `doc
 - Tests: `backend/tests/test_residual_risk_k1.py`
 - Honesty: `risks_closed_claimed: false`, `go_live_claimed: false` — indexing ≠ closure
 
-Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false`.
+## Stage 33 C1 — Compliance readiness
+
+Maps control themes to existing Stage 18–33 packs. See `docs/COMPLIANCE_READINESS_MVP.md`.
+
+- Pack: `compliance-readiness-register.json`
+- Tests: `backend/tests/test_compliance_readiness_c1.py`
+- Honesty: `soc2_complete_claimed: false`, `iso27001_complete_claimed: false`, `certification_complete_claimed: false` — mapping ≠ certification
+
+Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false`.

@@ -1,0 +1,204 @@
+{
+  "stage": "33",
+  "workstream": "C1",
+  "doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "residual_risk_register": "ops/mvp/residual-risk-register.json",
+  "operator_remaining_register": "ops/mvp/operator-remaining-register.json",
+  "gate_matrix": "ops/mvp/gate-matrix.json",
+  "register_complete": true,
+  "soc2_complete_claimed": false,
+  "iso27001_complete_claimed": false,
+  "certification_complete_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "live_runs_certified": false,
+  "vendor_pen_test_purchased": false,
+  "controls": [
+    {
+      "id": "cr-access-control",
+      "theme": "access_control",
+      "title": "Authentication, RBAC, and tenant isolation control themes",
+      "framework_hints": [
+        "SOC2-CC6",
+        "ISO27001-A.9"
+      ],
+      "status": "mapped",
+      "certified": false,
+      "evidence_packs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/ADR_001_TENANCY.md",
+        "ops/mvp/gate-matrix.json"
+      ],
+      "source": "docs/SECURITY_GUIDE.md#access"
+    },
+    {
+      "id": "cr-audit-logging",
+      "theme": "audit_logging",
+      "title": "Immutable audit logging and retention policy themes",
+      "framework_hints": [
+        "SOC2-CC7",
+        "ISO27001-A.12"
+      ],
+      "status": "mapped",
+      "certified": false,
+      "evidence_packs": [
+        "docs/ADR_007_AUDIT_RETENTION.md",
+        "ops/mvp/gate-matrix.json"
+      ],
+      "source": "ops/mvp/gate-matrix.json#audit"
+    },
+    {
+      "id": "cr-encryption-tls",
+      "theme": "encryption_tls",
+      "title": "TLS ingress / cert-manager operator packaging themes",
+      "framework_hints": [
+        "SOC2-CC6",
+        "ISO27001-A.10"
+      ],
+      "status": "partial",
+      "certified": false,
+      "evidence_packs": [
+        "docs/TLS_INGRESS_PACK_MVP.md"
+      ],
+      "source": "docs/TLS_INGRESS_PACK_MVP.md"
+    },
+    {
+      "id": "cr-vulnerability",
+      "theme": "vulnerability_mgmt",
+      "title": "Security scan + pen-test engagement packaging themes",
+      "framework_hints": [
+        "SOC2-CC7",
+        "ISO27001-A.12"
+      ],
+      "status": "partial",
+      "certified": false,
+      "evidence_packs": [
+        "docs/SECURITY_SCAN_MVP.md",
+        "docs/PENTEST_PACK_MVP.md"
+      ],
+      "source": "ops/mvp/operator-remaining-register.json#vendor_pen_test_purchased"
+    },
+    {
+      "id": "cr-incident",
+      "theme": "incident_response",
+      "title": "Incident / on-call operator packaging themes",
+      "framework_hints": [
+        "SOC2-CC7",
+        "ISO27001-A.16"
+      ],
+      "status": "partial",
+      "certified": false,
+      "evidence_packs": [
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "cr-backup-dr",
+      "theme": "backup_dr",
+      "title": "Backup / PITR / DR runbook packaging themes",
+      "framework_hints": [
+        "SOC2-A1",
+        "ISO27001-A.12"
+      ],
+      "status": "partial",
+      "certified": false,
+      "evidence_packs": [
+        "docs/PITR_DRILL_PACK_MVP.md",
+        "docs/DR_WAL_PITR_RUNBOOK.md",
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+      ],
+      "source": "ops/mvp/operator-remaining-register.json"
+    },
+    {
+      "id": "cr-monitoring",
+      "theme": "monitoring",
+      "title": "Ops monitoring / Grafana / Alertmanager packaging themes",
+      "framework_hints": [
+        "SOC2-CC7",
+        "ISO27001-A.12"
+      ],
+      "status": "partial",
+      "certified": false,
+      "evidence_packs": [
+        "docs/OPS_MONITORING_MVP.md",
+        "docs/GRAFANA_PACK_MVP.md"
+      ],
+      "source": "ops/mvp/operator-remaining-register.json#hosted_grafana_claimed"
+    },
+    {
+      "id": "cr-change-ci",
+      "theme": "change_management",
+      "title": "CI honesty \u2014 main ci.yml remains deploy-free (Stage 18 C1)",
+      "framework_hints": [
+        "SOC2-CC8",
+        "ISO27001-A.14"
+      ],
+      "status": "mapped",
+      "certified": false,
+      "evidence_packs": [
+        "docs/STAGE_33_PLAN.md",
+        "ops/mvp/residual-risk-register.json"
+      ],
+      "source": "docs/STAGE_33_PLAN.md#Stage 18 C1"
+    },
+    {
+      "id": "cr-privacy",
+      "theme": "data_protection",
+      "title": "GDPR / data protection control themes (SECURITY_GUIDE \u00a714)",
+      "framework_hints": [
+        "GDPR",
+        "ISO27001-A.18"
+      ],
+      "status": "mapped",
+      "certified": false,
+      "evidence_packs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/ADR_003_USER_DELETE_POLICY.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md#14"
+    },
+    {
+      "id": "cr-attestation",
+      "theme": "go_live_attestation",
+      "title": "Go-live attestation / LAUNCH \u00a77 Remaining (not certified)",
+      "framework_hints": [
+        "SOC2-CC2",
+        "ISO27001-A.5"
+      ],
+      "status": "deferred",
+      "certified": false,
+      "evidence_packs": [
+        "docs/ATTESTATION_PACK_MVP.md",
+        "ops/mvp/operator-remaining-register.json"
+      ],
+      "source": "ops/mvp/operator-remaining-register.json#attestation_claimed"
+    },
+    {
+      "id": "cr-residual-risk",
+      "theme": "residual_risk",
+      "title": "Residual risk register indexed (Stage 33 K1) \u2014 not risks closed",
+      "framework_hints": [
+        "SOC2-CC9",
+        "ISO27001-A.8"
+      ],
+      "status": "mapped",
+      "certified": false,
+      "evidence_packs": [
+        "docs/RESIDUAL_RISK_MVP.md",
+        "ops/mvp/residual-risk-register.json"
+      ],
+      "source": "ops/mvp/residual-risk-register.json"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage33_c1_compliance_readiness.json",
+  "deferred": [
+    "Claiming SOC 2 Type I/II certification Complete from Stage 33 C1 packaging",
+    "Claiming ISO 27001 certification Complete from Stage 33 C1 packaging",
+    "Purchased vendor pen-test certificate Complete",
+    "Live go-live / \u00a77 / attestation Complete",
+    "Hosted Grafana / PagerDuty / SIEM SaaS Complete"
+  ]
+}

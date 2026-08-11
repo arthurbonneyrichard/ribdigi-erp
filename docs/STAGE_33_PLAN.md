@@ -1,6 +1,6 @@
 # Stage 33 Plan — Commercial MVP Continuity Fidelity
 
-**Status:** Open — K1 complete; C1 next (ADR-071)  
+**Status:** Open — C1 complete; F1 next (ADR-071)  
 **Base:** Residual Risk Register Pack + Compliance Readiness Pack + First-Tenant Onboarding Pack + Knowledge Transfer Pack → Commercial MVP Continuity Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-071](ADR_071_STAGE33_OPEN.md)
@@ -36,7 +36,7 @@ Commercial MVP Continuity Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **K1** | Residual risk register packaging | P0 | COMPLETE |
-| **C1** | Compliance readiness packaging (not SOC 2 / ISO Complete) | P0 | PENDING |
+| **C1** | Compliance readiness packaging (not SOC 2 / ISO Complete) | P0 | COMPLETE |
 | **F1** | First-tenant onboarding packaging | P1 | PENDING |
 | **T1** | Knowledge transfer packaging | P1 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
@@ -69,10 +69,10 @@ Commercial MVP Continuity Fidelity
 
 ## C1 acceptance criteria
 
-- [ ] Compliance readiness packaging mapping control themes to existing packs (not claiming SOC 2 / ISO certification Complete).
-- [ ] Automated proof: `backend/tests/test_compliance_readiness_c1.py`.
-- [ ] SECURITY_GUIDE / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 33 C1.
+- [x] Compliance readiness packaging mapping control themes to existing packs (not claiming SOC 2 / ISO certification Complete).
+- [x] Automated proof: `backend/tests/test_compliance_readiness_c1.py`.
+- [x] SECURITY_GUIDE / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 33 C1.
 
 ## F1 acceptance criteria
 
@@ -104,4 +104,4 @@ Commercial MVP Continuity Fidelity
 
 ## Sign-off
 
-Stage 33 open under ADR-071. K1 complete; C1 next. Stages 1–32 remain frozen for their scopes.
+Stage 33 open under ADR-071. C1 complete; F1 next. Stages 1–32 remain frozen for their scopes.
