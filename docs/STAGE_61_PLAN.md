@@ -1,10 +1,11 @@
 # Stage 61 Plan — Commercial Fintech & Supply-Chain Fidelity
 
-**Status:** Open — D1 complete; H61x next  
+**Status:** Closed — exit met (H61x / ADR-128)  
 **Base:** Embedded Fintech Honesty Pack + Supply Chain Integration Honesty Pack → Commercial Fintech & Supply-Chain Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-127](ADR_127_STAGE61_OPEN.md)  
 **Prior freeze:** [ADR-126](ADR_126_STAGE60_FREEZE.md) · [STAGE_60_EXIT_CRITERIA.md](STAGE_60_EXIT_CRITERIA.md)
+**Exit:** [STAGE_61_EXIT_CRITERIA.md](STAGE_61_EXIT_CRITERIA.md) · [ADR-128](ADR_128_STAGE61_FREEZE.md)  
 
 Stage 61 opens after Stage 60 freeze: **Embedded Fintech Honesty Packaging + Supply Chain Integration Honesty Packaging → Commercial Fintech & Supply-Chain Fidelity**. PRODUCT_OVERVIEW Long-Term Future Roadmap themes (Embedded fintech — lending, invoice financing; Supply chain integration with suppliers), with Stage 49–60 commercial / manufacturing / tax adjacency, lack dedicated customer-facing honesty packs for embedded fintech Remaining and supply-chain supplier integration Remaining. This track packages those Remaining surfaces on proven Stage 36–60 commercial / ops honesty assets — **not** claiming live embedded fintech Complete, live supply-chain supplier integration Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–60 packs as new Complete, or reopening Stages 1–60 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Fintech & Supply-Chain Fidelity
 | **F1** | Embedded fintech honesty packaging (not live lending / invoice financing Complete) | P0 | COMPLETE |
 | **S1** | Supply chain integration honesty packaging (not live supplier supply-chain integration Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H61x** | Stage 61 exit criteria + freeze ADR | Exit | PENDING |
+| **H61x** | Stage 61 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -114,6 +115,6 @@ Commercial Fintech & Supply-Chain Fidelity
 
 ## H61x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for F1–D1 / H61x — `docs/STAGE_61_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_128_STAGE61_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage61_exit_h61x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for F1–D1 / H61x — `docs/STAGE_61_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_128_STAGE61_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage61_exit_h61x.py`.

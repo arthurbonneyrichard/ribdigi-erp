@@ -1389,3 +1389,5 @@ Every feature in every phase must meet:
 **Stage 61 S1 (2026-08-11):** Supply chain integration honesty — `docs/SUPPLY_CHAIN_INTEGRATION_MVP.md`, `ops/mvp/supply-chain-integration.json`, evidence `stage61_s1_supply_chain_integration.json` (`test_supply_chain_integration_s1.py`); live supplier supply-chain Remaining.
 
 **Stage 61 D1 (2026-08-11):** Fintech & supply-chain fidelity sync — `docs/STAGE_61_FIDELITY.md` (`test_stage61_fidelity_d1.py`); maps F1–S1 → readiness / launch / deploy / security.
+
+**Stage 61 exit (2026-08-11):** F1, S1, D1, H61x met — `docs/STAGE_61_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_128_STAGE61_FREEZE.md`. Fidelity: `docs/STAGE_61_FIDELITY.md`.

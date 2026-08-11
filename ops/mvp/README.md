@@ -216,6 +216,8 @@ Authoritative MVP docs:
 - `docs/EMBEDDED_FINTECH_MVP.md` (`backend/tests/test_embedded_fintech_f1.py`) — Stage 61 F1
 - `docs/SUPPLY_CHAIN_INTEGRATION_MVP.md` (`backend/tests/test_supply_chain_integration_s1.py`) — Stage 61 S1
 - `docs/STAGE_61_FIDELITY.md` (`backend/tests/test_stage61_fidelity_d1.py`) — Stage 61 D1
+- `docs/STAGE_61_EXIT_CRITERIA.md` (`backend/tests/test_stage61_exit_h61x.py`) — Stage 61 H61x
+- `docs/ADR_128_STAGE61_FREEZE.md` — Stage 61 freeze
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -841,7 +843,7 @@ H60x met — `docs/STAGE_60_EXIT_CRITERIA.md`, ADR-126. Stages 1–60 frozen for
 
 ## Stage 61 open
 
-Commercial Fintech & Supply-Chain Fidelity — `docs/STAGE_61_PLAN.md`, ADR-127; Open — D1 complete; H61x next.
+Commercial Fintech & Supply-Chain Fidelity — `docs/STAGE_61_PLAN.md`, ADR-127; Closed — exit met (H61x / ADR-128).
 
 ## Stage 61 F1 — Embedded fintech honesty
 
@@ -854,3 +856,7 @@ Commercial Fintech & Supply-Chain Fidelity — `docs/STAGE_61_PLAN.md`, ADR-127;
 ## Stage 61 D1 — Fintech & supply-chain fidelity
 
 `docs/STAGE_61_FIDELITY.md` — maps F1–S1 → readiness / launch / deploy / security (`test_stage61_fidelity_d1.py`).
+
+## Stage 61 exit
+
+H61x met — `docs/STAGE_61_EXIT_CRITERIA.md`, ADR-128. Stages 1–61 frozen for Stage 61 feature scope.
