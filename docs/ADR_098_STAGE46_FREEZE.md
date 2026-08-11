@@ -23,3 +23,8 @@ Stage 46 Commercial Liability & Remedy Fidelity delivered limitation of liabilit
 - Stage 1–45 freezes remain in force for their scopes (Stage 45 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Liability & remedy packaging Complete does **not** mean signed liability-cap, live indemnity, live service credits, warranty, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 47 (Commercial Insurance & Audit Fidelity) after Stage 46 freeze via CONTINUE/NEXT — see [ADR-099](ADR_099_STAGE47_OPEN.md) and [STAGE_47_PLAN.md](STAGE_47_PLAN.md). Stage 46 feature scope remains frozen; Stage 47 does not reopen L1–D1 / H46x.
+

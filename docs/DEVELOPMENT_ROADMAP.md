@@ -472,6 +472,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 46 exit (2026-08-11):** L1, W1, D1, H46x met — `docs/STAGE_46_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_098_STAGE46_FREEZE.md`. Fidelity: `docs/STAGE_46_FIDELITY.md`.
 
+**Stage 47 open (2026-08-11):** Commercial Insurance & Audit Fidelity track approved — `docs/ADR_099_STAGE47_OPEN.md` + `docs/STAGE_47_PLAN.md` (cyber insurance/COI → customer audit rights → fidelity).
+
 
 
 

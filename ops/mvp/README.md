@@ -112,6 +112,7 @@ Authoritative MVP docs:
 - `docs/SERVICE_CREDIT_WARRANTY_MVP.md` (`backend/tests/test_service_credit_warranty_w1.py`) — Stage 46 W1
 - `docs/STAGE_46_FIDELITY.md` (`backend/tests/test_stage46_fidelity_d1.py`) — Stage 46 D1
 - `docs/STAGE_46_EXIT_CRITERIA.md` / `docs/ADR_098_STAGE46_FREEZE.md` (`backend/tests/test_stage46_exit_h46x.py`) — Stage 46 H46x
+- `docs/STAGE_47_PLAN.md` (`backend/tests/test_stage47_open.py`) — Stage 47 open (ADR-099)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -454,3 +455,7 @@ Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; Clo
 ## Stage 46 exit
 
 H46x met — `docs/STAGE_46_EXIT_CRITERIA.md`, ADR-098. Stages 1–46 frozen for Stage 46 feature scope.
+
+## Stage 47 open
+
+Commercial Insurance & Audit Fidelity — `docs/STAGE_47_PLAN.md`, ADR-099; I1 next.
