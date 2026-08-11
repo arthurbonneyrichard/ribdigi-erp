@@ -261,3 +261,7 @@ Indexes Stage 34 assurance / Stage 38 disclosure packs as MSA security exhibit h
 - Pack: `msa-addendum.json`
 - Tests: `backend/tests/test_msa_addendum_a1.py`
 - Honesty: `msa_signed_claimed: false`, `security_exhibit_signed: false`, `legal_counsel_claimed: false`, `contract_execution_claimed: false` — packaging ≠ signed MSA Complete
+
+## Stage 39 exit
+
+H39x met — `docs/STAGE_39_EXIT_CRITERIA.md`, ADR-084. Stages 1–39 frozen; Stage 40+ requires open ADR after CONTINUE/NEXT.
