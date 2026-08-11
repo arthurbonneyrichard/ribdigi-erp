@@ -220,6 +220,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_64_EXIT_CRITERIA.md` (`backend/tests/test_stage64_exit_h64x.py`) — Stage 64 H64x
 - `docs/STAGE_64_FIDELITY.md` (`backend/tests/test_stage64_fidelity_d1.py`) — Stage 64 D1
 - `docs/FRANCHISE_CHAIN_MVP.md` (`backend/tests/test_franchise_chain_f1.py`) — Stage 64 F1
 - `docs/ADVANCED_BI_MVP.md` (`backend/tests/test_advanced_bi_b1.py`) — Stage 64 B1
@@ -923,6 +924,12 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 64 exit
+
+Commercial Analytics & Franchise Fidelity — `docs/STAGE_64_PLAN.md`, ADR-133; Closed — exit met (H64x / ADR-134).
+
+H64x met — `docs/STAGE_64_EXIT_CRITERIA.md`, ADR-134. Stages 1–64 frozen for Stage 64 feature scope.
+
 ## Stage 64 D1 — Analytics & franchise fidelity
 
 `docs/STAGE_64_FIDELITY.md` — maps B1–F1 → readiness / launch / deploy / security (`test_stage64_fidelity_d1.py`).
@@ -935,6 +942,6 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 `docs/ADVANCED_BI_MVP.md` + `ops/mvp/advanced-bi.json` — packaging Complete; `advanced_bi_live_claimed` / `custom_analytics_live_claimed` / `custom_report_builder_live` / `advanced_bi_program_live` remain false.
 
-## Stage 64 open
+## Stage 64 open (historical)
 
 Commercial Analytics & Franchise Fidelity — `docs/STAGE_64_PLAN.md`, ADR-133; Open — B1 next.
