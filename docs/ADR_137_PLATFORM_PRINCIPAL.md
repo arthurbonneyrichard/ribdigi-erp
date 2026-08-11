@@ -23,3 +23,6 @@ Commercial MVP requires a Ribdigi House **Platform Owner** console distinct from
 - Platform operators are not tied to a customer tenant lifecycle.
 - Frontend redirects platform principals to `/platform/dashboard` and tenant users to `/dashboard`.
 - Security tests must prove tenant roles cannot call platform APIs and platform roles cannot read other tenants’ business rows via tenant APIs.
+- The reserved platform tenant cannot be suspended or listed as a customer tenant (legacy `/tenants*` and `/platform/*`).
+- Platform principals are allowlisted to `/api/v1/platform/*`, `/me`, and auth/security paths only (enforced in `current_claims`).
+- Platform staff management lives under `/api/v1/platform/users`; plan_code edits are metadata-only under `/platform/tenants/{id}/plan`.

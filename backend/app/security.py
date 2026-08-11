@@ -227,9 +227,18 @@ async def current_claims(
     if not tenant:
         raise HTTPException(status_code=403, detail="Tenant suspended or missing")
     from app import tenants as tenants_svc
+    from app.platform_const import (
+        is_platform_tenant_id,
+        path_allowed_for_platform_principal,
+        principal_for,
+    )
 
     tenant = await tenants_svc.ensure_trial_state(db, tenant)
-    if tenant.status == "suspended":
+    # Prefer live role/tenant over stale JWT principal
+    live_principal = principal_for(tenant_id=tenant_id, role=str(user.role or ""))
+    if tenant.status == "suspended" and not (
+        is_platform_tenant_id(tenant_id) and live_principal == "platform"
+    ):
         raise HTTPException(status_code=403, detail="Tenant suspended or missing")
 
     data["permissions"] = await resolve_user_permissions(db, user)
@@ -240,14 +249,16 @@ async def current_claims(
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
     data["auth_method"] = "jwt"
-    from app.platform_const import principal_for
-
-    data["principal"] = data.get("principal") or principal_for(
-        tenant_id=tenant_id, role=str(user.role or "")
-    )
-    # Prefer live role/tenant over stale JWT principal
-    data["principal"] = principal_for(tenant_id=tenant_id, role=str(user.role or ""))
+    data["principal"] = live_principal
     data["role"] = user.role
+    if live_principal == "platform" and not path_allowed_for_platform_principal(request.url.path):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "PLATFORM_USE_PLATFORM_API",
+                "message": "Platform principals cannot access tenant ERP modules. Use /api/v1/platform/*.",
+            },
+        )
     scope = record_scope_from_permissions(
         user.role, data["permissions"] if isinstance(data.get("permissions"), dict) else None
     )
@@ -312,7 +323,7 @@ def require_platform_permission(module: str, action: str = "read"):
 
 def require_permission(module: str, action: str = "read"):
     async def dep(claims: dict = Depends(current_claims)) -> dict:
-        # Platform staff must use /api/v1/platform/* for SaaS ops (except security profile).
+        # Defense in depth — allowlist already enforced in current_claims for platform.
         if claims.get("principal") == "platform" and module not in {"security"}:
             raise HTTPException(
                 status_code=403,

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.config import settings
 from app.document_numbering import normalize_document_numbering, preview_document_numbering, merge_document_numbering
+from app.platform_const import PLATFORM_TENANT_ID
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 VALID_PLAN_CODES = frozenset({"trial", "starter", "growth", "enterprise"})
@@ -18,6 +19,15 @@ VALID_INDUSTRIES = frozenset(
     {"retail", "pharmacy", "restaurant", "bakery", "wholesale", "manufacturing", "mart"}
 )
 TRIAL_REMINDER_DAYS = (7, 3, 1)
+
+
+def assert_mutable_customer_tenant(tenant: m.Tenant) -> None:
+    """Refuse lifecycle mutations against the reserved Ribdigi House tenant (ADR-137)."""
+    if tenant.id == PLATFORM_TENANT_ID or (tenant.slug or "") == PLATFORM_TENANT_ID:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot suspend or alter lifecycle of the Ribdigi House platform tenant",
+        )
 
 
 def default_trial_ends_at(from_dt: datetime | None = None) -> datetime:
@@ -165,6 +175,7 @@ async def suspend_tenant(
     *,
     reason: str | None = None,
 ) -> m.Tenant:
+    assert_mutable_customer_tenant(tenant)
     if tenant.status == "suspended":
         raise HTTPException(status_code=400, detail="Tenant is already suspended")
     tenant.status = "suspended"
@@ -178,6 +189,8 @@ async def suspend_tenant(
 
 async def enter_grace(db: AsyncSession, tenant: m.Tenant, *, now: datetime | None = None) -> m.Tenant:
     now = now or datetime.utcnow()
+    if tenant.id == PLATFORM_TENANT_ID:
+        return tenant
     if tenant.status == "grace":
         return tenant
     if tenant.status not in {"trial"}:
@@ -193,6 +206,7 @@ async def enter_grace(db: AsyncSession, tenant: m.Tenant, *, now: datetime | Non
 
 
 async def activate_tenant(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
+    assert_mutable_customer_tenant(tenant)
     if tenant.status == "active":
         raise HTTPException(status_code=400, detail="Tenant is already active")
     if tenant.status not in {"suspended", "trial", "grace"}:
@@ -207,6 +221,15 @@ async def activate_tenant(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
 
 async def ensure_trial_state(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
     """Apply overdue trial→grace or grace→suspend transitions (idempotent)."""
+    if tenant.id == PLATFORM_TENANT_ID:
+        # Platform tenant must remain operable for Ribdigi House staff (ADR-137).
+        if tenant.status != "active":
+            tenant.status = "active"
+            tenant.suspended_at = None
+            tenant.suspended_reason = None
+            tenant.grace_ends_at = None
+            await db.flush()
+        return tenant
     now = datetime.utcnow()
     if tenant.status == "trial" and tenant.trial_ends_at and tenant.trial_ends_at <= now:
         await enter_grace(db, tenant, now=now)
@@ -526,7 +549,12 @@ async def update_smtp_settings(
 
 
 async def list_tenants(db: AsyncSession, *, status: str | None = None, limit: int = 100) -> list[m.Tenant]:
-    q = select(m.Tenant).order_by(m.Tenant.created_at.desc()).limit(min(max(limit, 1), 500))
+    q = (
+        select(m.Tenant)
+        .where(m.Tenant.id != PLATFORM_TENANT_ID)
+        .order_by(m.Tenant.created_at.desc())
+        .limit(min(max(limit, 1), 500))
+    )
     if status:
         if status not in VALID_STATUSES:
             raise HTTPException(status_code=400, detail="Invalid status filter")

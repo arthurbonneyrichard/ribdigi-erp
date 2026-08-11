@@ -24,7 +24,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "platform_dashboard": ["read"],
         "platform_tenants": ["read", "write"],
         "platform_users": ["read"],
-        "platform_plans": ["read"],
+        "platform_plans": ["read", "write"],
         "platform_billing": ["read"],
         "platform_audit": ["read"],
         "platform_health": ["read"],
@@ -194,8 +194,15 @@ def permissions_for_role(role: str) -> dict[str, list[str]]:
     return {}
 
 
-def normalize_permissions_map(raw: dict | None, *, allow_wildcard: bool = True) -> dict[str, list[str]]:
+def normalize_permissions_map(
+    raw: dict | None,
+    *,
+    allow_wildcard: bool = True,
+    allow_platform_modules: bool = False,
+) -> dict[str, list[str]]:
     """Validate and normalize a module→actions permission map."""
+    from app.platform_const import PLATFORM_MODULES
+
     if raw is None:
         return {}
     if not isinstance(raw, dict):
@@ -211,6 +218,10 @@ def normalize_permissions_map(raw: dict | None, *, allow_wildcard: bool = True) 
             if actions == ["*"] or actions == "*" or (isinstance(actions, list) and "*" in actions):
                 return {"*": ["*"]}
             raise ValueError("Wildcard module must map to ['*']")
+        if module in PLATFORM_MODULES and not allow_platform_modules:
+            raise ValueError(
+                f"Platform module '{module}' cannot be granted on customer-tenant custom roles"
+            )
         if module not in SYSTEM_MODULES and not _MODULE_KEY_RE.fullmatch(module):
             raise ValueError(f"Invalid permission module '{module}'")
         if module not in SYSTEM_MODULES:

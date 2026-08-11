@@ -216,9 +216,17 @@ async def create_custom_role(
         raise HTTPException(status_code=409, detail="A custom role with this slug already exists")
 
     if permissions is not None:
-        perms = normalize_permissions_map(permissions, allow_wildcard=False)
+        perms = normalize_permissions_map(
+            permissions,
+            allow_wildcard=False,
+            allow_platform_modules=is_platform_tenant_id(tenant_id),
+        )
     else:
-        perms = normalize_permissions_map(_copy_base_permissions(base_role), allow_wildcard=False)
+        perms = normalize_permissions_map(
+            _copy_base_permissions(base_role),
+            allow_wildcard=False,
+            allow_platform_modules=is_platform_tenant_id(tenant_id),
+        )
 
     row = m.CustomRole(
         tenant_id=tenant_id,
@@ -259,7 +267,11 @@ async def update_custom_role(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     if permissions is not None:
-        row.permissions = normalize_permissions_map(permissions, allow_wildcard=False)
+        row.permissions = normalize_permissions_map(
+            permissions,
+            allow_wildcard=False,
+            allow_platform_modules=is_platform_tenant_id(tenant_id),
+        )
     if is_active is not None:
         row.is_active = bool(is_active)
     row.updated_at = datetime.utcnow()

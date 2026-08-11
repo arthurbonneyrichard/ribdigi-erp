@@ -43,3 +43,35 @@ def principal_for(*, tenant_id: str, role: str) -> str:
 
 def home_path_for_principal(principal: str | None) -> str:
     return "/platform/dashboard" if principal == "platform" else "/dashboard"
+
+
+def path_allowed_for_platform_principal(path: str) -> bool:
+    """ADR-137 allowlist: platform APIs + auth/profile/security only."""
+    p = (path or "").split("?", 1)[0]
+    if p.startswith("/api/v1/platform"):
+        return True
+    allow_exact = {
+        "/api/v1/me",
+        "/api/v1/auth/me",
+        "/api/v1/auth/logout",
+        "/api/v1/auth/idle-logout",
+        "/api/v1/auth/sessions",
+        "/api/v1/auth/change-password",
+        "/api/v1/auth/2fa/status",
+        "/api/v1/auth/2fa/setup",
+        "/api/v1/auth/2fa/confirm",
+        "/api/v1/auth/2fa/disable",
+        "/api/v1/auth/2fa/backup-codes",
+        "/api/v1/auth/webauthn/register/options",
+        "/api/v1/auth/webauthn/register/verify",
+        "/api/v1/auth/webauthn/credentials",
+        "/api/v1/health",
+        "/api/v1/health/ready",
+    }
+    if p in allow_exact:
+        return True
+    if p.startswith("/api/v1/auth/sessions/"):
+        return True
+    if p.startswith("/api/v1/auth/webauthn/credentials/"):
+        return True
+    return False
