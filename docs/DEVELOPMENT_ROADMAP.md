@@ -1357,3 +1357,5 @@ Every feature in every phase must meet:
 **Stage 58 B1 (2026-08-11):** Business metrics honesty — `docs/BUSINESS_METRICS_MVP.md`, `ops/mvp/business-metrics.json`, evidence `stage58_b1_business_metrics.json` (`test_business_metrics_b1.py`); measured MRR / NRR Remaining.
 
 **Stage 58 I1 (2026-08-11):** AI metrics honesty — `docs/AI_METRICS_MVP.md`, `ops/mvp/ai-metrics.json`, evidence `stage58_i1_ai_metrics.json` (`test_ai_metrics_i1.py`); measured AI adoption / accuracy Remaining.
+
+**Stage 58 D1 (2026-08-11):** Business & AI metrics fidelity sync — `docs/STAGE_58_FIDELITY.md` (`test_stage58_fidelity_d1.py`); maps B1–I1 → readiness / launch / deploy / security.

@@ -1,6 +1,6 @@
 # Stage 58 Plan — Commercial Business & AI Metrics Fidelity
 
-**Status:** Open — I1 complete; D1 next  
+**Status:** Open — D1 complete; H58x next  
 **Base:** Business Metrics Honesty Pack + AI Metrics Honesty Pack → Commercial Business & AI Metrics Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-121](ADR_121_STAGE58_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Business & AI Metrics Fidelity
 |----|------------|----------|---------|
 | **B1** | Business metrics honesty packaging (not measured MRR / paying customers / NRR Complete) | P0 | COMPLETE |
 | **I1** | AI metrics honesty packaging (not measured AI adoption / prediction accuracy / chat resolution Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H58x** | Stage 58 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -101,9 +101,9 @@ Commercial Business & AI Metrics Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_58_FIDELITY.md` maps B1–I1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 58 D1.
-- [ ] Automated proof: `backend/tests/test_stage58_fidelity_d1.py` (`docs/STAGE_58_FIDELITY.md`).
+- [x] `docs/STAGE_58_FIDELITY.md` maps B1–I1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 58 D1.
+- [x] Automated proof: `backend/tests/test_stage58_fidelity_d1.py` (`docs/STAGE_58_FIDELITY.md`).
 
 ## H58x acceptance criteria
 
