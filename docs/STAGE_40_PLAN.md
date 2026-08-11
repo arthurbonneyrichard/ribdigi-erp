@@ -1,6 +1,6 @@
 # Stage 40 Plan — Commercial Availability & Supply-Chain Fidelity
 
-**Status:** Open — U1 complete; S1 next  
+**Status:** Open — U1–S1 complete; D1 next  
 **Base:** Status Page / Uptime Honesty Pack + SBOM / Dependency Disclosure Honesty Pack → Commercial Availability & Supply-Chain Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-085](ADR_085_STAGE40_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Availability & Supply-Chain Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **U1** | Status page / uptime honesty packaging (not live status page / 99.9% SLA Complete) | P0 | COMPLETE |
-| **S1** | SBOM / dependency disclosure honesty packaging (not live SBOM pipeline Complete) | P0 | PENDING |
+| **S1** | SBOM / dependency disclosure honesty packaging (not live SBOM pipeline Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H40x** | Stage 40 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -67,10 +67,10 @@ Commercial Availability & Supply-Chain Fidelity
 
 ## S1 acceptance criteria
 
-- [ ] SBOM / dependency disclosure honesty packaging indexing SECURITY_GUIDE §12.4 SBOM / vulnerability-scanning themes (not claiming live SBOM pipeline / Cosign signing Complete).
-- [ ] Automated proof: `backend/tests/test_sbom_disclosure_s1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 40 S1.
+- [x] SBOM / dependency disclosure honesty packaging indexing SECURITY_GUIDE §12.4 SBOM / vulnerability-scanning themes (not claiming live SBOM pipeline / Cosign signing Complete).
+- [x] Automated proof: `backend/tests/test_sbom_disclosure_s1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 40 S1.
 
 ## D1 acceptance criteria
 

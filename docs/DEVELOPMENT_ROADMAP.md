@@ -406,6 +406,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 40 U1 (2026-08-11):** Status page / uptime honesty — `docs/STATUS_UPTIME_MVP.md`, `ops/mvp/status-uptime.json`, evidence `stage40_u1_status_uptime.json` (`test_status_uptime_u1.py`); live status page / 99.9% SLA Remaining.
 
+**Stage 40 S1 (2026-08-11):** SBOM / dependency disclosure honesty — `docs/SBOM_DISCLOSURE_MVP.md`, `ops/mvp/sbom-disclosure.json`, evidence `stage40_s1_sbom_disclosure.json` (`test_sbom_disclosure_s1.py`); live SBOM pipeline Remaining.
+
 
 
 
