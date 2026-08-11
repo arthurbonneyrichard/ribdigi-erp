@@ -341,9 +341,10 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 29 D1** | Operator hardening & cutover fidelity — `docs/STAGE_29_FIDELITY.md` (`test_stage29_fidelity_d1.py`) maps V1–X1 → readiness / launch / deploy / security |
 | **Stage 29 fidelity** | D1 maps V1–X1 operator-hardening evidence — `docs/STAGE_29_FIDELITY.md` (`test_stage29_fidelity_d1.py`); exit/freeze `docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064 (`test_stage29_exit_h29x.py`); historical open ADR-063; purchased cert / live soak / ACME / cutover / §7 remain Remaining |
 | **Stage 30 open** | Go-Live Support Fidelity — `docs/STAGE_30_PLAN.md`, ADR-065 (`test_stage30_open.py`); Stages 1–29 remain frozen; closed under ADR-066 |
-| **Stage 31 open** | Commercial MVP Closeout Fidelity — `docs/STAGE_31_PLAN.md`, ADR-067 (`test_stage31_open.py`); Stages 1–30 remain frozen; G1–R1 complete; O1 next |
+| **Stage 31 open** | Commercial MVP Closeout Fidelity — `docs/STAGE_31_PLAN.md`, ADR-067 (`test_stage31_open.py`); Stages 1–30 remain frozen; G1–O1 complete; C1 next |
 | **Stage 31 G1** | MVP gate honesty matrix — `docs/MVP_GATE_MATRIX_MVP.md`, `ops/mvp/gate-matrix.json` (`test_mvp_gate_matrix_g1.py`); go-live / §7 Remaining |
 | **Stage 31 R1** | Deferred ADR register — `docs/DEFERRED_ADR_REGISTER_MVP.md`, `ops/mvp/deferred-adr-register.json` (`test_deferred_adr_register_r1.py`); ADR-001–006 post-MVP scopes Remaining |
+| **Stage 31 O1** | Operator Remaining register — `docs/OPERATOR_REMAINING_MVP.md`, `ops/mvp/operator-remaining-register.json` (`test_operator_remaining_o1.py`); live runs / attestation Remaining |
 | **Stage 30 L1** | Operator evidence ledger — `docs/EVIDENCE_LEDGER_MVP.md`, `ops/evidence/ledger.json` (`test_evidence_ledger_l1.py`); live runs / attestation Remaining |
 | **Stage 30 I1** | Incident response / on-call pack — `docs/INCIDENT_PACK_MVP.md`, `ops/incident/` (`test_incident_pack_i1.py`); hosted PagerDuty / live rota Remaining |
 | **Stage 30 S1** | Support & Admin runbook fidelity — `docs/SUPPORT_RUNBOOK_MVP.md`, `ops/support/` + ADMIN_MANUAL §§7/11/12 (`test_support_runbook_s1.py`); live ops SLA Remaining |
