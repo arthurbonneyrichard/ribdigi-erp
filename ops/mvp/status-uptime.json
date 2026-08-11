@@ -1,0 +1,152 @@
+{
+  "stage": "40",
+  "workstream": "U1",
+  "doc": "docs/STATUS_UPTIME_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "support_sla_boundary": "ops/mvp/support-sla-boundary.json",
+  "support_sla_boundary_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+  "ops_monitoring": "docs/OPS_MONITORING_MVP.md",
+  "grafana_pack": "docs/GRAFANA_PACK_MVP.md",
+  "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+  "incident_checklist": "ops/incident/incident-checklist.json",
+  "admin_ops_map": "ops/support/admin-ops-map.json",
+  "stage40_plan": "docs/STAGE_40_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "status_page_live": false,
+  "uptime_sla_claimed": false,
+  "measured_uptime_claimed": false,
+  "public_dashboard_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage40_u1_status_uptime.json",
+  "steps": [
+    {
+      "id": "su-product-overview-uptime",
+      "category": "uptime",
+      "title": "Bound PRODUCT_OVERVIEW 99.9% uptime theme as honesty packaging (not measured SLA)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_40_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "su-support-sla-status-page",
+      "category": "status",
+      "title": "Link Stage 36 support SLA status-page Remaining to availability boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "su-health-probes",
+      "category": "monitoring",
+      "title": "Index health/readiness probe packaging as internal availability signal",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPS_MONITORING_MVP.md",
+        "docs/DEPLOYMENT_GUIDE.md"
+      ],
+      "source": "docs/OPS_MONITORING_MVP.md"
+    },
+    {
+      "id": "su-prometheus-grafana",
+      "category": "monitoring",
+      "title": "Link Prometheus / Grafana pack as operator monitoring adjacency (not public status page)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/GRAFANA_PACK_MVP.md",
+        "docs/OPS_MONITORING_MVP.md"
+      ],
+      "source": "docs/GRAFANA_PACK_MVP.md"
+    },
+    {
+      "id": "su-incident-alertmanager",
+      "category": "incident",
+      "title": "Index incident / Alertmanager availability signal honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "ops/incident/incident-checklist.json"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "su-support-runbook",
+      "category": "support",
+      "title": "Align support runbook status-page Remaining honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_RUNBOOK_MVP.md",
+        "ops/support/admin-ops-map.json"
+      ],
+      "source": "docs/SUPPORT_RUNBOOK_MVP.md"
+    },
+    {
+      "id": "su-admin-ops-map",
+      "category": "support",
+      "title": "Confirm admin-ops map lists live status-page as Remaining",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "ops/support/admin-ops-map.json",
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+      ],
+      "source": "ops/support/admin-ops-map.json"
+    },
+    {
+      "id": "su-maintenance-window",
+      "category": "change",
+      "title": "Index maintenance-window / change adjacency without claiming public change calendar",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADMIN_MANUAL.md",
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+      ],
+      "source": "docs/ADMIN_MANUAL.md"
+    },
+    {
+      "id": "su-status-page-remaining",
+      "category": "honesty",
+      "title": "Live public status page Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_40_PLAN.md",
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+      ],
+      "source": "docs/STAGE_40_PLAN.md"
+    },
+    {
+      "id": "su-uptime-sla-remaining",
+      "category": "honesty",
+      "title": "Measured 99.9% uptime SLA Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_40_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    }
+  ],
+  "deferred": [
+    "Live public status page / customer uptime dashboard Complete",
+    "Measured 99.9% uptime SLA / availability guarantee Complete",
+    "Hosted Grafana / PagerDuty SaaS Complete",
+    "Public change calendar / maintenance portal Complete"
+  ]
+}

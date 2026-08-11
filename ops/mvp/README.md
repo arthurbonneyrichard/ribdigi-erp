@@ -31,6 +31,7 @@
 | `breach-notification.json` | Stage 38 B1 breach notification / security contact — `breach_drill_claimed: false` / `regulatory_filing_claimed: false` / `customer_notify_saas_claimed: false` / `security_mailbox_live: false` |
 | `dpa-subprocessor.json` | Stage 39 P1 DPA / subprocessor honesty — `dpa_signed_claimed: false` / `subprocessor_register_live: false` / `legal_counsel_claimed: false` / `contract_execution_claimed: false` |
 | `msa-addendum.json` | Stage 39 A1 MSA security addendum honesty — `msa_signed_claimed: false` / `security_exhibit_signed: false` / `legal_counsel_claimed: false` / `contract_execution_claimed: false` |
+| `status-uptime.json` | Stage 40 U1 status page / uptime honesty — `status_page_live: false` / `uptime_sla_claimed: false` / `measured_uptime_claimed: false` / `public_dashboard_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -64,6 +65,7 @@ Authoritative MVP docs:
 - `docs/BREACH_NOTIFICATION_MVP.md` (`backend/tests/test_breach_notification_b1.py`) — Stage 38 B1
 - `docs/STAGE_39_PLAN.md` (`backend/tests/test_stage39_open.py`) — Stage 39 open (ADR-083)
 - `docs/STAGE_40_PLAN.md` (`backend/tests/test_stage40_open.py`) — Stage 40 open (ADR-085)
+- `docs/STATUS_UPTIME_MVP.md` (`backend/tests/test_status_uptime_u1.py`) — Stage 40 U1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -269,4 +271,8 @@ H39x met — `docs/STAGE_39_EXIT_CRITERIA.md`, ADR-084. Stages 1–39 frozen for
 
 ## Stage 40 open
 
-Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR-085; U1 next.
+Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR-085; U1 complete; S1 next.
+
+## Stage 40 U1 — Status page / uptime honesty
+
+`docs/STATUS_UPTIME_MVP.md` + `ops/mvp/status-uptime.json` — packaging Complete; `status_page_live` / `uptime_sla_claimed` remain false.

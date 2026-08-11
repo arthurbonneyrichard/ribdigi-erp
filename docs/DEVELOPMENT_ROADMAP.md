@@ -404,6 +404,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 40 open (2026-08-11):** Commercial Availability & Supply-Chain Fidelity track approved — `docs/ADR_085_STAGE40_OPEN.md` + `docs/STAGE_40_PLAN.md` (status/uptime → SBOM/dependency disclosure → fidelity).
 
+**Stage 40 U1 (2026-08-11):** Status page / uptime honesty — `docs/STATUS_UPTIME_MVP.md`, `ops/mvp/status-uptime.json`, evidence `stage40_u1_status_uptime.json` (`test_status_uptime_u1.py`); live status page / 99.9% SLA Remaining.
+
 
 
 

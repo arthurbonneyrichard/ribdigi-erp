@@ -1,6 +1,6 @@
 # Stage 40 Plan — Commercial Availability & Supply-Chain Fidelity
 
-**Status:** Open — U1 next  
+**Status:** Open — U1 complete; S1 next  
 **Base:** Status Page / Uptime Honesty Pack + SBOM / Dependency Disclosure Honesty Pack → Commercial Availability & Supply-Chain Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-085](ADR_085_STAGE40_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Availability & Supply-Chain Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **U1** | Status page / uptime honesty packaging (not live status page / 99.9% SLA Complete) | P0 | PENDING |
+| **U1** | Status page / uptime honesty packaging (not live status page / 99.9% SLA Complete) | P0 | COMPLETE |
 | **S1** | SBOM / dependency disclosure honesty packaging (not live SBOM pipeline Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H40x** | Stage 40 exit criteria + freeze ADR | Exit | PENDING |
@@ -60,10 +60,10 @@ Commercial Availability & Supply-Chain Fidelity
 
 ## U1 acceptance criteria
 
-- [ ] Status page / uptime honesty packaging consolidating PRODUCT_OVERVIEW uptime theme and Stage 30–36 support Remaining (status-page) into a customer-facing availability boundary (not forging live status page / 99.9% SLA Complete).
-- [ ] Automated proof: `backend/tests/test_status_uptime_u1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 40 U1.
+- [x] Status page / uptime honesty packaging consolidating PRODUCT_OVERVIEW uptime theme and Stage 30–36 support Remaining (status-page) into a customer-facing availability boundary (not forging live status page / 99.9% SLA Complete).
+- [x] Automated proof: `backend/tests/test_status_uptime_u1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 40 U1.
 
 ## S1 acceptance criteria
 
