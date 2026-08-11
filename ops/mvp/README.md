@@ -38,6 +38,7 @@
 | `tos-aup.json` | Stage 43 T1 ToS / AUP honesty — `tos_signed_claimed: false` / `aup_enforced_claimed: false` / `legal_counsel_claimed: false` / `clickwrap_live: false` |
 | `cookie-privacy-notice.json` | Stage 43 C1 Cookie / privacy notice honesty — `cookie_consent_live: false` / `cmp_saas_claimed: false` / `privacy_notice_live: false` / `legal_counsel_claimed: false` |
 | `data-residency.json` | Stage 44 R1 Data residency / localization honesty — `multi_region_residency_claimed: false` / `schema_per_tenant_claimed: false` / `gdpr_residency_cert_claimed: false` / `customer_region_pinning_live: false` |
+| `encryption-kms.json` | Stage 44 E1 Encryption / key-management honesty — `hsm_claimed: false` / `vault_saas_live: false` / `customer_managed_keys_claimed: false` / `mtls_mesh_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
 
@@ -94,6 +95,7 @@ Authoritative MVP docs:
 - `docs/STAGE_43_EXIT_CRITERIA.md` / `docs/ADR_092_STAGE43_FREEZE.md` (`backend/tests/test_stage43_exit_h43x.py`) — Stage 43 H43x
 - `docs/STAGE_44_PLAN.md` (`backend/tests/test_stage44_open.py`) — Stage 44 open (ADR-093)
 - `docs/DATA_RESIDENCY_MVP.md` (`backend/tests/test_data_residency_r1.py`) — Stage 44 R1
+- `docs/ENCRYPTION_KMS_MVP.md` (`backend/tests/test_encryption_kms_e1.py`) — Stage 44 E1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -379,8 +381,12 @@ H43x met — `docs/STAGE_43_EXIT_CRITERIA.md`, ADR-092. Stages 1–43 frozen for
 
 ## Stage 44 open
 
-Commercial Data Trust Fidelity — `docs/STAGE_44_PLAN.md`, ADR-093; R1 complete; E1 next.
+Commercial Data Trust Fidelity — `docs/STAGE_44_PLAN.md`, ADR-093; E1 complete; D1 next.
 
 ## Stage 44 R1 — Data residency / localization honesty
 
 `docs/DATA_RESIDENCY_MVP.md` + `ops/mvp/data-residency.json` — packaging Complete; `multi_region_residency_claimed` / `schema_per_tenant_claimed` / `gdpr_residency_cert_claimed` / `customer_region_pinning_live` remain false.
+
+## Stage 44 E1 — Encryption / key-management honesty
+
+`docs/ENCRYPTION_KMS_MVP.md` + `ops/mvp/encryption-kms.json` — packaging Complete; `hsm_claimed` / `vault_saas_live` / `customer_managed_keys_claimed` / `mtls_mesh_claimed` remain false.

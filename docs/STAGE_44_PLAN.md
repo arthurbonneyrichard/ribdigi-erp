@@ -1,6 +1,6 @@
 # Stage 44 Plan — Commercial Data Trust Fidelity
 
-**Status:** Open — R1 complete; E1 next  
+**Status:** Open — E1 complete; D1 next  
 **Base:** Data Residency / Localization Honesty Pack + Encryption / Key-Management Honesty Pack → Commercial Data Trust Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-093](ADR_093_STAGE44_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Data Trust Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **R1** | Data residency / localization honesty packaging (not multi-region residency Complete) | P0 | COMPLETE |
-| **E1** | Encryption / key-management honesty packaging (not HSM / live Vault Complete) | P0 | PENDING |
+| **E1** | Encryption / key-management honesty packaging (not HSM / live Vault Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H44x** | Stage 44 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -70,10 +70,10 @@ Commercial Data Trust Fidelity
 
 ## E1 acceptance criteria
 
-- [ ] Encryption / key-management honesty packaging indexing SECURITY_GUIDE encryption / backup-key themes and Stage 26 WAL/PITR adjacency (not claiming HSM / live Vault SaaS Complete).
-- [ ] Automated proof: `backend/tests/test_encryption_kms_e1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 44 E1.
+- [x] Encryption / key-management honesty packaging indexing SECURITY_GUIDE encryption / backup-key themes and Stage 26 WAL/PITR adjacency (not claiming HSM / live Vault SaaS Complete).
+- [x] Automated proof: `backend/tests/test_encryption_kms_e1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 44 E1.
 
 ## D1 acceptance criteria
 

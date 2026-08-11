@@ -1,0 +1,155 @@
+{
+  "stage": "44",
+  "workstream": "E1",
+  "doc": "docs/ENCRYPTION_KMS_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "tls_ingress_doc": "docs/TLS_INGRESS_PACK_MVP.md",
+  "tls_checklist": "ops/k8s/tls-checklist.json",
+  "wal_pitr_doc": "docs/DR_WAL_PITR_RUNBOOK.md",
+  "pitr_checklist": "ops/postgres/pitr-drill-checklist.json",
+  "logical_backup_doc": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+  "data_residency": "ops/mvp/data-residency.json",
+  "data_residency_doc": "docs/DATA_RESIDENCY_MVP.md",
+  "k8s_deploy_doc": "docs/K8S_DEPLOY_MVP.md",
+  "sbom_disclosure": "ops/mvp/sbom-disclosure.json",
+  "sbom_disclosure_doc": "docs/SBOM_DISCLOSURE_MVP.md",
+  "stage44_plan": "docs/STAGE_44_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "hsm_claimed": false,
+  "vault_saas_live": false,
+  "customer_managed_keys_claimed": false,
+  "mtls_mesh_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage44_e1_encryption_kms.json",
+  "steps": [
+    {
+      "id": "ek-transit-tls",
+      "category": "transit",
+      "title": "Index SECURITY_GUIDE encryption-in-transit / TLS themes",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/ENCRYPTION_KMS_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ek-rest-aes",
+      "category": "rest",
+      "title": "Index SECURITY_GUIDE encryption-at-rest / AES themes",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/ENCRYPTION_KMS_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ek-tls-ingress",
+      "category": "transit",
+      "title": "Link Stage 29 TLS ingress / cert-manager packaging as transit adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/TLS_INGRESS_PACK_MVP.md",
+        "ops/k8s/tls-checklist.json"
+      ],
+      "source": "docs/TLS_INGRESS_PACK_MVP.md"
+    },
+    {
+      "id": "ek-wal-pitr-backup",
+      "category": "backup",
+      "title": "Link Stage 26 WAL/PITR strategy as backup encryption adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_WAL_PITR_RUNBOOK.md",
+        "ops/postgres/pitr-drill-checklist.json"
+      ],
+      "source": "docs/DR_WAL_PITR_RUNBOOK.md"
+    },
+    {
+      "id": "ek-ribbak-encrypt",
+      "category": "backup",
+      "title": "Link logical .ribbak encrypted backup as application-backup adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/DR_WAL_PITR_RUNBOOK.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "ek-residency-adjacency",
+      "category": "keys",
+      "title": "Link Stage 44 R1 data-residency as paired data-trust adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATA_RESIDENCY_MVP.md",
+        "ops/mvp/data-residency.json"
+      ],
+      "source": "docs/DATA_RESIDENCY_MVP.md"
+    },
+    {
+      "id": "ek-k8s-secrets",
+      "category": "keys",
+      "title": "Link Stage 26 K8s deploy secrets packaging (not Vault SaaS Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/K8S_DEPLOY_MVP.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/K8S_DEPLOY_MVP.md"
+    },
+    {
+      "id": "ek-vault-aspirational",
+      "category": "keys",
+      "title": "Index SECURITY_GUIDE Vault / KMS aspirational key-management theme as Remaining honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/STAGE_44_PLAN.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ek-hsm-vault-remaining",
+      "category": "honesty",
+      "title": "HSM / live HashiCorp Vault SaaS Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_44_PLAN.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/STAGE_44_PLAN.md"
+    },
+    {
+      "id": "ek-cmk-mtls-remaining",
+      "category": "honesty",
+      "title": "Customer-managed keys / mTLS mesh Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_44_PLAN.md",
+        "docs/TLS_INGRESS_PACK_MVP.md"
+      ],
+      "source": "docs/STAGE_44_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "HSM / FIPS HSM Complete",
+    "Live HashiCorp Vault SaaS / External Secrets Operator Complete",
+    "Customer-managed keys (CMK) Complete",
+    "Istio / Linkerd mTLS mesh Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}
