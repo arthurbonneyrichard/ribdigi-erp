@@ -1351,3 +1351,5 @@ Every feature in every phase must meet:
 **Stage 57 D1 (2026-08-11):** Mobile & metrics fidelity sync — `docs/STAGE_57_FIDELITY.md` (`test_stage57_fidelity_d1.py`); maps A1–K1 → readiness / launch / deploy / security.
 
 **Stage 57 exit (2026-08-11):** A1, K1, D1, H57x met — `docs/STAGE_57_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_120_STAGE57_FREEZE.md`. Fidelity: `docs/STAGE_57_FIDELITY.md`.
+
+**Stage 58 open (2026-08-11):** Commercial Business & AI Metrics Fidelity track approved — `docs/ADR_121_STAGE58_OPEN.md` + `docs/STAGE_58_PLAN.md` (business metrics → AI metrics → fidelity).

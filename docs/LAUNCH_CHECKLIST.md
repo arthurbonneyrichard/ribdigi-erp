@@ -182,6 +182,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
+- [x] Stage 58 track opened (ADR-121: `test_stage58_open.py`, `docs/STAGE_58_PLAN.md`) — Commercial Business & AI Metrics Fidelity; B1 next
 - [x] Stage 57 track opened (ADR-119: `test_stage57_open.py`, `docs/STAGE_57_PLAN.md`) — Commercial Mobile & Metrics Fidelity; closed under ADR-120
 - [x] Mobile app GTM honesty (Stage 57 A1: `test_mobile_app_gtm_a1.py` — `docs/MOBILE_APP_GTM_MVP.md`, `ops/mvp/mobile-app-gtm.json`; evidence `stage57_a1_mobile_app_gtm.json`; live Flutter / store publish Remaining)
 - [x] Success metrics honesty (Stage 57 K1: `test_success_metrics_k1.py` — `docs/SUCCESS_METRICS_MVP.md`, `ops/mvp/success-metrics.json`; evidence `stage57_k1_success_metrics.json`; measured MAU / NPS / uptime Remaining)

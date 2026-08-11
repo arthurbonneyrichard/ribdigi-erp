@@ -23,3 +23,7 @@ Stage 57 Commercial Mobile & Metrics Fidelity delivered mobile app GTM honesty p
 - Stage 1–56 freezes remain in force for their scopes (Stage 56 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Mobile & metrics packaging Complete does **not** mean live Flutter / App Store / Play publish, measured MAU, measured NPS, measured 99.9% uptime SLA, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 58 (Commercial Business & AI Metrics Fidelity) after Stage 57 freeze via CONTINUE/NEXT — see [ADR-121](ADR_121_STAGE58_OPEN.md) and [STAGE_58_PLAN.md](STAGE_58_PLAN.md). Stage 57 feature scope remains frozen; Stage 58 does not reopen A1–D1 / H57x.
