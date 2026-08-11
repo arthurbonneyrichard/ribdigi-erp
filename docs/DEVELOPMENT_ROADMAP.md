@@ -418,6 +418,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 41 C1 (2026-08-11):** Change / maintenance governance honesty — `docs/CHANGE_GOVERNANCE_MVP.md`, `ops/mvp/change-governance.json`, evidence `stage41_c1_change_governance.json` (`test_change_governance_c1.py`); public change calendar Remaining.
 
+**Stage 41 D1 (2026-08-11):** Commercial accessibility & change governance fidelity — `docs/STAGE_41_FIDELITY.md` (`test_stage41_fidelity_d1.py`); maps A1–C1 → readiness / launch / deploy / security; WCAG AA audit / public change calendar Remaining.
+
 
 
 

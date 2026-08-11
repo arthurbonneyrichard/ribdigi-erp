@@ -1,6 +1,6 @@
 # Stage 41 Plan — Commercial Accessibility & Change Governance Fidelity
 
-**Status:** Open — A1–C1 complete; D1 next  
+**Status:** Open — D1 complete; H41x next  
 **Base:** Accessibility Statement Honesty Pack + Change / Maintenance Governance Honesty Pack → Commercial Accessibility & Change Governance Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-087](ADR_087_STAGE41_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Accessibility & Change Governance Fidelity
 |----|------------|----------|---------|
 | **A1** | Accessibility statement honesty packaging (not WCAG AA audit Complete) | P0 | COMPLETE |
 | **C1** | Change / maintenance governance honesty packaging (not public change calendar Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H41x** | Stage 41 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -75,9 +75,9 @@ Commercial Accessibility & Change Governance Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_41_FIDELITY.md` maps A1–C1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 41 D1.
-- [ ] Automated proof: `backend/tests/test_stage41_fidelity_d1.py`.
+- [x] `docs/STAGE_41_FIDELITY.md` maps A1–C1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 41 D1.
+- [x] Automated proof: `backend/tests/test_stage41_fidelity_d1.py`.
 
 ## H41x acceptance criteria
 

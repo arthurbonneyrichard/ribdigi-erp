@@ -75,6 +75,7 @@ Authoritative MVP docs:
 - `docs/STAGE_41_PLAN.md` (`backend/tests/test_stage41_open.py`) — Stage 41 open (ADR-087)
 - `docs/ACCESSIBILITY_STATEMENT_MVP.md` (`backend/tests/test_accessibility_statement_a1.py`) — Stage 41 A1
 - `docs/CHANGE_GOVERNANCE_MVP.md` (`backend/tests/test_change_governance_c1.py`) — Stage 41 C1
+- `docs/STAGE_41_FIDELITY.md` (`backend/tests/test_stage41_fidelity_d1.py`) — Stage 41 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -300,7 +301,7 @@ H40x met — `docs/STAGE_40_EXIT_CRITERIA.md`, ADR-086. Stages 1–40 frozen for
 
 ## Stage 41 open
 
-Commercial Accessibility & Change Governance Fidelity — `docs/STAGE_41_PLAN.md`, ADR-087; A1–C1 complete; D1 next.
+Commercial Accessibility & Change Governance Fidelity — `docs/STAGE_41_PLAN.md`, ADR-087; D1 complete; H41x next.
 
 ## Stage 41 A1 — Accessibility statement honesty
 
@@ -309,3 +310,7 @@ Commercial Accessibility & Change Governance Fidelity — `docs/STAGE_41_PLAN.md
 ## Stage 41 C1 — Change / maintenance governance honesty
 
 `docs/CHANGE_GOVERNANCE_MVP.md` + `ops/mvp/change-governance.json` — packaging Complete; `change_calendar_live` / `maintenance_portal_claimed` remain false.
+
+## Stage 41 D1 — Fidelity
+
+`docs/STAGE_41_FIDELITY.md` maps A1–C1 → readiness / launch / deploy / security (`test_stage41_fidelity_d1.py`).

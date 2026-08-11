@@ -173,9 +173,10 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [x] Stage 41 track opened (ADR-087: `test_stage41_open.py`, `docs/STAGE_41_PLAN.md`) — Commercial Accessibility & Change Governance Fidelity; A1–C1 complete; D1 next
+- [x] Stage 41 track opened (ADR-087: `test_stage41_open.py`, `docs/STAGE_41_PLAN.md`) — Commercial Accessibility & Change Governance Fidelity; D1 complete; H41x next
 - [x] Accessibility statement honesty (Stage 41 A1: `test_accessibility_statement_a1.py` — `docs/ACCESSIBILITY_STATEMENT_MVP.md`, `ops/mvp/accessibility-statement.json`; evidence `stage41_a1_accessibility_statement.json`; WCAG AA audit Remaining)
 - [x] Change / maintenance governance honesty (Stage 41 C1: `test_change_governance_c1.py` — `docs/CHANGE_GOVERNANCE_MVP.md`, `ops/mvp/change-governance.json`; evidence `stage41_c1_change_governance.json`; public change calendar Remaining)
+- [x] Stage 41 fidelity sync (D1: `test_stage41_fidelity_d1.py`, `docs/STAGE_41_FIDELITY.md` — A1–C1 + readiness + deploy / launch / security)
 - [x] Stage 40 Commercial Availability & Supply-Chain Fidelity (closed: `docs/STAGE_40_PLAN.md`, ADR-086) — U1–D1 / H40x complete
 - [x] Stage 40 track opened (ADR-085: `test_stage40_open.py`, `docs/STAGE_40_PLAN.md`)
 - [x] Status page / uptime honesty (Stage 40 U1: `test_status_uptime_u1.py` — `docs/STATUS_UPTIME_MVP.md`, `ops/mvp/status-uptime.json`; evidence `stage40_u1_status_uptime.json`; live status page / 99.9% SLA Remaining)
