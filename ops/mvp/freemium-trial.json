@@ -1,0 +1,155 @@
+{
+  "stage": "50",
+  "workstream": "F1",
+  "doc": "docs/FREEMIUM_TRIAL_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "stage21_fidelity": "docs/STAGE_21_FIDELITY.md",
+  "stage21_plan": "docs/STAGE_21_PLAN.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "referral_program": "ops/mvp/referral-program.json",
+  "referral_program_doc": "docs/REFERRAL_PROGRAM_MVP.md",
+  "pricing_transparency": "ops/mvp/pricing-transparency.json",
+  "pricing_transparency_doc": "docs/PRICING_TRANSPARENCY_MVP.md",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "deferred_adr_register_doc": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage50_plan": "docs/STAGE_50_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "freemium_trial_live": false,
+  "freemium_conversion_claimed": false,
+  "paid_trial_billing_claimed": false,
+  "no_cc_trial_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage50_f1_freemium_trial.json",
+  "steps": [
+    {
+      "id": "ft-product-overview",
+      "category": "freemium",
+      "title": "Index PRODUCT_OVERVIEW 14-day freemium / no-CC trial themes as acquisition honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_50_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "ft-stage21-trial",
+      "category": "trial",
+      "title": "Link Stage 21 tenant registration / trial / grace as engine adjacency (not freemium conversion Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_21_FIDELITY.md",
+        "docs/STAGE_21_PLAN.md"
+      ],
+      "source": "docs/STAGE_21_FIDELITY.md"
+    },
+    {
+      "id": "ft-billing-deferred",
+      "category": "trial",
+      "title": "Link Stage 36 billing-deferred honesty as paid-trial Remaining adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "ft-referral-adjacency",
+      "category": "freemium",
+      "title": "Link Stage 50 R1 referral program as acquisition adjacency (not freemium trial)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/REFERRAL_PROGRAM_MVP.md",
+        "ops/mvp/referral-program.json"
+      ],
+      "source": "docs/REFERRAL_PROGRAM_MVP.md"
+    },
+    {
+      "id": "ft-pricing-adjacency",
+      "category": "freemium",
+      "title": "Link Stage 49 pricing transparency as list-price adjacency (not trial terms Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRICING_TRANSPARENCY_MVP.md",
+        "ops/mvp/pricing-transparency.json"
+      ],
+      "source": "docs/PRICING_TRANSPARENCY_MVP.md"
+    },
+    {
+      "id": "ft-deferred-adr",
+      "category": "trial",
+      "title": "Link deferred ADR register / ADR-002 as billing Remaining honesty for trial conversion",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEFERRED_ADR_REGISTER_MVP.md",
+        "ops/mvp/deferred-adr-register.json"
+      ],
+      "source": "docs/DEFERRED_ADR_REGISTER_MVP.md"
+    },
+    {
+      "id": "ft-roadmap-backlog",
+      "category": "freemium",
+      "title": "Index DEVELOPMENT_ROADMAP acquisition / trial backlog as freemium Remaining source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "ft-plan-honesty",
+      "category": "trial",
+      "title": "Confirm Stage 50 plan explicitly defers live freemium conversion / paid trial billing",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_50_PLAN.md",
+        "docs/FREEMIUM_TRIAL_MVP.md"
+      ],
+      "source": "docs/STAGE_50_PLAN.md"
+    },
+    {
+      "id": "ft-conversion-remaining",
+      "category": "honesty",
+      "title": "Live freemium conversion Remaining \u2014 packaging \u2260 operating freemium funnel",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_50_PLAN.md",
+        "docs/FREEMIUM_TRIAL_MVP.md"
+      ],
+      "source": "docs/STAGE_50_PLAN.md"
+    },
+    {
+      "id": "ft-billing-remaining",
+      "category": "honesty",
+      "title": "Paid trial billing / no-CC as paid Complete Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_50_PLAN.md",
+        "docs/FREEMIUM_TRIAL_MVP.md"
+      ],
+      "source": "docs/STAGE_50_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live freemium conversion Complete",
+    "Paid trial billing / payment-provider Complete",
+    "No-credit-card trial as paid billing Complete (ADR-002)",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

@@ -1,6 +1,6 @@
 # Stage 50 Plan — Commercial Acquisition & Trial Fidelity
 
-**Status:** Open — R1 complete; F1 next  
+**Status:** Open — F1 complete; D1 next  
 **Base:** Referral Program Honesty Pack + Freemium Trial Honesty Pack → Commercial Acquisition & Trial Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-105](ADR_105_STAGE50_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Acquisition & Trial Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **R1** | Referral program honesty packaging (not live referral credits / payout Complete) | P0 | COMPLETE |
-| **F1** | Freemium / 14-day trial honesty packaging (not live freemium conversion / paid trial billing Complete) | P0 | PENDING |
+| **F1** | Freemium / 14-day trial honesty packaging (not live freemium conversion / paid trial billing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H50x** | Stage 50 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -82,10 +82,10 @@ Commercial Acquisition & Trial Fidelity
 
 ## F1 acceptance criteria
 
-- [ ] Freemium / 14-day trial honesty packaging indexing PRODUCT_OVERVIEW trial themes and Stage 21 tenant-trial adjacency (not claiming live freemium conversion / paid trial billing Complete).
-- [ ] Automated proof: `backend/tests/test_freemium_trial_f1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 50 F1.
+- [x] Freemium / 14-day trial honesty packaging indexing PRODUCT_OVERVIEW trial themes and Stage 21 tenant-trial adjacency (not claiming live freemium conversion / paid trial billing Complete).
+- [x] Automated proof: `backend/tests/test_freemium_trial_f1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 50 F1.
 
 ## D1 acceptance criteria
 

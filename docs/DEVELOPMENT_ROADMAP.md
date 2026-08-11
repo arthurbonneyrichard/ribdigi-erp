@@ -506,6 +506,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 50 R1 (2026-08-11):** Referral program honesty — `docs/REFERRAL_PROGRAM_MVP.md`, `ops/mvp/referral-program.json`, evidence `stage50_r1_referral_program.json` (`test_referral_program_r1.py`); live referral credits Remaining.
 
+**Stage 50 F1 (2026-08-11):** Freemium trial honesty — `docs/FREEMIUM_TRIAL_MVP.md`, `ops/mvp/freemium-trial.json`, evidence `stage50_f1_freemium_trial.json` (`test_freemium_trial_f1.py`); live freemium conversion Remaining.
+
 
 
 
