@@ -156,11 +156,15 @@ export default function Page() {
         throw new Error(body.detail || body.message || 'Label failed');
       }
       const html = await res.text();
-      const w = window.open('', '_blank', 'noopener,noreferrer,width=720,height=640');
-      if (!w) throw new Error('Pop-up blocked — allow pop-ups to print labels');
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank', 'noopener,noreferrer,width=720,height=640');
+      if (!w) {
+        URL.revokeObjectURL(url);
+        throw new Error('Pop-up blocked — allow pop-ups to print labels');
+      }
+      // Revoke after the new tab has a chance to load the blob.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
       setMessage('Barcode label opened — use Print labels');
     } catch (err: any) {
       setError(err.message);
