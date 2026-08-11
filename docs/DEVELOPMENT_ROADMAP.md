@@ -478,6 +478,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 47 A1 (2026-08-11):** Customer audit rights honesty — `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md`, `ops/mvp/customer-audit-rights.json`, evidence `stage47_a1_customer_audit_rights.json` (`test_customer_audit_rights_a1.py`); customer audit executed Remaining.
 
+**Stage 47 D1 (2026-08-11):** Commercial insurance & audit fidelity — `docs/STAGE_47_FIDELITY.md` (`test_stage47_fidelity_d1.py`); maps I1–A1 → readiness / launch / deploy / security; issued COI / customer audit executed Remaining.
+
 
 
 

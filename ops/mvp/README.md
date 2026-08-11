@@ -117,6 +117,7 @@ Authoritative MVP docs:
 - `docs/STAGE_47_PLAN.md` (`backend/tests/test_stage47_open.py`) — Stage 47 open (ADR-099)
 - `docs/CYBER_INSURANCE_MVP.md` (`backend/tests/test_cyber_insurance_i1.py`) — Stage 47 I1
 - `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md` (`backend/tests/test_customer_audit_rights_a1.py`) — Stage 47 A1
+- `docs/STAGE_47_FIDELITY.md` (`backend/tests/test_stage47_fidelity_d1.py`) — Stage 47 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -462,7 +463,7 @@ H46x met — `docs/STAGE_46_EXIT_CRITERIA.md`, ADR-098. Stages 1–46 frozen for
 
 ## Stage 47 open
 
-Commercial Insurance & Audit Fidelity — `docs/STAGE_47_PLAN.md`, ADR-099; A1 complete; D1 next.
+Commercial Insurance & Audit Fidelity — `docs/STAGE_47_PLAN.md`, ADR-099; D1 complete; H47x next.
 
 ## Stage 47 I1 — Cyber insurance / COI honesty
 
@@ -471,3 +472,7 @@ Commercial Insurance & Audit Fidelity — `docs/STAGE_47_PLAN.md`, ADR-099; A1 c
 ## Stage 47 A1 — Customer audit rights honesty
 
 `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md` + `ops/mvp/customer-audit-rights.json` — packaging Complete; `customer_audit_rights_live` / `on_site_audit_claimed` / `audit_executed_claimed` / `audit_schedule_live` remain false.
+
+## Stage 47 D1 — Fidelity
+
+`docs/STAGE_47_FIDELITY.md` maps I1–A1 → readiness / launch / deploy / security (`test_stage47_fidelity_d1.py`).

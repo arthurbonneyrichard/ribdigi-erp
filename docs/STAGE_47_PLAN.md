@@ -1,6 +1,6 @@
 # Stage 47 Plan — Commercial Insurance & Audit Fidelity
 
-**Status:** Open — A1 complete; D1 next  
+**Status:** Open — D1 complete; H47x next  
 **Base:** Cyber Insurance / Certificate of Insurance Honesty Pack + Customer Audit Rights Honesty Pack → Commercial Insurance & Audit Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-099](ADR_099_STAGE47_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Insurance & Audit Fidelity
 |----|------------|----------|---------|
 | **I1** | Cyber insurance / certificate of insurance honesty packaging (not issued COI / live cyber policy Complete) | P0 | COMPLETE |
 | **A1** | Customer audit rights honesty packaging (not customer audit executed Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H47x** | Stage 47 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -83,9 +83,9 @@ Commercial Insurance & Audit Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_47_FIDELITY.md` maps I1–A1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 47 D1.
-- [ ] Automated proof: `backend/tests/test_stage47_fidelity_d1.py`.
+- [x] `docs/STAGE_47_FIDELITY.md` maps I1–A1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 47 D1.
+- [x] Automated proof: `backend/tests/test_stage47_fidelity_d1.py`.
 
 ## H47x acceptance criteria
 
