@@ -13,7 +13,13 @@ def test_stage24_plan_and_open_adr():
     assert "ADR-053" in plan or "ADR_053" in plan
     for ws in ("N1", "G1", "O1", "D1", "H24x"):
         assert f"| **{ws}** |" in plan, ws
-    assert "PENDING" in plan or "O1 next" in plan or "G1 next" in plan or "N1 next" in plan
+    assert (
+        "PENDING" in plan
+        or "D1 next" in plan
+        or "O1 next" in plan
+        or "G1 next" in plan
+        or "N1 next" in plan
+    )
     assert "Kanban" in plan or "multi-bin" in plan.lower()
     assert "WAL" in plan or "PITR" in plan
 

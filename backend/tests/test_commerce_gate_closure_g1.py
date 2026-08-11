@@ -27,7 +27,7 @@ def test_g1_plan_marks_complete() -> None:
     g1_line = [ln for ln in PLAN.splitlines() if "| **G1** |" in ln][0]
     assert "COMPLETE" in g1_line
     assert "test_commerce_gate_closure_g1.py" in PLAN
-    assert "G1 complete" in PLAN or "O1 next" in PLAN
+    assert "G1 complete" in PLAN or "O1 next" in PLAN or "N1–G1–O1 complete" in PLAN or "D1 next" in PLAN
 
 
 def test_commerce_gates_mvp_complete() -> None:
@@ -53,10 +53,10 @@ def test_commerce_gates_mvp_complete() -> None:
         assert label not in sec
 
 
-def test_ops_and_ai_not_fake_completed() -> None:
-    """G1 must not close O1 / post-MVP ops gates."""
-    assert "- [ ] Redis/Celery/RabbitMQ used for intended production workloads." in READINESS
-    assert "- [ ] AI provider configured securely." in READINESS or "AI provider" in READINESS
+def test_ops_platform_gates_not_fake_completed() -> None:
+    """G1 must not close post-MVP ops platform gates (WAL / K8s / monitoring / load)."""
     assert "- [ ] Point-in-time recovery/WAL strategy complete." in READINESS
     assert "- [ ] Kubernetes production deployment reviewed." in READINESS
-    assert "Partial" in READINESS  # Redis/Celery / AI / monitoring still Partial
+    assert "- [ ] Monitoring, metrics, logging and alerting complete." in READINESS
+    assert "- [ ] Load/performance tests meet documented targets." in READINESS
+    assert "Partial" in READINESS  # monitoring / load still Partial

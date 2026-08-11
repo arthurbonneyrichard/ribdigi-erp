@@ -39,7 +39,7 @@ Fidelity closeout
 |----|------------|----------|---------|
 | **N1** | Shared document numbering series fidelity | P0 | COMPLETE |
 | **G1** | Commerce gates closure (Inv / Purch / Sales / POS / Multi-store) | P0 | COMPLETE |
-| **O1** | Ops Redis/Celery + AI MVP gate honesty | P1 | PENDING |
+| **O1** | Ops Redis/Celery + AI MVP gate honesty | P1 | COMPLETE |
 | **D1** | Spec / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
 | **H24x** | Stage 24 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -77,10 +77,20 @@ Fidelity closeout
 - [x] Automated proof: `backend/tests/test_commerce_gate_closure_g1.py`.
 - [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan synced (Stage 24 G1).
 
-## O1–H24x acceptance criteria
+## O1 acceptance criteria
+
+- [x] Redis/Celery/RabbitMQ gate Complete (MVP); Remaining PgBouncer / K8s / WAL / 1000-VU only.
+- [x] AI provider gate Complete (MVP); Remaining external LLM configuration when enabled.
+- [x] AI tenant-safe access gate Complete (MVP).
+- [x] AI functions gate Complete (MVP); Remaining Prophet/ML, optional LLM, PO OCR apply.
+- [x] No fake-complete of monitoring / WAL / K8s / load gates.
+- [x] Automated proof: `backend/tests/test_ops_ai_gate_closure_o1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan synced (Stage 24 O1).
+
+## D1–H24x acceptance criteria
 
 Filled when each workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-053 open. N1–G1 complete; O1 next. Stages 1–23 remain frozen for their scopes.
+Plan authored; ADR-053 open. N1–G1–O1 complete; D1 next. Stages 1–23 remain frozen for their scopes.

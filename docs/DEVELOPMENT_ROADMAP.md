@@ -202,6 +202,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 24 G1 (2026-08-10):** Commerce gates closure — Inventory, Purchasing, Sales, POS, Multi-store Complete (MVP) (`test_commerce_gate_closure_g1.py`); Remaining deferred-only (Kanban, USB/serial, multi-bin, ADR-005).
 
+**Stage 24 O1 (2026-08-10):** Ops Redis/Celery + AI MVP gate honesty — Redis/Celery intended workloads + AI provider/tenant-safe/functions Complete (MVP) (`test_ops_ai_gate_closure_o1.py`); Remaining PgBouncer/LLM/Prophet; monitoring/WAL/K8s/load stay open.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -782,7 +784,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 24 open (`docs/STAGE_24_PLAN.md`, ADR-053) — N1–G1 complete; O1 next. Stages 1–23 remain frozen for their scopes.
+**Active delivery plan:** Stage 24 open (`docs/STAGE_24_PLAN.md`, ADR-053) — N1–G1–O1 complete; D1 next. Stages 1–23 remain frozen for their scopes.
 
 ### 6.2 Features
 
