@@ -454,6 +454,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 45 open (2026-08-11):** Commercial Continuity & Exit Fidelity track approved — `docs/ADR_095_STAGE45_OPEN.md` + `docs/STAGE_45_PLAN.md` (RTO/RPO → retention/return → fidelity).
 
+**Stage 45 O1 (2026-08-11):** RTO / RPO recovery objectives honesty — `docs/RTO_RPO_MVP.md`, `ops/mvp/rto-rpo.json`, evidence `stage45_o1_rto_rpo.json` (`test_rto_rpo_o1.py`); measured RTO/RPO Remaining.
+
 
 
 

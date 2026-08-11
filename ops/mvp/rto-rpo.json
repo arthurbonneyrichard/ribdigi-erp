@@ -1,0 +1,157 @@
+{
+  "stage": "45",
+  "workstream": "O1",
+  "doc": "docs/RTO_RPO_MVP.md",
+  "business_requirements": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "wal_pitr_doc": "docs/DR_WAL_PITR_RUNBOOK.md",
+  "pitr_drill_doc": "docs/PITR_DRILL_PACK_MVP.md",
+  "pitr_checklist": "ops/postgres/pitr-drill-checklist.json",
+  "status_uptime": "ops/mvp/status-uptime.json",
+  "status_uptime_doc": "docs/STATUS_UPTIME_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "change_governance": "ops/mvp/change-governance.json",
+  "change_governance_doc": "docs/CHANGE_GOVERNANCE_MVP.md",
+  "incident_pack_doc": "docs/INCIDENT_PACK_MVP.md",
+  "incident_checklist": "ops/incident/incident-checklist.json",
+  "logical_backup_doc": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+  "stage45_plan": "docs/STAGE_45_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "measured_rto_claimed": false,
+  "measured_rpo_claimed": false,
+  "multi_region_failover_claimed": false,
+  "rto_rpo_sla_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage45_o1_rto_rpo.json",
+  "steps": [
+    {
+      "id": "rr-br-rto",
+      "category": "rto",
+      "title": "Index BR Recovery Time Objective (< 4 hours) as customer-facing continuity boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/RTO_RPO_MVP.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "rr-br-rpo",
+      "category": "rpo",
+      "title": "Index BR Recovery Point Objective (< 15 minutes) as customer-facing continuity boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/RTO_RPO_MVP.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "rr-security-strategy",
+      "category": "rto",
+      "title": "Link SECURITY_GUIDE strategy RTO/RPO themes as honesty adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/DR_WAL_PITR_RUNBOOK.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "rr-wal-pitr",
+      "category": "rpo",
+      "title": "Link Stage 26 WAL/PITR strategy as RPO/RTO packaging adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_WAL_PITR_RUNBOOK.md",
+        "ops/postgres/pitr-drill-checklist.json"
+      ],
+      "source": "docs/DR_WAL_PITR_RUNBOOK.md"
+    },
+    {
+      "id": "rr-pitr-drill",
+      "category": "rto",
+      "title": "Link Stage 28 PITR drill pack (execution Remaining) as recovery-objective adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PITR_DRILL_PACK_MVP.md",
+        "ops/postgres/pitr-drill-checklist.json"
+      ],
+      "source": "docs/PITR_DRILL_PACK_MVP.md"
+    },
+    {
+      "id": "rr-status-uptime",
+      "category": "availability",
+      "title": "Link Stage 40 status / uptime honesty as availability adjacency (not measured RTO)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STATUS_UPTIME_MVP.md",
+        "ops/mvp/status-uptime.json"
+      ],
+      "source": "docs/STATUS_UPTIME_MVP.md"
+    },
+    {
+      "id": "rr-support-sla",
+      "category": "availability",
+      "title": "Link Stage 36 support SLA boundary as escalation / continuity adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "rr-change-governance",
+      "category": "availability",
+      "title": "Link Stage 41 change / maintenance-window as continuity adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CHANGE_GOVERNANCE_MVP.md",
+        "ops/mvp/change-governance.json"
+      ],
+      "source": "docs/CHANGE_GOVERNANCE_MVP.md"
+    },
+    {
+      "id": "rr-measured-remaining",
+      "category": "honesty",
+      "title": "Measured RTO / RPO SLA Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_45_PLAN.md",
+        "docs/DR_WAL_PITR_RUNBOOK.md"
+      ],
+      "source": "docs/STAGE_45_PLAN.md"
+    },
+    {
+      "id": "rr-failover-remaining",
+      "category": "honesty",
+      "title": "Multi-region failover Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_45_PLAN.md",
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+      ],
+      "source": "docs/STAGE_45_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Measured RTO / RPO SLA Complete",
+    "Multi-region failover / DR site Complete",
+    "Live operator PITR drill proving RTO/RPO Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

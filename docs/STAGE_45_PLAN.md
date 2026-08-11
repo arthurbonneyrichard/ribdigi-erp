@@ -1,6 +1,6 @@
 # Stage 45 Plan — Commercial Continuity & Exit Fidelity
 
-**Status:** Open — O1 next  
+**Status:** Open — O1 complete; T1 next  
 **Base:** RTO / RPO Recovery Objectives Honesty Pack + Data Retention / Return Honesty Pack → Commercial Continuity & Exit Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-095](ADR_095_STAGE45_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Continuity & Exit Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **O1** | RTO / RPO recovery objectives honesty packaging (not measured RTO/RPO SLA Complete) | P0 | PENDING |
+| **O1** | RTO / RPO recovery objectives honesty packaging (not measured RTO/RPO SLA Complete) | P0 | COMPLETE |
 | **T1** | Data retention / return honesty packaging (not customer data-return portal Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H45x** | Stage 45 exit criteria + freeze ADR | Exit | PENDING |
@@ -65,10 +65,10 @@ Commercial Continuity & Exit Fidelity
 
 ## O1 acceptance criteria
 
-- [ ] RTO / RPO recovery objectives honesty packaging consolidating BR availability RTO/RPO themes and Stage 26–28 / Stage 40 DR / uptime adjacency (not forging measured RTO/RPO SLA Complete).
-- [ ] Automated proof: `backend/tests/test_rto_rpo_o1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 45 O1.
+- [x] RTO / RPO recovery objectives honesty packaging consolidating BR availability RTO/RPO themes and Stage 26–28 / Stage 40 DR / uptime adjacency (not forging measured RTO/RPO SLA Complete).
+- [x] Automated proof: `backend/tests/test_rto_rpo_o1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 45 O1.
 
 ## T1 acceptance criteria
 
