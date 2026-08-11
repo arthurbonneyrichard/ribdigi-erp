@@ -1,6 +1,6 @@
 # Stage 55 Plan — Commercial Licensing & Positioning Fidelity
 
-**Status:** Open — W1 complete; U1 next  
+**Status:** Open — U1 complete; D1 next  
 **Base:** White-Label Licensing Commercial Honesty Pack + Unit Economics / Competitive Positioning Honesty Pack → Commercial Licensing & Positioning Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-115](ADR_115_STAGE55_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Licensing & Positioning Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **W1** | White-label licensing commercial honesty packaging (not live white-label licensing / franchise revenue-share billing Complete) | P0 | COMPLETE |
-| **U1** | Unit economics / competitive positioning honesty packaging (not measured CAC/LTV / competitive superiority proven Complete) | P0 | PENDING |
+| **U1** | Unit economics / competitive positioning honesty packaging (not measured CAC/LTV / competitive superiority proven Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H55x** | Stage 55 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -90,10 +90,10 @@ Commercial Licensing & Positioning Fidelity
 
 ## U1 acceptance criteria
 
-- [ ] Unit economics / competitive positioning honesty packaging indexing PRODUCT_OVERVIEW CAC/LTV targets and competitive landscape themes (not claiming measured CAC/LTV / competitive superiority proven Complete).
-- [ ] Automated proof: `backend/tests/test_unit_economics_positioning_u1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 55 U1.
+- [x] Unit economics / competitive positioning honesty packaging indexing PRODUCT_OVERVIEW CAC/LTV targets and competitive landscape themes (not claiming measured CAC/LTV / competitive superiority proven Complete).
+- [x] Automated proof: `backend/tests/test_unit_economics_positioning_u1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 55 U1.
 
 ## D1 acceptance criteria
 

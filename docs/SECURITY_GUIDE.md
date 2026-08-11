@@ -432,8 +432,9 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 54 M1** | Digital marketing / case studies / testimonials honesty — `docs/DIGITAL_MARKETING_MVP.md`, `ops/mvp/digital-marketing.json` (`test_digital_marketing_m1.py`); live digital marketing campaigns Remaining |
 | **Stage 54 S1** | Direct sales honesty — `docs/DIRECT_SALES_MVP.md`, `ops/mvp/direct-sales.json` (`test_direct_sales_s1.py`); live inside-sales team Remaining |
 | **Stage 54 fidelity** | D1 maps M1–S1 go-to-market — `docs/STAGE_54_FIDELITY.md` (`test_stage54_fidelity_d1.py`); exit/freeze `docs/STAGE_54_EXIT_CRITERIA.md`, ADR-114 (`test_stage54_exit_h54x.py`); historical open ADR-113; live digital marketing campaigns / inside-sales / published proof / go-live / §7 remain Remaining |
-| **Stage 55 open** | Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115 (`test_stage55_open.py`); Stages 1–54 remain frozen; W1 complete; U1 next |
+| **Stage 55 open** | Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115 (`test_stage55_open.py`); Stages 1–54 remain frozen; U1 complete; D1 next |
 | **Stage 55 W1** | White-label licensing commercial honesty — `docs/WHITE_LABEL_LICENSING_MVP.md`, `ops/mvp/white-label-licensing.json` (`test_white_label_licensing_w1.py`); live white-label licensing Remaining |
+| **Stage 55 U1** | Unit economics / competitive positioning honesty — `docs/UNIT_ECONOMICS_POSITIONING_MVP.md`, `ops/mvp/unit-economics-positioning.json` (`test_unit_economics_positioning_u1.py`); measured CAC/LTV Remaining |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |

@@ -1325,3 +1325,5 @@ Every feature in every phase must meet:
 **Stage 55 open (2026-08-11):** Commercial Licensing & Positioning Fidelity track approved — `docs/ADR_115_STAGE55_OPEN.md` + `docs/STAGE_55_PLAN.md` (white-label licensing → unit economics/competitive positioning → fidelity).
 
 **Stage 55 W1 (2026-08-11):** White-label licensing commercial honesty — `docs/WHITE_LABEL_LICENSING_MVP.md`, `ops/mvp/white-label-licensing.json`, evidence `stage55_w1_white_label_licensing.json` (`test_white_label_licensing_w1.py`); live white-label licensing Remaining.
+
+**Stage 55 U1 (2026-08-11):** Unit economics / competitive positioning honesty — `docs/UNIT_ECONOMICS_POSITIONING_MVP.md`, `ops/mvp/unit-economics-positioning.json`, evidence `stage55_u1_unit_economics_positioning.json` (`test_unit_economics_positioning_u1.py`); measured CAC/LTV Remaining.
