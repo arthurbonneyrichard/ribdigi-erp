@@ -1,9 +1,10 @@
 # Stage 29 Plan — Operator Hardening & Production Cutover Fidelity
 
-**Status:** Open — D1 complete; H29x next (ADR-063)  
+**Status:** Closed — exit met (H29x / ADR-064)  
 **Base:** Vendor Pen-Test / ZAP Staging Pack + PgBouncer Soak / Helm Pooler Pack + Cert-manager / TLS Ingress Pack + Production Cutover Pack → Operator Hardening & Cutover Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-063](ADR_063_STAGE29_OPEN.md)
+**Open ADR (historical):** [ADR-063](ADR_063_STAGE29_OPEN.md)  
+**Exit:** [STAGE_29_EXIT_CRITERIA.md](STAGE_29_EXIT_CRITERIA.md) · [ADR-064](ADR_064_STAGE29_FREEZE.md) · [STAGE_29_FIDELITY.md](STAGE_29_FIDELITY.md)
 
 Stage 29 closes the owner product outline after Stage 28 freeze: **Vendor Pen-Test / ZAP Staging Packaging + PgBouncer Soak / Helm Pooler Packaging + Cert-manager / TLS Ingress Packaging + Production Cutover Packaging → Operator Hardening & Production Cutover Fidelity**. Stages 26–28 delivered Complete (MVP) ops platform, release, and staging-certification **packaging** with honest Remaining for live execution, purchased vendor pen tests, hosted SaaS observability, and production §7 sign-off. This track packages adjacent Remaining on proven Stage 26/27/28 assets (`SECURITY_SCAN_MVP.md`, `PGBOUNCER_MVP.md`, `K8S_DEPLOY_MVP.md`, `LAUNCH_CERT_MVP.md`) — **not** inventing purchased pen-test certificates, green live soak numbers, Let’s Encrypt issuance success, forged §7 sign-off, or re-packaging Stage 28 R1/G1/A1/C1 packs — and **not** paid billing, schema-per-tenant, i18n packs, ADR-003/005, Open Banking, tax e-file, external LLM/Prophet, or reopening Stages 1–28.
 
@@ -40,7 +41,7 @@ Operator Hardening & Cutover Fidelity
 | **T1** | Cert-manager / TLS ingress packaging | P0 | COMPLETE |
 | **X1** | Production cutover pack (LAUNCH §§1–3 / §7 harness) | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
-| **H29x** | Stage 29 exit criteria + freeze ADR | Exit | PENDING |
+| **H29x** | Stage 29 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -95,12 +96,12 @@ Operator Hardening & Cutover Fidelity
 
 ## H29x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for V1–D1 / H29x — `docs/STAGE_29_EXIT_CRITERIA.md`.
-- [ ] Scope freeze ADR accepted — `docs/ADR_064_STAGE29_FREEZE.md` (number reserved at close).
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
-- [ ] Automated proof: `backend/tests/test_stage29_exit_h29x.py`.
-- [ ] Stages 1–28 freezes remain; Stage 30+ requires explicit open ADR after CONTINUE/NEXT.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for V1–D1 / H29x — `docs/STAGE_29_EXIT_CRITERIA.md`.
+- [x] Scope freeze ADR accepted — `docs/ADR_064_STAGE29_FREEZE.md` (number reserved at close).
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
+- [x] Automated proof: `backend/tests/test_stage29_exit_h29x.py`.
+- [x] Stages 1–28 freezes remain; Stage 30+ requires explicit open ADR after CONTINUE/NEXT.
 
 ## Sign-off
 
-Stage 29 open under ADR-063. D1 complete; H29x next. Stages 1–28 remain frozen for their scopes.
+Stage 29 exit met under ADR-064. V1–D1 / H29x complete. Stages 1–28 remain frozen for their scopes. Stage 30+ requires an explicit open ADR after CONTINUE/NEXT.

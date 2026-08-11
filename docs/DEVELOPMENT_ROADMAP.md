@@ -276,6 +276,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 29 D1 (2026-08-11):** Operator hardening & cutover fidelity sync — `docs/STAGE_29_FIDELITY.md` (`test_stage29_fidelity_d1.py`) maps V1–X1 → BR-16 / readiness / deploy / launch / security; H29x next.
 
+**Stage 29 exit (2026-08-11):** V1, B2, T1, X1, D1, H29x met — `docs/STAGE_29_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_064_STAGE29_FREEZE.md`. Fidelity: `docs/STAGE_29_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -856,7 +858,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 29 open (`docs/STAGE_29_PLAN.md`, ADR-063) — D1 complete; H29x next. Stages 1–28 remain frozen for their scopes (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062).
+**Active delivery plan:** Stage 29 frozen (`docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064). Stage 30+ requires an explicit open ADR after CONTINUE/NEXT. Stages 1–28 remain frozen for their scopes (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062).
 
 ### 6.2 Features
 

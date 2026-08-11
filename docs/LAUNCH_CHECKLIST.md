@@ -172,8 +172,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 track opened (ADR-061: `test_stage28_open.py`, `docs/STAGE_28_PLAN.md`)
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
-- [ ] Stage 29 Operator Hardening & Production Cutover Fidelity (open: `docs/STAGE_29_PLAN.md`, ADR-063) — H29x next
+- [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
 - [x] Stage 29 track opened (ADR-063: `test_stage29_open.py`, `docs/STAGE_29_PLAN.md`)
+- [x] Stage 29 exit + freeze (H29x: `test_stage29_exit_h29x.py`, `docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064)
 - [x] Stage 29 fidelity sync (D1: `test_stage29_fidelity_d1.py`, `docs/STAGE_29_FIDELITY.md` — V1–X1 + readiness + deploy / launch / security)
 - [x] Production cutover pack (Stage 29 X1: `test_cutover_pack_x1.py` — `docs/CUTOVER_PACK_MVP.md`, `ops/launch/cutover-checklist.json`, `ops/k8s/deploy-production.example.yml`; evidence `stage29_x1_cutover_pack.json`; live cutover / §7 sign-off Remaining)
 - [x] Cert-manager / TLS ingress pack (Stage 29 T1: `test_tls_ingress_t1.py` — `docs/TLS_INGRESS_PACK_MVP.md`, `ops/k8s/cluster-issuer.example.yaml`; evidence `stage29_t1_tls_ingress.json`; live ACME issuance Remaining)

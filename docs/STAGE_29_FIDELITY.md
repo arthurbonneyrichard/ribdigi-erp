@@ -1,9 +1,10 @@
 # Stage 29 Fidelity Notes — Operator Hardening & Production Cutover Fidelity
 
-**Status:** Open with Stage 29 D1; H29x next (ADR-063)  
+**Status:** Closed — exit met (H29x / ADR-064); historical open ADR-063  
 **Surface:** Vendor pen-test/ZAP → PgBouncer soak → Cert-manager/TLS → Production cutover → Fidelity closeout  
-**Open ADR:** [ADR-063](ADR_063_STAGE29_OPEN.md)  
-**Plan:** [STAGE_29_PLAN.md](STAGE_29_PLAN.md)
+**Open ADR (historical):** [ADR-063](ADR_063_STAGE29_OPEN.md)  
+**Plan:** [STAGE_29_PLAN.md](STAGE_29_PLAN.md)  
+**Exit:** [STAGE_29_EXIT_CRITERIA.md](STAGE_29_EXIT_CRITERIA.md) · [ADR-064](ADR_064_STAGE29_FREEZE.md)
 
 Stage 29 proves the owner product outline after Stage 28 freeze — Vendor Pen-Test / ZAP Staging Pack + PgBouncer Soak / Helm Pooler Pack + Cert-manager / TLS Ingress Pack + Production Cutover Pack → Operator Hardening & Production Cutover Fidelity — by extending proven Stage 26/27/28 assets. It is **not** paid billing (ADR-002), schema-per-tenant (ADR-001), i18n packs (ADR-006), user↔store membership (ADR-005), hard-delete archival (ADR-003), Open Banking, tax e-file portals, claiming hosted Grafana/PagerDuty/SIEM as SaaS Complete, live production cutover via main `ci.yml`, purchased vendor pen-test certificates, green live soak / ACME issuance, forged production §7 sign-off, re-packaging Stage 28 R1/G1/A1/C1 packs as new Complete, external LLM/Prophet, or reopening Stages 1–28.
 
@@ -36,18 +37,20 @@ Stage 29 proves the owner product outline after Stage 28 freeze — Vendor Pen-T
 - `backend/tests/test_cutover_pack_x1.py`
 - `backend/tests/test_stage29_open.py`
 - `backend/tests/test_stage29_fidelity_d1.py`
+- `backend/tests/test_stage29_exit_h29x.py`
 
 ## Spec sync targets
 
 - `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16 fidelity (+ Stage 29 V1–X1 / D1 cite)
-- `docs/API_DOCUMENTATION.md` — Stage 29 V1–X1 / D1 cite
-- `PRODUCTION_READINESS.md` — OWASP / PgBouncer / K8s / launch Completes + Stage 29 D1 cite
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 29 D1
-- `docs/LAUNCH_CHECKLIST.md` — V1–X1 / D1 evidence
-- `docs/DEPLOYMENT_GUIDE.md` — Stage 29 B2 / T1 / X1 / D1
-- `docs/SECURITY_GUIDE.md` — Stage 29 V1–X1 / D1 cite
+- `docs/API_DOCUMENTATION.md` — Stage 29 V1–X1 / D1 / H29x cite
+- `PRODUCTION_READINESS.md` — OWASP / PgBouncer / K8s / launch Completes + Stage 29 D1 / H29x cite
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 29 D1 / H29x exit
+- `docs/LAUNCH_CHECKLIST.md` — V1–X1 / D1 / H29x evidence
+- `docs/DEPLOYMENT_GUIDE.md` — Stage 29 B2 / T1 / X1 / D1 / H29x
+- `docs/SECURITY_GUIDE.md` — Stage 29 V1–X1 / D1 / H29x cite
 - `docs/PENTEST_PACK_MVP.md` · `docs/PGBOUNCER_SOAK_PACK_MVP.md` · `docs/TLS_INGRESS_PACK_MVP.md` · `docs/CUTOVER_PACK_MVP.md`
-- `docs/STAGE_29_PLAN.md` — D1 complete; H29x next
+- `docs/STAGE_29_PLAN.md` — Closed (H29x / ADR-064)
+- `docs/STAGE_29_EXIT_CRITERIA.md` · `docs/ADR_064_STAGE29_FREEZE.md`
 - `docs/ADR_063_STAGE29_OPEN.md`
 
 ## Deferred (not Stage 29 blockers)

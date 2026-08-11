@@ -31,18 +31,12 @@ def test_stage29_fidelity_note_and_plan():
 
     plan = _read("docs/STAGE_29_PLAN.md")
     assert "STAGE_29_FIDELITY.md" in plan
-    for ws in ("V1", "B2", "T1", "X1", "D1"):
+    for ws in ("V1", "B2", "T1", "X1", "D1", "H29x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}** |" in ln][0]
         assert "COMPLETE" in line, ws
-    h29 = [ln for ln in plan.splitlines() if "| **H29x** |" in ln][0]
-    assert "PENDING" in h29 or "COMPLETE" in h29
-    assert (
-        "D1 next" in plan
-        or "D1 complete" in plan
-        or "H29x next" in plan
-        or "Closed" in plan
-        or "exit met" in plan.lower()
-    )
+    assert "ADR-064" in plan or "ADR_064" in plan
+    assert "Closed" in plan or "exit met" in plan.lower()
+    assert "ADR-064" in fidelity or "ADR_064" in fidelity or "exit met" in fidelity.lower()
 
 
 def test_stage29_br16_and_workstream_docs():
@@ -107,6 +101,7 @@ def test_stage29_api_deploy_security_launch():
     assert "test_cutover_pack_x1.py" in launch
     assert "test_stage29_fidelity_d1.py" in launch
     assert "STAGE_29_FIDELITY.md" in launch
+    assert "STAGE_29_EXIT_CRITERIA.md" in launch or "ADR-064" in launch
 
 
 def test_stage29_readiness_and_roadmap():
@@ -114,6 +109,7 @@ def test_stage29_readiness_and_roadmap():
     assert "STAGE_29_FIDELITY.md" in pr
     assert "test_stage29_fidelity_d1.py" in pr
     assert "Stage 29 D1" in pr
+    assert "STAGE_29_EXIT_CRITERIA.md" in pr or "ADR-064" in pr or "ADR_064" in pr
     assert "Stage 29 V1" in pr
     assert "Stage 29 B2" in pr
     assert "Stage 29 T1" in pr
@@ -133,3 +129,5 @@ def test_stage29_readiness_and_roadmap():
     assert "ADR_063_STAGE29_OPEN.md" in roadmap
     assert "STAGE_29_PLAN.md" in roadmap
     assert "test_stage29_fidelity_d1.py" in roadmap
+    assert "STAGE_29_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_064_STAGE29_FREEZE.md" in roadmap
