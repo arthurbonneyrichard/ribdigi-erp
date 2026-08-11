@@ -227,6 +227,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Commercial assurance boundary honesty (Stage 73 A1: `test_commercial_assurance_a1.py` — `docs/COMMERCIAL_ASSURANCE_MVP.md`, `ops/mvp/commercial-assurance.json`; evidence `stage73_a1_commercial_assurance.json`; customer assurance Remaining)
 - [x] Stage 73 fidelity sync (D1: `test_stage73_fidelity_d1.py`, `docs/STAGE_73_FIDELITY.md` — E1–A1 + readiness + deploy / launch / security)
 - [x] Stage 73 exit + freeze (H73x: `test_stage73_exit_h73x.py`, `docs/STAGE_73_EXIT_CRITERIA.md`, ADR-153)
+- [x] Stage 74 track opened (ADR-154: `test_stage74_open.py`, `docs/STAGE_74_PLAN.md`) — Commercial Operator Boundary Fidelity; closed under ADR-155
+- [x] Commercial support boundary honesty (Stage 74 S1: `test_commercial_support_s1.py` — `docs/COMMERCIAL_SUPPORT_MVP.md`, `ops/mvp/commercial-support.json`; evidence `stage74_s1_commercial_support.json`; support boundary live Remaining)
+- [x] Commercial status boundary honesty (Stage 74 U1: `test_commercial_status_u1.py` — `docs/COMMERCIAL_STATUS_MVP.md`, `ops/mvp/commercial-status.json`; evidence `stage74_u1_commercial_status.json`; status page live Remaining)
+- [x] Stage 74 fidelity sync (D1: `test_stage74_fidelity_d1.py`, `docs/STAGE_74_FIDELITY.md` — S1–U1 + readiness + deploy / launch / security)
+- [x] Stage 74 exit + freeze (H74x: `test_stage74_exit_h74x.py`, `docs/STAGE_74_EXIT_CRITERIA.md`, ADR-155)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

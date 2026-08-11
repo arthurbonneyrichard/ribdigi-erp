@@ -27,4 +27,8 @@ Stage 73 Commercial Assurance Fidelity delivered commercial evidence chain hones
 
 ## Next stage
 
-Blocked pending CONTINUE/NEXT + open ADR with a distinct product outline.
+Stage 74 opened via ADR-154 (`docs/ADR_154_STAGE74_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 74 (Commercial Operator Boundary Fidelity — Commercial Support Boundary → Commercial Status Boundary → Commercial Operator Boundary Fidelity) after Stage 73 freeze via CONTINUE/NEXT — see [ADR-154](ADR_154_STAGE74_OPEN.md) and [STAGE_74_PLAN.md](STAGE_74_PLAN.md). Stage 73 feature scope remains frozen; Stage 74 does not reopen E1–D1 / H73x.

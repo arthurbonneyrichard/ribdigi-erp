@@ -1510,4 +1510,14 @@ Every feature in every phase must meet:
 
 **Stage 73 D1 (2026-08-11):** Commercial Assurance fidelity sync — `docs/STAGE_73_FIDELITY.md` (`test_stage73_fidelity_d1.py`); maps E1–A1 → readiness / launch / deploy / security.
 
-**Stage 73 exit (2026-08-11):** E1, A1, D1, H73x met — `docs/STAGE_73_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_153_STAGE73_FREEZE.md`. Fidelity: `docs/STAGE_73_FIDELITY.md`.
+**Stage 73 exit (2026-08-11):** E1, A1, D1, H73x met — `docs/STAGE_73_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_153_STAGE73_FREEZE.md`. Fidelity: `docs/STAGE_73_FIDELITY.md`. Stage 74 opened via ADR-154.
+
+**Stage 74 open (2026-08-11):** Commercial Operator Boundary Fidelity track approved — `docs/ADR_154_STAGE74_OPEN.md` + `docs/STAGE_74_PLAN.md` (Commercial Support Boundary → Commercial Status Boundary → Commercial Operator Boundary Fidelity; S1 next).
+
+**Stage 74 S1 (2026-08-11):** Commercial support boundary honesty — `docs/COMMERCIAL_SUPPORT_MVP.md`, `ops/mvp/commercial-support.json`, evidence `stage74_s1_commercial_support.json` (`test_commercial_support_s1.py`); support boundary live Remaining.
+
+**Stage 74 U1 (2026-08-11):** Commercial status boundary honesty — `docs/COMMERCIAL_STATUS_MVP.md`, `ops/mvp/commercial-status.json`, evidence `stage74_u1_commercial_status.json` (`test_commercial_status_u1.py`); status page live Remaining.
+
+**Stage 74 D1 (2026-08-11):** Commercial Operator Boundary fidelity sync — `docs/STAGE_74_FIDELITY.md` (`test_stage74_fidelity_d1.py`); maps S1–U1 → readiness / launch / deploy / security.
+
+**Stage 74 exit (2026-08-11):** S1, U1, D1, H74x met — `docs/STAGE_74_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_155_STAGE74_FREEZE.md`. Fidelity: `docs/STAGE_74_FIDELITY.md`.

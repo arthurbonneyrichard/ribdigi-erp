@@ -24,7 +24,7 @@ Stage 73 proves the owner Commercial Assurance path after Stage 72 freeze — **
 | **E1** | `test_commercial_evidence_chain_e1.py` — `COMMERCIAL_EVIDENCE_CHAIN_MVP.md`, commercial-evidence-chain JSON | Owner Evidence Chain / Stage 30 ledger | Evidence chain live |
 | **A1** | `test_commercial_assurance_a1.py` — `COMMERCIAL_ASSURANCE_MVP.md`, commercial-assurance JSON | Owner Assurance Boundary / Stage 34 assurance | Customer assurance; go-live |
 | **D1** | This note + `test_stage73_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H73x** | `STAGE_73_EXIT_CRITERIA.md`; ADR-153; `test_stage73_exit_h73x.py` | Stage 73 exit + freeze | Stage 74+ requires CONTINUE/NEXT |
+| **H73x** | `STAGE_73_EXIT_CRITERIA.md`; ADR-153; `test_stage73_exit_h73x.py` | Stage 73 exit + freeze | Stage 74 opened via ADR-154 |
 
 ## Evidence tests
 
