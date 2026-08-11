@@ -1,0 +1,33 @@
+# Launch Certification MVP — Checklist Evidence Packaging
+
+**Status:** Complete (MVP) — Stage 27 L1  
+**Evidence:** `backend/tests/test_launch_cert_l1.py` · `/opt/cursor/artifacts/launch/stage27_l1_launch_cert.json`  
+**Map:** `ops/launch/checklist-map.json`  
+**Checklist:** `docs/LAUNCH_CHECKLIST.md`
+
+This is the **MVP launch certification packaging surface**: classify `LAUNCH_CHECKLIST.md` rows as CI-proven vs operator-required vs deferred, and write durable evidence that production sign-off is **not** claimed by packaging alone. It is **not** a forged go-live certificate.
+
+## Classification
+
+| Class | Meaning | Checklist sections |
+|-------|---------|-------------------|
+| `operator_required` | Verify in the **target** environment; stay `[ ]` until ops signs | §1 Configuration & secrets; §2 Identity & security; §3 Integrations; §4 “Product create + stock-in…”; §7 Sign-off |
+| `ci_proven` | Automated tests / stage evidence already back the `[x]` row | Most §4 stage fidelity/exit rows; §5 Reliability & cache (Stage 19 R1) |
+| `deferred` | Post-launch ops follow-ups — never mark Complete as production sign-off | §6 Explicitly deferred |
+
+## Automation hooks
+
+1. Maintain `ops/launch/checklist-map.json` as the authoritative CI-vs-operator map (synced by `test_launch_cert_l1.py`).
+2. Before promoting staging → production, operators walk §1–§3 and the remaining §4 smoke row in the **real** env, then fill §7.
+3. CI continues to prove packaging honesty: operator rows remain unchecked; `production_signoff_claimed: false` in the evidence artifact.
+
+## Explicitly not claimed
+
+- Filling §7 Name/Date as if Engineering / Operations / Product signed production
+- Checking §1–§3 because Stage 27 L1 packaging exists
+- Treating Stage 7 L7x / Stage 27 L1 Complete as “production is live”
+- Marking §6 deferred items Complete
+
+## Sign-off
+
+Stage 27 L1 is met when this doc + checklist map + evidence JSON exist, `test_launch_cert_l1.py` passes, and `LAUNCH_CHECKLIST.md` / roadmap cite Stage 27 L1 without fake production sign-off.

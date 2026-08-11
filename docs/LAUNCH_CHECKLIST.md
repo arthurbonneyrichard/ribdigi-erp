@@ -2,7 +2,7 @@
 
 **Status:** Documented (Stage 7 L7x)  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Related:** [PRODUCTION_READINESS.md](../PRODUCTION_READINESS.md), [STAGE_7_EXIT_CRITERIA.md](STAGE_7_EXIT_CRITERIA.md), [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+**Related:** [PRODUCTION_READINESS.md](../PRODUCTION_READINESS.md), [STAGE_7_EXIT_CRITERIA.md](STAGE_7_EXIT_CRITERIA.md), [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md), [LAUNCH_CERT_MVP.md](LAUNCH_CERT_MVP.md) (Stage 27 L1)
 
 This is the **operator go-live checklist** for a commercial MVP launch. It is **not** a claim that deferred infra (hosted Grafana/PagerDuty, vendor pen test, certified 1000-VU soak, live GHA→prod cutover) is Complete. K8s/WAL/PgBouncer packaging are Complete (MVP) under Stages 26–27 with honest Remaining.
 
@@ -164,8 +164,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Load capacity fidelity (Stage 26 C1: `test_load_capacity_c1.py` — smoke + CI capacity profiles; `docs/LOAD_CAPACITY_MVP.md`; evidence `stage26_c1_capacity_evidence.json`; readiness load Complete MVP)
 - [x] Stage 26 fidelity sync (D1: `test_stage26_fidelity_d1.py`, `docs/STAGE_26_FIDELITY.md` — BR-16 + NFR §5.6 + readiness + deploy / launch / security)
 - [x] Stage 26 exit + freeze (H26x: `test_stage26_exit_h26x.py`, `docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058)
-- [ ] Stage 27 Commercial MVP Release Fidelity (open: `docs/STAGE_27_PLAN.md`, ADR-059) — B1 / P1 / S1 complete; L1 next
+- [ ] Stage 27 Commercial MVP Release Fidelity (open: `docs/STAGE_27_PLAN.md`, ADR-059) — B1 / P1 / S1 / L1 complete; D1 next
 - [x] Stage 27 track opened (ADR-059: `test_stage27_open.py`, `docs/STAGE_27_PLAN.md`)
+- [x] Launch certification pack (Stage 27 L1: `test_launch_cert_l1.py` — `docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`; evidence `stage27_l1_launch_cert.json`; operator §§1–3 / §7 remain unsigned)
 - [x] Security scan baseline evidence (Stage 27 S1: `test_security_scan_s1.py` — `docs/SECURITY_SCAN_MVP.md`, evidence `stage27_s1_security_scan.json`; ZAP template `ops/security/zap-baseline.example.yml` not in main CI)
 - [x] PgBouncer pooling fidelity (Stage 27 P1: `test_pgbouncer_p1.py` — `ops/postgres/pgbouncer.ini.example`, `docs/PGBOUNCER_MVP.md`; evidence `stage27_p1_pgbouncer.json`)
 - [x] Automatic `.ribbak` offsite upload (Stage 27 B1: `test_backup_offsite_b1.py` — `BACKUP_OFFSITE_UPLOAD_ENABLED` + `BACKUP_OFFSITE_S3_*`; failure → Backup failed; evidence `stage27_b1_offsite_upload.json`)
@@ -200,4 +201,4 @@ Record as **ops follow-ups**, not Stage 7 incompletes:
 | Operations | | | Env checklist §§1–5 verified |
 | Product | | | Accept deferred §6 as post-launch |
 
-**Stage 7 L7x** records that this checklist **exists and is authoritative for MVP go-live hygiene**. Operator rows above remain unchecked until a real environment is signed off.
+**Stage 7 L7x** records that this checklist **exists and is authoritative for MVP go-live hygiene**. Stage **27** **L1** packages CI-vs-operator classification (`docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`, `test_launch_cert_l1.py`) — packaging is **not** production sign-off. Operator rows above remain unchecked until a real environment is signed off.

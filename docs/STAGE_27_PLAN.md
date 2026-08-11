@@ -36,7 +36,7 @@ Commercial MVP Release Fidelity
 | **B1** | Automatic `.ribbak` offsite upload fidelity | P0 | COMPLETE |
 | **P1** | PgBouncer connection pooling fidelity | P0 | COMPLETE |
 | **S1** | Security scan / ZAP-in-CI baseline evidence | P0 | COMPLETE |
-| **L1** | Launch certification pack (operator sign-off evidence) | P1 | PENDING |
+| **L1** | Launch certification pack (operator sign-off evidence) | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / security / deploy fidelity sync | P2 | PENDING |
 | **H27x** | Stage 27 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -79,10 +79,10 @@ Commercial MVP Release Fidelity
 
 ## L1 acceptance criteria
 
-- [ ] Launch certification pack — operator LAUNCH_CHECKLIST evidence packaging / automation hooks (extend `docs/LAUNCH_CHECKLIST.md` — not fake production sign-off).
-- [ ] Durable artifact or checklist mapping for env / smoke / ops rows that can be proven in CI vs operator-only.
-- [ ] Automated proof: `backend/tests/test_launch_cert_l1.py`.
-- [ ] Plan / launch / roadmap cite Stage 27 L1.
+- [x] Launch certification pack — operator LAUNCH_CHECKLIST evidence packaging / automation hooks (extend `docs/LAUNCH_CHECKLIST.md` — not fake production sign-off).
+- [x] Durable artifact or checklist mapping for env / smoke / ops rows that can be proven in CI vs operator-only.
+- [x] Automated proof: `backend/tests/test_launch_cert_l1.py`.
+- [x] Plan / launch / roadmap cite Stage 27 L1.
 
 ## D1 acceptance criteria
 
@@ -100,4 +100,4 @@ Commercial MVP Release Fidelity
 
 ## Sign-off
 
-Stage 27 open under ADR-059. B1 / P1 / S1 complete; L1 next. Stages 1–26 remain frozen for their scopes.
+Stage 27 open under ADR-059. B1 / P1 / S1 / L1 complete; D1 next. Stages 1–26 remain frozen for their scopes.
