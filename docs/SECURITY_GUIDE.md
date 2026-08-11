@@ -333,6 +333,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 28 A1** | Grafana / Alertmanager pack — `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/` (`test_grafana_pack_a1.py`); hosted Grafana/PagerDuty/SIEM Remaining |
 | **Stage 28 C1** | Operator ~1000-VU cert pack — `docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/` (`test_load_cert_pack_c1.py`); live 1000-VU execution Remaining; no forged certificate |
 | **Stage 28 fidelity** | D1 maps R1–C1 staging-cert evidence — `docs/STAGE_28_FIDELITY.md` (`test_stage28_fidelity_d1.py`); exit/freeze ADR-062 (`test_stage28_exit_h28x.py`); historical open ADR-061; live drills / hosted SaaS / forged certs remain Remaining |
+| **Stage 29 open** | Operator Hardening & Production Cutover Fidelity — `docs/STAGE_29_PLAN.md`, ADR-063 (`test_stage29_open.py`); Stages 1–28 remain frozen; V1 pen-test / B2 PgBouncer soak / T1 TLS / X1 cutover pending |
 
 ### 7.3 Tenant Lifecycle Security
 

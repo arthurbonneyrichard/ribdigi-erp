@@ -264,6 +264,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 28 exit (2026-08-11):** R1, G1, A1, C1, D1, H28x met — `docs/STAGE_28_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_062_STAGE28_FREEZE.md`. Fidelity: `docs/STAGE_28_FIDELITY.md`.
 
+**Stage 29 open (2026-08-11):** Operator Hardening & Production Cutover Fidelity track approved — `docs/ADR_063_STAGE29_OPEN.md` + `docs/STAGE_29_PLAN.md` (Vendor pen-test/ZAP → PgBouncer soak → Cert-manager/TLS → Production cutover → fidelity).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -844,7 +846,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 28 closed (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062) — R1–D1 / H28x complete (`docs/STAGE_28_FIDELITY.md`). Stages 1–28 remain frozen for their scopes. Next delivery track requires an explicit open ADR after CONTINUE/NEXT.
+**Active delivery plan:** Stage 29 open (`docs/STAGE_29_PLAN.md`, ADR-063) — V1 next. Stages 1–28 remain frozen for their scopes (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062).
 
 ### 6.2 Features
 

@@ -23,3 +23,7 @@ Stage 28 Staging Certification Fidelity (R1, G1, A1, C1, D1, H28x) delivered ope
 - Stage 1–27 freezes remain in force for their scopes.
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Operator `LAUNCH_CHECKLIST.md` §§1–3 / §7 remain unsigned until a real environment is verified (**Stage 27 L1**).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 29 (Operator Hardening & Production Cutover Fidelity) after Stage 28 freeze via CONTINUE/NEXT — see [ADR-063](ADR_063_STAGE29_OPEN.md) and [STAGE_29_PLAN.md](STAGE_29_PLAN.md). Stage 28 feature scope remains frozen; Stage 29 does not reopen R1–D1 / H28x.
