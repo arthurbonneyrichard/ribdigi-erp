@@ -312,6 +312,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 32 H1 (2026-08-11):** Operator handoff pack — `docs/OPERATOR_HANDOFF_MVP.md`, `ops/mvp/operator-handoff.json`, evidence `stage32_h1_operator_handoff.json` (`test_operator_handoff_h1.py`); ops take-over checklist; live handoff / §7 Remaining.
 
+**Stage 32 N1 (2026-08-11):** Commercial release notes — `docs/RELEASE_NOTES_MVP.md`, `ops/mvp/release-notes.json`, evidence `stage32_n1_release_notes.json` (`test_release_notes_n1.py`); packaging Complete ≠ production live.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -892,7 +894,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 32 open (`docs/STAGE_32_PLAN.md`, ADR-069) — A1–H1 complete; N1 next. Stages 1–31 remain frozen for their scopes (`docs/STAGE_31_EXIT_CRITERIA.md`, ADR-068).
+**Active delivery plan:** Stage 32 open (`docs/STAGE_32_PLAN.md`, ADR-069) — A1–N1 complete; B1 next. Stages 1–31 remain frozen for their scopes (`docs/STAGE_31_EXIT_CRITERIA.md`, ADR-068).
 
 ### 6.2 Features
 
