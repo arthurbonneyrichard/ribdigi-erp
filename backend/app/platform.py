@@ -519,6 +519,7 @@ async def list_customer_tenants(
     status: str | None = None,
     plan_code: str | None = None,
     industry: str | None = None,
+    created_this_month: bool = False,
     limit: int = 50,
     offset: int = 0,
 ) -> tuple[list[dict], int]:
@@ -530,6 +531,10 @@ async def list_customer_tenants(
         filters.append(m.Tenant.plan_code == plan_code.strip().lower())
     if industry and industry.strip():
         filters.append(func.lower(m.Tenant.industry) == industry.strip().lower())
+    if created_this_month:
+        now = datetime.utcnow()
+        month_start = datetime(now.year, now.month, 1)
+        filters.append(m.Tenant.created_at >= month_start)
     if q and q.strip():
         like = f"%{q.strip().lower()}%"
         admin_tenant_ids = (
@@ -548,6 +553,7 @@ async def list_customer_tenants(
                 m.Tenant.id == q.strip(),
                 m.Tenant.id.in_(admin_tenant_ids),
                 func.lower(func.coalesce(m.Tenant.platform_notes, "")).like(like),
+                func.lower(func.coalesce(m.Tenant.suspended_reason, "")).like(like),
             )
         )
     total = int(
@@ -610,6 +616,33 @@ async def latest_house_email_deliveries(
         tid = details.get("target_tenant_id")
         if tid in wanted and tid not in out:
             out[tid] = _delivery_summary_from_audit(row)
+            if len(out) == len(wanted):
+                break
+    return out
+
+
+async def latest_staff_invite_deliveries(
+    db: AsyncSession, user_ids: list[str]
+) -> dict[str, dict]:
+    """Stage 93 J1 — latest platform.user.create invite delivery keyed by user_id."""
+    wanted = {uid for uid in user_ids if uid}
+    if not wanted:
+        return {}
+    rows = await audit_svc.query_logs(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        module="platform_email",
+        action="platform.email.delivery",
+        limit=1000,
+    )
+    out: dict[str, dict] = {}
+    for row in rows:
+        details = row.details if isinstance(row.details, dict) else {}
+        if details.get("related_action") != "platform.user.create":
+            continue
+        uid = details.get("user_id")
+        if uid in wanted and uid not in out:
+            out[uid] = _delivery_summary_from_audit(row)
             if len(out) == len(wanted):
                 break
     return out
@@ -742,12 +775,23 @@ def customer_tenants_to_csv(rows: list[dict]) -> str:
 def customer_tenants_to_pdf(rows: list[dict]) -> bytes:
     from app.report_export import to_pdf as build_pdf
 
-    lines = [
-        f"{r.get('slug') or '-'} | {r.get('company_name') or '-'} | "
-        f"{r.get('status') or '-'} | plan={r.get('plan_code') or '-'} | "
-        f"days={r.get('days_remaining') if r.get('days_remaining') is not None else '-'}"
-        for r in rows
-    ]
+    lines = []
+    for r in rows:
+        delivery = r.get("last_house_email_delivery") or {}
+        delivery_bit = (
+            f"last_email={delivery.get('created_at') or '-'} "
+            f"sent={delivery.get('sent') if delivery.get('sent') is not None else '-'} "
+            f"mode={delivery.get('mode') or '-'} "
+            f"purpose={delivery.get('purpose') or '-'}"
+            if delivery
+            else "last_email=-"
+        )
+        lines.append(
+            f"{r.get('slug') or '-'} | {r.get('company_name') or '-'} | "
+            f"{r.get('status') or '-'} | plan={r.get('plan_code') or '-'} | "
+            f"days={r.get('days_remaining') if r.get('days_remaining') is not None else '-'} | "
+            f"{delivery_bit}"
+        )
     if not lines:
         lines = ["No customer tenants in selection."]
     return build_pdf("Customer tenants", lines, subtitle=f"{len(rows)} tenant(s)")

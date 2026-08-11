@@ -16,6 +16,13 @@ type PlatformUser = {
   totp_enabled?: boolean;
   last_session_at?: string | null;
   active_session_count?: number;
+  last_invite_delivery?: {
+    created_at?: string | null;
+    sent?: boolean;
+    mode?: string;
+    error?: string | null;
+    purpose?: string;
+  } | null;
 };
 
 type StaffSession = {
@@ -78,9 +85,12 @@ export default function PlatformUsersPage() {
       setFullName('');
       setPassword('');
       setMsg(
-        r.data?.invite_by_email
-          ? `Invite email issued for ${r.data.email || email}`
-          : 'Platform user created',
+        r.message ||
+          (r.data?.invite_by_email
+            ? r.data?.email_delivery?.sent
+              ? `Invite email sent to ${r.data.email || email}`
+              : `Invite email not sent (mode: ${r.data?.email_delivery?.mode || 'n/a'})`
+            : 'Platform user created'),
       );
       await load();
     } catch (err: any) {
@@ -211,6 +221,7 @@ export default function PlatformUsersPage() {
             <th>2FA</th>
             <th>Last session</th>
             <th>Active sessions</th>
+            <th>Last invite delivery</th>
             <th />
           </tr>
         </thead>
@@ -228,6 +239,21 @@ export default function PlatformUsersPage() {
                 {formatDateTime(u.last_session_at, formats.date_format, formats.time_format)}
               </td>
               <td>{u.active_session_count ?? 0}</td>
+              <td className="muted" style={{ fontSize: 13 }}>
+                {u.last_invite_delivery?.created_at
+                  ? `${formatDateTime(
+                      u.last_invite_delivery.created_at,
+                      formats.date_format,
+                      formats.time_format,
+                    )} · sent=${String(u.last_invite_delivery.sent)} · mode=${
+                      u.last_invite_delivery.mode || '—'
+                    }${
+                      u.last_invite_delivery.error
+                        ? ` · error=${u.last_invite_delivery.error}`
+                        : ''
+                    }`
+                  : '—'}
+              </td>
               <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button type="button" disabled={busy} onClick={() => emailPasswordReset(u)}>
                   Email reset link
@@ -240,7 +266,7 @@ export default function PlatformUsersPage() {
           ))}
           {items.length === 0 && (
             <tr>
-              <td colSpan={8} className="muted">
+              <td colSpan={9} className="muted">
                 No platform users yet. Use the bootstrap script or create one above.
               </td>
             </tr>

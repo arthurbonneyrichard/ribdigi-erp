@@ -53,6 +53,11 @@ def plan_catalog_items() -> list[dict]:
     return [dict(PLAN_CATALOG[code]) for code in sorted(VALID_PLAN_CODES)]
 
 
+def industry_catalog_items() -> list[dict]:
+    """Stage 93 M1 — canonical industry catalog for House roster filters/provisioning."""
+    return [{"code": code, "label": code.replace("_", " ").title()} for code in sorted(VALID_INDUSTRIES)]
+
+
 def assert_mutable_customer_tenant(tenant: m.Tenant) -> None:
     """Refuse lifecycle mutations against the reserved Ribdigi House tenant (ADR-137)."""
     if tenant.id == PLATFORM_TENANT_ID or (tenant.slug or "") == PLATFORM_TENANT_ID:

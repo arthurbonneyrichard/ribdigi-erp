@@ -184,12 +184,20 @@ async def verify_chain(db: AsyncSession, tenant_id: str) -> dict:
                 "valid": False,
                 "checked": checked,
                 "broken_at": row.id,
+                "broken_created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
                 "action": row.action,
                 "created_at": row.created_at,
+                "verified_at": datetime.utcnow().isoformat() + "Z",
             }
         expected_prev = row.integrity_hash or expected_prev
         checked += 1
-    return {"valid": True, "checked": checked, "broken_at": None}
+    return {
+        "valid": True,
+        "checked": checked,
+        "broken_at": None,
+        "broken_created_at": None,
+        "verified_at": datetime.utcnow().isoformat() + "Z",
+    }
 
 
 def to_csv(rows: list[m.AuditLog]) -> str:

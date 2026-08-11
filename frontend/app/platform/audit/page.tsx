@@ -69,7 +69,14 @@ export default function PlatformAuditPage() {
     try {
       const r = await api('/platform/audit/verify');
       setVerify(r.data);
-      setMessage(r.data?.valid ? 'Integrity chain valid' : 'Integrity chain broken');
+      const when = r.data?.verified_at
+        ? formatDateTime(r.data.verified_at, formats.date_format, formats.time_format)
+        : '';
+      setMessage(
+        r.data?.valid
+          ? `Integrity chain valid${when ? ` · verified ${when}` : ''}`
+          : `Integrity chain broken${when ? ` · verified ${when}` : ''}`,
+      );
     } catch (err: any) {
       setError(err.message || 'Verify failed');
     }
@@ -191,7 +198,19 @@ export default function PlatformAuditPage() {
         <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
           <p>Valid: {String(verify.valid)}</p>
           <p>Checked: {verify.checked}</p>
-          {verify.broken_at && <p>Broken at: {verify.broken_at}</p>}
+          {verify.verified_at && (
+            <p>
+              Verified:{' '}
+              {formatDateTime(verify.verified_at, formats.date_format, formats.time_format)}
+            </p>
+          )}
+          {verify.broken_at && <p>Broken at id: {verify.broken_at}</p>}
+          {verify.broken_created_at && (
+            <p>
+              Broken event:{' '}
+              {formatDateTime(verify.broken_created_at, formats.date_format, formats.time_format)}
+            </p>
+          )}
         </div>
       )}
       <table className="table" style={{ marginTop: 16 }}>

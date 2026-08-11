@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
@@ -34,6 +34,8 @@ type PlanItem = {
   soft_limits?: { stores?: number | null; users?: number | null };
 };
 
+type IndustryItem = { code: string; label?: string };
+
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 const emptyForm = {
@@ -49,32 +51,76 @@ const emptyForm = {
 
 export default function PlatformTenantsPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [items, setItems] = useState<TenantRow[]>([]);
   const [atRisk, setAtRisk] = useState<TenantRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(() => searchParams.get('q') || '');
   const [status, setStatus] = useState(() => searchParams.get('status') || '');
-  const [planCode, setPlanCode] = useState('');
-  const [industry, setIndustry] = useState('');
+  const [planCode, setPlanCode] = useState(() => searchParams.get('plan_code') || '');
+  const [industry, setIndustry] = useState(() => searchParams.get('industry') || '');
+  const [createdThisMonth, setCreatedThisMonth] = useState(
+    () => searchParams.get('created_this_month') === 'true',
+  );
+  const [focusAtRisk, setFocusAtRisk] = useState(() => searchParams.get('focus') === 'at-risk');
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [creating, setCreating] = useState(false);
   const [catalog, setCatalog] = useState<PlanItem[]>([]);
+  const [industries, setIndustries] = useState<IndustryItem[]>([]);
   const [formats, setFormats] = useState(HOUSE_FORMAT_DEFAULTS);
 
   const selectedPlan = catalog.find((p) => p.code === form.plan_code);
 
-  async function load(nextStatus?: string) {
+  function syncUrl(next: {
+    q?: string;
+    status?: string;
+    planCode?: string;
+    industry?: string;
+    createdThisMonth?: boolean;
+    focusAtRisk?: boolean;
+  }) {
+    const params = new URLSearchParams();
+    const nq = next.q !== undefined ? next.q : q;
+    const ns = next.status !== undefined ? next.status : status;
+    const np = next.planCode !== undefined ? next.planCode : planCode;
+    const ni = next.industry !== undefined ? next.industry : industry;
+    const nm = next.createdThisMonth !== undefined ? next.createdThisMonth : createdThisMonth;
+    const nf = next.focusAtRisk !== undefined ? next.focusAtRisk : focusAtRisk;
+    if (nq.trim()) params.set('q', nq.trim());
+    if (ns) params.set('status', ns);
+    if (np) params.set('plan_code', np);
+    if (ni) params.set('industry', ni);
+    if (nm) params.set('created_this_month', 'true');
+    if (nf) params.set('focus', 'at-risk');
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  async function load(overrides?: {
+    q?: string;
+    status?: string;
+    planCode?: string;
+    industry?: string;
+    createdThisMonth?: boolean;
+  }) {
     setError('');
-    const statusFilter = nextStatus !== undefined ? nextStatus : status;
+    const qf = overrides?.q !== undefined ? overrides.q : q;
+    const statusFilter = overrides?.status !== undefined ? overrides.status : status;
+    const planFilter = overrides?.planCode !== undefined ? overrides.planCode : planCode;
+    const industryFilter = overrides?.industry !== undefined ? overrides.industry : industry;
+    const monthFilter =
+      overrides?.createdThisMonth !== undefined ? overrides.createdThisMonth : createdThisMonth;
     try {
       const params = new URLSearchParams();
-      if (q.trim()) params.set('q', q.trim());
+      if (qf.trim()) params.set('q', qf.trim());
       if (statusFilter) params.set('status', statusFilter);
-      if (planCode) params.set('plan_code', planCode);
-      if (industry) params.set('industry', industry);
+      if (planFilter) params.set('plan_code', planFilter);
+      if (industryFilter) params.set('industry', industryFilter);
+      if (monthFilter) params.set('created_this_month', 'true');
       const r = await api(`/platform/tenants?${params.toString()}`);
       setItems(r.data?.items || []);
       setTotal(r.data?.total || 0);
@@ -90,15 +136,37 @@ export default function PlatformTenantsPage() {
     api('/platform/plans')
       .then((r) => setCatalog(r.data?.catalog || []))
       .catch(() => setCatalog([]));
+    api('/platform/industries')
+      .then((r) => setIndustries(r.data?.catalog || []))
+      .catch(() => setIndustries([]));
   }, []);
 
   useEffect(() => {
-    const fromQuery = searchParams.get('status') || '';
-    setStatus(fromQuery);
-    load(fromQuery);
-    if (searchParams.get('focus') === 'at-risk') {
+    const fromStatus = searchParams.get('status') || '';
+    const fromQ = searchParams.get('q') || '';
+    const fromPlan = searchParams.get('plan_code') || '';
+    const fromIndustry = searchParams.get('industry') || '';
+    const fromMonth = searchParams.get('created_this_month') === 'true';
+    const fromFocus = searchParams.get('focus') === 'at-risk';
+    setStatus(fromStatus);
+    setQ(fromQ);
+    setPlanCode(fromPlan);
+    setIndustry(fromIndustry);
+    setCreatedThisMonth(fromMonth);
+    setFocusAtRisk(fromFocus);
+    load({
+      q: fromQ,
+      status: fromStatus,
+      planCode: fromPlan,
+      industry: fromIndustry,
+      createdThisMonth: fromMonth,
+    });
+    if (fromFocus) {
       const el = document.getElementById('at-risk-queue');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.focus();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -147,6 +215,7 @@ export default function PlatformTenantsPage() {
       if (status) params.set('status', status);
       if (planCode) params.set('plan_code', planCode);
       if (industry) params.set('industry', industry);
+      if (createdThisMonth) params.set('created_this_month', 'true');
       params.set('format', fmt);
       const res = await fetch(`${apiBase}/platform/tenants/export?${params}`, {
         headers: {
@@ -216,6 +285,28 @@ export default function PlatformTenantsPage() {
           style={{ width: '100%', padding: 10, margin: '6px 0', borderRadius: 8, border: '1px solid #cbd5e1' }}
         />
         <select
+          value={form.industry}
+          onChange={(e) => setForm({ ...form, industry: e.target.value })}
+          style={{ width: '100%', padding: 10, margin: '6px 0', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          {(industries.length
+            ? industries
+            : [
+                { code: 'retail' },
+                { code: 'pharmacy' },
+                { code: 'restaurant' },
+                { code: 'bakery' },
+                { code: 'wholesale' },
+                { code: 'manufacturing' },
+                { code: 'mart' },
+              ]
+          ).map((i) => (
+            <option key={i.code} value={i.code}>
+              {i.label || i.code}
+            </option>
+          ))}
+        </select>
+        <select
           value={form.plan_code}
           onChange={(e) => setForm({ ...form, plan_code: e.target.value })}
           style={{ width: '100%', padding: 10, margin: '6px 0', borderRadius: 8, border: '1px solid #cbd5e1' }}
@@ -264,12 +355,16 @@ export default function PlatformTenantsPage() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search slug, name, admin email, or notes"
+          placeholder="Search slug, name, admin email, notes, or suspend reason"
           style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 200 }}
         />
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setStatus(v);
+            syncUrl({ status: v });
+          }}
           style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
         >
           <option value="">All statuses</option>
@@ -291,18 +386,43 @@ export default function PlatformTenantsPage() {
         </select>
         <select
           value={industry}
-          onChange={(e) => setIndustry(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setIndustry(v);
+            syncUrl({ industry: v });
+          }}
           style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
         >
           <option value="">All industries</option>
-          <option value="retail">retail</option>
-          <option value="pharmacy">pharmacy</option>
-          <option value="restaurant">restaurant</option>
-          <option value="bakery">bakery</option>
-          <option value="wholesale">wholesale</option>
-          <option value="manufacturing">manufacturing</option>
-          <option value="mart">mart</option>
+          {(industries.length
+            ? industries
+            : [
+                { code: 'retail' },
+                { code: 'pharmacy' },
+                { code: 'restaurant' },
+                { code: 'bakery' },
+                { code: 'wholesale' },
+                { code: 'manufacturing' },
+                { code: 'mart' },
+              ]
+          ).map((i) => (
+            <option key={i.code} value={i.code}>
+              {i.label || i.code}
+            </option>
+          ))}
         </select>
+        <label className="muted" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="checkbox"
+            checked={createdThisMonth}
+            onChange={(e) => {
+              const v = e.target.checked;
+              setCreatedThisMonth(v);
+              syncUrl({ createdThisMonth: v });
+            }}
+          />
+          Created this month
+        </label>
         <button type="submit" style={{ padding: '10px 14px', borderRadius: 8, background: '#111827', color: '#fff', border: 0 }}>
           Search
         </button>
@@ -316,7 +436,18 @@ export default function PlatformTenantsPage() {
       {error && <p>{error}</p>}
       {msg && <p style={{ color: '#047857' }}>{msg}</p>}
 
-      <h2 id="at-risk-queue" style={{ fontSize: 16, marginTop: 24 }}>
+      <h2
+        id="at-risk-queue"
+        tabIndex={-1}
+        style={{
+          fontSize: 16,
+          marginTop: 24,
+          outline: focusAtRisk ? '2px solid #2563eb' : undefined,
+          background: focusAtRisk ? '#eff6ff' : undefined,
+          padding: focusAtRisk ? 8 : undefined,
+          borderRadius: focusAtRisk ? 8 : undefined,
+        }}
+      >
         At-risk (trial/grace within 14 days)
       </h2>
       <p className="muted">{atRisk.length} tenant(s) in queue</p>

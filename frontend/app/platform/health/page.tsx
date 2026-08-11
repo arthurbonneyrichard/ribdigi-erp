@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
+import { downloadPlatformEvidence } from '../../../lib/platformEvidence';
 
 type Check = { status?: string; latency_ms?: number; reason?: string; mode?: string; required?: boolean };
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function PlatformHealthPage() {
   const [data, setData] = useState<any>(null);
@@ -23,27 +22,7 @@ export default function PlatformHealthPage() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/platform/evidence`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
-      if (!res.ok) throw new Error('Evidence download failed');
-      const body = await res.json();
-      const blob = new Blob([JSON.stringify(body.data ?? body, null, 2)], {
-        type: 'application/json',
-      });
-      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `platform-evidence-${stamp}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setMessage('Evidence JSON downloaded (packaging honesty only)');
+      setMessage(await downloadPlatformEvidence());
     } catch (err: any) {
       setError(err.message || 'Evidence download failed');
     }
@@ -52,6 +31,7 @@ export default function PlatformHealthPage() {
   const checks: Record<string, Check> = data?.checks || {};
   const security = data?.security || {};
   const contacts = data?.operator_contacts || {};
+  const runtime = data?.house_runtime || {};
 
   return (
     <PlatformShell>
@@ -94,6 +74,25 @@ export default function PlatformHealthPage() {
               </p>
             </div>
             <div className="card">
+              <div className="muted">Celery</div>
+              <div className="kpi" style={{ fontSize: 18 }}>
+                {security.celery_enabled ? 'Enabled' : 'Disabled'}
+              </div>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Runtime flag from House security posture (packaging honesty).
+              </p>
+            </div>
+            <div className="card">
+              <div className="muted">House idle timeout</div>
+              <div className="kpi" style={{ fontSize: 18 }}>
+                {runtime.inactivity_timeout_minutes ?? '—'} min
+              </div>
+              <p className="muted" style={{ marginTop: 8 }}>
+                TZ: {runtime.timezone || '—'} · date: {runtime.date_format || '—'} · time:{' '}
+                {runtime.time_format || '—'} · numbers: {runtime.number_format || '—'}
+              </p>
+            </div>
+            <div className="card">
               <div className="muted">Security posture</div>
               <p className="muted" style={{ marginTop: 8 }}>
                 Env: {data.env || '—'} · OpenAPI: {String(security.openapi_enabled)} · Debug:{' '}
@@ -103,6 +102,11 @@ export default function PlatformHealthPage() {
                 CORS origins: {security.cors_origins_count ?? '—'}
                 {security.cors_allows_wildcard ? ' (includes *)' : ''}
               </p>
+              {security.cors_allows_wildcard && (
+                <p role="alert" style={{ color: '#b45309', marginTop: 8 }}>
+                  Warning: CORS allowlist includes wildcard '*'. Tighten origins before production.
+                </p>
+              )}
               {Array.isArray(security.cors_origins) && (
                 <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
                   Allowlist: {security.cors_origins.join(', ') || '—'}

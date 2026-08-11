@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
+import { downloadPlatformEvidence } from '../../../lib/platformEvidence';
 
 export default function PlatformSettingsPage() {
   const [companyName, setCompanyName] = useState('');
@@ -12,6 +13,7 @@ export default function PlatformSettingsPage() {
   const [timezone, setTimezone] = useState('Africa/Accra');
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [timeFormat, setTimeFormat] = useState('24h');
+  const [numberFormat, setNumberFormat] = useState('1,234.56');
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -27,6 +29,7 @@ export default function PlatformSettingsPage() {
       setTimezone(r.data?.timezone || 'Africa/Accra');
       setDateFormat(r.data?.date_format || 'DD/MM/YYYY');
       setTimeFormat(r.data?.time_format || '24h');
+      setNumberFormat(r.data?.number_format || '1,234.56');
     } catch (err: any) {
       setError(err.message || 'Failed to load settings');
     }
@@ -52,6 +55,7 @@ export default function PlatformSettingsPage() {
           timezone,
           date_format: dateFormat,
           time_format: timeFormat,
+          number_format: numberFormat,
         }),
       });
       setMsg('Settings saved');
@@ -60,6 +64,16 @@ export default function PlatformSettingsPage() {
       setError(err.message || 'Save failed');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function downloadEvidence() {
+    setError('');
+    setMsg('');
+    try {
+      setMsg(await downloadPlatformEvidence());
+    } catch (err: any) {
+      setError(err.message || 'Evidence download failed');
     }
   }
 
@@ -132,6 +146,16 @@ export default function PlatformSettingsPage() {
           <option value="24h">24h</option>
           <option value="12h">12h</option>
         </select>
+        <label className="muted">House number format</label>
+        <select
+          value={numberFormat}
+          onChange={(e) => setNumberFormat(e.target.value)}
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="1,234.56">1,234.56</option>
+          <option value="1.234,56">1.234,56</option>
+          <option value="1 234.56">1 234.56</option>
+        </select>
         <button
           type="submit"
           disabled={busy}
@@ -140,6 +164,11 @@ export default function PlatformSettingsPage() {
           Save
         </button>
       </form>
+      <p style={{ marginTop: 16 }}>
+        <button type="button" onClick={downloadEvidence}>
+          Download evidence JSON
+        </button>
+      </p>
 
       <div className="card" style={{ marginTop: 24, maxWidth: 640 }}>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>Operator runbooks (packaging links)</h2>

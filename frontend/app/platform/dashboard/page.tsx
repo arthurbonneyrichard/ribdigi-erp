@@ -49,6 +49,9 @@ export default function PlatformDashboardPage() {
         <div className="card">
           <div className="muted">Total tenants</div>
           <div className="kpi">{d.total_tenants ?? '—'}</div>
+          <p style={{ marginTop: 8 }}>
+            <Link href="/platform/tenants">View all tenants →</Link>
+          </p>
         </div>
         <div className="card">
           <div className="muted">Active</div>
@@ -88,6 +91,9 @@ export default function PlatformDashboardPage() {
         <div className="card">
           <div className="muted">New this month</div>
           <div className="kpi">{d.new_tenants_this_month ?? '—'}</div>
+          <p style={{ marginTop: 8 }}>
+            <Link href="/platform/tenants?created_this_month=true">View new this month →</Link>
+          </p>
         </div>
         <div className="card">
           <div className="muted">Platform users</div>

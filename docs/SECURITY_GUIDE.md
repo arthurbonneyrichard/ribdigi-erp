@@ -564,6 +564,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 92 K1** | House regional formats + protected CORS allowlist on health/evidence (`test_stage92_readiness_formats_k1.py`); packaging honesty only — not go-live Complete |
 | **Stage 92 D1** | House Console Workflow & Readiness Ops fidelity — `docs/STAGE_92_FIDELITY.md` (`test_stage92_fidelity_d1.py`); maps B1–K1 → readiness / launch / deploy / security |
 | **Stage 92 H92x** | Exit + freeze — `docs/STAGE_92_EXIT_CRITERIA.md`, ADR-191 (`test_stage92_exit_h92x.py`); Stages 1–92 frozen for Stage 92 scope; Stage 93+ requires CONTINUE/NEXT |
+| **Stage 93 open** | House Navigation & Runtime Ops — `docs/STAGE_93_PLAN.md`, ADR-192 (`test_stage93_open.py`); Stages 1–92 remain frozen for prior scopes; M1 next historically |
+| **Stage 93 M1** | Roster navigation & export — industries catalog, created_this_month, URL sync, notes limit, PDF delivery, grace column (`test_stage93_roster_navigation_m1.py`) |
+| **Stage 93 J1** | Staff delivery & integrity — last invite delivery + audit verified_at (`test_stage93_staff_integrity_j1.py`); no fabricated SMTP success |
+| **Stage 93 V1** | Format, evidence & runtime posture — number_format, house_runtime, Celery badge, CORS alert (`test_stage93_runtime_posture_v1.py`); packaging honesty only — not go-live Complete |
+| **Stage 93 D1** | House Navigation & Runtime Ops fidelity — `docs/STAGE_93_FIDELITY.md` (`test_stage93_fidelity_d1.py`); maps M1–V1 → readiness / launch / deploy / security |
+| **Stage 93 H93x** | Exit + freeze — `docs/STAGE_93_EXIT_CRITERIA.md`, ADR-193 (`test_stage93_exit_h93x.py`); Stages 1–93 frozen for Stage 93 scope; Stage 94+ requires CONTINUE/NEXT |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |

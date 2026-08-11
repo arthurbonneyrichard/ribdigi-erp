@@ -1717,3 +1717,15 @@ Every feature in every phase must meet:
 **Stage 92 D1 (2026-08-11):** House Console Workflow & Readiness Ops fidelity sync — `docs/STAGE_92_FIDELITY.md` (`test_stage92_fidelity_d1.py`); maps B1–K1 → readiness / launch / deploy / security.
 
 **Stage 92 exit (2026-08-11):** B1, G1, K1, D1, H92x met — `docs/STAGE_92_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_191_STAGE92_FREEZE.md`. Fidelity: `docs/STAGE_92_FIDELITY.md`.
+
+**Stage 93 open (2026-08-11):** House Navigation & Runtime Ops track approved — `docs/ADR_192_STAGE93_OPEN.md` + `docs/STAGE_93_PLAN.md` (Roster Navigation & Export → Staff Delivery & Integrity → Format, Evidence & Runtime Posture → House Navigation & Runtime Ops; M1 next).
+
+**Stage 93 M1 (2026-08-11):** Roster navigation & export — industries catalog, created_this_month, URL sync, notes limit, PDF delivery, grace column (`test_stage93_roster_navigation_m1.py`).
+
+**Stage 93 J1 (2026-08-11):** Staff delivery & integrity — last invite delivery + audit verified_at formatting (`test_stage93_staff_integrity_j1.py`).
+
+**Stage 93 V1 (2026-08-11):** Format, evidence & runtime posture — number_format, house_runtime, Celery badge, CORS alert, settings evidence download (`test_stage93_runtime_posture_v1.py`).
+
+**Stage 93 D1 (2026-08-11):** House Navigation & Runtime Ops fidelity sync — `docs/STAGE_93_FIDELITY.md` (`test_stage93_fidelity_d1.py`); maps M1–V1 → readiness / launch / deploy / security.
+
+**Stage 93 exit (2026-08-11):** M1, J1, V1, D1, H93x met — `docs/STAGE_93_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_193_STAGE93_FREEZE.md`. Fidelity: `docs/STAGE_93_FIDELITY.md`.

@@ -1,0 +1,30 @@
+# ADR-193: Stage 93 Scope Freeze
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Related:** [ADR-192](ADR_192_STAGE93_OPEN.md), [STAGE_93_EXIT_CRITERIA.md](STAGE_93_EXIT_CRITERIA.md), [STAGE_93_FIDELITY.md](STAGE_93_FIDELITY.md)
+
+## Context
+
+Stage 93 House Navigation & Runtime Ops delivered roster navigation & export (M1), staff delivery & integrity (J1), format/evidence/runtime posture (V1), fidelity sync (D1), and exit (H93x), extending Ribdigi House ops without claiming paid billing Complete, fabricated SMTP success, or live go-live Complete. Opening further Stage 93 feature expansion risks conflating navigation packaging with ADR-002 billing Complete or §§1–3 / go-live attestation. Prior Stage 92 remains frozen under ADR-191.
+
+## Decision
+
+1. **Stage 93 is frozen for new feature scope.** Further Stage 93 work is limited to bugfixes, security patches, test hardening, and documentation corrections against accepted ACs / ADRs.
+2. **Do not open Stage 94 (or a new delivery track)** until `docs/STAGE_93_EXIT_CRITERIA.md` remains accurate, any CRITICAL Stage 93 failures are closed, and the next track is explicitly approved (e.g. CONTINUE / NEXT after freeze with an open ADR and a **distinct** product outline).
+3. Deferred items listed in Stage 93 exit criteria remain deferred.
+4. Existing later-roadmap code may receive bugfixes; new Stage 94+ epics require an explicit plan + open ADR after Stage 93 exit sign-off.
+5. **Stage 1–92 freezes remain in force** for their respective scopes (Stage 92 under ADR-191; Stage 91 under ADR-189).
+6. Honesty flags stay false for packaging Completes that do not equal live verification: `mrr_fabricated_claimed: false`, `billing_complete_claimed: false`, `subscriptions_live_claimed: false`, `user_store_membership_claimed: false`, `hard_delete_claimed: false`, `sections_1_3_verified: false`, `section_7_signed: false`, `go_live_claimed: false`, `attestation_claimed: false`.
+
+## Consequences
+
+- Agents treat Stage 93 M1–V1 / D1 / H93x as closed unless fixing a regression.
+- `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP.
+- Stage 1–92 freezes remain in force for their scopes (Stage 92 included).
+- Main `ci.yml` remains deploy-free (**Stage 18 C1**).
+- House navigation & runtime ops Complete does **not** mean paid billing, live subscriptions, User↔Store membership, hard-delete, impersonation, fabricated email success, §§1–3 verified, §7 signed, or live go-live Complete.
+
+## Next stage
+
+Stage 94 requires CONTINUE/NEXT with a distinct product outline and open ADR after this freeze. Stage 93 feature scope remains frozen.

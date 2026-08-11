@@ -27,4 +27,4 @@ Stage 92 House Console Workflow & Readiness Ops delivered investigation export &
 
 ## Next stage
 
-Stage 93 requires CONTINUE/NEXT with a distinct product outline and open ADR after this freeze. Stage 92 feature scope remains frozen.
+Stage 93 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-192](ADR_192_STAGE93_OPEN.md) + [STAGE_93_PLAN.md](STAGE_93_PLAN.md) (Roster Navigation & Export → Staff Delivery & Integrity → Format, Evidence & Runtime Posture → House Navigation & Runtime Ops). Stage 92 feature scope remains frozen.

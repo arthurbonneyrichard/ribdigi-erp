@@ -269,12 +269,21 @@ export default function PlatformTenantDetailPage() {
             <div className="muted">House operator notes (not visible on tenant Company profile)</div>
             <textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => setNotes(e.target.value.slice(0, 2000))}
               rows={4}
+              maxLength={2000}
               style={{ width: '100%', marginTop: 8, padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
               placeholder="Internal notes for Ribdigi House operators"
             />
-            <button type="button" disabled={busy} onClick={saveNotes} style={{ marginTop: 8 }}>
+            <p className="muted" style={{ marginTop: 6, fontSize: 13 }}>
+              {notes.length}/2000 characters
+            </p>
+            <button
+              type="button"
+              disabled={busy || notes.length > 2000}
+              onClick={saveNotes}
+              style={{ marginTop: 8 }}
+            >
               Save notes
             </button>
           </div>

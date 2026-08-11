@@ -250,6 +250,9 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_93_EXIT_CRITERIA.md` / `docs/ADR_193_STAGE93_FREEZE.md` (`backend/tests/test_stage93_exit_h93x.py`) — Stage 93 H93x
+- `docs/STAGE_93_FIDELITY.md` (`backend/tests/test_stage93_fidelity_d1.py`) — Stage 93 D1
+- `docs/STAGE_93_PLAN.md` (`backend/tests/test_stage93_open.py`) — Stage 93 open (ADR-192)
 - `docs/STAGE_92_EXIT_CRITERIA.md` / `docs/ADR_191_STAGE92_FREEZE.md` (`backend/tests/test_stage92_exit_h92x.py`) — Stage 92 H92x
 - `docs/STAGE_92_FIDELITY.md` (`backend/tests/test_stage92_fidelity_d1.py`) — Stage 92 D1
 - `docs/STAGE_92_PLAN.md` (`backend/tests/test_stage92_open.py`) — Stage 92 open (ADR-190)
@@ -1068,6 +1071,31 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
 
+
+
+## Stage 93 exit
+
+H93x met — `docs/STAGE_93_EXIT_CRITERIA.md`, ADR-193. Stages 1–93 frozen for Stage 93 feature scope.
+
+## Stage 93 D1 — House Navigation & Runtime Ops fidelity
+
+`docs/STAGE_93_FIDELITY.md` — maps M1–V1 → readiness / launch / deploy / security.
+
+## Stage 93 V1 — Format, evidence & runtime posture
+
+`test_stage93_runtime_posture_v1.py` — number_format, house_runtime, Celery badge, CORS alert, settings evidence download.
+
+## Stage 93 J1 — Staff delivery & integrity
+
+`test_stage93_staff_integrity_j1.py` — last invite delivery + audit verified_at.
+
+## Stage 93 M1 — Roster navigation & export
+
+`test_stage93_roster_navigation_m1.py` — industries catalog, created_this_month, URL sync, notes limit, PDF delivery, grace column.
+
+## Stage 93 open
+
+ADR-192 + `docs/STAGE_93_PLAN.md` — House Navigation & Runtime Ops.
 
 ## Stage 92 exit
 

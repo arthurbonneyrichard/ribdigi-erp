@@ -1,4 +1,4 @@
-/** House console regional formats (Stage 92 K1) — reuse format.ts helpers. */
+/** House console regional formats (Stage 92 K1 / Stage 93 V1) — reuse format.ts helpers. */
 
 import { api } from './api';
 import type { RegionalFormats } from './format';
@@ -14,7 +14,7 @@ export async function fetchHouseFormats(): Promise<Required<RegionalFormats>> {
     const r = await api('/platform/settings');
     return {
       date_format: r.data?.date_format || HOUSE_FORMAT_DEFAULTS.date_format,
-      number_format: HOUSE_FORMAT_DEFAULTS.number_format,
+      number_format: r.data?.number_format || HOUSE_FORMAT_DEFAULTS.number_format,
       time_format: r.data?.time_format || HOUSE_FORMAT_DEFAULTS.time_format,
     };
   } catch {

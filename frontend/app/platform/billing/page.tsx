@@ -23,6 +23,13 @@ type RosterItem = {
   billing?: string;
 };
 
+function fmtTs(
+  value: string | null | undefined,
+  formats: { date_format?: string | null; time_format?: string | null },
+) {
+  return formatDateTime(value, formats.date_format, formats.time_format);
+}
+
 export default function PlatformBillingPage() {
   const [data, setData] = useState<any>(null);
   const [roster, setRoster] = useState<RosterItem[]>([]);
@@ -84,6 +91,7 @@ export default function PlatformBillingPage() {
                 <th>Users</th>
                 <th>Stores</th>
                 <th>Trial ends</th>
+                <th>Grace ends</th>
                 <th>Created</th>
                 <th>Billing</th>
               </tr>
@@ -101,12 +109,9 @@ export default function PlatformBillingPage() {
                   <td className="muted">{row.admin_email || '—'}</td>
                   <td>{row.user_count ?? '—'}</td>
                   <td>{row.store_count ?? '—'}</td>
-                  <td>
-                    {formatDateTime(row.trial_ends_at, formats.date_format, formats.time_format)}
-                  </td>
-                  <td>
-                    {formatDateTime(row.created_at, formats.date_format, formats.time_format)}
-                  </td>
+                  <td>{fmtTs(row.trial_ends_at, formats)}</td>
+                  <td>{fmtTs(row.grace_ends_at, formats)}</td>
+                  <td>{fmtTs(row.created_at, formats)}</td>
                   <td>{row.billing || 'deferred'}</td>
                 </tr>
               ))}

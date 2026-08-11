@@ -76,7 +76,7 @@ class PlatformPlanUpdate(BaseModel):
 
 
 class PlatformTenantNotesUpdate(BaseModel):
-    platform_notes: str | None = None
+    platform_notes: str | None = Field(default=None, max_length=2000)
 
 
 class PlatformTenantLifecycleUpdate(BaseModel):
@@ -95,6 +95,7 @@ class PlatformSettingsUpdate(BaseModel):
     timezone: str | None = Field(default=None, min_length=1, max_length=64)
     date_format: str | None = None
     time_format: str | None = None
+    number_format: str | None = None
 
 
 @router.get("/dashboard")
@@ -170,15 +171,18 @@ async def platform_list_tenants(
     status: str | None = Query(None),
     plan_code: str | None = Query(None),
     industry: str | None = Query(None),
+    created_this_month: bool = Query(False),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
+    """Stage 93 M1: ``created_this_month`` filters to tenants created in the current UTC month."""
     items, total = await platform_svc.list_customer_tenants(
         db,
         q=q,
         status=status,
         plan_code=plan_code,
         industry=industry,
+        created_this_month=created_this_month,
         limit=limit,
         offset=offset,
     )
@@ -193,7 +197,23 @@ async def platform_list_tenants(
                 "status": status,
                 "plan_code": plan_code,
                 "industry": industry,
+                "created_this_month": created_this_month,
             },
+        }
+    )
+
+
+@router.get("/industries")
+async def platform_industries_catalog(
+    claims: dict = Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 93 M1 — canonical industry catalog for House roster filters/provisioning."""
+    await platform_svc.ensure_platform_tenant(db)
+    return env(
+        {
+            "catalog": tenants_svc.industry_catalog_items(),
+            "codes": sorted(tenants_svc.VALID_INDUSTRIES),
         }
     )
 
@@ -206,6 +226,7 @@ async def platform_tenants_export(
     status: str | None = Query(None),
     plan_code: str | None = Query(None),
     industry: str | None = Query(None),
+    created_this_month: bool = Query(False),
     format: str = Query("csv"),
 ):
     """Stage 88 R1 — export customer tenant roster (csv/pdf). Stage 89 F1 adds plan/industry filters."""
@@ -215,6 +236,7 @@ async def platform_tenants_export(
         status=status,
         plan_code=plan_code,
         industry=industry,
+        created_this_month=created_this_month,
         limit=500,
         offset=0,
     )
@@ -258,11 +280,17 @@ async def platform_create_tenant(
             detail="Only platform_super_admin can provision customer tenants",
         )
     await platform_svc.ensure_platform_tenant(db)
+    industry = (payload.industry or "retail").strip().lower()
+    if industry not in tenants_svc.VALID_INDUSTRIES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"industry must be one of: {sorted(tenants_svc.VALID_INDUSTRIES)}",
+        )
     tenant, admin, raw = await platform_svc.provision_customer_tenant(
         db,
         slug=payload.slug,
         company_name=payload.company_name,
-        industry=payload.industry,
+        industry=industry,
         currency=payload.currency,
         timezone=(payload.timezone or "Africa/Accra").strip() or "Africa/Accra",
         tax_jurisdiction=(payload.tax_jurisdiction or "GH").strip().upper() or "GH",
@@ -794,8 +822,30 @@ def _serialize_platform_settings(tenant: m.Tenant) -> dict:
         "timezone": getattr(tenant, "timezone", None) or "Africa/Accra",
         "date_format": getattr(tenant, "date_format", None) or "DD/MM/YYYY",
         "time_format": getattr(tenant, "time_format", None) or "24h",
+        "number_format": getattr(tenant, "number_format", None) or "1,234.56",
         "status": tenant.status,
         "plan_code": getattr(tenant, "plan_code", None) or "enterprise",
+    }
+
+
+def _house_runtime(tenant: m.Tenant | None) -> dict[str, Any]:
+    """Stage 93 V1 — protected House runtime posture for health/evidence."""
+    if not tenant:
+        return {
+            "timezone": None,
+            "date_format": None,
+            "time_format": None,
+            "number_format": None,
+            "inactivity_timeout_minutes": None,
+        }
+    return {
+        "timezone": getattr(tenant, "timezone", None) or "Africa/Accra",
+        "date_format": getattr(tenant, "date_format", None) or "DD/MM/YYYY",
+        "time_format": getattr(tenant, "time_format", None) or "24h",
+        "number_format": getattr(tenant, "number_format", None) or "1,234.56",
+        "inactivity_timeout_minutes": int(
+            getattr(tenant, "inactivity_timeout_minutes", None) or 30
+        ),
     }
 
 
@@ -868,6 +918,15 @@ async def platform_patch_settings(
             raise HTTPException(status_code=400, detail="time_format must be 24h or 12h")
         tenant.time_format = tfmt
         changes["time_format"] = tenant.time_format
+    if payload.number_format is not None:
+        nfmt = payload.number_format.strip()
+        if nfmt not in tenants_svc.VALID_NUMBER_FORMATS:
+            raise HTTPException(
+                status_code=400,
+                detail="number_format must be one of: 1,234.56, 1.234,56, 1 234.56",
+            )
+        tenant.number_format = nfmt
+        changes["number_format"] = tenant.number_format
     if not changes:
         return env(_serialize_platform_settings(tenant), message="no changes")
     ip, ua = _client_meta(request)
@@ -927,12 +986,14 @@ async def platform_list_users(
             )
         ).all()
     }
+    invites = await platform_svc.latest_staff_invite_deliveries(db, [u.id for u in rows])
     out = []
     for u in rows:
         payload = serialize_user(u)
         last = last_by_user.get(u.id)
         payload["last_session_at"] = last.isoformat() + "Z" if last else None
         payload["active_session_count"] = active_by_user.get(u.id, 0)
+        payload["last_invite_delivery"] = invites.get(u.id)
         out.append(payload)
     return env(out)
 
@@ -1110,9 +1171,19 @@ async def platform_create_user(
             "sent": email_result.sent,
             "mode": email_result.mode,
             "error": email_result.error,
+            "fabricated_success": False,
         }
         if settings.DEBUG or settings.APP_ENV.lower() != "production":
             data["reset_token"] = reset_token
+        invite_msg = (
+            "Invite email sent"
+            if email_result.sent
+            else (
+                f"Invite email not sent (mode: {email_result.mode or 'n/a'}"
+                f"{f'; error: {email_result.error}' if email_result.error else ''})"
+            )
+        )
+        return env(data, message=invite_msg)
     return env(
         data,
         message="platform user invited" if invite_by_email else "platform user created",
@@ -1286,6 +1357,7 @@ async def platform_health(
         "company_name": getattr(platform_tenant, "company_name", None) if platform_tenant else None,
     }
     report["security"] = _platform_security_detail()
+    report["house_runtime"] = _house_runtime(platform_tenant)
     return env(report)
 
 
@@ -1487,17 +1559,12 @@ async def platform_operator_evidence(
                 "company_name": getattr(platform_tenant, "company_name", None)
                 if platform_tenant
                 else None,
-                "timezone": getattr(platform_tenant, "timezone", None) if platform_tenant else None,
-                "date_format": getattr(platform_tenant, "date_format", None)
-                if platform_tenant
-                else None,
-                "time_format": getattr(platform_tenant, "time_format", None)
-                if platform_tenant
-                else None,
                 "support_email": getattr(platform_tenant, "email", None)
                 if platform_tenant
                 else None,
+                **_house_runtime(platform_tenant),
             },
+            "house_runtime": _house_runtime(platform_tenant),
             "health": report,
             "security": _platform_security_detail(),
             "honesty_flags": {
