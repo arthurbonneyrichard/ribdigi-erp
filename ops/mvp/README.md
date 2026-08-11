@@ -131,6 +131,7 @@ Authoritative MVP docs:
 - `docs/STAGE_49_PLAN.md` (`backend/tests/test_stage49_open.py`) — Stage 49 open (ADR-103)
 - `docs/PARTNER_RESELLER_MVP.md` (`backend/tests/test_partner_reseller_r1.py`) — Stage 49 R1
 - `docs/PRICING_TRANSPARENCY_MVP.md` (`backend/tests/test_pricing_transparency_l1.py`) — Stage 49 L1
+- `docs/STAGE_49_FIDELITY.md` (`backend/tests/test_stage49_fidelity_d1.py`) — Stage 49 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -525,3 +526,7 @@ Commercial Channel & Pricing Fidelity — `docs/STAGE_49_PLAN.md`, ADR-103; R1 c
 ## Stage 49 L1 — Pricing transparency honesty
 
 `docs/PRICING_TRANSPARENCY_MVP.md` + `ops/mvp/pricing-transparency.json` — packaging Complete; `public_pricing_portal_claimed` / `list_price_binding_claimed` / `checkout_pricing_live` / `paid_billing_claimed` remain false.
+
+## Stage 49 D1 — Fidelity
+
+`docs/STAGE_49_FIDELITY.md` maps R1–L1 → readiness / launch / deploy / security (`test_stage49_fidelity_d1.py`).

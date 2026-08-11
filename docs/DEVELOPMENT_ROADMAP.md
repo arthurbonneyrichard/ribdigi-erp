@@ -498,6 +498,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 49 L1 (2026-08-11):** Pricing transparency honesty — `docs/PRICING_TRANSPARENCY_MVP.md`, `ops/mvp/pricing-transparency.json`, evidence `stage49_l1_pricing_transparency.json` (`test_pricing_transparency_l1.py`); public pricing portal Remaining.
 
+**Stage 49 D1 (2026-08-11):** Channel & pricing fidelity sync — `docs/STAGE_49_FIDELITY.md` (`test_stage49_fidelity_d1.py`); maps R1–L1 → readiness / launch / deploy / security.
+
 
 
 

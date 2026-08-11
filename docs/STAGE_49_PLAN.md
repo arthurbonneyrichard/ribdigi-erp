@@ -1,6 +1,6 @@
 # Stage 49 Plan — Commercial Channel & Pricing Fidelity
 
-**Status:** Open — L1 complete; D1 next  
+**Status:** Open — D1 complete; H49x next  
 **Base:** Partner / Reseller Terms Honesty Pack + Pricing Transparency Honesty Pack → Commercial Channel & Pricing Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-103](ADR_103_STAGE49_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Channel & Pricing Fidelity
 |----|------------|----------|---------|
 | **R1** | Partner / reseller / white-label terms honesty packaging (not live partner program / signed reseller Complete) | P0 | COMPLETE |
 | **L1** | Pricing transparency / published edition price-list honesty packaging (not public pricing portal / checkout pricing Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H49x** | Stage 49 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -86,9 +86,9 @@ Commercial Channel & Pricing Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_49_FIDELITY.md` maps R1–L1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 49 D1.
-- [ ] Automated proof: `backend/tests/test_stage49_fidelity_d1.py`.
+- [x] `docs/STAGE_49_FIDELITY.md` maps R1–L1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 49 D1.
+- [x] Automated proof: `backend/tests/test_stage49_fidelity_d1.py`.
 
 ## H49x acceptance criteria
 
