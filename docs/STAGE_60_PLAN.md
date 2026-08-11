@@ -1,6 +1,6 @@
 # Stage 60 Plan — Commercial Manufacturing & Tax Fidelity
 
-**Status:** Open — T1 complete; D1 next  
+**Status:** Open — D1 complete; H60x next  
 **Base:** Advanced Manufacturing Honesty Pack + Multi-Country Tax Honesty Pack → Commercial Manufacturing & Tax Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-125](ADR_125_STAGE60_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Manufacturing & Tax Fidelity
 |----|------------|----------|---------|
 | **M1** | Advanced manufacturing honesty packaging (not live MRP / production scheduling Complete) | P0 | COMPLETE |
 | **T1** | Multi-country tax honesty packaging (not live GST / VAT / Sales Tax e-file Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H60x** | Stage 60 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -108,9 +108,9 @@ Commercial Manufacturing & Tax Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_60_FIDELITY.md` maps M1–T1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 60 D1.
-- [ ] Automated proof: `backend/tests/test_stage60_fidelity_d1.py` (`docs/STAGE_60_FIDELITY.md`).
+- [x] `docs/STAGE_60_FIDELITY.md` maps M1–T1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 60 D1.
+- [x] Automated proof: `backend/tests/test_stage60_fidelity_d1.py` (`docs/STAGE_60_FIDELITY.md`).
 
 ## H60x acceptance criteria
 
