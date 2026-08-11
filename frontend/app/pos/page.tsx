@@ -453,7 +453,7 @@ export default function Page() {
 
             {!session && (
               <div className="tpos-empty">
-                <p>Open a shift to unlock the touch catalog.</p>
+                <p>Open a shift to unlock the product catalog.</p>
               </div>
             )}
 
