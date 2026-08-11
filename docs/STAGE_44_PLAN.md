@@ -1,6 +1,6 @@
 # Stage 44 Plan — Commercial Data Trust Fidelity
 
-**Status:** Open — R1 next  
+**Status:** Open — R1 complete; E1 next  
 **Base:** Data Residency / Localization Honesty Pack + Encryption / Key-Management Honesty Pack → Commercial Data Trust Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-093](ADR_093_STAGE44_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Data Trust Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **R1** | Data residency / localization honesty packaging (not multi-region residency Complete) | P0 | PENDING |
+| **R1** | Data residency / localization honesty packaging (not multi-region residency Complete) | P0 | COMPLETE |
 | **E1** | Encryption / key-management honesty packaging (not HSM / live Vault Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H44x** | Stage 44 exit criteria + freeze ADR | Exit | PENDING |
@@ -63,10 +63,10 @@ Commercial Data Trust Fidelity
 
 ## R1 acceptance criteria
 
-- [ ] Data residency / localization honesty packaging consolidating BR local-data-laws and Stage 37–39 privacy / DPA adjacency (not forging multi-region residency Complete).
-- [ ] Automated proof: `backend/tests/test_data_residency_r1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 44 R1.
+- [x] Data residency / localization honesty packaging consolidating BR local-data-laws and Stage 37–39 privacy / DPA adjacency (not forging multi-region residency Complete).
+- [x] Automated proof: `backend/tests/test_data_residency_r1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 44 R1.
 
 ## E1 acceptance criteria
 

@@ -174,7 +174,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
 - [x] Stage 43 Commercial Legal Notice Fidelity (closed: `docs/STAGE_43_PLAN.md`, ADR-092) — T1–D1 / H43x complete
-- [x] Stage 44 track opened (ADR-093: `test_stage44_open.py`, `docs/STAGE_44_PLAN.md`) — Commercial Data Trust Fidelity; R1 next
+- [x] Stage 44 track opened (ADR-093: `test_stage44_open.py`, `docs/STAGE_44_PLAN.md`) — Commercial Data Trust Fidelity; R1 complete; E1 next
+- [x] Data residency / localization honesty (Stage 44 R1: `test_data_residency_r1.py` — `docs/DATA_RESIDENCY_MVP.md`, `ops/mvp/data-residency.json`; evidence `stage44_r1_data_residency.json`; multi-region residency Remaining)
 - [x] Stage 43 track opened (ADR-091: `test_stage43_open.py`, `docs/STAGE_43_PLAN.md`)
 - [x] ToS / AUP honesty (Stage 43 T1: `test_tos_aup_t1.py` — `docs/TOS_AUP_MVP.md`, `ops/mvp/tos-aup.json`; evidence `stage43_t1_tos_aup.json`; signed ToS Remaining)
 - [x] Cookie / privacy notice honesty (Stage 43 C1: `test_cookie_privacy_notice_c1.py` — `docs/COOKIE_PRIVACY_NOTICE_MVP.md`, `ops/mvp/cookie-privacy-notice.json`; evidence `stage43_c1_cookie_privacy_notice.json`; live cookie-consent Remaining)

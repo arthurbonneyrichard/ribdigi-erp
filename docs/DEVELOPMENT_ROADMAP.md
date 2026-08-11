@@ -444,6 +444,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 44 open (2026-08-11):** Commercial Data Trust Fidelity track approved — `docs/ADR_093_STAGE44_OPEN.md` + `docs/STAGE_44_PLAN.md` (data residency → encryption/KMS → fidelity).
 
+**Stage 44 R1 (2026-08-11):** Data residency / localization honesty — `docs/DATA_RESIDENCY_MVP.md`, `ops/mvp/data-residency.json`, evidence `stage44_r1_data_residency.json` (`test_data_residency_r1.py`); multi-region residency Remaining.
+
 
 
 

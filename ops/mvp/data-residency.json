@@ -1,0 +1,159 @@
+{
+  "stage": "44",
+  "workstream": "R1",
+  "doc": "docs/DATA_RESIDENCY_MVP.md",
+  "adr_001_tenancy": "docs/ADR_001_TENANCY.md",
+  "business_requirements": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+  "dpa_subprocessor": "ops/mvp/dpa-subprocessor.json",
+  "dpa_subprocessor_doc": "docs/DPA_SUBPROCESSOR_MVP.md",
+  "data_portability": "ops/mvp/data-portability.json",
+  "data_portability_doc": "docs/DATA_PORTABILITY_MVP.md",
+  "erasure_honesty": "ops/mvp/erasure-honesty.json",
+  "erasure_honesty_doc": "docs/ERASURE_HONESTY_MVP.md",
+  "cookie_privacy_notice": "ops/mvp/cookie-privacy-notice.json",
+  "cookie_privacy_notice_doc": "docs/COOKIE_PRIVACY_NOTICE_MVP.md",
+  "compliance_readiness": "ops/mvp/compliance-readiness-register.json",
+  "compliance_readiness_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "compliance_questionnaire": "ops/mvp/compliance-questionnaire.json",
+  "compliance_questionnaire_doc": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "stage44_plan": "docs/STAGE_44_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "multi_region_residency_claimed": false,
+  "schema_per_tenant_claimed": false,
+  "gdpr_residency_cert_claimed": false,
+  "customer_region_pinning_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage44_r1_data_residency.json",
+  "steps": [
+    {
+      "id": "dr-br-local-laws",
+      "category": "residency",
+      "title": "Index BR local-data-laws / data residency theme as customer-facing boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/DATA_RESIDENCY_MVP.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "dr-adr001-shared-schema",
+      "category": "tenancy",
+      "title": "Link ADR-001 shared-schema + tenant_id honesty (schema-per-tenant Remaining)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_001_TENANCY.md",
+        "ops/mvp/deferred-adr-register.json"
+      ],
+      "source": "docs/ADR_001_TENANCY.md"
+    },
+    {
+      "id": "dr-dpa-adjacency",
+      "category": "privacy",
+      "title": "Link Stage 39 DPA / subprocessor as residency privacy-terms adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DPA_SUBPROCESSOR_MVP.md",
+        "ops/mvp/dpa-subprocessor.json"
+      ],
+      "source": "docs/DPA_SUBPROCESSOR_MVP.md"
+    },
+    {
+      "id": "dr-portability-adjacency",
+      "category": "privacy",
+      "title": "Link Stage 37 data-portability as subject-rights / localization adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATA_PORTABILITY_MVP.md",
+        "ops/mvp/data-portability.json"
+      ],
+      "source": "docs/DATA_PORTABILITY_MVP.md"
+    },
+    {
+      "id": "dr-erasure-adjacency",
+      "category": "privacy",
+      "title": "Link Stage 37 erasure honesty as localization / retention adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ERASURE_HONESTY_MVP.md",
+        "ops/mvp/erasure-honesty.json"
+      ],
+      "source": "docs/ERASURE_HONESTY_MVP.md"
+    },
+    {
+      "id": "dr-cookie-privacy-adjacency",
+      "category": "privacy",
+      "title": "Link Stage 43 cookie / privacy-notice as notice adjacency (not residency Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COOKIE_PRIVACY_NOTICE_MVP.md",
+        "ops/mvp/cookie-privacy-notice.json"
+      ],
+      "source": "docs/COOKIE_PRIVACY_NOTICE_MVP.md"
+    },
+    {
+      "id": "dr-compliance-readiness",
+      "category": "compliance",
+      "title": "Link Stage 33 compliance readiness data-protection theme",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "ops/mvp/compliance-readiness-register.json"
+      ],
+      "source": "docs/COMPLIANCE_READINESS_MVP.md"
+    },
+    {
+      "id": "dr-compliance-questionnaire",
+      "category": "compliance",
+      "title": "Link Stage 34 compliance questionnaire privacy / GDPR theme",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+        "ops/mvp/compliance-questionnaire.json"
+      ],
+      "source": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+    },
+    {
+      "id": "dr-multi-region-remaining",
+      "category": "honesty",
+      "title": "Multi-region / per-market data residency Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_44_PLAN.md",
+        "docs/ADR_001_TENANCY.md"
+      ],
+      "source": "docs/STAGE_44_PLAN.md"
+    },
+    {
+      "id": "dr-gdpr-residency-remaining",
+      "category": "honesty",
+      "title": "GDPR residency certification / customer region-pinning Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_44_PLAN.md",
+        "docs/DATA_PORTABILITY_MVP.md"
+      ],
+      "source": "docs/STAGE_44_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Multi-region / per-market data residency Complete",
+    "Schema-per-tenant Complete (ADR-001)",
+    "Customer region-pinning / sovereign-cloud Complete",
+    "GDPR / privacy residency certification Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}
