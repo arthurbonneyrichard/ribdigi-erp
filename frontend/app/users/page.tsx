@@ -211,6 +211,26 @@ export default function Page() {
     }
   }
 
+  async function emailPasswordReset(userId: string, email: string) {
+    setError('');
+    setMessage('');
+    if (!window.confirm(`Send a password reset email to ${email}?`)) return;
+    try {
+      const r = await api(`/users/${userId}/password-reset-email`, {
+        method: 'POST',
+        body: '{}',
+      });
+      const sent = r.data?.email_delivery?.sent;
+      setMessage(
+        sent
+          ? `Reset email sent to ${email}`
+          : `Reset token issued for ${email} (email mode: ${r.data?.email_delivery?.mode || 'n/a'})`,
+      );
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function setOrg(userId: string, patch: { branch_id?: string | null; department_id?: string | null; clear_branch?: boolean; clear_department?: boolean }) {
     setError('');
     setMessage('');
@@ -449,7 +469,10 @@ export default function Page() {
               {canWrite && (
                 <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button type="button" onClick={() => resetPassword(r.id, r.email)}>
-                    Reset password
+                    Set temp password
+                  </button>
+                  <button type="button" onClick={() => emailPasswordReset(r.id, r.email)}>
+                    Email reset link
                   </button>
                   {r.is_active ? (
                     <button type="button" onClick={() => setActive(r.id, false)}>

@@ -292,23 +292,40 @@ async def platform_plans_catalog(
 @router.get("/billing")
 async def platform_billing_honesty(
     claims: dict = Depends(require_platform_permission("platform_billing", "read")),
+    db: AsyncSession = Depends(get_db),
 ):
-    """ADR-002 deferred billing surface — no fabricated MRR."""
+    """ADR-002 deferred billing surface — no fabricated MRR.
+
+    Stage 85 R1: includes tenant×plan subscriptions roster as metadata only.
+    """
+    roster = await platform_svc.platform_subscriptions_roster(db)
     return env(
         {
             "deferred": True,
             "provider": None,
             "mrr": None,
             "outstanding_payments": None,
-            "active_subscriptions": None,
+            "active_subscriptions": roster["items"],
+            "subscriptions_live": False,
             "checkout_enabled": False,
             "message": (
-                "Subscription billing is deferred (ADR-002). Plan codes are commercial "
-                "metadata only until a payment provider ships."
+                "Subscription billing is deferred (ADR-002). The roster below is "
+                "tenant×plan commercial metadata only — not live checkout or MRR."
             ),
             "plan_codes": sorted(tenants_svc.VALID_PLAN_CODES),
+            "distribution": roster.get("distribution"),
+            "roster_total": roster.get("total"),
         }
     )
+
+
+@router.get("/subscriptions")
+async def platform_subscriptions_roster(
+    claims: dict = Depends(require_platform_permission("platform_billing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 85 R1 — customer tenant × plan_code roster (metadata honesty)."""
+    return env(await platform_svc.platform_subscriptions_roster(db))
 
 
 def _serialize_platform_settings(tenant: m.Tenant) -> dict:

@@ -191,6 +191,50 @@ async def platform_plan_distribution(db: AsyncSession) -> dict:
     return {"slices": slices, "total": sum(s["count"] for s in slices)}
 
 
+async def platform_subscriptions_roster(db: AsyncSession) -> dict:
+    """Customer tenant × plan_code roster (Stage 85 R1) — metadata only, no MRR/checkout.
+
+    Honesty: this is not paid billing Complete (ADR-002). ``subscriptions_live_claimed``
+    and fabricated MRR remain false.
+    """
+    await ensure_platform_tenant(db)
+    rows = (
+        await db.execute(
+            select(m.Tenant)
+            .where(_customer_tenant_filter())
+            .order_by(m.Tenant.company_name.asc())
+        )
+    ).scalars().all()
+    items = []
+    for t in rows:
+        items.append(
+            {
+                "tenant_id": t.id,
+                "slug": t.slug,
+                "company_name": t.company_name,
+                "status": t.status,
+                "plan_code": getattr(t, "plan_code", None) or "trial",
+                "trial_ends_at": t.trial_ends_at.isoformat() + "Z" if t.trial_ends_at else None,
+                "billing": "deferred",
+            }
+        )
+    distribution = await platform_plan_distribution(db)
+    return {
+        "deferred_billing": True,
+        "mrr": None,
+        "checkout_enabled": False,
+        "subscriptions_live": False,
+        "message": (
+            "Tenant×plan roster is commercial metadata only. Subscription billing, "
+            "checkout, and fabricated MRR remain deferred (ADR-002)."
+        ),
+        "plan_codes": sorted(tenants_svc.VALID_PLAN_CODES),
+        "distribution": distribution,
+        "items": items,
+        "total": len(items),
+    }
+
+
 async def platform_industry_distribution(db: AsyncSession) -> dict:
     await ensure_platform_tenant(db)
     rows = (

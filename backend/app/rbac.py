@@ -108,6 +108,17 @@ ROLE_LABELS: dict[str, str] = {
     "cashier": "Cashier",
 }
 
+# Stage 85 L1 — org-chart display names (slug unchanged; Manager ≡ store_manager)
+ROLE_ORG_CHART_LABELS: dict[str, str] = {
+    "company_admin": "Tenant Admin",
+    "store_manager": "Manager",
+    "cashier": "Cashier",
+    "accountant": "Accountant",
+    "inventory_officer": "Inventory Officer",
+    "sales_officer": "Sales Officer",
+    "super_admin": "Super Admin",
+}
+
 # Frontend nav href → required module (read). Used for menu filtering.
 MENU_MODULE_BY_PATH: dict[str, str] = {
     "/dashboard": "dashboard",
@@ -404,6 +415,9 @@ def list_system_role_catalog() -> list[dict]:
             {
                 "role": role,
                 "label": ROLE_LABELS.get(role, role),
+                "org_chart_label": ROLE_ORG_CHART_LABELS.get(
+                    role, ROLE_LABELS.get(role, role)
+                ),
                 "permissions": permissions_for_role(role),
                 "record_scope": record_scope_for_role(role),
                 "system": True,

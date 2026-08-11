@@ -133,7 +133,7 @@
     {
       "id": "rh-subscriptions-remaining",
       "category": "honesty",
-      "title": "Live subscriptions / checkout / fabricated MRR Remaining",
+      "title": "Live subscriptions / checkout / fabricated MRR Remaining (Stage 85 R1 roster is metadata honesty only)",
       "status": "remaining",
       "done": false,
       "pack_refs": [

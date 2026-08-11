@@ -8,6 +8,7 @@ import { api } from '../../../lib/api';
 type RoleRow = {
   role: string;
   label: string;
+  org_chart_label?: string;
   system?: boolean;
   permissions?: Record<string, string[]>;
   record_scope?: string;
@@ -178,12 +179,19 @@ export default function AdminRolesPage() {
         </table>
       )}
 
-      <h2 style={{ fontSize: 18, marginTop: 24 }}>System roles</h2>
+      <h2 style={{ fontSize: 18, marginTop: 24 }}>System roles (org chart)</h2>
+      <p className="muted">
+        Tenant Admin · Manager · Cashier · Accountant · Inventory Officer · Sales Officer (+ Super
+        Admin). View permission matrices on{' '}
+        <Link href="/admin/permissions">Permissions</Link>.
+      </p>
       <table className="table">
         <thead>
           <tr>
-            <th>Role</th>
+            <th>Slug</th>
             <th>Label</th>
+            <th>Org chart</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -193,6 +201,10 @@ export default function AdminRolesPage() {
               <tr key={r.role}>
                 <td>{r.role}</td>
                 <td>{r.label}</td>
+                <td>{r.org_chart_label || r.label}</td>
+                <td>
+                  <Link href={`/admin/permissions`}>View matrix</Link>
+                </td>
               </tr>
             ))}
         </tbody>

@@ -47,6 +47,7 @@ def serialize_custom_role(row: m.CustomRole) -> dict:
         "role": row.slug,
         "slug": row.slug,
         "label": row.label,
+        "org_chart_label": row.label,
         "description": row.description,
         "permissions": perms,
         "record_scope": row.record_scope or "own",

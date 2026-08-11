@@ -8,6 +8,7 @@ import { api } from '../../../lib/api';
 type RoleRow = {
   role: string;
   label: string;
+  org_chart_label?: string;
   system?: boolean;
   permissions?: Record<string, string[]>;
   record_scope?: string;
@@ -37,6 +38,7 @@ const MODULES = [
 export default function AdminPermissionsPage() {
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [editRole, setEditRole] = useState('');
+  const [viewSystemRole, setViewSystemRole] = useState('');
   const [matrix, setMatrix] = useState<Record<string, string[]>>({});
   const [matrixScope, setMatrixScope] = useState('own');
   const [error, setError] = useState('');
@@ -104,18 +106,84 @@ export default function AdminPermissionsPage() {
   }
 
   const customRoles = roles.filter((r) => !r.system);
+  const systemRoles = roles.filter((r) => r.system);
+  const systemView = systemRoles.find((r) => r.role === viewSystemRole);
+  const systemPerms = systemView?.permissions || {};
+  const systemIsWildcard = systemPerms['*']?.includes('*');
 
   return (
     <Shell>
       <h1>Permissions</h1>
       <p className="muted">
-        Module/action matrix for custom tenant roles. Create roles on{' '}
-        <Link href="/admin/roles">Roles</Link>; assign on <Link href="/users">Users</Link>.
+        Module/action matrix for custom tenant roles, plus read-only system role catalog (org
+        chart: Manager, Cashier, Accountant, …). Create roles on <Link href="/admin/roles">Roles</Link>
+        ; assign on <Link href="/users">Users</Link>.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <label className="muted">
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2 style={{ fontSize: 18, marginTop: 0 }}>System roles (read-only)</h2>
+        <p className="muted">Org-chart labels · slug unchanged (Manager ≡ store_manager).</p>
+        <label className="muted">
+          System role{' '}
+          <select
+            value={viewSystemRole}
+            onChange={(e) => setViewSystemRole(e.target.value)}
+            style={{ padding: 8, marginLeft: 8 }}
+          >
+            <option value="">Select…</option>
+            {systemRoles.map((r) => (
+              <option key={r.role} value={r.role}>
+                {r.org_chart_label || r.label} ({r.role})
+              </option>
+            ))}
+          </select>
+        </label>
+        {systemView && (
+          <div style={{ marginTop: 16 }}>
+            <p>
+              <strong>{systemView.org_chart_label || systemView.label}</strong>{' '}
+              <span className="muted">
+                · {systemView.role} · scope {systemView.record_scope || '—'}
+              </span>
+            </p>
+            {systemIsWildcard ? (
+              <p className="muted">Full access (*)</p>
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Module</th>
+                    <th>read</th>
+                    <th>write</th>
+                    <th>approve</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {MODULES.map((mod) => (
+                    <tr key={mod}>
+                      <td>{mod}</td>
+                      {(['read', 'write', 'approve'] as const).map((action) => (
+                        <td key={action}>
+                          <input
+                            type="checkbox"
+                            checked={(systemPerms[mod] || []).includes(action)}
+                            disabled
+                            readOnly
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </div>
+
+      <label className="muted" style={{ display: 'block', marginTop: 24 }}>
         Custom role{' '}
         <select
           value={editRole}
@@ -131,7 +199,11 @@ export default function AdminPermissionsPage() {
         </select>
       </label>
 
-      {!editRole && <p className="muted" style={{ marginTop: 16 }}>Select a custom role to edit permissions.</p>}
+      {!editRole && (
+        <p className="muted" style={{ marginTop: 16 }}>
+          Select a custom role to edit permissions.
+        </p>
+      )}
 
       {canWrite && editRole && (
         <div className="card" style={{ marginTop: 24 }}>

@@ -27,4 +27,4 @@ Stage 84 Dual-Console Permission & Slice Fidelity delivered dotted permission al
 
 ## Next stage
 
-Stage 85+ requires CONTINUE/NEXT with a distinct product outline and open ADR.
+Stage 85 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-176](ADR_176_STAGE85_OPEN.md) + [STAGE_85_PLAN.md](STAGE_85_PLAN.md) (Platform Subscriptions Roster → Admin Email Password Reset → Org-Chart Role Catalog → House Roster & Tenant Access Ops). Stage 84 feature scope remains frozen.

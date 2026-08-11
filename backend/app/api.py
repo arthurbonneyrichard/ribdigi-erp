@@ -2441,6 +2441,57 @@ async def update_user(
     return env(serialize_user(user), "User updated")
 
 
+@api.post("/users/{user_id}/password-reset-email")
+async def admin_password_reset_email(
+    user_id: str,
+    request: Request,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 85 E1 — Tenant Admin initiates email password reset (not prompt/PATCH password)."""
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Cannot email reset for inactive user")
+    raw, token_hash, expires = issue_one_time_token()
+    db.add(
+        m.AuthToken(
+            tenant_id=claims["tenant_id"],
+            user_id=user.id,
+            purpose="password_reset",
+            token_hash=token_hash,
+            expires_at=expires,
+        )
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="admin_password_reset_email",
+        entity="user",
+        entity_id=user.id,
+        details={"email": user.email, "initiated_by": claims["sub"]},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    from app import emailer
+
+    email_result = await emailer.send_password_reset_email(to=user.email, token=raw)
+    data: dict = {
+        "user_id": user.id,
+        "email": user.email,
+        "email_delivery": {
+            "sent": email_result.sent,
+            "mode": email_result.mode,
+            "error": email_result.error,
+        },
+    }
+    if settings.DEBUG or settings.APP_ENV.lower() != "production":
+        data["reset_token"] = raw
+    return env(data, "Password reset email issued")
+
+
 @api.delete("/users/{user_id}")
 async def deactivate_user(
     user_id: str,

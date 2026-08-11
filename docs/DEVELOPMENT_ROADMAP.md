@@ -1621,3 +1621,15 @@ Every feature in every phase must meet:
 **Stage 84 D1 (2026-08-11):** Dual-Console Permission & Slice fidelity sync — `docs/STAGE_84_FIDELITY.md` (`test_stage84_fidelity_d1.py`); maps A1–S1 → readiness / launch / deploy / security.
 
 **Stage 84 exit (2026-08-11):** A1, S1, D1, H84x met — `docs/STAGE_84_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_175_STAGE84_FREEZE.md`. Fidelity: `docs/STAGE_84_FIDELITY.md`.
+
+**Stage 85 open (2026-08-11):** House Roster & Tenant Access Ops track approved — `docs/ADR_176_STAGE85_OPEN.md` + `docs/STAGE_85_PLAN.md` (Platform Subscriptions Roster → Admin Email Password Reset → Org-Chart Role Catalog → House Roster & Tenant Access Ops; R1 next).
+
+**Stage 85 R1 (2026-08-11):** Platform subscriptions roster — tenant×plan metadata (`test_platform_subscriptions_r1.py`); `subscriptions_live_claimed: false`.
+
+**Stage 85 E1 (2026-08-11):** Admin email password reset — `POST /users/{id}/password-reset-email` (`test_admin_email_reset_e1.py`).
+
+**Stage 85 L1 (2026-08-11):** Org-chart role catalog — Manager/Tenant Admin labels + system matrix (`test_org_role_catalog_l1.py`).
+
+**Stage 85 D1 (2026-08-11):** House Roster & Tenant Access Ops fidelity sync — `docs/STAGE_85_FIDELITY.md` (`test_stage85_fidelity_d1.py`); maps R1–L1 → readiness / launch / deploy / security.
+
+**Stage 85 exit (2026-08-11):** R1, E1, L1, D1, H85x met — `docs/STAGE_85_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_177_STAGE85_FREEZE.md`. Fidelity: `docs/STAGE_85_FIDELITY.md`.
