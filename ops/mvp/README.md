@@ -27,6 +27,7 @@
 | `billing-deferred-honesty.json` | Stage 36 B1 billing-deferred honesty — `billing_complete_claimed: false` / `payment_provider_claimed: false` / `checkout_success_claimed: false` / `deferred_implemented_claimed: false` |
 | `data-portability.json` | Stage 37 P1 data subject access / portability — `gdpr_complete_claimed: false` / `dsar_portal_claimed: false` / `live_portability_workflow_claimed: false` / `consent_management_claimed: false` |
 | `erasure-honesty.json` | Stage 37 E1 erasure / soft-delete honesty — `hard_delete_claimed: false` / `erasure_complete_claimed: false` / `anonymize_workflow_claimed: false` / `deferred_implemented_claimed: false` |
+| *(Stage 38 open)* | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081; V1/B1 packs pending |
 
 Authoritative MVP docs:
 

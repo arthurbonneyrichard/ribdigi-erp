@@ -23,3 +23,8 @@ Stage 37 Commercial Data Protection Fidelity delivered data subject access / por
 - Stage 1–36 freezes remain in force for their scopes (Stage 36 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Data protection packaging Complete does **not** mean GDPR certification, live DSAR portal, hard-delete archival, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 38 (Commercial Security Disclosure Fidelity) after Stage 37 freeze via CONTINUE/NEXT — see [ADR-081](ADR_081_STAGE38_OPEN.md) and [STAGE_38_PLAN.md](STAGE_38_PLAN.md). Stage 37 feature scope remains frozen; Stage 38 does not reopen P1–D1 / H37x.
+
