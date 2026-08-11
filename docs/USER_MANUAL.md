@@ -1093,6 +1093,12 @@ On the AI / inventory prediction views you can see:
 
 **Sales analysis** (`/ai/sales/analysis` via the AI page) shows trend forecast, RFM customer segments, products frequently bought together, and peak hour/day patterns.
 
+**Expense analysis** (`/ai/expenses/analysis`) shows budget variance, anomalies, and optimization suggestions.
+
+**Purchases analysis** (`/ai/purchases/analysis` — Stage 25 U1) shows spend trend, supplier concentration, PO open/fill signals, and overdue bills from live PO / GRN / purchase invoices.
+
+**Cross-domain analysis** (`/ai/cross-domain/analysis` — Stage 25 U1) orchestrates Inventory, Sales, Purchases, and Expenses into synthesis signals on the AI page.
+
 **Natural-language reports:** ask e.g. “Show me monthly sales for Q2”, preview rows, export CSV/PDF, and save the prompt as a reusable template.
 
 ### 14.5 Customer & security AI
@@ -1102,6 +1108,8 @@ On the AI / inventory prediction views you can see:
 **Security monitor** (requires security read) flags unusual login IP/device patterns and rapid sensitive transaction bursts; enabling notify creates unread security notifications for admins.
 
 ### 14.6 AI Document Assistant
+
+On the **AI Assistant** page, **Document analyze** uploads a file to `POST /ai/documents/analyze` (Stage 25 U1) for OCR extract / match / discrepancy flags — suggest-only.
 
 When applying receipt or supplier-invoice OCR to a draft:
 1. Upload the attachment on the expense or draft purchase invoice
