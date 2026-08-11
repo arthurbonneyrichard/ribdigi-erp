@@ -182,6 +182,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
+- [x] Stage 56 track opened (ADR-117: `test_stage56_open.py`, `docs/STAGE_56_PLAN.md`) — Commercial Onboarding & Expansion Fidelity; O1 next
 - [x] Stage 55 Commercial Licensing & Positioning Fidelity (closed: `docs/STAGE_55_PLAN.md`, ADR-116) — W1–D1 / H55x complete
 - [x] Stage 55 track opened (ADR-115: `test_stage55_open.py`, `docs/STAGE_55_PLAN.md`)
 - [x] White-label licensing commercial honesty (Stage 55 W1: `test_white_label_licensing_w1.py` — `docs/WHITE_LABEL_LICENSING_MVP.md`, `ops/mvp/white-label-licensing.json`; evidence `stage55_w1_white_label_licensing.json`; live white-label licensing Remaining)

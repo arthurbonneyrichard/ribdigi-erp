@@ -23,3 +23,7 @@ Stage 55 Commercial Licensing & Positioning Fidelity delivered white-label licen
 - Stage 1–54 freezes remain in force for their scopes (Stage 54 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Licensing & positioning packaging Complete does **not** mean live white-label licensing, franchise revenue-share billing, measured CAC/LTV, competitive superiority proven, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 56 (Commercial Onboarding & Expansion Fidelity) after Stage 55 freeze via CONTINUE/NEXT — see [ADR-117](ADR_117_STAGE56_OPEN.md) and [STAGE_56_PLAN.md](STAGE_56_PLAN.md). Stage 55 feature scope remains frozen; Stage 56 does not reopen W1–D1 / H55x.

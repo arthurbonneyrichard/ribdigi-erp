@@ -175,6 +175,7 @@ Authoritative MVP docs:
 - `docs/UNIT_ECONOMICS_POSITIONING_MVP.md` (`backend/tests/test_unit_economics_positioning_u1.py`) — Stage 55 U1
 - `docs/STAGE_55_FIDELITY.md` (`backend/tests/test_stage55_fidelity_d1.py`) — Stage 55 D1
 - `docs/STAGE_55_EXIT_CRITERIA.md` / `docs/ADR_116_STAGE55_FREEZE.md` (`backend/tests/test_stage55_exit_h55x.py`) — Stage 55 H55x
+- `docs/STAGE_56_PLAN.md` (`backend/tests/test_stage56_open.py`) — Stage 56 open (ADR-117)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -697,3 +698,7 @@ Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115
 ## Stage 55 exit
 
 H55x met — `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116. Stages 1–55 frozen for Stage 55 feature scope.
+
+## Stage 56 open
+
+Commercial Onboarding & Expansion Fidelity — `docs/STAGE_56_PLAN.md`, ADR-117; O1 next.
