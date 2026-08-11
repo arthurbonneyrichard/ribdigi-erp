@@ -442,6 +442,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 43 exit (2026-08-11):** T1, C1, D1, H43x met — `docs/STAGE_43_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_092_STAGE43_FREEZE.md`. Fidelity: `docs/STAGE_43_FIDELITY.md`.
 
+**Stage 44 open (2026-08-11):** Commercial Data Trust Fidelity track approved — `docs/ADR_093_STAGE44_OPEN.md` + `docs/STAGE_44_PLAN.md` (data residency → encryption/KMS → fidelity).
+
 
 
 

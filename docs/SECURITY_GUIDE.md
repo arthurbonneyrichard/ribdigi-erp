@@ -380,6 +380,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 43 C1** | Cookie / privacy notice honesty — `docs/COOKIE_PRIVACY_NOTICE_MVP.md`, `ops/mvp/cookie-privacy-notice.json` (`test_cookie_privacy_notice_c1.py`); live cookie-consent Remaining |
 | **Stage 43 D1** | Legal notice fidelity — `docs/STAGE_43_FIDELITY.md` (`test_stage43_fidelity_d1.py`) maps T1–C1 → readiness / launch / deploy / security |
 | **Stage 43 fidelity** | D1 maps T1–C1 legal notice — `docs/STAGE_43_FIDELITY.md` (`test_stage43_fidelity_d1.py`); exit/freeze `docs/STAGE_43_EXIT_CRITERIA.md`, ADR-092 (`test_stage43_exit_h43x.py`); historical open ADR-091; signed ToS / live cookie-consent / go-live / §7 remain Remaining |
+| **Stage 44 open** | Commercial Data Trust Fidelity — `docs/STAGE_44_PLAN.md`, ADR-093 (`test_stage44_open.py`); Stages 1–43 remain frozen; R1 next |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |

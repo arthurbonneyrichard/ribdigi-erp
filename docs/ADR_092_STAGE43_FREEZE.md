@@ -23,3 +23,7 @@ Stage 43 Commercial Legal Notice Fidelity delivered Terms of Service / Acceptabl
 - Stage 1–42 freezes remain in force for their scopes (Stage 42 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Legal notice packaging Complete does **not** mean signed ToS, live cookie-consent / CMP SaaS, published privacy notice, legal counsel approval, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 44 (Commercial Data Trust Fidelity) after Stage 43 freeze via CONTINUE/NEXT — see [ADR-093](ADR_093_STAGE44_OPEN.md) and [STAGE_44_PLAN.md](STAGE_44_PLAN.md). Stage 43 feature scope remains frozen; Stage 44 does not reopen T1–D1 / H43x.

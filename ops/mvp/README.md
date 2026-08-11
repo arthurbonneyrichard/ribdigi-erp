@@ -91,6 +91,7 @@ Authoritative MVP docs:
 - `docs/COOKIE_PRIVACY_NOTICE_MVP.md` (`backend/tests/test_cookie_privacy_notice_c1.py`) — Stage 43 C1
 - `docs/STAGE_43_FIDELITY.md` (`backend/tests/test_stage43_fidelity_d1.py`) — Stage 43 D1
 - `docs/STAGE_43_EXIT_CRITERIA.md` / `docs/ADR_092_STAGE43_FREEZE.md` (`backend/tests/test_stage43_exit_h43x.py`) — Stage 43 H43x
+- `docs/STAGE_44_PLAN.md` (`backend/tests/test_stage44_open.py`) — Stage 44 open (ADR-093)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -372,4 +373,8 @@ Commercial Legal Notice Fidelity — `docs/STAGE_43_PLAN.md`, ADR-091; Closed �
 
 ## Stage 43 exit
 
-H43x met — `docs/STAGE_43_EXIT_CRITERIA.md`, ADR-092. Stages 1–43 frozen for Stage 43 feature scope; Stage 44+ requires open ADR after CONTINUE/NEXT.
+H43x met — `docs/STAGE_43_EXIT_CRITERIA.md`, ADR-092. Stages 1–43 frozen for Stage 43 feature scope.
+
+## Stage 44 open
+
+Commercial Data Trust Fidelity — `docs/STAGE_44_PLAN.md`, ADR-093; R1 next.
