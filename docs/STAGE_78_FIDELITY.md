@@ -24,7 +24,7 @@ Stage 78 proves the owner Commercial Procurement Boundary path after Stage 77 fr
 | **P1** | `test_commercial_pricing_p1.py` — `COMMERCIAL_PRICING_MVP.md`, commercial-pricing JSON | Owner Pricing Boundary / Stage 49 pricing | Public pricing portal |
 | **S1** | `test_commercial_professional_services_s1.py` — `COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md`, commercial-professional-services JSON | Owner Professional Services Boundary / Stage 48 SOW | Signed SOW; go-live |
 | **D1** | This note + `test_stage78_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H78x** | `STAGE_78_EXIT_CRITERIA.md`; ADR-163; `test_stage78_exit_h78x.py` | Stage 78 exit + freeze | Stage 79+ requires CONTINUE/NEXT |
+| **H78x** | `STAGE_78_EXIT_CRITERIA.md`; ADR-163; `test_stage78_exit_h78x.py` | Stage 78 exit + freeze | Stage 79 opened via ADR-164 |
 
 ## Evidence tests
 

@@ -27,4 +27,8 @@ Stage 78 Commercial Procurement Boundary Fidelity delivered commercial pricing h
 
 ## Next stage
 
-Stage 79+ requires CONTINUE/NEXT with a distinct open ADR after this freeze.
+Stage 79 opened via ADR-164 (`docs/ADR_164_STAGE79_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 79 (Commercial Data Exit Fidelity — Commercial Data Retention/Return Boundary → Commercial Customer Audit Boundary → Commercial Data Exit Fidelity) after Stage 78 freeze via CONTINUE/NEXT — see [ADR-164](ADR_164_STAGE79_OPEN.md) and [STAGE_79_PLAN.md](STAGE_79_PLAN.md). Stage 78 feature scope remains frozen; Stage 79 does not reopen P1–D1 / H78x.

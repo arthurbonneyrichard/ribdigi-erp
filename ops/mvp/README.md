@@ -76,6 +76,8 @@
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `business-pilot.json` | Stage 65 P1 Controlled business pilot honesty — `controlled_business_pilot_live_claimed: false` / `real_workflow_feedback_claimed: false` / `pilot_bugfix_program_live: false` / `business_pilot_program_live: false` |
+| `commercial-data-retention.json` | Stage 79 R1 Commercial data retention honesty — `data_return_portal_claimed: false` / `offboarding_workflow_claimed: false` / `go_live_claimed: false` |
+| `commercial-customer-audit.json` | Stage 79 A1 Commercial customer audit honesty — `customer_audit_rights_live: false` / `audit_executed_claimed: false` / `go_live_claimed: false` |
 | `commercial-pricing.json` | Stage 78 P1 Commercial pricing honesty — `public_pricing_portal_claimed: false` / `checkout_pricing_live: false` / `go_live_claimed: false` |
 | `commercial-professional-services.json` | Stage 78 S1 Commercial professional services honesty — `signed_sow_claimed: false` / `professional_services_live: false` / `go_live_claimed: false` |
 | `commercial-dpa.json` | Stage 77 A1 Commercial DPA honesty — `dpa_signed_claimed: false` / `subprocessor_register_live: false` / `go_live_claimed: false` |
@@ -248,6 +250,11 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_79_EXIT_CRITERIA.md` / `docs/ADR_165_STAGE79_FREEZE.md` (`backend/tests/test_stage79_exit_h79x.py`) — Stage 79 H79x
+- `docs/STAGE_79_FIDELITY.md` (`backend/tests/test_stage79_fidelity_d1.py`) — Stage 79 D1
+- `docs/COMMERCIAL_CUSTOMER_AUDIT_MVP.md` (`backend/tests/test_commercial_customer_audit_a1.py`) — Stage 79 A1
+- `docs/COMMERCIAL_DATA_RETENTION_MVP.md` (`backend/tests/test_commercial_data_retention_r1.py`) — Stage 79 R1
+- `docs/STAGE_79_PLAN.md` (`backend/tests/test_stage79_open.py`) — Stage 79 open (ADR-164)
 - `docs/STAGE_78_EXIT_CRITERIA.md` / `docs/ADR_163_STAGE78_FREEZE.md` (`backend/tests/test_stage78_exit_h78x.py`) — Stage 78 H78x
 - `docs/STAGE_78_FIDELITY.md` (`backend/tests/test_stage78_fidelity_d1.py`) — Stage 78 D1
 - `docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md` (`backend/tests/test_commercial_professional_services_s1.py`) — Stage 78 S1
@@ -1020,6 +1027,26 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 79 exit
+
+H79x met — `docs/STAGE_79_EXIT_CRITERIA.md`, ADR-165. Stages 1–79 frozen for Stage 79 feature scope.
+
+## Stage 79 D1 — Commercial Data Exit fidelity
+
+`docs/STAGE_79_FIDELITY.md` — maps R1–A1 → readiness / launch / deploy / security.
+
+## Stage 79 A1 — Commercial customer audit honesty
+
+`docs/COMMERCIAL_CUSTOMER_AUDIT_MVP.md` + `ops/mvp/commercial-customer-audit.json` — packaging Complete; `customer_audit_rights_live` / `audit_executed_claimed` / `go_live_claimed` remain false.
+
+## Stage 79 R1 — Commercial data retention honesty
+
+`docs/COMMERCIAL_DATA_RETENTION_MVP.md` + `ops/mvp/commercial-data-retention.json` — packaging Complete; `data_return_portal_claimed` / `offboarding_workflow_claimed` / `go_live_claimed` remain false.
+
+## Stage 79 open
+
+ADR-164 + `docs/STAGE_79_PLAN.md` — Commercial Data Exit Fidelity.
 
 ## Stage 78 exit
 

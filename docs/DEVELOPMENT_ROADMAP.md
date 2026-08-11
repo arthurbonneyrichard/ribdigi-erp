@@ -1561,3 +1561,13 @@ Every feature in every phase must meet:
 **Stage 78 D1 (2026-08-11):** Commercial Procurement Boundary fidelity sync — `docs/STAGE_78_FIDELITY.md` (`test_stage78_fidelity_d1.py`); maps P1–S1 → readiness / launch / deploy / security.
 
 **Stage 78 exit (2026-08-11):** P1, S1, D1, H78x met — `docs/STAGE_78_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_163_STAGE78_FREEZE.md`. Fidelity: `docs/STAGE_78_FIDELITY.md`.
+
+**Stage 79 open (2026-08-11):** Commercial Data Exit Fidelity track approved — `docs/ADR_164_STAGE79_OPEN.md` + `docs/STAGE_79_PLAN.md` (Commercial Data Retention/Return Boundary → Commercial Customer Audit Boundary → Commercial Data Exit Fidelity; R1 next).
+
+**Stage 79 R1 (2026-08-11):** Commercial data retention honesty — `docs/COMMERCIAL_DATA_RETENTION_MVP.md`, `ops/mvp/commercial-data-retention.json`, evidence `stage79_r1_commercial_data_retention.json` (`test_commercial_data_retention_r1.py`); data return portal Remaining.
+
+**Stage 79 A1 (2026-08-11):** Commercial customer audit honesty — `docs/COMMERCIAL_CUSTOMER_AUDIT_MVP.md`, `ops/mvp/commercial-customer-audit.json`, evidence `stage79_a1_commercial_customer_audit.json` (`test_commercial_customer_audit_a1.py`); customer audit rights live Remaining.
+
+**Stage 79 D1 (2026-08-11):** Commercial Data Exit fidelity sync — `docs/STAGE_79_FIDELITY.md` (`test_stage79_fidelity_d1.py`); maps R1–A1 → readiness / launch / deploy / security.
+
+**Stage 79 exit (2026-08-11):** R1, A1, D1, H79x met — `docs/STAGE_79_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_165_STAGE79_FREEZE.md`. Fidelity: `docs/STAGE_79_FIDELITY.md`.

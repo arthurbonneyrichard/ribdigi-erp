@@ -485,7 +485,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 78 P1** | Commercial pricing honesty — `docs/COMMERCIAL_PRICING_MVP.md`, `ops/mvp/commercial-pricing.json` (`test_commercial_pricing_p1.py`); public pricing portal Remaining |
 | **Stage 78 S1** | Commercial professional services honesty — `docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md`, `ops/mvp/commercial-professional-services.json` (`test_commercial_professional_services_s1.py`); signed SOW Remaining |
 | **Stage 78 D1** | Commercial Procurement Boundary fidelity — `docs/STAGE_78_FIDELITY.md` (`test_stage78_fidelity_d1.py`); maps P1–S1 → readiness / launch / deploy / security; pricing / SOW remain Remaining |
-| **Stage 78 H78x** | Exit + freeze — `docs/STAGE_78_EXIT_CRITERIA.md`, ADR-163 (`test_stage78_exit_h78x.py`); Stages 1–78 frozen for Stage 78 scope; Stage 79+ requires CONTINUE/NEXT |
+| **Stage 78 H78x** | Exit + freeze — `docs/STAGE_78_EXIT_CRITERIA.md`, ADR-163 (`test_stage78_exit_h78x.py`); Stages 1–78 frozen for Stage 78 scope; Stage 79 opened via ADR-164 |
+| **Stage 79 open** | Commercial Data Exit Fidelity — `docs/STAGE_79_PLAN.md`, ADR-164 (`test_stage79_open.py`); Stages 1–78 remain frozen for prior scopes; R1 next historically |
+| **Stage 79 R1** | Commercial data retention honesty — `docs/COMMERCIAL_DATA_RETENTION_MVP.md`, `ops/mvp/commercial-data-retention.json` (`test_commercial_data_retention_r1.py`); data return portal Remaining |
+| **Stage 79 A1** | Commercial customer audit honesty — `docs/COMMERCIAL_CUSTOMER_AUDIT_MVP.md`, `ops/mvp/commercial-customer-audit.json` (`test_commercial_customer_audit_a1.py`); customer audit rights live Remaining |
+| **Stage 79 D1** | Commercial Data Exit fidelity — `docs/STAGE_79_FIDELITY.md` (`test_stage79_fidelity_d1.py`); maps R1–A1 → readiness / launch / deploy / security; retention / audit remain Remaining |
+| **Stage 79 H79x** | Exit + freeze — `docs/STAGE_79_EXIT_CRITERIA.md`, ADR-165 (`test_stage79_exit_h79x.py`); Stages 1–79 frozen for Stage 79 scope; Stage 80+ requires CONTINUE/NEXT |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |
