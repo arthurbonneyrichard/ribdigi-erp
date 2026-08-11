@@ -288,6 +288,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 30 A1 (2026-08-11):** Go-live attestation matrix — `docs/ATTESTATION_PACK_MVP.md`, `ops/launch/attestation-matrix.json`, evidence `stage30_a1_attestation_pack.json` (`test_attestation_pack_a1.py`); §§1–3 / §7 / attestation Remaining.
 
+**Stage 30 D1 (2026-08-11):** Go-live support fidelity sync — `docs/STAGE_30_FIDELITY.md` (`test_stage30_fidelity_d1.py`) maps L1–A1 → BR-16 / readiness / deploy / launch / security / admin; H30x next.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -868,7 +870,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 30 open (`docs/STAGE_30_PLAN.md`, ADR-065) — L1–A1 complete; D1 next. Stages 1–29 remain frozen for their scopes (`docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064).
+**Active delivery plan:** Stage 30 open (`docs/STAGE_30_PLAN.md`, ADR-065) — D1 complete; H30x next. Stages 1–29 remain frozen for their scopes (`docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064).
 
 ### 6.2 Features
 

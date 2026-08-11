@@ -1,9 +1,10 @@
 # Stage 30 Plan — Go-Live Support Fidelity
 
-**Status:** Open — L1–A1 complete; D1 next (ADR-065)  
+**Status:** Open — D1 complete; H30x next (ADR-065)  
 **Base:** Operator Evidence Ledger Pack + Incident Response / On-Call Pack + Support & Admin Runbook Fidelity + Go-Live Attestation Matrix Pack → Go-Live Support Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-065](ADR_065_STAGE30_OPEN.md)
+**Open ADR:** [ADR-065](ADR_065_STAGE30_OPEN.md)  
+**Fidelity:** [STAGE_30_FIDELITY.md](STAGE_30_FIDELITY.md)
 
 Stage 30 closes the owner product outline after Stage 29 freeze: **Operator Evidence Ledger Packaging + Incident Response / On-Call Packaging + Support & Admin Runbook Fidelity + Go-Live Attestation Matrix Packaging → Go-Live Support Fidelity**. Stages 26–29 delivered Complete (MVP) ops platform, release, staging-certification, and operator-hardening **packaging** with honest Remaining for live execution, purchased vendor pen tests, hosted SaaS observability, and production §7 sign-off. This track packages **go-live support** surfaces on proven Stage 26–29 assets (evidence artifacts under `/opt/cursor/artifacts/`, `ops/` checklists, `ADMIN_MANUAL.md`, `LAUNCH_CHECKLIST.md`) — **not** inventing live pen-test/soak/TLS/cutover success, re-packaging Stage 26–29 packs as new Complete, or paid billing / schema-per-tenant / i18n / ADR-003/005 / Open Banking / tax e-file / external LLM/Prophet — and **not** reopening Stages 1–29.
 
@@ -39,7 +40,7 @@ Go-Live Support Fidelity
 | **I1** | Incident response / on-call packaging | P0 | COMPLETE |
 | **S1** | Support & Admin runbook fidelity (ADMIN_MANUAL ↔ ops packs) | P1 | COMPLETE |
 | **A1** | Go-live attestation matrix (Remaining honesty; not forged §7) | P1 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
 | **H30x** | Stage 30 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -88,9 +89,9 @@ Go-Live Support Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_30_FIDELITY.md` maps L1–A1 evidence → readiness / launch / deploy / security / admin docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 30 D1.
-- [ ] Automated proof: `backend/tests/test_stage30_fidelity_d1.py`.
+- [x] `docs/STAGE_30_FIDELITY.md` maps L1–A1 evidence → readiness / launch / deploy / security / admin docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 30 D1.
+- [x] Automated proof: `backend/tests/test_stage30_fidelity_d1.py`.
 
 ## H30x acceptance criteria
 
@@ -102,4 +103,4 @@ Go-Live Support Fidelity
 
 ## Sign-off
 
-Stage 30 open under ADR-065. L1–A1 complete; D1 next. Stages 1–29 remain frozen for their scopes.
+Stage 30 open under ADR-065. D1 complete; H30x next. Stages 1–29 remain frozen for their scopes.
