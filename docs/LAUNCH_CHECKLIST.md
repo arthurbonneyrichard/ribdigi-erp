@@ -179,6 +179,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 46 Commercial Liability & Remedy Fidelity (closed: `docs/STAGE_46_PLAN.md`, ADR-098) — L1–D1 / H46x complete
 - [x] Stage 47 Commercial Insurance & Audit Fidelity (closed: `docs/STAGE_47_PLAN.md`, ADR-100) — I1–D1 / H47x complete
 - [x] Stage 48 Commercial Services Fidelity (closed: `docs/STAGE_48_PLAN.md`, ADR-102) — P1–D1 / H48x complete
+- [x] Stage 49 track opened (ADR-103: `test_stage49_open.py`, `docs/STAGE_49_PLAN.md`) — Commercial Channel & Pricing Fidelity; R1 next
 - [x] Stage 48 track opened (ADR-101: `test_stage48_open.py`, `docs/STAGE_48_PLAN.md`)
 - [x] Professional services / SOW honesty (Stage 48 P1: `test_professional_services_sow_p1.py` — `docs/PROFESSIONAL_SERVICES_SOW_MVP.md`, `ops/mvp/professional-services-sow.json`; evidence `stage48_p1_professional_services_sow.json`; signed SOW Remaining)
 - [x] Customer training / certification honesty (Stage 48 T1: `test_customer_training_cert_t1.py` — `docs/CUSTOMER_TRAINING_CERT_MVP.md`, `ops/mvp/customer-training-cert.json`; evidence `stage48_t1_customer_training_cert.json`; live training Remaining)

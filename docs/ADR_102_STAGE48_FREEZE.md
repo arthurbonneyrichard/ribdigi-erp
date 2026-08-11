@@ -23,3 +23,8 @@ Stage 48 Commercial Services Fidelity delivered professional services / SOW hone
 - Stage 1–47 freezes remain in force for their scopes (Stage 47 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Services packaging Complete does **not** mean signed SOW, live implementation delivery, live customer training, attendance certification, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 49 (Commercial Channel & Pricing Fidelity) after Stage 48 freeze via CONTINUE/NEXT — see [ADR-103](ADR_103_STAGE49_OPEN.md) and [STAGE_49_PLAN.md](STAGE_49_PLAN.md). Stage 48 feature scope remains frozen; Stage 49 does not reopen P1–D1 / H48x.
+
