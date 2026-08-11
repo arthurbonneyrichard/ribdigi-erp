@@ -250,6 +250,9 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_83_EXIT_CRITERIA.md` / `docs/ADR_173_STAGE83_FREEZE.md` (`backend/tests/test_stage83_exit_h83x.py`) — Stage 83 H83x
+- `docs/STAGE_83_FIDELITY.md` (`backend/tests/test_stage83_fidelity_d1.py`) — Stage 83 D1
+- `docs/STAGE_83_PLAN.md` (`backend/tests/test_stage83_open.py`) — Stage 83 open (ADR-172)
 - `docs/STAGE_82_EXIT_CRITERIA.md` / `docs/ADR_171_STAGE82_FREEZE.md` (`backend/tests/test_stage82_exit_h82x.py`) — Stage 82 H82x
 - `docs/STAGE_82_FIDELITY.md` (`backend/tests/test_stage82_fidelity_d1.py`) — Stage 82 D1
 - `docs/STAGE_82_PLAN.md` (`backend/tests/test_stage82_open.py`) — Stage 82 open (ADR-170)
@@ -1036,6 +1039,26 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 83 exit
+
+H83x met — `docs/STAGE_83_EXIT_CRITERIA.md`, ADR-173. Stages 1–83 frozen for Stage 83 feature scope.
+
+## Stage 83 D1 — Dual-Console Ops fidelity
+
+`docs/STAGE_83_FIDELITY.md` — maps S1–U1 → readiness / launch / deploy / security.
+
+## Stage 83 U1 — Tenant Admin user-ops
+
+`test_admin_user_ops_u1.py` — reset password + org assignment.
+
+## Stage 83 S1 — Store-scoped chart depth
+
+`test_store_scoped_charts_s1.py` — managed-store chart/slice series.
+
+## Stage 83 open
+
+ADR-172 + `docs/STAGE_83_PLAN.md` — Dual-Console Ops Fidelity.
 
 ## Stage 82 exit
 

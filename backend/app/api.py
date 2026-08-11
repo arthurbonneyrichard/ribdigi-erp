@@ -2706,7 +2706,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     from app.rbac import ROLE_LABELS, has_permission
 
     chart_series = await dashboard_charts_svc.load_revenue_chart_series(
-        db, tenant_id=tid, now=now
+        db, tenant_id=tid, now=now, store_ids=managed_ids
     )
 
     # Tenant user management KPIs (Tenant Admin / users:read only after filter)

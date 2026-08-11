@@ -1601,3 +1601,13 @@ Every feature in every phase must meet:
 **Stage 82 D1 (2026-08-11):** Dual-Console Surface Parity fidelity sync — `docs/STAGE_82_FIDELITY.md` (`test_stage82_fidelity_d1.py`); maps C1–P1 → readiness / launch / deploy / security.
 
 **Stage 82 exit (2026-08-11):** C1, P1, D1, H82x met — `docs/STAGE_82_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_171_STAGE82_FREEZE.md`. Fidelity: `docs/STAGE_82_FIDELITY.md`.
+
+**Stage 83 open (2026-08-11):** Dual-Console Ops Fidelity track approved — `docs/ADR_172_STAGE83_OPEN.md` + `docs/STAGE_83_PLAN.md` (Store-Scoped Chart Depth → Tenant Admin User Ops → Dual-Console Ops Fidelity; S1 next).
+
+**Stage 83 S1 (2026-08-11):** Store-scoped chart depth — `store_ids` on charts/slices (`test_store_scoped_charts_s1.py`).
+
+**Stage 83 U1 (2026-08-11):** Tenant Admin user-ops — reset password + org assignment (`test_admin_user_ops_u1.py`).
+
+**Stage 83 D1 (2026-08-11):** Dual-Console Ops fidelity sync — `docs/STAGE_83_FIDELITY.md` (`test_stage83_fidelity_d1.py`); maps S1–U1 → readiness / launch / deploy / security.
+
+**Stage 83 exit (2026-08-11):** S1, U1, D1, H83x met — `docs/STAGE_83_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_173_STAGE83_FREEZE.md`. Fidelity: `docs/STAGE_83_FIDELITY.md`.

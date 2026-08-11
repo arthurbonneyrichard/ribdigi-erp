@@ -22,20 +22,42 @@ def _meta(claims: dict) -> dict:
 
 
 async def sales_trend(db: AsyncSession, claims: dict) -> dict:
+    from app import dashboard_scope as dashboard_scope_svc
+
     tid = claims["tenant_id"]
+    managed_ids = await dashboard_scope_svc.managed_store_ids(db, claims)
     series = await dashboard_charts_svc.load_revenue_chart_series(
-        db, tenant_id=tid, now=datetime.utcnow()
+        db, tenant_id=tid, now=datetime.utcnow(), store_ids=managed_ids
     )
     payload = {
         **_meta(claims),
         "daily_revenue_series": series["daily_revenue_series"],
         "monthly_revenue_series": series["monthly_revenue_series"],
+        "store_scope": dashboard_scope_svc.store_scope_payload(managed_ids),
     }
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 
 
 async def top_products(db: AsyncSession, claims: dict) -> dict:
+    from app import dashboard_scope as dashboard_scope_svc
+
     tid = claims["tenant_id"]
+    managed_ids = await dashboard_scope_svc.managed_store_ids(db, claims)
+    filters = [
+        m.Product.tenant_id == tid,
+        m.SalesInvoice.tenant_id == tid,
+        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+    ]
+    if managed_ids is not None:
+        if not managed_ids:
+            payload = {
+                **_meta(claims),
+                "top_products": [],
+                "store_scope": dashboard_scope_svc.store_scope_payload(managed_ids),
+            }
+            return dashboard_views_svc.filter_dashboard_payload(payload, claims)
+        filters.append(m.SalesInvoice.store_id.in_(managed_ids))
+
     top_rows = (
         await db.execute(
             select(
@@ -47,11 +69,7 @@ async def top_products(db: AsyncSession, claims: dict) -> dict:
             )
             .join(m.SalesInvoiceItem, m.SalesInvoiceItem.product_id == m.Product.id)
             .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
-            .where(
-                m.Product.tenant_id == tid,
-                m.SalesInvoice.tenant_id == tid,
-                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
-            )
+            .where(*filters)
             .group_by(m.Product.id, m.Product.name, m.Product.sku)
             .order_by(func.coalesce(func.sum(m.SalesInvoiceItem.line_total), 0).desc())
             .limit(5)
@@ -67,7 +85,11 @@ async def top_products(db: AsyncSession, claims: dict) -> dict:
         }
         for row in top_rows
     ]
-    payload = {**_meta(claims), "top_products": products}
+    payload = {
+        **_meta(claims),
+        "top_products": products,
+        "store_scope": dashboard_scope_svc.store_scope_payload(managed_ids),
+    }
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 
 

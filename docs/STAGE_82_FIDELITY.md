@@ -24,7 +24,7 @@ Stage 82 proves Dual-Console Surface Parity after Stage 81 freeze — **Tenant D
 | **C1** | `test_dashboard_slices_c1.py` — `/api/v1/dashboard/*` slices | BR-4 dashboard | Store-scoped chart series depth |
 | **P1** | `test_platform_plans_p1.py` — plans catalog + Activity alias | ADR-002 adjacency / platform_plans | Paid checkout |
 | **D1** | This note + `test_stage82_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H82x** | `STAGE_82_EXIT_CRITERIA.md`; ADR-171; `test_stage82_exit_h82x.py` | Stage 82 exit + freeze | Stage 83+ requires CONTINUE/NEXT |
+| **H82x** | `STAGE_82_EXIT_CRITERIA.md`; ADR-171; `test_stage82_exit_h82x.py` | Stage 82 exit + freeze | Stage 83 opened via ADR-172 |
 
 ## Evidence tests
 

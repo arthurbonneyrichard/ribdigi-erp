@@ -69,8 +69,14 @@ async def load_revenue_chart_series(
     *,
     tenant_id: str,
     now: datetime | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Aggregate POS/sale txs + posted invoices into daily (30d) and monthly (12m) series."""
+    """Aggregate POS/sale txs + posted invoices into daily (30d) and monthly (12m) series.
+
+    When ``store_ids`` is provided (Stage 83 S1 Store Manager scope), only include
+    invoices with matching ``store_id`` and POS txs via ``PosSession.store_id``.
+    An empty list yields zero-filled series (manager with no stores).
+    """
     now = now or datetime.utcnow()
     day_start = (now - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
     # Start of the month 11 months before the current month (12 months inclusive).
@@ -83,15 +89,36 @@ async def load_revenue_chart_series(
     daily: dict[str, float] = defaultdict(float)
     monthly: dict[str, float] = defaultdict(float)
 
-    txs = (
-        await db.execute(
-            select(m.Transaction.created_at, m.Transaction.total).where(
-                m.Transaction.tenant_id == tenant_id,
-                m.Transaction.tx_type.in_(["sale", "pos_sale"]),
-                m.Transaction.created_at >= month_horizon,
+    if store_ids is not None and len(store_ids) == 0:
+        return {
+            "daily_revenue_series": fill_daily_series(daily, now=now, days=30),
+            "monthly_revenue_series": fill_monthly_series(monthly, now=now, months=12),
+        }
+
+    if store_ids is None:
+        txs = (
+            await db.execute(
+                select(m.Transaction.created_at, m.Transaction.total).where(
+                    m.Transaction.tenant_id == tenant_id,
+                    m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+                    m.Transaction.created_at >= month_horizon,
+                )
             )
-        )
-    ).all()
+        ).all()
+    else:
+        txs = (
+            await db.execute(
+                select(m.Transaction.created_at, m.Transaction.total)
+                .select_from(m.Transaction)
+                .join(m.PosSession, m.Transaction.session_id == m.PosSession.id)
+                .where(
+                    m.Transaction.tenant_id == tenant_id,
+                    m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+                    m.Transaction.created_at >= month_horizon,
+                    m.PosSession.store_id.in_(store_ids),
+                )
+            )
+        ).all()
     for created_at, total in txs:
         amt = float(total or 0)
         mk = _month_key(created_at)
@@ -102,16 +129,20 @@ async def load_revenue_chart_series(
             if dk:
                 daily[dk] += amt
 
+    inv_filters = [
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+        func.coalesce(m.SalesInvoice.posted_at, m.SalesInvoice.created_at) >= month_horizon,
+    ]
+    if store_ids is not None:
+        inv_filters.append(m.SalesInvoice.store_id.in_(store_ids))
+
     invs = (
         await db.execute(
             select(
                 func.coalesce(m.SalesInvoice.posted_at, m.SalesInvoice.created_at),
                 m.SalesInvoice.total_amount,
-            ).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
-                func.coalesce(m.SalesInvoice.posted_at, m.SalesInvoice.created_at) >= month_horizon,
-            )
+            ).where(*inv_filters)
         )
     ).all()
     for when, total in invs:

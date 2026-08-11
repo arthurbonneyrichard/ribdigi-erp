@@ -192,13 +192,47 @@ export default function Page() {
     }
   }
 
+  async function resetPassword(userId: string, email: string) {
+    setError('');
+    setMessage('');
+    const password = window.prompt(
+      `Set a temporary password for ${email} (min 8 chars, must meet policy):`
+    );
+    if (!password) return;
+    try {
+      await api(`/users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ password }),
+      });
+      setMessage('Password reset — sessions revoked');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setOrg(userId: string, patch: { branch_id?: string | null; department_id?: string | null; clear_branch?: boolean; clear_department?: boolean }) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      });
+      setMessage('Org assignment updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   return (
     <Shell>
       <h1>Users</h1>
       <p className="muted">
-        Tenant user lifecycle and branch/department assignment. Manage custom roles at Admin → Roles
-        and permission matrices at Admin → Permissions. Deactivate soft-disables login (no permanent
-        delete in MVP).
+        Tenant user lifecycle, password reset, and branch/department assignment. Manage custom
+        roles at Admin → Roles and permission matrices at Admin → Permissions. Deactivate
+        soft-disables login (no permanent delete in MVP).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -344,7 +378,8 @@ export default function Page() {
             <th>Full Name</th>
             <th>Email</th>
             <th>Role</th>
-            <th>Org</th>
+            <th>Branch</th>
+            <th>Department</th>
             <th>Active</th>
             {canWrite && <th>Actions</th>}
           </tr>
@@ -368,12 +403,54 @@ export default function Page() {
                   r.role
                 )}
               </td>
-              <td className="muted">
-                {[r.branch_id ? 'B' : null, r.department_id ? 'D' : null].filter(Boolean).join('/') || '—'}
+              <td>
+                {canWrite ? (
+                  <select
+                    value={r.branch_id || ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (!v) setOrg(r.id, { clear_branch: true, clear_department: true });
+                      else setOrg(r.id, { branch_id: v });
+                    }}
+                  >
+                    <option value="">—</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="muted">{r.branch_id ? 'B' : '—'}</span>
+                )}
+              </td>
+              <td>
+                {canWrite ? (
+                  <select
+                    value={r.department_id || ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (!v) setOrg(r.id, { clear_department: true });
+                      else setOrg(r.id, { department_id: v });
+                    }}
+                  >
+                    <option value="">—</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="muted">{r.department_id ? 'D' : '—'}</span>
+                )}
               </td>
               <td>{r.is_active ? 'Yes' : 'No'}</td>
               {canWrite && (
-                <td>
+                <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button type="button" onClick={() => resetPassword(r.id, r.email)}>
+                    Reset password
+                  </button>
                   {r.is_active ? (
                     <button type="button" onClick={() => setActive(r.id, false)}>
                       Deactivate

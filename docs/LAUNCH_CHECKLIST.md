@@ -272,6 +272,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Platform Plans console + Activity alias (Stage 82 P1: `test_platform_plans_p1.py`; no fabricated MRR)
 - [x] Stage 82 fidelity sync (D1: `test_stage82_fidelity_d1.py`, `docs/STAGE_82_FIDELITY.md` — C1–P1 + readiness + deploy / launch / security)
 - [x] Stage 82 exit + freeze (H82x: `test_stage82_exit_h82x.py`, `docs/STAGE_82_EXIT_CRITERIA.md`, ADR-171)
+- [x] Stage 83 track opened (ADR-172: `test_stage83_open.py`, `docs/STAGE_83_PLAN.md`) — Dual-Console Ops Fidelity; closed under ADR-173
+- [x] Store-scoped chart depth (Stage 83 S1: `test_store_scoped_charts_s1.py`)
+- [x] Tenant Admin user-ops (Stage 83 U1: `test_admin_user_ops_u1.py` — reset password + org assignment)
+- [x] Stage 83 fidelity sync (D1: `test_stage83_fidelity_d1.py`, `docs/STAGE_83_FIDELITY.md` — S1–U1 + readiness + deploy / launch / security)
+- [x] Stage 83 exit + freeze (H83x: `test_stage83_exit_h83x.py`, `docs/STAGE_83_EXIT_CRITERIA.md`, ADR-173)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

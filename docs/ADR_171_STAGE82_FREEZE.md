@@ -27,4 +27,8 @@ Stage 82 Dual-Console Surface Parity delivered tenant dashboard chart/KPI subrou
 
 ## Next stage
 
-Stage 83+ requires CONTINUE/NEXT with a distinct product outline and open ADR.
+Stage 83 opened via ADR-172 (`docs/ADR_172_STAGE83_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 83 (Dual-Console Ops Fidelity — Store-Scoped Chart Depth → Tenant Admin User Ops → Dual-Console Ops Fidelity) after Stage 82 freeze via CONTINUE/NEXT — see [ADR-172](ADR_172_STAGE83_OPEN.md) and [STAGE_83_PLAN.md](STAGE_83_PLAN.md). Stage 82 feature scope remains frozen; Stage 83 does not reopen C1–D1 / H82x.
