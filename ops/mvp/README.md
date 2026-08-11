@@ -83,6 +83,7 @@ Authoritative MVP docs:
 - `docs/AI_USE_DISCLOSURE_MVP.md` (`backend/tests/test_ai_use_disclosure_a1.py`) — Stage 42 A1
 - `docs/AI_PROVIDER_BOUNDARY_MVP.md` (`backend/tests/test_ai_provider_boundary_p1.py`) — Stage 42 P1
 - `docs/STAGE_42_FIDELITY.md` (`backend/tests/test_stage42_fidelity_d1.py`) — Stage 42 D1
+- `docs/STAGE_42_EXIT_CRITERIA.md` / `docs/ADR_090_STAGE42_FREEZE.md` (`backend/tests/test_stage42_exit_h42x.py`) — Stage 42 H42x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -328,7 +329,7 @@ H41x met — `docs/STAGE_41_EXIT_CRITERIA.md`, ADR-088. Stages 1–41 frozen for
 
 ## Stage 42 open
 
-Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; D1 complete; H42x next.
+Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; Closed — exit met (H42x / ADR-090).
 
 ## Stage 42 A1 — AI use disclosure honesty
 
@@ -341,3 +342,7 @@ Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; D1 com
 ## Stage 42 D1 — Fidelity
 
 `docs/STAGE_42_FIDELITY.md` maps A1–P1 → readiness / launch / deploy / security (`test_stage42_fidelity_d1.py`).
+
+## Stage 42 exit
+
+H42x met — `docs/STAGE_42_EXIT_CRITERIA.md`, ADR-090. Stages 1–42 frozen for Stage 42 feature scope; Stage 43+ requires open ADR after CONTINUE/NEXT.

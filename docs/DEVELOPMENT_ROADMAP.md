@@ -430,6 +430,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 42 D1 (2026-08-11):** Commercial AI transparency fidelity — `docs/STAGE_42_FIDELITY.md` (`test_stage42_fidelity_d1.py`); maps A1–P1 → readiness / launch / deploy / security; external LLM / AI certification Remaining.
 
+**Stage 42 exit (2026-08-11):** A1, P1, D1, H42x met — `docs/STAGE_42_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_090_STAGE42_FREEZE.md`. Fidelity: `docs/STAGE_42_FIDELITY.md`.
+
 
 
 

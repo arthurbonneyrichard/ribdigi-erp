@@ -1,10 +1,11 @@
 # Stage 42 Plan — Commercial AI Transparency Fidelity
 
-**Status:** Open — D1 complete; H42x next  
+**Status:** Closed — exit met (H42x / ADR-090)  
 **Base:** AI Use Disclosure Honesty Pack + AI Model / Provider Boundary Honesty Pack → Commercial AI Transparency Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-089](ADR_089_STAGE42_OPEN.md)  
-**Prior freeze:** [ADR-088](ADR_088_STAGE41_FREEZE.md) · [STAGE_41_EXIT_CRITERIA.md](STAGE_41_EXIT_CRITERIA.md)
+**Open ADR (historical):** [ADR-089](ADR_089_STAGE42_OPEN.md)  
+**Prior freeze:** [ADR-088](ADR_088_STAGE41_FREEZE.md) · [STAGE_41_EXIT_CRITERIA.md](STAGE_41_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_42_EXIT_CRITERIA.md](STAGE_42_EXIT_CRITERIA.md) · [ADR-090](ADR_090_STAGE42_FREEZE.md)
 
 Stage 42 opens after Stage 41 freeze: **AI Use Disclosure Honesty Packaging + AI Model / Provider Boundary Honesty Packaging → Commercial AI Transparency Fidelity**. Stage 20 AI Business Assistant fidelity and SECURITY_GUIDE §13 AI security surfaces lack dedicated customer-facing AI transparency honesty packs for use disclosure and external-LLM / provider Remaining. This track packages those Remaining surfaces on proven Stage 20 AI / Stage 5 `ai_guard` / Stage 24 AI provider-gate assets — **not** claiming external LLM Complete, AI certification Complete, output-PII scanner Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–41 packs as new Complete, or reopening Stages 1–41 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial AI Transparency Fidelity
 | **A1** | AI use disclosure honesty packaging (not AI certification Complete) | P0 | COMPLETE |
 | **P1** | AI model / provider boundary honesty packaging (not external LLM Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H42x** | Stage 42 exit criteria + freeze ADR | Exit | PENDING |
+| **H42x** | Stage 42 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -83,6 +84,6 @@ Commercial AI Transparency Fidelity
 
 ## H42x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H42x — `docs/STAGE_42_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_090_STAGE42_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage42_exit_h42x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H42x — `docs/STAGE_42_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_090_STAGE42_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage42_exit_h42x.py`.
