@@ -41,6 +41,7 @@
 | `encryption-kms.json` | Stage 44 E1 Encryption / key-management honesty — `hsm_claimed: false` / `vault_saas_live: false` / `customer_managed_keys_claimed: false` / `mtls_mesh_claimed: false` |
 | `rto-rpo.json` | Stage 45 O1 RTO / RPO recovery objectives honesty — `measured_rto_claimed: false` / `measured_rpo_claimed: false` / `multi_region_failover_claimed: false` / `rto_rpo_sla_live: false` |
 | `liability-indemnity.json` | Stage 46 L1 Limitation of liability / indemnity honesty — `liability_cap_claimed: false` / `indemnity_signed_claimed: false` / `legal_counsel_claimed: false` / `contract_liability_live: false` |
+| `service-credit-warranty.json` | Stage 46 W1 Service credit / warranty honesty — `service_credits_live: false` / `warranty_live_claimed: false` / `uptime_credit_claimed: false` / `remedy_schedule_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -108,6 +109,7 @@ Authoritative MVP docs:
 - `docs/STAGE_45_EXIT_CRITERIA.md` / `docs/ADR_096_STAGE45_FREEZE.md` (`backend/tests/test_stage45_exit_h45x.py`) — Stage 45 H45x
 - `docs/STAGE_46_PLAN.md` (`backend/tests/test_stage46_open.py`) — Stage 46 open (ADR-097)
 - `docs/LIABILITY_INDEMNITY_MVP.md` (`backend/tests/test_liability_indemnity_l1.py`) — Stage 46 L1
+- `docs/SERVICE_CREDIT_WARRANTY_MVP.md` (`backend/tests/test_service_credit_warranty_w1.py`) — Stage 46 W1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -433,8 +435,12 @@ H45x met — `docs/STAGE_45_EXIT_CRITERIA.md`, ADR-096. Stages 1–45 frozen for
 
 ## Stage 46 open
 
-Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; L1 complete; W1 next.
+Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; W1 complete; D1 next.
 
 ## Stage 46 L1 — Limitation of liability / indemnity honesty
 
 `docs/LIABILITY_INDEMNITY_MVP.md` + `ops/mvp/liability-indemnity.json` — packaging Complete; `liability_cap_claimed` / `indemnity_signed_claimed` / `legal_counsel_claimed` / `contract_liability_live` remain false.
+
+## Stage 46 W1 — Service credit / warranty honesty
+
+`docs/SERVICE_CREDIT_WARRANTY_MVP.md` + `ops/mvp/service-credit-warranty.json` — packaging Complete; `service_credits_live` / `warranty_live_claimed` / `uptime_credit_claimed` / `remedy_schedule_live` remain false.

@@ -466,6 +466,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 46 L1 (2026-08-11):** Limitation of liability / indemnity honesty — `docs/LIABILITY_INDEMNITY_MVP.md`, `ops/mvp/liability-indemnity.json`, evidence `stage46_l1_liability_indemnity.json` (`test_liability_indemnity_l1.py`); signed liability-cap Remaining.
 
+**Stage 46 W1 (2026-08-11):** Service credit / warranty honesty — `docs/SERVICE_CREDIT_WARRANTY_MVP.md`, `ops/mvp/service-credit-warranty.json`, evidence `stage46_w1_service_credit_warranty.json` (`test_service_credit_warranty_w1.py`); live service credits Remaining.
+
 
 
 

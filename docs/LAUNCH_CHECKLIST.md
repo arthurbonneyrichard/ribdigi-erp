@@ -176,8 +176,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 43 Commercial Legal Notice Fidelity (closed: `docs/STAGE_43_PLAN.md`, ADR-092) — T1–D1 / H43x complete
 - [x] Stage 44 Commercial Data Trust Fidelity (closed: `docs/STAGE_44_PLAN.md`, ADR-094) — R1–D1 / H44x complete
 - [x] Stage 45 Commercial Continuity & Exit Fidelity (closed: `docs/STAGE_45_PLAN.md`, ADR-096) — O1–D1 / H45x complete
-- [x] Stage 46 track opened (ADR-097: `test_stage46_open.py`, `docs/STAGE_46_PLAN.md`) — Commercial Liability & Remedy Fidelity; L1 complete; W1 next
+- [x] Stage 46 track opened (ADR-097: `test_stage46_open.py`, `docs/STAGE_46_PLAN.md`) — Commercial Liability & Remedy Fidelity; W1 complete; D1 next
 - [x] Limitation of liability / indemnity honesty (Stage 46 L1: `test_liability_indemnity_l1.py` — `docs/LIABILITY_INDEMNITY_MVP.md`, `ops/mvp/liability-indemnity.json`; evidence `stage46_l1_liability_indemnity.json`; signed liability-cap Remaining)
+- [x] Service credit / warranty honesty (Stage 46 W1: `test_service_credit_warranty_w1.py` — `docs/SERVICE_CREDIT_WARRANTY_MVP.md`, `ops/mvp/service-credit-warranty.json`; evidence `stage46_w1_service_credit_warranty.json`; live service credits Remaining)
 - [x] Stage 45 track opened (ADR-095: `test_stage45_open.py`, `docs/STAGE_45_PLAN.md`)
 - [x] RTO / RPO recovery objectives honesty (Stage 45 O1: `test_rto_rpo_o1.py` — `docs/RTO_RPO_MVP.md`, `ops/mvp/rto-rpo.json`; evidence `stage45_o1_rto_rpo.json`; measured RTO/RPO Remaining)
 - [x] Data retention / return honesty (Stage 45 T1: `test_data_retention_return_t1.py` — `docs/DATA_RETENTION_RETURN_MVP.md`, `ops/mvp/data-retention-return.json`; evidence `stage45_t1_data_retention_return.json`; data-return portal Remaining)

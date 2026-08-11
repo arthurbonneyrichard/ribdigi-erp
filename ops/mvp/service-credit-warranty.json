@@ -1,0 +1,159 @@
+{
+  "stage": "46",
+  "workstream": "W1",
+  "doc": "docs/SERVICE_CREDIT_WARRANTY_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "status_uptime": "ops/mvp/status-uptime.json",
+  "status_uptime_doc": "docs/STATUS_UPTIME_MVP.md",
+  "rto_rpo": "ops/mvp/rto-rpo.json",
+  "rto_rpo_doc": "docs/RTO_RPO_MVP.md",
+  "incident_pack_doc": "docs/INCIDENT_PACK_MVP.md",
+  "incident_checklist": "ops/incident/incident-checklist.json",
+  "liability_indemnity": "ops/mvp/liability-indemnity.json",
+  "liability_indemnity_doc": "docs/LIABILITY_INDEMNITY_MVP.md",
+  "msa_addendum": "ops/mvp/msa-addendum.json",
+  "msa_addendum_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "change_governance": "ops/mvp/change-governance.json",
+  "change_governance_doc": "docs/CHANGE_GOVERNANCE_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "stage46_plan": "docs/STAGE_46_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "service_credits_live": false,
+  "warranty_live_claimed": false,
+  "uptime_credit_claimed": false,
+  "remedy_schedule_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage46_w1_service_credit_warranty.json",
+  "steps": [
+    {
+      "id": "sc-support-sla",
+      "category": "credit",
+      "title": "Link Stage 36 support SLA boundary as credit-eligibility adjacency (not live credits)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "sc-status-uptime",
+      "category": "credit",
+      "title": "Link Stage 40 status / uptime honesty as uptime-credit adjacency (not measured SLA credits)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STATUS_UPTIME_MVP.md",
+        "ops/mvp/status-uptime.json"
+      ],
+      "source": "docs/STATUS_UPTIME_MVP.md"
+    },
+    {
+      "id": "sc-rto-rpo",
+      "category": "credit",
+      "title": "Link Stage 45 RTO / RPO objectives as continuity-remedy adjacency (not measured RTO credits)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RTO_RPO_MVP.md",
+        "ops/mvp/rto-rpo.json"
+      ],
+      "source": "docs/RTO_RPO_MVP.md"
+    },
+    {
+      "id": "sc-incident",
+      "category": "warranty",
+      "title": "Link incident escalation pack as warranty / remedy process adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "ops/incident/incident-checklist.json"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "sc-liability-adjacency",
+      "category": "warranty",
+      "title": "Link Stage 46 L1 liability / indemnity as risk-allocation adjacency (not credits)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LIABILITY_INDEMNITY_MVP.md",
+        "ops/mvp/liability-indemnity.json"
+      ],
+      "source": "docs/LIABILITY_INDEMNITY_MVP.md"
+    },
+    {
+      "id": "sc-msa-adjacency",
+      "category": "warranty",
+      "title": "Link Stage 39 MSA security addendum as commercial exhibit adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MSA_ADDENDUM_MVP.md",
+        "ops/mvp/msa-addendum.json"
+      ],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "sc-change-governance",
+      "category": "credit",
+      "title": "Link Stage 41 change / maintenance-window as credit-exclusion adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CHANGE_GOVERNANCE_MVP.md",
+        "ops/mvp/change-governance.json"
+      ],
+      "source": "docs/CHANGE_GOVERNANCE_MVP.md"
+    },
+    {
+      "id": "sc-product-overview",
+      "category": "credit",
+      "title": "Index PRODUCT_OVERVIEW uptime theme as remedy honesty source (not measured credits)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STATUS_UPTIME_MVP.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "sc-credits-remaining",
+      "category": "honesty",
+      "title": "Live service credits Remaining \u2014 packaging \u2260 billing-integrated credits",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_46_PLAN.md",
+        "docs/SERVICE_CREDIT_WARRANTY_MVP.md"
+      ],
+      "source": "docs/STAGE_46_PLAN.md"
+    },
+    {
+      "id": "sc-warranty-remaining",
+      "category": "honesty",
+      "title": "Warranty / remedy-schedule Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_46_PLAN.md",
+        "docs/SERVICE_CREDIT_WARRANTY_MVP.md"
+      ],
+      "source": "docs/STAGE_46_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live service credits Complete",
+    "Warranty Complete / warranty portal Complete",
+    "Measured uptime SLA credits Complete",
+    "Billing-integrated remedy schedule Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

@@ -1,6 +1,6 @@
 # Stage 46 Plan — Commercial Liability & Remedy Fidelity
 
-**Status:** Open — L1 complete; W1 next  
+**Status:** Open — W1 complete; D1 next  
 **Base:** Limitation of Liability / Indemnity Honesty Pack + Service Credit / Warranty Honesty Pack → Commercial Liability & Remedy Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-097](ADR_097_STAGE46_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Liability & Remedy Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **L1** | Limitation of liability / indemnity honesty packaging (not signed liability-cap / indemnity Complete) | P0 | COMPLETE |
-| **W1** | Service credit / warranty honesty packaging (not live service credits / warranty Complete) | P0 | PENDING |
+| **W1** | Service credit / warranty honesty packaging (not live service credits / warranty Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H46x** | Stage 46 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -74,10 +74,10 @@ Commercial Liability & Remedy Fidelity
 
 ## W1 acceptance criteria
 
-- [ ] Service credit / warranty honesty packaging indexing Stage 36 support-SLA and Stage 40 uptime / Stage 45 RTO adjacency (not claiming live service credits / warranty Complete).
-- [ ] Automated proof: `backend/tests/test_service_credit_warranty_w1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 46 W1.
+- [x] Service credit / warranty honesty packaging indexing Stage 36 support-SLA and Stage 40 uptime / Stage 45 RTO adjacency (not claiming live service credits / warranty Complete).
+- [x] Automated proof: `backend/tests/test_service_credit_warranty_w1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 46 W1.
 
 ## D1 acceptance criteria
 
