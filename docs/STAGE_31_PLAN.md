@@ -1,6 +1,6 @@
 # Stage 31 Plan — Commercial MVP Closeout Fidelity
 
-**Status:** Open — G1–O1 complete; C1 next (ADR-067)  
+**Status:** Open — G1–C1 complete; D1 next (ADR-067)  
 **Base:** MVP Gate Honesty Matrix Pack + Deferred ADR Register Pack + Operator Remaining Register Pack + Commercial MVP Declaration Pack → Commercial MVP Closeout Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-067](ADR_067_STAGE31_OPEN.md)
@@ -38,7 +38,7 @@ Commercial MVP Closeout Fidelity
 | **G1** | MVP gate honesty matrix (Complete vs Remaining vs Deferred) | P0 | COMPLETE |
 | **R1** | Deferred ADR register packaging (ADR-001–006 index) | P0 | COMPLETE |
 | **O1** | Operator Remaining register (Stage 26–30 honesty flags) | P1 | COMPLETE |
-| **C1** | Commercial MVP declaration pack (packaging ≠ live go-live) | P1 | PENDING |
+| **C1** | Commercial MVP declaration pack (packaging ≠ live go-live) | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
 | **H31x** | Stage 31 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -81,10 +81,10 @@ Commercial MVP Closeout Fidelity
 
 ## C1 acceptance criteria
 
-- [ ] Commercial MVP declaration packaging stating packaging Complete ≠ live go-live / forged §7 (extends attestation / launch cert honesty).
-- [ ] Automated proof: `backend/tests/test_mvp_declaration_c1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 31 C1.
+- [x] Commercial MVP declaration packaging stating packaging Complete ≠ live go-live / forged §7 (extends attestation / launch cert honesty).
+- [x] Automated proof: `backend/tests/test_mvp_declaration_c1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 31 C1.
 
 ## D1 acceptance criteria
 
@@ -102,4 +102,4 @@ Commercial MVP Closeout Fidelity
 
 ## Sign-off
 
-Stage 31 open under ADR-067. G1–O1 complete; C1 next. Stages 1–30 remain frozen for their scopes.
+Stage 31 open under ADR-067. G1–C1 complete; D1 next. Stages 1–30 remain frozen for their scopes.

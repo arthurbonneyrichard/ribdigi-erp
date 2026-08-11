@@ -1,0 +1,47 @@
+{
+  "stage": "31",
+  "workstream": "C1",
+  "doc": "docs/MVP_DECLARATION_MVP.md",
+  "gate_matrix": "ops/mvp/gate-matrix.json",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "operator_remaining_register": "ops/mvp/operator-remaining-register.json",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "checklist_map": "ops/launch/checklist-map.json",
+  "packaging_complete": true,
+  "commercial_mvp_packaging_declared": true,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "sections_1_3_verified": false,
+  "live_runs_certified": false,
+  "deferred_implemented_claimed": false,
+  "statements": [
+    {
+      "id": "packaging",
+      "text": "Commercial MVP product and ops packaging gates are Complete (MVP) per PRODUCTION_READINESS and Stage 31 G1 gate matrix",
+      "claimed": true
+    },
+    {
+      "id": "deferred-adrs",
+      "text": "ADR-001–006 post-MVP scopes remain deferred per Stage 31 R1 register",
+      "claimed": true
+    },
+    {
+      "id": "operator-remaining",
+      "text": "Stage 26–30 operator honesty flags remain false per Stage 31 O1 register until live verification",
+      "claimed": true
+    },
+    {
+      "id": "not-go-live",
+      "text": "This declaration is not live production go-live and does not fill LAUNCH §7 Name/Date",
+      "claimed": true
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage31_c1_mvp_declaration.json",
+  "deferred": [
+    "Treating packaging Complete as production live",
+    "Forged LAUNCH §7 Name/Date sign-off",
+    "Forged go-live attestation Complete",
+    "Flipping operator Remaining flags without ops evidence"
+  ]
+}
