@@ -1397,3 +1397,5 @@ Every feature in every phase must meet:
 **Stage 62 I1 (2026-08-11):** IoT integration honesty — `docs/IOT_INTEGRATION_MVP.md`, `ops/mvp/iot-integration.json`, evidence `stage62_i1_iot_integration.json` (`test_iot_integration_i1.py`); live smart shelves / temperature sensors Remaining.
 
 **Stage 62 A1 (2026-08-11):** AI model marketplace honesty — `docs/AI_MODEL_MARKETPLACE_MVP.md`, `ops/mvp/ai-model-marketplace.json`, evidence `stage62_a1_ai_model_marketplace.json` (`test_ai_model_marketplace_a1.py`); live industry-prediction marketplace Remaining.
+
+**Stage 62 D1 (2026-08-11):** IoT & AI marketplace fidelity sync — `docs/STAGE_62_FIDELITY.md` (`test_stage62_fidelity_d1.py`); maps I1–A1 → readiness / launch / deploy / security.

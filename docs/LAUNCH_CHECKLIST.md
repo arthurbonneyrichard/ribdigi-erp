@@ -182,9 +182,10 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
-- [x] Stage 62 track opened (ADR-129: `test_stage62_open.py`, `docs/STAGE_62_PLAN.md`) — Commercial IoT & AI Marketplace Fidelity; A1 complete; D1 next
+- [x] Stage 62 track opened (ADR-129: `test_stage62_open.py`, `docs/STAGE_62_PLAN.md`) — Commercial IoT & AI Marketplace Fidelity; D1 complete; H62x next
 - [x] IoT integration honesty (Stage 62 I1: `test_iot_integration_i1.py` — `docs/IOT_INTEGRATION_MVP.md`, `ops/mvp/iot-integration.json`; evidence `stage62_i1_iot_integration.json`; live smart shelves / temperature sensors Remaining)
 - [x] AI model marketplace honesty (Stage 62 A1: `test_ai_model_marketplace_a1.py` — `docs/AI_MODEL_MARKETPLACE_MVP.md`, `ops/mvp/ai-model-marketplace.json`; evidence `stage62_a1_ai_model_marketplace.json`; live industry-prediction marketplace Remaining)
+- [x] Stage 62 fidelity sync (D1: `test_stage62_fidelity_d1.py`, `docs/STAGE_62_FIDELITY.md` — I1–A1 + readiness + deploy / launch / security)
 - [x] Stage 61 track opened (ADR-127: `test_stage61_open.py`, `docs/STAGE_61_PLAN.md`) — Commercial Fintech & Supply-Chain Fidelity; closed under ADR-128
 - [x] Embedded fintech honesty (Stage 61 F1: `test_embedded_fintech_f1.py` — `docs/EMBEDDED_FINTECH_MVP.md`, `ops/mvp/embedded-fintech.json`; evidence `stage61_f1_embedded_fintech.json`; live lending / invoice financing Remaining)
 - [x] Supply chain integration honesty (Stage 61 S1: `test_supply_chain_integration_s1.py` — `docs/SUPPLY_CHAIN_INTEGRATION_MVP.md`, `ops/mvp/supply-chain-integration.json`; evidence `stage61_s1_supply_chain_integration.json`; live supplier supply-chain Remaining)

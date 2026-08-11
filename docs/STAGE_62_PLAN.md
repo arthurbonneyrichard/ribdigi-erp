@@ -1,6 +1,6 @@
 # Stage 62 Plan — Commercial IoT & AI Marketplace Fidelity
 
-**Status:** Open — A1 complete; D1 next  
+**Status:** Open — D1 complete; H62x next  
 **Base:** IoT Integration Honesty Pack + AI Model Marketplace Honesty Pack → Commercial IoT & AI Marketplace Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-129](ADR_129_STAGE62_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial IoT & AI Marketplace Fidelity
 |----|------------|----------|---------|
 | **I1** | IoT integration honesty packaging (not live smart shelves / temperature sensors Complete) | P0 | COMPLETE |
 | **A1** | AI model marketplace honesty packaging (not live industry-prediction marketplace Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H62x** | Stage 62 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -108,9 +108,9 @@ Commercial IoT & AI Marketplace Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_62_FIDELITY.md` maps I1–A1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 62 D1.
-- [ ] Automated proof: `backend/tests/test_stage62_fidelity_d1.py` (`docs/STAGE_62_FIDELITY.md`).
+- [x] `docs/STAGE_62_FIDELITY.md` maps I1–A1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 62 D1.
+- [x] Automated proof: `backend/tests/test_stage62_fidelity_d1.py` (`docs/STAGE_62_FIDELITY.md`).
 
 ## H62x acceptance criteria
 
