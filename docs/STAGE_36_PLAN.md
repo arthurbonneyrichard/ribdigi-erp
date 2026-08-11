@@ -1,6 +1,6 @@
 # Stage 36 Plan — Commercial Assurance Completion Fidelity
 
-**Status:** Open — B1 complete; D1 next (ADR-077)  
+**Status:** Open — D1 complete; H36x next (ADR-077)  
 **Base:** Support SLA Boundary Pack + Billing-Deferred Honesty Pack → Commercial Assurance Completion Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-077](ADR_077_STAGE36_OPEN.md)
@@ -33,7 +33,7 @@ Commercial Assurance Completion Fidelity
 |----|------------|----------|---------|
 | **S1** | Support SLA / incident escalation boundary packaging | P0 | COMPLETE |
 | **B1** | Billing-deferred commercial honesty packaging (not paid billing Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H36x** | Stage 36 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -67,9 +67,9 @@ Commercial Assurance Completion Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_36_FIDELITY.md` maps S1–B1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 36 D1.
-- [ ] Automated proof: `backend/tests/test_stage36_fidelity_d1.py`.
+- [x] `docs/STAGE_36_FIDELITY.md` maps S1–B1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 36 D1.
+- [x] Automated proof: `backend/tests/test_stage36_fidelity_d1.py`.
 
 ## H36x acceptance criteria
 
@@ -81,4 +81,4 @@ Commercial Assurance Completion Fidelity
 
 ## Sign-off
 
-Stage 36 open under ADR-077. B1 complete; D1 next. Stages 1–35 remain frozen for their scopes (Stage 34 S1/B1 packaging scopes reopen only inside this plan).
+Stage 36 open under ADR-077. D1 complete; H36x next. Stages 1–35 remain frozen for their scopes (Stage 34 S1/B1 packaging scopes reopen only inside this plan).
