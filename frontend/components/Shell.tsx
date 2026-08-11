@@ -38,7 +38,20 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [fullName, setFullName] = useState('');
   const pathname = usePathname();
+
+  async function logout() {
+    try {
+      await api('/auth/logout', { method: 'POST' });
+    } catch {
+      /* revoke best-effort; clear client session regardless */
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('tenant');
+    window.location.href = '/';
+  }
 
   useEffect(() => {
     let active = true;
@@ -51,6 +64,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         if (!active) return;
         setUnread(countRes.data?.count || 0);
         setPermissions(meRes.data?.permissions || {});
+        setFullName(meRes.data?.full_name || '');
       } catch {
         if (active) {
           setUnread(0);
@@ -107,11 +121,24 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           >
             <span aria-hidden>{'\u2630'}</span> Menu
           </button>
-          {canReadModule(permissions, 'notifications') && (
-            <Link href="/notifications" className="bell">
-              Alerts{unread > 0 ? ` · ${unread}` : ''}
-            </Link>
-          )}
+          <div className="topbar-right">
+            {canReadModule(permissions, 'notifications') && (
+              <Link href="/notifications" className="bell">
+                Alerts{unread > 0 ? ` · ${unread}` : ''}
+              </Link>
+            )}
+            {fullName && (
+              <span className="userchip" title={fullName}>
+                <span className="uavatar" aria-hidden>
+                  {fullName.trim().charAt(0).toUpperCase() || 'U'}
+                </span>
+                <span className="uname">{fullName.trim().split(/\s+/)[0]}</span>
+              </span>
+            )}
+            <button type="button" className="logout-btn" onClick={logout}>
+              Log out
+            </button>
+          </div>
         </div>
         {children}
       </main>

@@ -102,3 +102,11 @@
 
 /* Badge refinement */
 .main .badge{font-weight:600;color:#3730a3}
+
+/* Top bar user chip + logout */
+.topbar-right{display:flex;align-items:center;gap:10px}
+.userchip{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;background:#fff;border:1px solid #e5e7eb;border-radius:999px;font-size:13px;font-weight:600;color:#334155}
+.uavatar{width:26px;height:26px;border-radius:50%;background:#111827;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:0 0 auto}
+.uname{white-space:nowrap}
+.main .topbar-right .logout-btn{color:#dc2626;background:#fef2f2;border-color:#fecaca;font-weight:700}
+.main .topbar-right .logout-btn:hover{background:#fee2e2;border-color:#fca5a5}
