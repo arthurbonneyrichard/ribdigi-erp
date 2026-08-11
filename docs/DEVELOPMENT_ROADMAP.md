@@ -1401,3 +1401,5 @@ Every feature in every phase must meet:
 **Stage 62 D1 (2026-08-11):** IoT & AI marketplace fidelity sync — `docs/STAGE_62_FIDELITY.md` (`test_stage62_fidelity_d1.py`); maps I1–A1 → readiness / launch / deploy / security.
 
 **Stage 62 exit (2026-08-11):** I1, A1, D1, H62x met — `docs/STAGE_62_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_130_STAGE62_FREEZE.md`. Fidelity: `docs/STAGE_62_FIDELITY.md`.
+
+**Stage 63 open (2026-08-11):** Commercial Capital & Scale Fidelity track approved — `docs/ADR_131_STAGE63_OPEN.md` + `docs/STAGE_63_PLAN.md` (IPO readiness → global scale → fidelity).

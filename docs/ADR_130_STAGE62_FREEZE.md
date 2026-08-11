@@ -23,3 +23,7 @@ Stage 62 Commercial IoT & AI Marketplace Fidelity delivered IoT integration hone
 - Stage 1–61 freezes remain in force for their scopes (Stage 61 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - IoT & AI marketplace packaging Complete does **not** mean live IoT / smart shelves / temperature sensors, live AI model marketplace / industry-prediction marketplace, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 63 (Commercial Capital & Scale Fidelity) after Stage 62 freeze via CONTINUE/NEXT — see [ADR-131](ADR_131_STAGE63_OPEN.md) and [STAGE_63_PLAN.md](STAGE_63_PLAN.md). Stage 62 feature scope remains frozen; Stage 63 does not reopen I1–D1 / H62x.
