@@ -394,6 +394,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 39 open (2026-08-11):** Commercial Contract Evidence Fidelity track approved — `docs/ADR_083_STAGE39_OPEN.md` + `docs/STAGE_39_PLAN.md` (DPA/subprocessor → MSA security addendum → fidelity).
 
+**Stage 39 P1 (2026-08-11):** DPA / subprocessor honesty — `docs/DPA_SUBPROCESSOR_MVP.md`, `ops/mvp/dpa-subprocessor.json`, evidence `stage39_p1_dpa_subprocessor.json` (`test_dpa_subprocessor_p1.py`); signed DPA Remaining.
+
 
 
 
@@ -977,7 +979,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 39 open — Commercial Contract Evidence Fidelity (`docs/STAGE_39_PLAN.md`, ADR-083). Stages 1–38 remain frozen for their scopes; P1 next.
+**Active delivery plan:** Stage 39 open — Commercial Contract Evidence Fidelity (`docs/STAGE_39_PLAN.md`, ADR-083). Stages 1–38 remain frozen for their scopes; P1 complete; A1 next.
 
 ### 6.2 Features
 

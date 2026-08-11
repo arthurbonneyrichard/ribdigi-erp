@@ -29,7 +29,7 @@
 | `erasure-honesty.json` | Stage 37 E1 erasure / soft-delete honesty — `hard_delete_claimed: false` / `erasure_complete_claimed: false` / `anonymize_workflow_claimed: false` / `deferred_implemented_claimed: false` |
 | `vuln-disclosure.json` | Stage 38 V1 vulnerability disclosure — `disclosure_program_claimed: false` / `bug_bounty_claimed: false` / `continuous_disclosure_claimed: false` / `researcher_intake_live: false` |
 | `breach-notification.json` | Stage 38 B1 breach notification / security contact — `breach_drill_claimed: false` / `regulatory_filing_claimed: false` / `customer_notify_saas_claimed: false` / `security_mailbox_live: false` |
-| *(Stage 39 open)* | Commercial Contract Evidence Fidelity — `docs/STAGE_39_PLAN.md`, ADR-083; P1/A1 packs pending |
+| `dpa-subprocessor.json` | Stage 39 P1 DPA / subprocessor honesty — `dpa_signed_claimed: false` / `subprocessor_register_live: false` / `legal_counsel_claimed: false` / `contract_execution_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -61,7 +61,8 @@ Authoritative MVP docs:
 - `docs/STAGE_38_PLAN.md` (`backend/tests/test_stage38_open.py`) — Stage 38 open (ADR-081)
 - `docs/VULN_DISCLOSURE_MVP.md` (`backend/tests/test_vuln_disclosure_v1.py`) — Stage 38 V1
 - `docs/BREACH_NOTIFICATION_MVP.md` (`backend/tests/test_breach_notification_b1.py`) — Stage 38 B1
-- `docs/STAGE_39_PLAN.md` (`backend/tests/test_stage39_open.py`) — Stage 39 open (ADR-083); P1 next
+- `docs/STAGE_39_PLAN.md` (`backend/tests/test_stage39_open.py`) — Stage 39 open (ADR-083)
+- `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 
 ## Stage 33 K1 — Residual risk register
 
@@ -242,3 +243,11 @@ H38x met — `docs/STAGE_38_EXIT_CRITERIA.md`, ADR-082. Stages 1–38 frozen.
 ## Stage 39 open
 
 Commercial Contract Evidence Fidelity — `docs/STAGE_39_PLAN.md`, ADR-083; P1 next.
+
+## Stage 39 P1 — DPA / subprocessor honesty
+
+Indexes infrastructure processing roles against compliance privacy themes. See `docs/DPA_SUBPROCESSOR_MVP.md`.
+
+- Pack: `dpa-subprocessor.json`
+- Tests: `backend/tests/test_dpa_subprocessor_p1.py`
+- Honesty: `dpa_signed_claimed: false`, `subprocessor_register_live: false`, `legal_counsel_claimed: false`, `contract_execution_claimed: false` — packaging ≠ signed DPA Complete
