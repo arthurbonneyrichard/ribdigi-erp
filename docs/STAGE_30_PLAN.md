@@ -1,6 +1,6 @@
 # Stage 30 Plan — Go-Live Support Fidelity
 
-**Status:** Open — L1–I1 complete; S1 next (ADR-065)  
+**Status:** Open — L1–S1 complete; A1 next (ADR-065)  
 **Base:** Operator Evidence Ledger Pack + Incident Response / On-Call Pack + Support & Admin Runbook Fidelity + Go-Live Attestation Matrix Pack → Go-Live Support Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-065](ADR_065_STAGE30_OPEN.md)
@@ -37,7 +37,7 @@ Go-Live Support Fidelity
 |----|------------|----------|---------|
 | **L1** | Operator evidence ledger (index Stage 26–29 artifacts + honesty flags) | P0 | COMPLETE |
 | **I1** | Incident response / on-call packaging | P0 | COMPLETE |
-| **S1** | Support & Admin runbook fidelity (ADMIN_MANUAL ↔ ops packs) | P1 | PENDING |
+| **S1** | Support & Admin runbook fidelity (ADMIN_MANUAL ↔ ops packs) | P1 | COMPLETE |
 | **A1** | Go-live attestation matrix (Remaining honesty; not forged §7) | P1 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
 | **H30x** | Stage 30 exit criteria + freeze ADR | Exit | PENDING |
@@ -74,10 +74,10 @@ Go-Live Support Fidelity
 
 ## S1 acceptance criteria
 
-- [ ] Support & Admin runbook fidelity syncing `docs/ADMIN_MANUAL.md` troubleshooting / maintenance to Stage 26–29 `ops/` packs (not inventing live ops success).
-- [ ] Automated proof: `backend/tests/test_support_runbook_s1.py`.
-- [ ] ADMIN_MANUAL / launch / roadmap cite Stage 30 S1.
-- [ ] Plan cites Stage 30 S1.
+- [x] Support & Admin runbook fidelity syncing `docs/ADMIN_MANUAL.md` troubleshooting / maintenance to Stage 26–29 `ops/` packs (not inventing live ops success).
+- [x] Automated proof: `backend/tests/test_support_runbook_s1.py`.
+- [x] ADMIN_MANUAL / launch / roadmap cite Stage 30 S1.
+- [x] Plan cites Stage 30 S1.
 
 ## A1 acceptance criteria
 
@@ -102,4 +102,4 @@ Go-Live Support Fidelity
 
 ## Sign-off
 
-Stage 30 open under ADR-065. L1–I1 complete; S1 next. Stages 1–29 remain frozen for their scopes.
+Stage 30 open under ADR-065. L1–S1 complete; A1 next. Stages 1–29 remain frozen for their scopes.

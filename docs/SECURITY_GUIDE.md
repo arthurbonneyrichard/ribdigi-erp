@@ -340,9 +340,10 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 29 X1** | Production cutover pack — `docs/CUTOVER_PACK_MVP.md`, `ops/launch/` + `ops/k8s/deploy-production.example.yml` (`test_cutover_pack_x1.py`); live cutover / §7 sign-off Remaining; main CI deploy-free |
 | **Stage 29 D1** | Operator hardening & cutover fidelity — `docs/STAGE_29_FIDELITY.md` (`test_stage29_fidelity_d1.py`) maps V1–X1 → readiness / launch / deploy / security |
 | **Stage 29 fidelity** | D1 maps V1–X1 operator-hardening evidence — `docs/STAGE_29_FIDELITY.md` (`test_stage29_fidelity_d1.py`); exit/freeze `docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064 (`test_stage29_exit_h29x.py`); historical open ADR-063; purchased cert / live soak / ACME / cutover / §7 remain Remaining |
-| **Stage 30 open** | Go-Live Support Fidelity — `docs/STAGE_30_PLAN.md`, ADR-065 (`test_stage30_open.py`); Stages 1–29 remain frozen; L1–I1 complete; S1 next |
+| **Stage 30 open** | Go-Live Support Fidelity — `docs/STAGE_30_PLAN.md`, ADR-065 (`test_stage30_open.py`); Stages 1–29 remain frozen; L1–S1 complete; A1 next |
 | **Stage 30 L1** | Operator evidence ledger — `docs/EVIDENCE_LEDGER_MVP.md`, `ops/evidence/ledger.json` (`test_evidence_ledger_l1.py`); live runs / attestation Remaining |
 | **Stage 30 I1** | Incident response / on-call pack — `docs/INCIDENT_PACK_MVP.md`, `ops/incident/` (`test_incident_pack_i1.py`); hosted PagerDuty / live rota Remaining |
+| **Stage 30 S1** | Support & Admin runbook fidelity — `docs/SUPPORT_RUNBOOK_MVP.md`, `ops/support/` + ADMIN_MANUAL §§7/11/12 (`test_support_runbook_s1.py`); live ops SLA Remaining |
 
 ### 7.3 Tenant Lifecycle Security
 

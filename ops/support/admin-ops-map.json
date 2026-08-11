@@ -1,0 +1,62 @@
+{
+  "stage": "30",
+  "workstream": "S1",
+  "doc": "docs/SUPPORT_RUNBOOK_MVP.md",
+  "admin_manual": "docs/ADMIN_MANUAL.md",
+  "live_ops_success_claimed": false,
+  "support_sla_claimed": false,
+  "sections": [
+    {
+      "id": "7",
+      "title": "Backup & Recovery",
+      "admin_heading": "## 7. Backup & Recovery",
+      "packs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/DR_WAL_PITR_RUNBOOK.md",
+        "docs/PITR_DRILL_PACK_MVP.md"
+      ],
+      "ops": [
+        "ops/postgres/pitr-drill-checklist.json",
+        "ops/backup/sync-ribbak-offsite.sh.example"
+      ]
+    },
+    {
+      "id": "11",
+      "title": "Maintenance & Monitoring",
+      "admin_heading": "## 11. Maintenance & Monitoring",
+      "packs": [
+        "docs/OPS_MONITORING_MVP.md",
+        "docs/GRAFANA_PACK_MVP.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "ops": [
+        "ops/prometheus/prometheus.yml",
+        "ops/grafana/alertmanager.yml.example",
+        "ops/incident/oncall-runbook.md.example"
+      ]
+    },
+    {
+      "id": "12",
+      "title": "Troubleshooting",
+      "admin_heading": "## 12. Troubleshooting",
+      "packs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "docs/CUTOVER_PACK_MVP.md",
+        "docs/TLS_INGRESS_PACK_MVP.md",
+        "docs/PGBOUNCER_SOAK_PACK_MVP.md",
+        "docs/EVIDENCE_LEDGER_MVP.md"
+      ],
+      "ops": [
+        "ops/incident/incident-checklist.json",
+        "ops/launch/cutover-checklist.json",
+        "ops/evidence/ledger.json"
+      ]
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage30_s1_support_runbook.json",
+  "deferred": [
+    "Live support SLA / status-page Complete",
+    "Inventing green PITR / cutover / PagerDuty from ADMIN_MANUAL alone",
+    "Hosted helpdesk SaaS Complete"
+  ]
+}
