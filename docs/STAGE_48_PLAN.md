@@ -1,10 +1,11 @@
 # Stage 48 Plan — Commercial Services Fidelity
 
-**Status:** Open — D1 complete; H48x next  
+**Status:** Closed — exit met (H48x / ADR-102)  
 **Base:** Professional Services / SOW Honesty Pack + Customer Training / Certification Honesty Pack → Commercial Services Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-101](ADR_101_STAGE48_OPEN.md)  
-**Prior freeze:** [ADR-100](ADR_100_STAGE47_FREEZE.md) · [STAGE_47_EXIT_CRITERIA.md](STAGE_47_EXIT_CRITERIA.md)
+**Prior freeze:** [ADR-100](ADR_100_STAGE47_FREEZE.md) · [STAGE_47_EXIT_CRITERIA.md](STAGE_47_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_48_EXIT_CRITERIA.md](STAGE_48_EXIT_CRITERIA.md) · [ADR-102](ADR_102_STAGE48_FREEZE.md)
 
 Stage 48 opens after Stage 47 freeze: **Professional Services / SOW Honesty Packaging + Customer Training / Certification Honesty Packaging → Commercial Services Fidelity**. PRODUCT_OVERVIEW implementation / onboarding and on-site training themes, plus Stage 33 operator first-tenant / knowledge-transfer and Stage 36 support-SLA adjacency, lack dedicated customer-facing honesty packs for SOW / implementation delivery boundaries and customer training / certification Remaining. This track packages those Remaining surfaces on proven Stage 33–47 commercial / onboarding / support assets — **not** claiming signed SOW Complete, live implementation delivery Complete, live customer training Complete, training certification Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–47 packs as new Complete, or reopening Stages 1–47 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Services Fidelity
 | **P1** | Professional services / SOW honesty packaging (not signed SOW / live implementation delivery Complete) | P0 | COMPLETE |
 | **T1** | Customer training / certification honesty packaging (not live training / attendance cert Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H48x** | Stage 48 exit criteria + freeze ADR | Exit | PENDING |
+| **H48x** | Stage 48 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -90,6 +91,6 @@ Commercial Services Fidelity
 
 ## H48x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for P1–D1 / H48x — `docs/STAGE_48_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_102_STAGE48_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage48_exit_h48x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for P1–D1 / H48x — `docs/STAGE_48_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_102_STAGE48_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage48_exit_h48x.py`.

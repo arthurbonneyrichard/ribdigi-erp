@@ -125,6 +125,7 @@ Authoritative MVP docs:
 - `docs/PROFESSIONAL_SERVICES_SOW_MVP.md` (`backend/tests/test_professional_services_sow_p1.py`) — Stage 48 P1
 - `docs/CUSTOMER_TRAINING_CERT_MVP.md` (`backend/tests/test_customer_training_cert_t1.py`) — Stage 48 T1
 - `docs/STAGE_48_FIDELITY.md` (`backend/tests/test_stage48_fidelity_d1.py`) — Stage 48 D1
+- `docs/STAGE_48_EXIT_CRITERIA.md` / `docs/ADR_102_STAGE48_FREEZE.md` (`backend/tests/test_stage48_exit_h48x.py`) — Stage 48 H48x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -490,7 +491,7 @@ H47x met — `docs/STAGE_47_EXIT_CRITERIA.md`, ADR-100. Stages 1–47 frozen for
 
 ## Stage 48 open
 
-Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101; D1 complete; H48x next.
+Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101; Closed — exit met (H48x / ADR-102).
 
 ## Stage 48 P1 — Professional services / SOW honesty
 
@@ -503,3 +504,7 @@ Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101; D1 complete; 
 ## Stage 48 D1 — Fidelity
 
 `docs/STAGE_48_FIDELITY.md` maps P1–T1 → readiness / launch / deploy / security (`test_stage48_fidelity_d1.py`).
+
+## Stage 48 exit
+
+H48x met — `docs/STAGE_48_EXIT_CRITERIA.md`, ADR-102. Stages 1–48 frozen for Stage 48 feature scope.

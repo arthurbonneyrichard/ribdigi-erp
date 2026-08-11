@@ -490,6 +490,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 48 D1 (2026-08-11):** Commercial services fidelity — `docs/STAGE_48_FIDELITY.md` (`test_stage48_fidelity_d1.py`); maps P1–T1 → readiness / launch / deploy / security; signed SOW / live training Remaining.
 
+**Stage 48 exit (2026-08-11):** P1, T1, D1, H48x met — `docs/STAGE_48_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_102_STAGE48_FREEZE.md`. Fidelity: `docs/STAGE_48_FIDELITY.md`.
+
 
 
 
