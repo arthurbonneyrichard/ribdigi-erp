@@ -1,6 +1,6 @@
 # Stage 60 Plan — Commercial Manufacturing & Tax Fidelity
 
-**Status:** Open — M1 complete; T1 next  
+**Status:** Open — T1 complete; D1 next  
 **Base:** Advanced Manufacturing Honesty Pack + Multi-Country Tax Honesty Pack → Commercial Manufacturing & Tax Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-125](ADR_125_STAGE60_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Manufacturing & Tax Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **M1** | Advanced manufacturing honesty packaging (not live MRP / production scheduling Complete) | P0 | COMPLETE |
-| **T1** | Multi-country tax honesty packaging (not live GST / VAT / Sales Tax e-file Complete) | P0 | PENDING |
+| **T1** | Multi-country tax honesty packaging (not live GST / VAT / Sales Tax e-file Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H60x** | Stage 60 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -101,10 +101,10 @@ Commercial Manufacturing & Tax Fidelity
 
 ## T1 acceptance criteria
 
-- [ ] Multi-country tax honesty packaging indexing PRODUCT_OVERVIEW GST / VAT / Sales Tax Mid-Term themes with existing tax-report adjacency (not claiming live multi-country tax e-file Complete).
-- [ ] Automated proof: `backend/tests/test_multi_country_tax_t1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 60 T1.
+- [x] Multi-country tax honesty packaging indexing PRODUCT_OVERVIEW GST / VAT / Sales Tax Mid-Term themes with existing tax-report adjacency (not claiming live multi-country tax e-file Complete).
+- [x] Automated proof: `backend/tests/test_multi_country_tax_t1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 60 T1.
 
 ## D1 acceptance criteria
 

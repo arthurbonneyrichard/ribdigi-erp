@@ -1375,3 +1375,5 @@ Every feature in every phase must meet:
 **Stage 60 open (2026-08-11):** Commercial Manufacturing & Tax Fidelity track approved — `docs/ADR_125_STAGE60_OPEN.md` + `docs/STAGE_60_PLAN.md` (advanced manufacturing → multi-country tax → fidelity).
 
 **Stage 60 M1 (2026-08-11):** Advanced manufacturing honesty — `docs/ADVANCED_MANUFACTURING_MVP.md`, `ops/mvp/advanced-manufacturing.json`, evidence `stage60_m1_advanced_manufacturing.json` (`test_advanced_manufacturing_m1.py`); live MRP / production scheduling Remaining.
+
+**Stage 60 T1 (2026-08-11):** Multi-country tax honesty — `docs/MULTI_COUNTRY_TAX_MVP.md`, `ops/mvp/multi-country-tax.json`, evidence `stage60_t1_multi_country_tax.json` (`test_multi_country_tax_t1.py`); live multi-country tax e-file Remaining.
