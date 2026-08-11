@@ -1,6 +1,6 @@
 # Stage 38 Plan — Commercial Security Disclosure Fidelity
 
-**Status:** Open — V1–B1 complete; D1 next  
+**Status:** Open — V1–D1 complete; H38x next  
 **Base:** Vulnerability Disclosure Policy Pack + Breach Notification / Security Contact Honesty Pack → Commercial Security Disclosure Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-081](ADR_081_STAGE38_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Security Disclosure Fidelity
 |----|------------|----------|---------|
 | **V1** | Vulnerability disclosure policy packaging (not live disclosure / bug-bounty Complete) | P0 | COMPLETE |
 | **B1** | Breach notification / security contact honesty packaging (not live breach drill Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H38x** | Stage 38 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -71,9 +71,9 @@ Commercial Security Disclosure Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_38_FIDELITY.md` maps V1–B1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 38 D1.
-- [ ] Automated proof: `backend/tests/test_stage38_fidelity_d1.py`.
+- [x] `docs/STAGE_38_FIDELITY.md` maps V1–B1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 38 D1.
+- [x] Automated proof: `backend/tests/test_stage38_fidelity_d1.py`.
 
 ## H38x acceptance criteria
 
@@ -85,4 +85,4 @@ Commercial Security Disclosure Fidelity
 
 ## Sign-off
 
-Stage 38 V1–B1 complete. D1 next. Stages 1–37 remain frozen for their scopes.
+Stage 38 V1–D1 complete. H38x next. Stages 1–37 remain frozen for their scopes.
