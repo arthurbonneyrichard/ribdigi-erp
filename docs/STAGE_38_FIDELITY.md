@@ -1,10 +1,10 @@
 # Stage 38 Fidelity Notes — Commercial Security Disclosure Fidelity
 
-**Status:** Open — D1 complete; H38x next  
+**Status:** Closed — exit met (H38x / ADR-082); historical open ADR-081  
 **Surface:** Vulnerability disclosure → Breach notification / security contact → Fidelity closeout  
-**Open ADR:** [ADR-081](ADR_081_STAGE38_OPEN.md)  
+**Open ADR (historical):** [ADR-081](ADR_081_STAGE38_OPEN.md)  
 **Plan:** [STAGE_38_PLAN.md](STAGE_38_PLAN.md)  
-**Exit (pending):** `STAGE_38_EXIT_CRITERIA.md` · `ADR_082_STAGE38_FREEZE.md` (H38x)
+**Exit:** [STAGE_38_EXIT_CRITERIA.md](STAGE_38_EXIT_CRITERIA.md) · [ADR-082](ADR_082_STAGE38_FREEZE.md)
 
 Stage 38 proves the owner product outline after Stage 37 freeze — Vulnerability Disclosure Policy Pack + Breach Notification / Security Contact Honesty Pack → Commercial Security Disclosure Fidelity — by packaging SECURITY_GUIDE / Stage 27–30 security and incident surfaces. It is **not** live disclosure program Complete, bug-bounty Complete, live breach drill Complete, live go-live / §7 / attestation Complete, SOC 2 / ISO Complete, re-packaging Stage 26–37 packs as new Complete, or reopening Stages 1–37 frozen feature scopes.
 
@@ -23,7 +23,7 @@ Stage 38 proves the owner product outline after Stage 37 freeze — Vulnerabilit
 | **V1** | `test_vuln_disclosure_v1.py` — `VULN_DISCLOSURE_MVP.md`, vuln-disclosure JSON | SECURITY_GUIDE / Stage 27–29 security | Live disclosure; bug-bounty |
 | **B1** | `test_breach_notification_b1.py` — `BREACH_NOTIFICATION_MVP.md`, breach-notification JSON | SECURITY_GUIDE §15 / Stage 30 incident | Live breach drill; regulatory filing |
 | **D1** | This note + `test_stage38_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H38x** | `STAGE_38_EXIT_CRITERIA.md`; ADR-082; `test_stage38_exit_h38x.py` (pending) | Stage 38 exit + freeze | Next track needs open ADR |
+| **H38x** | `STAGE_38_EXIT_CRITERIA.md`; ADR-082; `test_stage38_exit_h38x.py` | Stage 38 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -42,7 +42,8 @@ Stage 38 proves the owner product outline after Stage 37 freeze — Vulnerabilit
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 38 V1–B1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 38 V1–B1 / D1 cite
 - `docs/VULN_DISCLOSURE_MVP.md` · `docs/BREACH_NOTIFICATION_MVP.md`
-- `docs/STAGE_38_PLAN.md` — Open (D1 complete; H38x next)
+- `docs/STAGE_38_PLAN.md` — Closed (H38x / ADR-082)
+- `docs/STAGE_38_EXIT_CRITERIA.md` · `docs/ADR_082_STAGE38_FREEZE.md`
 - `docs/ADR_081_STAGE38_OPEN.md`
 
 ## Deferred (not Stage 38 D1 blockers)

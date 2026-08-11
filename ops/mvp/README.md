@@ -232,3 +232,7 @@ Indexes SECURITY_GUIDE 72-hour regulatory theme and Stage 30 incident contact pa
 - Pack: `breach-notification.json`
 - Tests: `backend/tests/test_breach_notification_b1.py`
 - Honesty: `breach_drill_claimed: false`, `regulatory_filing_claimed: false`, `customer_notify_saas_claimed: false`, `security_mailbox_live: false` — packaging ≠ live breach drill Complete
+
+## Stage 38 exit
+
+H38x met — `docs/STAGE_38_EXIT_CRITERIA.md`, ADR-082. Stages 1–38 frozen; Stage 39+ requires open ADR after CONTINUE/NEXT.

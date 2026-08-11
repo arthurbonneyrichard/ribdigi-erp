@@ -173,11 +173,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [ ] Stage 38 Commercial Security Disclosure Fidelity (open: `docs/STAGE_38_PLAN.md`, ADR-081) — V1–D1 complete; H38x next; Stages 1–37 frozen
+- [x] Stage 38 Commercial Security Disclosure Fidelity (closed: `docs/STAGE_38_PLAN.md`, ADR-082) — V1–D1 / H38x complete
 - [x] Stage 38 track opened (ADR-081: `test_stage38_open.py`, `docs/STAGE_38_PLAN.md`)
 - [x] Vulnerability disclosure (Stage 38 V1: `test_vuln_disclosure_v1.py` — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json`; evidence `stage38_v1_vuln_disclosure.json`; live disclosure / bug-bounty Remaining)
 - [x] Breach notification / security contact (Stage 38 B1: `test_breach_notification_b1.py` — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json`; evidence `stage38_b1_breach_notification.json`; live breach drill Remaining)
 - [x] Stage 38 fidelity sync (D1: `test_stage38_fidelity_d1.py`, `docs/STAGE_38_FIDELITY.md` — V1–B1 + readiness + deploy / launch / security)
+- [x] Stage 38 exit + freeze (H38x: `test_stage38_exit_h38x.py`, `docs/STAGE_38_EXIT_CRITERIA.md`, ADR-082)
 - [x] Stage 37 Commercial Data Protection Fidelity (closed: `docs/STAGE_37_PLAN.md`, ADR-080) — P1–D1 / H37x complete
 - [x] Stage 37 track opened (ADR-079: `test_stage37_open.py`, `docs/STAGE_37_PLAN.md`)
 - [x] Data subject access / portability (Stage 37 P1: `test_data_portability_p1.py` — `docs/DATA_PORTABILITY_MVP.md`, `ops/mvp/data-portability.json`; evidence `stage37_p1_data_portability.json`; GDPR / DSAR Remaining)
