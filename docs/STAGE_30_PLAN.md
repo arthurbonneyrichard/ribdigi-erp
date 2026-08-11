@@ -1,10 +1,10 @@
 # Stage 30 Plan — Go-Live Support Fidelity
 
-**Status:** Open — D1 complete; H30x next (ADR-065)  
+**Status:** Closed — exit met (H30x / ADR-066)  
 **Base:** Operator Evidence Ledger Pack + Incident Response / On-Call Pack + Support & Admin Runbook Fidelity + Go-Live Attestation Matrix Pack → Go-Live Support Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-065](ADR_065_STAGE30_OPEN.md)  
-**Fidelity:** [STAGE_30_FIDELITY.md](STAGE_30_FIDELITY.md)
+**Open ADR (historical):** [ADR-065](ADR_065_STAGE30_OPEN.md)  
+**Exit:** [STAGE_30_EXIT_CRITERIA.md](STAGE_30_EXIT_CRITERIA.md) · [ADR-066](ADR_066_STAGE30_FREEZE.md) · [STAGE_30_FIDELITY.md](STAGE_30_FIDELITY.md)
 
 Stage 30 closes the owner product outline after Stage 29 freeze: **Operator Evidence Ledger Packaging + Incident Response / On-Call Packaging + Support & Admin Runbook Fidelity + Go-Live Attestation Matrix Packaging → Go-Live Support Fidelity**. Stages 26–29 delivered Complete (MVP) ops platform, release, staging-certification, and operator-hardening **packaging** with honest Remaining for live execution, purchased vendor pen tests, hosted SaaS observability, and production §7 sign-off. This track packages **go-live support** surfaces on proven Stage 26–29 assets (evidence artifacts under `/opt/cursor/artifacts/`, `ops/` checklists, `ADMIN_MANUAL.md`, `LAUNCH_CHECKLIST.md`) — **not** inventing live pen-test/soak/TLS/cutover success, re-packaging Stage 26–29 packs as new Complete, or paid billing / schema-per-tenant / i18n / ADR-003/005 / Open Banking / tax e-file / external LLM/Prophet — and **not** reopening Stages 1–29.
 
@@ -41,7 +41,7 @@ Go-Live Support Fidelity
 | **S1** | Support & Admin runbook fidelity (ADMIN_MANUAL ↔ ops packs) | P1 | COMPLETE |
 | **A1** | Go-live attestation matrix (Remaining honesty; not forged §7) | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
-| **H30x** | Stage 30 exit criteria + freeze ADR | Exit | PENDING |
+| **H30x** | Stage 30 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -95,12 +95,12 @@ Go-Live Support Fidelity
 
 ## H30x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for L1–D1 / H30x — `docs/STAGE_30_EXIT_CRITERIA.md`.
-- [ ] Scope freeze ADR accepted — `docs/ADR_066_STAGE30_FREEZE.md` (number reserved at close).
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
-- [ ] Automated proof: `backend/tests/test_stage30_exit_h30x.py`.
-- [ ] Stages 1–29 freezes remain; Stage 31+ requires explicit open ADR after CONTINUE/NEXT.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for L1–D1 / H30x — `docs/STAGE_30_EXIT_CRITERIA.md`.
+- [x] Scope freeze ADR accepted — `docs/ADR_066_STAGE30_FREEZE.md` (number reserved at close).
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
+- [x] Automated proof: `backend/tests/test_stage30_exit_h30x.py`.
+- [x] Stages 1–29 freezes remain; Stage 31+ requires explicit open ADR after CONTINUE/NEXT.
 
 ## Sign-off
 
-Stage 30 open under ADR-065. D1 complete; H30x next. Stages 1–29 remain frozen for their scopes.
+Stage 30 exit met under ADR-066. L1–D1 / H30x complete. Stages 1–29 remain frozen for their scopes. Stage 31+ requires an explicit open ADR after CONTINUE/NEXT.

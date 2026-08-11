@@ -32,18 +32,12 @@ def test_stage30_fidelity_note_and_plan():
 
     plan = _read("docs/STAGE_30_PLAN.md")
     assert "STAGE_30_FIDELITY.md" in plan
-    for ws in ("L1", "I1", "S1", "A1", "D1"):
+    for ws in ("L1", "I1", "S1", "A1", "D1", "H30x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}** |" in ln][0]
         assert "COMPLETE" in line, ws
-    h30 = [ln for ln in plan.splitlines() if "| **H30x** |" in ln][0]
-    assert "PENDING" in h30 or "COMPLETE" in h30
-    assert (
-        "D1 next" in plan
-        or "D1 complete" in plan
-        or "H30x next" in plan
-        or "Closed" in plan
-        or "exit met" in plan.lower()
-    )
+    assert "ADR-066" in plan or "ADR_066" in plan
+    assert "Closed" in plan or "exit met" in plan.lower()
+    assert "ADR-066" in fidelity or "ADR_066" in fidelity or "exit met" in fidelity.lower()
 
 
 def test_stage30_br16_and_workstream_docs():
@@ -119,6 +113,7 @@ def test_stage30_api_deploy_security_launch_admin():
     assert "test_attestation_pack_a1.py" in launch
     assert "test_stage30_fidelity_d1.py" in launch
     assert "STAGE_30_FIDELITY.md" in launch
+    assert "STAGE_30_EXIT_CRITERIA.md" in launch or "ADR-066" in launch
 
     admin = _read("docs/ADMIN_MANUAL.md")
     assert "Stage 30 S1" in admin or "SUPPORT_RUNBOOK_MVP.md" in admin
@@ -136,6 +131,7 @@ def test_stage30_readiness_and_roadmap():
     assert "Stage 30 I1" in pr
     assert "Stage 30 S1" in pr
     assert "Stage 30 A1" in pr
+    assert "STAGE_30_EXIT_CRITERIA.md" in pr or "ADR-066" in pr or "ADR_066" in pr
     assert (
         "attestation" in pr.lower()
         or "§7" in pr
@@ -150,3 +146,5 @@ def test_stage30_readiness_and_roadmap():
     assert "ADR_065_STAGE30_OPEN.md" in roadmap
     assert "STAGE_30_PLAN.md" in roadmap
     assert "test_stage30_fidelity_d1.py" in roadmap
+    assert "STAGE_30_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_066_STAGE30_FREEZE.md" in roadmap
