@@ -4,25 +4,26 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
-const items: [string, string, string][] = [
-  ['Dashboard', '/dashboard', 'dashboard'],
-  ['Company', '/company', 'company'],
-  ['Inventory', '/inventory', 'inventory'],
-  ['Sales', '/sales', 'sales'],
-  ['POS', '/pos', 'pos'],
-  ['Purchasing', '/purchasing', 'purchasing'],
-  ['Expenses', '/expenses', 'expenses'],
-  ['Accounting', '/accounting', 'accounting'],
-  ['Credit', '/credit', 'credit'],
-  ['Tax', '/tax', 'tax'],
-  ['Multi-Store', '/stores', 'stores'],
-  ['Reports', '/reports', 'reports'],
-  ['Notifications', '/notifications', 'notifications'],
-  ['Audit', '/audit', 'audit'],
-  ['Backup', '/backup', 'backup'],
-  ['Security', '/security', 'security'],
-  ['AI Assistant', '/ai', 'ai'],
-  ['Users', '/users', 'users'],
+// [label, href, module, icon]
+const items: [string, string, string, string][] = [
+  ['Dashboard', '/dashboard', 'dashboard', '\ud83d\udcca'],
+  ['Company', '/company', 'company', '\ud83c\udfe2'],
+  ['Inventory', '/inventory', 'inventory', '\ud83d\udce6'],
+  ['Sales', '/sales', 'sales', '\ud83e\uddfe'],
+  ['POS', '/pos', 'pos', '\ud83d\uded2'],
+  ['Purchasing', '/purchasing', 'purchasing', '\ud83d\ude9a'],
+  ['Expenses', '/expenses', 'expenses', '\ud83d\udcb8'],
+  ['Accounting', '/accounting', 'accounting', '\ud83d\udcd2'],
+  ['Credit', '/credit', 'credit', '\ud83d\udcb3'],
+  ['Tax', '/tax', 'tax', '\ud83e\uddee'],
+  ['Multi-Store', '/stores', 'stores', '\ud83c\udfec'],
+  ['Reports', '/reports', 'reports', '\ud83d\udcc8'],
+  ['Notifications', '/notifications', 'notifications', '\ud83d\udd14'],
+  ['Audit', '/audit', 'audit', '\ud83d\udd0d'],
+  ['Backup', '/backup', 'backup', '\ud83d\udcbe'],
+  ['Security', '/security', 'security', '\ud83d\udd12'],
+  ['AI Assistant', '/ai', 'ai', '\ud83e\udd16'],
+  ['Users', '/users', 'users', '\ud83d\udc65'],
 ];
 
 function canReadModule(permissions: Record<string, string[]> | null | undefined, module: string) {
@@ -70,10 +71,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <aside className="side">
         <div className="brand">RIBDIGI ERP</div>
         <nav className="nav">
-          {visible.map(([n, h]) => (
+          {visible.map(([n, h, , icon]) => (
             <Link key={h} href={h} onClick={() => setMenuOpen(false)}>
-              {n}
-              {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
+              <span className="nav-ico" aria-hidden>
+                {icon}
+              </span>
+              <span className="nav-label">
+                {n}
+                {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
+              </span>
             </Link>
           ))}
         </nav>
