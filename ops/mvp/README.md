@@ -71,6 +71,7 @@
 | `advanced-manufacturing.json` | Stage 60 M1 Advanced manufacturing honesty — `mrp_module_live_claimed: false` / `production_scheduling_live_claimed: false` / `bom_mrp_program_live: false` / `advanced_manufacturing_program_live: false` |
 | `multi-country-tax.json` | Stage 60 T1 Multi-country tax honesty — `multi_country_tax_engine_claimed: false` / `tax_efile_portal_live_claimed: false` / `gst_vat_sales_tax_compliance_live: false` / `multi_country_tax_program_live: false` |
 | `embedded-fintech.json` | Stage 61 F1 Embedded fintech honesty — `lending_product_live_claimed: false` / `invoice_financing_live_claimed: false` / `embedded_fintech_program_live: false` / `fintech_marketplace_live: false` |
+| `supply-chain-integration.json` | Stage 61 S1 Supply chain integration honesty — `supplier_supply_chain_live_claimed: false` / `supplier_portal_live_claimed: false` / `edi_asn_program_live: false` / `supply_chain_integration_program_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -213,6 +214,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_61_PLAN.md` (`backend/tests/test_stage61_open.py`) — Stage 61 open (ADR-127)
 - `docs/EMBEDDED_FINTECH_MVP.md` (`backend/tests/test_embedded_fintech_f1.py`) — Stage 61 F1
+- `docs/SUPPLY_CHAIN_INTEGRATION_MVP.md` (`backend/tests/test_supply_chain_integration_s1.py`) — Stage 61 S1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -838,8 +840,12 @@ H60x met — `docs/STAGE_60_EXIT_CRITERIA.md`, ADR-126. Stages 1–60 frozen for
 
 ## Stage 61 open
 
-Commercial Fintech & Supply-Chain Fidelity — `docs/STAGE_61_PLAN.md`, ADR-127; Open — F1 complete; S1 next.
+Commercial Fintech & Supply-Chain Fidelity — `docs/STAGE_61_PLAN.md`, ADR-127; Open — S1 complete; D1 next.
 
 ## Stage 61 F1 — Embedded fintech honesty
 
 `docs/EMBEDDED_FINTECH_MVP.md` + `ops/mvp/embedded-fintech.json` — packaging Complete; `lending_product_live_claimed` / `invoice_financing_live_claimed` / `embedded_fintech_program_live` / `fintech_marketplace_live` remain false.
+
+## Stage 61 S1 — Supply chain integration honesty
+
+`docs/SUPPLY_CHAIN_INTEGRATION_MVP.md` + `ops/mvp/supply-chain-integration.json` — packaging Complete; `supplier_supply_chain_live_claimed` / `supplier_portal_live_claimed` / `edi_asn_program_live` / `supply_chain_integration_program_live` remain false.

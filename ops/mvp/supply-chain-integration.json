@@ -1,0 +1,158 @@
+{
+  "stage": "61",
+  "workstream": "S1",
+  "doc": "docs/SUPPLY_CHAIN_INTEGRATION_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "e2e_purchase_stock": "ops/mvp/e2e-purchase-stock.json",
+  "e2e_purchase_stock_doc": "docs/E2E_PURCHASE_STOCK_MVP.md",
+  "advanced_manufacturing": "ops/mvp/advanced-manufacturing.json",
+  "advanced_manufacturing_doc": "docs/ADVANCED_MANUFACTURING_MVP.md",
+  "embedded_fintech": "ops/mvp/embedded-fintech.json",
+  "embedded_fintech_doc": "docs/EMBEDDED_FINTECH_MVP.md",
+  "industry_partnerships": "ops/mvp/industry-partnerships.json",
+  "industry_partnerships_doc": "docs/INDUSTRY_PARTNERSHIPS_MVP.md",
+  "partner_reseller": "ops/mvp/partner-reseller.json",
+  "partner_reseller_doc": "docs/PARTNER_RESELLER_MVP.md",
+  "api_integration_commercial": "ops/mvp/api-integration-commercial.json",
+  "api_integration_commercial_doc": "docs/API_INTEGRATION_COMMERCIAL_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage61_plan": "docs/STAGE_61_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "supplier_supply_chain_live_claimed": false,
+  "supplier_portal_live_claimed": false,
+  "edi_asn_program_live": false,
+  "supply_chain_integration_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage61_s1_supply_chain_integration.json",
+  "steps": [
+    {
+      "id": "sci-product-overview",
+      "category": "supply_chain",
+      "title": "Index PRODUCT_OVERVIEW supplier supply-chain Long-Term themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_61_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "sci-purchase-stock",
+      "category": "ops",
+      "title": "Link purchase-stock / inventory E2E as internal purchasing adjacency (not external supply-chain live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/E2E_PURCHASE_STOCK_MVP.md",
+        "ops/mvp/e2e-purchase-stock.json"
+      ],
+      "source": "docs/E2E_PURCHASE_STOCK_MVP.md"
+    },
+    {
+      "id": "sci-manufacturing",
+      "category": "ops",
+      "title": "Link Stage 60 advanced manufacturing as ops-depth adjacency (MRP Remaining \u2260 supplier network)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADVANCED_MANUFACTURING_MVP.md",
+        "ops/mvp/advanced-manufacturing.json"
+      ],
+      "source": "docs/ADVANCED_MANUFACTURING_MVP.md"
+    },
+    {
+      "id": "sci-fintech-adjacency",
+      "category": "supply_chain",
+      "title": "Link Stage 61 F1 embedded fintech as commercial adjacency (lending \u2260 supplier portal)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/EMBEDDED_FINTECH_MVP.md",
+        "ops/mvp/embedded-fintech.json"
+      ],
+      "source": "docs/EMBEDDED_FINTECH_MVP.md"
+    },
+    {
+      "id": "sci-industry",
+      "category": "ops",
+      "title": "Link Stage 52 industry partnerships as segment adjacency (not EDI/ASN program live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INDUSTRY_PARTNERSHIPS_MVP.md",
+        "ops/mvp/industry-partnerships.json"
+      ],
+      "source": "docs/INDUSTRY_PARTNERSHIPS_MVP.md"
+    },
+    {
+      "id": "sci-partner",
+      "category": "ops",
+      "title": "Link Stage 50 partner-reseller as channel adjacency (not supply-chain integration program live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PARTNER_RESELLER_MVP.md",
+        "ops/mvp/partner-reseller.json"
+      ],
+      "source": "docs/PARTNER_RESELLER_MVP.md"
+    },
+    {
+      "id": "sci-api-commercial",
+      "category": "supply_chain",
+      "title": "Link Stage 53 API / integration commercial as connector-fee adjacency (not supplier EDI live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_INTEGRATION_COMMERCIAL_MVP.md",
+        "ops/mvp/api-integration-commercial.json"
+      ],
+      "source": "docs/API_INTEGRATION_COMMERCIAL_MVP.md"
+    },
+    {
+      "id": "sci-plan-honesty",
+      "category": "supply_chain",
+      "title": "Confirm Stage 61 plan explicitly defers live supplier supply-chain integration",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_61_PLAN.md",
+        "docs/SUPPLY_CHAIN_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_61_PLAN.md"
+    },
+    {
+      "id": "sci-supplier-network-remaining",
+      "category": "honesty",
+      "title": "Live supplier supply-chain integration Remaining \u2014 packaging \u2260 external supplier network",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_61_PLAN.md",
+        "docs/SUPPLY_CHAIN_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_61_PLAN.md"
+    },
+    {
+      "id": "sci-portal-remaining",
+      "category": "honesty",
+      "title": "Live supplier portal / EDI ASN Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_61_PLAN.md",
+        "docs/SUPPLY_CHAIN_INTEGRATION_MVP.md"
+      ],
+      "source": "docs/STAGE_61_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live supplier supply-chain integration Complete",
+    "Live supplier portal Complete",
+    "EDI / ASN program live Complete",
+    "Supply-chain integration program live Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

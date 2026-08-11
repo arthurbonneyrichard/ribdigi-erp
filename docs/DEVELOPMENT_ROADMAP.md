@@ -1385,3 +1385,5 @@ Every feature in every phase must meet:
 **Stage 61 open (2026-08-11):** Commercial Fintech & Supply-Chain Fidelity track approved — `docs/ADR_127_STAGE61_OPEN.md` + `docs/STAGE_61_PLAN.md` (embedded fintech → supply chain integration → fidelity).
 
 **Stage 61 F1 (2026-08-11):** Embedded fintech honesty — `docs/EMBEDDED_FINTECH_MVP.md`, `ops/mvp/embedded-fintech.json`, evidence `stage61_f1_embedded_fintech.json` (`test_embedded_fintech_f1.py`); live lending / invoice financing Remaining.
+
+**Stage 61 S1 (2026-08-11):** Supply chain integration honesty — `docs/SUPPLY_CHAIN_INTEGRATION_MVP.md`, `ops/mvp/supply-chain-integration.json`, evidence `stage61_s1_supply_chain_integration.json` (`test_supply_chain_integration_s1.py`); live supplier supply-chain Remaining.
