@@ -1345,3 +1345,5 @@ Every feature in every phase must meet:
 **Stage 57 open (2026-08-11):** Commercial Mobile & Metrics Fidelity track approved — `docs/ADR_119_STAGE57_OPEN.md` + `docs/STAGE_57_PLAN.md` (mobile app GTM → success metrics → fidelity).
 
 **Stage 57 A1 (2026-08-11):** Mobile app GTM honesty — `docs/MOBILE_APP_GTM_MVP.md`, `ops/mvp/mobile-app-gtm.json`, evidence `stage57_a1_mobile_app_gtm.json` (`test_mobile_app_gtm_a1.py`); live Flutter / store publish Remaining.
+
+**Stage 57 K1 (2026-08-11):** Success metrics honesty — `docs/SUCCESS_METRICS_MVP.md`, `ops/mvp/success-metrics.json`, evidence `stage57_k1_success_metrics.json` (`test_success_metrics_k1.py`); measured MAU / NPS / uptime Remaining.

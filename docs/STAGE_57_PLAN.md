@@ -1,6 +1,6 @@
 # Stage 57 Plan — Commercial Mobile & Metrics Fidelity
 
-**Status:** Open — A1 complete; K1 next  
+**Status:** Open — K1 complete; D1 next  
 **Base:** Mobile App GTM Honesty Pack + Success Metrics Honesty Pack → Commercial Mobile & Metrics Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-119](ADR_119_STAGE57_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Mobile & Metrics Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **A1** | Mobile app GTM honesty packaging (not live Flutter / store publish Complete) | P0 | COMPLETE |
-| **K1** | Success metrics honesty packaging (not measured MAU / NPS / uptime SLA Complete) | P0 | PENDING |
+| **K1** | Success metrics honesty packaging (not measured MAU / NPS / uptime SLA Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H57x** | Stage 57 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -94,10 +94,10 @@ Commercial Mobile & Metrics Fidelity
 
 ## K1 acceptance criteria
 
-- [ ] Success metrics honesty packaging indexing PRODUCT_OVERVIEW MAU / NPS / uptime / adoption themes and Stage 40 status-uptime adjacency (not claiming measured MAU / NPS / uptime SLA Complete).
-- [ ] Automated proof: `backend/tests/test_success_metrics_k1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 57 K1.
+- [x] Success metrics honesty packaging indexing PRODUCT_OVERVIEW MAU / NPS / uptime / adoption themes and Stage 40 status-uptime adjacency (not claiming measured MAU / NPS / uptime SLA Complete).
+- [x] Automated proof: `backend/tests/test_success_metrics_k1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 57 K1.
 
 ## D1 acceptance criteria
 
