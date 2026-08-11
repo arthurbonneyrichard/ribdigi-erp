@@ -1,10 +1,11 @@
 # Stage 62 Plan — Commercial IoT & AI Marketplace Fidelity
 
-**Status:** Open — D1 complete; H62x next  
+**Status:** Closed — exit met (H62x / ADR-130)  
 **Base:** IoT Integration Honesty Pack + AI Model Marketplace Honesty Pack → Commercial IoT & AI Marketplace Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-129](ADR_129_STAGE62_OPEN.md)  
 **Prior freeze:** [ADR-128](ADR_128_STAGE61_FREEZE.md) · [STAGE_61_EXIT_CRITERIA.md](STAGE_61_EXIT_CRITERIA.md)
+**Exit:** [STAGE_62_EXIT_CRITERIA.md](STAGE_62_EXIT_CRITERIA.md) · [ADR-130](ADR_130_STAGE62_FREEZE.md)  
 
 Stage 62 opens after Stage 61 freeze: **IoT Integration Honesty Packaging + AI Model Marketplace Honesty Packaging → Commercial IoT & AI Marketplace Fidelity**. PRODUCT_OVERVIEW Long-Term Future Roadmap themes (IoT integration — smart shelves, temperature sensors; AI model marketplace for industry-specific predictions), with Stage 49–61 commercial / manufacturing / AI / ops adjacency, lack dedicated customer-facing honesty packs for IoT integration Remaining and AI model marketplace Remaining. This track packages those Remaining surfaces on proven Stage 36–61 commercial / ops honesty assets — **not** claiming live IoT integration Complete, live AI model marketplace Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–61 packs as new Complete, or reopening Stages 1–61 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial IoT & AI Marketplace Fidelity
 | **I1** | IoT integration honesty packaging (not live smart shelves / temperature sensors Complete) | P0 | COMPLETE |
 | **A1** | AI model marketplace honesty packaging (not live industry-prediction marketplace Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H62x** | Stage 62 exit criteria + freeze ADR | Exit | PENDING |
+| **H62x** | Stage 62 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -114,6 +115,6 @@ Commercial IoT & AI Marketplace Fidelity
 
 ## H62x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for I1–D1 / H62x — `docs/STAGE_62_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_130_STAGE62_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage62_exit_h62x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for I1–D1 / H62x — `docs/STAGE_62_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_130_STAGE62_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage62_exit_h62x.py`.

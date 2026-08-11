@@ -218,6 +218,8 @@ Authoritative MVP docs:
 - `docs/IOT_INTEGRATION_MVP.md` (`backend/tests/test_iot_integration_i1.py`) — Stage 62 I1
 - `docs/AI_MODEL_MARKETPLACE_MVP.md` (`backend/tests/test_ai_model_marketplace_a1.py`) — Stage 62 A1
 - `docs/STAGE_62_FIDELITY.md` (`backend/tests/test_stage62_fidelity_d1.py`) — Stage 62 D1
+- `docs/STAGE_62_EXIT_CRITERIA.md` (`backend/tests/test_stage62_exit_h62x.py`) — Stage 62 H62x
+- `docs/ADR_130_STAGE62_FREEZE.md` — Stage 62 freeze
 - `docs/STAGE_61_PLAN.md` (`backend/tests/test_stage61_open.py`) — Stage 61 open (ADR-127)
 - `docs/EMBEDDED_FINTECH_MVP.md` (`backend/tests/test_embedded_fintech_f1.py`) — Stage 61 F1
 - `docs/SUPPLY_CHAIN_INTEGRATION_MVP.md` (`backend/tests/test_supply_chain_integration_s1.py`) — Stage 61 S1
@@ -869,7 +871,7 @@ H61x met — `docs/STAGE_61_EXIT_CRITERIA.md`, ADR-128. Stages 1–61 frozen for
 
 ## Stage 62 open
 
-Commercial IoT & AI Marketplace Fidelity — `docs/STAGE_62_PLAN.md`, ADR-129; Open — D1 complete; H62x next.
+Commercial IoT & AI Marketplace Fidelity — `docs/STAGE_62_PLAN.md`, ADR-129; Closed — exit met (H62x / ADR-130).
 
 ## Stage 62 I1 — IoT integration honesty
 
@@ -882,3 +884,7 @@ Commercial IoT & AI Marketplace Fidelity — `docs/STAGE_62_PLAN.md`, ADR-129; O
 ## Stage 62 D1 — IoT & AI marketplace fidelity
 
 `docs/STAGE_62_FIDELITY.md` — maps I1–A1 → readiness / launch / deploy / security (`test_stage62_fidelity_d1.py`).
+
+## Stage 62 exit
+
+H62x met — `docs/STAGE_62_EXIT_CRITERIA.md`, ADR-130. Stages 1–62 frozen for Stage 62 feature scope.
