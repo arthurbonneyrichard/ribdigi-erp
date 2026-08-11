@@ -173,8 +173,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [ ] Stage 34 Commercial Customer Assurance Fidelity (open: `docs/STAGE_34_PLAN.md`, ADR-073) — A1 next
+- [ ] Stage 34 Commercial Customer Assurance Fidelity (open: `docs/STAGE_34_PLAN.md`, ADR-073) — C1 next
 - [x] Stage 34 track opened (ADR-073: `test_stage34_open.py`, `docs/STAGE_34_PLAN.md`)
+- [x] Assurance evidence (Stage 34 A1: `test_assurance_evidence_a1.py` — `docs/ASSURANCE_EVIDENCE_MVP.md`, `ops/mvp/assurance-evidence.json`; evidence `stage34_a1_assurance_evidence.json`; live attestation / §7 Remaining)
 - [x] Stage 33 Commercial MVP Continuity Fidelity (closed: `docs/STAGE_33_PLAN.md`, ADR-072) — K1–D1 / H33x complete
 - [x] Stage 33 track opened (ADR-071: `test_stage33_open.py`, `docs/STAGE_33_PLAN.md`)
 - [x] Stage 33 exit + freeze (H33x: `test_stage33_exit_h33x.py`, `docs/STAGE_33_EXIT_CRITERIA.md`, ADR-072)

@@ -1,0 +1,149 @@
+{
+  "stage": "34",
+  "workstream": "A1",
+  "doc": "docs/ASSURANCE_EVIDENCE_MVP.md",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "residual_risk_register": "ops/mvp/residual-risk-register.json",
+  "compliance_readiness_register": "ops/mvp/compliance-readiness-register.json",
+  "evidence_ledger": "ops/evidence/ledger.json",
+  "launch_cert": "docs/LAUNCH_CERT_MVP.md",
+  "pentest_checklist": "ops/security/pentest-engagement-checklist.json",
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "go_live_claimed": false,
+  "live_runs_certified": false,
+  "vendor_pen_test_purchased": false,
+  "certification_complete_claimed": false,
+  "items": [
+    {
+      "id": "ae-security-scan",
+      "category": "security",
+      "title": "OWASP pytest baseline security scan evidence for procurement map",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_SCAN_MVP.md"
+      ],
+      "source": "docs/SECURITY_SCAN_MVP.md"
+    },
+    {
+      "id": "ae-pentest-readiness",
+      "category": "security",
+      "title": "Vendor pen-test / ZAP engagement readiness (certificate Remaining)",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/PENTEST_PACK_MVP.md",
+        "ops/security/pentest-engagement-checklist.json"
+      ],
+      "source": "ops/security/pentest-engagement-checklist.json"
+    },
+    {
+      "id": "ae-launch-cert",
+      "category": "launch",
+      "title": "Launch checklist CI-vs-operator certification map",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CERT_MVP.md",
+        "ops/launch/checklist-map.json"
+      ],
+      "source": "docs/LAUNCH_CERT_MVP.md"
+    },
+    {
+      "id": "ae-attestation-readiness",
+      "category": "attestation",
+      "title": "Go-live attestation readiness matrix (\u00a77 Remaining)",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/ATTESTATION_PACK_MVP.md",
+        "ops/launch/attestation-matrix.json"
+      ],
+      "source": "ops/launch/attestation-matrix.json"
+    },
+    {
+      "id": "ae-evidence-ledger",
+      "category": "evidence",
+      "title": "Operator evidence ledger index for assurance responses",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/EVIDENCE_LEDGER_MVP.md",
+        "ops/evidence/ledger.json"
+      ],
+      "source": "ops/evidence/ledger.json"
+    },
+    {
+      "id": "ae-residual-risk",
+      "category": "risk",
+      "title": "Residual risk register honesty for customer assurance",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/RESIDUAL_RISK_MVP.md",
+        "ops/mvp/residual-risk-register.json"
+      ],
+      "source": "ops/mvp/residual-risk-register.json"
+    },
+    {
+      "id": "ae-compliance-readiness",
+      "category": "compliance",
+      "title": "Compliance control theme mapping (SOC 2 / ISO Remaining)",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "ops/mvp/compliance-readiness-register.json"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json"
+    },
+    {
+      "id": "ae-cutover-remaining",
+      "category": "launch",
+      "title": "Cutover / production \u00a77 Remaining honesty",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/CUTOVER_PACK_MVP.md",
+        "docs/ATTESTATION_PACK_MVP.md"
+      ],
+      "source": "docs/CUTOVER_PACK_MVP.md"
+    },
+    {
+      "id": "ae-security-guide",
+      "category": "security",
+      "title": "SECURITY_GUIDE control narrative for procurement questionnaires",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ae-tenancy-isolation",
+      "category": "security",
+      "title": "Tenant isolation / RBAC assurance references (ADR-001 MVP shared-schema)",
+      "status": "indexed",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/ADR_001_TENANCY.md"
+      ],
+      "source": "docs/ADR_001_TENANCY.md"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage34_a1_assurance_evidence.json",
+  "deferred": [
+    "Claiming customer assurance / go-live attestation Complete because Stage 34 A1 packaging exists",
+    "Forged LAUNCH \u00a77 Name/Date sign-off",
+    "Purchased vendor pen-test certificate Complete",
+    "SOC 2 / ISO certification Complete",
+    "Live operator run certification Complete",
+    "Re-packaging Stage 26\u201333 packs as new Complete"
+  ]
+}

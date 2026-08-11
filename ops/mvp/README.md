@@ -15,6 +15,7 @@
 | `compliance-readiness-register.json` | Stage 33 C1 compliance readiness — `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` |
 | `first-tenant-onboarding.json` | Stage 33 F1 first-tenant onboarding — `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` |
 | `knowledge-transfer.json` | Stage 33 T1 knowledge transfer — `live_training_claimed: false` / `training_complete_claimed: false` |
+| `assurance-evidence.json` | Stage 34 A1 assurance evidence — `customer_assurance_claimed: false` / `attestation_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -30,6 +31,7 @@ Authoritative MVP docs:
 - `docs/COMPLIANCE_READINESS_MVP.md` (`backend/tests/test_compliance_readiness_c1.py`) — Stage 33 C1
 - `docs/FIRST_TENANT_ONBOARDING_MVP.md` (`backend/tests/test_first_tenant_onboarding_f1.py`) — Stage 33 F1
 - `docs/KNOWLEDGE_TRANSFER_MVP.md` (`backend/tests/test_knowledge_transfer_t1.py`) — Stage 33 T1
+- `docs/ASSURANCE_EVIDENCE_MVP.md` (`backend/tests/test_assurance_evidence_a1.py`) — Stage 34 A1
 
 ## Stage 33 K1 — Residual risk register
 
@@ -71,4 +73,12 @@ Doc-only fidelity sync (no new register). See `docs/STAGE_33_FIDELITY.md` (`back
 
 Exit met under ADR-072. See `docs/STAGE_33_EXIT_CRITERIA.md` and `docs/ADR_072_STAGE33_FREEZE.md` (`backend/tests/test_stage33_exit_h33x.py`). Continuity packaging Complete ≠ live go-live / risks closed / SOC 2 / ISO / live onboarding / training.
 
-Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false`.
+## Stage 34 A1 — Assurance evidence
+
+Procurement-facing evidence map for customer assurance / attestation readiness. See `docs/ASSURANCE_EVIDENCE_MVP.md`.
+
+- Pack: `assurance-evidence.json`
+- Tests: `backend/tests/test_assurance_evidence_a1.py`
+- Honesty: `customer_assurance_claimed: false`, `attestation_claimed: false`, `section_7_signed: false` — indexing ≠ live attestation
+
+Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false` / `customer_assurance_claimed: false` / `attestation_claimed: false`.

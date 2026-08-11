@@ -336,6 +336,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 34 open (2026-08-11):** Commercial Customer Assurance Fidelity track approved — `docs/ADR_073_STAGE34_OPEN.md` + `docs/STAGE_34_PLAN.md` (Assurance evidence → Compliance questionnaire → Support SLA boundary → Billing-deferred honesty → fidelity).
 
+**Stage 34 A1 (2026-08-11):** Assurance evidence — `docs/ASSURANCE_EVIDENCE_MVP.md`, `ops/mvp/assurance-evidence.json`, evidence `stage34_a1_assurance_evidence.json` (`test_assurance_evidence_a1.py`); live attestation / §7 Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -916,7 +918,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 34 open (`docs/STAGE_34_PLAN.md`, ADR-073) — A1 next. Stages 1–33 remain frozen for their scopes (`docs/STAGE_33_EXIT_CRITERIA.md`, ADR-072).
+**Active delivery plan:** Stage 34 open (`docs/STAGE_34_PLAN.md`, ADR-073) — A1 complete; C1 next. Stages 1–33 remain frozen for their scopes (`docs/STAGE_33_EXIT_CRITERIA.md`, ADR-072).
 
 ### 6.2 Features
 
