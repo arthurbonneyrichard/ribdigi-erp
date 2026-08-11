@@ -416,6 +416,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 41 A1 (2026-08-11):** Accessibility statement honesty — `docs/ACCESSIBILITY_STATEMENT_MVP.md`, `ops/mvp/accessibility-statement.json`, evidence `stage41_a1_accessibility_statement.json` (`test_accessibility_statement_a1.py`); WCAG AA audit Remaining.
 
+**Stage 41 C1 (2026-08-11):** Change / maintenance governance honesty — `docs/CHANGE_GOVERNANCE_MVP.md`, `ops/mvp/change-governance.json`, evidence `stage41_c1_change_governance.json` (`test_change_governance_c1.py`); public change calendar Remaining.
+
 
 
 

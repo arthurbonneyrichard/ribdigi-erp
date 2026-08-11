@@ -1,6 +1,6 @@
 # Stage 41 Plan — Commercial Accessibility & Change Governance Fidelity
 
-**Status:** Open — A1 complete; C1 next  
+**Status:** Open — A1–C1 complete; D1 next  
 **Base:** Accessibility Statement Honesty Pack + Change / Maintenance Governance Honesty Pack → Commercial Accessibility & Change Governance Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-087](ADR_087_STAGE41_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Accessibility & Change Governance Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **A1** | Accessibility statement honesty packaging (not WCAG AA audit Complete) | P0 | COMPLETE |
-| **C1** | Change / maintenance governance honesty packaging (not public change calendar Complete) | P0 | PENDING |
+| **C1** | Change / maintenance governance honesty packaging (not public change calendar Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H41x** | Stage 41 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -68,10 +68,10 @@ Commercial Accessibility & Change Governance Fidelity
 
 ## C1 acceptance criteria
 
-- [ ] Change / maintenance governance honesty packaging indexing ADMIN_MANUAL / DR maintenance-window themes (not claiming public change calendar Complete).
-- [ ] Automated proof: `backend/tests/test_change_governance_c1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 41 C1.
+- [x] Change / maintenance governance honesty packaging indexing ADMIN_MANUAL / DR maintenance-window themes (not claiming public change calendar Complete).
+- [x] Automated proof: `backend/tests/test_change_governance_c1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 41 C1.
 
 ## D1 acceptance criteria
 
