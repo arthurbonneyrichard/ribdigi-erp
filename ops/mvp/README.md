@@ -68,6 +68,7 @@
 | `ai-metrics.json` | Stage 58 I1 AI metrics honesty — `ai_feature_adoption_measured_claimed: false` / `prediction_accuracy_measured_claimed: false` / `chat_resolution_measured_claimed: false` / `ai_metrics_program_live: false` |
 | `ecommerce-integration.json` | Stage 59 E1 E-commerce integration honesty — `shopify_connector_live_claimed: false` / `woocommerce_connector_live_claimed: false` / `ecommerce_sync_program_live: false` / `ecommerce_integration_program_live: false` |
 | `crm-commercial.json` | Stage 59 C1 CRM commercial honesty — `crm_module_live_claimed: false` / `customer_segmentation_live_claimed: false` / `crm_pipeline_program_live: false` / `crm_commercial_program_live: false` |
+| `advanced-manufacturing.json` | Stage 60 M1 Advanced manufacturing honesty — `mrp_module_live_claimed: false` / `production_scheduling_live_claimed: false` / `bom_mrp_program_live: false` / `advanced_manufacturing_program_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -204,6 +205,7 @@ Authoritative MVP docs:
 - `docs/STAGE_59_FIDELITY.md` (`backend/tests/test_stage59_fidelity_d1.py`) — Stage 59 D1
 - `docs/STAGE_59_EXIT_CRITERIA.md` / `docs/ADR_124_STAGE59_FREEZE.md` (`backend/tests/test_stage59_exit_h59x.py`) — Stage 59 H59x
 - `docs/STAGE_60_PLAN.md` (`backend/tests/test_stage60_open.py`) — Stage 60 open (ADR-125)
+- `docs/ADVANCED_MANUFACTURING_MVP.md` (`backend/tests/test_advanced_manufacturing_m1.py`) — Stage 60 M1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -809,4 +811,8 @@ H59x met — `docs/STAGE_59_EXIT_CRITERIA.md`, ADR-124. Stages 1–59 frozen for
 
 ## Stage 60 open
 
-Commercial Manufacturing & Tax Fidelity — `docs/STAGE_60_PLAN.md`, ADR-125; Open — M1 next.
+Commercial Manufacturing & Tax Fidelity — `docs/STAGE_60_PLAN.md`, ADR-125; Open — M1 complete; T1 next.
+
+## Stage 60 M1 — Advanced manufacturing honesty
+
+`docs/ADVANCED_MANUFACTURING_MVP.md` + `ops/mvp/advanced-manufacturing.json` — packaging Complete; `mrp_module_live_claimed` / `production_scheduling_live_claimed` / `bom_mrp_program_live` / `advanced_manufacturing_program_live` remain false.

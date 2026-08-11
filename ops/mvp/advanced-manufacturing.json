@@ -1,0 +1,160 @@
+{
+  "stage": "60",
+  "workstream": "M1",
+  "doc": "docs/ADVANCED_MANUFACTURING_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "e2e_purchase_stock": "ops/mvp/e2e-purchase-stock.json",
+  "e2e_purchase_stock_doc": "docs/E2E_PURCHASE_STOCK_MVP.md",
+  "industry_partnerships": "ops/mvp/industry-partnerships.json",
+  "industry_partnerships_doc": "docs/INDUSTRY_PARTNERSHIPS_MVP.md",
+  "white_label_licensing": "ops/mvp/white-label-licensing.json",
+  "white_label_licensing_doc": "docs/WHITE_LABEL_LICENSING_MVP.md",
+  "implementation_onboarding": "ops/mvp/implementation-onboarding.json",
+  "implementation_onboarding_doc": "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+  "ecommerce_integration": "ops/mvp/ecommerce-integration.json",
+  "ecommerce_integration_doc": "docs/ECOMMERCE_INTEGRATION_MVP.md",
+  "crm_commercial": "ops/mvp/crm-commercial.json",
+  "crm_commercial_doc": "docs/CRM_COMMERCIAL_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage60_plan": "docs/STAGE_60_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "mrp_module_live_claimed": false,
+  "production_scheduling_live_claimed": false,
+  "bom_mrp_program_live": false,
+  "advanced_manufacturing_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage60_m1_advanced_manufacturing.json",
+  "steps": [
+    {
+      "id": "am-product-overview",
+      "category": "manufacturing",
+      "title": "Index PRODUCT_OVERVIEW Advanced Manufacturing / MRP / production-scheduling Mid-Term themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_60_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "am-purchase-stock",
+      "category": "ops",
+      "title": "Link purchase-stock / inventory E2E as ops adjacency (not live MRP)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/E2E_PURCHASE_STOCK_MVP.md",
+        "ops/mvp/e2e-purchase-stock.json"
+      ],
+      "source": "docs/E2E_PURCHASE_STOCK_MVP.md"
+    },
+    {
+      "id": "am-industry",
+      "category": "manufacturing",
+      "title": "Link Stage 52 industry partnerships as manufacturing-segment adjacency (not production scheduling live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INDUSTRY_PARTNERSHIPS_MVP.md",
+        "ops/mvp/industry-partnerships.json"
+      ],
+      "source": "docs/INDUSTRY_PARTNERSHIPS_MVP.md"
+    },
+    {
+      "id": "am-white-label",
+      "category": "ops",
+      "title": "Link Stage 55 white-label / Enterprise tier as marketing adjacency (Advanced Manufacturing \u2260 shipped MRP)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/WHITE_LABEL_LICENSING_MVP.md",
+        "ops/mvp/white-label-licensing.json"
+      ],
+      "source": "docs/WHITE_LABEL_LICENSING_MVP.md"
+    },
+    {
+      "id": "am-onboarding",
+      "category": "ops",
+      "title": "Link Stage 56 implementation onboarding as delivery adjacency (not BOM/MRP program live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+        "ops/mvp/implementation-onboarding.json"
+      ],
+      "source": "docs/IMPLEMENTATION_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "am-channel-adjacency",
+      "category": "ops",
+      "title": "Link Stage 59 e-commerce / CRM channel packs as adjacency (channel \u2260 manufacturing module)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ECOMMERCE_INTEGRATION_MVP.md",
+        "ops/mvp/ecommerce-integration.json",
+        "docs/CRM_COMMERCIAL_MVP.md",
+        "ops/mvp/crm-commercial.json"
+      ],
+      "source": "docs/ECOMMERCE_INTEGRATION_MVP.md"
+    },
+    {
+      "id": "am-roadmap-backlog",
+      "category": "manufacturing",
+      "title": "Index DEVELOPMENT_ROADMAP manufacturing / MRP backlog as Remaining source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "am-plan-honesty",
+      "category": "manufacturing",
+      "title": "Confirm Stage 60 plan explicitly defers live Advanced Manufacturing / MRP",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_60_PLAN.md",
+        "docs/ADVANCED_MANUFACTURING_MVP.md"
+      ],
+      "source": "docs/STAGE_60_PLAN.md"
+    },
+    {
+      "id": "am-mrp-remaining",
+      "category": "honesty",
+      "title": "Live MRP module Remaining \u2014 packaging \u2260 shipped manufacturing MRP surface",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_60_PLAN.md",
+        "docs/ADVANCED_MANUFACTURING_MVP.md"
+      ],
+      "source": "docs/STAGE_60_PLAN.md"
+    },
+    {
+      "id": "am-scheduling-remaining",
+      "category": "honesty",
+      "title": "Live production scheduling Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_60_PLAN.md",
+        "docs/ADVANCED_MANUFACTURING_MVP.md"
+      ],
+      "source": "docs/STAGE_60_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live MRP module Complete",
+    "Live production scheduling Complete",
+    "BOM / MRP program live Complete",
+    "Advanced manufacturing program live Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

@@ -1373,3 +1373,5 @@ Every feature in every phase must meet:
 **Stage 59 exit (2026-08-11):** E1, C1, D1, H59x met — `docs/STAGE_59_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_124_STAGE59_FREEZE.md`. Fidelity: `docs/STAGE_59_FIDELITY.md`.
 
 **Stage 60 open (2026-08-11):** Commercial Manufacturing & Tax Fidelity track approved — `docs/ADR_125_STAGE60_OPEN.md` + `docs/STAGE_60_PLAN.md` (advanced manufacturing → multi-country tax → fidelity).
+
+**Stage 60 M1 (2026-08-11):** Advanced manufacturing honesty — `docs/ADVANCED_MANUFACTURING_MVP.md`, `ops/mvp/advanced-manufacturing.json`, evidence `stage60_m1_advanced_manufacturing.json` (`test_advanced_manufacturing_m1.py`); live MRP / production scheduling Remaining.

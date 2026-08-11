@@ -1,6 +1,6 @@
 # Stage 60 Plan — Commercial Manufacturing & Tax Fidelity
 
-**Status:** Open — M1 next  
+**Status:** Open — M1 complete; T1 next  
 **Base:** Advanced Manufacturing Honesty Pack + Multi-Country Tax Honesty Pack → Commercial Manufacturing & Tax Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-125](ADR_125_STAGE60_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Manufacturing & Tax Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **M1** | Advanced manufacturing honesty packaging (not live MRP / production scheduling Complete) | P0 | PENDING |
+| **M1** | Advanced manufacturing honesty packaging (not live MRP / production scheduling Complete) | P0 | COMPLETE |
 | **T1** | Multi-country tax honesty packaging (not live GST / VAT / Sales Tax e-file Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H60x** | Stage 60 exit criteria + freeze ADR | Exit | PENDING |
@@ -94,10 +94,10 @@ Commercial Manufacturing & Tax Fidelity
 
 ## M1 acceptance criteria
 
-- [ ] Advanced manufacturing honesty packaging indexing PRODUCT_OVERVIEW MRP / production-scheduling Mid-Term themes with Stage 49–59 commercial / ops adjacency (not claiming live Advanced Manufacturing / MRP Complete).
-- [ ] Automated proof: `backend/tests/test_advanced_manufacturing_m1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 60 M1.
+- [x] Advanced manufacturing honesty packaging indexing PRODUCT_OVERVIEW MRP / production-scheduling Mid-Term themes with Stage 49–59 commercial / ops adjacency (not claiming live Advanced Manufacturing / MRP Complete).
+- [x] Automated proof: `backend/tests/test_advanced_manufacturing_m1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 60 M1.
 
 ## T1 acceptance criteria
 
