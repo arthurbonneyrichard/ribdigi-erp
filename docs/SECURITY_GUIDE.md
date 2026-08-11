@@ -370,7 +370,8 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 41 C1** | Change / maintenance governance honesty — `docs/CHANGE_GOVERNANCE_MVP.md`, `ops/mvp/change-governance.json` (`test_change_governance_c1.py`); public change calendar Remaining |
 | **Stage 41 D1** | Accessibility & change governance fidelity — `docs/STAGE_41_FIDELITY.md` (`test_stage41_fidelity_d1.py`) maps A1–C1 → readiness / launch / deploy / security |
 | **Stage 41 fidelity** | D1 maps A1–C1 accessibility & change governance — `docs/STAGE_41_FIDELITY.md` (`test_stage41_fidelity_d1.py`); exit/freeze `docs/STAGE_41_EXIT_CRITERIA.md`, ADR-088 (`test_stage41_exit_h41x.py`); historical open ADR-087; WCAG AA audit / public change calendar / go-live / §7 remain Remaining |
-| **Stage 42 open** | Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089 (`test_stage42_open.py`); Stages 1–41 remain frozen; A1 next |
+| **Stage 42 open** | Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089 (`test_stage42_open.py`); Stages 1–41 remain frozen; A1 complete; P1 next |
+| **Stage 42 A1** | AI use disclosure honesty — `docs/AI_USE_DISCLOSURE_MVP.md`, `ops/mvp/ai-use-disclosure.json` (`test_ai_use_disclosure_a1.py`); AI certification Remaining |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |

@@ -424,6 +424,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 42 open (2026-08-11):** Commercial AI Transparency Fidelity track approved — `docs/ADR_089_STAGE42_OPEN.md` + `docs/STAGE_42_PLAN.md` (AI use disclosure → AI model/provider boundary → fidelity).
 
+**Stage 42 A1 (2026-08-11):** AI use disclosure honesty — `docs/AI_USE_DISCLOSURE_MVP.md`, `ops/mvp/ai-use-disclosure.json`, evidence `stage42_a1_ai_use_disclosure.json` (`test_ai_use_disclosure_a1.py`); AI certification Remaining.
+
 
 
 

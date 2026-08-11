@@ -1,6 +1,6 @@
 # Stage 42 Plan — Commercial AI Transparency Fidelity
 
-**Status:** Open — A1 next  
+**Status:** Open — A1 complete; P1 next  
 **Base:** AI Use Disclosure Honesty Pack + AI Model / Provider Boundary Honesty Pack → Commercial AI Transparency Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-089](ADR_089_STAGE42_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial AI Transparency Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **A1** | AI use disclosure honesty packaging (not AI certification Complete) | P0 | PENDING |
+| **A1** | AI use disclosure honesty packaging (not AI certification Complete) | P0 | COMPLETE |
 | **P1** | AI model / provider boundary honesty packaging (not external LLM Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H42x** | Stage 42 exit criteria + freeze ADR | Exit | PENDING |
@@ -63,10 +63,10 @@ Commercial AI Transparency Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] AI use disclosure honesty packaging consolidating Stage 20 AI BR-21 surfaces and SECURITY_GUIDE §13 into a customer-facing AI use boundary (not forging AI certification Complete).
-- [ ] Automated proof: `backend/tests/test_ai_use_disclosure_a1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 42 A1.
+- [x] AI use disclosure honesty packaging consolidating Stage 20 AI BR-21 surfaces and SECURITY_GUIDE §13 into a customer-facing AI use boundary (not forging AI certification Complete).
+- [x] Automated proof: `backend/tests/test_ai_use_disclosure_a1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 42 A1.
 
 ## P1 acceptance criteria
 
