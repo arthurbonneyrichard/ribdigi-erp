@@ -25,12 +25,18 @@ Optional, **not** wired into main `ci.yml` (requires a real staging URL / auth �
 - `ops/security/zap-baseline.example.yml` — copy into a staging-only workflow when ready
 - `ops/security/README.md` — operator notes
 
+## Vendor pen-test / ZAP staging pack (Stage 29 V1)
+
+Authoritative pack: [PENTEST_PACK_MVP.md](PENTEST_PACK_MVP.md) · `ops/security/pentest-engagement-checklist.json` · `ops/security/vendor-engagement.example.json`.
+
+Packaging covers engagement checklist + OWASP scope matrix + evidence schema. Evidence keeps `vendor_pen_test_purchased: false`, `live_zap_executed: false`. Purchased vendor certificate and green live ZAP remain **Remaining**.
+
 ## Explicitly Remaining
 
-- Vendor / third-party penetration test
+- Vendor / third-party penetration test **purchase / execution** (Stage 29 V1 packs engagement only)
 - Live ZAP baseline (or full Top 10) against authenticated staging in CI
 - Claiming ZAP HTML/JSON pass artifacts without a real scan run
 
 ## Sign-off
 
-Stage 27 S1 is met when this doc + evidence JSON exist, `test_security_scan_s1.py` passes, SECURITY_GUIDE / PRODUCTION_READINESS cite Stage 27 S1 with vendor pen test / live ZAP Remaining, and main `ci.yml` stays deploy-free.
+Stage 27 S1 is met when this doc + evidence JSON exist, `test_security_scan_s1.py` passes, SECURITY_GUIDE / PRODUCTION_READINESS cite Stage 27 S1 with vendor pen test / live ZAP Remaining, and main `ci.yml` stays deploy-free. Stage 29 V1 is met when `docs/PENTEST_PACK_MVP.md` + checklist + `test_pentest_pack_v1.py` pass without inventing a purchased cert.

@@ -1,6 +1,6 @@
 # Stage 29 Plan — Operator Hardening & Production Cutover Fidelity
 
-**Status:** Open — V1 next (ADR-063)  
+**Status:** Open — V1 complete; B2 next (ADR-063)  
 **Base:** Vendor Pen-Test / ZAP Staging Pack + PgBouncer Soak / Helm Pooler Pack + Cert-manager / TLS Ingress Pack + Production Cutover Pack → Operator Hardening & Cutover Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-063](ADR_063_STAGE29_OPEN.md)
@@ -35,7 +35,7 @@ Operator Hardening & Cutover Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **V1** | Vendor pen-test / ZAP staging operator pack | P0 | PENDING |
+| **V1** | Vendor pen-test / ZAP staging operator pack | P0 | COMPLETE |
 | **B2** | PgBouncer soak / Helm pooler packaging | P0 | PENDING |
 | **T1** | Cert-manager / TLS ingress packaging | P0 | PENDING |
 | **X1** | Production cutover pack (LAUNCH §§1–3 / §7 harness) | P1 | PENDING |
@@ -60,11 +60,11 @@ Operator Hardening & Cutover Fidelity
 
 ## V1 acceptance criteria
 
-- [ ] Vendor pen-test / ZAP staging operator packaging extending `docs/SECURITY_SCAN_MVP.md` / `ops/security/` (engagement checklist + evidence schema — not purchased cert / green live ZAP without target).
-- [ ] Durable artifact path under `/opt/cursor/artifacts/security/` (or equivalent).
-- [ ] Automated proof: `backend/tests/test_pentest_pack_v1.py`.
-- [ ] PRODUCTION_READINESS OWASP Remaining honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 29 V1.
+- [x] Vendor pen-test / ZAP staging operator packaging extending `docs/SECURITY_SCAN_MVP.md` / `ops/security/` (engagement checklist + evidence schema — not purchased cert / green live ZAP without target).
+- [x] Durable artifact path under `/opt/cursor/artifacts/security/` (or equivalent).
+- [x] Automated proof: `backend/tests/test_pentest_pack_v1.py`.
+- [x] PRODUCTION_READINESS OWASP Remaining honesty updated.
+- [x] Plan / launch / roadmap cite Stage 29 V1.
 
 ## B2 acceptance criteria
 
@@ -103,4 +103,4 @@ Operator Hardening & Cutover Fidelity
 
 ## Sign-off
 
-Stage 29 open under ADR-063. V1 next. Stages 1–28 remain frozen for their scopes.
+Stage 29 open under ADR-063. V1 complete; B2 next. Stages 1–28 remain frozen for their scopes.

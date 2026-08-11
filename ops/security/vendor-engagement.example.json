@@ -1,0 +1,15 @@
+{
+  "engagement_id": "REPLACE-WITH-OPERATOR-ENGAGEMENT-ID",
+  "vendor_name": "",
+  "started_at": "YYYY-MM-DD",
+  "finished_at": "YYYY-MM-DD",
+  "staging_base_url": "https://staging.example.invalid",
+  "scope_ids": ["A01", "A02", "A03", "A05", "A07", "AUTH-STAGING"],
+  "zap_report_retained": false,
+  "vendor_report_retained": false,
+  "critical_findings_open": null,
+  "purchased_cert_claimed": false,
+  "passed": false,
+  "operator": "",
+  "notes": "Stage 29 V1 schema example only — do not commit a forged vendor pass. See docs/PENTEST_PACK_MVP.md."
+}

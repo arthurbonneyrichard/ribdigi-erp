@@ -334,6 +334,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 28 C1** | Operator ~1000-VU cert pack — `docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/` (`test_load_cert_pack_c1.py`); live 1000-VU execution Remaining; no forged certificate |
 | **Stage 28 fidelity** | D1 maps R1–C1 staging-cert evidence — `docs/STAGE_28_FIDELITY.md` (`test_stage28_fidelity_d1.py`); exit/freeze ADR-062 (`test_stage28_exit_h28x.py`); historical open ADR-061; live drills / hosted SaaS / forged certs remain Remaining |
 | **Stage 29 open** | Operator Hardening & Production Cutover Fidelity — `docs/STAGE_29_PLAN.md`, ADR-063 (`test_stage29_open.py`); Stages 1–28 remain frozen; V1 pen-test / B2 PgBouncer soak / T1 TLS / X1 cutover pending |
+| **Stage 29 V1** | Vendor pen-test / ZAP staging pack — `docs/PENTEST_PACK_MVP.md`, `ops/security/` (`test_pentest_pack_v1.py`); purchased cert / live ZAP Remaining; main CI deploy-free |
 
 ### 7.3 Tenant Lifecycle Security
 

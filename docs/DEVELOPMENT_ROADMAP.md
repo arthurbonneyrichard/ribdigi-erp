@@ -266,6 +266,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 29 open (2026-08-11):** Operator Hardening & Production Cutover Fidelity track approved — `docs/ADR_063_STAGE29_OPEN.md` + `docs/STAGE_29_PLAN.md` (Vendor pen-test/ZAP → PgBouncer soak → Cert-manager/TLS → Production cutover → fidelity).
 
+**Stage 29 V1 (2026-08-11):** Vendor pen-test / ZAP staging pack — `docs/PENTEST_PACK_MVP.md`, `ops/security/pentest-engagement-checklist.json`, `ops/security/vendor-engagement.example.json`, evidence `stage29_v1_pentest_pack.json` (`test_pentest_pack_v1.py`); purchased cert / live ZAP Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -846,7 +848,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 29 open (`docs/STAGE_29_PLAN.md`, ADR-063) — V1 next. Stages 1–28 remain frozen for their scopes (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062).
+**Active delivery plan:** Stage 29 open (`docs/STAGE_29_PLAN.md`, ADR-063) — V1 complete; B2 next. Stages 1–28 remain frozen for their scopes (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062).
 
 ### 6.2 Features
 
