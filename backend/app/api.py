@@ -3768,7 +3768,7 @@ async def pos_sale(
             detail="Select a customer for credit sales",
         )
 
-    ref = f"POS_SALE-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+    ref = await pos_svc.next_pos_sale_number(db, claims["tenant_id"])
     body = payload.model_dump()
     body.pop("items", None)
     body.pop("session_id", None)

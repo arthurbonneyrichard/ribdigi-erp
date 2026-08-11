@@ -12,6 +12,7 @@ from app import models as m
 from app.tax import resolve_product_tax
 from app.credit import default_due_date
 from app.catalog import resolve_sale_line, stock_out_with_batch
+from app.doc_numbers import next_sales_invoice_number
 
 
 def invoice_payment_status(total: float, paid: float) -> str:
@@ -173,7 +174,7 @@ async def create_sales_invoice(
 
     invoice = m.SalesInvoice(
         tenant_id=tenant_id,
-        invoice_number=f"INV-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        invoice_number=await next_sales_invoice_number(db, tenant_id),
         customer_id=customer_id,
         status="draft",
         subtotal=subtotal,

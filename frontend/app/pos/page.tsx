@@ -360,23 +360,24 @@ export default function Page() {
           items,
         }),
       });
-      const receiptRes = await api(`/pos/sales/${r.data.id}/receipt?paper=${paper}`);
-      setReceipt(receiptRes.data);
-      const drawerNote =
-        r.data?.drawer?.ok === true
-          ? ` · drawer ${r.data.drawer.mode}`
-          : r.data?.drawer?.skipped
-            ? ''
-            : r.data?.drawer?.error
-              ? ` · drawer warn: ${r.data.drawer.error}`
-              : '';
-      const custNote = r.data?.customer_name ? ` · ${r.data.customer_name}` : '';
-      setMessage(`Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0})${custNote}${drawerNote}`);
+      if (!r?.data?.id || !r?.data?.reference) {
+        throw new Error(r?.message || 'Sale failed');
+      }
+      const saleRef = r.data.reference as string;
       setCart([]);
       clearCustomer();
+      try {
+        const receiptRes = await api(`/pos/sales/${r.data.id}/receipt?paper=${paper}`);
+        setReceipt(receiptRes.data);
+      } catch (receiptErr: any) {
+        setError(receiptErr.message || 'Sale saved, but receipt could not be loaded');
+      }
       await refreshSession();
       await browse(q);
+      // Success only after the sale itself completed.
+      setMessage(`Sale successful · ${saleRef}`);
     } catch (err: any) {
+      setMessage('');
       setError(err.message);
     } finally {
       setBusy(false);

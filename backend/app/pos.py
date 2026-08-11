@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.doc_numbers import next_pos_sale_number  # re-exported for API callers
 
 
 def compute_expected_cash(opening_cash: float, cash_sales: float) -> float:
