@@ -37,7 +37,7 @@ MVP Production Launch Fidelity
 1. **Stage 66 delivery track is open** per `docs/STAGE_66_PLAN.md` (MVP Production Launch Fidelity for RIBDIGI BUSINESS ERP Commercial MVP).
 2. **Stage 1–65 freezes remain** for their respective scopes: bugfixes / security / tests / docs only.
 3. Deliver Stage 66 **one workstream at a time** (L1 → T1 → D1 → H66x) with tests, commit, push, and PR update after each feature.
-4. Explicitly out of this pass: live production cutover Complete; first paying tenant onboarded Complete; LAUNCH §7 Name/Date signed Complete; forged go-live attestation Complete; re-packaging Stage 26–65 packs as new Complete; paid billing (ADR-002) Complete; SOC 2 / ISO Complete; main `ci.yml` deploy jobs; reopening Stages 1–65 frozen feature scopes.
+4. Explicitly out of this pass: live production cutover Complete; first paying tenant onboarded Complete; LAUNCH §7 Name/Date signed Complete; forged go-live attestation Complete; re-packaging Stage 26–65 packs as new Complete; paid billing (ADR-002) Complete; SOC 2 / ISO Complete; main `ci.yml` deploy jobs; reopening Stages 1–65 frozen feature scopes. Honesty flags stay false for packaging: `go_live_claimed: false`, `section_7_signed: false`, `production_cutover_claimed: false`.
 5. Main `ci.yml` remains deploy-free (**Stage 18 C1**); operator templates stay outside main CI.
 6. ADR-137 Platform Principal Separation remains its own ADR; Stage 66 does not reopen platform feature scope beyond honesty indexing if needed for launch adjacency.
 
