@@ -1,6 +1,6 @@
 # Stage 54 Plan — Commercial Go-To-Market Fidelity
 
-**Status:** Open — M1 complete; S1 next  
+**Status:** Open — S1 complete; D1 next  
 **Base:** Digital Marketing / Case Studies / Testimonials Honesty Pack + Direct Sales Honesty Pack → Commercial Go-To-Market Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-113](ADR_113_STAGE54_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Go-To-Market Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **M1** | Digital marketing / case studies / testimonials honesty packaging (not live campaigns / published case studies Complete) | P0 | COMPLETE |
-| **S1** | Direct sales honesty packaging (not live inside-sales team / Enterprise pipeline Complete) | P0 | PENDING |
+| **S1** | Direct sales honesty packaging (not live inside-sales team / Enterprise pipeline Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H54x** | Stage 54 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -88,10 +88,10 @@ Commercial Go-To-Market Fidelity
 
 ## S1 acceptance criteria
 
-- [ ] Direct sales honesty packaging indexing PRODUCT_OVERVIEW Direct Sales (Enterprise / White-Label) themes and Stage 49 partner / reseller adjacency (not claiming live inside-sales team / Enterprise pipeline Complete).
-- [ ] Automated proof: `backend/tests/test_direct_sales_s1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 54 S1.
+- [x] Direct sales honesty packaging indexing PRODUCT_OVERVIEW Direct Sales (Enterprise / White-Label) themes and Stage 49 partner / reseller adjacency (not claiming live inside-sales team / Enterprise pipeline Complete).
+- [x] Automated proof: `backend/tests/test_direct_sales_s1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 54 S1.
 
 ## D1 acceptance criteria
 
