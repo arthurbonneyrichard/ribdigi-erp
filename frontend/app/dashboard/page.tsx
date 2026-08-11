@@ -112,7 +112,12 @@ export default function Page() {
 
         <section className="info-grid">
           <div className="panel">
-            <h3>Cash flow</h3>
+            <h3>
+              <span className="pico pi-flow" aria-hidden>
+                {'\ud83d\udcb5'}
+              </span>
+              Cash flow
+            </h3>
             <p className="hint">Sales, purchases &amp; approved expenses to date</p>
             {flowEmpty ? (
               <div className="empty">No cash flow recorded yet — your first sale will appear here.</div>
@@ -139,7 +144,12 @@ export default function Page() {
           </div>
 
           <div className="panel">
-            <h3>Business mix</h3>
+            <h3>
+              <span className="pico pi-mix" aria-hidden>
+                {'\ud83e\udd1d'}
+              </span>
+              Business mix
+            </h3>
             <p className="hint">Customers vs suppliers</p>
             <div className="mix">
               <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Customers vs suppliers">
@@ -192,7 +202,12 @@ export default function Page() {
         </section>
 
         <section className="panel">
-          <h3>Inventory health</h3>
+          <h3>
+            <span className="pico pi-health" aria-hidden>
+              {'\ud83d\udce6'}
+            </span>
+            Inventory health
+          </h3>
           <p className="hint">In-stock vs items at or below reorder level</p>
           <div className="health">
             <svg width="130" height="130" viewBox="0 0 130 130" role="img" aria-label="Inventory health">
