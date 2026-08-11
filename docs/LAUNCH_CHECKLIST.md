@@ -173,10 +173,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [ ] Stage 33 Commercial MVP Continuity Fidelity (open: `docs/STAGE_33_PLAN.md`, ADR-071) — F1 next
+- [ ] Stage 33 Commercial MVP Continuity Fidelity (open: `docs/STAGE_33_PLAN.md`, ADR-071) — T1 next
 - [x] Stage 33 track opened (ADR-071: `test_stage33_open.py`, `docs/STAGE_33_PLAN.md`)
 - [x] Residual risk register (Stage 33 K1: `test_residual_risk_k1.py` — `docs/RESIDUAL_RISK_MVP.md`, `ops/mvp/residual-risk-register.json`; evidence `stage33_k1_residual_risk.json`; risks closed / go-live Remaining)
 - [x] Compliance readiness (Stage 33 C1: `test_compliance_readiness_c1.py` — `docs/COMPLIANCE_READINESS_MVP.md`, `ops/mvp/compliance-readiness-register.json`; evidence `stage33_c1_compliance_readiness.json`; SOC 2 / ISO certification Remaining)
+- [x] First-tenant onboarding (Stage 33 F1: `test_first_tenant_onboarding_f1.py` — `docs/FIRST_TENANT_ONBOARDING_MVP.md`, `ops/mvp/first-tenant-onboarding.json`; evidence `stage33_f1_first_tenant_onboarding.json`; live onboarding success Remaining)
 - [x] Stage 32 Commercial MVP Handoff Fidelity (closed: `docs/STAGE_32_PLAN.md`, ADR-070) — A1–D1 / H32x complete
 - [x] Stage 32 track opened (ADR-069: `test_stage32_open.py`, `docs/STAGE_32_PLAN.md`)
 - [x] Stage 32 exit + freeze (H32x: `test_stage32_exit_h32x.py`, `docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070)

@@ -1,0 +1,151 @@
+{
+  "stage": "33",
+  "workstream": "F1",
+  "doc": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+  "operator_handoff": "ops/mvp/operator-handoff.json",
+  "mvp_declaration": "ops/mvp/mvp-declaration.json",
+  "operator_remaining_register": "ops/mvp/operator-remaining-register.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "cutover_checklist": "ops/launch/cutover-checklist.json",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "packaging_complete": true,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "live_runs_certified": false,
+  "demo_tenant_claimed": false,
+  "steps": [
+    {
+      "id": "ft-env-ready",
+      "category": "environment",
+      "title": "Target environment secrets / kubeconfig / DB / Redis / SMTP ready out-of-band",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPERATOR_HANDOFF_MVP.md",
+        "docs/CUTOVER_PACK_MVP.md",
+        "ops/launch/cutover-checklist.json"
+      ],
+      "source": "ops/mvp/operator-handoff.json#phase-3"
+    },
+    {
+      "id": "ft-no-demo",
+      "category": "honesty",
+      "title": "Confirm no demo tenants, seed passwords, or hard-coded production credentials",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/MVP_DECLARATION_MVP.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md"
+    },
+    {
+      "id": "ft-register-admin",
+      "category": "tenant_lifecycle",
+      "title": "First real company admin registered; email verification works end-to-end",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#first-admin"
+    },
+    {
+      "id": "ft-rbac-smoke",
+      "category": "security",
+      "title": "RBAC smoke: cashier cannot write users; tenant header mismatch returns 403",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#rbac"
+    },
+    {
+      "id": "ft-api-key",
+      "category": "security",
+      "title": "Tenant API key created; X-API-Key read path works; secret stored out-of-band",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#api-key"
+    },
+    {
+      "id": "ft-onboarding-checklist",
+      "category": "product_onboarding",
+      "title": "In-app onboarding checklist appears for new tenants (Stage 6 N2); dismiss only at \u226580%",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#onboarding-checklist"
+    },
+    {
+      "id": "ft-core-erp-smoke",
+      "category": "erp_smoke",
+      "title": "Core ERP smoke with real tenant data (products, stock, first sale) \u2014 not demo seed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/SUPPORT_RUNBOOK_MVP.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#core-erp"
+    },
+    {
+      "id": "ft-launch-sections",
+      "category": "launch",
+      "title": "Walk LAUNCH \u00a7\u00a71\u20133 in target env using launch cert + attestation matrix",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/ATTESTATION_PACK_MVP.md",
+        "ops/launch/attestation-matrix.json"
+      ],
+      "source": "ops/mvp/operator-handoff.json#phase-4"
+    },
+    {
+      "id": "ft-ops-takeover",
+      "category": "operations",
+      "title": "Ops take-over: monitoring / incident / support runbooks ready for first tenant",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPERATOR_HANDOFF_MVP.md",
+        "docs/SUPPORT_RUNBOOK_MVP.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "ops/mvp/operator-handoff.json#phase-5"
+    },
+    {
+      "id": "ft-section-7",
+      "category": "go_live",
+      "title": "Sign LAUNCH \u00a77 Name/Date only after real Engineering / Operations / Product verification",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/ATTESTATION_PACK_MVP.md"
+      ],
+      "source": "ops/mvp/operator-handoff.json#phase-8"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage33_f1_first_tenant_onboarding.json",
+  "deferred": [
+    "Claiming first commercial tenant onboarded because Stage 33 F1 packaging exists",
+    "Forging live onboarding success / demo tenant as Complete",
+    "Live go-live / \u00a77 / attestation Complete",
+    "Re-packaging Stage 26\u201332 packs as new Complete"
+  ]
+}

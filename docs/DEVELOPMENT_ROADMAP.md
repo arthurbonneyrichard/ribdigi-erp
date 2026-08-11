@@ -326,6 +326,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 33 C1 (2026-08-11):** Compliance readiness — `docs/COMPLIANCE_READINESS_MVP.md`, `ops/mvp/compliance-readiness-register.json`, evidence `stage33_c1_compliance_readiness.json` (`test_compliance_readiness_c1.py`); SOC 2 / ISO certification Remaining.
 
+**Stage 33 F1 (2026-08-11):** First-tenant onboarding — `docs/FIRST_TENANT_ONBOARDING_MVP.md`, `ops/mvp/first-tenant-onboarding.json`, evidence `stage33_f1_first_tenant_onboarding.json` (`test_first_tenant_onboarding_f1.py`); live onboarding success Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -906,7 +908,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 33 open (`docs/STAGE_33_PLAN.md`, ADR-071) — C1 complete; F1 next. Stages 1–32 remain frozen for their scopes (`docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070).
+**Active delivery plan:** Stage 33 open (`docs/STAGE_33_PLAN.md`, ADR-071) — F1 complete; T1 next. Stages 1–32 remain frozen for their scopes (`docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070).
 
 ### 6.2 Features
 

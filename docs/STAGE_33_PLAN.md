@@ -1,6 +1,6 @@
 # Stage 33 Plan — Commercial MVP Continuity Fidelity
 
-**Status:** Open — C1 complete; F1 next (ADR-071)  
+**Status:** Open — F1 complete; T1 next (ADR-071)  
 **Base:** Residual Risk Register Pack + Compliance Readiness Pack + First-Tenant Onboarding Pack + Knowledge Transfer Pack → Commercial MVP Continuity Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-071](ADR_071_STAGE33_OPEN.md)
@@ -37,7 +37,7 @@ Commercial MVP Continuity Fidelity
 |----|------------|----------|---------|
 | **K1** | Residual risk register packaging | P0 | COMPLETE |
 | **C1** | Compliance readiness packaging (not SOC 2 / ISO Complete) | P0 | COMPLETE |
-| **F1** | First-tenant onboarding packaging | P1 | PENDING |
+| **F1** | First-tenant onboarding packaging | P1 | COMPLETE |
 | **T1** | Knowledge transfer packaging | P1 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
 | **H33x** | Stage 33 exit criteria + freeze ADR | Exit | PENDING |
@@ -76,10 +76,10 @@ Commercial MVP Continuity Fidelity
 
 ## F1 acceptance criteria
 
-- [ ] First-tenant onboarding packaging consolidating checklist for first commercial tenant (extends handoff / launch honesty; not forging live onboarding success).
-- [ ] Automated proof: `backend/tests/test_first_tenant_onboarding_f1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 33 F1.
+- [x] First-tenant onboarding packaging consolidating checklist for first commercial tenant (extends handoff / launch honesty; not forging live onboarding success).
+- [x] Automated proof: `backend/tests/test_first_tenant_onboarding_f1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 33 F1.
 
 ## T1 acceptance criteria
 
@@ -104,4 +104,4 @@ Commercial MVP Continuity Fidelity
 
 ## Sign-off
 
-Stage 33 open under ADR-071. C1 complete; F1 next. Stages 1–32 remain frozen for their scopes.
+Stage 33 open under ADR-071. F1 complete; T1 next. Stages 1–32 remain frozen for their scopes.
