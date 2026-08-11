@@ -1,0 +1,172 @@
+{
+  "stage": "65",
+  "workstream": "R1",
+  "doc": "docs/RELEASE_PIPELINE_MVP.md",
+  "stage65_plan": "docs/STAGE_65_PLAN.md",
+  "staging_gha_doc": "docs/STAGING_GHA_MVP.md",
+  "staging_gha_template": "ops/k8s/deploy-staging.example.yml",
+  "security_scan_doc": "docs/SECURITY_SCAN_MVP.md",
+  "pentest_doc": "docs/PENTEST_PACK_MVP.md",
+  "pentest_checklist": "ops/security/pentest-engagement-checklist.json",
+  "attestation_doc": "docs/ATTESTATION_PACK_MVP.md",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "mvp_declaration_doc": "docs/MVP_DECLARATION_MVP.md",
+  "mvp_declaration": "ops/mvp/mvp-declaration.json",
+  "mvp_gate_doc": "docs/MVP_GATE_MATRIX_MVP.md",
+  "mvp_gate": "ops/mvp/gate-matrix.json",
+  "cutover_doc": "docs/CUTOVER_PACK_MVP.md",
+  "cutover_checklist": "ops/launch/cutover-checklist.json",
+  "release_notes_doc": "docs/RELEASE_NOTES_MVP.md",
+  "release_notes": "ops/mvp/release-notes.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "mvp_release_candidate_signed": false,
+  "release_pipeline_live_claimed": false,
+  "staging_promotion_live_claimed": false,
+  "security_review_signed_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage65_r1_release_pipeline.json",
+  "steps": [
+    {
+      "id": "rp-owner-outline",
+      "category": "pipeline",
+      "title": "Index owner Development \u2192 Internal QA \u2192 Staging \u2192 Regression \u2192 Security Review \u2192 MVP RC path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_65_PLAN.md",
+        "docs/ADR_135_STAGE65_OPEN.md"
+      ],
+      "source": "docs/STAGE_65_PLAN.md"
+    },
+    {
+      "id": "rp-staging-gha",
+      "category": "staging",
+      "title": "Link Stage 28 staging GHA as staging adjacency (live staging apply Remaining \u2260 pipeline Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGING_GHA_MVP.md",
+        "ops/k8s/deploy-staging.example.yml"
+      ],
+      "source": "docs/STAGING_GHA_MVP.md"
+    },
+    {
+      "id": "rp-security-scan",
+      "category": "security",
+      "title": "Link Stage 27 security-scan as Internal QA / security-review adjacency (OWASP packaging \u2260 review signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_SCAN_MVP.md",
+        "docs/PENTEST_PACK_MVP.md"
+      ],
+      "source": "docs/SECURITY_SCAN_MVP.md"
+    },
+    {
+      "id": "rp-pentest",
+      "category": "security",
+      "title": "Link Stage 29 pen-test pack as security-review adjacency (purchased cert Remaining \u2260 review Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PENTEST_PACK_MVP.md",
+        "ops/security/pentest-engagement-checklist.json"
+      ],
+      "source": "docs/PENTEST_PACK_MVP.md"
+    },
+    {
+      "id": "rp-attestation",
+      "category": "rc",
+      "title": "Link Stage 30 attestation as MVP RC adjacency (attestation Remaining \u2260 RC signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ATTESTATION_PACK_MVP.md",
+        "ops/launch/attestation-matrix.json"
+      ],
+      "source": "docs/ATTESTATION_PACK_MVP.md"
+    },
+    {
+      "id": "rp-mvp-declaration",
+      "category": "rc",
+      "title": "Link Stage 31 MVP declaration / gate matrix as packaging adjacency (declared packaging \u2260 RC signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MVP_DECLARATION_MVP.md",
+        "ops/mvp/mvp-declaration.json",
+        "ops/mvp/gate-matrix.json"
+      ],
+      "source": "docs/MVP_DECLARATION_MVP.md"
+    },
+    {
+      "id": "rp-cutover",
+      "category": "staging",
+      "title": "Link Stage 29 cutover pack as promotion adjacency (production cutover Remaining \u2260 RC promotion)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CUTOVER_PACK_MVP.md",
+        "ops/launch/cutover-checklist.json"
+      ],
+      "source": "docs/CUTOVER_PACK_MVP.md"
+    },
+    {
+      "id": "rp-release-notes",
+      "category": "pipeline",
+      "title": "Link Stage 32 release notes as Development / QA communication adjacency (notes \u2260 RC signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RELEASE_NOTES_MVP.md",
+        "ops/mvp/release-notes.json"
+      ],
+      "source": "docs/RELEASE_NOTES_MVP.md"
+    },
+    {
+      "id": "rp-plan-honesty",
+      "category": "pipeline",
+      "title": "Confirm Stage 65 plan explicitly defers signed MVP RC / live staging promotion",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_65_PLAN.md",
+        "docs/RELEASE_PIPELINE_MVP.md"
+      ],
+      "source": "docs/STAGE_65_PLAN.md"
+    },
+    {
+      "id": "rp-rc-remaining",
+      "category": "honesty",
+      "title": "Signed MVP Release Candidate Remaining \u2014 packaging \u2260 RC sign-off",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_65_PLAN.md",
+        "docs/RELEASE_PIPELINE_MVP.md"
+      ],
+      "source": "docs/STAGE_65_PLAN.md"
+    },
+    {
+      "id": "rp-staging-remaining",
+      "category": "honesty",
+      "title": "Live staging promotion / Internal QA gate / security-review sign-off Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_65_PLAN.md",
+        "docs/STAGING_GHA_MVP.md"
+      ],
+      "source": "docs/STAGE_65_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Signed MVP Release Candidate Complete",
+    "Live release pipeline / Internal QA gate Complete",
+    "Live staging promotion / GHA apply Complete",
+    "Security-review sign-off Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

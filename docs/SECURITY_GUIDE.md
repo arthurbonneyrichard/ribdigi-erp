@@ -436,7 +436,8 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 55 W1** | White-label licensing commercial honesty — `docs/WHITE_LABEL_LICENSING_MVP.md`, `ops/mvp/white-label-licensing.json` (`test_white_label_licensing_w1.py`); live white-label licensing Remaining |
 | **Stage 55 U1** | Unit economics / competitive positioning honesty — `docs/UNIT_ECONOMICS_POSITIONING_MVP.md`, `ops/mvp/unit-economics-positioning.json` (`test_unit_economics_positioning_u1.py`); measured CAC/LTV Remaining |
 | **Stage 55 fidelity** | D1 maps W1–U1 licensing & positioning — `docs/STAGE_55_FIDELITY.md` (`test_stage55_fidelity_d1.py`); exit/freeze `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116 (`test_stage55_exit_h55x.py`); historical open ADR-115; live white-label licensing / measured CAC/LTV / competitive superiority / go-live / §7 remain Remaining |
-| **Stage 65 open** | MVP Release Candidate Fidelity — `docs/STAGE_65_PLAN.md`, ADR-135 (`test_stage65_open.py`); Stages 1–64 remain frozen; R1 next |
+| **Stage 65 open** | MVP Release Candidate Fidelity — `docs/STAGE_65_PLAN.md`, ADR-135 (`test_stage65_open.py`); Stages 1–64 remain frozen; R1 complete; P1 next |
+| **Stage 65 R1** | Release pipeline honesty — `docs/RELEASE_PIPELINE_MVP.md`, `ops/mvp/release-pipeline.json` (`test_release_pipeline_r1.py`); signed MVP RC / live staging promotion Remaining |
 | **Stage 64 open** | Commercial Analytics & Franchise Fidelity — `docs/STAGE_64_PLAN.md`, ADR-133 (`test_stage64_open.py`); closed under ADR-134; Stages 1–64 frozen for Stage 64 scope |
 | **Stage 64 B1** | Advanced BI honesty — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json` (`test_advanced_bi_b1.py`); live Advanced BI / custom analytics Remaining |
 | **Stage 64 F1** | Franchise & chain enterprise honesty — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json` (`test_franchise_chain_f1.py`); live franchise / chain deals Remaining |

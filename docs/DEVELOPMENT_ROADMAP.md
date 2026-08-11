@@ -1423,3 +1423,5 @@ Every feature in every phase must meet:
 **Stage 64 exit (2026-08-11):** B1, F1, D1, H64x met — `docs/STAGE_64_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_134_STAGE64_FREEZE.md`. Fidelity: `docs/STAGE_64_FIDELITY.md`. Stage 65 next (not yet opened).
 
 **Stage 65 open (2026-08-11):** MVP Release Candidate Fidelity track approved — `docs/ADR_135_STAGE65_OPEN.md` + `docs/STAGE_65_PLAN.md` (Development → Internal QA → Staging → Controlled Business Pilot → … → MVP Release Candidate; R1 next).
+
+**Stage 65 R1 (2026-08-11):** Release pipeline honesty — `docs/RELEASE_PIPELINE_MVP.md`, `ops/mvp/release-pipeline.json`, evidence `stage65_r1_release_pipeline.json` (`test_release_pipeline_r1.py`); signed MVP RC / live staging promotion Remaining.

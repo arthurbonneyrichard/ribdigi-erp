@@ -1,6 +1,6 @@
 # Stage 65 Plan — MVP Release Candidate Fidelity
 
-**Status:** Open — R1 next  
+**Status:** Open — R1 complete; P1 next  
 **Base:** Release Pipeline Honesty Pack + Controlled Business Pilot Honesty Pack → MVP Release Candidate Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-135](ADR_135_STAGE65_OPEN.md)  
@@ -76,7 +76,7 @@ MVP Release Candidate Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **R1** | Release pipeline honesty packaging (Development → Internal QA → Staging → Regression → Security Review → MVP RC; not signed RC Complete) | P0 | PENDING |
+| **R1** | Release pipeline honesty packaging (Development → Internal QA → Staging → Regression → Security Review → MVP RC; not signed RC Complete) | P0 | COMPLETE |
 | **P1** | Controlled business pilot honesty packaging (Pilot → Real Workflow Feedback → Bug Fixes; not live pilot Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H65x** | Stage 65 exit criteria + freeze ADR | Exit | PENDING |
@@ -106,10 +106,12 @@ MVP Release Candidate Fidelity
 
 ## R1 acceptance criteria
 
-- [ ] Release pipeline honesty packaging indexing Development → Internal QA → Staging → Regression Testing → Security Review → MVP Release Candidate with Stage 26–64 staging / security / attestation adjacency (not claiming signed MVP RC Complete).
-- [ ] Automated proof: `backend/tests/test_release_pipeline_r1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 65 R1.
+- [x] Release pipeline honesty packaging indexing Development → Internal QA → Staging → Regression Testing → Security Review → MVP Release Candidate with Stage 26–64 staging / security / attestation adjacency (not claiming signed MVP RC Complete).
+- [x] Automated proof: `backend/tests/test_release_pipeline_r1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 65 R1.
+
+**Deliverables:** `docs/RELEASE_PIPELINE_MVP.md`, `ops/mvp/release-pipeline.json`, evidence `stage65_r1_release_pipeline.json`.
 
 ## P1 acceptance criteria
 

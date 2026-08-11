@@ -75,6 +75,7 @@
 | `iot-integration.json` | Stage 62 I1 IoT integration honesty — `iot_integration_live_claimed: false` / `smart_shelves_live_claimed: false` / `temperature_sensors_live_claimed: false` / `iot_program_live: false` |
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
+| `release-pipeline.json` | Stage 65 R1 Release pipeline honesty — `mvp_release_candidate_signed: false` / `release_pipeline_live_claimed: false` / `staging_promotion_live_claimed: false` / `security_review_signed_claimed: false` |
 | `advanced-bi.json` | Stage 64 B1 Advanced BI honesty — `advanced_bi_live_claimed: false` / `custom_analytics_live_claimed: false` / `custom_report_builder_live: false` / `advanced_bi_program_live: false` |
 | `ipo-readiness.json` | Stage 63 P1 IPO readiness honesty — `ipo_readiness_live_claimed: false` / `series_b_c_funding_claimed: false` / `capital_raise_program_live: false` / `ipo_filing_claimed: false` |
 | `global-scale.json` | Stage 63 G1 Global scale honesty — `global_scale_50k_customers_claimed: false` / `twenty_plus_countries_claimed: false` / `international_scale_program_live: false` / `paying_customers_50k_measured: false` |
@@ -220,6 +221,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/RELEASE_PIPELINE_MVP.md` (`backend/tests/test_release_pipeline_r1.py`) — Stage 65 R1
 - `docs/STAGE_65_PLAN.md` (`backend/tests/test_stage65_open.py`) — Stage 65 open (ADR-135)
 - `docs/STAGE_64_EXIT_CRITERIA.md` (`backend/tests/test_stage64_exit_h64x.py`) — Stage 64 H64x
 - `docs/STAGE_64_FIDELITY.md` (`backend/tests/test_stage64_fidelity_d1.py`) — Stage 64 D1
@@ -925,9 +927,13 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 65 R1 — Release pipeline honesty
+
+`docs/RELEASE_PIPELINE_MVP.md` + `ops/mvp/release-pipeline.json` — packaging Complete; `mvp_release_candidate_signed` / `release_pipeline_live_claimed` / `staging_promotion_live_claimed` / `security_review_signed_claimed` remain false.
+
 ## Stage 65 open
 
-MVP Release Candidate Fidelity — `docs/STAGE_65_PLAN.md`, ADR-135; Open — R1 next.
+MVP Release Candidate Fidelity — `docs/STAGE_65_PLAN.md`, ADR-135; Open — R1 complete; P1 next.
 
 ## Stage 64 exit
 
