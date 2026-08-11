@@ -1,10 +1,11 @@
 # Stage 43 Plan — Commercial Legal Notice Fidelity
 
-**Status:** Open — D1 complete; H43x next  
+**Status:** Closed — exit met (H43x / ADR-092)  
 **Base:** Terms of Service / Acceptable Use Honesty Pack + Cookie / Privacy Notice Honesty Pack → Commercial Legal Notice Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-091](ADR_091_STAGE43_OPEN.md)  
-**Prior freeze:** [ADR-090](ADR_090_STAGE42_FREEZE.md) · [STAGE_42_EXIT_CRITERIA.md](STAGE_42_EXIT_CRITERIA.md)
+**Open ADR (historical):** [ADR-091](ADR_091_STAGE43_OPEN.md)  
+**Prior freeze:** [ADR-090](ADR_090_STAGE42_FREEZE.md) · [STAGE_42_EXIT_CRITERIA.md](STAGE_42_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_43_EXIT_CRITERIA.md](STAGE_43_EXIT_CRITERIA.md) · [ADR-092](ADR_092_STAGE43_FREEZE.md)
 
 Stage 43 opens after Stage 42 freeze: **Terms of Service / Acceptable Use Honesty Packaging + Cookie / Privacy Notice Honesty Packaging → Commercial Legal Notice Fidelity**. Stage 39 contract-evidence packs (DPA/MSA) and Stage 37–38 data-protection / disclosure packs map privacy/control themes but lack dedicated customer-facing legal-notice honesty packs for ToS/AUP and cookie / privacy-notice boundaries. This track packages those Remaining surfaces on proven Stage 33–39 compliance / contract / session-security assets — **not** claiming signed ToS Complete, live cookie-consent banner Complete, legal counsel approval Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–42 packs as new Complete, or reopening Stages 1–42 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Legal Notice Fidelity
 | **T1** | Terms of Service / Acceptable Use honesty packaging (not signed ToS Complete) | P0 | COMPLETE |
 | **C1** | Cookie / privacy notice honesty packaging (not live cookie-consent Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H43x** | Stage 43 exit criteria + freeze ADR | Exit | PENDING |
+| **H43x** | Stage 43 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -82,6 +83,6 @@ Commercial Legal Notice Fidelity
 
 ## H43x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for T1–D1 / H43x — `docs/STAGE_43_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_092_STAGE43_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage43_exit_h43x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for T1–D1 / H43x — `docs/STAGE_43_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_092_STAGE43_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage43_exit_h43x.py`.

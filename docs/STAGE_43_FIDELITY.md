@@ -1,9 +1,10 @@
 # Stage 43 Fidelity Notes — Commercial Legal Notice Fidelity
 
-**Status:** Open — D1 complete; H43x next  
+**Status:** Closed — exit met (H43x / ADR-092); historical open ADR-091  
 **Surface:** ToS / AUP → Cookie / privacy notice → Fidelity closeout  
-**Open ADR:** [ADR-091](ADR_091_STAGE43_OPEN.md)  
+**Open ADR (historical):** [ADR-091](ADR_091_STAGE43_OPEN.md)  
 **Plan:** [STAGE_43_PLAN.md](STAGE_43_PLAN.md)  
+**Exit:** [STAGE_43_EXIT_CRITERIA.md](STAGE_43_EXIT_CRITERIA.md) · [ADR-092](ADR_092_STAGE43_FREEZE.md)  
 **Prior freeze:** [ADR-090](ADR_090_STAGE42_FREEZE.md)
 
 Stage 43 proves the owner product outline after Stage 42 freeze — Terms of Service / Acceptable Use Honesty Pack + Cookie / Privacy Notice Honesty Pack → Commercial Legal Notice Fidelity — by packaging Stage 39 MSA / Stage 36 billing-deferred commercial adjacency and SECURITY_GUIDE session/cookie themes with Stage 37–39 privacy adjacency into customer-facing legal-notice honesty. It is **not** signed ToS Complete, live cookie-consent / CMP Complete, legal counsel approval Complete, live go-live / §7 / attestation Complete, SOC 2 / ISO Complete, re-packaging Stage 26–42 packs as new Complete, or reopening Stages 1–42 frozen feature scopes.
@@ -23,7 +24,7 @@ Stage 43 proves the owner product outline after Stage 42 freeze — Terms of Ser
 | **T1** | `test_tos_aup_t1.py` — `TOS_AUP_MVP.md`, tos-aup JSON | Stage 39 MSA / Stage 36 billing-deferred | Signed ToS; clickwrap |
 | **C1** | `test_cookie_privacy_notice_c1.py` — `COOKIE_PRIVACY_NOTICE_MVP.md`, cookie-privacy-notice JSON | SECURITY_GUIDE session / Stage 37–39 privacy | Live cookie-consent; CMP |
 | **D1** | This note + `test_stage43_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H43x** | `STAGE_43_EXIT_CRITERIA.md`; ADR-092 (planned); `test_stage43_exit_h43x.py` | Stage 43 exit + freeze | Next track needs open ADR |
+| **H43x** | `STAGE_43_EXIT_CRITERIA.md`; ADR-092; `test_stage43_exit_h43x.py` | Stage 43 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -42,7 +43,8 @@ Stage 43 proves the owner product outline after Stage 42 freeze — Terms of Ser
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 43 T1–C1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 43 T1–C1 / D1 cite
 - `docs/TOS_AUP_MVP.md` · `docs/COOKIE_PRIVACY_NOTICE_MVP.md`
-- `docs/STAGE_43_PLAN.md` — Open (D1 complete; H43x next)
+- `docs/STAGE_43_PLAN.md` — Closed (H43x / ADR-092)
+- `docs/STAGE_43_EXIT_CRITERIA.md` · `docs/ADR_092_STAGE43_FREEZE.md`
 - `docs/ADR_091_STAGE43_OPEN.md`
 
 ## Deferred (not Stage 43 D1 blockers)
