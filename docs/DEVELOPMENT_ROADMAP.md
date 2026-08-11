@@ -1347,3 +1347,5 @@ Every feature in every phase must meet:
 **Stage 57 A1 (2026-08-11):** Mobile app GTM honesty — `docs/MOBILE_APP_GTM_MVP.md`, `ops/mvp/mobile-app-gtm.json`, evidence `stage57_a1_mobile_app_gtm.json` (`test_mobile_app_gtm_a1.py`); live Flutter / store publish Remaining.
 
 **Stage 57 K1 (2026-08-11):** Success metrics honesty — `docs/SUCCESS_METRICS_MVP.md`, `ops/mvp/success-metrics.json`, evidence `stage57_k1_success_metrics.json` (`test_success_metrics_k1.py`); measured MAU / NPS / uptime Remaining.
+
+**Stage 57 D1 (2026-08-11):** Mobile & metrics fidelity sync — `docs/STAGE_57_FIDELITY.md` (`test_stage57_fidelity_d1.py`); maps A1–K1 → readiness / launch / deploy / security.

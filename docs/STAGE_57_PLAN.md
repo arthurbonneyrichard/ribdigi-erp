@@ -1,6 +1,6 @@
 # Stage 57 Plan — Commercial Mobile & Metrics Fidelity
 
-**Status:** Open — K1 complete; D1 next  
+**Status:** Open — D1 complete; H57x next  
 **Base:** Mobile App GTM Honesty Pack + Success Metrics Honesty Pack → Commercial Mobile & Metrics Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-119](ADR_119_STAGE57_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Mobile & Metrics Fidelity
 |----|------------|----------|---------|
 | **A1** | Mobile app GTM honesty packaging (not live Flutter / store publish Complete) | P0 | COMPLETE |
 | **K1** | Success metrics honesty packaging (not measured MAU / NPS / uptime SLA Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H57x** | Stage 57 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -101,9 +101,9 @@ Commercial Mobile & Metrics Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_57_FIDELITY.md` maps A1–K1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 57 D1.
-- [ ] Automated proof: `backend/tests/test_stage57_fidelity_d1.py` (`docs/STAGE_57_FIDELITY.md`).
+- [x] `docs/STAGE_57_FIDELITY.md` maps A1–K1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 57 D1.
+- [x] Automated proof: `backend/tests/test_stage57_fidelity_d1.py` (`docs/STAGE_57_FIDELITY.md`).
 
 ## H57x acceptance criteria
 
