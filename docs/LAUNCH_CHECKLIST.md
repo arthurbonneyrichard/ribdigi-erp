@@ -197,8 +197,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Post-launch continuity honesty (Stage 67 C1: `test_post_launch_continuity_c1.py` — `docs/POST_LAUNCH_CONTINUITY_MVP.md`, `ops/mvp/post-launch-continuity.json`; evidence `stage67_c1_post_launch_continuity.json`; live continuity / steady-state handoff Remaining)
 - [x] Stage 67 fidelity sync (D1: `test_stage67_fidelity_d1.py`, `docs/STAGE_67_FIDELITY.md` — H1–C1 + readiness + deploy / launch / security)
 - [x] Stage 67 exit + freeze (H67x: `test_stage67_exit_h67x.py`, `docs/STAGE_67_EXIT_CRITERIA.md`, ADR-141)
-- [x] Stage 68 track opened (ADR-142: `test_stage68_open.py`, `docs/STAGE_68_PLAN.md`) — Platform ↔ Tenant Console Fidelity; H1 complete / T1 next
+- [x] Stage 68 track opened (ADR-142: `test_stage68_open.py`, `docs/STAGE_68_PLAN.md`) — Platform ↔ Tenant Console Fidelity; T1 complete / D1 next
 - [x] Ribdigi House console honesty (Stage 68 H1: `test_ribdigi_house_console_h1.py` — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json`; evidence `stage68_h1_ribdigi_house_console.json`; paid billing / live subscriptions Remaining)
+- [x] Tenant Company console honesty (Stage 68 T1: `test_tenant_company_console_t1.py` — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json`; evidence `stage68_t1_tenant_company_console.json`; module re-Complete / demo tenant Remaining)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

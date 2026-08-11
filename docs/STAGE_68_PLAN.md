@@ -1,6 +1,6 @@
 # Stage 68 Plan — Platform ↔ Tenant Console Fidelity
 
-**Status:** Open — H1 complete; T1 next  
+**Status:** Open — T1 complete; D1 next  
 **Base:** Ribdigi House Console Honesty Pack + Tenant Company Console Honesty Pack → Platform ↔ Tenant Console Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-142](ADR_142_STAGE68_OPEN.md)  
@@ -57,7 +57,7 @@ Platform ↔ Tenant Console Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **H1** | Ribdigi House (Platform Owner) console honesty packaging (Tenants → Plans/Billing deferred → Users → Security/Audit/Health/Settings; not paid billing Complete) | P0 | COMPLETE |
-| **T1** | Tenant Company console honesty packaging (POS → Sales → Inventory → Purchasing → Accounting → Expenses → Credit → Tax → Reports → Settings; not re-claiming modules) | P0 | PENDING |
+| **T1** | Tenant Company console honesty packaging (POS → Sales → Inventory → Purchasing → Accounting → Expenses → Credit → Tax → Reports → Settings; not re-claiming modules) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H68x** | Stage 68 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -83,12 +83,12 @@ Platform ↔ Tenant Console Fidelity
 
 ## T1 acceptance criteria
 
-- [ ] Tenant Company console honesty packaging indexing tenant ERP shell modules (POS, Sales, Inventory, Purchasing, Accounting, Expenses, Credit, Tax, Reports, Settings) with principal isolation vs House (not re-claiming modules as new Complete).
-- [ ] Automated proof: `backend/tests/test_tenant_company_console_t1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 68 T1.
+- [x] Tenant Company console honesty packaging indexing tenant ERP shell modules (POS, Sales, Inventory, Purchasing, Accounting, Expenses, Credit, Tax, Reports, Settings) with principal isolation vs House (not re-claiming modules as new Complete).
+- [x] Automated proof: `backend/tests/test_tenant_company_console_t1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 68 T1.
 
-**Deliverables:** `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json`, evidence `stage68_t1_tenant_company_console.json`.
+**Deliverables:** `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json`, evidence `stage68_t1_tenant_company_console.json` (`test_tenant_company_console_t1.py`).
 
 ## D1 acceptance criteria
 

@@ -76,6 +76,7 @@
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `business-pilot.json` | Stage 65 P1 Controlled business pilot honesty — `controlled_business_pilot_live_claimed: false` / `real_workflow_feedback_claimed: false` / `pilot_bugfix_program_live: false` / `business_pilot_program_live: false` |
+| `tenant-company-console.json` | Stage 68 T1 Tenant Company console honesty — `tenant_modules_reclaimed_complete: false` / `demo_tenant_claimed: false` / `cross_principal_leak_claimed: false` |
 | `ribdigi-house-console.json` | Stage 68 H1 Ribdigi House console honesty — `billing_complete_claimed: false` / `payment_provider_claimed: false` / `subscriptions_live_claimed: false` / `mrr_fabricated_claimed: false` |
 | `post-launch-continuity.json` | Stage 67 C1 Post-launch continuity honesty — `post_launch_continuity_live_claimed: false` / `handoff_complete_claimed: false` / `live_training_claimed: false` / `customer_success_stabilization_claimed: false` |
 | `production-hypercare.json` | Stage 67 H1 Production hypercare honesty — `production_hypercare_live_claimed: false` / `incident_drill_executed: false` / `oncall_rota_live: false` / `support_sla_claimed: false` |
@@ -227,6 +228,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/TENANT_COMPANY_CONSOLE_MVP.md` (`backend/tests/test_tenant_company_console_t1.py`) — Stage 68 T1
 - `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md` (`backend/tests/test_ribdigi_house_console_h1.py`) — Stage 68 H1
 - `docs/STAGE_68_PLAN.md` (`backend/tests/test_stage68_open.py`) — Stage 68 open (ADR-142)
 - `docs/STAGE_67_EXIT_CRITERIA.md` / `docs/ADR_141_STAGE67_FREEZE.md` (`backend/tests/test_stage67_exit_h67x.py`) — Stage 67 H67x
@@ -947,13 +949,17 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 68 T1 — Tenant Company console honesty
+
+`docs/TENANT_COMPANY_CONSOLE_MVP.md` + `ops/mvp/tenant-company-console.json` — packaging Complete; `tenant_modules_reclaimed_complete` / `demo_tenant_claimed` / `cross_principal_leak_claimed` remain false.
+
 ## Stage 68 H1 — Ribdigi House console honesty
 
 `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md` + `ops/mvp/ribdigi-house-console.json` — packaging Complete; `billing_complete_claimed` / `payment_provider_claimed` / `subscriptions_live_claimed` / `mrr_fabricated_claimed` remain false.
 
 ## Stage 68 open
 
-Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142; Open — H1 complete; T1 next.
+Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142; Open — T1 complete; D1 next.
 
 ## Stage 67 exit
 

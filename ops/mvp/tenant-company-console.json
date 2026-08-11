@@ -1,0 +1,150 @@
+{
+  "stage": "68",
+  "workstream": "T1",
+  "doc": "docs/TENANT_COMPANY_CONSOLE_MVP.md",
+  "stage68_plan": "docs/STAGE_68_PLAN.md",
+  "adr137": "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+  "adr001": "docs/ADR_001_TENANCY.md",
+  "house_console_doc": "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md",
+  "house_console": "ops/mvp/ribdigi-house-console.json",
+  "tenant_shell": "frontend/components/Shell.tsx",
+  "platform_shell": "frontend/components/PlatformShell.tsx",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "tenant_modules_reclaimed_complete": false,
+  "demo_tenant_claimed": false,
+  "cross_principal_leak_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "billing_complete_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage68_t1_tenant_company_console.json",
+  "steps": [
+    {
+      "id": "tc-owner-outline",
+      "category": "tenant",
+      "title": "Index owner TENANT COMPANY Dashboard path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_68_PLAN.md",
+        "docs/ADR_142_STAGE68_OPEN.md"
+      ],
+      "source": "docs/STAGE_68_PLAN.md"
+    },
+    {
+      "id": "tc-shell-core",
+      "category": "tenant",
+      "title": "Index POS / Sales / Inventory / Purchasing tenant shell modules (index \u2260 re-Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "frontend/components/Shell.tsx",
+        "docs/TENANT_COMPANY_CONSOLE_MVP.md"
+      ],
+      "source": "frontend/components/Shell.tsx"
+    },
+    {
+      "id": "tc-shell-finance",
+      "category": "tenant",
+      "title": "Index Accounting / Expenses / Credit / Tax tenant shell modules (index \u2260 re-Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "frontend/components/Shell.tsx",
+        "docs/TENANT_COMPANY_CONSOLE_MVP.md"
+      ],
+      "source": "frontend/components/Shell.tsx"
+    },
+    {
+      "id": "tc-shell-reports-settings",
+      "category": "tenant",
+      "title": "Index Reports + Company/Settings tenant shell modules (index \u2260 re-Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "frontend/components/Shell.tsx",
+        "docs/TENANT_COMPANY_CONSOLE_MVP.md"
+      ],
+      "source": "frontend/components/Shell.tsx"
+    },
+    {
+      "id": "tc-principal-isolation",
+      "category": "tenant",
+      "title": "Link ADR-137 principal isolation vs Ribdigi House (platform redirect \u2260 tenant leak)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+        "frontend/components/Shell.tsx",
+        "frontend/components/PlatformShell.tsx"
+      ],
+      "source": "docs/ADR_137_PLATFORM_PRINCIPAL.md"
+    },
+    {
+      "id": "tc-house-adjacency",
+      "category": "tenant",
+      "title": "Link Stage 68 H1 Ribdigi House as dual-console adjacency (House \u2260 Tenant Company)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md",
+        "ops/mvp/ribdigi-house-console.json"
+      ],
+      "source": "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md"
+    },
+    {
+      "id": "tc-tenancy",
+      "category": "tenant",
+      "title": "Link ADR-001 shared-schema + tenant_id as tenancy adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_001_TENANCY.md",
+        "docs/ADR_137_PLATFORM_PRINCIPAL.md"
+      ],
+      "source": "docs/ADR_001_TENANCY.md"
+    },
+    {
+      "id": "tc-plan-honesty",
+      "category": "tenant",
+      "title": "Confirm Stage 68 plan explicitly defers module re-Complete / demo tenant success",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_68_PLAN.md",
+        "docs/TENANT_COMPANY_CONSOLE_MVP.md"
+      ],
+      "source": "docs/STAGE_68_PLAN.md"
+    },
+    {
+      "id": "tc-reclaim-remaining",
+      "category": "honesty",
+      "title": "Tenant module re-Complete Remaining \u2014 Stage 68 indexes only",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_68_PLAN.md",
+        "docs/TENANT_COMPANY_CONSOLE_MVP.md"
+      ],
+      "source": "docs/STAGE_68_PLAN.md"
+    },
+    {
+      "id": "tc-golive-remaining",
+      "category": "honesty",
+      "title": "Live go-live / first paying tenant / \u00a77 Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_68_PLAN.md",
+        "docs/ADR_137_PLATFORM_PRINCIPAL.md"
+      ],
+      "source": "docs/STAGE_68_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Re-packaging tenant ERP modules as new Stage 68 Completes",
+    "Demo / fake tenant company success",
+    "Live go-live / first paying tenant / \u00a77 Complete",
+    "Paid House billing Complete (ADR-002)"
+  ]
+}
