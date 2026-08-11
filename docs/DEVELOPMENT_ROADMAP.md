@@ -236,6 +236,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 26 exit (2026-08-11):** M1, W1, K1, C1, D1, H26x met — `docs/STAGE_26_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_058_STAGE26_FREEZE.md`. Fidelity: `docs/STAGE_26_FIDELITY.md`.
 
+**Stage 27 open (2026-08-11):** Commercial MVP Release Fidelity track approved — `docs/ADR_059_STAGE27_OPEN.md` + `docs/STAGE_27_PLAN.md` (Auto `.ribbak` offsite → PgBouncer → Security scan → Launch cert → fidelity).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -816,7 +818,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 26 closed (`docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058) — M1–D1 / H26x complete (`docs/STAGE_26_FIDELITY.md`). Stages 1–26 remain frozen for their scopes. Next delivery track requires an explicit open ADR after CONTINUE/NEXT.
+**Active delivery plan:** Stage 27 open (`docs/STAGE_27_PLAN.md`, ADR-059) — B1 next. Stages 1–26 remain frozen for their scopes (`docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058).
 
 ### 6.2 Features
 

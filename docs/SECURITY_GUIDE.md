@@ -321,6 +321,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 26 K1** | Kubernetes/Helm deploy fidelity — `helm/ribdigi/`, `k8s/`, `docs/K8S_DEPLOY_MVP.md` (`test_k8s_deploy_k1.py`); live GHA→staging deferred |
 | **Stage 26 C1** | Load capacity CI evidence — `docs/LOAD_CAPACITY_MVP.md`, `backend/loadtest/` (`test_load_capacity_c1.py`); operator 1000-VU deferred |
 | **Stage 26 fidelity** | D1 maps M1–C1 ops evidence — `docs/STAGE_26_FIDELITY.md` (`test_stage26_fidelity_d1.py`); exit/freeze ADR-058 (`test_stage26_exit_h26x.py`); historical open ADR-057; secrets remain env/Secret only; main CI deploy-free (Stage 18 C1) |
+| **Stage 27 open** | Commercial MVP Release Fidelity — `docs/STAGE_27_PLAN.md`, ADR-059 (`test_stage27_open.py`); Stages 1–26 remain frozen; B1 offsite / P1 PgBouncer / S1 security scan / L1 launch cert pending |
 
 ### 7.3 Tenant Lifecycle Security
 

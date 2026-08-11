@@ -164,6 +164,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Load capacity fidelity (Stage 26 C1: `test_load_capacity_c1.py` — smoke + CI capacity profiles; `docs/LOAD_CAPACITY_MVP.md`; evidence `stage26_c1_capacity_evidence.json`; readiness load Complete MVP)
 - [x] Stage 26 fidelity sync (D1: `test_stage26_fidelity_d1.py`, `docs/STAGE_26_FIDELITY.md` — BR-16 + NFR §5.6 + readiness + deploy / launch / security)
 - [x] Stage 26 exit + freeze (H26x: `test_stage26_exit_h26x.py`, `docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058)
+- [ ] Stage 27 Commercial MVP Release Fidelity (open: `docs/STAGE_27_PLAN.md`, ADR-059) — B1 next
+- [x] Stage 27 track opened (ADR-059: `test_stage27_open.py`, `docs/STAGE_27_PLAN.md`)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1

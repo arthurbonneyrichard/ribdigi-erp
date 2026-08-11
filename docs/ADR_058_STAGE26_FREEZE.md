@@ -22,3 +22,7 @@ Stage 26 Production Platform & Ops Fidelity (M1, W1, K1, C1, D1, H26x) delivered
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP (hosted Grafana/PagerDuty, operator PITR drill, live GHA→staging, ~1000-VU soak remain Remaining where applicable).
 - Stage 1–25 freezes remain in force for their scopes.
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 27 (Commercial MVP Release Fidelity) after Stage 26 freeze via CONTINUE/NEXT — see [ADR-059](ADR_059_STAGE27_OPEN.md) and [STAGE_27_PLAN.md](STAGE_27_PLAN.md). Stage 26 feature scope remains frozen; Stage 27 does not reopen M1–D1 / H26x.
