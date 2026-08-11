@@ -436,9 +436,13 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 55 W1** | White-label licensing commercial honesty — `docs/WHITE_LABEL_LICENSING_MVP.md`, `ops/mvp/white-label-licensing.json` (`test_white_label_licensing_w1.py`); live white-label licensing Remaining |
 | **Stage 55 U1** | Unit economics / competitive positioning honesty — `docs/UNIT_ECONOMICS_POSITIONING_MVP.md`, `ops/mvp/unit-economics-positioning.json` (`test_unit_economics_positioning_u1.py`); measured CAC/LTV Remaining |
 | **Stage 55 fidelity** | D1 maps W1–U1 licensing & positioning — `docs/STAGE_55_FIDELITY.md` (`test_stage55_fidelity_d1.py`); exit/freeze `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116 (`test_stage55_exit_h55x.py`); historical open ADR-115; live white-label licensing / measured CAC/LTV / competitive superiority / go-live / §7 remain Remaining |
-| **Stage 67 open** | MVP Post-Launch Continuity Fidelity — `docs/STAGE_67_PLAN.md`, ADR-140 (`test_stage67_open.py`); Stages 1–66 remain frozen for prior scopes; H1 next historically |
+| **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); Stages 1–67 remain frozen for prior scopes; H1 next historically |
+| **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
+| **Stage 67 open** | MVP Post-Launch Continuity Fidelity — `docs/STAGE_67_PLAN.md`, ADR-140 (`test_stage67_open.py`); historical open; closed via H67x / ADR-141 |
 | **Stage 67 H1** | Production hypercare honesty — `docs/PRODUCTION_HYPERCARE_MVP.md`, `ops/mvp/production-hypercare.json` (`test_production_hypercare_h1.py`); live hypercare / incident drill Remaining |
 | **Stage 67 C1** | Post-launch continuity honesty — `docs/POST_LAUNCH_CONTINUITY_MVP.md`, `ops/mvp/post-launch-continuity.json` (`test_post_launch_continuity_c1.py`); live continuity / steady-state handoff Remaining |
+| **Stage 67 D1** | MVP post-launch continuity fidelity — `docs/STAGE_67_FIDELITY.md` (`test_stage67_fidelity_d1.py`); maps H1–C1 → readiness / launch / deploy / security |
+| **Stage 67 H67x** | Exit + freeze — `docs/STAGE_67_EXIT_CRITERIA.md`, ADR-141 (`test_stage67_exit_h67x.py`); Stages 1–67 frozen for Stage 67 scope; Stage 68 opened via ADR-142 |
 | **Stage 66 open** | MVP Production Launch Fidelity — `docs/STAGE_66_PLAN.md`, ADR-138 (`test_stage66_open.py`); historical open; closed via H66x / ADR-139 |
 | **Stage 66 L1** | Production launch honesty — `docs/PRODUCTION_LAUNCH_MVP.md`, `ops/mvp/production-launch.json` (`test_production_launch_l1.py`); live cutover / §7 signed / go-live Remaining |
 | **Stage 66 T1** | First tenant go-live honesty — `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json` (`test_first_tenant_golive_t1.py`); first paying tenant / live onboarding Remaining |

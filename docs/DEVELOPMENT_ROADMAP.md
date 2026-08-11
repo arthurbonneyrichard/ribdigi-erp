@@ -1447,3 +1447,11 @@ Every feature in every phase must meet:
 **Stage 67 H1 (2026-08-11):** Production hypercare honesty — `docs/PRODUCTION_HYPERCARE_MVP.md`, `ops/mvp/production-hypercare.json`, evidence `stage67_h1_production_hypercare.json` (`test_production_hypercare_h1.py`); live hypercare / incident drill Remaining.
 
 **Stage 67 C1 (2026-08-11):** Post-launch continuity honesty — `docs/POST_LAUNCH_CONTINUITY_MVP.md`, `ops/mvp/post-launch-continuity.json`, evidence `stage67_c1_post_launch_continuity.json` (`test_post_launch_continuity_c1.py`); live continuity / steady-state handoff Remaining.
+
+**Stage 67 D1 (2026-08-11):** MVP post-launch continuity fidelity sync — `docs/STAGE_67_FIDELITY.md` (`test_stage67_fidelity_d1.py`); maps H1–C1 → readiness / launch / deploy / security.
+
+**Stage 67 exit (2026-08-11):** H1, C1, D1, H67x met — `docs/STAGE_67_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_141_STAGE67_FREEZE.md`. Fidelity: `docs/STAGE_67_FIDELITY.md`. Stage 68 opened via ADR-142.
+
+**Stage 68 open (2026-08-11):** Platform ↔ Tenant Console Fidelity track approved — `docs/ADR_142_STAGE68_OPEN.md` + `docs/STAGE_68_PLAN.md` (RIBDIGI HOUSE Platform Owner ↔ TENANT COMPANY Dashboard; H1 next).
+
+**Stage 68 H1 (2026-08-11):** Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json`, evidence `stage68_h1_ribdigi_house_console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining.
