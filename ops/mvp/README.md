@@ -250,6 +250,9 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_89_EXIT_CRITERIA.md` / `docs/ADR_185_STAGE89_FREEZE.md` (`backend/tests/test_stage89_exit_h89x.py`) — Stage 89 H89x
+- `docs/STAGE_89_FIDELITY.md` (`backend/tests/test_stage89_fidelity_d1.py`) — Stage 89 D1
+- `docs/STAGE_89_PLAN.md` (`backend/tests/test_stage89_open.py`) — Stage 89 open (ADR-184)
 - `docs/STAGE_88_EXIT_CRITERIA.md` / `docs/ADR_183_STAGE88_FREEZE.md` (`backend/tests/test_stage88_exit_h88x.py`) — Stage 88 H88x
 - `docs/STAGE_88_FIDELITY.md` (`backend/tests/test_stage88_fidelity_d1.py`) — Stage 88 D1
 - `docs/STAGE_88_PLAN.md` (`backend/tests/test_stage88_open.py`) — Stage 88 open (ADR-182)
@@ -1054,6 +1057,30 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 89 exit
+
+H89x met — `docs/STAGE_89_EXIT_CRITERIA.md`, ADR-185. Stages 1–89 frozen for Stage 89 feature scope.
+
+## Stage 89 D1 — House Customer Assist & Roster Intelligence Ops fidelity
+
+`docs/STAGE_89_FIDELITY.md` — maps A1–C1 → readiness / launch / deploy / security.
+
+## Stage 89 C1 — Plan catalog + billing roster depth
+
+`test_platform_catalog_billing_c1.py` — metadata catalog + trial_ends deep-links.
+
+## Stage 89 F1 — Roster filters + dashboard at-risk KPIs
+
+`test_platform_roster_intel_f1.py` — `plan_code`/`industry` filters + `at_risk_count`.
+
+## Stage 89 A1 — House Tenant Admin assist
+
+`test_platform_tenant_admin_assist_a1.py` — admin password-reset + resend-verification (no impersonation).
+
+## Stage 89 open
+
+ADR-184 + `docs/STAGE_89_PLAN.md` — House Customer Assist & Roster Intelligence Ops.
 
 ## Stage 88 exit
 

@@ -27,4 +27,4 @@ Stage 88 House Lifecycle & Staff Security Ops delivered tenant lifecycle control
 
 ## Next stage
 
-Stage 89 requires CONTINUE/NEXT with a distinct product outline, open ADR, and plan. Until then, Stage 88 feature scope remains frozen under this ADR.
+Stage 89 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-184](ADR_184_STAGE89_OPEN.md) + [STAGE_89_PLAN.md](STAGE_89_PLAN.md) (House Tenant Admin Assist → Tenant Roster Filters & Dashboard At-Risk KPIs → Plan Catalog & Billing Roster Depth → House Customer Assist & Roster Intelligence Ops). Stage 89 subsequently froze under [ADR-185](ADR_185_STAGE89_FREEZE.md). Stage 88 feature scope remains frozen.

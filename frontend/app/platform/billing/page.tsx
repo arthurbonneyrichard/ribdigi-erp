@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
@@ -68,16 +69,20 @@ export default function PlatformBillingPage() {
                 <th>Slug</th>
                 <th>Status</th>
                 <th>Plan</th>
+                <th>Trial ends</th>
                 <th>Billing</th>
               </tr>
             </thead>
             <tbody>
               {roster.map((row) => (
                 <tr key={row.tenant_id}>
-                  <td>{row.company_name}</td>
+                  <td>
+                    <Link href={`/platform/tenants/${row.tenant_id}`}>{row.company_name}</Link>
+                  </td>
                   <td>{row.slug}</td>
                   <td>{row.status}</td>
                   <td>{row.plan_code}</td>
+                  <td>{row.trial_ends_at || '—'}</td>
                   <td>{row.billing || 'deferred'}</td>
                 </tr>
               ))}

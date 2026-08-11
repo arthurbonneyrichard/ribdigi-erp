@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { BarChart, DonutChart } from '../../../components/DashboardCharts';
@@ -11,6 +12,8 @@ type Dash = {
   trial_tenants?: number;
   grace_tenants?: number;
   suspended_tenants?: number;
+  at_risk_count?: number;
+  at_risk_within_days?: number;
   new_tenants_this_month?: number;
   platform_users?: number;
   customer_users?: number;
@@ -54,6 +57,17 @@ export default function PlatformDashboardPage() {
         <div className="card">
           <div className="muted">Trial</div>
           <div className="kpi">{d.trial_tenants ?? '—'}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Grace</div>
+          <div className="kpi">{d.grace_tenants ?? '—'}</div>
+        </div>
+        <div className="card">
+          <div className="muted">At-risk ({d.at_risk_within_days ?? 14}d)</div>
+          <div className="kpi">{d.at_risk_count ?? '—'}</div>
+          <p style={{ marginTop: 8 }}>
+            <Link href="/platform/tenants">View tenants / at-risk queue →</Link>
+          </p>
         </div>
         <div className="card">
           <div className="muted">Suspended</div>

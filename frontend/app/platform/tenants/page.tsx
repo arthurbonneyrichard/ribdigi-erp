@@ -37,6 +37,8 @@ export default function PlatformTenantsPage() {
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [planCode, setPlanCode] = useState('');
+  const [industry, setIndustry] = useState('');
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -49,6 +51,8 @@ export default function PlatformTenantsPage() {
       const params = new URLSearchParams();
       if (q.trim()) params.set('q', q.trim());
       if (status) params.set('status', status);
+      if (planCode) params.set('plan_code', planCode);
+      if (industry) params.set('industry', industry);
       const r = await api(`/platform/tenants?${params.toString()}`);
       setItems(r.data?.items || []);
       setTotal(r.data?.total || 0);
@@ -106,6 +110,8 @@ export default function PlatformTenantsPage() {
       const params = new URLSearchParams();
       if (q.trim()) params.set('q', q.trim());
       if (status) params.set('status', status);
+      if (planCode) params.set('plan_code', planCode);
+      if (industry) params.set('industry', industry);
       params.set('format', fmt);
       const res = await fetch(`${apiBase}/platform/tenants/export?${params}`, {
         headers: {
@@ -217,6 +223,31 @@ export default function PlatformTenantsPage() {
           <option value="grace">grace</option>
           <option value="suspended">suspended</option>
         </select>
+        <select
+          value={planCode}
+          onChange={(e) => setPlanCode(e.target.value)}
+          style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="">All plans</option>
+          <option value="trial">trial</option>
+          <option value="starter">starter</option>
+          <option value="growth">growth</option>
+          <option value="enterprise">enterprise</option>
+        </select>
+        <select
+          value={industry}
+          onChange={(e) => setIndustry(e.target.value)}
+          style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="">All industries</option>
+          <option value="retail">retail</option>
+          <option value="pharmacy">pharmacy</option>
+          <option value="restaurant">restaurant</option>
+          <option value="bakery">bakery</option>
+          <option value="wholesale">wholesale</option>
+          <option value="manufacturing">manufacturing</option>
+          <option value="mart">mart</option>
+        </select>
         <button type="submit" style={{ padding: '10px 14px', borderRadius: 8, background: '#111827', color: '#fff', border: 0 }}>
           Search
         </button>
@@ -274,6 +305,7 @@ export default function PlatformTenantsPage() {
             <th>Slug</th>
             <th>Status</th>
             <th>Plan</th>
+            <th>Industry</th>
             <th>Users</th>
             <th>Actions</th>
           </tr>
@@ -289,6 +321,7 @@ export default function PlatformTenantsPage() {
                 <span className="badge">{t.status}</span>
               </td>
               <td>{t.plan_code || '—'}</td>
+              <td>{(t as any).industry || '—'}</td>
               <td>{t.user_count ?? 0}</td>
               <td style={{ display: 'flex', gap: 8 }}>
                 {t.status !== 'suspended' ? (
@@ -313,7 +346,7 @@ export default function PlatformTenantsPage() {
           ))}
           {items.length === 0 && (
             <tr>
-              <td colSpan={6} className="muted">
+              <td colSpan={7} className="muted">
                 No customer tenants found.
               </td>
             </tr>

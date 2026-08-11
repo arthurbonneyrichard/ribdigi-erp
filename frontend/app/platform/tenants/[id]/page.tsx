@@ -105,6 +105,33 @@ export default function PlatformTenantDetailPage() {
     }
   }
 
+  async function assistAdmin(kind: 'password-reset-email' | 'resend-verification') {
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      const r = await api(`/platform/tenants/${id}/admin/${kind}`, {
+        method: 'POST',
+        body: '{}',
+      });
+      if (r.data?.already_verified) {
+        setMsg('Tenant Admin email already verified');
+      } else {
+        const sent = r.data?.email_delivery?.sent;
+        setMsg(
+          sent
+            ? `Assist email sent to ${r.data?.email || 'Tenant Admin'}`
+            : `Assist token issued for ${r.data?.email || 'Tenant Admin'} (mode: ${r.data?.email_delivery?.mode || 'n/a'})`,
+        );
+      }
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Assist action failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <PlatformShell>
       <p>
@@ -211,6 +238,39 @@ export default function PlatformTenantDetailPage() {
               Save notes
             </button>
           </div>
+
+          <div className="card" style={{ marginTop: 16, maxWidth: 640 }}>
+            <div className="muted">Tenant Admin assist (no impersonation)</div>
+            {row.tenant_admin ? (
+              <>
+                <p style={{ marginTop: 8 }}>
+                  {row.tenant_admin.full_name} · {row.tenant_admin.email} · verified:{' '}
+                  {row.tenant_admin.email_verified ? 'yes' : 'no'}
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => assistAdmin('password-reset-email')}
+                  >
+                    Email password reset
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || row.tenant_admin.email_verified}
+                    onClick={() => assistAdmin('resend-verification')}
+                  >
+                    Resend verification
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="muted" style={{ marginTop: 8 }}>
+                No active company_admin found for this tenant.
+              </p>
+            )}
+          </div>
+
           <p className="muted" style={{ marginTop: 16 }}>
             Suspension changes status only — no data wipe. Active sessions are revoked.
           </p>

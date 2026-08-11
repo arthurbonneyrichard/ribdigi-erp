@@ -104,12 +104,15 @@ async def platform_dashboard_kpis(db: AsyncSession) -> dict:
         ).scalar_one()
         or 0
     )
+    at_risk = await list_at_risk_tenants(db, within_days=14)
     return {
         "total_tenants": total,
         "active_tenants": by_status.get("active", 0),
         "trial_tenants": by_status.get("trial", 0),
         "grace_tenants": by_status.get("grace", 0),
         "suspended_tenants": by_status.get("suspended", 0),
+        "at_risk_count": int(at_risk.get("total") or 0),
+        "at_risk_within_days": int(at_risk.get("within_days") or 14),
         "new_tenants_this_month": new_this_month,
         "platform_users": platform_users,
         "customer_users": customer_users,
@@ -371,6 +374,22 @@ async def platform_user_growth(db: AsyncSession, *, months: int = 12) -> dict:
     return {"series": series, "months": months}
 
 
+async def get_customer_tenant_admin(db: AsyncSession, tenant_id: str) -> m.User | None:
+    """Primary Tenant Admin (`company_admin`) for House assist (Stage 89 A1)."""
+    return (
+        await db.execute(
+            select(m.User)
+            .where(
+                m.User.tenant_id == tenant_id,
+                m.User.role == "company_admin",
+                m.User.is_active == True,  # noqa: E712
+            )
+            .order_by(m.User.created_at.asc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+
+
 async def _enrich_tenant_row(db: AsyncSession, t: m.Tenant) -> dict:
     user_count = int(
         (
@@ -403,6 +422,7 @@ async def _enrich_tenant_row(db: AsyncSession, t: m.Tenant) -> dict:
             select(func.max(m.AuditLog.created_at)).where(m.AuditLog.tenant_id == t.id)
         )
     ).scalar_one()
+    admin = await get_customer_tenant_admin(db, t.id)
     base = tenants_svc.serialize_tenant(t)
     base.update(
         {
@@ -411,6 +431,17 @@ async def _enrich_tenant_row(db: AsyncSession, t: m.Tenant) -> dict:
             "branch_count": branch_count,
             "last_activity_at": last_activity.isoformat() + "Z" if last_activity else None,
             "platform_notes": getattr(t, "platform_notes", None),
+            "tenant_admin": (
+                {
+                    "id": admin.id,
+                    "email": admin.email,
+                    "full_name": admin.full_name,
+                    "email_verified": bool(admin.email_verified),
+                    "role": admin.role,
+                }
+                if admin
+                else None
+            ),
         }
     )
     return base
@@ -421,6 +452,8 @@ async def list_customer_tenants(
     *,
     q: str | None = None,
     status: str | None = None,
+    plan_code: str | None = None,
+    industry: str | None = None,
     limit: int = 50,
     offset: int = 0,
 ) -> tuple[list[dict], int]:
@@ -428,6 +461,10 @@ async def list_customer_tenants(
     filters = [_customer_tenant_filter()]
     if status:
         filters.append(m.Tenant.status == status)
+    if plan_code and plan_code.strip():
+        filters.append(m.Tenant.plan_code == plan_code.strip().lower())
+    if industry and industry.strip():
+        filters.append(func.lower(m.Tenant.industry) == industry.strip().lower())
     if q and q.strip():
         like = f"%{q.strip().lower()}%"
         filters.append(

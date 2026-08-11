@@ -1669,3 +1669,15 @@ Every feature in every phase must meet:
 **Stage 88 D1 (2026-08-11):** House Lifecycle & Staff Security Ops fidelity sync — `docs/STAGE_88_FIDELITY.md` (`test_stage88_fidelity_d1.py`); maps L1–S1 → readiness / launch / deploy / security.
 
 **Stage 88 exit (2026-08-11):** L1, R1, S1, D1, H88x met — `docs/STAGE_88_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_183_STAGE88_FREEZE.md`. Fidelity: `docs/STAGE_88_FIDELITY.md`.
+
+**Stage 89 open (2026-08-11):** House Customer Assist & Roster Intelligence Ops track approved — `docs/ADR_184_STAGE89_OPEN.md` + `docs/STAGE_89_PLAN.md` (House Tenant Admin Assist → Tenant Roster Filters & Dashboard At-Risk KPIs → Plan Catalog & Billing Roster Depth → House Customer Assist & Roster Intelligence Ops; A1 next).
+
+**Stage 89 A1 (2026-08-11):** House Tenant Admin assist — `POST /platform/tenants/{id}/admin/password-reset-email` / `…/admin/resend-verification` (`test_platform_tenant_admin_assist_a1.py`).
+
+**Stage 89 F1 (2026-08-11):** Roster filters + dashboard at-risk KPIs — `plan_code`/`industry` filters + `at_risk_count` (`test_platform_roster_intel_f1.py`).
+
+**Stage 89 C1 (2026-08-11):** Plan catalog + billing roster depth — metadata catalog + trial_ends deep-links (`test_platform_catalog_billing_c1.py`).
+
+**Stage 89 D1 (2026-08-11):** House Customer Assist & Roster Intelligence Ops fidelity sync — `docs/STAGE_89_FIDELITY.md` (`test_stage89_fidelity_d1.py`); maps A1–C1 → readiness / launch / deploy / security.
+
+**Stage 89 exit (2026-08-11):** A1, F1, C1, D1, H89x met — `docs/STAGE_89_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_185_STAGE89_FREEZE.md`. Fidelity: `docs/STAGE_89_FIDELITY.md`.

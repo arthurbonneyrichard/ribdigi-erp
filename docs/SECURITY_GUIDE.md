@@ -540,6 +540,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 88 S1** | Platform staff invite + session ops — email invite + `GET/DELETE /platform/users/sessions` (`test_platform_staff_security_s1.py`) |
 | **Stage 88 D1** | House Lifecycle & Staff Security Ops fidelity — `docs/STAGE_88_FIDELITY.md` (`test_stage88_fidelity_d1.py`); maps L1–S1 → readiness / launch / deploy / security |
 | **Stage 88 H88x** | Exit + freeze — `docs/STAGE_88_EXIT_CRITERIA.md`, ADR-183 (`test_stage88_exit_h88x.py`); Stages 1–88 frozen for Stage 88 scope; Stage 89+ requires CONTINUE/NEXT |
+| **Stage 89 open** | House Customer Assist & Roster Intelligence Ops — `docs/STAGE_89_PLAN.md`, ADR-184 (`test_stage89_open.py`); Stages 1–88 remain frozen for prior scopes; A1 next historically |
+| **Stage 89 A1** | House Tenant Admin assist — `POST /platform/tenants/{id}/admin/password-reset-email` / `…/admin/resend-verification` (`test_platform_tenant_admin_assist_a1.py`); no impersonation |
+| **Stage 89 F1** | Roster filters + dashboard at-risk KPIs — `plan_code`/`industry` + `at_risk_count` (`test_platform_roster_intel_f1.py`) |
+| **Stage 89 C1** | Plan catalog + billing roster depth — metadata catalog (`test_platform_catalog_billing_c1.py`) |
+| **Stage 89 D1** | House Customer Assist & Roster Intelligence Ops fidelity — `docs/STAGE_89_FIDELITY.md` (`test_stage89_fidelity_d1.py`); maps A1–C1 → readiness / launch / deploy / security |
+| **Stage 89 H89x** | Exit + freeze — `docs/STAGE_89_EXIT_CRITERIA.md`, ADR-185 (`test_stage89_exit_h89x.py`); Stages 1–89 frozen for Stage 89 scope; Stage 90+ requires CONTINUE/NEXT |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |

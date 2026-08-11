@@ -5,12 +5,21 @@ import PlatformShell from '../../../components/PlatformShell';
 import { DonutChart } from '../../../components/DashboardCharts';
 import { api } from '../../../lib/api';
 
+type PlanItem = {
+  code: string;
+  label?: string;
+  blurb?: string;
+  soft_limits?: { stores?: number | null; users?: number | null };
+};
+
 type PlansPayload = {
   deferred_billing?: boolean;
   mrr?: number | null;
   checkout_enabled?: boolean;
+  subscriptions_live?: boolean;
   message?: string;
   plan_codes?: string[];
+  catalog?: PlanItem[];
   distribution?: { slices?: { plan_code: string; count: number }[]; total?: number };
 };
 
@@ -27,11 +36,16 @@ export default function PlatformPlansPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const catalog = data.catalog?.length
+    ? data.catalog
+    : (data.plan_codes || []).map((code) => ({ code }));
+
   return (
     <PlatformShell>
       <h1>Plans</h1>
       <p className="muted">
-        RIBDIGI ERP · Plan codes are commercial metadata only (billing deferred — ADR-002).
+        RIBDIGI ERP · Plan codes are commercial metadata only (billing deferred — ADR-002). No
+        prices, checkout, or fabricated MRR.
       </p>
       {error && <p>{error}</p>}
       {loading && <p className="muted">Loading plans…</p>}
@@ -50,20 +64,43 @@ export default function PlatformPlansPage() {
           <div className="kpi">{data.checkout_enabled ? 'On' : 'Off'}</div>
         </div>
         <div className="card">
+          <div className="muted">Live subscriptions</div>
+          <div className="kpi">{data.subscriptions_live ? 'yes' : 'no'}</div>
+        </div>
+        <div className="card">
           <div className="muted">Tenants with plans</div>
           <div className="kpi">{data.distribution?.total ?? '—'}</div>
         </div>
       </div>
       <div className="grid" style={{ marginTop: 20 }}>
         <div className="card">
-          <h2 style={{ fontSize: 16 }}>Plan codes</h2>
-          <ul>
-            {(data.plan_codes || []).map((code) => (
-              <li key={code}>{code}</li>
-            ))}
-          </ul>
+          <h2 style={{ fontSize: 16 }}>Plan catalog (metadata)</h2>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Label</th>
+                <th>Description</th>
+                <th>Soft limits</th>
+              </tr>
+            </thead>
+            <tbody>
+              {catalog.map((p) => (
+                <tr key={p.code}>
+                  <td>{p.code}</td>
+                  <td>{p.label || p.code}</td>
+                  <td>{p.blurb || '—'}</td>
+                  <td>
+                    stores: {p.soft_limits?.stores ?? 'n/a'} · users:{' '}
+                    {p.soft_limits?.users ?? 'n/a'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           <p className="muted" style={{ marginTop: 8 }}>
-            Assign a tenant plan from the tenant detail page (metadata PATCH only).
+            Assign a tenant plan from the tenant detail page (metadata PATCH only). Soft limits are
+            informational — not enforced checkout entitlements.
           </p>
         </div>
         <div className="card">

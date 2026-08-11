@@ -164,13 +164,34 @@ async def platform_list_tenants(
     db: AsyncSession = Depends(get_db),
     q: str | None = Query(None),
     status: str | None = Query(None),
+    plan_code: str | None = Query(None),
+    industry: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
     items, total = await platform_svc.list_customer_tenants(
-        db, q=q, status=status, limit=limit, offset=offset
+        db,
+        q=q,
+        status=status,
+        plan_code=plan_code,
+        industry=industry,
+        limit=limit,
+        offset=offset,
     )
-    return env({"items": items, "total": total, "limit": limit, "offset": offset})
+    return env(
+        {
+            "items": items,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "filters": {
+                "q": q,
+                "status": status,
+                "plan_code": plan_code,
+                "industry": industry,
+            },
+        }
+    )
 
 
 @router.get("/tenants/export")
@@ -179,11 +200,19 @@ async def platform_tenants_export(
     db: AsyncSession = Depends(get_db),
     q: str | None = Query(None),
     status: str | None = Query(None),
+    plan_code: str | None = Query(None),
+    industry: str | None = Query(None),
     format: str = Query("csv"),
 ):
-    """Stage 88 R1 — export customer tenant roster (csv/pdf)."""
+    """Stage 88 R1 — export customer tenant roster (csv/pdf). Stage 89 F1 adds plan/industry filters."""
     items, _total = await platform_svc.list_customer_tenants(
-        db, q=q, status=status, limit=500, offset=0
+        db,
+        q=q,
+        status=status,
+        plan_code=plan_code,
+        industry=industry,
+        limit=500,
+        offset=0,
     )
     fmt = (format or "csv").strip().lower()
     if fmt == "pdf":
@@ -414,6 +443,146 @@ async def platform_activate_tenant(
     return env({"id": row.id, "status": row.status}, message="tenant activated")
 
 
+@router.post("/tenants/{tenant_id}/admin/password-reset-email")
+async def platform_tenant_admin_password_reset_email(
+    tenant_id: str,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 89 A1 — House-initiated password reset for customer Tenant Admin (no impersonation)."""
+    if tenant_id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=400, detail="Use platform users for House staff reset")
+    row = await db.get(m.Tenant, tenant_id)
+    if not row or row.id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    admin = await platform_svc.get_customer_tenant_admin(db, tenant_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Tenant Admin not found")
+    raw, token_hash, expires = issue_one_time_token()
+    db.add(
+        m.AuthToken(
+            tenant_id=tenant_id,
+            user_id=admin.id,
+            purpose="password_reset",
+            token_hash=token_hash,
+            expires_at=expires,
+        )
+    )
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.tenant.admin_password_reset_email",
+        entity="user",
+        entity_id=admin.id,
+        details={
+            "target_tenant_id": tenant_id,
+            "admin_email": admin.email,
+            "impersonation": False,
+        },
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_tenants",
+    )
+    await db.commit()
+    from app import emailer
+
+    email_result = await emailer.send_password_reset_email(to=admin.email, token=raw)
+    data: dict[str, Any] = {
+        "tenant_id": tenant_id,
+        "admin_user_id": admin.id,
+        "email": admin.email,
+        "impersonation": False,
+        "email_delivery": {
+            "sent": email_result.sent,
+            "mode": email_result.mode,
+            "error": email_result.error,
+        },
+    }
+    if settings.DEBUG or settings.APP_ENV.lower() != "production":
+        data["reset_token"] = raw
+    return env(data, "Tenant Admin password reset email issued")
+
+
+@router.post("/tenants/{tenant_id}/admin/resend-verification")
+async def platform_tenant_admin_resend_verification(
+    tenant_id: str,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 89 A1 — House resend email verification for customer Tenant Admin."""
+    if tenant_id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=400, detail="Platform staff emails are already verified")
+    row = await db.get(m.Tenant, tenant_id)
+    if not row or row.id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    admin = await platform_svc.get_customer_tenant_admin(db, tenant_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Tenant Admin not found")
+    if bool(admin.email_verified):
+        return env(
+            {
+                "tenant_id": tenant_id,
+                "admin_user_id": admin.id,
+                "email": admin.email,
+                "already_verified": True,
+                "impersonation": False,
+            },
+            "Tenant Admin email already verified",
+        )
+    raw, token_hash, expires = issue_one_time_token()
+    db.add(
+        m.AuthToken(
+            tenant_id=tenant_id,
+            user_id=admin.id,
+            purpose="email_verify",
+            token_hash=token_hash,
+            expires_at=expires,
+        )
+    )
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.tenant.admin_resend_verification",
+        entity="user",
+        entity_id=admin.id,
+        details={
+            "target_tenant_id": tenant_id,
+            "admin_email": admin.email,
+            "impersonation": False,
+        },
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_tenants",
+    )
+    await db.commit()
+    from app import emailer
+
+    email_result = await emailer.send_verification_email(
+        to=admin.email, token=raw, company_name=row.company_name
+    )
+    data: dict[str, Any] = {
+        "tenant_id": tenant_id,
+        "admin_user_id": admin.id,
+        "email": admin.email,
+        "already_verified": False,
+        "impersonation": False,
+        "email_delivery": {
+            "sent": email_result.sent,
+            "mode": email_result.mode,
+            "error": email_result.error,
+        },
+    }
+    if settings.DEBUG or settings.APP_ENV.lower() != "production":
+        data["email_verification_token"] = raw
+    return env(data, "Tenant Admin verification email issued")
+
+
 @router.patch("/tenants/{tenant_id}/plan")
 async def platform_set_tenant_plan(
     tenant_id: str,
@@ -501,18 +670,24 @@ async def platform_plans_catalog(
     claims: dict = Depends(require_platform_permission("platform_plans", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Metadata plan catalog + distribution (ADR-002 — no payment / fabricated MRR)."""
+    """Metadata plan catalog + distribution (ADR-002 — no payment / fabricated MRR).
+
+    Stage 89 C1: enriched catalog labels/blurbs/soft limits (still not checkout).
+    """
     distribution = await platform_svc.platform_plan_distribution(db)
+    catalog = tenants_svc.plan_catalog_items()
     return env(
         {
             "deferred_billing": True,
             "mrr": None,
             "checkout_enabled": False,
+            "subscriptions_live": False,
             "message": (
                 "Plan codes are commercial metadata only. Subscription billing is deferred "
                 "(ADR-002); no payment provider and no fabricated MRR."
             ),
             "plan_codes": sorted(tenants_svc.VALID_PLAN_CODES),
+            "catalog": catalog,
             "distribution": distribution,
         }
     )

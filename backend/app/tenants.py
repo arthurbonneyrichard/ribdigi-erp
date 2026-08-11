@@ -20,6 +20,38 @@ VALID_INDUSTRIES = frozenset(
 )
 TRIAL_REMINDER_DAYS = (7, 3, 1)
 
+# Stage 89 C1 — commercial metadata catalog only (no prices / checkout / fabricated MRR).
+PLAN_CATALOG: dict[str, dict] = {
+    "trial": {
+        "code": "trial",
+        "label": "Trial",
+        "blurb": "Evaluation window for new customer tenants.",
+        "soft_limits": {"stores": 1, "users": 5},
+    },
+    "starter": {
+        "code": "starter",
+        "label": "Starter",
+        "blurb": "Single-location retail operations metadata tier.",
+        "soft_limits": {"stores": 2, "users": 15},
+    },
+    "growth": {
+        "code": "growth",
+        "label": "Growth",
+        "blurb": "Multi-store growth metadata tier.",
+        "soft_limits": {"stores": 10, "users": 50},
+    },
+    "enterprise": {
+        "code": "enterprise",
+        "label": "Enterprise",
+        "blurb": "Large-org metadata tier (limits negotiated offline).",
+        "soft_limits": {"stores": None, "users": None},
+    },
+}
+
+
+def plan_catalog_items() -> list[dict]:
+    return [dict(PLAN_CATALOG[code]) for code in sorted(VALID_PLAN_CODES)]
+
 
 def assert_mutable_customer_tenant(tenant: m.Tenant) -> None:
     """Refuse lifecycle mutations against the reserved Ribdigi House tenant (ADR-137)."""
