@@ -375,8 +375,9 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 42 P1** | AI model / provider boundary honesty — `docs/AI_PROVIDER_BOUNDARY_MVP.md`, `ops/mvp/ai-provider-boundary.json` (`test_ai_provider_boundary_p1.py`); external LLM Remaining |
 | **Stage 42 D1** | AI transparency fidelity — `docs/STAGE_42_FIDELITY.md` (`test_stage42_fidelity_d1.py`) maps A1–P1 → readiness / launch / deploy / security |
 | **Stage 42 fidelity** | D1 maps A1–P1 AI transparency — `docs/STAGE_42_FIDELITY.md` (`test_stage42_fidelity_d1.py`); exit/freeze `docs/STAGE_42_EXIT_CRITERIA.md`, ADR-090 (`test_stage42_exit_h42x.py`); historical open ADR-089; external LLM / AI certification / go-live / §7 remain Remaining |
-| **Stage 43 open** | Commercial Legal Notice Fidelity — `docs/STAGE_43_PLAN.md`, ADR-091 (`test_stage43_open.py`); Stages 1–42 remain frozen; T1 complete; C1 next |
+| **Stage 43 open** | Commercial Legal Notice Fidelity — `docs/STAGE_43_PLAN.md`, ADR-091 (`test_stage43_open.py`); Stages 1–42 remain frozen; C1 complete; D1 next |
 | **Stage 43 T1** | ToS / AUP honesty — `docs/TOS_AUP_MVP.md`, `ops/mvp/tos-aup.json` (`test_tos_aup_t1.py`); signed ToS Remaining |
+| **Stage 43 C1** | Cookie / privacy notice honesty — `docs/COOKIE_PRIVACY_NOTICE_MVP.md`, `ops/mvp/cookie-privacy-notice.json` (`test_cookie_privacy_notice_c1.py`); live cookie-consent Remaining |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |

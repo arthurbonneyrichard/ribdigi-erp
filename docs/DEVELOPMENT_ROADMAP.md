@@ -436,6 +436,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 43 T1 (2026-08-11):** ToS / AUP honesty — `docs/TOS_AUP_MVP.md`, `ops/mvp/tos-aup.json`, evidence `stage43_t1_tos_aup.json` (`test_tos_aup_t1.py`); signed ToS Remaining.
 
+**Stage 43 C1 (2026-08-11):** Cookie / privacy notice honesty — `docs/COOKIE_PRIVACY_NOTICE_MVP.md`, `ops/mvp/cookie-privacy-notice.json`, evidence `stage43_c1_cookie_privacy_notice.json` (`test_cookie_privacy_notice_c1.py`); live cookie-consent Remaining.
+
 
 
 

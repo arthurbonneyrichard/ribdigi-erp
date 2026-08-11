@@ -36,6 +36,7 @@
 | `ai-use-disclosure.json` | Stage 42 A1 AI use disclosure honesty — `ai_certification_claimed: false` / `ai_advice_binding_claimed: false` / `external_llm_claimed: false` / `output_pii_scanner_claimed: false` |
 | `ai-provider-boundary.json` | Stage 42 P1 AI model / provider boundary honesty — `external_llm_claimed: false` / `prophet_claimed: false` / `paid_model_vendor_required: false` / `output_pii_scanner_claimed: false` |
 | `tos-aup.json` | Stage 43 T1 ToS / AUP honesty — `tos_signed_claimed: false` / `aup_enforced_claimed: false` / `legal_counsel_claimed: false` / `clickwrap_live: false` |
+| `cookie-privacy-notice.json` | Stage 43 C1 Cookie / privacy notice honesty — `cookie_consent_live: false` / `cmp_saas_claimed: false` / `privacy_notice_live: false` / `legal_counsel_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
 
@@ -87,6 +88,7 @@ Authoritative MVP docs:
 - `docs/STAGE_42_EXIT_CRITERIA.md` / `docs/ADR_090_STAGE42_FREEZE.md` (`backend/tests/test_stage42_exit_h42x.py`) — Stage 42 H42x
 - `docs/STAGE_43_PLAN.md` (`backend/tests/test_stage43_open.py`) — Stage 43 open (ADR-091)
 - `docs/TOS_AUP_MVP.md` (`backend/tests/test_tos_aup_t1.py`) — Stage 43 T1
+- `docs/COOKIE_PRIVACY_NOTICE_MVP.md` (`backend/tests/test_cookie_privacy_notice_c1.py`) — Stage 43 C1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -352,8 +354,12 @@ H42x met — `docs/STAGE_42_EXIT_CRITERIA.md`, ADR-090. Stages 1–42 frozen for
 
 ## Stage 43 open
 
-Commercial Legal Notice Fidelity — `docs/STAGE_43_PLAN.md`, ADR-091; T1 complete; C1 next.
+Commercial Legal Notice Fidelity — `docs/STAGE_43_PLAN.md`, ADR-091; C1 complete; D1 next.
 
 ## Stage 43 T1 — ToS / AUP honesty
 
 `docs/TOS_AUP_MVP.md` + `ops/mvp/tos-aup.json` — packaging Complete; `tos_signed_claimed` / `aup_enforced_claimed` / `legal_counsel_claimed` / `clickwrap_live` remain false.
+
+## Stage 43 C1 — Cookie / privacy notice honesty
+
+`docs/COOKIE_PRIVACY_NOTICE_MVP.md` + `ops/mvp/cookie-privacy-notice.json` — packaging Complete; `cookie_consent_live` / `cmp_saas_claimed` / `privacy_notice_live` / `legal_counsel_claimed` remain false.
