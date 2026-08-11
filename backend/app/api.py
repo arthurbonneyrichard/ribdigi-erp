@@ -11208,6 +11208,27 @@ async def ai_purchases_analysis(
     return env(data)
 
 
+@api.get("/ai/cross-domain/analysis")
+async def ai_cross_domain_analysis(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    lookback_days: int = 90,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 25 X1 / BR-21.12 — Inv+Sales+Purch+Exp orchestration with synthesis signals."""
+    from app import ai_cross_domain as ai_cross_domain_svc
+
+    data = await ai_cross_domain_svc.analyze_cross_domain(
+        db,
+        claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+        lookback_days=lookback_days,
+    )
+    return env(data)
+
+
 @api.get("/ai/security/alerts")
 async def ai_security_alerts(
     lookback_hours: int = 72,

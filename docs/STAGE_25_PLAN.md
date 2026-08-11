@@ -1,6 +1,6 @@
 # Stage 25 Plan — Actuals → AI Analysis → Business Insights
 
-**Status:** Open — P1 COMPLETE; X1 next (ADR-055)  
+**Status:** Open — P1 / X1 COMPLETE; B1 next (ADR-055)  
 **Base:** Commerce actuals → Basic RIBDIGI AI analysis → Business insights  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-055](ADR_055_STAGE25_OPEN.md)
@@ -36,7 +36,7 @@ Business Insights
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **P1** | Purchases actuals → AI analysis | P0 | COMPLETE |
-| **X1** | Cross-domain analysis (Inv + Sales + Purch + Exp) | P0 | PENDING |
+| **X1** | Cross-domain analysis (Inv + Sales + Purch + Exp) | P0 | COMPLETE |
 | **B1** | Business Insights surface (all four actuals) | P1 | PENDING |
 | **U1** | AI UI fidelity (purchases + analysis panels) | P1 | PENDING |
 | **D1** | Spec / BR / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
@@ -66,7 +66,12 @@ Business Insights
 
 ## X1 acceptance criteria
 
-Filled when workstream starts.
+- [x] Single orchestration endpoint over live Inv + Sales + Purch + Exp analyzers (extend proven `ai_*` — not a parallel stack).
+- [x] Response includes per-domain summaries + `cross_signals` synthesis (multi-domain kinds).
+- [x] Tenant-scoped + `require_permission("ai", …)`; cashier without `ai` → 403; no cross-tenant leakage.
+- [x] Automated proof: `backend/tests/test_ai_cross_domain_x1.py`.
+- [x] API / BR-21.12 / plan / launch / roadmap cite Stage 25 X1.
+- [x] No fake LLM/Prophet claims; Remaining external ML stays deferred.
 
 ## B1 acceptance criteria
 
@@ -86,4 +91,4 @@ Filled when exit workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-055 open. P1 complete; X1 next. Stages 1–24 remain frozen for their scopes.
+Plan authored; ADR-055 open. P1 / X1 complete; B1 next. Stages 1–24 remain frozen for their scopes.

@@ -1110,7 +1110,16 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`. Stage 24 N1 shared s
   - [x] Overdue purchase-invoice + optimization suggestions — Stage 25 P1 (`purchase_invoices.overdue` / `suggestions`)
   - Remaining post-MVP: external LLM / Prophet upgrades (not Stage 25)
 
-Fidelity sync: Stage 20 D1 — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`). Stage 25 P1 purchases analysis — `test_ai_purchases_analysis_p1.py` / `docs/STAGE_25_PLAN.md`.
+#### BR-21.12 Cross-Domain AI Analysis
+- **Description:** Orchestrate Inventory + Sales + Purchases + Expenses analyzers into one basic analysis contract with synthesis signals.
+- **Priority:** Medium
+- **Acceptance Criteria:**
+  - [x] Single endpoint returns per-domain summaries — Stage 25 X1 (`GET /ai/cross-domain/analysis` `domains`; `test_ai_cross_domain_x1.py`)
+  - [x] Cross-domain synthesis signals (multi-domain kinds) — Stage 25 X1 (`cross_signals`)
+  - [x] Extends proven `ai_inventory` / `ai_sales` / `ai_purchases` / `ai_expenses` — no parallel stack
+  - Remaining post-MVP: external LLM / Prophet upgrades (not Stage 25)
+
+Fidelity sync: Stage 20 D1 — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`). Stage 25 P1/X1 — `test_ai_purchases_analysis_p1.py` / `test_ai_cross_domain_x1.py` / `docs/STAGE_25_PLAN.md`.
 
 ---
 
