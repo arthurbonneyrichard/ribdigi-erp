@@ -1,0 +1,159 @@
+{
+  "stage": "47",
+  "workstream": "I1",
+  "doc": "docs/CYBER_INSURANCE_MVP.md",
+  "liability_indemnity": "ops/mvp/liability-indemnity.json",
+  "liability_indemnity_doc": "docs/LIABILITY_INDEMNITY_MVP.md",
+  "msa_addendum": "ops/mvp/msa-addendum.json",
+  "msa_addendum_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "assurance_evidence": "ops/mvp/assurance-evidence.json",
+  "assurance_evidence_doc": "docs/ASSURANCE_EVIDENCE_MVP.md",
+  "residual_risk": "ops/mvp/residual-risk-register.json",
+  "residual_risk_doc": "docs/RESIDUAL_RISK_MVP.md",
+  "breach_notification": "ops/mvp/breach-notification.json",
+  "breach_notification_doc": "docs/BREACH_NOTIFICATION_MVP.md",
+  "service_credit_warranty": "ops/mvp/service-credit-warranty.json",
+  "service_credit_warranty_doc": "docs/SERVICE_CREDIT_WARRANTY_MVP.md",
+  "compliance_questionnaire_doc": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+  "compliance_readiness_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "stage47_plan": "docs/STAGE_47_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "insurance_certificate_claimed": false,
+  "cyber_insurance_live": false,
+  "coi_issued_claimed": false,
+  "broker_attestation_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage47_i1_cyber_insurance.json",
+  "steps": [
+    {
+      "id": "ci-liability-adjacency",
+      "category": "insurance",
+      "title": "Link Stage 46 liability / indemnity as risk-allocation adjacency (not COI proof)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LIABILITY_INDEMNITY_MVP.md",
+        "ops/mvp/liability-indemnity.json"
+      ],
+      "source": "docs/LIABILITY_INDEMNITY_MVP.md"
+    },
+    {
+      "id": "ci-msa-adjacency",
+      "category": "insurance",
+      "title": "Link Stage 39 MSA security addendum as commercial insurance exhibit adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MSA_ADDENDUM_MVP.md",
+        "ops/mvp/msa-addendum.json"
+      ],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "ci-assurance-adjacency",
+      "category": "coi",
+      "title": "Link Stage 34 assurance evidence map as insurance-proof adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ASSURANCE_EVIDENCE_MVP.md",
+        "ops/mvp/assurance-evidence.json"
+      ],
+      "source": "docs/ASSURANCE_EVIDENCE_MVP.md"
+    },
+    {
+      "id": "ci-residual-risk",
+      "category": "coi",
+      "title": "Link residual risk / compliance readiness as coverage-gap honesty adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RESIDUAL_RISK_MVP.md",
+        "ops/mvp/residual-risk-register.json"
+      ],
+      "source": "docs/RESIDUAL_RISK_MVP.md"
+    },
+    {
+      "id": "ci-breach-adjacency",
+      "category": "insurance",
+      "title": "Link Stage 38 breach notification as cyber-incident insurance theme adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BREACH_NOTIFICATION_MVP.md",
+        "ops/mvp/breach-notification.json"
+      ],
+      "source": "docs/BREACH_NOTIFICATION_MVP.md"
+    },
+    {
+      "id": "ci-remedy-adjacency",
+      "category": "insurance",
+      "title": "Link Stage 46 service credit / warranty as remedy adjacency (not insurance certificate)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SERVICE_CREDIT_WARRANTY_MVP.md",
+        "ops/mvp/service-credit-warranty.json"
+      ],
+      "source": "docs/SERVICE_CREDIT_WARRANTY_MVP.md"
+    },
+    {
+      "id": "ci-compliance-themes",
+      "category": "coi",
+      "title": "Link compliance questionnaire / readiness themes to insurance honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+        "docs/COMPLIANCE_READINESS_MVP.md"
+      ],
+      "source": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+    },
+    {
+      "id": "ci-security-guide",
+      "category": "coi",
+      "title": "Index SECURITY_GUIDE posture narrative for cyber insurance honesty references",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/ASSURANCE_EVIDENCE_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ci-coi-remaining",
+      "category": "honesty",
+      "title": "Issued certificate of insurance Remaining \u2014 packaging \u2260 delivered COI",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_47_PLAN.md",
+        "docs/CYBER_INSURANCE_MVP.md"
+      ],
+      "source": "docs/STAGE_47_PLAN.md"
+    },
+    {
+      "id": "ci-policy-remaining",
+      "category": "honesty",
+      "title": "Live cyber policy / broker attestation Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_47_PLAN.md",
+        "docs/CYBER_INSURANCE_MVP.md"
+      ],
+      "source": "docs/STAGE_47_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Issued certificate of insurance Complete",
+    "Live cyber / E&O policy Complete",
+    "Broker / underwriter attestation Complete",
+    "Customer-delivered insurance schedule Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

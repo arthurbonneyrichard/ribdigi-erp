@@ -474,6 +474,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 47 open (2026-08-11):** Commercial Insurance & Audit Fidelity track approved — `docs/ADR_099_STAGE47_OPEN.md` + `docs/STAGE_47_PLAN.md` (cyber insurance/COI → customer audit rights → fidelity).
 
+**Stage 47 I1 (2026-08-11):** Cyber insurance / COI honesty — `docs/CYBER_INSURANCE_MVP.md`, `ops/mvp/cyber-insurance.json`, evidence `stage47_i1_cyber_insurance.json` (`test_cyber_insurance_i1.py`); issued COI Remaining.
+
 
 
 
