@@ -152,6 +152,7 @@ Authoritative MVP docs:
 - `docs/STAGE_52_PLAN.md` (`backend/tests/test_stage52_open.py`) — Stage 52 open (ADR-109)
 - `docs/INDUSTRY_PARTNERSHIPS_MVP.md` (`backend/tests/test_industry_partnerships_i1.py`) — Stage 52 I1
 - `docs/SUBSCRIPTION_RENEWAL_MVP.md` (`backend/tests/test_subscription_renewal_r1.py`) — Stage 52 R1
+- `docs/STAGE_52_FIDELITY.md` (`backend/tests/test_stage52_fidelity_d1.py`) — Stage 52 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -597,7 +598,7 @@ H51x met — `docs/STAGE_51_EXIT_CRITERIA.md`, ADR-108. Stages 1–51 frozen for
 
 ## Stage 52 open
 
-Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109; R1 complete; D1 next.
+Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109; D1 complete; H52x next.
 
 ## Stage 52 I1 — Industry partnerships honesty
 
@@ -606,3 +607,7 @@ Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109;
 ## Stage 52 R1 — Subscription renewal / annual discount honesty
 
 `docs/SUBSCRIPTION_RENEWAL_MVP.md` + `ops/mvp/subscription-renewal.json` — packaging Complete; `annual_discount_enforcement_claimed` / `auto_renewal_billing_live` / `upgrade_downgrade_live` / `renewal_program_live` remain false.
+
+## Stage 52 D1 — Fidelity
+
+`docs/STAGE_52_FIDELITY.md` maps I1–R1 → readiness / launch / deploy / security (`test_stage52_fidelity_d1.py`).

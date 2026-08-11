@@ -528,6 +528,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 52 R1 (2026-08-11):** Subscription renewal / annual discount honesty — `docs/SUBSCRIPTION_RENEWAL_MVP.md`, `ops/mvp/subscription-renewal.json`, evidence `stage52_r1_subscription_renewal.json` (`test_subscription_renewal_r1.py`); live annual-discount enforcement Remaining.
 
+**Stage 52 D1 (2026-08-11):** Partnerships & renewal fidelity sync — `docs/STAGE_52_FIDELITY.md` (`test_stage52_fidelity_d1.py`); maps I1–R1 → readiness / launch / deploy / security.
+
 
 
 

@@ -1,6 +1,6 @@
 # Stage 52 Plan — Commercial Partnerships & Renewal Fidelity
 
-**Status:** Open — R1 complete; D1 next  
+**Status:** Open — D1 complete; H52x next  
 **Base:** Industry Partnerships Honesty Pack + Subscription Renewal / Annual Discount Honesty Pack → Commercial Partnerships & Renewal Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-109](ADR_109_STAGE52_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Partnerships & Renewal Fidelity
 |----|------------|----------|---------|
 | **I1** | Industry partnerships honesty packaging (not live industry partnership program / signed association deals Complete) | P0 | COMPLETE |
 | **R1** | Subscription renewal / annual discount honesty packaging (not live annual-discount enforcement / auto-renewal billing Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H52x** | Stage 52 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -90,9 +90,9 @@ Commercial Partnerships & Renewal Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_52_FIDELITY.md` maps I1–R1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 52 D1.
-- [ ] Automated proof: `backend/tests/test_stage52_fidelity_d1.py`.
+- [x] `docs/STAGE_52_FIDELITY.md` maps I1–R1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 52 D1.
+- [x] Automated proof: `backend/tests/test_stage52_fidelity_d1.py` (`docs/STAGE_52_FIDELITY.md`).
 
 ## H52x acceptance criteria
 

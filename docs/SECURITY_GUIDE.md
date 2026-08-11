@@ -420,9 +420,10 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 51 A1** | Add-on services honesty — `docs/ADDON_SERVICES_MVP.md`, `ops/mvp/addon-services.json` (`test_addon_services_a1.py`); live add-on catalog Remaining |
 | **Stage 51 D1** | Marketplace & add-ons fidelity — `docs/STAGE_51_FIDELITY.md` (`test_stage51_fidelity_d1.py`) maps M1–A1 → readiness / launch / deploy / security |
 | **Stage 51 fidelity** | D1 maps M1–A1 marketplace & add-ons — `docs/STAGE_51_FIDELITY.md` (`test_stage51_fidelity_d1.py`); exit/freeze `docs/STAGE_51_EXIT_CRITERIA.md`, ADR-108 (`test_stage51_exit_h51x.py`); historical open ADR-107; live marketplace listing / add-on catalog / go-live / §7 remain Remaining |
-| **Stage 52 open** | Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109 (`test_stage52_open.py`); Stages 1–51 remain frozen; R1 complete; D1 next |
+| **Stage 52 open** | Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109 (`test_stage52_open.py`); Stages 1–51 remain frozen; D1 complete; H52x next |
 | **Stage 52 I1** | Industry partnerships honesty — `docs/INDUSTRY_PARTNERSHIPS_MVP.md`, `ops/mvp/industry-partnerships.json` (`test_industry_partnerships_i1.py`); live industry partnership program Remaining |
 | **Stage 52 R1** | Subscription renewal / annual discount honesty — `docs/SUBSCRIPTION_RENEWAL_MVP.md`, `ops/mvp/subscription-renewal.json` (`test_subscription_renewal_r1.py`); live annual-discount enforcement Remaining |
+| **Stage 52 D1** | Partnerships & renewal fidelity — `docs/STAGE_52_FIDELITY.md` (`test_stage52_fidelity_d1.py`) maps I1–R1 → readiness / launch / deploy / security |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |
