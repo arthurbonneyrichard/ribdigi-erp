@@ -27,4 +27,8 @@ Stage 68 Platform ↔ Tenant Console Fidelity delivered Ribdigi House console ho
 
 ## Next stage
 
-Stage 69 requires explicit CONTINUE/NEXT (not opened).
+Stage 69 opened via ADR-144 (`docs/ADR_144_STAGE69_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 69 (MVP Commercial Go-Live Fidelity — Platform ↔ Tenant Consoles Ready → Pre-Flight §§1–3 → Go-Live Attestation §7 → First Commercial Day Ops → MVP Commercial Go-Live) after Stage 68 freeze via CONTINUE/NEXT — see [ADR-144](ADR_144_STAGE69_OPEN.md) and [STAGE_69_PLAN.md](STAGE_69_PLAN.md). Stage 68 feature scope remains frozen; Stage 69 does not reopen H1–D1 / H68x.

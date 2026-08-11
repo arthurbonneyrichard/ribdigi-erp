@@ -1460,4 +1460,8 @@ Every feature in every phase must meet:
 
 **Stage 68 D1 (2026-08-11):** Platform ↔ Tenant console fidelity sync — `docs/STAGE_68_FIDELITY.md` (`test_stage68_fidelity_d1.py`); maps H1–T1 → readiness / launch / deploy / security.
 
-**Stage 68 exit (2026-08-11):** H1, T1, D1, H68x met — `docs/STAGE_68_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_143_STAGE68_FREEZE.md`. Fidelity: `docs/STAGE_68_FIDELITY.md`. Stage 69 requires explicit CONTINUE/NEXT (not opened).
+**Stage 68 exit (2026-08-11):** H1, T1, D1, H68x met — `docs/STAGE_68_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_143_STAGE68_FREEZE.md`. Fidelity: `docs/STAGE_68_FIDELITY.md`. Stage 69 opened via ADR-144.
+
+**Stage 69 open (2026-08-11):** MVP Commercial Go-Live Fidelity track approved — `docs/ADR_144_STAGE69_OPEN.md` + `docs/STAGE_69_PLAN.md` (Platform ↔ Tenant Consoles Ready → Pre-Flight §§1–3 → Go-Live Attestation §7 → First Commercial Day Ops → MVP Commercial Go-Live; V1 next).
+
+**Stage 69 V1 (2026-08-11):** Pre-flight verification honesty — `docs/PREFLIGHT_VERIFICATION_MVP.md`, `ops/mvp/preflight-verification.json`, evidence `stage69_v1_preflight_verification.json` (`test_preflight_verification_v1.py`); §§1–3 verified Remaining.

@@ -25,7 +25,7 @@ Stage 68 proves the owner dual-console product outline after Stage 67 freeze —
 | **H1** | `test_ribdigi_house_console_h1.py` — `RIBDIGI_HOUSE_CONSOLE_MVP.md`, ribdigi-house-console JSON | Owner House path / ADR-137 / ADR-002 | Paid billing; live subscriptions |
 | **T1** | `test_tenant_company_console_t1.py` — `TENANT_COMPANY_CONSOLE_MVP.md`, tenant-company-console JSON | Owner Tenant Company path / Shell / principal isolation | Module re-Complete; demo tenant |
 | **D1** | This note + `test_stage68_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H68x** | `STAGE_68_EXIT_CRITERIA.md`; ADR-143; `test_stage68_exit_h68x.py` | Stage 68 exit + freeze | Stage 69 needs open ADR |
+| **H68x** | `STAGE_68_EXIT_CRITERIA.md`; ADR-143; `test_stage68_exit_h68x.py` | Stage 68 exit + freeze | Stage 69 opened via ADR-144 |
 
 ## Evidence tests
 

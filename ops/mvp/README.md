@@ -76,6 +76,7 @@
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `business-pilot.json` | Stage 65 P1 Controlled business pilot honesty — `controlled_business_pilot_live_claimed: false` / `real_workflow_feedback_claimed: false` / `pilot_bugfix_program_live: false` / `business_pilot_program_live: false` |
+| `preflight-verification.json` | Stage 69 V1 Pre-flight verification honesty — `sections_1_3_verified: false` / `preflight_verified_claimed: false` / `go_live_claimed: false` / `section_7_signed: false` |
 | `tenant-company-console.json` | Stage 68 T1 Tenant Company console honesty — `tenant_modules_reclaimed_complete: false` / `demo_tenant_claimed: false` / `cross_principal_leak_claimed: false` |
 | `ribdigi-house-console.json` | Stage 68 H1 Ribdigi House console honesty — `billing_complete_claimed: false` / `payment_provider_claimed: false` / `subscriptions_live_claimed: false` / `mrr_fabricated_claimed: false` |
 | `post-launch-continuity.json` | Stage 67 C1 Post-launch continuity honesty — `post_launch_continuity_live_claimed: false` / `handoff_complete_claimed: false` / `live_training_claimed: false` / `customer_success_stabilization_claimed: false` |
@@ -228,6 +229,8 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/PREFLIGHT_VERIFICATION_MVP.md` (`backend/tests/test_preflight_verification_v1.py`) — Stage 69 V1
+- `docs/STAGE_69_PLAN.md` (`backend/tests/test_stage69_open.py`) — Stage 69 open (ADR-144)
 - `docs/STAGE_68_EXIT_CRITERIA.md` / `docs/ADR_143_STAGE68_FREEZE.md` (`backend/tests/test_stage68_exit_h68x.py`) — Stage 68 H68x
 - `docs/STAGE_68_FIDELITY.md` (`backend/tests/test_stage68_fidelity_d1.py`) — Stage 68 D1
 - `docs/TENANT_COMPANY_CONSOLE_MVP.md` (`backend/tests/test_tenant_company_console_t1.py`) — Stage 68 T1
@@ -950,6 +953,14 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 69 V1 — Pre-flight verification honesty
+
+`docs/PREFLIGHT_VERIFICATION_MVP.md` + `ops/mvp/preflight-verification.json` — packaging Complete; `sections_1_3_verified` / `preflight_verified_claimed` / `go_live_claimed` / `section_7_signed` remain false.
+
+## Stage 69 open
+
+MVP Commercial Go-Live Fidelity — `docs/STAGE_69_PLAN.md`, ADR-144; Open — V1 complete; A1 next.
 
 ## Stage 68 exit
 

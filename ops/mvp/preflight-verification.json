@@ -1,0 +1,152 @@
+{
+  "stage": "69",
+  "workstream": "V1",
+  "doc": "docs/PREFLIGHT_VERIFICATION_MVP.md",
+  "stage69_plan": "docs/STAGE_69_PLAN.md",
+  "launch_cert_doc": "docs/LAUNCH_CERT_MVP.md",
+  "checklist_map": "ops/launch/checklist-map.json",
+  "cutover_doc": "docs/CUTOVER_PACK_MVP.md",
+  "cutover_checklist": "ops/launch/cutover-checklist.json",
+  "attestation_doc": "docs/ATTESTATION_PACK_MVP.md",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "production_launch_doc": "docs/PRODUCTION_LAUNCH_MVP.md",
+  "production_launch": "ops/mvp/production-launch.json",
+  "house_console_doc": "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md",
+  "tenant_console_doc": "docs/TENANT_COMPANY_CONSOLE_MVP.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "sections_1_3_verified": false,
+  "preflight_verified_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage69_v1_preflight_verification.json",
+  "steps": [
+    {
+      "id": "pf-owner-outline",
+      "category": "preflight",
+      "title": "Index owner Pre-Flight Env Verification (\u00a7\u00a71\u20133) path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_69_PLAN.md",
+        "docs/ADR_144_STAGE69_OPEN.md"
+      ],
+      "source": "docs/STAGE_69_PLAN.md"
+    },
+    {
+      "id": "pf-launch-cert",
+      "category": "preflight",
+      "title": "Link Stage 27 launch-cert as \u00a7\u00a71\u20133 adjacency (checklist map \u2260 verified)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CERT_MVP.md",
+        "ops/launch/checklist-map.json"
+      ],
+      "source": "docs/LAUNCH_CERT_MVP.md"
+    },
+    {
+      "id": "pf-cutover",
+      "category": "preflight",
+      "title": "Link Stage 29 cutover pack as pre-flight adjacency (cutover Remaining \u2260 \u00a7\u00a71\u20133 verified)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CUTOVER_PACK_MVP.md",
+        "ops/launch/cutover-checklist.json"
+      ],
+      "source": "docs/CUTOVER_PACK_MVP.md"
+    },
+    {
+      "id": "pf-attestation-map",
+      "category": "preflight",
+      "title": "Link Stage 30 attestation sections map as adjacency (sections_1_3_verified stays false)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ATTESTATION_PACK_MVP.md",
+        "ops/launch/attestation-matrix.json"
+      ],
+      "source": "docs/ATTESTATION_PACK_MVP.md"
+    },
+    {
+      "id": "pf-production-launch",
+      "category": "preflight",
+      "title": "Link Stage 66 L1 production launch as adjacency (live cutover Remaining \u2260 pre-flight Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCTION_LAUNCH_MVP.md",
+        "ops/mvp/production-launch.json"
+      ],
+      "source": "docs/PRODUCTION_LAUNCH_MVP.md"
+    },
+    {
+      "id": "pf-dual-console",
+      "category": "preflight",
+      "title": "Link Stage 68 dual-console packs as readiness adjacency (consoles packaged \u2260 env verified)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md",
+        "docs/TENANT_COMPANY_CONSOLE_MVP.md"
+      ],
+      "source": "docs/STAGE_68_PLAN.md"
+    },
+    {
+      "id": "pf-plan-honesty",
+      "category": "preflight",
+      "title": "Confirm Stage 69 plan explicitly defers \u00a7\u00a71\u20133 verified / \u00a77 signed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_69_PLAN.md",
+        "docs/PREFLIGHT_VERIFICATION_MVP.md"
+      ],
+      "source": "docs/STAGE_69_PLAN.md"
+    },
+    {
+      "id": "pf-sections-remaining",
+      "category": "honesty",
+      "title": "LAUNCH \u00a7\u00a71\u20133 verified Remaining \u2014 packaging \u2260 verified Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_69_PLAN.md",
+        "docs/LAUNCH_CERT_MVP.md"
+      ],
+      "source": "docs/STAGE_69_PLAN.md"
+    },
+    {
+      "id": "pf-golive-remaining",
+      "category": "honesty",
+      "title": "Live go-live / \u00a77 / attestation Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_69_PLAN.md",
+        "docs/ATTESTATION_PACK_MVP.md"
+      ],
+      "source": "docs/STAGE_69_PLAN.md"
+    },
+    {
+      "id": "pf-preflight-remaining",
+      "category": "honesty",
+      "title": "Pre-flight verified Complete Remaining \u2014 packaging \u2260 target-env verification",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_69_PLAN.md",
+        "docs/PREFLIGHT_VERIFICATION_MVP.md"
+      ],
+      "source": "docs/STAGE_69_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "LAUNCH \u00a7\u00a71\u20133 verified Complete",
+    "LAUNCH \u00a77 Name/Date signed Complete",
+    "Live go-live / attestation Complete",
+    "Pre-flight verified Complete in target env"
+  ]
+}
