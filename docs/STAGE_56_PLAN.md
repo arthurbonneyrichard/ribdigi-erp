@@ -1,6 +1,6 @@
 # Stage 56 Plan — Commercial Onboarding & Expansion Fidelity
 
-**Status:** Open — G1 complete; D1 next  
+**Status:** Open — D1 complete; H56x next  
 **Base:** Implementation & Onboarding Commercial Honesty Pack + Geographic Expansion Honesty Pack → Commercial Onboarding & Expansion Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-117](ADR_117_STAGE56_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Onboarding & Expansion Fidelity
 |----|------------|----------|---------|
 | **O1** | Implementation & onboarding commercial honesty packaging (not live data-migration fee billing / on-site training delivery Complete) | P0 | COMPLETE |
 | **G1** | Geographic expansion honesty packaging (not multi-market expansion / international localization Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H56x** | Stage 56 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -98,9 +98,9 @@ Commercial Onboarding & Expansion Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_56_FIDELITY.md` maps O1–G1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 56 D1.
-- [ ] Automated proof: `backend/tests/test_stage56_fidelity_d1.py` (`docs/STAGE_56_FIDELITY.md`).
+- [x] `docs/STAGE_56_FIDELITY.md` maps O1–G1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 56 D1.
+- [x] Automated proof: `backend/tests/test_stage56_fidelity_d1.py` (`docs/STAGE_56_FIDELITY.md`).
 
 ## H56x acceptance criteria
 

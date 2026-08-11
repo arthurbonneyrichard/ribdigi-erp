@@ -1337,3 +1337,5 @@ Every feature in every phase must meet:
 **Stage 56 O1 (2026-08-11):** Implementation & onboarding commercial honesty — `docs/IMPLEMENTATION_ONBOARDING_MVP.md`, `ops/mvp/implementation-onboarding.json`, evidence `stage56_o1_implementation_onboarding.json` (`test_implementation_onboarding_o1.py`); live data-migration fee billing Remaining.
 
 **Stage 56 G1 (2026-08-11):** Geographic expansion honesty — `docs/GEOGRAPHIC_EXPANSION_MVP.md`, `ops/mvp/geographic-expansion.json`, evidence `stage56_g1_geographic_expansion.json` (`test_geographic_expansion_g1.py`); multi-market expansion Remaining.
+
+**Stage 56 D1 (2026-08-11):** Onboarding & expansion fidelity sync — `docs/STAGE_56_FIDELITY.md` (`test_stage56_fidelity_d1.py`); maps O1–G1 → readiness / launch / deploy / security.
