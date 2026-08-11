@@ -1,0 +1,62 @@
+# Stage 26 M1 — Prometheus alert rules over ribdigi_* series and readiness probe.
+# Evaluated when ops/prometheus/prometheus.yml rule_files are loaded.
+# Hosted Grafana / Alertmanager → PagerDuty remains deferred (see OPS_MONITORING_MVP.md).
+
+groups:
+  - name: ribdigi-mvp
+    rules:
+      - alert: RibdigiDown
+        expr: ribdigi_up == 0 or absent(ribdigi_up)
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RIBDIGI API process is down"
+          description: "ribdigi_up is missing or zero for the scrape target."
+
+      - alert: RibdigiHighErrorRate
+        expr: |
+          (
+            sum(rate(ribdigi_http_requests_total{status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(ribdigi_http_requests_total[5m])), 1e-9)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RIBDIGI HTTP 5xx error rate > 5%"
+          description: "Error rate from ribdigi_http_requests_total exceeds 5% for 5m."
+
+      - alert: RibdigiHighLatency
+        expr: |
+          (
+            sum(rate(ribdigi_http_request_duration_seconds_sum[5m]))
+            /
+            clamp_min(sum(rate(ribdigi_http_request_duration_seconds_count[5m])), 1e-9)
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RIBDIGI average request latency > 500ms"
+          description: "Mean latency from duration sum/count exceeds 0.5s for 10m."
+
+      - alert: RibdigiNotReady
+        expr: probe_success{job="ribdigi-ready"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RIBDIGI /api/v1/health/ready probe failing"
+          description: "Blackbox probe against readiness returned failure (deps down or 503)."
+
+      # Optional — only fires when a rabbitmq_exporter scrape is configured by the operator.
+      - alert: RibdigiRabbitMQQueueDepthHigh
+        expr: rabbitmq_queue_messages > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RabbitMQ queue depth high (optional exporter)"
+          description: "Optional rabbitmq_exporter metric; not emitted by the RIBDIGI app."

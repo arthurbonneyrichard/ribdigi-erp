@@ -77,8 +77,15 @@ def test_stage24_readiness_and_roadmap():
     assert "- [x] Inventory catalog" in pr
     assert "- [x] Redis/Celery/RabbitMQ used for intended production workloads." in pr
     assert "- [x] AI functions use real tenant data" in pr
-    assert "- [ ] Monitoring, metrics, logging and alerting complete." in pr
+    # Monitoring may be Complete (MVP) after Stage 26 M1; WAL stays open until W1.
     assert "- [ ] Point-in-time recovery/WAL strategy complete." in pr
+    assert (
+        "- [ ] Monitoring, metrics, logging and alerting complete." in pr
+        or (
+            "- [x] Monitoring, metrics, logging and alerting complete." in pr
+            and "Stage 26 M1" in pr
+        )
+    )
 
     roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
     assert "STAGE_24_FIDELITY.md" in roadmap

@@ -1,6 +1,6 @@
 # Stage 26 Plan — Production Platform & Ops Fidelity
 
-**Status:** Open — M1 next (ADR-057)  
+**Status:** Open — M1 COMPLETE; W1 next (ADR-057)  
 **Base:** Monitoring & Alerting + WAL/PITR + Kubernetes Deploy + Load Capacity → Ops Platform Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-057](ADR_057_STAGE26_OPEN.md)
@@ -33,7 +33,7 @@ Ops Platform Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **M1** | Monitoring & alerting fidelity (Prometheus scrape / alert rules / log-ship hooks) | P0 | PENDING |
+| **M1** | Monitoring & alerting fidelity (Prometheus scrape / alert rules / log-ship hooks) | P0 | COMPLETE |
 | **W1** | WAL / PITR strategy + S3 offsite backup fidelity | P0 | PENDING |
 | **K1** | Kubernetes / Helm production deploy fidelity | P0 | PENDING |
 | **C1** | Certified load / capacity evidence | P0 | PENDING |
@@ -53,11 +53,11 @@ Ops Platform Fidelity
 
 ## M1 acceptance criteria
 
-- [ ] Prometheus scrape + alert-rule fidelity over existing `/api/v1/metrics` / health hooks (extend `OPS_MONITORING_MVP.md` — not a parallel stack).
-- [ ] Log-shipping / aggregation operator hooks documented against Stage 18 structured JSON logs (no fake SIEM claim).
-- [ ] Automated proof: `backend/tests/test_ops_monitoring_m1.py`.
-- [ ] PRODUCTION_READINESS monitoring gate honesty updated with evidence (Remaining only if still deferred).
-- [ ] Plan / launch / roadmap cite Stage 26 M1.
+- [x] Prometheus scrape + alert-rule fidelity over existing `/api/v1/metrics` / health hooks (extend `OPS_MONITORING_MVP.md` — not a parallel stack).
+- [x] Log-shipping / aggregation operator hooks documented against Stage 18 structured JSON logs (no fake SIEM claim).
+- [x] Automated proof: `backend/tests/test_ops_monitoring_m1.py`.
+- [x] PRODUCTION_READINESS monitoring gate honesty updated with evidence (Remaining only if still deferred).
+- [x] Plan / launch / roadmap cite Stage 26 M1.
 
 ## W1 acceptance criteria
 
@@ -99,4 +99,4 @@ Ops Platform Fidelity
 
 ## Sign-off
 
-Stage 26 open under ADR-057. M1 next. Stages 1–25 remain frozen for their scopes.
+Stage 26 open under ADR-057. M1 complete; W1 next. Stages 1–25 remain frozen for their scopes.

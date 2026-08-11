@@ -156,8 +156,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] AI UI fidelity (Stage 25 U1: `test_ai_ui_fidelity_u1.py` — `/ai` purchases + cross-domain + document analyze panels)
 - [x] Stage 25 fidelity sync (D1: `test_stage25_fidelity_d1.py`, `docs/STAGE_25_FIDELITY.md` — BR-21.2 / 21.11 / 21.12 + readiness + USER_MANUAL / API / launch)
 - [x] Stage 25 exit + freeze (H25x: `test_stage25_exit_h25x.py`, `docs/STAGE_25_EXIT_CRITERIA.md`, ADR-056)
-- [ ] Stage 26 Production Platform & Ops Fidelity (open: `docs/STAGE_26_PLAN.md`, ADR-057) — M1 next
+- [ ] Stage 26 Production Platform & Ops Fidelity (open: `docs/STAGE_26_PLAN.md`, ADR-057) — M1 complete; W1 next
 - [x] Stage 26 track opened (ADR-057: `test_stage26_open.py`, `docs/STAGE_26_PLAN.md`)
+- [x] Monitoring & alerting fidelity (Stage 26 M1: `test_ops_monitoring_m1.py` — `ops/prometheus` scrape/alerts + Fluent Bit log-ship example; `OPS_MONITORING_MVP.md`; readiness monitoring Complete MVP)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1

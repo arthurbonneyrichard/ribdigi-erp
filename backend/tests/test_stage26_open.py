@@ -16,7 +16,9 @@ def test_stage26_plan_and_open_adr():
     assert (
         "PENDING" in plan
         or "M1 next" in plan
+        or "M1 complete" in plan
         or "W1 next" in plan
+        or "W1 complete" in plan
         or "K1 next" in plan
         or "C1 next" in plan
         or "D1 next" in plan
