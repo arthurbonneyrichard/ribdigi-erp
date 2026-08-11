@@ -296,6 +296,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 31 G1 (2026-08-11):** MVP gate honesty matrix — `docs/MVP_GATE_MATRIX_MVP.md`, `ops/mvp/gate-matrix.json`, evidence `stage31_g1_mvp_gate_matrix.json` (`test_mvp_gate_matrix_g1.py`); go-live / §7 Remaining.
 
+**Stage 31 R1 (2026-08-11):** Deferred ADR register — `docs/DEFERRED_ADR_REGISTER_MVP.md`, `ops/mvp/deferred-adr-register.json`, evidence `stage31_r1_deferred_adr_register.json` (`test_deferred_adr_register_r1.py`); ADR-001–006 post-MVP scopes Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -876,7 +878,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 31 open (`docs/STAGE_31_PLAN.md`, ADR-067) — G1 complete; R1 next. Stages 1–30 remain frozen for their scopes (`docs/STAGE_30_EXIT_CRITERIA.md`, ADR-066).
+**Active delivery plan:** Stage 31 open (`docs/STAGE_31_PLAN.md`, ADR-067) — G1–R1 complete; O1 next. Stages 1–30 remain frozen for their scopes (`docs/STAGE_30_EXIT_CRITERIA.md`, ADR-066).
 
 ### 6.2 Features
 
