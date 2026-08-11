@@ -314,6 +314,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **MVP gate honesty** | Stage 23 G1 marks shared-schema isolation Complete for MVP; schema-per-tenant remains deferred (ADR-001); evidence `test_mvp_gate_closure_g1.py` |
 | **Stage 23 fidelity** | D1 maps reports dimension + gate evidence — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`); exit/freeze ADR-052 (`test_stage23_exit_h23x.py`) |
 | **Stage 24 fidelity** | D1 maps commerce/ops/AI gate evidence — `docs/STAGE_24_FIDELITY.md` (`test_stage24_fidelity_d1.py`); exit/freeze ADR-054 (`test_stage24_exit_h24x.py`) |
+| **Stage 25 open** | Actuals → AI Analysis → Business Insights — `docs/STAGE_25_PLAN.md`, ADR-055 (`test_stage25_open.py`); Stages 1–24 remain frozen |
 
 ### 7.3 Tenant Lifecycle Security
 
