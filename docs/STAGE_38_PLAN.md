@@ -1,6 +1,6 @@
 # Stage 38 Plan — Commercial Security Disclosure Fidelity
 
-**Status:** Open — V1 complete; B1 next  
+**Status:** Open — V1–B1 complete; D1 next  
 **Base:** Vulnerability Disclosure Policy Pack + Breach Notification / Security Contact Honesty Pack → Commercial Security Disclosure Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-081](ADR_081_STAGE38_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Security Disclosure Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **V1** | Vulnerability disclosure policy packaging (not live disclosure / bug-bounty Complete) | P0 | COMPLETE |
-| **B1** | Breach notification / security contact honesty packaging (not live breach drill Complete) | P0 | PENDING |
+| **B1** | Breach notification / security contact honesty packaging (not live breach drill Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H38x** | Stage 38 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -64,10 +64,10 @@ Commercial Security Disclosure Fidelity
 
 ## B1 acceptance criteria
 
-- [ ] Breach notification / security contact honesty packaging indexing SECURITY_GUIDE regulatory 72-hour theme and Stage 30 incident contact path (not claiming live breach drill Complete).
-- [ ] Automated proof: `backend/tests/test_breach_notification_b1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 38 B1.
+- [x] Breach notification / security contact honesty packaging indexing SECURITY_GUIDE regulatory 72-hour theme and Stage 30 incident contact path (not claiming live breach drill Complete).
+- [x] Automated proof: `backend/tests/test_breach_notification_b1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 38 B1.
 
 ## D1 acceptance criteria
 
@@ -85,4 +85,4 @@ Commercial Security Disclosure Fidelity
 
 ## Sign-off
 
-Stage 38 V1 complete. B1 next. Stages 1–37 remain frozen for their scopes.
+Stage 38 V1–B1 complete. D1 next. Stages 1–37 remain frozen for their scopes.

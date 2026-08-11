@@ -1,0 +1,155 @@
+{
+  "stage": "38",
+  "workstream": "B1",
+  "doc": "docs/BREACH_NOTIFICATION_MVP.md",
+  "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+  "incident_checklist": "ops/incident/incident-checklist.json",
+  "oncall_runbook": "ops/incident/oncall-runbook.md.example",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "vuln_disclosure": "ops/mvp/vuln-disclosure.json",
+  "vuln_disclosure_doc": "docs/VULN_DISCLOSURE_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "evidence_ledger": "ops/evidence/ledger.json",
+  "stage38_plan": "docs/STAGE_38_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "breach_drill_claimed": false,
+  "regulatory_filing_claimed": false,
+  "customer_notify_saas_claimed": false,
+  "security_mailbox_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "steps": [
+    {
+      "id": "bn-severity-ack",
+      "category": "incident",
+      "title": "Index SECURITY_GUIDE / incident P1\u2013P4 severity \u2192 ack-target honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/INCIDENT_PACK_MVP.md",
+        "ops/incident/incident-checklist.json"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "bn-gdpr-72h",
+      "category": "regulatory",
+      "title": "Index SECURITY_GUIDE GDPR breach notification within 72 hours theme",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/BREACH_NOTIFICATION_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "bn-incident-checklist",
+      "category": "incident",
+      "title": "Link Stage 30 I1 incident checklist / on-call runbook for breach contact path",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "ops/incident/incident-checklist.json",
+        "ops/incident/oncall-runbook.md.example"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "bn-security-contact",
+      "category": "contact",
+      "title": "Package security contact path honesty (incident + disclosure adjacency)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "docs/VULN_DISCLOSURE_MVP.md",
+        "ops/mvp/vuln-disclosure.json"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "bn-playbook",
+      "category": "incident",
+      "title": "Link containment / eradication / recovery playbook honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "bn-post-incident-evidence",
+      "category": "contact",
+      "title": "Link post-incident notes path to evidence ledger honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "ops/evidence/ledger.json",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "ops/evidence/ledger.json"
+    },
+    {
+      "id": "bn-alertmanager-pagerduty",
+      "category": "deferred",
+      "title": "Confirm Alertmanager PagerDuty / live paging remains Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "bn-vuln-disclosure-adjacency",
+      "category": "contact",
+      "title": "Confirm Stage 38 V1 disclosure contact adjacency without claiming mailbox live",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/VULN_DISCLOSURE_MVP.md",
+        "ops/mvp/vuln-disclosure.json"
+      ],
+      "source": "docs/VULN_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "bn-breach-drill-remaining",
+      "category": "honesty",
+      "title": "Live breach notification drill Remaining \u2014 packaging \u2260 drilled",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_38_PLAN.md",
+        "docs/BREACH_NOTIFICATION_MVP.md"
+      ],
+      "source": "docs/STAGE_38_PLAN.md#B1"
+    },
+    {
+      "id": "bn-regulatory-filing-remaining",
+      "category": "honesty",
+      "title": "Regulatory filing / customer notification SaaS Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_38_PLAN.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/STAGE_38_PLAN.md#B1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage38_b1_breach_notification.json",
+  "deferred": [
+    "Claiming live breach notification drill Complete because Stage 38 B1 packaging exists",
+    "Regulatory 72-hour filing already executed Complete",
+    "Customer breach-notification SaaS Complete",
+    "Production security mailbox / live paging Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}
