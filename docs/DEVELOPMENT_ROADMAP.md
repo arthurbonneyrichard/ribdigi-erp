@@ -518,6 +518,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 51 A1 (2026-08-11):** Add-on services honesty — `docs/ADDON_SERVICES_MVP.md`, `ops/mvp/addon-services.json`, evidence `stage51_a1_addon_services.json` (`test_addon_services_a1.py`); live add-on catalog Remaining.
 
+**Stage 51 D1 (2026-08-11):** Marketplace & add-ons fidelity sync — `docs/STAGE_51_FIDELITY.md` (`test_stage51_fidelity_d1.py`); maps M1–A1 → readiness / launch / deploy / security.
+
 
 
 

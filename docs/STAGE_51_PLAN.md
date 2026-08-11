@@ -1,6 +1,6 @@
 # Stage 51 Plan — Commercial Marketplace & Add-Ons Fidelity
 
-**Status:** Open — A1 complete; D1 next  
+**Status:** Open — D1 complete; H51x next  
 **Base:** Marketplace Presence Honesty Pack + Add-On Services Honesty Pack → Commercial Marketplace & Add-Ons Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-107](ADR_107_STAGE51_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Marketplace & Add-Ons Fidelity
 |----|------------|----------|---------|
 | **M1** | Marketplace / app-store presence honesty packaging (not live marketplace listing Complete) | P0 | COMPLETE |
 | **A1** | Add-on services honesty packaging (not live add-on catalog / add-on billing Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H51x** | Stage 51 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -89,9 +89,9 @@ Commercial Marketplace & Add-Ons Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_51_FIDELITY.md` maps M1–A1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 51 D1.
-- [ ] Automated proof: `backend/tests/test_stage51_fidelity_d1.py`.
+- [x] `docs/STAGE_51_FIDELITY.md` maps M1–A1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 51 D1.
+- [x] Automated proof: `backend/tests/test_stage51_fidelity_d1.py` (`docs/STAGE_51_FIDELITY.md`).
 
 ## H51x acceptance criteria
 

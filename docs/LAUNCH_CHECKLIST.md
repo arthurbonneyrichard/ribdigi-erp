@@ -181,9 +181,10 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 48 Commercial Services Fidelity (closed: `docs/STAGE_48_PLAN.md`, ADR-102) — P1–D1 / H48x complete
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
-- [x] Stage 51 track opened (ADR-107: `test_stage51_open.py`, `docs/STAGE_51_PLAN.md`) — Commercial Marketplace & Add-Ons Fidelity; A1 complete; D1 next
+- [x] Stage 51 track opened (ADR-107: `test_stage51_open.py`, `docs/STAGE_51_PLAN.md`) — Commercial Marketplace & Add-Ons Fidelity; D1 complete; H51x next
 - [x] Marketplace presence honesty (Stage 51 M1: `test_marketplace_presence_m1.py` — `docs/MARKETPLACE_PRESENCE_MVP.md`, `ops/mvp/marketplace-presence.json`; evidence `stage51_m1_marketplace_presence.json`; live marketplace listing Remaining)
 - [x] Add-on services honesty (Stage 51 A1: `test_addon_services_a1.py` — `docs/ADDON_SERVICES_MVP.md`, `ops/mvp/addon-services.json`; evidence `stage51_a1_addon_services.json`; live add-on catalog Remaining)
+- [x] Stage 51 fidelity sync (D1: `test_stage51_fidelity_d1.py`, `docs/STAGE_51_FIDELITY.md` — M1–A1 + readiness + deploy / launch / security)
 - [x] Stage 50 track opened (ADR-105: `test_stage50_open.py`, `docs/STAGE_50_PLAN.md`)
 - [x] Referral program honesty (Stage 50 R1: `test_referral_program_r1.py` — `docs/REFERRAL_PROGRAM_MVP.md`, `ops/mvp/referral-program.json`; evidence `stage50_r1_referral_program.json`; live referral credits Remaining)
 - [x] Freemium trial honesty (Stage 50 F1: `test_freemium_trial_f1.py` — `docs/FREEMIUM_TRIAL_MVP.md`, `ops/mvp/freemium-trial.json`; evidence `stage50_f1_freemium_trial.json`; live freemium conversion Remaining)

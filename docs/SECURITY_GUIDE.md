@@ -415,9 +415,10 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 50 F1** | Freemium trial honesty — `docs/FREEMIUM_TRIAL_MVP.md`, `ops/mvp/freemium-trial.json` (`test_freemium_trial_f1.py`); live freemium conversion Remaining |
 | **Stage 50 D1** | Acquisition & trial fidelity — `docs/STAGE_50_FIDELITY.md` (`test_stage50_fidelity_d1.py`) maps R1–F1 → readiness / launch / deploy / security |
 | **Stage 50 fidelity** | D1 maps R1–F1 acquisition & trial — `docs/STAGE_50_FIDELITY.md` (`test_stage50_fidelity_d1.py`); exit/freeze `docs/STAGE_50_EXIT_CRITERIA.md`, ADR-106 (`test_stage50_exit_h50x.py`); historical open ADR-105; live referral credits / freemium conversion / go-live / §7 remain Remaining |
-| **Stage 51 open** | Commercial Marketplace & Add-Ons Fidelity — `docs/STAGE_51_PLAN.md`, ADR-107 (`test_stage51_open.py`); Stages 1–50 remain frozen; A1 complete; D1 next |
+| **Stage 51 open** | Commercial Marketplace & Add-Ons Fidelity — `docs/STAGE_51_PLAN.md`, ADR-107 (`test_stage51_open.py`); Stages 1–50 remain frozen; D1 complete; H51x next |
 | **Stage 51 M1** | Marketplace presence honesty — `docs/MARKETPLACE_PRESENCE_MVP.md`, `ops/mvp/marketplace-presence.json` (`test_marketplace_presence_m1.py`); live marketplace listing Remaining |
 | **Stage 51 A1** | Add-on services honesty — `docs/ADDON_SERVICES_MVP.md`, `ops/mvp/addon-services.json` (`test_addon_services_a1.py`); live add-on catalog Remaining |
+| **Stage 51 D1** | Marketplace & add-ons fidelity — `docs/STAGE_51_FIDELITY.md` (`test_stage51_fidelity_d1.py`) maps M1–A1 → readiness / launch / deploy / security |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |
