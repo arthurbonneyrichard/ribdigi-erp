@@ -14,6 +14,7 @@
 | `residual-risk-register.json` | Stage 33 K1 residual risk — `risks_closed_claimed: false` |
 | `compliance-readiness-register.json` | Stage 33 C1 compliance readiness — `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` |
 | `first-tenant-onboarding.json` | Stage 33 F1 first-tenant onboarding — `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` |
+| `knowledge-transfer.json` | Stage 33 T1 knowledge transfer — `live_training_claimed: false` / `training_complete_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -28,6 +29,7 @@ Authoritative MVP docs:
 - `docs/RESIDUAL_RISK_MVP.md` (`backend/tests/test_residual_risk_k1.py`) — Stage 33 K1
 - `docs/COMPLIANCE_READINESS_MVP.md` (`backend/tests/test_compliance_readiness_c1.py`) — Stage 33 C1
 - `docs/FIRST_TENANT_ONBOARDING_MVP.md` (`backend/tests/test_first_tenant_onboarding_f1.py`) — Stage 33 F1
+- `docs/KNOWLEDGE_TRANSFER_MVP.md` (`backend/tests/test_knowledge_transfer_t1.py`) — Stage 33 T1
 
 ## Stage 33 K1 — Residual risk register
 
@@ -53,4 +55,12 @@ Consolidates checklist for the first commercial tenant. See `docs/FIRST_TENANT_O
 - Tests: `backend/tests/test_first_tenant_onboarding_f1.py`
 - Honesty: `first_tenant_onboarded_claimed: false`, `live_onboarding_success_claimed: false` — packaging ≠ live onboarding
 
-Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false`.
+## Stage 33 T1 — Knowledge transfer
+
+Indexes operator/admin training curriculum surfaces. See `docs/KNOWLEDGE_TRANSFER_MVP.md`.
+
+- Pack: `knowledge-transfer.json`
+- Tests: `backend/tests/test_knowledge_transfer_t1.py`
+- Honesty: `live_training_claimed: false`, `training_complete_claimed: false` — indexing ≠ live training
+
+Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false`.

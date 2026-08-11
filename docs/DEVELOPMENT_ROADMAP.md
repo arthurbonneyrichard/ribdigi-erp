@@ -328,6 +328,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 33 F1 (2026-08-11):** First-tenant onboarding — `docs/FIRST_TENANT_ONBOARDING_MVP.md`, `ops/mvp/first-tenant-onboarding.json`, evidence `stage33_f1_first_tenant_onboarding.json` (`test_first_tenant_onboarding_f1.py`); live onboarding success Remaining.
 
+**Stage 33 T1 (2026-08-11):** Knowledge transfer — `docs/KNOWLEDGE_TRANSFER_MVP.md`, `ops/mvp/knowledge-transfer.json`, evidence `stage33_t1_knowledge_transfer.json` (`test_knowledge_transfer_t1.py`); live training Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -908,7 +910,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 33 open (`docs/STAGE_33_PLAN.md`, ADR-071) — F1 complete; T1 next. Stages 1–32 remain frozen for their scopes (`docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070).
+**Active delivery plan:** Stage 33 open (`docs/STAGE_33_PLAN.md`, ADR-071) — T1 complete; D1 next. Stages 1–32 remain frozen for their scopes (`docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070).
 
 ### 6.2 Features
 

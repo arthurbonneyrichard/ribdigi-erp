@@ -1,0 +1,157 @@
+{
+  "stage": "33",
+  "workstream": "T1",
+  "doc": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+  "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+  "admin_ops_map": "ops/support/admin-ops-map.json",
+  "operator_handoff": "ops/mvp/operator-handoff.json",
+  "first_tenant_onboarding": "ops/mvp/first-tenant-onboarding.json",
+  "admin_manual": "docs/ADMIN_MANUAL.md",
+  "packaging_complete": true,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "support_sla_claimed": false,
+  "handoff_complete_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "modules": [
+    {
+      "id": "kt-continuity-honesty",
+      "audience": "operator_admin",
+      "title": "MVP continuity honesty & Stage 33 packaging vs live claims",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/STAGE_33_PLAN.md",
+        "docs/ADR_071_STAGE33_OPEN.md"
+      ],
+      "source": "docs/STAGE_33_PLAN.md"
+    },
+    {
+      "id": "kt-admin-rbac",
+      "audience": "admin",
+      "title": "Admin roles, access, and RBAC boundaries",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/ADMIN_MANUAL.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/ADMIN_MANUAL.md"
+    },
+    {
+      "id": "kt-first-tenant",
+      "audience": "operator_admin",
+      "title": "First-tenant onboarding workflow (Stage 33 F1 packaging)",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+        "ops/mvp/first-tenant-onboarding.json",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "ops/mvp/first-tenant-onboarding.json"
+    },
+    {
+      "id": "kt-support-runbook",
+      "audience": "support",
+      "title": "Support/admin runbook \u2014 ADMIN_MANUAL \u2194 ops pack map",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/SUPPORT_RUNBOOK_MVP.md",
+        "ops/support/admin-ops-map.json",
+        "docs/ADMIN_MANUAL.md"
+      ],
+      "source": "ops/support/admin-ops-map.json"
+    },
+    {
+      "id": "kt-operator-handoff",
+      "audience": "operator",
+      "title": "Operator handoff and take-over phases (Stage 32 H1)",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/OPERATOR_HANDOFF_MVP.md",
+        "ops/mvp/operator-handoff.json"
+      ],
+      "source": "ops/mvp/operator-handoff.json"
+    },
+    {
+      "id": "kt-monitoring-incident",
+      "audience": "operator",
+      "title": "Monitoring and incident response curriculum surfaces",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/OPS_MONITORING_MVP.md",
+        "docs/GRAFANA_PACK_MVP.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "kt-backup-dr",
+      "audience": "operator_admin",
+      "title": "Backup, restore, PITR, and DR runbook curriculum",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/ADMIN_MANUAL.md",
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/DR_WAL_PITR_RUNBOOK.md",
+        "docs/PITR_DRILL_PACK_MVP.md"
+      ],
+      "source": "docs/PITR_DRILL_PACK_MVP.md"
+    },
+    {
+      "id": "kt-launch-cutover",
+      "audience": "operator",
+      "title": "Launch, cutover, rollback, and attestation Remaining honesty",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/LAUNCH_CERT_MVP.md",
+        "docs/CUTOVER_PACK_MVP.md",
+        "docs/ATTESTATION_PACK_MVP.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md"
+    },
+    {
+      "id": "kt-security-isolation",
+      "audience": "admin",
+      "title": "Security and tenant isolation curriculum surfaces",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/ADMIN_MANUAL.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "kt-compliance-risk",
+      "audience": "operator_admin",
+      "title": "Compliance readiness, residual risk, and post-MVP boundaries",
+      "status": "indexed",
+      "delivered": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/RESIDUAL_RISK_MVP.md",
+        "docs/POST_MVP_BACKLOG_MVP.md",
+        "docs/OPERATOR_REMAINING_MVP.md"
+      ],
+      "source": "docs/COMPLIANCE_READINESS_MVP.md"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage33_t1_knowledge_transfer.json",
+  "deferred": [
+    "Claiming live operator/admin training Complete because Stage 33 T1 packaging exists",
+    "Training attendance / certification / sign-off Complete",
+    "Live support SLA / handoff Complete",
+    "Live go-live / \u00a77 / attestation Complete",
+    "Re-packaging Stage 26\u201332 packs as new Complete"
+  ]
+}

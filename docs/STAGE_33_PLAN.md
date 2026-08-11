@@ -1,6 +1,6 @@
 # Stage 33 Plan — Commercial MVP Continuity Fidelity
 
-**Status:** Open — F1 complete; T1 next (ADR-071)  
+**Status:** Open — T1 complete; D1 next (ADR-071)  
 **Base:** Residual Risk Register Pack + Compliance Readiness Pack + First-Tenant Onboarding Pack + Knowledge Transfer Pack → Commercial MVP Continuity Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-071](ADR_071_STAGE33_OPEN.md)
@@ -38,7 +38,7 @@ Commercial MVP Continuity Fidelity
 | **K1** | Residual risk register packaging | P0 | COMPLETE |
 | **C1** | Compliance readiness packaging (not SOC 2 / ISO Complete) | P0 | COMPLETE |
 | **F1** | First-tenant onboarding packaging | P1 | COMPLETE |
-| **T1** | Knowledge transfer packaging | P1 | PENDING |
+| **T1** | Knowledge transfer packaging | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
 | **H33x** | Stage 33 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -83,10 +83,10 @@ Commercial MVP Continuity Fidelity
 
 ## T1 acceptance criteria
 
-- [ ] Knowledge transfer packaging indexing operator/admin training curriculum surfaces (extends support / handoff honesty; not claiming live training Complete).
-- [ ] Automated proof: `backend/tests/test_knowledge_transfer_t1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 33 T1.
+- [x] Knowledge transfer packaging indexing operator/admin training curriculum surfaces (extends support / handoff honesty; not claiming live training Complete).
+- [x] Automated proof: `backend/tests/test_knowledge_transfer_t1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 33 T1.
 
 ## D1 acceptance criteria
 
@@ -104,4 +104,4 @@ Commercial MVP Continuity Fidelity
 
 ## Sign-off
 
-Stage 33 open under ADR-071. F1 complete; T1 next. Stages 1–32 remain frozen for their scopes.
+Stage 33 open under ADR-071. T1 complete; D1 next. Stages 1–32 remain frozen for their scopes.
