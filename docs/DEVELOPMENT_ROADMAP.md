@@ -1407,3 +1407,5 @@ Every feature in every phase must meet:
 **Stage 63 P1 (2026-08-11):** IPO readiness honesty — `docs/IPO_READINESS_MVP.md`, `ops/mvp/ipo-readiness.json`, evidence `stage63_p1_ipo_readiness.json` (`test_ipo_readiness_p1.py`); live IPO / Series B–C funding Remaining.
 
 **Stage 63 G1 (2026-08-11):** Global scale honesty — `docs/GLOBAL_SCALE_MVP.md`, `ops/mvp/global-scale.json`, evidence `stage63_g1_global_scale.json` (`test_global_scale_g1.py`); measured 50k customers / 20+ countries Remaining.
+
+**Stage 63 D1 (2026-08-11):** Capital & scale fidelity sync — `docs/STAGE_63_FIDELITY.md` (`test_stage63_fidelity_d1.py`); maps P1–G1 → readiness / launch / deploy / security.

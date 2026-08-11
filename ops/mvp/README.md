@@ -219,6 +219,7 @@ Authoritative MVP docs:
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
 - `docs/IPO_READINESS_MVP.md` (`backend/tests/test_ipo_readiness_p1.py`) — Stage 63 P1
 - `docs/GLOBAL_SCALE_MVP.md` (`backend/tests/test_global_scale_g1.py`) — Stage 63 G1
+- `docs/STAGE_63_FIDELITY.md` (`backend/tests/test_stage63_fidelity_d1.py`) — Stage 63 D1
 - `docs/STAGE_62_PLAN.md` (`backend/tests/test_stage62_open.py`) — Stage 62 open (ADR-129)
 - `docs/IOT_INTEGRATION_MVP.md` (`backend/tests/test_iot_integration_i1.py`) — Stage 62 I1
 - `docs/AI_MODEL_MARKETPLACE_MVP.md` (`backend/tests/test_ai_model_marketplace_a1.py`) — Stage 62 A1
@@ -896,7 +897,7 @@ H62x met — `docs/STAGE_62_EXIT_CRITERIA.md`, ADR-130. Stages 1–62 frozen for
 
 ## Stage 63 open
 
-Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Open — G1 complete; D1 next.
+Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Open — D1 complete; H63x next.
 
 ## Stage 63 P1 — IPO readiness honesty
 
@@ -905,3 +906,7 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Open �
 ## Stage 63 G1 — Global scale honesty
 
 `docs/GLOBAL_SCALE_MVP.md` + `ops/mvp/global-scale.json` — packaging Complete; `global_scale_50k_customers_claimed` / `twenty_plus_countries_claimed` / `international_scale_program_live` / `paying_customers_50k_measured` remain false.
+
+## Stage 63 D1 — Capital & scale fidelity
+
+`docs/STAGE_63_FIDELITY.md` — maps P1–G1 → readiness / launch / deploy / security (`test_stage63_fidelity_d1.py`).

@@ -436,9 +436,10 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 55 W1** | White-label licensing commercial honesty — `docs/WHITE_LABEL_LICENSING_MVP.md`, `ops/mvp/white-label-licensing.json` (`test_white_label_licensing_w1.py`); live white-label licensing Remaining |
 | **Stage 55 U1** | Unit economics / competitive positioning honesty — `docs/UNIT_ECONOMICS_POSITIONING_MVP.md`, `ops/mvp/unit-economics-positioning.json` (`test_unit_economics_positioning_u1.py`); measured CAC/LTV Remaining |
 | **Stage 55 fidelity** | D1 maps W1–U1 licensing & positioning — `docs/STAGE_55_FIDELITY.md` (`test_stage55_fidelity_d1.py`); exit/freeze `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116 (`test_stage55_exit_h55x.py`); historical open ADR-115; live white-label licensing / measured CAC/LTV / competitive superiority / go-live / §7 remain Remaining |
-| **Stage 63 open** | Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131 (`test_stage63_open.py`); Stages 1–62 remain frozen; G1 complete; D1 next |
+| **Stage 63 open** | Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131 (`test_stage63_open.py`); Stages 1–62 remain frozen; D1 complete; H63x next |
 | **Stage 63 P1** | IPO readiness honesty — `docs/IPO_READINESS_MVP.md`, `ops/mvp/ipo-readiness.json` (`test_ipo_readiness_p1.py`); live IPO / Series B–C funding Remaining |
 | **Stage 63 G1** | Global scale honesty — `docs/GLOBAL_SCALE_MVP.md`, `ops/mvp/global-scale.json` (`test_global_scale_g1.py`); measured 50k customers / 20+ countries Remaining |
+| **Stage 63 D1** | Capital & scale fidelity — `docs/STAGE_63_FIDELITY.md` (`test_stage63_fidelity_d1.py`); maps P1–G1 → readiness / launch / deploy / security; live IPO / measured global scale Remaining |
 | **Stage 62 open** | Commercial IoT & AI Marketplace Fidelity — `docs/STAGE_62_PLAN.md`, ADR-129 (`test_stage62_open.py`); Stages 1–61 remain frozen; closed under ADR-130 |
 | **Stage 62 I1** | IoT integration honesty — `docs/IOT_INTEGRATION_MVP.md`, `ops/mvp/iot-integration.json` (`test_iot_integration_i1.py`); live smart shelves / temperature sensors Remaining |
 | **Stage 62 A1** | AI model marketplace honesty — `docs/AI_MODEL_MARKETPLACE_MVP.md`, `ops/mvp/ai-model-marketplace.json` (`test_ai_model_marketplace_a1.py`); live industry-prediction marketplace Remaining |

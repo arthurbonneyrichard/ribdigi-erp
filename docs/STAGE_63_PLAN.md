@@ -1,6 +1,6 @@
 # Stage 63 Plan — Commercial Capital & Scale Fidelity
 
-**Status:** Open — G1 complete; D1 next  
+**Status:** Open — D1 complete; H63x next  
 **Base:** IPO Readiness Honesty Pack + Global Scale Honesty Pack → Commercial Capital & Scale Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-131](ADR_131_STAGE63_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Capital & Scale Fidelity
 |----|------------|----------|---------|
 | **P1** | IPO readiness honesty packaging (not live IPO / Series B–C funding Complete) | P0 | COMPLETE |
 | **G1** | Global scale honesty packaging (not measured 50k customers / 20+ countries Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H63x** | Stage 63 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -110,9 +110,9 @@ Commercial Capital & Scale Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_63_FIDELITY.md` maps P1–G1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 63 D1.
-- [ ] Automated proof: `backend/tests/test_stage63_fidelity_d1.py` (`docs/STAGE_63_FIDELITY.md`).
+- [x] `docs/STAGE_63_FIDELITY.md` maps P1–G1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 63 D1.
+- [x] Automated proof: `backend/tests/test_stage63_fidelity_d1.py` (`docs/STAGE_63_FIDELITY.md`).
 
 ## H63x acceptance criteria
 
