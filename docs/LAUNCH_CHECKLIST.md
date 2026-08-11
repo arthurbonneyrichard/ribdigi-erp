@@ -173,8 +173,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [ ] Stage 30 Go-Live Support Fidelity (open: `docs/STAGE_30_PLAN.md`, ADR-065) — I1 next
+- [ ] Stage 30 Go-Live Support Fidelity (open: `docs/STAGE_30_PLAN.md`, ADR-065) — S1 next
 - [x] Stage 30 track opened (ADR-065: `test_stage30_open.py`, `docs/STAGE_30_PLAN.md`)
+- [x] Incident response / on-call pack (Stage 30 I1: `test_incident_pack_i1.py` — `docs/INCIDENT_PACK_MVP.md`, `ops/incident/`; evidence `stage30_i1_incident_pack.json`; hosted PagerDuty / live rota Remaining)
 - [x] Operator evidence ledger pack (Stage 30 L1: `test_evidence_ledger_l1.py` — `docs/EVIDENCE_LEDGER_MVP.md`, `ops/evidence/ledger.json`; evidence `stage30_l1_evidence_ledger.json`; live runs / attestation Remaining)
 - [x] Stage 29 track opened (ADR-063: `test_stage29_open.py`, `docs/STAGE_29_PLAN.md`)
 - [x] Stage 29 exit + freeze (H29x: `test_stage29_exit_h29x.py`, `docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064)

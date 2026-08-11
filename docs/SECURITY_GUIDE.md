@@ -340,8 +340,9 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 29 X1** | Production cutover pack — `docs/CUTOVER_PACK_MVP.md`, `ops/launch/` + `ops/k8s/deploy-production.example.yml` (`test_cutover_pack_x1.py`); live cutover / §7 sign-off Remaining; main CI deploy-free |
 | **Stage 29 D1** | Operator hardening & cutover fidelity — `docs/STAGE_29_FIDELITY.md` (`test_stage29_fidelity_d1.py`) maps V1–X1 → readiness / launch / deploy / security |
 | **Stage 29 fidelity** | D1 maps V1–X1 operator-hardening evidence — `docs/STAGE_29_FIDELITY.md` (`test_stage29_fidelity_d1.py`); exit/freeze `docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064 (`test_stage29_exit_h29x.py`); historical open ADR-063; purchased cert / live soak / ACME / cutover / §7 remain Remaining |
-| **Stage 30 open** | Go-Live Support Fidelity — `docs/STAGE_30_PLAN.md`, ADR-065 (`test_stage30_open.py`); Stages 1–29 remain frozen; L1 complete; I1 next |
+| **Stage 30 open** | Go-Live Support Fidelity — `docs/STAGE_30_PLAN.md`, ADR-065 (`test_stage30_open.py`); Stages 1–29 remain frozen; L1–I1 complete; S1 next |
 | **Stage 30 L1** | Operator evidence ledger — `docs/EVIDENCE_LEDGER_MVP.md`, `ops/evidence/ledger.json` (`test_evidence_ledger_l1.py`); live runs / attestation Remaining |
+| **Stage 30 I1** | Incident response / on-call pack — `docs/INCIDENT_PACK_MVP.md`, `ops/incident/` (`test_incident_pack_i1.py`); hosted PagerDuty / live rota Remaining |
 
 ### 7.3 Tenant Lifecycle Security
 
@@ -654,6 +655,8 @@ The MVP includes AI capabilities across 10 modules. Security controls include:
 
 ## 15. Incident Response Plan
 
+**MVP fidelity (Stage 30 I1):** Operator incident / on-call packaging — `docs/INCIDENT_PACK_MVP.md`, `ops/incident/incident-checklist.json`, `ops/incident/oncall-runbook.md.example` (`test_incident_pack_i1.py`). Extends Stage 26 M1 alerts + Stage 28 A1 Alertmanager. Packaging keeps `pagerduty_hosted_claimed: false`, `oncall_rota_live: false`, `incident_drill_executed: false` — not hosted PagerDuty SaaS Complete.
+
 ### 15.1 Severity Levels
 
 | Level | Description | Response Time | Examples |
@@ -702,7 +705,7 @@ The MVP includes AI capabilities across 10 modules. Security controls include:
 - [ ] Password policy enforced
 - [ ] Session timeout and rotation configured
 - [x] AI input sanitization + AI audit logging active (Stage 5 A1; external-LLM output filtering post-MVP)
-- [ ] Incident response runbook accessible to on-call team
+- [ ] Incident response runbook accessible to on-call team — Stage 30 I1 packs `ops/incident/oncall-runbook.md.example` (`docs/INCIDENT_PACK_MVP.md`, `test_incident_pack_i1.py`); live rota / hosted PagerDuty Remaining
 
 **Stage 5 S1 verify:** `GET /api/v1/health` returns `security.rate_limit_enabled`, `openapi_enabled=false` in production, and response includes CSP + rate-limit headers.
 

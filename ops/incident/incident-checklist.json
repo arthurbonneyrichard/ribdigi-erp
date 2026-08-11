@@ -1,0 +1,59 @@
+{
+  "stage": "30",
+  "workstream": "I1",
+  "doc": "docs/INCIDENT_PACK_MVP.md",
+  "ops_monitoring_mvp": "docs/OPS_MONITORING_MVP.md",
+  "grafana_pack_mvp": "docs/GRAFANA_PACK_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "alertmanager": "ops/grafana/alertmanager.yml.example",
+  "runbook": "ops/incident/oncall-runbook.md.example",
+  "pagerduty_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "severity_levels": [
+    {"id": "P1", "name": "Critical", "ack_minutes": 15},
+    {"id": "P2", "name": "High", "ack_minutes": 60},
+    {"id": "P3", "name": "Medium", "ack_minutes": 1440},
+    {"id": "P4", "name": "Low", "ack_minutes": 10080}
+  ],
+  "steps": [
+    {
+      "id": "1",
+      "title": "Confirm Prometheus alerts fire for RibdigiDown / HighErrorRate / NotReady (Stage 26 M1)",
+      "class": "operator_required"
+    },
+    {
+      "id": "2",
+      "title": "Route Alertmanager critical receiver (Stage 28 A1); keep PagerDuty commented until secrets exist",
+      "class": "operator_required"
+    },
+    {
+      "id": "3",
+      "title": "Staff on-call rota and publish ops/incident/oncall-runbook.md.example to the team wiki",
+      "class": "operator_required"
+    },
+    {
+      "id": "4",
+      "title": "Rehearse Detection → Containment → Eradication → Recovery → Post-Incident (SECURITY_GUIDE §15)",
+      "class": "operator_required"
+    },
+    {
+      "id": "5",
+      "title": "Record drill outcome in ops change log (not forged CI paging success)",
+      "class": "operator_required"
+    }
+  ],
+  "pass_criteria": [
+    "On-call can open the runbook without inventing PagerDuty SaaS",
+    "Alertmanager critical route documented against ribdigi alerts",
+    "SECURITY_GUIDE §15 severity table cited",
+    "Honesty flags remain false until a real rota/drill exists"
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/monitoring/stage30_i1_incident_pack.json",
+  "deferred": [
+    "Hosted PagerDuty / Opsgenie SaaS Complete",
+    "Live on-call rota paging production",
+    "Incident drill certificate forged in CI",
+    "SIEM incident bus Complete"
+  ]
+}

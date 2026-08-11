@@ -30,4 +30,4 @@ Wire Prometheus `alerting.alertmanagers` to Alertmanager when ready (operator). 
 - Production Alertmanager → PagerDuty wiring Complete
 - Centralized SIEM
 
-Authoritative docs: `docs/GRAFANA_PACK_MVP.md`, `docs/OPS_MONITORING_MVP.md` (`test_grafana_pack_a1.py`).
+Authoritative docs: `docs/GRAFANA_PACK_MVP.md`, `docs/OPS_MONITORING_MVP.md` (`test_grafana_pack_a1.py`), `docs/INCIDENT_PACK_MVP.md` (`test_incident_pack_i1.py`).

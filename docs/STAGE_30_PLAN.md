@@ -1,6 +1,6 @@
 # Stage 30 Plan — Go-Live Support Fidelity
 
-**Status:** Open — L1 complete; I1 next (ADR-065)  
+**Status:** Open — L1–I1 complete; S1 next (ADR-065)  
 **Base:** Operator Evidence Ledger Pack + Incident Response / On-Call Pack + Support & Admin Runbook Fidelity + Go-Live Attestation Matrix Pack → Go-Live Support Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-065](ADR_065_STAGE30_OPEN.md)
@@ -36,7 +36,7 @@ Go-Live Support Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **L1** | Operator evidence ledger (index Stage 26–29 artifacts + honesty flags) | P0 | COMPLETE |
-| **I1** | Incident response / on-call packaging | P0 | PENDING |
+| **I1** | Incident response / on-call packaging | P0 | COMPLETE |
 | **S1** | Support & Admin runbook fidelity (ADMIN_MANUAL ↔ ops packs) | P1 | PENDING |
 | **A1** | Go-live attestation matrix (Remaining honesty; not forged §7) | P1 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
@@ -67,10 +67,10 @@ Go-Live Support Fidelity
 
 ## I1 acceptance criteria
 
-- [ ] Incident response / on-call operator packaging (checklist + runbook example — not hosted PagerDuty SaaS Complete).
-- [ ] Automated proof: `backend/tests/test_incident_pack_i1.py`.
-- [ ] SECURITY_GUIDE / DEPLOYMENT_GUIDE honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 30 I1.
+- [x] Incident response / on-call operator packaging (checklist + runbook example — not hosted PagerDuty SaaS Complete).
+- [x] Automated proof: `backend/tests/test_incident_pack_i1.py`.
+- [x] SECURITY_GUIDE / DEPLOYMENT_GUIDE honesty updated.
+- [x] Plan / launch / roadmap cite Stage 30 I1.
 
 ## S1 acceptance criteria
 
@@ -102,4 +102,4 @@ Go-Live Support Fidelity
 
 ## Sign-off
 
-Stage 30 open under ADR-065. L1 complete; I1 next. Stages 1–29 remain frozen for their scopes.
+Stage 30 open under ADR-065. L1–I1 complete; S1 next. Stages 1–29 remain frozen for their scopes.

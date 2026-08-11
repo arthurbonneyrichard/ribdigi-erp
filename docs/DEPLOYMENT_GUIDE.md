@@ -1110,7 +1110,7 @@ MAINTENANCE_MESSAGE="System upgrade in progress"
 
 ## 9. Monitoring & Observability
 
-**MVP fidelity (Stage 26 M1):** Live surfaces are `GET /api/v1/health` / `health/ready` and Prometheus-text `GET /api/v1/metrics`, plus structured `ribdigi.request` JSON logs (Stage 18 L1). Versioned operator configs: `ops/prometheus/prometheus.yml`, `ops/prometheus/alerts/ribdigi.yml`, `ops/logging/fluent-bit-ribdigi.conf.example`. Authoritative MVP doc: `docs/OPS_MONITORING_MVP.md` (`test_ops_monitoring_m1.py`). Stage 28 A1 Grafana/Alertmanager examples: `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/` (`test_grafana_pack_a1.py`) — packaging only. Hosted Grafana / Alertmanager→PagerDuty / SIEM remain post-MVP operator choices — do not treat the aspirational tables below as deployed-by-default.
+**MVP fidelity (Stage 26 M1 + Stage 28 A1 + Stage 30 I1):** Live surfaces are `GET /api/v1/health` / `health/ready` and Prometheus-text `GET /api/v1/metrics`, plus structured `ribdigi.request` JSON logs (Stage 18 L1). Versioned operator configs: `ops/prometheus/prometheus.yml`, `ops/prometheus/alerts/ribdigi.yml`, `ops/logging/fluent-bit-ribdigi.conf.example`. Authoritative MVP doc: `docs/OPS_MONITORING_MVP.md` (`test_ops_monitoring_m1.py`). Stage 28 A1 Grafana/Alertmanager examples: `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/` (`test_grafana_pack_a1.py`) — packaging only. Stage 30 I1 incident / on-call pack: `docs/INCIDENT_PACK_MVP.md`, `ops/incident/` (`test_incident_pack_i1.py`) — packaging only (`pagerduty_hosted_claimed: false`). Hosted Grafana / Alertmanager→PagerDuty / live rota / SIEM remain post-MVP operator choices — do not treat the aspirational tables below as deployed-by-default.
 
 ### 9.1 Monitoring Stack
 

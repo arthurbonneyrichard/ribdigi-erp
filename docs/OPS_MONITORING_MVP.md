@@ -83,6 +83,16 @@ Wire Alertmanager → PagerDuty in the operator environment when ready; hosted P
 
 Import the dashboard against operator Prometheus; do not treat packaging as hosted Grafana SaaS Complete.
 
+## Incident / on-call packaging (Stage 30 I1)
+
+| Path | Role |
+|------|------|
+| `ops/incident/incident-checklist.json` | Severity + operator steps; honesty flags |
+| `ops/incident/oncall-runbook.md.example` | Detection → recovery playbook template |
+| `docs/INCIDENT_PACK_MVP.md` | Pack honesty + evidence (`test_incident_pack_i1.py`) |
+
+Extends Alertmanager critical routing; does **not** claim hosted PagerDuty or a live on-call rota.
+
 ## Log shipping hooks (Stage 26 M1)
 
 Example: `ops/logging/fluent-bit-ribdigi.conf.example` — parse `ribdigi.request` JSON lines and forward (stdout / ES / CloudWatch / Loki via operator OUTPUT).
@@ -91,7 +101,8 @@ Docker `json-file` / journald drivers also capture process stdout when `REQUEST_
 
 ## Explicitly deferred (hosted ops)
 
-- Hosted Grafana-as-a-service / production Alertmanager→PagerDuty Complete / SIEM (Stage 28 A1 packages **examples** only)
+- Hosted Grafana-as-a-service / production Alertmanager→PagerDuty Complete / SIEM (Stage 28 A1 packages **examples** only; Stage 30 I1 packs incident runbook only)
+- Live on-call rota / incident drill certificate (Stage 30 I1 packaging)
 - Distributed tracing (OpenTelemetry) backends
 - Full log PII scanners / SIEM rulesets
 - Certified capacity / SLO burn-rate alerts (Stage 26 C1 / Stage 28 C1)
