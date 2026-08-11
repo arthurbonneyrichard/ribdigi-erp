@@ -1,6 +1,6 @@
 # Stage 45 Plan — Commercial Continuity & Exit Fidelity
 
-**Status:** Open — O1 complete; T1 next  
+**Status:** Open — T1 complete; D1 next  
 **Base:** RTO / RPO Recovery Objectives Honesty Pack + Data Retention / Return Honesty Pack → Commercial Continuity & Exit Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-095](ADR_095_STAGE45_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Continuity & Exit Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **O1** | RTO / RPO recovery objectives honesty packaging (not measured RTO/RPO SLA Complete) | P0 | COMPLETE |
-| **T1** | Data retention / return honesty packaging (not customer data-return portal Complete) | P0 | PENDING |
+| **T1** | Data retention / return honesty packaging (not customer data-return portal Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H45x** | Stage 45 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -72,10 +72,10 @@ Commercial Continuity & Exit Fidelity
 
 ## T1 acceptance criteria
 
-- [ ] Data retention / return honesty packaging indexing ADR-007 audit retention and Stage 33–37 compliance / erasure adjacency (not claiming customer data-return portal Complete).
-- [ ] Automated proof: `backend/tests/test_data_retention_return_t1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 45 T1.
+- [x] Data retention / return honesty packaging indexing ADR-007 audit retention and Stage 33–37 compliance / erasure adjacency (not claiming customer data-return portal Complete).
+- [x] Automated proof: `backend/tests/test_data_retention_return_t1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 45 T1.
 
 ## D1 acceptance criteria
 

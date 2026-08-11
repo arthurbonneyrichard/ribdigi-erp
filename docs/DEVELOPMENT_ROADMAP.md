@@ -456,6 +456,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 45 O1 (2026-08-11):** RTO / RPO recovery objectives honesty — `docs/RTO_RPO_MVP.md`, `ops/mvp/rto-rpo.json`, evidence `stage45_o1_rto_rpo.json` (`test_rto_rpo_o1.py`); measured RTO/RPO Remaining.
 
+**Stage 45 T1 (2026-08-11):** Data retention / return honesty — `docs/DATA_RETENTION_RETURN_MVP.md`, `ops/mvp/data-retention-return.json`, evidence `stage45_t1_data_retention_return.json` (`test_data_retention_return_t1.py`); data-return portal Remaining.
+
 
 
 

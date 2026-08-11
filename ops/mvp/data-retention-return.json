@@ -1,0 +1,158 @@
+{
+  "stage": "45",
+  "workstream": "T1",
+  "doc": "docs/DATA_RETENTION_RETURN_MVP.md",
+  "adr_007": "docs/ADR_007_AUDIT_RETENTION.md",
+  "business_requirements": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+  "erasure_honesty": "ops/mvp/erasure-honesty.json",
+  "erasure_honesty_doc": "docs/ERASURE_HONESTY_MVP.md",
+  "data_portability": "ops/mvp/data-portability.json",
+  "data_portability_doc": "docs/DATA_PORTABILITY_MVP.md",
+  "compliance_readiness": "ops/mvp/compliance-readiness-register.json",
+  "compliance_readiness_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "dpa_subprocessor": "ops/mvp/dpa-subprocessor.json",
+  "dpa_subprocessor_doc": "docs/DPA_SUBPROCESSOR_MVP.md",
+  "rto_rpo": "ops/mvp/rto-rpo.json",
+  "rto_rpo_doc": "docs/RTO_RPO_MVP.md",
+  "msa_addendum": "ops/mvp/msa-addendum.json",
+  "msa_addendum_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "logical_backup_doc": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+  "stage45_plan": "docs/STAGE_45_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "data_return_portal_claimed": false,
+  "hot_audit_purge_claimed": false,
+  "contract_exit_return_live": false,
+  "offboarding_workflow_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage45_t1_data_retention_return.json",
+  "steps": [
+    {
+      "id": "drt-adr007-audit",
+      "category": "retention",
+      "title": "Link ADR-007 audit retention / cold-archive policy as retention honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_007_AUDIT_RETENTION.md",
+        "docs/DATA_RETENTION_RETURN_MVP.md"
+      ],
+      "source": "docs/ADR_007_AUDIT_RETENTION.md"
+    },
+    {
+      "id": "drt-br-schedule",
+      "category": "retention",
+      "title": "Index BR financial / audit / backup retention schedule themes",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/ADR_007_AUDIT_RETENTION.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "drt-erasure-adjacency",
+      "category": "return",
+      "title": "Link Stage 37 erasure honesty as exit / deletion adjacency (hard-delete Remaining)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ERASURE_HONESTY_MVP.md",
+        "ops/mvp/erasure-honesty.json"
+      ],
+      "source": "docs/ERASURE_HONESTY_MVP.md"
+    },
+    {
+      "id": "drt-portability-adjacency",
+      "category": "return",
+      "title": "Link Stage 37 data-portability as export adjacency (not return portal Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATA_PORTABILITY_MVP.md",
+        "ops/mvp/data-portability.json"
+      ],
+      "source": "docs/DATA_PORTABILITY_MVP.md"
+    },
+    {
+      "id": "drt-compliance-readiness",
+      "category": "retention",
+      "title": "Link Stage 33 compliance readiness retention theme",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "ops/mvp/compliance-readiness-register.json"
+      ],
+      "source": "docs/COMPLIANCE_READINESS_MVP.md"
+    },
+    {
+      "id": "drt-dpa-exit",
+      "category": "return",
+      "title": "Link Stage 39 DPA / subprocessor as contract-exit data-handling adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DPA_SUBPROCESSOR_MVP.md",
+        "ops/mvp/dpa-subprocessor.json"
+      ],
+      "source": "docs/DPA_SUBPROCESSOR_MVP.md"
+    },
+    {
+      "id": "drt-rto-adjacency",
+      "category": "continuity",
+      "title": "Link Stage 45 O1 RTO/RPO as paired continuity adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RTO_RPO_MVP.md",
+        "ops/mvp/rto-rpo.json"
+      ],
+      "source": "docs/RTO_RPO_MVP.md"
+    },
+    {
+      "id": "drt-backup-retention",
+      "category": "retention",
+      "title": "Link logical backup retention / prune as backup-retention adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "drt-return-portal-remaining",
+      "category": "honesty",
+      "title": "Customer data-return / offboarding portal Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_45_PLAN.md",
+        "docs/DATA_PORTABILITY_MVP.md"
+      ],
+      "source": "docs/STAGE_45_PLAN.md"
+    },
+    {
+      "id": "drt-purge-exit-remaining",
+      "category": "honesty",
+      "title": "Hot audit purge / contract-exit return workflow Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_45_PLAN.md",
+        "docs/ADR_007_AUDIT_RETENTION.md"
+      ],
+      "source": "docs/STAGE_45_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Customer data-return / offboarding portal Complete",
+    "Hot audit-row physical purge Complete",
+    "Live contract-exit return workflow Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

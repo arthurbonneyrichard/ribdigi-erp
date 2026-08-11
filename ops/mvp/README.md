@@ -40,6 +40,7 @@
 | `data-residency.json` | Stage 44 R1 Data residency / localization honesty — `multi_region_residency_claimed: false` / `schema_per_tenant_claimed: false` / `gdpr_residency_cert_claimed: false` / `customer_region_pinning_live: false` |
 | `encryption-kms.json` | Stage 44 E1 Encryption / key-management honesty — `hsm_claimed: false` / `vault_saas_live: false` / `customer_managed_keys_claimed: false` / `mtls_mesh_claimed: false` |
 | `rto-rpo.json` | Stage 45 O1 RTO / RPO recovery objectives honesty — `measured_rto_claimed: false` / `measured_rpo_claimed: false` / `multi_region_failover_claimed: false` / `rto_rpo_sla_live: false` |
+| `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
 
@@ -101,6 +102,7 @@ Authoritative MVP docs:
 - `docs/STAGE_44_EXIT_CRITERIA.md` / `docs/ADR_094_STAGE44_FREEZE.md` (`backend/tests/test_stage44_exit_h44x.py`) — Stage 44 H44x
 - `docs/STAGE_45_PLAN.md` (`backend/tests/test_stage45_open.py`) — Stage 45 open (ADR-095)
 - `docs/RTO_RPO_MVP.md` (`backend/tests/test_rto_rpo_o1.py`) — Stage 45 O1
+- `docs/DATA_RETENTION_RETURN_MVP.md` (`backend/tests/test_data_retention_return_t1.py`) — Stage 45 T1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -406,8 +408,12 @@ H44x met — `docs/STAGE_44_EXIT_CRITERIA.md`, ADR-094. Stages 1–44 frozen for
 
 ## Stage 45 open
 
-Commercial Continuity & Exit Fidelity — `docs/STAGE_45_PLAN.md`, ADR-095; O1 complete; T1 next.
+Commercial Continuity & Exit Fidelity — `docs/STAGE_45_PLAN.md`, ADR-095; T1 complete; D1 next.
 
 ## Stage 45 O1 — RTO / RPO recovery objectives honesty
 
 `docs/RTO_RPO_MVP.md` + `ops/mvp/rto-rpo.json` — packaging Complete; `measured_rto_claimed` / `measured_rpo_claimed` / `multi_region_failover_claimed` / `rto_rpo_sla_live` remain false.
+
+## Stage 45 T1 — Data retention / return honesty
+
+`docs/DATA_RETENTION_RETURN_MVP.md` + `ops/mvp/data-retention-return.json` — packaging Complete; `data_return_portal_claimed` / `hot_audit_purge_claimed` / `contract_exit_return_live` / `offboarding_workflow_claimed` remain false.
