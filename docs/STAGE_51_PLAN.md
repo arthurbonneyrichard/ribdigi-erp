@@ -1,6 +1,6 @@
 # Stage 51 Plan — Commercial Marketplace & Add-Ons Fidelity
 
-**Status:** Open — M1 complete; A1 next  
+**Status:** Open — A1 complete; D1 next  
 **Base:** Marketplace Presence Honesty Pack + Add-On Services Honesty Pack → Commercial Marketplace & Add-Ons Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-107](ADR_107_STAGE51_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Marketplace & Add-Ons Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **M1** | Marketplace / app-store presence honesty packaging (not live marketplace listing Complete) | P0 | COMPLETE |
-| **A1** | Add-on services honesty packaging (not live add-on catalog / add-on billing Complete) | P0 | PENDING |
+| **A1** | Add-on services honesty packaging (not live add-on catalog / add-on billing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H51x** | Stage 51 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -82,10 +82,10 @@ Commercial Marketplace & Add-Ons Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] Add-on services honesty packaging indexing PRODUCT_OVERVIEW add-on themes and Stage 36 billing-deferred adjacency (not claiming live add-on catalog / add-on billing Complete).
-- [ ] Automated proof: `backend/tests/test_addon_services_a1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 51 A1.
+- [x] Add-on services honesty packaging indexing PRODUCT_OVERVIEW add-on themes and Stage 36 billing-deferred adjacency (not claiming live add-on catalog / add-on billing Complete).
+- [x] Automated proof: `backend/tests/test_addon_services_a1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 51 A1.
 
 ## D1 acceptance criteria
 

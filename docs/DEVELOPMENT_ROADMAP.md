@@ -516,6 +516,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 51 M1 (2026-08-11):** Marketplace presence honesty — `docs/MARKETPLACE_PRESENCE_MVP.md`, `ops/mvp/marketplace-presence.json`, evidence `stage51_m1_marketplace_presence.json` (`test_marketplace_presence_m1.py`); live marketplace listing Remaining.
 
+**Stage 51 A1 (2026-08-11):** Add-on services honesty — `docs/ADDON_SERVICES_MVP.md`, `ops/mvp/addon-services.json`, evidence `stage51_a1_addon_services.json` (`test_addon_services_a1.py`); live add-on catalog Remaining.
+
 
 
 
