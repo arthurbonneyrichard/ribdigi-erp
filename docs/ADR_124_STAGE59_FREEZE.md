@@ -23,3 +23,8 @@ Stage 59 Commercial Channel Extensions Fidelity delivered e-commerce integration
 - Stage 1–58 freezes remain in force for their scopes (Stage 58 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Channel extensions packaging Complete does **not** mean live Shopify / WooCommerce connector, live CRM module / segmentation, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 60 (Commercial Manufacturing & Tax Fidelity) after Stage 59 freeze via CONTINUE/NEXT — see [ADR-125](ADR_125_STAGE60_OPEN.md) and [STAGE_60_PLAN.md](STAGE_60_PLAN.md). Stage 59 feature scope remains frozen; Stage 60 does not reopen E1–D1 / H59x.
+

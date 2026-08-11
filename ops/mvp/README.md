@@ -203,6 +203,7 @@ Authoritative MVP docs:
 - `docs/CRM_COMMERCIAL_MVP.md` (`backend/tests/test_crm_commercial_c1.py`) — Stage 59 C1
 - `docs/STAGE_59_FIDELITY.md` (`backend/tests/test_stage59_fidelity_d1.py`) — Stage 59 D1
 - `docs/STAGE_59_EXIT_CRITERIA.md` / `docs/ADR_124_STAGE59_FREEZE.md` (`backend/tests/test_stage59_exit_h59x.py`) — Stage 59 H59x
+- `docs/STAGE_60_PLAN.md` (`backend/tests/test_stage60_open.py`) — Stage 60 open (ADR-125)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -805,3 +806,7 @@ Commercial Channel Extensions Fidelity — `docs/STAGE_59_PLAN.md`, ADR-123; Clo
 ## Stage 59 exit
 
 H59x met — `docs/STAGE_59_EXIT_CRITERIA.md`, ADR-124. Stages 1–59 frozen for Stage 59 feature scope.
+
+## Stage 60 open
+
+Commercial Manufacturing & Tax Fidelity — `docs/STAGE_60_PLAN.md`, ADR-125; Open — M1 next.

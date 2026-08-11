@@ -1371,3 +1371,5 @@ Every feature in every phase must meet:
 **Stage 59 D1 (2026-08-11):** Channel extensions fidelity sync — `docs/STAGE_59_FIDELITY.md` (`test_stage59_fidelity_d1.py`); maps E1–C1 → readiness / launch / deploy / security.
 
 **Stage 59 exit (2026-08-11):** E1, C1, D1, H59x met — `docs/STAGE_59_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_124_STAGE59_FREEZE.md`. Fidelity: `docs/STAGE_59_FIDELITY.md`.
+
+**Stage 60 open (2026-08-11):** Commercial Manufacturing & Tax Fidelity track approved — `docs/ADR_125_STAGE60_OPEN.md` + `docs/STAGE_60_PLAN.md` (advanced manufacturing → multi-country tax → fidelity).
