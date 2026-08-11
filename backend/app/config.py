@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     BACKUP_OFFSITE_UPLOAD_ENABLED: bool = False
     BACKUP_OFFSITE_S3_BUCKET: str = ""
     BACKUP_OFFSITE_S3_PREFIX: str = "ribdigi/logical/ribbak"
+    # Stage 27 P1 — PgBouncer transaction mode (also auto-detected for host pgbouncer / :6432)
+    PGBOUNCER_TRANSACTION_MODE: bool = False
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
     TOTP_ENCRYPTION_KEY: str = ""
     TOTP_ENFORCED_ROLES: str = "company_admin,super_admin"
     WEBAUTHN_RP_ID: str = "localhost"

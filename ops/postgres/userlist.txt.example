@@ -1,0 +1,5 @@
+"ribdigi" "replace-with-postgres-scram-or-md5-password-hash"
+# Stage 27 P1 — PgBouncer auth_file example.
+# Generate a real entry matching Postgres role auth, e.g.:
+#   SELECT rolpassword FROM pg_authid WHERE rolname = 'ribdigi';
+# Or use plaintext only in tightly controlled staging (auth_type = plain) — never in production.

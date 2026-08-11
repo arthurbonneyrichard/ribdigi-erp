@@ -1223,7 +1223,7 @@ groups:
 - Primary-Replica setup with streaming replication
 - Automatic failover using Patroni or cloud-managed solution
 - Read replicas for report generation and analytics
-- Connection pooling via PgBouncer
+- Connection pooling via PgBouncer — Stage 27 P1 MVP packaging (`docs/PGBOUNCER_MVP.md`, `ops/postgres/pgbouncer.ini.example`, `test_pgbouncer_p1.py`); optional compose overlay; not default CI / in-cluster Helm claim
 
 **Redis:**
 - Redis Sentinel for high availability
@@ -1337,7 +1337,8 @@ kubectl describe pod -n ribdigi-production <pod-name>
 **Database Connection Issues:**
 ```bash
 # Check connection pool status
-kubectl exec -it -n ribdigi-production <backend-pod> -- python -c "from app.db import check_pool; check_pool()"
+# Prefer: confirm DATABASE_URL targets pgbouncer:6432 and `SHOW POOLS;` inside PgBouncer admin console
+# (Stage 27 P1 — no fake check_pool() helper). See docs/PGBOUNCER_MVP.md.
 
 # Check PostgreSQL logs
 kubectl logs -n ribdigi-production statefulset/postgres

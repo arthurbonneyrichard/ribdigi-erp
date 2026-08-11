@@ -1,0 +1,28 @@
+; Stage 27 P1 — PgBouncer operator example (not applied by default compose/CI).
+; Point app DATABASE_URL at pgbouncer:6432; keep Alembic/admin on postgres:5432 when needed.
+;
+; pool_mode = transaction is the MVP multiplexing default for FastAPI/SQLAlchemy + asyncpg.
+; Requires statement_cache_size=0 (app auto-applies when URL hosts pgbouncer / :6432,
+; or set PGBOUNCER_TRANSACTION_MODE=true). Session mode is the zero-code-change fallback.
+
+[databases]
+ribdigi_erp = host=postgres port=5432 dbname=ribdigi_erp
+
+[pgbouncer]
+listen_addr = 0.0.0.0
+listen_port = 6432
+auth_type = scram-sha-256
+auth_file = /etc/pgbouncer/userlist.txt
+pool_mode = transaction
+max_client_conn = 200
+default_pool_size = 20
+min_pool_size = 2
+reserve_pool_size = 5
+reserve_pool_timeout = 3
+server_reset_query = DISCARD ALL
+ignore_startup_parameters = extra_float_digits,options
+admin_users = ribdigi
+stats_users = ribdigi
+logfile = /var/log/pgbouncer/pgbouncer.log
+pidfile = /var/run/pgbouncer/pgbouncer.pid
+; Prefer TLS termination at the ingress / cloud LB; enable server_tls_* when required.

@@ -1,0 +1,25 @@
+# Stage 27 P1 — optional PgBouncer overlay (not default docker-compose / CI).
+# Usage (from repo root):
+#   docker compose -f docker-compose.yml -f ops/postgres/docker-compose.pgbouncer.example.yml up -d
+# Then set DATABASE_URL=postgresql+asyncpg://ribdigi:ribdigi@pgbouncer:6432/ribdigi_erp
+# Keep Alembic against postgres:5432 when preferred.
+
+services:
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.1.1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://ribdigi:ribdigi@postgres:5432/ribdigi_erp
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "200"
+      DEFAULT_POOL_SIZE: "20"
+      AUTH_TYPE: scram-sha-256
+      LISTEN_PORT: "6432"
+    ports:
+      - "6432:6432"
+    # Prefer mounting versioned examples for production-like staging:
+    # volumes:
+    #   - ./ops/postgres/pgbouncer.ini.example:/etc/pgbouncer/pgbouncer.ini:ro
+    #   - ./ops/postgres/userlist.txt.example:/etc/pgbouncer/userlist.txt:ro

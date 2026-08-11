@@ -1,4 +1,6 @@
-# PostgreSQL WAL archive examples (Stage 26 W1)
+# PostgreSQL operator examples
+
+## Stage 26 W1 — WAL archive
 
 Versioned operator configs for continuous WAL archiving to S3-compatible storage. These files are **not** applied by default `docker-compose` or CI.
 
@@ -7,7 +9,7 @@ Versioned operator configs for continuous WAL archiving to S3-compatible storage
 | `postgresql-wal-archive.conf.example` | `wal_level=replica`, `archive_mode=on`, `archive_command` |
 | `archive-wal-to-s3.sh.example` | `archive_command` helper → `s3://…/ribdigi/postgres/wal/` |
 
-## Staging outline
+### Staging outline (WAL)
 
 1. Provision an S3-compatible bucket (MinIO in compose, or AWS).
 2. Install `archive-wal-to-s3.sh` on the Postgres host; set `WAL_S3_BUCKET` / `S3_ENDPOINT` / credentials.
@@ -17,3 +19,15 @@ Versioned operator configs for continuous WAL archiving to S3-compatible storage
 6. PITR drill (operator staging only — not CI): restore base + `recovery.signal` / `restore_command` to a target timestamp.
 
 Authoritative procedure: `docs/DR_WAL_PITR_RUNBOOK.md`. Logical tenant DR remains `.ribbak` (`docs/DR_LOGICAL_BACKUP_RUNBOOK.md`).
+
+## Stage 27 P1 — PgBouncer
+
+Optional connection pooler packaging. **Not** default compose/CI; **not** an in-cluster Helm claim.
+
+| File | Role |
+|------|------|
+| `pgbouncer.ini.example` | listen `6432`, `pool_mode=transaction`, DB `ribdigi_erp` |
+| `userlist.txt.example` | auth_file placeholder for role `ribdigi` |
+| `docker-compose.pgbouncer.example.yml` | optional overlay service |
+
+Authoritative MVP doc: `docs/PGBOUNCER_MVP.md` (`test_pgbouncer_p1.py`). Point `DATABASE_URL` at `pgbouncer:6432`; keep Alembic on `postgres:5432` when preferred.

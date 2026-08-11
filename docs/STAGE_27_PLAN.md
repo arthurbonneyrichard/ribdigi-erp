@@ -34,7 +34,7 @@ Commercial MVP Release Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **B1** | Automatic `.ribbak` offsite upload fidelity | P0 | COMPLETE |
-| **P1** | PgBouncer connection pooling fidelity | P0 | PENDING |
+| **P1** | PgBouncer connection pooling fidelity | P0 | COMPLETE |
 | **S1** | Security scan / ZAP-in-CI baseline evidence | P0 | PENDING |
 | **L1** | Launch certification pack (operator sign-off evidence) | P1 | PENDING |
 | **D1** | Spec / readiness / launch / security / deploy fidelity sync | P2 | PENDING |
@@ -63,11 +63,11 @@ Commercial MVP Release Fidelity
 
 ## P1 acceptance criteria
 
-- [ ] PgBouncer pooling fidelity — versioned operator config + Compose/prod wiring docs (extend Stage 18 C1 — not invent in-cluster pooler claim).
-- [ ] App DATABASE_URL / pool guidance documented; no silent production misconfig.
-- [ ] Automated proof: `backend/tests/test_pgbouncer_p1.py`.
-- [ ] PRODUCTION_READINESS Redis/Celery Remaining honesty updated (PgBouncer Complete MVP or Partial with evidence).
-- [ ] Plan / launch / roadmap cite Stage 27 P1.
+- [x] PgBouncer pooling fidelity — versioned operator config + Compose/prod wiring docs (extend Stage 18 C1 — not invent in-cluster pooler claim).
+- [x] App DATABASE_URL / pool guidance documented; no silent production misconfig.
+- [x] Automated proof: `backend/tests/test_pgbouncer_p1.py`.
+- [x] PRODUCTION_READINESS Redis/Celery Remaining honesty updated (PgBouncer Complete MVP or Partial with evidence).
+- [x] Plan / launch / roadmap cite Stage 27 P1.
 
 ## S1 acceptance criteria
 
@@ -100,4 +100,4 @@ Commercial MVP Release Fidelity
 
 ## Sign-off
 
-Stage 27 open under ADR-059. B1 complete; P1 next. Stages 1–26 remain frozen for their scopes.
+Stage 27 open under ADR-059. B1 / P1 complete; S1 next. Stages 1–26 remain frozen for their scopes.

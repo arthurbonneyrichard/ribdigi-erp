@@ -4,7 +4,7 @@
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Related:** [PRODUCTION_READINESS.md](../PRODUCTION_READINESS.md), [STAGE_7_EXIT_CRITERIA.md](STAGE_7_EXIT_CRITERIA.md), [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
 
-This is the **operator go-live checklist** for a commercial MVP launch. It is **not** a claim that deferred infra (Kubernetes chart review, WAL/PITR, vendor pen test, PgBouncer, certified 1000-VU run) is Complete.
+This is the **operator go-live checklist** for a commercial MVP launch. It is **not** a claim that deferred infra (hosted Grafana/PagerDuty, vendor pen test, certified 1000-VU soak, live GHA→prod cutover) is Complete. K8s/WAL/PgBouncer packaging are Complete (MVP) under Stages 26–27 with honest Remaining.
 
 Use this list before promoting a staging build to production. Check items only when verified in the target environment — never on demo data or fake success.
 
@@ -164,8 +164,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Load capacity fidelity (Stage 26 C1: `test_load_capacity_c1.py` — smoke + CI capacity profiles; `docs/LOAD_CAPACITY_MVP.md`; evidence `stage26_c1_capacity_evidence.json`; readiness load Complete MVP)
 - [x] Stage 26 fidelity sync (D1: `test_stage26_fidelity_d1.py`, `docs/STAGE_26_FIDELITY.md` — BR-16 + NFR §5.6 + readiness + deploy / launch / security)
 - [x] Stage 26 exit + freeze (H26x: `test_stage26_exit_h26x.py`, `docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058)
-- [ ] Stage 27 Commercial MVP Release Fidelity (open: `docs/STAGE_27_PLAN.md`, ADR-059) — B1 complete; P1 next
+- [ ] Stage 27 Commercial MVP Release Fidelity (open: `docs/STAGE_27_PLAN.md`, ADR-059) — B1 / P1 complete; S1 next
 - [x] Stage 27 track opened (ADR-059: `test_stage27_open.py`, `docs/STAGE_27_PLAN.md`)
+- [x] PgBouncer pooling fidelity (Stage 27 P1: `test_pgbouncer_p1.py` — `ops/postgres/pgbouncer.ini.example`, `docs/PGBOUNCER_MVP.md`; evidence `stage27_p1_pgbouncer.json`)
 - [x] Automatic `.ribbak` offsite upload (Stage 27 B1: `test_backup_offsite_b1.py` — `BACKUP_OFFSITE_UPLOAD_ENABLED` + `BACKUP_OFFSITE_S3_*`; failure → Backup failed; evidence `stage27_b1_offsite_upload.json`)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
@@ -186,7 +187,7 @@ Record as **ops follow-ups**, not Stage 7 incompletes:
 - Hosted Grafana / PagerDuty / SIEM (Stage 26 M1 scrape/alerts Complete)
 - Operator staging PITR drill execution / managed-cloud PITR automation (Stage 26 W1 strategy Complete — `docs/DR_WAL_PITR_RUNBOOK.md`)
 - Vendor penetration test / ZAP-in-CI Top 10
-- PgBouncer
+- In-cluster Helm PgBouncer as default data plane (Stage 27 P1 packaging Complete MVP — `docs/PGBOUNCER_MVP.md`)
 - Operator staging ~1000-VU capacity certificate (Stage 26 C1 CI capacity Complete — `docs/LOAD_CAPACITY_MVP.md`; harness in `backend/loadtest/`)
 - Paid billing (ADR-002); schema-per-tenant (ADR-001); i18n packs (ADR-006)
 

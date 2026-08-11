@@ -240,6 +240,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 27 B1 (2026-08-11):** Automatic `.ribbak` offsite upload after `create_backup` — `BACKUP_OFFSITE_UPLOAD_ENABLED` / `BACKUP_OFFSITE_S3_BUCKET` / `BACKUP_OFFSITE_S3_PREFIX`; failure → `Backup failed` (no fake success); evidence `stage27_b1_offsite_upload.json` (`test_backup_offsite_b1.py`); operator `ops/backup/sync-ribbak-offsite.sh.example` retained.
 
+**Stage 27 P1 (2026-08-11):** PgBouncer connection pooling fidelity — `ops/postgres/pgbouncer.ini.example`, `docker-compose.pgbouncer.example.yml`, `docs/PGBOUNCER_MVP.md`, evidence `stage27_p1_pgbouncer.json` (`test_pgbouncer_p1.py`); asyncpg statement cache disabled when URL targets PgBouncer; live soak / Helm pooler Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -820,7 +822,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 27 open (`docs/STAGE_27_PLAN.md`, ADR-059) — B1 complete; P1 next. Stages 1–26 remain frozen for their scopes (`docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058).
+**Active delivery plan:** Stage 27 open (`docs/STAGE_27_PLAN.md`, ADR-059) — B1 / P1 complete; S1 next. Stages 1–26 remain frozen for their scopes (`docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058).
 
 ### 6.2 Features
 

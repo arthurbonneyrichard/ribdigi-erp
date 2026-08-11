@@ -323,6 +323,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 26 fidelity** | D1 maps M1–C1 ops evidence — `docs/STAGE_26_FIDELITY.md` (`test_stage26_fidelity_d1.py`); exit/freeze ADR-058 (`test_stage26_exit_h26x.py`); historical open ADR-057; secrets remain env/Secret only; main CI deploy-free (Stage 18 C1) |
 | **Stage 27 open** | Commercial MVP Release Fidelity — `docs/STAGE_27_PLAN.md`, ADR-059 (`test_stage27_open.py`); Stages 1–26 remain frozen; B1 offsite / P1 PgBouncer / S1 security scan / L1 launch cert pending |
 | **Stage 27 B1** | Opt-in `.ribbak` offsite upload after `create_backup` — `BACKUP_OFFSITE_UPLOAD_ENABLED` / `BACKUP_OFFSITE_S3_*` (`test_backup_offsite_b1.py`); failure → `Backup failed` (no fake success); secrets remain env-only |
+| **Stage 27 P1** | PgBouncer pooling fidelity — `ops/postgres/pgbouncer.ini.example`, `docs/PGBOUNCER_MVP.md` (`test_pgbouncer_p1.py`); secrets in env/userlist only; live soak / Helm pooler Remaining |
 
 ### 7.3 Tenant Lifecycle Security
 
