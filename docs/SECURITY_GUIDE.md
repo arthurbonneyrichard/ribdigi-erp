@@ -410,9 +410,10 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 49 L1** | Pricing transparency honesty — `docs/PRICING_TRANSPARENCY_MVP.md`, `ops/mvp/pricing-transparency.json` (`test_pricing_transparency_l1.py`); public pricing portal Remaining |
 | **Stage 49 D1** | Channel & pricing fidelity — `docs/STAGE_49_FIDELITY.md` (`test_stage49_fidelity_d1.py`) maps R1–L1 → readiness / launch / deploy / security |
 | **Stage 49 fidelity** | D1 maps R1–L1 channel & pricing — `docs/STAGE_49_FIDELITY.md` (`test_stage49_fidelity_d1.py`); exit/freeze `docs/STAGE_49_EXIT_CRITERIA.md`, ADR-104 (`test_stage49_exit_h49x.py`); historical open ADR-103; live partner program / public pricing portal / go-live / §7 remain Remaining |
-| **Stage 50 open** | Commercial Acquisition & Trial Fidelity — `docs/STAGE_50_PLAN.md`, ADR-105 (`test_stage50_open.py`); Stages 1–49 remain frozen; F1 complete; D1 next |
+| **Stage 50 open** | Commercial Acquisition & Trial Fidelity — `docs/STAGE_50_PLAN.md`, ADR-105 (`test_stage50_open.py`); Stages 1–49 remain frozen; D1 complete; H50x next |
 | **Stage 50 R1** | Referral program honesty — `docs/REFERRAL_PROGRAM_MVP.md`, `ops/mvp/referral-program.json` (`test_referral_program_r1.py`); live referral credits Remaining |
 | **Stage 50 F1** | Freemium trial honesty — `docs/FREEMIUM_TRIAL_MVP.md`, `ops/mvp/freemium-trial.json` (`test_freemium_trial_f1.py`); live freemium conversion Remaining |
+| **Stage 50 D1** | Acquisition & trial fidelity — `docs/STAGE_50_FIDELITY.md` (`test_stage50_fidelity_d1.py`) maps R1–F1 → readiness / launch / deploy / security |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |

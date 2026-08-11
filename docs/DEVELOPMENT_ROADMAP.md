@@ -508,6 +508,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 50 F1 (2026-08-11):** Freemium trial honesty — `docs/FREEMIUM_TRIAL_MVP.md`, `ops/mvp/freemium-trial.json`, evidence `stage50_f1_freemium_trial.json` (`test_freemium_trial_f1.py`); live freemium conversion Remaining.
 
+**Stage 50 D1 (2026-08-11):** Acquisition & trial fidelity sync — `docs/STAGE_50_FIDELITY.md` (`test_stage50_fidelity_d1.py`); maps R1–F1 → readiness / launch / deploy / security.
+
 
 
 
