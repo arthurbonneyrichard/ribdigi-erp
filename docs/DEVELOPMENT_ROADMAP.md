@@ -316,6 +316,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 32 B1 (2026-08-11):** Post-MVP backlog — `docs/POST_MVP_BACKLOG_MVP.md`, `ops/mvp/post-mvp-backlog.json`, evidence `stage32_b1_post_mvp_backlog.json` (`test_post_mvp_backlog_b1.py`); ADR-001–006 + operator Remaining indexed; deferred scopes Remaining.
 
+**Stage 32 D1 (2026-08-11):** Commercial MVP handoff fidelity sync — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`) maps A1–B1 → BR-16 / readiness / deploy / launch / security; H32x next.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -896,7 +898,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 32 open (`docs/STAGE_32_PLAN.md`, ADR-069) — A1–B1 complete; D1 next. Stages 1–31 remain frozen for their scopes (`docs/STAGE_31_EXIT_CRITERIA.md`, ADR-068).
+**Active delivery plan:** Stage 32 open (`docs/STAGE_32_PLAN.md`, ADR-069; fidelity `docs/STAGE_32_FIDELITY.md`) — A1–D1 complete; H32x next. Stages 1–31 remain frozen for their scopes (`docs/STAGE_31_EXIT_CRITERIA.md`, ADR-068).
 
 ### 6.2 Features
 

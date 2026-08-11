@@ -1,6 +1,7 @@
 # Stage 32 Plan — Commercial MVP Handoff Fidelity
 
-**Status:** Open — A1–B1 complete; D1 next (ADR-069)  
+**Status:** Open — A1–D1 complete; H32x next (ADR-069)  
+**Fidelity:** [STAGE_32_FIDELITY.md](STAGE_32_FIDELITY.md)  
 **Base:** MVP Acceptance Archive Pack + Operator Handoff Pack + Commercial Release Notes Pack + Post-MVP Backlog Pack → Commercial MVP Handoff Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-069](ADR_069_STAGE32_OPEN.md)
@@ -39,7 +40,7 @@ Commercial MVP Handoff Fidelity
 | **H1** | Operator handoff packaging | P0 | COMPLETE |
 | **N1** | Commercial release notes packaging | P1 | COMPLETE |
 | **B1** | Post-MVP backlog packaging (deferred ADR + Remaining index) | P1 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
 | **H32x** | Stage 32 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -89,9 +90,9 @@ Commercial MVP Handoff Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_32_FIDELITY.md` maps A1–B1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 32 D1.
-- [ ] Automated proof: `backend/tests/test_stage32_fidelity_d1.py`.
+- [x] `docs/STAGE_32_FIDELITY.md` maps A1–B1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 32 D1.
+- [x] Automated proof: `backend/tests/test_stage32_fidelity_d1.py`.
 
 ## H32x acceptance criteria
 
@@ -103,4 +104,4 @@ Commercial MVP Handoff Fidelity
 
 ## Sign-off
 
-Stage 32 open under ADR-069. A1–B1 complete; D1 next. Stages 1–31 remain frozen for their scopes.
+Stage 32 open under ADR-069. A1–D1 complete; H32x next. Stages 1–31 remain frozen for their scopes.
