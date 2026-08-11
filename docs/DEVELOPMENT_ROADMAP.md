@@ -1477,3 +1477,7 @@ Every feature in every phase must meet:
 **Stage 70 F1 (2026-08-11):** First commercial day ops honesty — `docs/FIRST_COMMERCIAL_DAY_MVP.md`, `ops/mvp/first-commercial-day.json`, evidence `stage70_f1_first_commercial_day.json` (`test_first_commercial_day_f1.py`); first-day live Remaining.
 
 **Stage 70 G1 (2026-08-11):** Commercial go-live closeout honesty — `docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md`, `ops/mvp/commercial-golive-closeout.json`, evidence `stage70_g1_commercial_golive_closeout.json` (`test_commercial_golive_closeout_g1.py`); go-live Remaining.
+
+**Stage 70 D1 (2026-08-11):** First Commercial Day fidelity sync — `docs/STAGE_70_FIDELITY.md` (`test_stage70_fidelity_d1.py`); maps F1–G1 → readiness / launch / deploy / security.
+
+**Stage 70 exit (2026-08-11):** F1, G1, D1, H70x met — `docs/STAGE_70_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_147_STAGE70_FREEZE.md`. Fidelity: `docs/STAGE_70_FIDELITY.md`.

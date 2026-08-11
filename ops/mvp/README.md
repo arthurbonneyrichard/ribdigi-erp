@@ -232,6 +232,8 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_70_EXIT_CRITERIA.md` / `docs/ADR_147_STAGE70_FREEZE.md` (`backend/tests/test_stage70_exit_h70x.py`) — Stage 70 H70x
+- `docs/STAGE_70_FIDELITY.md` (`backend/tests/test_stage70_fidelity_d1.py`) — Stage 70 D1
 - `docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md` (`backend/tests/test_commercial_golive_closeout_g1.py`) — Stage 70 G1
 - `docs/FIRST_COMMERCIAL_DAY_MVP.md` (`backend/tests/test_first_commercial_day_f1.py`) — Stage 70 F1
 - `docs/STAGE_70_PLAN.md` (`backend/tests/test_stage70_open.py`) — Stage 70 open (ADR-146)
@@ -963,6 +965,14 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 70 exit
+
+H70x met — `docs/STAGE_70_EXIT_CRITERIA.md`, ADR-147. Stages 1–70 frozen for Stage 70 feature scope.
+
+## Stage 70 D1 — First Commercial Day fidelity
+
+`docs/STAGE_70_FIDELITY.md` — maps F1–G1 → readiness / launch / deploy / security (`test_stage70_fidelity_d1.py`).
+
 ## Stage 70 G1 — Commercial go-live closeout honesty
 
 `docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md` + `ops/mvp/commercial-golive-closeout.json` — packaging Complete; `go_live_claimed` / `commercial_golive_closeout_claimed` / `section_7_signed` / `first_commercial_day_claimed` remain false.
@@ -973,7 +983,7 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 ## Stage 70 open
 
-First Commercial Day Fidelity — `docs/STAGE_70_PLAN.md`, ADR-146; Open — G1 complete; D1 next.
+First Commercial Day Fidelity — `docs/STAGE_70_PLAN.md`, ADR-146; Closed — exit met (H70x); freeze ADR-147.
 
 ## Stage 69 exit
 

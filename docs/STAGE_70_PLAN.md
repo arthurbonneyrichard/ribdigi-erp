@@ -1,9 +1,10 @@
 # Stage 70 Plan — First Commercial Day Fidelity
 
-**Status:** Open — G1 complete; D1 next  
+**Status:** Closed — exit met (H70x); freeze ADR-147  
 **Base:** First Commercial Day Ops Honesty Pack + MVP Commercial Go-Live Closeout Honesty Pack → First Commercial Day Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-146](ADR_146_STAGE70_OPEN.md)  
+**Open ADR (historical):** [ADR-146](ADR_146_STAGE70_OPEN.md)  
+**Exit:** [STAGE_70_EXIT_CRITERIA.md](STAGE_70_EXIT_CRITERIA.md) · [ADR-147](ADR_147_STAGE70_FREEZE.md)  
 **Prior freeze:** [ADR-145](ADR_145_STAGE69_FREEZE.md) · [STAGE_69_EXIT_CRITERIA.md](STAGE_69_EXIT_CRITERIA.md)
 
 Stage 70 opens after Stage 69 freeze: **First Commercial Day Ops Honesty Packaging + MVP Commercial Go-Live Closeout Honesty Packaging → First Commercial Day Fidelity**. The owner product outline continues past Pre-Flight + Attestation packaging:
@@ -46,8 +47,8 @@ First Commercial Day Fidelity
 |----|------------|----------|---------|
 | **F1** | First commercial day ops honesty packaging (day-one ops / hypercare adjacency; not first-day live Complete) | P0 | COMPLETE |
 | **G1** | MVP commercial go-live closeout honesty packaging (closeout / declaration adjacency; not go-live Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
-| **H70x** | Stage 70 exit criteria + freeze ADR | Exit | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
+| **H70x** | Stage 70 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -82,12 +83,12 @@ First Commercial Day Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_70_FIDELITY.md` maps F1–G1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 70 D1.
-- [ ] Automated proof: `backend/tests/test_stage70_fidelity_d1.py`.
+- [x] `docs/STAGE_70_FIDELITY.md` maps F1–G1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 70 D1.
+- [x] Automated proof: `backend/tests/test_stage70_fidelity_d1.py`.
 
 ## H70x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for F1–D1 / H70x — `docs/STAGE_70_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_147_STAGE70_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage70_exit_h70x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for F1–D1 / H70x — `docs/STAGE_70_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_147_STAGE70_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage70_exit_h70x.py`.
