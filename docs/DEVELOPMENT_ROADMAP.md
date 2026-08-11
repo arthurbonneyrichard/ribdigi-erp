@@ -460,6 +460,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 45 D1 (2026-08-11):** Commercial continuity & exit fidelity — `docs/STAGE_45_FIDELITY.md` (`test_stage45_fidelity_d1.py`); maps O1–T1 → readiness / launch / deploy / security; measured RTO/RPO / data-return portal Remaining.
 
+**Stage 45 exit (2026-08-11):** O1, T1, D1, H45x met — `docs/STAGE_45_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_096_STAGE45_FREEZE.md`. Fidelity: `docs/STAGE_45_FIDELITY.md`.
+
 
 
 

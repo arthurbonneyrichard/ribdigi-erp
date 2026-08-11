@@ -104,6 +104,7 @@ Authoritative MVP docs:
 - `docs/RTO_RPO_MVP.md` (`backend/tests/test_rto_rpo_o1.py`) — Stage 45 O1
 - `docs/DATA_RETENTION_RETURN_MVP.md` (`backend/tests/test_data_retention_return_t1.py`) — Stage 45 T1
 - `docs/STAGE_45_FIDELITY.md` (`backend/tests/test_stage45_fidelity_d1.py`) — Stage 45 D1
+- `docs/STAGE_45_EXIT_CRITERIA.md` / `docs/ADR_096_STAGE45_FREEZE.md` (`backend/tests/test_stage45_exit_h45x.py`) — Stage 45 H45x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -409,7 +410,7 @@ H44x met — `docs/STAGE_44_EXIT_CRITERIA.md`, ADR-094. Stages 1–44 frozen for
 
 ## Stage 45 open
 
-Commercial Continuity & Exit Fidelity — `docs/STAGE_45_PLAN.md`, ADR-095; D1 complete; H45x next.
+Commercial Continuity & Exit Fidelity — `docs/STAGE_45_PLAN.md`, ADR-095; Closed — exit met (H45x / ADR-096).
 
 ## Stage 45 O1 — RTO / RPO recovery objectives honesty
 
@@ -422,3 +423,7 @@ Commercial Continuity & Exit Fidelity — `docs/STAGE_45_PLAN.md`, ADR-095; D1 c
 ## Stage 45 D1 — Fidelity
 
 `docs/STAGE_45_FIDELITY.md` maps O1–T1 → readiness / launch / deploy / security (`test_stage45_fidelity_d1.py`).
+
+## Stage 45 exit
+
+H45x met — `docs/STAGE_45_EXIT_CRITERIA.md`, ADR-096. Stages 1–45 frozen for Stage 45 feature scope.

@@ -1,10 +1,11 @@
 # Stage 45 Plan — Commercial Continuity & Exit Fidelity
 
-**Status:** Open — D1 complete; H45x next  
+**Status:** Closed — exit met (H45x / ADR-096)  
 **Base:** RTO / RPO Recovery Objectives Honesty Pack + Data Retention / Return Honesty Pack → Commercial Continuity & Exit Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-095](ADR_095_STAGE45_OPEN.md)  
-**Prior freeze:** [ADR-094](ADR_094_STAGE44_FREEZE.md) · [STAGE_44_EXIT_CRITERIA.md](STAGE_44_EXIT_CRITERIA.md)
+**Prior freeze:** [ADR-094](ADR_094_STAGE44_FREEZE.md) · [STAGE_44_EXIT_CRITERIA.md](STAGE_44_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_45_EXIT_CRITERIA.md](STAGE_45_EXIT_CRITERIA.md) · [ADR-096](ADR_096_STAGE45_FREEZE.md)
 
 Stage 45 opens after Stage 44 freeze: **RTO / RPO Recovery Objectives Honesty Packaging + Data Retention / Return Honesty Packaging → Commercial Continuity & Exit Fidelity**. BR availability RTO/RPO / multi-region failover themes and ADR-007 / BR retention surfaces lack dedicated customer-facing continuity honesty packs for recovery-objective boundaries and retention / contract-exit data-return Remaining. This track packages those Remaining surfaces on proven Stage 26–28 DR / Stage 36–40 support / availability and Stage 33–34 compliance / audit-retention assets — **not** claiming measured RTO/RPO SLA Complete, multi-region failover Complete, customer data-return portal Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–44 packs as new Complete, or reopening Stages 1–44 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Continuity & Exit Fidelity
 | **O1** | RTO / RPO recovery objectives honesty packaging (not measured RTO/RPO SLA Complete) | P0 | COMPLETE |
 | **T1** | Data retention / return honesty packaging (not customer data-return portal Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H45x** | Stage 45 exit criteria + freeze ADR | Exit | PENDING |
+| **H45x** | Stage 45 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -85,6 +86,6 @@ Commercial Continuity & Exit Fidelity
 
 ## H45x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for O1–D1 / H45x — `docs/STAGE_45_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_096_STAGE45_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage45_exit_h45x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for O1–D1 / H45x — `docs/STAGE_45_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_096_STAGE45_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage45_exit_h45x.py`.
