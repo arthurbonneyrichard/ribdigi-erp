@@ -63,4 +63,8 @@ Indexes operator/admin training curriculum surfaces. See `docs/KNOWLEDGE_TRANSFE
 - Tests: `backend/tests/test_knowledge_transfer_t1.py`
 - Honesty: `live_training_claimed: false`, `training_complete_claimed: false` — indexing ≠ live training
 
+## Stage 33 D1 — Continuity fidelity
+
+Doc-only fidelity sync (no new register). See `docs/STAGE_33_FIDELITY.md` (`backend/tests/test_stage33_fidelity_d1.py`) — maps K1–T1 packs → readiness / launch / deploy / security.
+
 Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false`.
