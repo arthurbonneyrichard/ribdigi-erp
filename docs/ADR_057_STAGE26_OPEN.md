@@ -31,3 +31,7 @@ Ops Platform Fidelity
 
 - Agents may implement Stage 26 plan items without reopening Stage 1–25 feature scope.
 - Stage 26 exit requires `docs/STAGE_26_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Amendment (2026-08-11)
+
+Stage 26 exit criteria are met (`docs/STAGE_26_EXIT_CRITERIA.md`) and Stage 26 feature scope is frozen under [ADR-058](ADR_058_STAGE26_FREEZE.md). ADR-057 remains the historical open record for this track.

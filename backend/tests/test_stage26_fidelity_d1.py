@@ -27,12 +27,12 @@ def test_stage26_fidelity_note_and_plan():
 
     plan = _read("docs/STAGE_26_PLAN.md")
     assert "STAGE_26_FIDELITY.md" in plan
-    for ws in ("M1", "W1", "K1", "C1", "D1"):
+    for ws in ("M1", "W1", "K1", "C1", "D1", "H26x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}** |" in ln][0]
         assert "COMPLETE" in line, ws
-    assert "H26x" in plan and "PENDING" in plan
-    assert "ADR-057" in plan or "ADR_057" in plan
-    assert "D1 complete" in plan or "H26x next" in plan
+    assert "ADR-058" in plan or "ADR_058" in plan
+    assert "Closed" in plan or "exit met" in plan.lower()
+    assert "ADR-058" in fidelity or "ADR_058" in fidelity or "exit met" in fidelity.lower()
 
 
 def test_stage26_br16_and_nfr_cites():
@@ -85,6 +85,7 @@ def test_stage26_api_deploy_security_launch():
     assert "test_load_capacity_c1.py" in launch
     assert "test_stage26_fidelity_d1.py" in launch
     assert "STAGE_26_FIDELITY.md" in launch
+    assert "STAGE_26_EXIT_CRITERIA.md" in launch or "ADR-058" in launch
 
 
 def test_stage26_readiness_and_roadmap():
@@ -92,6 +93,7 @@ def test_stage26_readiness_and_roadmap():
     assert "STAGE_26_FIDELITY.md" in pr
     assert "test_stage26_fidelity_d1.py" in pr
     assert "Stage 26 D1" in pr
+    assert "STAGE_26_EXIT_CRITERIA.md" in pr or "ADR-058" in pr or "ADR_058" in pr
     assert "- [x] Monitoring, metrics, logging and alerting complete." in pr
     assert "- [x] Point-in-time recovery/WAL strategy complete." in pr
     assert "- [x] Kubernetes production deployment reviewed." in pr
@@ -107,3 +109,5 @@ def test_stage26_readiness_and_roadmap():
     assert "Stage 26 D1" in roadmap
     assert "ADR_057_STAGE26_OPEN.md" in roadmap
     assert "STAGE_26_PLAN.md" in roadmap
+    assert "STAGE_26_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_058_STAGE26_FREEZE.md" in roadmap

@@ -26,7 +26,7 @@ Stage 26 proves the owner product outline after Stage 25 freeze — Monitoring &
 | **K1** | `test_k8s_deploy_k1.py` — `helm/ribdigi/`, hardened `k8s/`, `K8S_DEPLOY_MVP.md` | NFR deploy; readiness Kubernetes | Live GHA→staging apply |
 | **C1** | `test_load_capacity_c1.py` — CI smoke + `--ci-capacity`, `LOAD_CAPACITY_MVP.md` | NFR performance; readiness load | Operator ~1000-VU staging |
 | **D1** | This note + `test_stage26_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H26x** | Exit + freeze (pending) | Stage 26 exit + ADR-058 | Next track needs open ADR |
+| **H26x** | `STAGE_26_EXIT_CRITERIA.md`; ADR-058; `test_stage26_exit_h26x.py` | Stage 26 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -36,18 +36,20 @@ Stage 26 proves the owner product outline after Stage 25 freeze — Monitoring &
 - `backend/tests/test_load_capacity_c1.py`
 - `backend/tests/test_stage26_open.py`
 - `backend/tests/test_stage26_fidelity_d1.py`
+- `backend/tests/test_stage26_exit_h26x.py`
 
 ## Spec sync targets
 
 - `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16.2 / 16.3 + NFR §5.6 (+ Stage 26 D1 cite)
-- `docs/API_DOCUMENTATION.md` — Stage 26 M1–C1 / D1 cite
-- `PRODUCTION_READINESS.md` — monitoring / WAL / K8s / load Completes + Stage 26 D1 cite
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 26 D1
-- `docs/LAUNCH_CHECKLIST.md` — M1–C1 / D1 evidence
-- `docs/DEPLOYMENT_GUIDE.md` — §5 / §9 / §10 / §11 MVP fidelity + Stage 26 D1
-- `docs/SECURITY_GUIDE.md` — Stage 26 M1–C1 / D1 cite
+- `docs/API_DOCUMENTATION.md` — Stage 26 M1–C1 / D1 / H26x cite
+- `PRODUCTION_READINESS.md` — monitoring / WAL / K8s / load Completes + Stage 26 D1 / H26x cite
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 26 D1 / H26x exit
+- `docs/LAUNCH_CHECKLIST.md` — M1–C1 / D1 / H26x evidence
+- `docs/DEPLOYMENT_GUIDE.md` — §5 / §9 / §10 / §11 MVP fidelity + Stage 26 D1 / H26x
+- `docs/SECURITY_GUIDE.md` — Stage 26 M1–C1 / D1 / H26x cite
 - `docs/OPS_MONITORING_MVP.md` · `docs/DR_WAL_PITR_RUNBOOK.md` · `docs/K8S_DEPLOY_MVP.md` · `docs/LOAD_CAPACITY_MVP.md`
-- `docs/STAGE_26_PLAN.md` — D1 complete; H26x next
+- `docs/STAGE_26_PLAN.md` — Closed (H26x / ADR-058)
+- `docs/STAGE_26_EXIT_CRITERIA.md` · `docs/ADR_058_STAGE26_FREEZE.md`
 - `docs/ADR_057_STAGE26_OPEN.md`
 
 ## Deferred (not Stage 26 blockers)
@@ -62,4 +64,4 @@ Stage 26 proves the owner product outline after Stage 25 freeze — Monitoring &
 - User↔store membership (ADR-005); hard-delete with archival (ADR-003)
 - Open Banking; tax e-file portals
 - External LLM / Prophet; PO OCR auto-apply
-- Reopening Stages 1–25 frozen feature scopes
+- Reopening Stages 1–26 frozen feature scopes
