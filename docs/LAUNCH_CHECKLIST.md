@@ -182,6 +182,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
+- [x] Stage 53 track opened (ADR-111: `test_stage53_open.py`, `docs/STAGE_53_PLAN.md`) — Commercial API & Lifecycle Fidelity; A1 next
 - [x] Stage 52 Commercial Partnerships & Renewal Fidelity (closed: `docs/STAGE_52_PLAN.md`, ADR-110) — I1–D1 / H52x complete
 - [x] Stage 52 track opened (ADR-109: `test_stage52_open.py`, `docs/STAGE_52_PLAN.md`)
 - [x] Industry partnerships honesty (Stage 52 I1: `test_industry_partnerships_i1.py` — `docs/INDUSTRY_PARTNERSHIPS_MVP.md`, `ops/mvp/industry-partnerships.json`; evidence `stage52_i1_industry_partnerships.json`; live industry partnership program Remaining)

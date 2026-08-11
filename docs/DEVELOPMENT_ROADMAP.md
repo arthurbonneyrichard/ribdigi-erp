@@ -1301,3 +1301,5 @@ Every feature in every phase must meet:
 **Review Cycle:** Bi-weekly (per sprint) or upon scope changes
 
 **Stage 52 exit (2026-08-11):** I1, R1, D1, H52x met — `docs/STAGE_52_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_110_STAGE52_FREEZE.md`. Fidelity: `docs/STAGE_52_FIDELITY.md`.
+
+**Stage 53 open (2026-08-11):** Commercial API & Lifecycle Fidelity track approved — `docs/ADR_111_STAGE53_OPEN.md` + `docs/STAGE_53_PLAN.md` (API/integration commercial → cancellation/churn → fidelity).

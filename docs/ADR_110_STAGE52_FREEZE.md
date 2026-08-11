@@ -23,3 +23,7 @@ Stage 52 Commercial Partnerships & Renewal Fidelity delivered industry partnersh
 - Stage 1–51 freezes remain in force for their scopes (Stage 51 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Partnerships & renewal packaging Complete does **not** mean live industry partnership program, signed association deals, live annual-discount enforcement, auto-renewal billing, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 53 (Commercial API & Lifecycle Fidelity) after Stage 52 freeze via CONTINUE/NEXT — see [ADR-111](ADR_111_STAGE53_OPEN.md) and [STAGE_53_PLAN.md](STAGE_53_PLAN.md). Stage 52 feature scope remains frozen; Stage 53 does not reopen I1–D1 / H52x.

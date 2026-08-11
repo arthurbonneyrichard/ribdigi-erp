@@ -153,6 +153,8 @@ Authoritative MVP docs:
 - `docs/INDUSTRY_PARTNERSHIPS_MVP.md` (`backend/tests/test_industry_partnerships_i1.py`) — Stage 52 I1
 - `docs/SUBSCRIPTION_RENEWAL_MVP.md` (`backend/tests/test_subscription_renewal_r1.py`) — Stage 52 R1
 - `docs/STAGE_52_FIDELITY.md` (`backend/tests/test_stage52_fidelity_d1.py`) — Stage 52 D1
+- `docs/STAGE_52_EXIT_CRITERIA.md` / `docs/ADR_110_STAGE52_FREEZE.md` (`backend/tests/test_stage52_exit_h52x.py`) — Stage 52 H52x
+- `docs/STAGE_53_PLAN.md` (`backend/tests/test_stage53_open.py`) — Stage 53 open (ADR-111)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -615,3 +617,7 @@ Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109;
 ## Stage 52 exit
 
 H52x met — `docs/STAGE_52_EXIT_CRITERIA.md`, ADR-110. Stages 1–52 frozen for Stage 52 feature scope.
+
+## Stage 53 open
+
+Commercial API & Lifecycle Fidelity — `docs/STAGE_53_PLAN.md`, ADR-111; A1 next.
