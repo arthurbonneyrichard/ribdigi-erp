@@ -365,6 +365,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 40 S1** | SBOM / dependency disclosure honesty — `docs/SBOM_DISCLOSURE_MVP.md`, `ops/mvp/sbom-disclosure.json` (`test_sbom_disclosure_s1.py`); live SBOM pipeline Remaining |
 | **Stage 40 D1** | Availability & supply-chain fidelity — `docs/STAGE_40_FIDELITY.md` (`test_stage40_fidelity_d1.py`) maps U1–S1 → readiness / launch / deploy / security |
 | **Stage 40 fidelity** | D1 maps U1–S1 availability & supply-chain — `docs/STAGE_40_FIDELITY.md` (`test_stage40_fidelity_d1.py`); exit/freeze `docs/STAGE_40_EXIT_CRITERIA.md`, ADR-086 (`test_stage40_exit_h40x.py`); historical open ADR-085; live status page / SBOM / go-live / §7 remain Remaining |
+| **Stage 41 open** | Commercial Accessibility & Change Governance Fidelity — `docs/STAGE_41_PLAN.md`, ADR-087 (`test_stage41_open.py`); Stages 1–40 remain frozen; A1 next |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |

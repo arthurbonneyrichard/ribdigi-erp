@@ -23,3 +23,8 @@ Stage 40 Commercial Availability & Supply-Chain Fidelity delivered status page /
 - Stage 1–39 freezes remain in force for their scopes (Stage 39 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Availability & supply-chain packaging Complete does **not** mean live status page, measured 99.9% SLA, live SBOM pipeline, Cosign signing, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 41 (Commercial Accessibility & Change Governance Fidelity) after Stage 40 freeze via CONTINUE/NEXT — see [ADR-087](ADR_087_STAGE41_OPEN.md) and [STAGE_41_PLAN.md](STAGE_41_PLAN.md). Stage 40 feature scope remains frozen; Stage 41 does not reopen U1–D1 / H40x.
+

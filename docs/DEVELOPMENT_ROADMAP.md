@@ -412,6 +412,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 40 exit (2026-08-11):** U1, S1, D1, H40x met — `docs/STAGE_40_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_086_STAGE40_FREEZE.md`. Fidelity: `docs/STAGE_40_FIDELITY.md`.
 
+**Stage 41 open (2026-08-11):** Commercial Accessibility & Change Governance Fidelity track approved — `docs/ADR_087_STAGE41_OPEN.md` + `docs/STAGE_41_PLAN.md` (accessibility statement → change/maintenance governance → fidelity).
+
 
 
 
