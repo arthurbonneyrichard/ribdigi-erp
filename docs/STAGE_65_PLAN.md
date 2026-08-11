@@ -1,6 +1,6 @@
 # Stage 65 Plan — MVP Release Candidate Fidelity
 
-**Status:** Open — R1 complete; P1 next  
+**Status:** Open — P1 complete; D1 next  
 **Base:** Release Pipeline Honesty Pack + Controlled Business Pilot Honesty Pack → MVP Release Candidate Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-135](ADR_135_STAGE65_OPEN.md)  
@@ -77,7 +77,7 @@ MVP Release Candidate Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **R1** | Release pipeline honesty packaging (Development → Internal QA → Staging → Regression → Security Review → MVP RC; not signed RC Complete) | P0 | COMPLETE |
-| **P1** | Controlled business pilot honesty packaging (Pilot → Real Workflow Feedback → Bug Fixes; not live pilot Complete) | P0 | PENDING |
+| **P1** | Controlled business pilot honesty packaging (Pilot → Real Workflow Feedback → Bug Fixes; not live pilot Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H65x** | Stage 65 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -115,10 +115,12 @@ MVP Release Candidate Fidelity
 
 ## P1 acceptance criteria
 
-- [ ] Controlled business pilot honesty packaging indexing Controlled Business Pilot → Real Workflow Feedback → Bug Fixes with E2E / first-tenant / onboarding adjacency (not claiming live pilot Complete).
-- [ ] Automated proof: `backend/tests/test_business_pilot_p1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 65 P1.
+- [x] Controlled business pilot honesty packaging indexing Controlled Business Pilot → Real Workflow Feedback → Bug Fixes with E2E / first-tenant / onboarding adjacency (not claiming live pilot Complete).
+- [x] Automated proof: `backend/tests/test_business_pilot_p1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 65 P1.
+
+**Deliverables:** `docs/BUSINESS_PILOT_MVP.md`, `ops/mvp/business-pilot.json`, evidence `stage65_p1_business_pilot.json`.
 
 ## D1 acceptance criteria
 
