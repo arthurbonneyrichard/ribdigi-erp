@@ -1469,3 +1469,5 @@ Every feature in every phase must meet:
 **Stage 69 A1 (2026-08-11):** Go-live attestation honesty — `docs/GOLIVE_ATTESTATION_MVP.md`, `ops/mvp/golive-attestation.json`, evidence `stage69_a1_golive_attestation.json` (`test_golive_attestation_a1.py`); §7 signed Remaining.
 
 **Stage 69 D1 (2026-08-11):** MVP Commercial Go-Live fidelity sync — `docs/STAGE_69_FIDELITY.md` (`test_stage69_fidelity_d1.py`); maps V1–A1 → readiness / launch / deploy / security.
+
+**Stage 69 exit (2026-08-11):** V1, A1, D1, H69x met — `docs/STAGE_69_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_145_STAGE69_FREEZE.md`. Fidelity: `docs/STAGE_69_FIDELITY.md`.

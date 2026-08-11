@@ -1,8 +1,9 @@
 # Stage 69 Fidelity Notes — MVP Commercial Go-Live Fidelity
 
-**Status:** Open — D1 complete; H69x next  
+**Status:** Closed — exit met (H69x); freeze ADR-145  
 **Surface:** Pre-Flight Env Verification (§§1–3) → Go-Live Attestation Walk (§7) → Fidelity closeout  
-**Open ADR:** [ADR-144](ADR_144_STAGE69_OPEN.md)  
+**Open ADR (historical):** [ADR-144](ADR_144_STAGE69_OPEN.md)  
+**Exit:** [STAGE_69_EXIT_CRITERIA.md](STAGE_69_EXIT_CRITERIA.md) · [ADR-145](ADR_145_STAGE69_FREEZE.md)  
 **Plan:** [STAGE_69_PLAN.md](STAGE_69_PLAN.md)  
 **Prior freeze:** [ADR-143](ADR_143_STAGE68_FREEZE.md) · [STAGE_68_EXIT_CRITERIA.md](STAGE_68_EXIT_CRITERIA.md)
 
@@ -23,7 +24,7 @@ Stage 69 proves the owner Commercial Go-Live path after Stage 68 freeze — **Pl
 | **V1** | `test_preflight_verification_v1.py` — `PREFLIGHT_VERIFICATION_MVP.md`, preflight-verification JSON | Owner Pre-Flight §§1–3 / Stage 27 launch-cert | §§1–3 verified |
 | **A1** | `test_golive_attestation_a1.py` — `GOLIVE_ATTESTATION_MVP.md`, golive-attestation JSON | Owner §7 walk / Stage 30–31 attestation | §7 signed; attestation claimed |
 | **D1** | This note + `test_stage69_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H69x** | `STAGE_69_EXIT_CRITERIA.md`; ADR-145 (planned); `test_stage69_exit_h69x.py` | Stage 69 exit + freeze | Pending |
+| **H69x** | `STAGE_69_EXIT_CRITERIA.md`; ADR-145; `test_stage69_exit_h69x.py` | Stage 69 exit + freeze | Stage 70+ requires CONTINUE/NEXT |
 
 ## Evidence tests
 
@@ -31,6 +32,7 @@ Stage 69 proves the owner Commercial Go-Live path after Stage 68 freeze — **Pl
 - `backend/tests/test_golive_attestation_a1.py`
 - `backend/tests/test_stage69_open.py`
 - `backend/tests/test_stage69_fidelity_d1.py`
+- `backend/tests/test_stage69_exit_h69x.py`
 
 ## Spec sync targets
 
@@ -42,7 +44,8 @@ Stage 69 proves the owner Commercial Go-Live path after Stage 68 freeze — **Pl
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 69 V1–A1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 69 V1–A1 / D1 cite
 - `docs/PREFLIGHT_VERIFICATION_MVP.md` · `docs/GOLIVE_ATTESTATION_MVP.md`
-- `docs/STAGE_69_PLAN.md` — Open — D1 complete; H69x next
+- `docs/STAGE_69_PLAN.md` — Closed — exit met (H69x); freeze ADR-145
+- `docs/STAGE_69_EXIT_CRITERIA.md` · `docs/ADR_145_STAGE69_FREEZE.md`
 - `docs/ADR_144_STAGE69_OPEN.md`
 
 ## Deferred (not Stage 69 D1 blockers)
