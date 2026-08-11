@@ -1,10 +1,11 @@
 # Stage 51 Plan — Commercial Marketplace & Add-Ons Fidelity
 
-**Status:** Open — D1 complete; H51x next  
+**Status:** Closed — exit met (H51x / ADR-108)  
 **Base:** Marketplace Presence Honesty Pack + Add-On Services Honesty Pack → Commercial Marketplace & Add-Ons Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-107](ADR_107_STAGE51_OPEN.md)  
-**Prior freeze:** [ADR-106](ADR_106_STAGE50_FREEZE.md) · [STAGE_50_EXIT_CRITERIA.md](STAGE_50_EXIT_CRITERIA.md)
+**Prior freeze:** [ADR-106](ADR_106_STAGE50_FREEZE.md) · [STAGE_50_EXIT_CRITERIA.md](STAGE_50_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_51_EXIT_CRITERIA.md](STAGE_51_EXIT_CRITERIA.md) · [ADR-108](ADR_108_STAGE51_FREEZE.md)
 
 Stage 51 opens after Stage 50 freeze: **Marketplace Presence Honesty Packaging + Add-On Services Honesty Packaging → Commercial Marketplace & Add-Ons Fidelity**. PRODUCT_OVERVIEW marketplace / app-store presence and add-on services (SMS/email credits, extra storage, premium AI training, custom reports) themes, plus Stage 36 billing-deferred and Stage 49–50 channel / acquisition adjacency, lack dedicated customer-facing honesty packs for marketplace listing boundaries and add-on commercial Remaining. This track packages those Remaining surfaces on proven Stage 36–50 commercial / billing-deferred assets — **not** claiming live marketplace listing Complete, app-store presence Complete, live add-on catalog Complete, add-on billing Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–50 packs as new Complete, or reopening Stages 1–50 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Marketplace & Add-Ons Fidelity
 | **M1** | Marketplace / app-store presence honesty packaging (not live marketplace listing Complete) | P0 | COMPLETE |
 | **A1** | Add-on services honesty packaging (not live add-on catalog / add-on billing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H51x** | Stage 51 exit criteria + freeze ADR | Exit | PENDING |
+| **H51x** | Stage 51 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -95,6 +96,6 @@ Commercial Marketplace & Add-Ons Fidelity
 
 ## H51x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for M1–D1 / H51x — `docs/STAGE_51_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_108_STAGE51_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage51_exit_h51x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for M1–D1 / H51x — `docs/STAGE_51_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_108_STAGE51_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage51_exit_h51x.py`.

@@ -520,6 +520,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 51 D1 (2026-08-11):** Marketplace & add-ons fidelity sync — `docs/STAGE_51_FIDELITY.md` (`test_stage51_fidelity_d1.py`); maps M1–A1 → readiness / launch / deploy / security.
 
+**Stage 51 exit (2026-08-11):** M1, A1, D1, H51x met — `docs/STAGE_51_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_108_STAGE51_FREEZE.md`. Fidelity: `docs/STAGE_51_FIDELITY.md`.
+
 
 
 
