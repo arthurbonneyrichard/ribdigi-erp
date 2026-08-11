@@ -222,6 +222,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_65_FIDELITY.md` (`backend/tests/test_stage65_fidelity_d1.py`) — Stage 65 D1
 - `docs/BUSINESS_PILOT_MVP.md` (`backend/tests/test_business_pilot_p1.py`) — Stage 65 P1
 - `docs/RELEASE_PIPELINE_MVP.md` (`backend/tests/test_release_pipeline_r1.py`) — Stage 65 R1
 - `docs/STAGE_65_PLAN.md` (`backend/tests/test_stage65_open.py`) — Stage 65 open (ADR-135)
@@ -929,6 +930,10 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 65 D1 — MVP release-candidate fidelity
+
+`docs/STAGE_65_FIDELITY.md` — maps R1–P1 → readiness / launch / deploy / security (`test_stage65_fidelity_d1.py`).
+
 ## Stage 65 P1 — Controlled business pilot honesty
 
 `docs/BUSINESS_PILOT_MVP.md` + `ops/mvp/business-pilot.json` — packaging Complete; `controlled_business_pilot_live_claimed` / `real_workflow_feedback_claimed` / `pilot_bugfix_program_live` / `business_pilot_program_live` remain false.
@@ -939,7 +944,7 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 ## Stage 65 open
 
-MVP Release Candidate Fidelity — `docs/STAGE_65_PLAN.md`, ADR-135; Open — P1 complete; D1 next.
+MVP Release Candidate Fidelity — `docs/STAGE_65_PLAN.md`, ADR-135; Open — D1 complete; H65x next.
 
 ## Stage 64 exit
 

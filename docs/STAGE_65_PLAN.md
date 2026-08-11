@@ -1,6 +1,6 @@
 # Stage 65 Plan — MVP Release Candidate Fidelity
 
-**Status:** Open — P1 complete; D1 next  
+**Status:** Open — D1 complete; H65x next  
 **Base:** Release Pipeline Honesty Pack + Controlled Business Pilot Honesty Pack → MVP Release Candidate Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-135](ADR_135_STAGE65_OPEN.md)  
@@ -78,7 +78,7 @@ MVP Release Candidate Fidelity
 |----|------------|----------|---------|
 | **R1** | Release pipeline honesty packaging (Development → Internal QA → Staging → Regression → Security Review → MVP RC; not signed RC Complete) | P0 | COMPLETE |
 | **P1** | Controlled business pilot honesty packaging (Pilot → Real Workflow Feedback → Bug Fixes; not live pilot Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H65x** | Stage 65 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -124,9 +124,11 @@ MVP Release Candidate Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_65_FIDELITY.md` maps R1–P1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 65 D1.
-- [ ] Automated proof: `backend/tests/test_stage65_fidelity_d1.py` (`docs/STAGE_65_FIDELITY.md`).
+- [x] `docs/STAGE_65_FIDELITY.md` maps R1–P1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 65 D1.
+- [x] Automated proof: `backend/tests/test_stage65_fidelity_d1.py` (`docs/STAGE_65_FIDELITY.md`).
+
+**Deliverables:** `docs/STAGE_65_FIDELITY.md`, `backend/tests/test_stage65_fidelity_d1.py`.
 
 ## H65x acceptance criteria
 
