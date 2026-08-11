@@ -1333,7 +1333,7 @@ Stage 20 D1 proves BR-21 commercial-MVP AI fidelity on rule-based `/ai/*` engine
 
 ### 16.2 AI Dashboard Insights
 **Endpoint:** `GET /ai/insights`  
-Returns sales/expense anomaly cards, restock suggestions; weekly digest is published via Celery/`publish_insights` when email prefs allow.
+Returns anomaly / restock / purchase cards with per-card `domains` cites (Inventory, Sales, Purchases, Expenses). Also returns `actuals`, `actuals_covered`, and `note` (Stage 25 B1). Weekly digest via Celery/`publish_insights` when email prefs allow. Evidence: `test_ai_insights_fidelity_i1.py`, `test_ai_business_insights_b1.py`.
 
 ### 16.3 Smart Inventory Intelligence
 **Endpoints:**  
