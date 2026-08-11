@@ -1,6 +1,6 @@
 # Stage 35 Plan — Commercial End-to-End Operational Smoke Fidelity
 
-**Status:** Open — U1 complete; P1 next (ADR-075)  
+**Status:** Open — P1 complete; S1 next (ADR-075)  
 **Base:** Org Bootstrap Pack + Users/RBAC Pack + Purchase-to-Stock Pack + Sale-to-Payment Pack + Verify Financials Pack + Backup/Restore Pack → Commercial End-to-End Operational Smoke Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-075](ADR_075_STAGE35_OPEN.md)
@@ -75,7 +75,7 @@ Commercial End-to-End Operational Smoke Fidelity
 |----|------------|----------|---------|
 | **T1** | Org bootstrap packaging (tenant → company → branch → store → warehouse) | P0 | COMPLETE |
 | **U1** | Users + RBAC assignment packaging | P0 | COMPLETE |
-| **P1** | Purchase-to-stock packaging (supplier → products → PO → receive → verify stock) | P0 | PENDING |
+| **P1** | Purchase-to-stock packaging (supplier → products → PO → receive → verify stock) | P0 | COMPLETE |
 | **S1** | Sale-to-payment packaging (customer → POS → payment → stock reduction) | P0 | PENDING |
 | **V1** | Verify financials packaging (tax → accounting → credit → reports → audit) | P1 | PENDING |
 | **R1** | Backup + restore test packaging | P1 | PENDING |
@@ -113,10 +113,10 @@ Commercial End-to-End Operational Smoke Fidelity
 
 ## P1 acceptance criteria
 
-- [ ] Purchase-to-stock packaging (supplier → products → PO → receive → verify stock) for E2E smoke (not forging live purchasing success).
-- [ ] Automated proof: `backend/tests/test_e2e_purchase_stock_p1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 35 P1.
+- [x] Purchase-to-stock packaging (supplier → products → PO → receive → verify stock) for E2E smoke (not forging live purchasing success).
+- [x] Automated proof: `backend/tests/test_e2e_purchase_stock_p1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 35 P1.
 
 ## S1 acceptance criteria
 
@@ -155,4 +155,4 @@ Commercial End-to-End Operational Smoke Fidelity
 
 ## Sign-off
 
-Stage 35 open under ADR-075. U1 complete; P1 next. Stages 1–34 remain frozen for their scopes.
+Stage 35 open under ADR-075. P1 complete; S1 next. Stages 1–34 remain frozen for their scopes.

@@ -19,6 +19,7 @@
 | `compliance-questionnaire.json` | Stage 34 C1 compliance questionnaire — `soc2_complete_claimed: false` / `questionnaire_answers_certified: false` |
 | `e2e-org-bootstrap.json` | Stage 35 T1 org bootstrap — `e2e_smoke_executed_claimed: false` / `live_bootstrap_claimed: false` / `demo_tenant_claimed: false` |
 | `e2e-users-rbac.json` | Stage 35 U1 users + RBAC — `live_users_provisioned_claimed: false` / `e2e_smoke_executed_claimed: false` / `demo_tenant_claimed: false` / `store_membership_claimed: false` |
+| `e2e-purchase-stock.json` | Stage 35 P1 purchase-to-stock — `live_purchase_stock_claimed: false` / `e2e_smoke_executed_claimed: false` / `demo_tenant_claimed: false` / `po_kanban_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -38,6 +39,7 @@ Authoritative MVP docs:
 - `docs/COMPLIANCE_QUESTIONNAIRE_MVP.md` (`backend/tests/test_compliance_questionnaire_c1.py`) — Stage 34 C1
 - `docs/E2E_ORG_BOOTSTRAP_MVP.md` (`backend/tests/test_e2e_org_bootstrap_t1.py`) — Stage 35 T1
 - `docs/E2E_USERS_RBAC_MVP.md` (`backend/tests/test_e2e_users_rbac_u1.py`) — Stage 35 U1
+- `docs/E2E_PURCHASE_STOCK_MVP.md` (`backend/tests/test_e2e_purchase_stock_p1.py`) — Stage 35 P1
 
 ## Stage 33 K1 — Residual risk register
 
@@ -115,4 +117,12 @@ Real test-tenant users + role assignment + RBAC / tenant-isolation smoke checkli
 - Tests: `backend/tests/test_e2e_users_rbac_u1.py`
 - Honesty: `live_users_provisioned_claimed: false`, `e2e_smoke_executed_claimed: false`, `demo_tenant_claimed: false`, `store_membership_claimed: false` — packaging ≠ live provisioning; ADR-005 remains deferred
 
-Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false` / `customer_assurance_claimed: false` / `attestation_claimed: false` / `questionnaire_answers_certified: false` / `e2e_smoke_executed_claimed: false` / `live_bootstrap_claimed: false` / `demo_tenant_claimed: false` / `live_users_provisioned_claimed: false` / `store_membership_claimed: false`.
+## Stage 35 P1 — E2E purchase-to-stock
+
+Supplier → products → PO → GRN → verify stock checklist. See `docs/E2E_PURCHASE_STOCK_MVP.md`.
+
+- Pack: `e2e-purchase-stock.json`
+- Tests: `backend/tests/test_e2e_purchase_stock_p1.py`
+- Honesty: `live_purchase_stock_claimed: false`, `e2e_smoke_executed_claimed: false`, `demo_tenant_claimed: false`, `po_kanban_claimed: false` — packaging ≠ live purchasing; PO Kanban remains Remaining
+
+Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false` / `customer_assurance_claimed: false` / `attestation_claimed: false` / `questionnaire_answers_certified: false` / `e2e_smoke_executed_claimed: false` / `live_bootstrap_claimed: false` / `demo_tenant_claimed: false` / `live_users_provisioned_claimed: false` / `store_membership_claimed: false` / `live_purchase_stock_claimed: false` / `po_kanban_claimed: false`.

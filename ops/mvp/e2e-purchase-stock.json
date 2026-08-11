@@ -1,0 +1,157 @@
+{
+  "stage": "35",
+  "workstream": "P1",
+  "doc": "docs/E2E_PURCHASE_STOCK_MVP.md",
+  "e2e_org_bootstrap": "ops/mvp/e2e-org-bootstrap.json",
+  "e2e_users_rbac": "ops/mvp/e2e-users-rbac.json",
+  "stage11_plan": "docs/STAGE_11_PLAN.md",
+  "stage24_plan": "docs/STAGE_24_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "api_docs": "docs/API_DOCUMENTATION.md",
+  "packaging_complete": true,
+  "live_purchase_stock_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "po_kanban_claimed": false,
+  "steps": [
+    {
+      "id": "ps-create-supplier",
+      "category": "supplier",
+      "title": "Create supplier for real test tenant (no demo seed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_11_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#purchasing"
+    },
+    {
+      "id": "ps-create-products",
+      "category": "products",
+      "title": "Create products for purchase path (SKU/unit/cost)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/LAUNCH_CHECKLIST.md",
+        "ops/mvp/e2e-org-bootstrap.json"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#inventory"
+    },
+    {
+      "id": "ps-create-po",
+      "category": "purchasing",
+      "title": "Create purchase order against supplier/warehouse",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_11_PLAN.md",
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_24_PLAN.md"
+      ],
+      "source": "docs/STAGE_11_PLAN.md"
+    },
+    {
+      "id": "ps-receive-grn",
+      "category": "purchasing",
+      "title": "Receive goods (GRN) into warehouse from PO",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_11_PLAN.md",
+        "docs/API_DOCUMENTATION.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#purchasing"
+    },
+    {
+      "id": "ps-verify-stock",
+      "category": "inventory",
+      "title": "Verify warehouse stock increase and stock movements",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_24_PLAN.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#inventory"
+    },
+    {
+      "id": "ps-purchase-invoice",
+      "category": "purchasing",
+      "title": "Optional: link purchase invoice on received GRN (Stage 11 chain)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_11_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/STAGE_11_PLAN.md"
+    },
+    {
+      "id": "ps-tenant-isolation",
+      "category": "security",
+      "title": "Tenant header mismatch on PO/GRN path returns 403",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/SECURITY_GUIDE.md",
+        "ops/mvp/e2e-users-rbac.json"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ps-doc-numbering",
+      "category": "purchasing",
+      "title": "Confirm PO/GRN shared document-numbering series (Stage 24 N1)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_24_PLAN.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/STAGE_24_PLAN.md#N1"
+    },
+    {
+      "id": "ps-po-kanban-deferred",
+      "category": "deferred",
+      "title": "Confirm PO Kanban polish remains Remaining (Stage 24)",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_24_PLAN.md",
+        "docs/STAGE_35_PLAN.md"
+      ],
+      "source": "docs/STAGE_24_PLAN.md"
+    },
+    {
+      "id": "ps-live-purchasing-remaining",
+      "category": "honesty",
+      "title": "Live purchase-to-stock / E2E smoke execution Remaining \u2014 packaging \u2260 executed",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_35_PLAN.md",
+        "ops/mvp/e2e-org-bootstrap.json",
+        "ops/mvp/e2e-users-rbac.json"
+      ],
+      "source": "docs/STAGE_35_PLAN.md#P1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage35_p1_e2e_purchase_stock.json",
+  "deferred": [
+    "Claiming live purchase-to-stock Complete because Stage 35 P1 packaging exists",
+    "Demo tenants / seed products / fake GRN success as Complete",
+    "PO Kanban polish Complete (Stage 24 Remaining)",
+    "Multi-bin / FIFO-LIFO-WA Complete",
+    "Live E2E smoke executed Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

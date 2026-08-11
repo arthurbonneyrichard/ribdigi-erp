@@ -350,6 +350,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 35 U1 (2026-08-11):** Users + RBAC — `docs/E2E_USERS_RBAC_MVP.md`, `ops/mvp/e2e-users-rbac.json`, evidence `stage35_u1_e2e_users_rbac.json` (`test_e2e_users_rbac_u1.py`); roles + RBAC smoke packaging; live provisioning / ADR-005 store membership Remaining.
 
+**Stage 35 P1 (2026-08-11):** Purchase-to-stock — `docs/E2E_PURCHASE_STOCK_MVP.md`, `ops/mvp/e2e-purchase-stock.json`, evidence `stage35_p1_e2e_purchase_stock.json` (`test_e2e_purchase_stock_p1.py`); supplier → products → PO → GRN → verify stock; live purchasing / PO Kanban Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -930,7 +932,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 35 open (`docs/STAGE_35_PLAN.md`, ADR-075) — U1 complete; P1 next. Stages 1–34 remain frozen for their scopes (`docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074).
+**Active delivery plan:** Stage 35 open (`docs/STAGE_35_PLAN.md`, ADR-075) — P1 complete; S1 next. Stages 1–34 remain frozen for their scopes (`docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074).
 
 ### 6.2 Features
 
