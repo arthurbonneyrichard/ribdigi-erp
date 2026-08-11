@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 
-// [label, href, module]
-const items: [string, string, string][] = [
+type NavItem = [label: string, href: string, module: string];
+
+/** Tenant ERP navigation (business workspace). */
+const TENANT_ITEMS: NavItem[] = [
   ['Dashboard', '/dashboard', 'dashboard'],
   ['Company', '/company', 'company'],
   ['Inventory', '/inventory', 'inventory'],
@@ -27,7 +29,76 @@ const items: [string, string, string][] = [
   ['Users', '/users', 'users'],
 ];
 
-const platformItem: [string, string, string] = ['Platform', '/platform', 'platform'];
+/** Software-owner / platform console navigation only. */
+const PLATFORM_ITEMS: NavItem[] = [
+  ['Platform', '/platform', 'platform'],
+  ['Notifications', '/notifications', 'notifications'],
+  ['Audit', '/audit', 'audit'],
+  ['Security', '/security', 'security'],
+];
+
+/**
+ * Modules each tenant role should see in the sidebar.
+ * `*` = all tenant modules the role can read via permissions.
+ * super_admin is handled separately (platform nav only).
+ */
+const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
+  company_admin: '*',
+  store_manager: [
+    'dashboard',
+    'inventory',
+    'sales',
+    'pos',
+    'purchasing',
+    'expenses',
+    'accounting',
+    'credit',
+    'tax',
+    'stores',
+    'reports',
+    'notifications',
+    'users',
+    'audit',
+    'ai',
+    'security',
+  ],
+  sales_officer: [
+    'dashboard',
+    'inventory',
+    'sales',
+    'pos',
+    'credit',
+    'reports',
+    'notifications',
+    'ai',
+    'security',
+  ],
+  inventory_officer: [
+    'dashboard',
+    'inventory',
+    'purchasing',
+    'reports',
+    'notifications',
+    'ai',
+    'security',
+  ],
+  accountant: [
+    'dashboard',
+    'inventory',
+    'sales',
+    'purchasing',
+    'expenses',
+    'accounting',
+    'credit',
+    'tax',
+    'reports',
+    'notifications',
+    'ai',
+    'audit',
+    'security',
+  ],
+  cashier: ['dashboard', 'inventory', 'pos', 'sales', 'notifications', 'security'],
+};
 
 // Monochrome line icons (inherit the nav text color via currentColor).
 const ICONS: Record<string, React.ReactNode> = {
@@ -182,6 +253,24 @@ function canReadModule(permissions: Record<string, string[]> | null | undefined,
   return actions.includes('*') || actions.includes('read') || actions.includes('write');
 }
 
+function navItemsForRole(
+  role: string,
+  permissions: Record<string, string[]> | null
+): NavItem[] {
+  // Software owner: platform console only — inventory/sales/etc. stay off the sidebar.
+  if (role === 'super_admin') {
+    return PLATFORM_ITEMS.filter(([, , module]) =>
+      module === 'platform' ? true : canReadModule(permissions, module)
+    );
+  }
+
+  const allowed = ROLE_NAV_MODULES[role] ?? ROLE_NAV_MODULES.cashier;
+  return TENANT_ITEMS.filter(([, , module]) => {
+    if (allowed !== '*' && !allowed.includes(module)) return false;
+    return canReadModule(permissions, module);
+  });
+}
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
@@ -190,6 +279,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [fullName, setFullName] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const pathname = usePathname();
+  const isPlatformOwner = role === 'super_admin';
 
   useEffect(() => {
     const el = document.documentElement;
@@ -255,17 +345,17 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const visible = [
-    ...(role === 'super_admin' ? [platformItem] : []),
-    ...items.filter(([, , module]) => canReadModule(permissions, module)),
-  ];
+  const visible = useMemo(() => navItemsForRole(role, permissions), [role, permissions]);
+  const showAlerts = visible.some(([, href]) => href === '/notifications');
 
   return (
     <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
       <aside className="side">
         <div className="brand">RIBDIGI ERP</div>
-        <div className="brand-sub">One System. Total Business Control.</div>
-        <nav className="nav">
+        <div className="brand-sub">
+          {isPlatformOwner ? 'Platform owner console' : 'One System. Total Business Control.'}
+        </div>
+        <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
           {visible.map(([n, h, module]) => {
             const active = pathname === h || pathname.startsWith(`${h}/`);
             return (
@@ -311,7 +401,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             >
               <span aria-hidden>{theme === 'dark' ? '\u2600\ufe0f' : '\ud83c\udf19'}</span>
             </button>
-            {canReadModule(permissions, 'notifications') && (
+            {showAlerts && (
               <Link href="/notifications" className="bell">
                 Alerts{unread > 0 ? ` · ${unread}` : ''}
               </Link>
