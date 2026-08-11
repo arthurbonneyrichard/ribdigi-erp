@@ -133,7 +133,7 @@ export default function Login() {
     <div className="login">
       <div className="login-badge" aria-hidden>R</div>
       <h1>RIBDIGI ERP</h1>
-      <p className="muted">One ERP Platform. Unlimited Business.</p>
+      <p className="muted">One System. Total Business Control.</p>
       <form onSubmit={go}>
         {!needs2fa && (
           <>
@@ -180,6 +180,7 @@ export default function Login() {
         )}
         {error && <p>{error}</p>}
       </form>
+      <p className="login-foot">A Ribdigi House Product</p>
     </div>
   );
 }

@@ -250,6 +250,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
       <aside className="side">
         <div className="brand">RIBDIGI ERP</div>
+        <div className="brand-sub">One System. Total Business Control.</div>
         <nav className="nav">
           {visible.map(([n, h, module]) => {
             const active = pathname === h || pathname.startsWith(`${h}/`);
@@ -272,6 +273,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+        <div className="side-foot">A Ribdigi House Product</div>
       </aside>
       <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
       <main className="main">

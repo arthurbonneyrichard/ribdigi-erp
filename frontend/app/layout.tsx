@@ -2,7 +2,7 @@ import './globals.css';
 
 export const metadata = {
   title: 'RIBDIGI ERP',
-  description: 'One ERP Platform. Unlimited Business.',
+  description: 'One System. Total Business Control. A Ribdigi House Product.',
 };
 
 // Runs before paint to avoid a flash of the wrong theme. Uses the saved
