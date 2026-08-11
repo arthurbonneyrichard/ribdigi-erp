@@ -1381,3 +1381,5 @@ Every feature in every phase must meet:
 **Stage 60 D1 (2026-08-11):** Manufacturing & tax fidelity sync — `docs/STAGE_60_FIDELITY.md` (`test_stage60_fidelity_d1.py`); maps M1–T1 → readiness / launch / deploy / security.
 
 **Stage 60 exit (2026-08-11):** M1, T1, D1, H60x met — `docs/STAGE_60_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_126_STAGE60_FREEZE.md`. Fidelity: `docs/STAGE_60_FIDELITY.md`.
+
+**Stage 61 open (2026-08-11):** Commercial Fintech & Supply-Chain Fidelity track approved — `docs/ADR_127_STAGE61_OPEN.md` + `docs/STAGE_61_PLAN.md` (embedded fintech → supply chain integration → fidelity).

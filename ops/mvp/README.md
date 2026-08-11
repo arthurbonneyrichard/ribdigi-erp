@@ -210,6 +210,7 @@ Authoritative MVP docs:
 - `docs/MULTI_COUNTRY_TAX_MVP.md` (`backend/tests/test_multi_country_tax_t1.py`) — Stage 60 T1
 - `docs/STAGE_60_FIDELITY.md` (`backend/tests/test_stage60_fidelity_d1.py`) — Stage 60 D1
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
+- `docs/STAGE_61_PLAN.md` (`backend/tests/test_stage61_open.py`) — Stage 61 open (ADR-127)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -832,3 +833,7 @@ Commercial Manufacturing & Tax Fidelity — `docs/STAGE_60_PLAN.md`, ADR-125; Cl
 ## Stage 60 exit
 
 H60x met — `docs/STAGE_60_EXIT_CRITERIA.md`, ADR-126. Stages 1–60 frozen for Stage 60 feature scope.
+
+## Stage 61 open
+
+Commercial Fintech & Supply-Chain Fidelity — `docs/STAGE_61_PLAN.md`, ADR-127; Open — F1 next.

@@ -23,3 +23,8 @@ Stage 60 Commercial Manufacturing & Tax Fidelity delivered advanced manufacturin
 - Stage 1–59 freezes remain in force for their scopes (Stage 59 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Manufacturing & tax packaging Complete does **not** mean live Advanced Manufacturing / MRP, live multi-country tax e-file / engine, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 61 (Commercial Fintech & Supply-Chain Fidelity) after Stage 60 freeze via CONTINUE/NEXT — see [ADR-127](ADR_127_STAGE61_OPEN.md) and [STAGE_61_PLAN.md](STAGE_61_PLAN.md). Stage 60 feature scope remains frozen; Stage 61 does not reopen M1–D1 / H60x.
+
