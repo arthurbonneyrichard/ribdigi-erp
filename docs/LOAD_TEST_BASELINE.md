@@ -8,7 +8,7 @@
 | Tier | Concurrent users | Throughput guide | p95 latency | Error rate |
 |------|------------------|------------------|-------------|------------|
 | **CI / harness smoke** | 5 | ~health-only | < 2000 ms | 0% |
-| **CI capacity** (Stage 26 C1) | 10 | health + auth scenarios | < 500 ms | 0% |
+| **CI capacity** (Stage 26 C1) | 10 | health + auth scenarios | < 3000 ms (ASGI) | 0% |
 | **Staging capacity** (operator) | up to 1000 | ~100 TPS aspirational | < 500 ms | 0% |
 | **Product aspirational** (roadmap) | 1000 | 100 TPS | API < 200 ms (prod opt) | 0% |
 

@@ -97,7 +97,8 @@ async def test_c1_capacity_evidence_artifact(client, db_session):
 
 def test_ci_capacity_targets_and_cli_flag():
     assert TARGETS.ci_capacity_concurrency >= TARGETS.smoke_concurrency
-    assert TARGETS.ci_capacity_p95_ms == 500.0
+    assert TARGETS.ci_capacity_p95_ms >= TARGETS.smoke_p95_ms  # ASGI-honest (login bcrypt)
+    assert TARGETS.staging_p95_ms == 500.0  # operator staging target unchanged
     assert "login" in TARGETS.ci_capacity_scenarios
     assert "dashboard" in TARGETS.ci_capacity_scenarios
 

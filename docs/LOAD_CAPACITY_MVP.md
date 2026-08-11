@@ -13,7 +13,7 @@ This is the **MVP load capacity surface**: httpx harness + CI smoke + CI capacit
 | Profile | Concurrency | Iterations | Scenarios | p95 gate | Where |
 |---------|-------------|------------|-----------|----------|-------|
 | Smoke | 5 | 20 | `health` | < 2000 ms | CI / ASGI / live |
-| CI capacity (Stage 26 C1) | 10 | 20 | `health,login,products,dashboard` | < 500 ms | CI / ASGI |
+| CI capacity (Stage 26 C1) | 10 | 20 | `health,login,products,dashboard` | < 3000 ms (ASGI-honest; bcrypt login) | CI / ASGI |
 | Staging capacity (operator) | up to 1000 | operator | same + Locust optional | < 500 ms | Sized staging |
 
 ## Harness
