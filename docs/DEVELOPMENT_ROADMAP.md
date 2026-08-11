@@ -1437,3 +1437,5 @@ Every feature in every phase must meet:
 **Stage 66 L1 (2026-08-11):** Production launch honesty — `docs/PRODUCTION_LAUNCH_MVP.md`, `ops/mvp/production-launch.json`, evidence `stage66_l1_production_launch.json` (`test_production_launch_l1.py`); live cutover / §7 signed / go-live Remaining.
 
 **Stage 66 T1 (2026-08-11):** First tenant go-live honesty — `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json`, evidence `stage66_t1_first_tenant_golive.json` (`test_first_tenant_golive_t1.py`); first paying tenant / live onboarding Remaining.
+
+**Stage 66 D1 (2026-08-11):** MVP production-launch fidelity sync — `docs/STAGE_66_FIDELITY.md` (`test_stage66_fidelity_d1.py`); maps L1–T1 → readiness / launch / deploy / security.

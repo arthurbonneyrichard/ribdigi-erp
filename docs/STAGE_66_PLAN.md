@@ -1,6 +1,6 @@
 # Stage 66 Plan — MVP Production Launch Fidelity
 
-**Status:** Open — T1 complete; D1 next  
+**Status:** Open — D1 complete; H66x next  
 **Base:** Production Launch Honesty Pack + First Tenant Go-Live Honesty Pack → MVP Production Launch Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-138](ADR_138_STAGE66_OPEN.md)  
@@ -62,7 +62,7 @@ MVP Production Launch Fidelity
 |----|------------|----------|---------|
 | **L1** | Production launch honesty packaging (Cutover → Attestation → Launch; not §7 signed / live cutover Complete) | P0 | COMPLETE |
 | **T1** | First tenant go-live honesty packaging (First paying tenant → onboarding adjacency; not live first-tenant Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H66x** | Stage 66 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -100,9 +100,11 @@ MVP Production Launch Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_66_FIDELITY.md` maps L1–T1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 66 D1.
-- [ ] Automated proof: `backend/tests/test_stage66_fidelity_d1.py`.
+- [x] `docs/STAGE_66_FIDELITY.md` maps L1–T1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 66 D1.
+- [x] Automated proof: `backend/tests/test_stage66_fidelity_d1.py`.
+
+**Deliverables:** `docs/STAGE_66_FIDELITY.md` (`test_stage66_fidelity_d1.py`).
 
 ## H66x acceptance criteria
 
