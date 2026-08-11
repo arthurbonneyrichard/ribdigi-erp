@@ -1367,3 +1367,5 @@ Every feature in every phase must meet:
 **Stage 59 E1 (2026-08-11):** E-commerce integration honesty — `docs/ECOMMERCE_INTEGRATION_MVP.md`, `ops/mvp/ecommerce-integration.json`, evidence `stage59_e1_ecommerce_integration.json` (`test_ecommerce_integration_e1.py`); live Shopify / WooCommerce Remaining.
 
 **Stage 59 C1 (2026-08-11):** CRM commercial honesty — `docs/CRM_COMMERCIAL_MVP.md`, `ops/mvp/crm-commercial.json`, evidence `stage59_c1_crm_commercial.json` (`test_crm_commercial_c1.py`); live CRM module / segmentation Remaining.
+
+**Stage 59 D1 (2026-08-11):** Channel extensions fidelity sync — `docs/STAGE_59_FIDELITY.md` (`test_stage59_fidelity_d1.py`); maps E1–C1 → readiness / launch / deploy / security.

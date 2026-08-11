@@ -1,6 +1,6 @@
 # Stage 59 Plan — Commercial Channel Extensions Fidelity
 
-**Status:** Open — C1 complete; D1 next  
+**Status:** Open — D1 complete; H59x next  
 **Base:** E-Commerce Integration Honesty Pack + CRM Commercial Honesty Pack → Commercial Channel Extensions Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-123](ADR_123_STAGE59_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Channel Extensions Fidelity
 |----|------------|----------|---------|
 | **E1** | E-commerce integration honesty packaging (not live Shopify / WooCommerce connector Complete) | P0 | COMPLETE |
 | **C1** | CRM commercial honesty packaging (not live CRM module / segmentation Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H59x** | Stage 59 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -104,9 +104,9 @@ Commercial Channel Extensions Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_59_FIDELITY.md` maps E1–C1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 59 D1.
-- [ ] Automated proof: `backend/tests/test_stage59_fidelity_d1.py` (`docs/STAGE_59_FIDELITY.md`).
+- [x] `docs/STAGE_59_FIDELITY.md` maps E1–C1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 59 D1.
+- [x] Automated proof: `backend/tests/test_stage59_fidelity_d1.py` (`docs/STAGE_59_FIDELITY.md`).
 
 ## H59x acceptance criteria
 

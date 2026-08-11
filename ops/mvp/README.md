@@ -201,6 +201,7 @@ Authoritative MVP docs:
 - `docs/STAGE_59_PLAN.md` (`backend/tests/test_stage59_open.py`) — Stage 59 open (ADR-123)
 - `docs/ECOMMERCE_INTEGRATION_MVP.md` (`backend/tests/test_ecommerce_integration_e1.py`) — Stage 59 E1
 - `docs/CRM_COMMERCIAL_MVP.md` (`backend/tests/test_crm_commercial_c1.py`) — Stage 59 C1
+- `docs/STAGE_59_FIDELITY.md` (`backend/tests/test_stage59_fidelity_d1.py`) — Stage 59 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -786,7 +787,7 @@ H58x met — `docs/STAGE_58_EXIT_CRITERIA.md`, ADR-122. Stages 1–58 frozen for
 
 ## Stage 59 open
 
-Commercial Channel Extensions Fidelity — `docs/STAGE_59_PLAN.md`, ADR-123; Open — C1 complete; D1 next.
+Commercial Channel Extensions Fidelity — `docs/STAGE_59_PLAN.md`, ADR-123; Open — D1 complete; H59x next.
 
 ## Stage 59 E1 — E-commerce integration honesty
 
@@ -795,3 +796,7 @@ Commercial Channel Extensions Fidelity — `docs/STAGE_59_PLAN.md`, ADR-123; Ope
 ## Stage 59 C1 — CRM commercial honesty
 
 `docs/CRM_COMMERCIAL_MVP.md` + `ops/mvp/crm-commercial.json` — packaging Complete; `crm_module_live_claimed` / `customer_segmentation_live_claimed` / `crm_pipeline_program_live` / `crm_commercial_program_live` remain false.
+
+## Stage 59 D1 — Channel extensions fidelity
+
+`docs/STAGE_59_FIDELITY.md` — maps E1–C1 → readiness / launch / deploy / security (`test_stage59_fidelity_d1.py`).
