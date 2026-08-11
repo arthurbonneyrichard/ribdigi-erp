@@ -1,6 +1,6 @@
 # Stage 56 Plan — Commercial Onboarding & Expansion Fidelity
 
-**Status:** Open — O1 next  
+**Status:** Open — O1 complete; G1 next  
 **Base:** Implementation & Onboarding Commercial Honesty Pack + Geographic Expansion Honesty Pack → Commercial Onboarding & Expansion Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-117](ADR_117_STAGE56_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Onboarding & Expansion Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **O1** | Implementation & onboarding commercial honesty packaging (not live data-migration fee billing / on-site training delivery Complete) | P0 | PENDING |
+| **O1** | Implementation & onboarding commercial honesty packaging (not live data-migration fee billing / on-site training delivery Complete) | P0 | COMPLETE |
 | **G1** | Geographic expansion honesty packaging (not multi-market expansion / international localization Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H56x** | Stage 56 exit criteria + freeze ADR | Exit | PENDING |
@@ -84,10 +84,10 @@ Commercial Onboarding & Expansion Fidelity
 
 ## O1 acceptance criteria
 
-- [ ] Implementation & onboarding commercial honesty packaging consolidating PRODUCT_OVERVIEW data-migration / on-site training / custom workflow themes with Stage 36 billing-deferred adjacency (not forging live migration fee billing / on-site training delivery Complete).
-- [ ] Automated proof: `backend/tests/test_implementation_onboarding_o1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 56 O1.
+- [x] Implementation & onboarding commercial honesty packaging consolidating PRODUCT_OVERVIEW data-migration / on-site training / custom workflow themes with Stage 36 billing-deferred adjacency (not forging live migration fee billing / on-site training delivery Complete).
+- [x] Automated proof: `backend/tests/test_implementation_onboarding_o1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 56 O1.
 
 ## G1 acceptance criteria
 

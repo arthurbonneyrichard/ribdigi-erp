@@ -60,6 +60,7 @@
 | `direct-sales.json` | Stage 54 S1 Direct sales honesty — `inside_sales_team_live: false` / `enterprise_pipeline_claimed: false` / `white_label_sales_pipeline_claimed: false` / `direct_sales_program_live: false` |
 | `white-label-licensing.json` | Stage 55 W1 White-label licensing honesty — `white_label_licensing_live: false` / `franchise_revenue_share_billing_claimed: false` / `per_tenant_licensing_fee_enforced: false` / `white_label_licensing_program_live: false` |
 | `unit-economics-positioning.json` | Stage 55 U1 Unit economics / positioning honesty — `cac_ltv_measured_claimed: false` / `arpu_payback_measured_claimed: false` / `competitive_superiority_proven: false` / `win_loss_analysis_live: false` |
+| `implementation-onboarding.json` | Stage 56 O1 Implementation / onboarding honesty — `data_migration_fee_billing_live: false` / `onsite_training_delivery_claimed: false` / `custom_workflow_sold_claimed: false` / `implementation_onboarding_program_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -176,6 +177,7 @@ Authoritative MVP docs:
 - `docs/STAGE_55_FIDELITY.md` (`backend/tests/test_stage55_fidelity_d1.py`) — Stage 55 D1
 - `docs/STAGE_55_EXIT_CRITERIA.md` / `docs/ADR_116_STAGE55_FREEZE.md` (`backend/tests/test_stage55_exit_h55x.py`) — Stage 55 H55x
 - `docs/STAGE_56_PLAN.md` (`backend/tests/test_stage56_open.py`) — Stage 56 open (ADR-117)
+- `docs/IMPLEMENTATION_ONBOARDING_MVP.md` (`backend/tests/test_implementation_onboarding_o1.py`) — Stage 56 O1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -701,4 +703,8 @@ H55x met — `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116. Stages 1–55 frozen for
 
 ## Stage 56 open
 
-Commercial Onboarding & Expansion Fidelity — `docs/STAGE_56_PLAN.md`, ADR-117; O1 next.
+Commercial Onboarding & Expansion Fidelity — `docs/STAGE_56_PLAN.md`, ADR-117; O1 complete; G1 next.
+
+## Stage 56 O1 — Implementation & onboarding commercial honesty
+
+`docs/IMPLEMENTATION_ONBOARDING_MVP.md` + `ops/mvp/implementation-onboarding.json` — packaging Complete; `data_migration_fee_billing_live` / `onsite_training_delivery_claimed` / `custom_workflow_sold_claimed` / `implementation_onboarding_program_live` remain false.
