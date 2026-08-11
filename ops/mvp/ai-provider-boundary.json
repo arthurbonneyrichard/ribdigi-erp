@@ -1,0 +1,151 @@
+{
+  "stage": "42",
+  "workstream": "P1",
+  "doc": "docs/AI_PROVIDER_BOUNDARY_MVP.md",
+  "ai_use_disclosure": "ops/mvp/ai-use-disclosure.json",
+  "ai_use_disclosure_doc": "docs/AI_USE_DISCLOSURE_MVP.md",
+  "stage20_fidelity": "docs/STAGE_20_FIDELITY.md",
+  "stage20_exit": "docs/STAGE_20_EXIT_CRITERIA.md",
+  "stage24_plan": "docs/STAGE_24_PLAN.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "production_readiness": "PRODUCTION_READINESS.md",
+  "ops_ai_gate_test": "backend/tests/test_ops_ai_gate_closure_o1.py",
+  "stage42_plan": "docs/STAGE_42_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "external_llm_claimed": false,
+  "prophet_claimed": false,
+  "paid_model_vendor_required": false,
+  "output_pii_scanner_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage42_p1_ai_provider_boundary.json",
+  "steps": [
+    {
+      "id": "ap-stage24-provider-gate",
+      "category": "provider",
+      "title": "Bind Stage 24 O1 AI provider gate Complete (MVP) as provider-boundary packaging",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_24_PLAN.md",
+        "backend/tests/test_ops_ai_gate_closure_o1.py"
+      ],
+      "source": "docs/STAGE_24_PLAN.md"
+    },
+    {
+      "id": "ap-optional-llm-unset",
+      "category": "provider",
+      "title": "Confirm optional external LLM provider may remain unset for MVP",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/STAGE_20_FIDELITY.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "ap-rules-deterministic",
+      "category": "model",
+      "title": "Index rule-based chat and deterministic inventory prediction without paid vendor",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/STAGE_20_FIDELITY.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "ap-stage20-llm-remaining",
+      "category": "honesty",
+      "title": "Link Stage 20 external LLM Remaining as provider-boundary honesty",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_20_FIDELITY.md",
+        "docs/STAGE_20_EXIT_CRITERIA.md"
+      ],
+      "source": "docs/STAGE_20_FIDELITY.md"
+    },
+    {
+      "id": "ap-prophet-remaining",
+      "category": "honesty",
+      "title": "Prophet / time-series upgrade Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_20_FIDELITY.md",
+        "docs/DEVELOPMENT_ROADMAP.md"
+      ],
+      "source": "docs/STAGE_20_FIDELITY.md"
+    },
+    {
+      "id": "ap-ai-guard",
+      "category": "security",
+      "title": "Index Stage 5 ai_guard input boundary as provider-agnostic control",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "PRODUCTION_READINESS.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ap-use-disclosure-adjacency",
+      "category": "disclosure",
+      "title": "Align Stage 42 A1 AI use disclosure adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/AI_USE_DISCLOSURE_MVP.md",
+        "ops/mvp/ai-use-disclosure.json"
+      ],
+      "source": "docs/AI_USE_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "ap-isolationforest-remaining",
+      "category": "honesty",
+      "title": "IsolationForest / SIEM upgrade Remaining (Stage 20 U1 adjacency)",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_20_FIDELITY.md",
+        "docs/STAGE_42_PLAN.md"
+      ],
+      "source": "docs/STAGE_20_FIDELITY.md"
+    },
+    {
+      "id": "ap-external-llm-configure-remaining",
+      "category": "honesty",
+      "title": "Configure/secure external LLM provider Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/STAGE_42_PLAN.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "ap-output-pii-remaining",
+      "category": "honesty",
+      "title": "Output-PII scanner for external providers Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    }
+  ],
+  "deferred": [
+    "External LLM provider Complete",
+    "Prophet forecasting Complete",
+    "IsolationForest / SIEM upgrade Complete",
+    "Output-PII scanner for external providers Complete"
+  ]
+}

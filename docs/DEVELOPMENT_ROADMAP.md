@@ -426,6 +426,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 42 A1 (2026-08-11):** AI use disclosure honesty — `docs/AI_USE_DISCLOSURE_MVP.md`, `ops/mvp/ai-use-disclosure.json`, evidence `stage42_a1_ai_use_disclosure.json` (`test_ai_use_disclosure_a1.py`); AI certification Remaining.
 
+**Stage 42 P1 (2026-08-11):** AI model / provider boundary honesty — `docs/AI_PROVIDER_BOUNDARY_MVP.md`, `ops/mvp/ai-provider-boundary.json`, evidence `stage42_p1_ai_provider_boundary.json` (`test_ai_provider_boundary_p1.py`); external LLM Remaining.
+
 
 
 

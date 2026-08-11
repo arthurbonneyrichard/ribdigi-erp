@@ -173,8 +173,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [x] Stage 42 track opened (ADR-089: `test_stage42_open.py`, `docs/STAGE_42_PLAN.md`) — Commercial AI Transparency Fidelity; A1 complete; P1 next
+- [x] Stage 42 track opened (ADR-089: `test_stage42_open.py`, `docs/STAGE_42_PLAN.md`) — Commercial AI Transparency Fidelity; A1–P1 complete; D1 next
 - [x] AI use disclosure honesty (Stage 42 A1: `test_ai_use_disclosure_a1.py` — `docs/AI_USE_DISCLOSURE_MVP.md`, `ops/mvp/ai-use-disclosure.json`; evidence `stage42_a1_ai_use_disclosure.json`; AI certification Remaining)
+- [x] AI model / provider boundary honesty (Stage 42 P1: `test_ai_provider_boundary_p1.py` — `docs/AI_PROVIDER_BOUNDARY_MVP.md`, `ops/mvp/ai-provider-boundary.json`; evidence `stage42_p1_ai_provider_boundary.json`; external LLM Remaining)
 - [x] Stage 41 Commercial Accessibility & Change Governance Fidelity (closed: `docs/STAGE_41_PLAN.md`, ADR-088) — A1–D1 / H41x complete
 - [x] Stage 41 track opened (ADR-087: `test_stage41_open.py`, `docs/STAGE_41_PLAN.md`)
 - [x] Accessibility statement honesty (Stage 41 A1: `test_accessibility_statement_a1.py` — `docs/ACCESSIBILITY_STATEMENT_MVP.md`, `ops/mvp/accessibility-statement.json`; evidence `stage41_a1_accessibility_statement.json`; WCAG AA audit Remaining)

@@ -34,6 +34,7 @@
 | `status-uptime.json` | Stage 40 U1 status page / uptime honesty — `status_page_live: false` / `uptime_sla_claimed: false` / `measured_uptime_claimed: false` / `public_dashboard_claimed: false` |
 | `sbom-disclosure.json` | Stage 40 S1 SBOM / dependency disclosure honesty — `sbom_pipeline_live: false` / `cosign_signing_claimed: false` / `snyk_saas_claimed: false` / `fossa_claimed: false` / `dependabot_live: false` |
 | `ai-use-disclosure.json` | Stage 42 A1 AI use disclosure honesty — `ai_certification_claimed: false` / `ai_advice_binding_claimed: false` / `external_llm_claimed: false` / `output_pii_scanner_claimed: false` |
+| `ai-provider-boundary.json` | Stage 42 P1 AI model / provider boundary honesty — `external_llm_claimed: false` / `prophet_claimed: false` / `paid_model_vendor_required: false` / `output_pii_scanner_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
 
@@ -80,6 +81,7 @@ Authoritative MVP docs:
 - `docs/STAGE_41_EXIT_CRITERIA.md` / `docs/ADR_088_STAGE41_FREEZE.md` (`backend/tests/test_stage41_exit_h41x.py`) — Stage 41 H41x
 - `docs/STAGE_42_PLAN.md` (`backend/tests/test_stage42_open.py`) — Stage 42 open (ADR-089)
 - `docs/AI_USE_DISCLOSURE_MVP.md` (`backend/tests/test_ai_use_disclosure_a1.py`) — Stage 42 A1
+- `docs/AI_PROVIDER_BOUNDARY_MVP.md` (`backend/tests/test_ai_provider_boundary_p1.py`) — Stage 42 P1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -325,8 +327,12 @@ H41x met — `docs/STAGE_41_EXIT_CRITERIA.md`, ADR-088. Stages 1–41 frozen for
 
 ## Stage 42 open
 
-Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; A1 complete; P1 next.
+Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; A1–P1 complete; D1 next.
 
 ## Stage 42 A1 — AI use disclosure honesty
 
 `docs/AI_USE_DISCLOSURE_MVP.md` + `ops/mvp/ai-use-disclosure.json` — packaging Complete; `ai_certification_claimed` / `external_llm_claimed` remain false.
+
+## Stage 42 P1 — AI model / provider boundary honesty
+
+`docs/AI_PROVIDER_BOUNDARY_MVP.md` + `ops/mvp/ai-provider-boundary.json` — packaging Complete; `external_llm_claimed` / `prophet_claimed` remain false.
