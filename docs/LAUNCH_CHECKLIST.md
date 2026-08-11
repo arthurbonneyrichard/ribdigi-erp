@@ -175,9 +175,10 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
 - [x] Stage 43 Commercial Legal Notice Fidelity (closed: `docs/STAGE_43_PLAN.md`, ADR-092) — T1–D1 / H43x complete
 - [x] Stage 44 Commercial Data Trust Fidelity (closed: `docs/STAGE_44_PLAN.md`, ADR-094) — R1–D1 / H44x complete
-- [x] Stage 45 track opened (ADR-095: `test_stage45_open.py`, `docs/STAGE_45_PLAN.md`) — Commercial Continuity & Exit Fidelity; T1 complete; D1 next
+- [x] Stage 45 track opened (ADR-095: `test_stage45_open.py`, `docs/STAGE_45_PLAN.md`) — Commercial Continuity & Exit Fidelity; D1 complete; H45x next
 - [x] RTO / RPO recovery objectives honesty (Stage 45 O1: `test_rto_rpo_o1.py` — `docs/RTO_RPO_MVP.md`, `ops/mvp/rto-rpo.json`; evidence `stage45_o1_rto_rpo.json`; measured RTO/RPO Remaining)
 - [x] Data retention / return honesty (Stage 45 T1: `test_data_retention_return_t1.py` — `docs/DATA_RETENTION_RETURN_MVP.md`, `ops/mvp/data-retention-return.json`; evidence `stage45_t1_data_retention_return.json`; data-return portal Remaining)
+- [x] Stage 45 fidelity sync (D1: `test_stage45_fidelity_d1.py`, `docs/STAGE_45_FIDELITY.md` — O1–T1 + readiness + deploy / launch / security)
 - [x] Stage 44 track opened (ADR-093: `test_stage44_open.py`, `docs/STAGE_44_PLAN.md`)
 - [x] Data residency / localization honesty (Stage 44 R1: `test_data_residency_r1.py` — `docs/DATA_RESIDENCY_MVP.md`, `ops/mvp/data-residency.json`; evidence `stage44_r1_data_residency.json`; multi-region residency Remaining)
 - [x] Encryption / key-management honesty (Stage 44 E1: `test_encryption_kms_e1.py` — `docs/ENCRYPTION_KMS_MVP.md`, `ops/mvp/encryption-kms.json`; evidence `stage44_e1_encryption_kms.json`; HSM / live Vault Remaining)

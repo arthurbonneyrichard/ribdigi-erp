@@ -1,6 +1,6 @@
 # Stage 45 Plan — Commercial Continuity & Exit Fidelity
 
-**Status:** Open — T1 complete; D1 next  
+**Status:** Open — D1 complete; H45x next  
 **Base:** RTO / RPO Recovery Objectives Honesty Pack + Data Retention / Return Honesty Pack → Commercial Continuity & Exit Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-095](ADR_095_STAGE45_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Continuity & Exit Fidelity
 |----|------------|----------|---------|
 | **O1** | RTO / RPO recovery objectives honesty packaging (not measured RTO/RPO SLA Complete) | P0 | COMPLETE |
 | **T1** | Data retention / return honesty packaging (not customer data-return portal Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H45x** | Stage 45 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -79,9 +79,9 @@ Commercial Continuity & Exit Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_45_FIDELITY.md` maps O1–T1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 45 D1.
-- [ ] Automated proof: `backend/tests/test_stage45_fidelity_d1.py`.
+- [x] `docs/STAGE_45_FIDELITY.md` maps O1–T1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 45 D1.
+- [x] Automated proof: `backend/tests/test_stage45_fidelity_d1.py`.
 
 ## H45x acceptance criteria
 

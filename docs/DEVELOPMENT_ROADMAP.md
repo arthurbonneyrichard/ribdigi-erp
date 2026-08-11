@@ -458,6 +458,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 45 T1 (2026-08-11):** Data retention / return honesty — `docs/DATA_RETENTION_RETURN_MVP.md`, `ops/mvp/data-retention-return.json`, evidence `stage45_t1_data_retention_return.json` (`test_data_retention_return_t1.py`); data-return portal Remaining.
 
+**Stage 45 D1 (2026-08-11):** Commercial continuity & exit fidelity — `docs/STAGE_45_FIDELITY.md` (`test_stage45_fidelity_d1.py`); maps O1–T1 → readiness / launch / deploy / security; measured RTO/RPO / data-return portal Remaining.
+
 
 
 
