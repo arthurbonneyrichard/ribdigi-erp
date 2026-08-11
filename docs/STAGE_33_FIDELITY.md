@@ -1,10 +1,10 @@
 # Stage 33 Fidelity Notes — Commercial MVP Continuity Fidelity
 
-**Status:** Open — D1 complete; H33x next (ADR-071)  
-**Surface:** Residual risk → Compliance readiness → First-tenant onboarding → Knowledge transfer → Fidelity sync  
-**Open ADR:** [ADR-071](ADR_071_STAGE33_OPEN.md)  
+**Status:** Closed — exit met (H33x / ADR-072); historical open ADR-071  
+**Surface:** Residual risk → Compliance readiness → First-tenant onboarding → Knowledge transfer → Fidelity closeout  
+**Open ADR (historical):** [ADR-071](ADR_071_STAGE33_OPEN.md)  
 **Plan:** [STAGE_33_PLAN.md](STAGE_33_PLAN.md)  
-**Exit (reserved):** [STAGE_33_EXIT_CRITERIA.md](STAGE_33_EXIT_CRITERIA.md) · [ADR-072](ADR_072_STAGE33_FREEZE.md) — H33x
+**Exit:** [STAGE_33_EXIT_CRITERIA.md](STAGE_33_EXIT_CRITERIA.md) · [ADR-072](ADR_072_STAGE33_FREEZE.md)
 
 Stage 33 proves the owner product outline after Stage 32 freeze — Residual Risk Register Pack + Compliance Readiness Pack + First-Tenant Onboarding Pack + Knowledge Transfer Pack → Commercial MVP Continuity Fidelity — by extending proven Stage 23 G1 / Stage 26–32 assets. It is **not** paid billing (ADR-002), schema-per-tenant (ADR-001), i18n packs (ADR-006), user↔store membership (ADR-005), hard-delete archival (ADR-003), Open Banking, tax e-file portals, claiming hosted Grafana/PagerDuty/SIEM as SaaS Complete, live production cutover via main `ci.yml`, purchased vendor pen-test certificates, green live soak / ACME / PITR / 1000-VU execution, forged production §7 / attestation Complete, SOC 2 / ISO certification Complete, live onboarding / training Complete, residual risks closed, re-packaging Stage 26–32 packs as new Complete, implementing deferred ADR post-MVP scopes, external LLM/Prophet, or reopening Stages 1–32.
 
@@ -27,7 +27,7 @@ Stage 33 proves the owner product outline after Stage 32 freeze — Residual Ris
 | **F1** | `test_first_tenant_onboarding_f1.py` — `FIRST_TENANT_ONBOARDING_MVP.md`, onboarding JSON | Launch / handoff | Live onboarding success |
 | **T1** | `test_knowledge_transfer_t1.py` — `KNOWLEDGE_TRANSFER_MVP.md`, KT JSON | Support / handoff | Live training Complete |
 | **D1** | This note + `test_stage33_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H33x** | `STAGE_33_EXIT_CRITERIA.md`; ADR-072; `test_stage33_exit_h33x.py` (reserved) | Stage 33 exit + freeze | H33x next |
+| **H33x** | `STAGE_33_EXIT_CRITERIA.md`; ADR-072; `test_stage33_exit_h33x.py` | Stage 33 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -48,7 +48,8 @@ Stage 33 proves the owner product outline after Stage 32 freeze — Residual Ris
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 33 K1 / C1 / F1 / T1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 33 K1–T1 / D1 cite
 - `docs/RESIDUAL_RISK_MVP.md` · `docs/COMPLIANCE_READINESS_MVP.md` · `docs/FIRST_TENANT_ONBOARDING_MVP.md` · `docs/KNOWLEDGE_TRANSFER_MVP.md`
-- `docs/STAGE_33_PLAN.md` — Open (D1 complete; H33x next / ADR-071)
+- `docs/STAGE_33_PLAN.md` — Closed (H33x / ADR-072)
+- `docs/STAGE_33_EXIT_CRITERIA.md` · `docs/ADR_072_STAGE33_FREEZE.md`
 - `docs/ADR_071_STAGE33_OPEN.md`
 
 ## Deferred (not Stage 33 blockers)

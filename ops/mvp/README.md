@@ -67,4 +67,8 @@ Indexes operator/admin training curriculum surfaces. See `docs/KNOWLEDGE_TRANSFE
 
 Doc-only fidelity sync (no new register). See `docs/STAGE_33_FIDELITY.md` (`backend/tests/test_stage33_fidelity_d1.py`) — maps K1–T1 packs → readiness / launch / deploy / security.
 
+## Stage 33 H33x — Exit + freeze
+
+Exit met under ADR-072. See `docs/STAGE_33_EXIT_CRITERIA.md` and `docs/ADR_072_STAGE33_FREEZE.md` (`backend/tests/test_stage33_exit_h33x.py`). Continuity packaging Complete ≠ live go-live / risks closed / SOC 2 / ISO / live onboarding / training.
+
 Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false`.
