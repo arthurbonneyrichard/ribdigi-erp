@@ -849,7 +849,7 @@ Fidelity sync: Stage 16 R1 suite — prior BR-14.1/14.4/14.5. Stage 23 D1/H23x �
   - [x] Point-in-time recovery (if WAL archiving enabled) — Stage 26 W1 strategy Complete (MVP): `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/` (`test_wal_pitr_w1.py`); operator staging PITR drill execution Remaining
   - [x] Logical DR drill automation evidence (Stage 23 B1: `test_logical_dr_drill_b1.py` / `stage23_b1_logical_drill.json`)
 
-Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`. Stage 23 B1 DR drill gate — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`. Stage 23 D1 — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`). Stage 26 W1 WAL/PITR + S3 offsite — `docs/DR_WAL_PITR_RUNBOOK.md` (`test_wal_pitr_w1.py`).
+Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`. Stage 23 B1 DR drill gate — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`. Stage 23 D1 — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`). Stage 26 W1 WAL/PITR + S3 offsite — `docs/DR_WAL_PITR_RUNBOOK.md` (`test_wal_pitr_w1.py`). Stage 26 D1 ops platform fidelity — `docs/STAGE_26_FIDELITY.md` (`test_stage26_fidelity_d1.py`; M1–C1).
 
 ---
 
@@ -1195,6 +1195,8 @@ Fidelity sync: Stage 20 D1 — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fideli
 | Logging | Structured JSON logging with correlation IDs |
 | Monitoring | Application metrics, error tracking, performance monitoring |
 | CI/CD | Automated testing, building, and deployment via GitHub Actions |
+
+Stage **26** **M1**/**C1**/**D1** ops evidence: `docs/OPS_MONITORING_MVP.md`, `docs/LOAD_CAPACITY_MVP.md`, `docs/STAGE_26_FIDELITY.md` (`test_stage26_fidelity_d1.py`).
 
 ### 5.7 Compliance
 
