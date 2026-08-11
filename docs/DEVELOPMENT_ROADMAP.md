@@ -318,6 +318,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 32 D1 (2026-08-11):** Commercial MVP handoff fidelity sync — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`) maps A1–B1 → BR-16 / readiness / deploy / launch / security; H32x next.
 
+**Stage 32 exit (2026-08-11):** A1, H1, N1, B1, D1, H32x met — `docs/STAGE_32_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_070_STAGE32_FREEZE.md`. Fidelity: `docs/STAGE_32_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -898,7 +900,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 32 open (`docs/STAGE_32_PLAN.md`, ADR-069; fidelity `docs/STAGE_32_FIDELITY.md`) — A1–D1 complete; H32x next. Stages 1–31 remain frozen for their scopes (`docs/STAGE_31_EXIT_CRITERIA.md`, ADR-068).
+**Active delivery plan:** Stage 32 closed — exit met (`docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070; fidelity `docs/STAGE_32_FIDELITY.md`). Stages 1–32 remain frozen for their scopes. Stage 33+ requires an explicit open ADR after CONTINUE/NEXT.
 
 ### 6.2 Features
 

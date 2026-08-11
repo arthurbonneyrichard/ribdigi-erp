@@ -1,9 +1,10 @@
 # Stage 32 Fidelity Notes — Commercial MVP Handoff Fidelity
 
-**Status:** Open with Stage 32 D1; H32x next (ADR-069)  
+**Status:** Closed — exit met (H32x / ADR-070); historical open ADR-069  
 **Surface:** Acceptance archive → Operator handoff → Release notes → Post-MVP backlog → Fidelity closeout  
-**Open ADR:** [ADR-069](ADR_069_STAGE32_OPEN.md)  
-**Plan:** [STAGE_32_PLAN.md](STAGE_32_PLAN.md)
+**Open ADR (historical):** [ADR-069](ADR_069_STAGE32_OPEN.md)  
+**Plan:** [STAGE_32_PLAN.md](STAGE_32_PLAN.md)  
+**Exit:** [STAGE_32_EXIT_CRITERIA.md](STAGE_32_EXIT_CRITERIA.md) · [ADR-070](ADR_070_STAGE32_FREEZE.md)
 
 Stage 32 proves the owner product outline after Stage 31 freeze — MVP Acceptance Archive Pack + Operator Handoff Pack + Commercial Release Notes Pack + Post-MVP Backlog Pack → Commercial MVP Handoff Fidelity — by extending proven Stage 23 G1 / Stage 26–31 assets. It is **not** paid billing (ADR-002), schema-per-tenant (ADR-001), i18n packs (ADR-006), user↔store membership (ADR-005), hard-delete archival (ADR-003), Open Banking, tax e-file portals, claiming hosted Grafana/PagerDuty/SIEM as SaaS Complete, live production cutover via main `ci.yml`, purchased vendor pen-test certificates, green live soak / ACME / PITR / 1000-VU execution, forged production §7 / attestation Complete, re-packaging Stage 26–31 packs as new Complete, implementing deferred ADR post-MVP scopes, external LLM/Prophet, or reopening Stages 1–31.
 
@@ -36,18 +37,20 @@ Stage 32 proves the owner product outline after Stage 31 freeze — MVP Acceptan
 - `backend/tests/test_post_mvp_backlog_b1.py`
 - `backend/tests/test_stage32_open.py`
 - `backend/tests/test_stage32_fidelity_d1.py`
+- `backend/tests/test_stage32_exit_h32x.py`
 
 ## Spec sync targets
 
-- `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16 fidelity (+ Stage 32 A1–B1 / D1 cite)
-- `docs/API_DOCUMENTATION.md` — Stage 32 A1–B1 / D1 cite
-- `PRODUCTION_READINESS.md` — handoff Completes + Stage 32 D1 cite
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 32 D1
-- `docs/LAUNCH_CHECKLIST.md` — A1–B1 / D1 evidence
-- `docs/DEPLOYMENT_GUIDE.md` — Stage 32 A1 / H1 / N1 / B1 / D1
-- `docs/SECURITY_GUIDE.md` — Stage 32 A1–B1 / D1 cite
+- `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16 fidelity (+ Stage 32 A1–B1 / D1 / H32x cite)
+- `docs/API_DOCUMENTATION.md` — Stage 32 A1–B1 / D1 / H32x cite
+- `PRODUCTION_READINESS.md` — handoff Completes + Stage 32 D1 / H32x cite
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 32 D1 / H32x exit
+- `docs/LAUNCH_CHECKLIST.md` — A1–B1 / D1 / H32x evidence
+- `docs/DEPLOYMENT_GUIDE.md` — Stage 32 A1 / H1 / N1 / B1 / D1 / H32x
+- `docs/SECURITY_GUIDE.md` — Stage 32 A1–B1 / D1 / H32x cite
 - `docs/ACCEPTANCE_ARCHIVE_MVP.md` · `docs/OPERATOR_HANDOFF_MVP.md` · `docs/RELEASE_NOTES_MVP.md` · `docs/POST_MVP_BACKLOG_MVP.md`
-- `docs/STAGE_32_PLAN.md` — D1 complete; H32x next
+- `docs/STAGE_32_PLAN.md` — Closed (H32x / ADR-070)
+- `docs/STAGE_32_EXIT_CRITERIA.md` · `docs/ADR_070_STAGE32_FREEZE.md`
 - `docs/ADR_069_STAGE32_OPEN.md`
 
 ## Deferred (not Stage 32 blockers)

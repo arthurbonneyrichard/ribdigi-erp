@@ -1,10 +1,10 @@
 # Stage 32 Plan — Commercial MVP Handoff Fidelity
 
-**Status:** Open — A1–D1 complete; H32x next (ADR-069)  
-**Fidelity:** [STAGE_32_FIDELITY.md](STAGE_32_FIDELITY.md)  
+**Status:** Closed — exit met (H32x / ADR-070)  
 **Base:** MVP Acceptance Archive Pack + Operator Handoff Pack + Commercial Release Notes Pack + Post-MVP Backlog Pack → Commercial MVP Handoff Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-069](ADR_069_STAGE32_OPEN.md)
+**Open ADR (historical):** [ADR-069](ADR_069_STAGE32_OPEN.md)  
+**Exit:** [STAGE_32_EXIT_CRITERIA.md](STAGE_32_EXIT_CRITERIA.md) · [ADR-070](ADR_070_STAGE32_FREEZE.md) · [STAGE_32_FIDELITY.md](STAGE_32_FIDELITY.md)
 
 Stage 32 closes the owner product outline after Stage 31 freeze: **MVP Acceptance Archive Packaging + Operator Handoff Packaging + Commercial Release Notes Packaging + Post-MVP Backlog Packaging → Commercial MVP Handoff Fidelity**. Stages 26–31 delivered Complete (MVP) ops platform, release, staging-certification, operator-hardening, go-live support, and commercial closeout **packaging** with honest Remaining for live execution, purchased vendor pen tests, hosted SaaS observability, production §7 sign-off, and deferred ADR-001–006 post-MVP scopes. This track packages **commercial MVP handoff** surfaces on proven Stage 23 G1 / Stage 26–31 assets (`PRODUCTION_READINESS.md`, Stage exit/freeze ADRs, `ops/mvp/`, `LAUNCH_CHECKLIST.md`, `MVP_DECLARATION_MVP.md`) — **not** inventing live pen-test/soak/TLS/cutover/attestation success, re-packaging Stage 26–31 packs as new Complete, implementing deferred ADRs, or paid billing / schema-per-tenant / i18n / ADR-003/005 / Open Banking / tax e-file / external LLM/Prophet — and **not** reopening Stages 1–31.
 
@@ -41,7 +41,7 @@ Commercial MVP Handoff Fidelity
 | **N1** | Commercial release notes packaging | P1 | COMPLETE |
 | **B1** | Post-MVP backlog packaging (deferred ADR + Remaining index) | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
-| **H32x** | Stage 32 exit criteria + freeze ADR | Exit | PENDING |
+| **H32x** | Stage 32 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -96,12 +96,12 @@ Commercial MVP Handoff Fidelity
 
 ## H32x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H32x — `docs/STAGE_32_EXIT_CRITERIA.md`.
-- [ ] Scope freeze ADR accepted — `docs/ADR_070_STAGE32_FREEZE.md` (number reserved at close).
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
-- [ ] Automated proof: `backend/tests/test_stage32_exit_h32x.py`.
-- [ ] Stages 1–31 freezes remain; Stage 33+ requires explicit open ADR after CONTINUE/NEXT.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H32x — `docs/STAGE_32_EXIT_CRITERIA.md`.
+- [x] Scope freeze ADR accepted — `docs/ADR_070_STAGE32_FREEZE.md` (number reserved at close).
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
+- [x] Automated proof: `backend/tests/test_stage32_exit_h32x.py`.
+- [x] Stages 1–31 freezes remain; Stage 33+ requires explicit open ADR after CONTINUE/NEXT.
 
 ## Sign-off
 
-Stage 32 open under ADR-069. A1–D1 complete; H32x next. Stages 1–31 remain frozen for their scopes.
+Stage 32 exit met under ADR-070. A1–D1 / H32x complete. Stages 1–31 remain frozen for their scopes. Stage 33+ requires an explicit open ADR after CONTINUE/NEXT.

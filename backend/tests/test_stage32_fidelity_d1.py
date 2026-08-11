@@ -31,18 +31,12 @@ def test_stage32_fidelity_note_and_plan():
 
     plan = _read("docs/STAGE_32_PLAN.md")
     assert "STAGE_32_FIDELITY.md" in plan
-    for ws in ("A1", "H1", "N1", "B1", "D1"):
+    for ws in ("A1", "H1", "N1", "B1", "D1", "H32x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}** |" in ln][0]
         assert "COMPLETE" in line, ws
-    h32 = [ln for ln in plan.splitlines() if "| **H32x** |" in ln][0]
-    assert "PENDING" in h32 or "COMPLETE" in h32
-    assert (
-        "D1 next" in plan
-        or "D1 complete" in plan
-        or "H32x next" in plan
-        or "Closed" in plan
-        or "exit met" in plan.lower()
-    )
+    assert "ADR-070" in plan or "ADR_070" in plan
+    assert "Closed" in plan or "exit met" in plan.lower()
+    assert "ADR-070" in fidelity or "ADR_070" in fidelity or "exit met" in fidelity.lower()
 
 
 def test_stage32_br16_and_workstream_docs():
@@ -120,6 +114,7 @@ def test_stage32_api_deploy_security_launch():
     assert "test_post_mvp_backlog_b1.py" in launch
     assert "test_stage32_fidelity_d1.py" in launch
     assert "STAGE_32_FIDELITY.md" in launch
+    assert "STAGE_32_EXIT_CRITERIA.md" in launch or "ADR-070" in launch
 
 
 def test_stage32_readiness_and_roadmap():
@@ -131,6 +126,7 @@ def test_stage32_readiness_and_roadmap():
     assert "Stage 32 H1" in pr
     assert "Stage 32 N1" in pr
     assert "Stage 32 B1" in pr
+    assert "STAGE_32_EXIT_CRITERIA.md" in pr or "ADR-070" in pr or "ADR_070" in pr
     assert (
         "go_live_claimed" in pr
         or "§7" in pr
@@ -145,3 +141,5 @@ def test_stage32_readiness_and_roadmap():
     assert "ADR_069_STAGE32_OPEN.md" in roadmap
     assert "STAGE_32_PLAN.md" in roadmap
     assert "test_stage32_fidelity_d1.py" in roadmap
+    assert "STAGE_32_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_070_STAGE32_FREEZE.md" in roadmap

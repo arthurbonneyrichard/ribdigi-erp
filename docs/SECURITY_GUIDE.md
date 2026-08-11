@@ -348,12 +348,13 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 31 C1** | Commercial MVP declaration — `docs/MVP_DECLARATION_MVP.md`, `ops/mvp/mvp-declaration.json` (`test_mvp_declaration_c1.py`); packaging ≠ live go-live / §7 |
 | **Stage 31 D1** | Closeout fidelity — `docs/STAGE_31_FIDELITY.md` (`test_stage31_fidelity_d1.py`) maps G1–C1 → readiness / launch / deploy / security |
 | **Stage 31 fidelity** | D1 maps G1–C1 closeout evidence — `docs/STAGE_31_FIDELITY.md` (`test_stage31_fidelity_d1.py`); exit/freeze `docs/STAGE_31_EXIT_CRITERIA.md`, ADR-068 (`test_stage31_exit_h31x.py`); historical open ADR-067; live go-live / attestation / §7 / deferred ADR implementations remain Remaining |
-| **Stage 32 open** | Commercial MVP Handoff Fidelity — `docs/STAGE_32_PLAN.md`, ADR-069 (`test_stage32_open.py`); Stages 1–31 remain frozen; A1–D1 complete; H32x next |
+| **Stage 32 open** | Commercial MVP Handoff Fidelity — `docs/STAGE_32_PLAN.md`, ADR-069 (`test_stage32_open.py`); Stages 1–31 remain frozen; closed under ADR-070 |
 | **Stage 32 A1** | MVP acceptance archive — `docs/ACCEPTANCE_ARCHIVE_MVP.md`, `ops/mvp/acceptance-archive.json` (`test_acceptance_archive_a1.py`); Stage 1–31 exit/freeze index; go-live / §7 Remaining |
 | **Stage 32 H1** | Operator handoff pack — `docs/OPERATOR_HANDOFF_MVP.md`, `ops/mvp/operator-handoff.json` (`test_operator_handoff_h1.py`); live handoff / §7 Remaining |
 | **Stage 32 N1** | Commercial release notes — `docs/RELEASE_NOTES_MVP.md`, `ops/mvp/release-notes.json` (`test_release_notes_n1.py`); packaging ≠ production live |
 | **Stage 32 B1** | Post-MVP backlog — `docs/POST_MVP_BACKLOG_MVP.md`, `ops/mvp/post-mvp-backlog.json` (`test_post_mvp_backlog_b1.py`); ADR-001–006 + Remaining indexed; deferred scopes Remaining |
 | **Stage 32 D1** | Handoff fidelity — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`) maps A1–B1 → readiness / launch / deploy / security |
+| **Stage 32 fidelity** | D1 maps A1–B1 handoff evidence — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`); exit/freeze `docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070 (`test_stage32_exit_h32x.py`); historical open ADR-069; live go-live / attestation / §7 / deferred ADR implementations remain Remaining |
 | **Stage 30 L1** | Operator evidence ledger — `docs/EVIDENCE_LEDGER_MVP.md`, `ops/evidence/ledger.json` (`test_evidence_ledger_l1.py`); live runs / attestation Remaining |
 | **Stage 30 I1** | Incident response / on-call pack — `docs/INCIDENT_PACK_MVP.md`, `ops/incident/` (`test_incident_pack_i1.py`); hosted PagerDuty / live rota Remaining |
 | **Stage 30 S1** | Support & Admin runbook fidelity — `docs/SUPPORT_RUNBOOK_MVP.md`, `ops/support/` + ADMIN_MANUAL §§7/11/12 (`test_support_runbook_s1.py`); live ops SLA Remaining |
