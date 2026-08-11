@@ -55,6 +55,7 @@
 | `industry-partnerships.json` | Stage 52 I1 Industry partnerships honesty — `industry_partnership_program_live: false` / `signed_association_deals_claimed: false` / `federation_endorsement_claimed: false` / `guild_program_live: false` |
 | `subscription-renewal.json` | Stage 52 R1 Subscription renewal honesty — `annual_discount_enforcement_claimed: false` / `auto_renewal_billing_live: false` / `upgrade_downgrade_live: false` / `renewal_program_live: false` |
 | `api-integration-commercial.json` | Stage 53 A1 API & integration commercial honesty — `api_rate_limit_upgrade_billing_live: false` / `connector_fee_billing_claimed: false` / `api_commercial_catalog_live: false` / `integration_revenue_live: false` |
+| `cancellation-churn.json` | Stage 53 C1 Cancellation / refund / churn honesty — `cancellation_portal_live: false` / `refund_processing_claimed: false` / `churn_measurement_live: false` / `cancellation_policy_enforced: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -157,6 +158,7 @@ Authoritative MVP docs:
 - `docs/STAGE_52_EXIT_CRITERIA.md` / `docs/ADR_110_STAGE52_FREEZE.md` (`backend/tests/test_stage52_exit_h52x.py`) — Stage 52 H52x
 - `docs/STAGE_53_PLAN.md` (`backend/tests/test_stage53_open.py`) — Stage 53 open (ADR-111)
 - `docs/API_INTEGRATION_COMMERCIAL_MVP.md` (`backend/tests/test_api_integration_commercial_a1.py`) — Stage 53 A1
+- `docs/CANCELLATION_CHURN_MVP.md` (`backend/tests/test_cancellation_churn_c1.py`) — Stage 53 C1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -622,8 +624,12 @@ H52x met — `docs/STAGE_52_EXIT_CRITERIA.md`, ADR-110. Stages 1–52 frozen for
 
 ## Stage 53 open
 
-Commercial API & Lifecycle Fidelity — `docs/STAGE_53_PLAN.md`, ADR-111; A1 complete; C1 next.
+Commercial API & Lifecycle Fidelity — `docs/STAGE_53_PLAN.md`, ADR-111; C1 complete; D1 next.
 
 ## Stage 53 A1 — API & integration commercial honesty
 
 `docs/API_INTEGRATION_COMMERCIAL_MVP.md` + `ops/mvp/api-integration-commercial.json` — packaging Complete; `api_rate_limit_upgrade_billing_live` / `connector_fee_billing_claimed` / `api_commercial_catalog_live` / `integration_revenue_live` remain false.
+
+## Stage 53 C1 — Cancellation / refund / churn policy honesty
+
+`docs/CANCELLATION_CHURN_MVP.md` + `ops/mvp/cancellation-churn.json` — packaging Complete; `cancellation_portal_live` / `refund_processing_claimed` / `churn_measurement_live` / `cancellation_policy_enforced` remain false.

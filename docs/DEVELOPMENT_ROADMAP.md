@@ -1305,3 +1305,5 @@ Every feature in every phase must meet:
 **Stage 53 open (2026-08-11):** Commercial API & Lifecycle Fidelity track approved — `docs/ADR_111_STAGE53_OPEN.md` + `docs/STAGE_53_PLAN.md` (API/integration commercial → cancellation/churn → fidelity).
 
 **Stage 53 A1 (2026-08-11):** API & integration commercial honesty — `docs/API_INTEGRATION_COMMERCIAL_MVP.md`, `ops/mvp/api-integration-commercial.json`, evidence `stage53_a1_api_integration_commercial.json` (`test_api_integration_commercial_a1.py`); live API rate-limit upgrade billing Remaining.
+
+**Stage 53 C1 (2026-08-11):** Cancellation / refund / churn policy honesty — `docs/CANCELLATION_CHURN_MVP.md`, `ops/mvp/cancellation-churn.json`, evidence `stage53_c1_cancellation_churn.json` (`test_cancellation_churn_c1.py`); live cancellation portal Remaining.

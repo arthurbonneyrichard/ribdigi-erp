@@ -1,6 +1,6 @@
 # Stage 53 Plan — Commercial API & Lifecycle Fidelity
 
-**Status:** Open — A1 complete; C1 next  
+**Status:** Open — C1 complete; D1 next  
 **Base:** API & Integration Commercial Honesty Pack + Cancellation / Refund / Churn Policy Honesty Pack → Commercial API & Lifecycle Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-111](ADR_111_STAGE53_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial API & Lifecycle Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **A1** | API & integration commercial honesty packaging (not live API rate-limit upgrade / connector fee billing Complete) | P0 | COMPLETE |
-| **C1** | Cancellation / refund / churn policy honesty packaging (not live cancellation portal / refund processing / churn measurement Complete) | P0 | PENDING |
+| **C1** | Cancellation / refund / churn policy honesty packaging (not live cancellation portal / refund processing / churn measurement Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H53x** | Stage 53 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -85,10 +85,10 @@ Commercial API & Lifecycle Fidelity
 
 ## C1 acceptance criteria
 
-- [ ] Cancellation / refund / churn policy honesty packaging indexing PRODUCT_OVERVIEW churn / lifecycle themes and Stage 36 billing-deferred / Stage 52 renewal adjacency (not claiming live cancellation portal / refund processing / churn measurement Complete).
-- [ ] Automated proof: `backend/tests/test_cancellation_churn_c1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 53 C1.
+- [x] Cancellation / refund / churn policy honesty packaging indexing PRODUCT_OVERVIEW churn / lifecycle themes and Stage 36 billing-deferred / Stage 52 renewal adjacency (not claiming live cancellation portal / refund processing / churn measurement Complete).
+- [x] Automated proof: `backend/tests/test_cancellation_churn_c1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 53 C1.
 
 ## D1 acceptance criteria
 
