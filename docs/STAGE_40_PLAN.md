@@ -1,10 +1,11 @@
 # Stage 40 Plan — Commercial Availability & Supply-Chain Fidelity
 
-**Status:** Open — D1 complete; H40x next  
+**Status:** Closed — exit met (H40x / ADR-086)  
 **Base:** Status Page / Uptime Honesty Pack + SBOM / Dependency Disclosure Honesty Pack → Commercial Availability & Supply-Chain Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-085](ADR_085_STAGE40_OPEN.md)  
-**Prior freeze:** [ADR-084](ADR_084_STAGE39_FREEZE.md) · [STAGE_39_EXIT_CRITERIA.md](STAGE_39_EXIT_CRITERIA.md)
+**Open ADR (historical):** [ADR-085](ADR_085_STAGE40_OPEN.md)  
+**Prior freeze:** [ADR-084](ADR_084_STAGE39_FREEZE.md) · [STAGE_39_EXIT_CRITERIA.md](STAGE_39_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_40_EXIT_CRITERIA.md](STAGE_40_EXIT_CRITERIA.md) · [ADR-086](ADR_086_STAGE40_FREEZE.md)
 
 Stage 40 opens after Stage 39 freeze: **Status Page / Uptime Honesty Packaging + SBOM / Dependency Disclosure Honesty Packaging → Commercial Availability & Supply-Chain Fidelity**. PRODUCT_OVERVIEW uptime themes, Stage 30–36 support / incident Remaining (status-page), and SECURITY_GUIDE §12.4 dependency / SBOM aspirational language lack dedicated customer-facing honesty packs. This track packages those Remaining surfaces on proven Stage 27–30 monitoring / incident / support and Stage 38–39 disclosure / contract assets — **not** claiming a live public status page Complete, measured 99.9% uptime SLA Complete, live SBOM pipeline / signed image releases Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–39 packs as new Complete, or reopening Stages 1–39 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Availability & Supply-Chain Fidelity
 | **U1** | Status page / uptime honesty packaging (not live status page / 99.9% SLA Complete) | P0 | COMPLETE |
 | **S1** | SBOM / dependency disclosure honesty packaging (not live SBOM pipeline Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H40x** | Stage 40 exit criteria + freeze ADR | Exit | PENDING |
+| **H40x** | Stage 40 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -80,6 +81,6 @@ Commercial Availability & Supply-Chain Fidelity
 
 ## H40x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for U1–D1 / H40x — `docs/STAGE_40_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_086_STAGE40_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage40_exit_h40x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for U1–D1 / H40x — `docs/STAGE_40_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_086_STAGE40_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage40_exit_h40x.py`.

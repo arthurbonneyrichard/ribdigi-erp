@@ -1,9 +1,10 @@
 # Stage 40 Fidelity Notes — Commercial Availability & Supply-Chain Fidelity
 
-**Status:** Open — D1 complete; H40x next (historical open ADR-085)  
+**Status:** Closed — exit met (H40x / ADR-086); historical open ADR-085  
 **Surface:** Status page / uptime → SBOM / dependency disclosure → Fidelity closeout  
-**Open ADR:** [ADR-085](ADR_085_STAGE40_OPEN.md)  
+**Open ADR (historical):** [ADR-085](ADR_085_STAGE40_OPEN.md)  
 **Plan:** [STAGE_40_PLAN.md](STAGE_40_PLAN.md)  
+**Exit:** [STAGE_40_EXIT_CRITERIA.md](STAGE_40_EXIT_CRITERIA.md) · [ADR-086](ADR_086_STAGE40_FREEZE.md)  
 **Prior freeze:** [ADR-084](ADR_084_STAGE39_FREEZE.md)
 
 Stage 40 proves the owner product outline after Stage 39 freeze — Status Page / Uptime Honesty Pack + SBOM / Dependency Disclosure Honesty Pack → Commercial Availability & Supply-Chain Fidelity — by packaging PRODUCT_OVERVIEW uptime themes, Stage 30–36 support Remaining (status-page), and SECURITY_GUIDE §12.4 SBOM / dependency aspirational language into customer-facing availability and supply-chain honesty. It is **not** a live public status page Complete, measured 99.9% uptime SLA Complete, live SBOM pipeline / Cosign signing Complete, live go-live / §7 / attestation Complete, SOC 2 / ISO Complete, re-packaging Stage 26–39 packs as new Complete, or reopening Stages 1–39 frozen feature scopes.
@@ -23,7 +24,7 @@ Stage 40 proves the owner product outline after Stage 39 freeze — Status Page 
 | **U1** | `test_status_uptime_u1.py` — `STATUS_UPTIME_MVP.md`, status-uptime JSON | Product overview uptime / Stage 36 support | Live status page; 99.9% SLA |
 | **S1** | `test_sbom_disclosure_s1.py` — `SBOM_DISCLOSURE_MVP.md`, sbom-disclosure JSON | SECURITY_GUIDE §12.4 / Stage 27–38 scan+disclosure | Live SBOM; Cosign |
 | **D1** | This note + `test_stage40_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H40x** | `STAGE_40_EXIT_CRITERIA.md` (at close); freeze ADR (planned ADR-086) | Stage 40 exit + freeze | Next track needs open ADR |
+| **H40x** | `STAGE_40_EXIT_CRITERIA.md`; ADR-086; `test_stage40_exit_h40x.py` | Stage 40 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -42,7 +43,8 @@ Stage 40 proves the owner product outline after Stage 39 freeze — Status Page 
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 40 U1–S1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 40 U1–S1 / D1 cite
 - `docs/STATUS_UPTIME_MVP.md` · `docs/SBOM_DISCLOSURE_MVP.md`
-- `docs/STAGE_40_PLAN.md` — Open — D1 complete; H40x next
+- `docs/STAGE_40_PLAN.md` — Closed (H40x / ADR-086)
+- `docs/STAGE_40_EXIT_CRITERIA.md` · `docs/ADR_086_STAGE40_FREEZE.md`
 - `docs/ADR_085_STAGE40_OPEN.md`
 
 ## Deferred (not Stage 40 D1 blockers)

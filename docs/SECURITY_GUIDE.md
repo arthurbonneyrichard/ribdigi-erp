@@ -360,10 +360,11 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 39 A1** | MSA security addendum honesty — `docs/MSA_ADDENDUM_MVP.md`, `ops/mvp/msa-addendum.json` (`test_msa_addendum_a1.py`); signed MSA Remaining |
 | **Stage 39 D1** | Contract evidence fidelity — `docs/STAGE_39_FIDELITY.md` (`test_stage39_fidelity_d1.py`) maps P1–A1 → readiness / launch / deploy / security |
 | **Stage 39 fidelity** | D1 maps P1–A1 contract evidence — `docs/STAGE_39_FIDELITY.md` (`test_stage39_fidelity_d1.py`); exit/freeze `docs/STAGE_39_EXIT_CRITERIA.md`, ADR-084 (`test_stage39_exit_h39x.py`); historical open ADR-083; signed DPA/MSA / go-live / §7 remain Remaining |
-| **Stage 40 open** | Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR-085 (`test_stage40_open.py`); Stages 1–39 remain frozen; D1 complete; H40x next |
+| **Stage 40 open** | Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR-085 (`test_stage40_open.py`); Stages 1–39 remain frozen; closed under ADR-086 |
 | **Stage 40 U1** | Status page / uptime honesty — `docs/STATUS_UPTIME_MVP.md`, `ops/mvp/status-uptime.json` (`test_status_uptime_u1.py`); live status page / 99.9% SLA Remaining |
 | **Stage 40 S1** | SBOM / dependency disclosure honesty — `docs/SBOM_DISCLOSURE_MVP.md`, `ops/mvp/sbom-disclosure.json` (`test_sbom_disclosure_s1.py`); live SBOM pipeline Remaining |
 | **Stage 40 D1** | Availability & supply-chain fidelity — `docs/STAGE_40_FIDELITY.md` (`test_stage40_fidelity_d1.py`) maps U1–S1 → readiness / launch / deploy / security |
+| **Stage 40 fidelity** | D1 maps U1–S1 availability & supply-chain — `docs/STAGE_40_FIDELITY.md` (`test_stage40_fidelity_d1.py`); exit/freeze `docs/STAGE_40_EXIT_CRITERIA.md`, ADR-086 (`test_stage40_exit_h40x.py`); historical open ADR-085; live status page / SBOM / go-live / §7 remain Remaining |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |

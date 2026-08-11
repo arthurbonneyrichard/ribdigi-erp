@@ -69,6 +69,7 @@ Authoritative MVP docs:
 - `docs/STATUS_UPTIME_MVP.md` (`backend/tests/test_status_uptime_u1.py`) — Stage 40 U1
 - `docs/SBOM_DISCLOSURE_MVP.md` (`backend/tests/test_sbom_disclosure_s1.py`) — Stage 40 S1
 - `docs/STAGE_40_FIDELITY.md` (`backend/tests/test_stage40_fidelity_d1.py`) — Stage 40 D1
+- `docs/STAGE_40_EXIT_CRITERIA.md` / `docs/ADR_086_STAGE40_FREEZE.md` (`backend/tests/test_stage40_exit_h40x.py`) — Stage 40 H40x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -274,7 +275,7 @@ H39x met — `docs/STAGE_39_EXIT_CRITERIA.md`, ADR-084. Stages 1–39 frozen for
 
 ## Stage 40 open
 
-Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR-085; D1 complete; H40x next.
+Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR-085; Closed — exit met (H40x / ADR-086).
 
 ## Stage 40 U1 — Status page / uptime honesty
 
@@ -287,3 +288,7 @@ Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR
 ## Stage 40 D1 — Fidelity
 
 `docs/STAGE_40_FIDELITY.md` maps U1–S1 → readiness / launch / deploy / security (`test_stage40_fidelity_d1.py`).
+
+## Stage 40 exit
+
+H40x met — `docs/STAGE_40_EXIT_CRITERIA.md`, ADR-086. Stages 1–40 frozen for Stage 40 feature scope; Stage 41+ requires open ADR after CONTINUE/NEXT.

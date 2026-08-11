@@ -410,6 +410,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 40 D1 (2026-08-11):** Commercial availability & supply-chain fidelity — `docs/STAGE_40_FIDELITY.md` (`test_stage40_fidelity_d1.py`); maps U1–S1 → readiness / launch / deploy / security; live status page / SBOM pipeline Remaining.
 
+**Stage 40 exit (2026-08-11):** U1, S1, D1, H40x met — `docs/STAGE_40_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_086_STAGE40_FREEZE.md`. Fidelity: `docs/STAGE_40_FIDELITY.md`.
+
 
 
 
