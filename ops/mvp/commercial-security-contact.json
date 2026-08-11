@@ -1,0 +1,155 @@
+{
+  "stage": "75",
+  "workstream": "C1",
+  "doc": "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md",
+  "stage75_plan": "docs/STAGE_75_PLAN.md",
+  "breach_doc": "docs/BREACH_NOTIFICATION_MVP.md",
+  "breach": "ops/mvp/breach-notification.json",
+  "vuln_doc": "docs/VULN_DISCLOSURE_MVP.md",
+  "vuln": "ops/mvp/vuln-disclosure.json",
+  "support_doc": "docs/COMMERCIAL_SUPPORT_MVP.md",
+  "support": "ops/mvp/commercial-support.json",
+  "status_doc": "docs/COMMERCIAL_STATUS_MVP.md",
+  "status": "ops/mvp/commercial-status.json",
+  "assurance_doc": "docs/COMMERCIAL_ASSURANCE_MVP.md",
+  "assurance": "ops/mvp/commercial-assurance.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "security_contact_live_claimed": false,
+  "breach_drill_claimed": false,
+  "vuln_disclosure_live_claimed": false,
+  "commercial_support_claimed": false,
+  "status_page_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage75_c1_commercial_security_contact.json",
+  "steps": [
+    {
+      "id": "csc-owner-outline",
+      "category": "security",
+      "title": "Index owner Commercial Security Contact Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_75_PLAN.md",
+        "docs/ADR_156_STAGE75_OPEN.md"
+      ],
+      "source": "docs/STAGE_75_PLAN.md"
+    },
+    {
+      "id": "csc-breach",
+      "category": "security",
+      "title": "Link Stage 38 breach notification as adjacency (drill Remaining ≠ security contact live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BREACH_NOTIFICATION_MVP.md",
+        "ops/mvp/breach-notification.json"
+      ],
+      "source": "docs/BREACH_NOTIFICATION_MVP.md"
+    },
+    {
+      "id": "csc-vuln",
+      "category": "security",
+      "title": "Link Stage 38 vuln disclosure as adjacency (program Remaining ≠ security contact live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/VULN_DISCLOSURE_MVP.md",
+        "ops/mvp/vuln-disclosure.json"
+      ],
+      "source": "docs/VULN_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "csc-support",
+      "category": "security",
+      "title": "Link Stage 74 S1 support as adjacency (support packaging ≠ security contact live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_SUPPORT_MVP.md",
+        "ops/mvp/commercial-support.json"
+      ],
+      "source": "docs/COMMERCIAL_SUPPORT_MVP.md"
+    },
+    {
+      "id": "csc-status",
+      "category": "security",
+      "title": "Link Stage 74 U1 status as adjacency (status packaging ≠ security contact live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_STATUS_MVP.md",
+        "ops/mvp/commercial-status.json"
+      ],
+      "source": "docs/COMMERCIAL_STATUS_MVP.md"
+    },
+    {
+      "id": "csc-assurance",
+      "category": "security",
+      "title": "Link Stage 73 A1 assurance as adjacency (assurance Remaining ≠ security contact live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_ASSURANCE_MVP.md",
+        "ops/mvp/commercial-assurance.json"
+      ],
+      "source": "docs/COMMERCIAL_ASSURANCE_MVP.md"
+    },
+    {
+      "id": "csc-plan-honesty",
+      "category": "security",
+      "title": "Confirm Stage 75 plan explicitly defers security contact live / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_75_PLAN.md",
+        "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md"
+      ],
+      "source": "docs/STAGE_75_PLAN.md"
+    },
+    {
+      "id": "csc-intake-ownership",
+      "category": "security",
+      "title": "Index security-contact intake ownership Remaining as honesty step",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md",
+        "docs/VULN_DISCLOSURE_MVP.md"
+      ],
+      "source": "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md"
+    },
+    {
+      "id": "csc-contact-remaining",
+      "category": "honesty",
+      "title": "Commercial security contact live Remaining — packaging ≠ live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_75_PLAN.md",
+        "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md"
+      ],
+      "source": "docs/STAGE_75_PLAN.md"
+    },
+    {
+      "id": "csc-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / breach drill / privacy Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_75_PLAN.md",
+        "docs/BREACH_NOTIFICATION_MVP.md"
+      ],
+      "source": "docs/STAGE_75_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Security contact live Complete",
+    "Breach drill Complete",
+    "Vuln disclosure live Complete",
+    "Privacy notice live Complete",
+    "Live go-live Complete"
+  ]
+}

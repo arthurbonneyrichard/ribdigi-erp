@@ -24,7 +24,7 @@ Stage 74 proves the owner Commercial Operator Boundary path after Stage 73 freez
 | **S1** | `test_commercial_support_s1.py` — `COMMERCIAL_SUPPORT_MVP.md`, commercial-support JSON | Owner Support Boundary / Stage 36 SLA | Support boundary live |
 | **U1** | `test_commercial_status_u1.py` — `COMMERCIAL_STATUS_MVP.md`, commercial-status JSON | Owner Status Boundary / Stage 40 status | Status page live; go-live |
 | **D1** | This note + `test_stage74_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H74x** | `STAGE_74_EXIT_CRITERIA.md`; ADR-155; `test_stage74_exit_h74x.py` | Stage 74 exit + freeze | Stage 75+ requires CONTINUE/NEXT |
+| **H74x** | `STAGE_74_EXIT_CRITERIA.md`; ADR-155; `test_stage74_exit_h74x.py` | Stage 74 exit + freeze | Stage 75 opened via ADR-156 |
 
 ## Evidence tests
 

@@ -76,6 +76,8 @@
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `business-pilot.json` | Stage 65 P1 Controlled business pilot honesty — `controlled_business_pilot_live_claimed: false` / `real_workflow_feedback_claimed: false` / `pilot_bugfix_program_live: false` / `business_pilot_program_live: false` |
+| `commercial-security-contact.json` | Stage 75 C1 Commercial security contact honesty — `security_contact_live_claimed: false` / `breach_drill_claimed: false` / `go_live_claimed: false` |
+| `commercial-privacy-notice.json` | Stage 75 P1 Commercial privacy notice honesty — `privacy_notice_live: false` / `cookie_consent_live: false` / `go_live_claimed: false` |
 | `commercial-status.json` | Stage 74 U1 Commercial status boundary honesty — `status_page_live: false` / `uptime_sla_claimed: false` / `go_live_claimed: false` |
 | `commercial-support.json` | Stage 74 S1 Commercial support boundary honesty — `commercial_support_claimed: false` / `support_boundary_live_claimed: false` / `go_live_claimed: false` |
 | `commercial-assurance.json` | Stage 73 A1 Commercial assurance boundary honesty — `customer_assurance_claimed: false` / `assurance_claimed: false` / `go_live_claimed: false` |
@@ -240,6 +242,11 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_75_EXIT_CRITERIA.md` / `docs/ADR_157_STAGE75_FREEZE.md` (`backend/tests/test_stage75_exit_h75x.py`) — Stage 75 H75x
+- `docs/STAGE_75_FIDELITY.md` (`backend/tests/test_stage75_fidelity_d1.py`) — Stage 75 D1
+- `docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md` (`backend/tests/test_commercial_privacy_notice_p1.py`) — Stage 75 P1
+- `docs/COMMERCIAL_SECURITY_CONTACT_MVP.md` (`backend/tests/test_commercial_security_contact_c1.py`) — Stage 75 C1
+- `docs/STAGE_75_PLAN.md` (`backend/tests/test_stage75_open.py`) — Stage 75 open (ADR-156)
 - `docs/STAGE_74_EXIT_CRITERIA.md` / `docs/ADR_155_STAGE74_FREEZE.md` (`backend/tests/test_stage74_exit_h74x.py`) — Stage 74 H74x
 - `docs/STAGE_74_FIDELITY.md` (`backend/tests/test_stage74_fidelity_d1.py`) — Stage 74 D1
 - `docs/COMMERCIAL_STATUS_MVP.md` (`backend/tests/test_commercial_status_u1.py`) — Stage 74 U1
@@ -992,6 +999,26 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 75 exit
+
+H75x met — `docs/STAGE_75_EXIT_CRITERIA.md`, ADR-157. Stages 1–75 frozen for Stage 75 feature scope.
+
+## Stage 75 D1 — Commercial Trust Boundary fidelity
+
+`docs/STAGE_75_FIDELITY.md` — maps C1–P1 → readiness / launch / deploy / security.
+
+## Stage 75 P1 — Commercial privacy notice honesty
+
+`docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md` + `ops/mvp/commercial-privacy-notice.json` — packaging Complete; `privacy_notice_live` / `cookie_consent_live` / `go_live_claimed` remain false.
+
+## Stage 75 C1 — Commercial security contact honesty
+
+`docs/COMMERCIAL_SECURITY_CONTACT_MVP.md` + `ops/mvp/commercial-security-contact.json` — packaging Complete; `security_contact_live_claimed` / `breach_drill_claimed` / `go_live_claimed` remain false.
+
+## Stage 75 open
+
+ADR-156 + `docs/STAGE_75_PLAN.md` — Commercial Trust Boundary Fidelity.
 
 ## Stage 74 exit
 

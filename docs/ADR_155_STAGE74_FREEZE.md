@@ -27,4 +27,8 @@ Stage 74 Commercial Operator Boundary Fidelity delivered commercial support boun
 
 ## Next stage
 
-Blocked pending CONTINUE/NEXT + open ADR with a distinct product outline.
+Stage 75 opened via ADR-156 (`docs/ADR_156_STAGE75_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 75 (Commercial Trust Boundary Fidelity — Commercial Security Contact Boundary → Commercial Privacy Notice Boundary → Commercial Trust Boundary Fidelity) after Stage 74 freeze via CONTINUE/NEXT — see [ADR-156](ADR_156_STAGE75_OPEN.md) and [STAGE_75_PLAN.md](STAGE_75_PLAN.md). Stage 74 feature scope remains frozen; Stage 75 does not reopen S1–D1 / H74x.
