@@ -221,7 +221,13 @@ def test_x1_plan_and_docs_cite_stage25():
     x1_line = [ln for ln in plan.splitlines() if "| **X1** |" in ln][0]
     assert "COMPLETE" in x1_line
     assert "test_ai_cross_domain_x1.py" in plan
-    assert "P1 complete" in plan or "X1 complete" in plan or "B1 next" in plan
+    assert (
+        "P1 complete" in plan
+        or "X1 complete" in plan
+        or "B1 next" in plan
+        or "B1 complete" in plan
+        or "U1 next" in plan
+    )
 
     br = (ROOT / "docs" / "BUSINESS_REQUIREMENTS_DOCUMENT.md").read_text(encoding="utf-8")
     assert "#### BR-21.12 Cross-Domain AI Analysis" in br

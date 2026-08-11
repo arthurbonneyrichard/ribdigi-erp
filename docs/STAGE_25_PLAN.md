@@ -1,6 +1,6 @@
 # Stage 25 Plan — Actuals → AI Analysis → Business Insights
 
-**Status:** Open — P1 / X1 COMPLETE; B1 next (ADR-055)  
+**Status:** Open — P1 / X1 / B1 COMPLETE; U1 next (ADR-055)  
 **Base:** Commerce actuals → Basic RIBDIGI AI analysis → Business insights  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-055](ADR_055_STAGE25_OPEN.md)
@@ -37,7 +37,7 @@ Business Insights
 |----|------------|----------|---------|
 | **P1** | Purchases actuals → AI analysis | P0 | COMPLETE |
 | **X1** | Cross-domain analysis (Inv + Sales + Purch + Exp) | P0 | COMPLETE |
-| **B1** | Business Insights surface (all four actuals) | P1 | PENDING |
+| **B1** | Business Insights surface (all four actuals) | P1 | COMPLETE |
 | **U1** | AI UI fidelity (purchases + analysis panels) | P1 | PENDING |
 | **D1** | Spec / BR / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
 | **H25x** | Stage 25 exit criteria + freeze ADR | Exit | PENDING |
@@ -75,7 +75,13 @@ Business Insights
 
 ## B1 acceptance criteria
 
-Filled when workstream starts.
+- [x] `GET /ai/insights` cards cite domains across Inventory, Sales, Purchases, Expenses (`domains` + `actuals_covered`).
+- [x] Purchase actual signals on the insights surface (spend WoW, overdue bills, draft PO backlog) + light Inv/Sales↔Purch cross cards.
+- [x] Dashboard + `/ai` Business Insights copy/UI show four-actual cites.
+- [x] Tenant-scoped; no cross-tenant leakage.
+- [x] Automated proof: `backend/tests/test_ai_business_insights_b1.py`.
+- [x] BR-21.2 / API / plan / launch / roadmap cite Stage 25 B1.
+- [x] No fake LLM claims; Remaining external ML stays deferred.
 
 ## U1 acceptance criteria
 
@@ -91,4 +97,4 @@ Filled when exit workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-055 open. P1 / X1 complete; B1 next. Stages 1–24 remain frozen for their scopes.
+Plan authored; ADR-055 open. P1 / X1 / B1 complete; U1 next. Stages 1–24 remain frozen for their scopes.

@@ -63,8 +63,17 @@ export default function Page() {
   const [method, setMethod] = useState('');
   const [history, setHistory] = useState<ChatTurn[]>([]);
   const [insightCards, setInsightCards] = useState<
-    { id: string; kind: string; severity: string; title: string; summary: string; action?: string }[]
+    {
+      id: string;
+      kind: string;
+      severity: string;
+      title: string;
+      summary: string;
+      action?: string;
+      domains?: string[];
+    }[]
   >([]);
+  const [insightActuals, setInsightActuals] = useState<string[]>([]);
   const [salesSummary, setSalesSummary] = useState<{
     invoice_count: number;
     total_sales: number;
@@ -262,6 +271,7 @@ export default function Page() {
     try {
       const r = await api('/ai/insights');
       setInsightCards(r.data?.cards || []);
+      setInsightActuals(r.data?.actuals_covered || r.data?.actuals || []);
     } catch (err: any) {
       setError(err.message || 'Unable to load insights');
     }
@@ -315,8 +325,9 @@ export default function Page() {
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Rule-based chat, NL reports, customer intelligence, sales/expense analysis, security monitoring,
-        demand forecasts, dead stock, insights, and stockout predictions — from your tenant data.
+        Rule-based chat, NL reports, customer intelligence, sales/purchases/expense analysis, security
+        monitoring, demand forecasts, dead stock, business insights, and stockout predictions — from
+        actual Inventory, Sales, Purchases, and Expenses.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -649,9 +660,11 @@ export default function Page() {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Dashboard insights</h3>
+        <h3>Business insights</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Sales spikes/drops, expense anomalies, and restock suggestions.
+          Sales spikes/drops, purchase spend and overdue bills, expense anomalies, and restock
+          suggestions — cited to Inventory, Sales, Purchases, and Expenses actuals.
+          {insightActuals.length > 0 ? ` Covered: ${insightActuals.join(', ')}.` : null}
         </p>
         <button type="button" onClick={loadInsights} style={{ marginBottom: 12 }}>
           Refresh insights
@@ -667,6 +680,9 @@ export default function Page() {
             </div>
             <p>{c.summary}</p>
             {c.action && <p className="muted">{c.action}</p>}
+            {Array.isArray(c.domains) && c.domains.length > 0 && (
+              <p className="muted">Actuals: {c.domains.join(' · ')}</p>
+            )}
           </div>
         ))}
       </div>

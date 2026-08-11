@@ -11040,6 +11040,9 @@ async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSe
             "method": data["method"],
             "count": data["count"],
             "low_stock_predictions": data["low_stock_predictions"],
+            "actuals": data.get("actuals") or ["inventory", "sales", "purchases", "expenses"],
+            "actuals_covered": data.get("actuals_covered") or [],
+            "note": data.get("note"),
         }
     )
 

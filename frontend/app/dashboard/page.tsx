@@ -37,6 +37,7 @@ type InsightCard = {
   title: string;
   summary: string;
   action?: string | null;
+  domains?: string[];
 };
 
 type Note = {
@@ -219,7 +220,7 @@ export default function Page() {
         <div className="card" style={{ marginTop: 20 }}>
           <h3>AI insights</h3>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Rule-based anomalies and restock suggestions from your sales, expenses, and stock.
+            Rule-based business insights from actual Inventory, Sales, Purchases, and Expenses.
           </p>
           <div className="grid">
             {insightCards.slice(0, 6).map((c) => (
@@ -230,6 +231,11 @@ export default function Page() {
                 </div>
                 <p style={{ margin: '6px 0' }}>{c.summary}</p>
                 {c.action && <p className="muted">{c.action}</p>}
+                {Array.isArray(c.domains) && c.domains.length > 0 && (
+                  <p className="muted" style={{ marginTop: 4 }}>
+                    Actuals: {c.domains.join(' · ')}
+                  </p>
+                )}
               </div>
             ))}
           </div>

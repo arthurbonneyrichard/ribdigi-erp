@@ -214,6 +214,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 25 X1 (2026-08-11):** Cross-domain AI analysis — `GET /ai/cross-domain/analysis` orchestrates Inv/Sales/Purch/Exp analyzers + `cross_signals` (`test_ai_cross_domain_x1.py`; BR-21.12).
 
+**Stage 25 B1 (2026-08-11):** Business Insights surface cites all four actuals — `GET /ai/insights` `domains`/`actuals_covered` + purchase spend/overdue/draft PO cards; dashboard/`/ai` UI (`test_ai_business_insights_b1.py`; BR-21.2).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -794,7 +796,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 25 open (`docs/STAGE_25_PLAN.md`, ADR-055) — P1 / X1 complete; B1 next. Stages 1–24 remain frozen for their scopes.
+**Active delivery plan:** Stage 25 open (`docs/STAGE_25_PLAN.md`, ADR-055) — P1 / X1 / B1 complete; U1 next. Stages 1–24 remain frozen for their scopes.
 
 ### 6.2 Features
 

@@ -1031,6 +1031,7 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`. Stage 24 N1 shared s
   - [x] Flag expense anomalies — Stage 20 I1 (`expense_spike` / `expense_vs_sales`)
   - [x] Suggest actions ("Restock Product Y — sales up 40% this week") — Stage 20 I1 (`restock_suggestion` / card `action`)
   - [x] Weekly insight digest email — Stage 20 I1 (`publish_insights` → `Weekly AI Insight Digest` + `ai_insight` email prefs; Celery `generate_ai_insights`)
+  - [x] Business insights cite Inventory + Sales + Purchases + Expenses actuals — Stage 25 B1 (`domains` / `actuals_covered`; purchase spend WoW, overdue bills, draft PO backlog; `test_ai_business_insights_b1.py`)
 
 #### BR-21.3 Smart Inventory Intelligence
 - **Description:** AI-powered inventory optimization.
