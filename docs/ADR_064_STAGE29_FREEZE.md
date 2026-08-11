@@ -23,3 +23,7 @@ Stage 29 Operator Hardening & Production Cutover Fidelity (V1, B2, T1, X1, D1, H
 - Stage 1–28 freezes remain in force for their scopes.
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Operator `LAUNCH_CHECKLIST.md` §§1–3 / §7 remain unsigned until a real environment is verified (**Stage 27 L1** / Stage 29 X1 pack).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 30 (Go-Live Support Fidelity) after Stage 29 freeze via CONTINUE/NEXT — see [ADR-065](ADR_065_STAGE30_OPEN.md) and [STAGE_30_PLAN.md](STAGE_30_PLAN.md). Stage 29 feature scope remains frozen; Stage 30 does not reopen V1–D1 / H29x.

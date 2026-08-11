@@ -173,6 +173,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
+- [ ] Stage 30 Go-Live Support Fidelity (open: `docs/STAGE_30_PLAN.md`, ADR-065) — L1 next
+- [x] Stage 30 track opened (ADR-065: `test_stage30_open.py`, `docs/STAGE_30_PLAN.md`)
 - [x] Stage 29 track opened (ADR-063: `test_stage29_open.py`, `docs/STAGE_29_PLAN.md`)
 - [x] Stage 29 exit + freeze (H29x: `test_stage29_exit_h29x.py`, `docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064)
 - [x] Stage 29 fidelity sync (D1: `test_stage29_fidelity_d1.py`, `docs/STAGE_29_FIDELITY.md` — V1–X1 + readiness + deploy / launch / security)

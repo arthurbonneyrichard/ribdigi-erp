@@ -278,6 +278,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 29 exit (2026-08-11):** V1, B2, T1, X1, D1, H29x met — `docs/STAGE_29_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_064_STAGE29_FREEZE.md`. Fidelity: `docs/STAGE_29_FIDELITY.md`.
 
+**Stage 30 open (2026-08-11):** Go-Live Support Fidelity track approved — `docs/ADR_065_STAGE30_OPEN.md` + `docs/STAGE_30_PLAN.md` (Evidence ledger → Incident/on-call → Support/Admin runbooks → Attestation → fidelity).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -858,7 +860,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 29 frozen (`docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064). Stage 30+ requires an explicit open ADR after CONTINUE/NEXT. Stages 1–28 remain frozen for their scopes (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062).
+**Active delivery plan:** Stage 30 open (`docs/STAGE_30_PLAN.md`, ADR-065) — L1 next. Stages 1–29 remain frozen for their scopes (`docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064).
 
 ### 6.2 Features
 
