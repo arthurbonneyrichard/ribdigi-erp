@@ -262,6 +262,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 28 D1 (2026-08-11):** Spec / BR-16 / readiness / deploy / launch / security fidelity sync — `docs/STAGE_28_FIDELITY.md` (`test_stage28_fidelity_d1.py`); open ADR `docs/ADR_061_STAGE28_OPEN.md`; plan `docs/STAGE_28_PLAN.md`.
 
+**Stage 28 exit (2026-08-11):** R1, G1, A1, C1, D1, H28x met — `docs/STAGE_28_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_062_STAGE28_FREEZE.md`. Fidelity: `docs/STAGE_28_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -842,7 +844,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 28 open (`docs/STAGE_28_PLAN.md`, ADR-061) — R1–D1 complete (`docs/STAGE_28_FIDELITY.md`); H28x next. Stages 1–27 remain frozen for their scopes (`docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060).
+**Active delivery plan:** Stage 28 closed (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062) — R1–D1 / H28x complete (`docs/STAGE_28_FIDELITY.md`). Stages 1–28 remain frozen for their scopes. Next delivery track requires an explicit open ADR after CONTINUE/NEXT.
 
 ### 6.2 Features
 

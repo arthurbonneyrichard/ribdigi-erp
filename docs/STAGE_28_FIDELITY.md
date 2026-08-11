@@ -1,9 +1,10 @@
 # Stage 28 Fidelity Notes — Staging Certification Fidelity
 
-**Status:** Open with Stage 28 D1; H28x next (ADR-061)  
+**Status:** Closed — exit met (H28x / ADR-062); historical open ADR-061  
 **Surface:** Operator PITR drill → Staging GHA → Grafana/Alertmanager → 1000-VU cert → Fidelity closeout  
-**Open ADR:** [ADR-061](ADR_061_STAGE28_OPEN.md)  
-**Plan:** [STAGE_28_PLAN.md](STAGE_28_PLAN.md)
+**Open ADR (historical):** [ADR-061](ADR_061_STAGE28_OPEN.md)  
+**Plan:** [STAGE_28_PLAN.md](STAGE_28_PLAN.md)  
+**Exit:** [STAGE_28_EXIT_CRITERIA.md](STAGE_28_EXIT_CRITERIA.md) · [ADR-062](ADR_062_STAGE28_FREEZE.md)
 
 Stage 28 proves the owner product outline after Stage 27 freeze — Operator PITR Drill Pack + Staging GHA Deploy Workflow + Grafana/Alertmanager Packaging + Operator 1000-VU Cert Pack → Staging Certification Fidelity — by extending proven Stage 26/27 assets. It is **not** paid billing (ADR-002), schema-per-tenant (ADR-001), i18n packs (ADR-006), user↔store membership (ADR-005), hard-delete archival (ADR-003), Open Banking, tax e-file portals, claiming hosted Grafana/PagerDuty/SIEM as SaaS Complete, live GHA→production cutover via main `ci.yml`, forged live PITR/1000-VU certificates, vendor pen test / live ZAP-against-staging, forged production §7 sign-off, external LLM/Prophet, or reopening Stages 1–27.
 
@@ -36,19 +37,20 @@ Stage 28 proves the owner product outline after Stage 27 freeze — Operator PIT
 - `backend/tests/test_load_cert_pack_c1.py`
 - `backend/tests/test_stage28_open.py`
 - `backend/tests/test_stage28_fidelity_d1.py`
-- `backend/tests/test_stage28_exit_h28x.py` (at close)
+- `backend/tests/test_stage28_exit_h28x.py`
 
 ## Spec sync targets
 
 - `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16.3 (+ Stage 28 R1 / D1 cite)
-- `docs/API_DOCUMENTATION.md` — Stage 28 R1–C1 / D1 cite
-- `PRODUCTION_READINESS.md` — WAL / K8s / monitoring / load Completes + Stage 28 D1 cite
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 28 D1
-- `docs/LAUNCH_CHECKLIST.md` — R1–C1 / D1 evidence
-- `docs/DEPLOYMENT_GUIDE.md` — Stage 28 G1 / A1 / C1 / D1
-- `docs/SECURITY_GUIDE.md` — Stage 28 R1–C1 / D1 cite
+- `docs/API_DOCUMENTATION.md` — Stage 28 R1–C1 / D1 / H28x cite
+- `PRODUCTION_READINESS.md` — WAL / K8s / monitoring / load Completes + Stage 28 D1 / H28x cite
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 28 D1 / H28x exit
+- `docs/LAUNCH_CHECKLIST.md` — R1–C1 / D1 / H28x evidence
+- `docs/DEPLOYMENT_GUIDE.md` — Stage 28 G1 / A1 / C1 / D1 / H28x
+- `docs/SECURITY_GUIDE.md` — Stage 28 R1–C1 / D1 / H28x cite
 - `docs/PITR_DRILL_PACK_MVP.md` · `docs/STAGING_GHA_MVP.md` · `docs/GRAFANA_PACK_MVP.md` · `docs/LOAD_CERT_PACK_MVP.md`
-- `docs/STAGE_28_PLAN.md` — D1 complete; H28x next
+- `docs/STAGE_28_PLAN.md` — Closed (H28x / ADR-062)
+- `docs/STAGE_28_EXIT_CRITERIA.md` · `docs/ADR_062_STAGE28_FREEZE.md`
 - `docs/ADR_061_STAGE28_OPEN.md`
 
 ## Deferred (not Stage 28 blockers)
@@ -63,5 +65,5 @@ Stage 28 proves the owner product outline after Stage 27 freeze — Operator PIT
 - User↔store membership (ADR-005); hard-delete with archival (ADR-003)
 - Open Banking; tax e-file portals
 - External LLM / Prophet; PO OCR auto-apply
-- Reopening Stages 1–27 frozen feature scopes
+- Reopening Stages 1–28 frozen feature scopes
 - Main `ci.yml` deploy jobs (Stage 18 C1 remains deploy-free)

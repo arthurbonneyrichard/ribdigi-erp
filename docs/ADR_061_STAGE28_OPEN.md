@@ -32,3 +32,7 @@ Staging Certification Fidelity
 
 - Agents may implement Stage 28 plan items without reopening Stage 1–27 feature scope.
 - Stage 28 exit requires `docs/STAGE_28_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Amendment (2026-08-11)
+
+Stage 28 exit criteria are met (`docs/STAGE_28_EXIT_CRITERIA.md`) and Stage 28 feature scope is frozen under [ADR-062](ADR_062_STAGE28_FREEZE.md). ADR-061 remains the historical open record for this track.

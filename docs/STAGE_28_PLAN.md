@@ -1,10 +1,10 @@
 # Stage 28 Plan — Staging Certification Fidelity
 
-**Status:** Open — R1–D1 complete; H28x next (ADR-061)  
+**Status:** Closed — exit met (H28x / ADR-062)  
 **Base:** Operator PITR Drill Pack + Staging GHA Workflow + Grafana/Alertmanager Packaging + 1000-VU Cert Pack → Staging Certification Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-061](ADR_061_STAGE28_OPEN.md)  
-**Fidelity:** [STAGE_28_FIDELITY.md](STAGE_28_FIDELITY.md)
+**Open ADR (historical):** [ADR-061](ADR_061_STAGE28_OPEN.md)  
+**Exit:** [STAGE_28_EXIT_CRITERIA.md](STAGE_28_EXIT_CRITERIA.md) · [ADR-062](ADR_062_STAGE28_FREEZE.md) · [STAGE_28_FIDELITY.md](STAGE_28_FIDELITY.md)
 
 Stage 28 closes the owner product outline after Stage 27 freeze: **Operator PITR Drill Packaging + Staging GHA Deploy Workflow + Grafana/Alertmanager Packaging + Operator 1000-VU Certificate Pack → Staging Certification Fidelity**. Stages 26–27 delivered Complete (MVP) ops platform and release packaging with honest Remaining for live staging drills, hosted observability, staging-only deploy workflows, and ~1000-VU certificates. This track extends proven Stage 26/27 assets (`DR_WAL_PITR_RUNBOOK.md`, `ops/k8s/`, `OPS_MONITORING_MVP.md`, `LOAD_CAPACITY_MVP.md`, `ops/security/zap-baseline.example.yml`) with operator certification packaging — **not** inventing live PITR success, green GHA→prod, hosted Grafana-as-a-service Complete, or forged 1000-VU certificates without artifacts — and **not** paid billing, schema-per-tenant, i18n packs, ADR-003/005, Open Banking, tax e-file, external LLM/Prophet, or reopening Stages 1–27.
 
@@ -40,7 +40,7 @@ Staging Certification Fidelity
 | **A1** | Grafana / Alertmanager operator packaging | P0 | COMPLETE |
 | **C1** | Operator ~1000-VU certificate pack | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
-| **H28x** | Stage 28 exit criteria + freeze ADR | Exit | PENDING |
+| **H28x** | Stage 28 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -94,12 +94,13 @@ Staging Certification Fidelity
 
 ## H28x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H28x — `docs/STAGE_28_EXIT_CRITERIA.md`.
-- [ ] Scope freeze ADR accepted — `docs/ADR_062_STAGE28_FREEZE.md` (number reserved at close).
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
-- [ ] Automated proof: `backend/tests/test_stage28_exit_h28x.py`.
-- [ ] Stages 1–27 freezes remain; Stage 29+ requires explicit open ADR after CONTINUE/NEXT.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H28x — `docs/STAGE_28_EXIT_CRITERIA.md`.
+- [x] Scope freeze ADR accepted — `docs/ADR_062_STAGE28_FREEZE.md`.
+- [x] Fidelity note closed with H28x evidence — `docs/STAGE_28_FIDELITY.md`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
+- [x] Automated proof: `backend/tests/test_stage28_exit_h28x.py`.
+- [x] Stages 1–27 freezes remain; Stage 29+ requires explicit open ADR after CONTINUE/NEXT.
 
 ## Sign-off
 
-Stage 28 open under ADR-061. R1–D1 complete; H28x next. Stages 1–27 remain frozen for their scopes.
+Stage 28 exit met (R1–D1 / H28x). Scope frozen under ADR-062. Stages 1–27 remain frozen for their scopes. Next delivery track requires an explicit open ADR after CONTINUE/NEXT.

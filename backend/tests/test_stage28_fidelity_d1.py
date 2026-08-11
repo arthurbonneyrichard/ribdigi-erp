@@ -30,12 +30,12 @@ def test_stage28_fidelity_note_and_plan():
 
     plan = _read("docs/STAGE_28_PLAN.md")
     assert "STAGE_28_FIDELITY.md" in plan
-    for ws in ("R1", "G1", "A1", "C1", "D1"):
+    for ws in ("R1", "G1", "A1", "C1", "D1", "H28x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}** |" in ln][0]
         assert "COMPLETE" in line, ws
-    assert "H28x" in plan and "PENDING" in plan
-    assert "ADR-061" in plan or "ADR_061" in plan
-    assert "D1 complete" in plan or "H28x next" in plan
+    assert "ADR-062" in plan or "ADR_062" in plan
+    assert "Closed" in plan or "exit met" in plan.lower()
+    assert "ADR-062" in fidelity or "ADR_062" in fidelity or "exit met" in fidelity.lower()
 
 
 def test_stage28_br16_and_workstream_docs():
@@ -88,6 +88,7 @@ def test_stage28_api_deploy_security_launch():
     assert "test_load_cert_pack_c1.py" in launch
     assert "test_stage28_fidelity_d1.py" in launch
     assert "STAGE_28_FIDELITY.md" in launch
+    assert "STAGE_28_EXIT_CRITERIA.md" in launch or "ADR-062" in launch
 
 
 def test_stage28_readiness_and_roadmap():
@@ -95,6 +96,7 @@ def test_stage28_readiness_and_roadmap():
     assert "STAGE_28_FIDELITY.md" in pr
     assert "test_stage28_fidelity_d1.py" in pr
     assert "Stage 28 D1" in pr
+    assert "STAGE_28_EXIT_CRITERIA.md" in pr or "ADR-062" in pr or "ADR_062" in pr
     assert "Stage 28 R1" in pr
     assert "Stage 28 G1" in pr
     assert "Stage 28 A1" in pr
@@ -112,3 +114,5 @@ def test_stage28_readiness_and_roadmap():
     assert "Stage 28 D1" in roadmap
     assert "ADR_061_STAGE28_OPEN.md" in roadmap
     assert "STAGE_28_PLAN.md" in roadmap
+    assert "STAGE_28_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_062_STAGE28_FREEZE.md" in roadmap
