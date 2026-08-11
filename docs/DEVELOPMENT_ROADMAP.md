@@ -504,6 +504,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 50 open (2026-08-11):** Commercial Acquisition & Trial Fidelity track approved — `docs/ADR_105_STAGE50_OPEN.md` + `docs/STAGE_50_PLAN.md` (referral → freemium trial → fidelity).
 
+**Stage 50 R1 (2026-08-11):** Referral program honesty — `docs/REFERRAL_PROGRAM_MVP.md`, `ops/mvp/referral-program.json`, evidence `stage50_r1_referral_program.json` (`test_referral_program_r1.py`); live referral credits Remaining.
+
 
 
 

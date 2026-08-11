@@ -1,6 +1,6 @@
 # Stage 50 Plan — Commercial Acquisition & Trial Fidelity
 
-**Status:** Open — R1 next  
+**Status:** Open — R1 complete; F1 next  
 **Base:** Referral Program Honesty Pack + Freemium Trial Honesty Pack → Commercial Acquisition & Trial Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-105](ADR_105_STAGE50_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Acquisition & Trial Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **R1** | Referral program honesty packaging (not live referral credits / payout Complete) | P0 | PENDING |
+| **R1** | Referral program honesty packaging (not live referral credits / payout Complete) | P0 | COMPLETE |
 | **F1** | Freemium / 14-day trial honesty packaging (not live freemium conversion / paid trial billing Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H50x** | Stage 50 exit criteria + freeze ADR | Exit | PENDING |
@@ -75,10 +75,10 @@ Commercial Acquisition & Trial Fidelity
 
 ## R1 acceptance criteria
 
-- [ ] Referral program honesty packaging consolidating PRODUCT_OVERVIEW referral themes and Stage 36 billing-deferred adjacency (not forging live referral credits / payout Complete).
-- [ ] Automated proof: `backend/tests/test_referral_program_r1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 50 R1.
+- [x] Referral program honesty packaging consolidating PRODUCT_OVERVIEW referral themes and Stage 36 billing-deferred adjacency (not forging live referral credits / payout Complete).
+- [x] Automated proof: `backend/tests/test_referral_program_r1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 50 R1.
 
 ## F1 acceptance criteria
 
