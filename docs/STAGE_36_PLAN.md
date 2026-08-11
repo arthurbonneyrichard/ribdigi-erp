@@ -1,6 +1,6 @@
 # Stage 36 Plan — Commercial Assurance Completion Fidelity
 
-**Status:** Open — S1 complete; B1 next (ADR-077)  
+**Status:** Open — B1 complete; D1 next (ADR-077)  
 **Base:** Support SLA Boundary Pack + Billing-Deferred Honesty Pack → Commercial Assurance Completion Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-077](ADR_077_STAGE36_OPEN.md)
@@ -32,7 +32,7 @@ Commercial Assurance Completion Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **S1** | Support SLA / incident escalation boundary packaging | P0 | COMPLETE |
-| **B1** | Billing-deferred commercial honesty packaging (not paid billing Complete) | P0 | PENDING |
+| **B1** | Billing-deferred commercial honesty packaging (not paid billing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H36x** | Stage 36 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -60,10 +60,10 @@ Commercial Assurance Completion Fidelity
 
 ## B1 acceptance criteria
 
-- [ ] Billing-deferred commercial honesty packaging indexing ADR-002 / plan_code metadata honesty for procurement (not claiming paid billing Complete).
-- [ ] Automated proof: `backend/tests/test_billing_deferred_honesty_b1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 36 B1.
+- [x] Billing-deferred commercial honesty packaging indexing ADR-002 / plan_code metadata honesty for procurement (not claiming paid billing Complete).
+- [x] Automated proof: `backend/tests/test_billing_deferred_honesty_b1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 36 B1.
 
 ## D1 acceptance criteria
 
@@ -81,4 +81,4 @@ Commercial Assurance Completion Fidelity
 
 ## Sign-off
 
-Stage 36 open under ADR-077. S1 complete; B1 next. Stages 1–35 remain frozen for their scopes (Stage 34 S1/B1 packaging scopes reopen only inside this plan).
+Stage 36 open under ADR-077. B1 complete; D1 next. Stages 1–35 remain frozen for their scopes (Stage 34 S1/B1 packaging scopes reopen only inside this plan).

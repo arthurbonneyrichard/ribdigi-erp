@@ -366,6 +366,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 36 S1 (2026-08-11):** Support SLA boundary — `docs/SUPPORT_SLA_BOUNDARY_MVP.md`, `ops/mvp/support-sla-boundary.json`, evidence `stage36_s1_support_sla_boundary.json` (`test_support_sla_boundary_s1.py`); live SLA / PagerDuty Remaining.
 
+**Stage 36 B1 (2026-08-11):** Billing-deferred honesty — `docs/BILLING_DEFERRED_HONESTY_MVP.md`, `ops/mvp/billing-deferred-honesty.json`, evidence `stage36_b1_billing_deferred_honesty.json` (`test_billing_deferred_honesty_b1.py`); ADR-002 / plan_code metadata; paid billing Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -946,7 +948,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 36 open (`docs/STAGE_36_PLAN.md`, ADR-077) — S1 complete; B1 next. Stages 1–35 remain frozen for their scopes (`docs/STAGE_35_EXIT_CRITERIA.md`, ADR-076).
+**Active delivery plan:** Stage 36 open (`docs/STAGE_36_PLAN.md`, ADR-077) — B1 complete; D1 next. Stages 1–35 remain frozen for their scopes (`docs/STAGE_35_EXIT_CRITERIA.md`, ADR-076).
 
 ### 6.2 Features
 

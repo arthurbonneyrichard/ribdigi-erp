@@ -22,6 +22,8 @@ def test_stage36_plan_and_open_adr():
         "PENDING" in plan
         or "S1 next" in plan
         or "S1 complete" in plan
+        or "B1 complete" in plan
+        or "D1 next" in plan
         or "Closed" in plan
         or "exit met" in plan.lower()
     )
