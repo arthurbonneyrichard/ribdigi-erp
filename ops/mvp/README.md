@@ -105,6 +105,7 @@ Authoritative MVP docs:
 - `docs/DATA_RETENTION_RETURN_MVP.md` (`backend/tests/test_data_retention_return_t1.py`) — Stage 45 T1
 - `docs/STAGE_45_FIDELITY.md` (`backend/tests/test_stage45_fidelity_d1.py`) — Stage 45 D1
 - `docs/STAGE_45_EXIT_CRITERIA.md` / `docs/ADR_096_STAGE45_FREEZE.md` (`backend/tests/test_stage45_exit_h45x.py`) — Stage 45 H45x
+- `docs/STAGE_46_PLAN.md` (`backend/tests/test_stage46_open.py`) — Stage 46 open (ADR-097)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -427,3 +428,7 @@ Commercial Continuity & Exit Fidelity — `docs/STAGE_45_PLAN.md`, ADR-095; Clos
 ## Stage 45 exit
 
 H45x met — `docs/STAGE_45_EXIT_CRITERIA.md`, ADR-096. Stages 1–45 frozen for Stage 45 feature scope.
+
+## Stage 46 open
+
+Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; L1 next.

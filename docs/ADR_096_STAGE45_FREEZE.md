@@ -23,3 +23,8 @@ Stage 45 Commercial Continuity & Exit Fidelity delivered RTO / RPO recovery obje
 - Stage 1–44 freezes remain in force for their scopes (Stage 44 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Continuity & exit packaging Complete does **not** mean measured RTO/RPO SLA, multi-region failover, customer data-return portal, hot audit purge, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 46 (Commercial Liability & Remedy Fidelity) after Stage 45 freeze via CONTINUE/NEXT — see [ADR-097](ADR_097_STAGE46_OPEN.md) and [STAGE_46_PLAN.md](STAGE_46_PLAN.md). Stage 45 feature scope remains frozen; Stage 46 does not reopen O1–D1 / H45x.
+
