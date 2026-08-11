@@ -1,6 +1,6 @@
 # Stage 29 Plan — Operator Hardening & Production Cutover Fidelity
 
-**Status:** Open — V1 complete; B2 next (ADR-063)  
+**Status:** Open — V1–B2 complete; T1 next (ADR-063)  
 **Base:** Vendor Pen-Test / ZAP Staging Pack + PgBouncer Soak / Helm Pooler Pack + Cert-manager / TLS Ingress Pack + Production Cutover Pack → Operator Hardening & Cutover Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-063](ADR_063_STAGE29_OPEN.md)
@@ -36,7 +36,7 @@ Operator Hardening & Cutover Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **V1** | Vendor pen-test / ZAP staging operator pack | P0 | COMPLETE |
-| **B2** | PgBouncer soak / Helm pooler packaging | P0 | PENDING |
+| **B2** | PgBouncer soak / Helm pooler packaging | P0 | COMPLETE |
 | **T1** | Cert-manager / TLS ingress packaging | P0 | PENDING |
 | **X1** | Production cutover pack (LAUNCH §§1–3 / §7 harness) | P1 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
@@ -68,10 +68,10 @@ Operator Hardening & Cutover Fidelity
 
 ## B2 acceptance criteria
 
-- [ ] PgBouncer soak / optional Helm pooler packaging extending `docs/PGBOUNCER_MVP.md` / `ops/postgres/` (soak checklist + pooler snippet — not live soak numbers / default in-cluster data plane Complete).
-- [ ] Automated proof: `backend/tests/test_pgbouncer_soak_b2.py`.
-- [ ] PRODUCTION_READINESS / DEPLOYMENT_GUIDE honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 29 B2.
+- [x] PgBouncer soak / optional Helm pooler packaging extending `docs/PGBOUNCER_MVP.md` / `ops/postgres/` (soak checklist + pooler snippet — not live soak numbers / default in-cluster data plane Complete).
+- [x] Automated proof: `backend/tests/test_pgbouncer_soak_b2.py`.
+- [x] PRODUCTION_READINESS / DEPLOYMENT_GUIDE honesty updated.
+- [x] Plan / launch / roadmap cite Stage 29 B2.
 
 ## T1 acceptance criteria
 
@@ -103,4 +103,4 @@ Operator Hardening & Cutover Fidelity
 
 ## Sign-off
 
-Stage 29 open under ADR-063. V1 complete; B2 next. Stages 1–28 remain frozen for their scopes.
+Stage 29 open under ADR-063. V1–B2 complete; T1 next. Stages 1–28 remain frozen for their scopes.

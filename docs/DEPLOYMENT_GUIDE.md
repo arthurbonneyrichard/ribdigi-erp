@@ -1223,7 +1223,7 @@ groups:
 - Primary-Replica setup with streaming replication
 - Automatic failover using Patroni or cloud-managed solution
 - Read replicas for report generation and analytics
-- Connection pooling via PgBouncer — Stage 27 P1 MVP packaging (`docs/PGBOUNCER_MVP.md`, `ops/postgres/pgbouncer.ini.example`, `test_pgbouncer_p1.py`); optional compose overlay; not default CI / in-cluster Helm claim. Stage 27 D1 locks release evidence (`docs/STAGE_27_FIDELITY.md`, `test_stage27_fidelity_d1.py`) across B1–L1. Stage 27 H27x exit + freeze: `docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060 (`test_stage27_exit_h27x.py`).
+- Connection pooling via PgBouncer — Stage 27 P1 MVP packaging (`docs/PGBOUNCER_MVP.md` (Stage 29 B2 soak pack: `docs/PGBOUNCER_SOAK_PACK_MVP.md`, `test_pgbouncer_soak_b2.py`), `ops/postgres/pgbouncer.ini.example`, `test_pgbouncer_p1.py`); optional compose overlay; not default CI / in-cluster Helm claim. Stage 27 D1 locks release evidence (`docs/STAGE_27_FIDELITY.md`, `test_stage27_fidelity_d1.py`) across B1–L1. Stage 27 H27x exit + freeze: `docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060 (`test_stage27_exit_h27x.py`).
 
 **Redis:**
 - Redis Sentinel for high availability

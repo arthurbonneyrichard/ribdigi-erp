@@ -35,10 +35,16 @@ PGBOUNCER_TRANSACTION_MODE=true
 
 ## Explicitly Remaining
 
-- Live load proof that p95 improves under ~1000 VU with PgBouncer sized infra
-- In-cluster / Helm PgBouncer chart as default K8s data plane
+- Live load proof that p95 improves under ~1000 VU with PgBouncer sized infra (**execution**)
+- In-cluster / Helm PgBouncer as **default** K8s data plane
 - Managed-cloud pooler product substitution (RDS Proxy, etc.) as Complete
+
+## Soak / pooler pack (Stage 29 B2)
+
+Authoritative pack: [PGBOUNCER_SOAK_PACK_MVP.md](PGBOUNCER_SOAK_PACK_MVP.md) · `ops/postgres/pgbouncer-soak-checklist.json` · `ops/postgres/soak-evidence.example.json` · optional `ops/postgres/pgbouncer-deployment.example.yaml` (not default Helm).
+
+Packaging evidence keeps `live_soak_executed: false`, `helm_pooler_default_claimed: false`.
 
 ## Sign-off
 
-Stage 27 P1 is met when versioned configs + this doc exist, `test_pgbouncer_p1.py` passes, and `PRODUCTION_READINESS.md` records PgBouncer Complete (MVP) with honest Remaining limited to live soak / in-cluster defaults.
+Stage 27 P1 is met when versioned configs + this doc exist, `test_pgbouncer_p1.py` passes, and `PRODUCTION_READINESS.md` records PgBouncer Complete (MVP) with honest Remaining limited to live soak / in-cluster defaults. Stage 29 B2 is met when the soak pack + `test_pgbouncer_soak_b2.py` pass without inventing live soak success.

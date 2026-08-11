@@ -42,3 +42,15 @@ Optional connection pooler packaging. **Not** default compose/CI; **not** an in-
 | `docker-compose.pgbouncer.example.yml` | optional overlay service |
 
 Authoritative MVP doc: `docs/PGBOUNCER_MVP.md` (`test_pgbouncer_p1.py`). Point `DATABASE_URL` at `pgbouncer:6432`; keep Alembic on `postgres:5432` when preferred.
+
+## Stage 29 B2 — PgBouncer soak / pooler pack
+
+Versioned soak checklist + optional in-cluster snippet. **Not** live soak Complete; **not** default Helm data plane.
+
+| File | Role |
+|------|------|
+| `pgbouncer-soak-checklist.json` | Operator soak steps; `live_soak_executed: false` |
+| `soak-evidence.example.json` | Run schema (`passed: false` placeholder) |
+| `pgbouncer-deployment.example.yaml` | Optional Deployment/Service snippet |
+
+Authoritative pack: `docs/PGBOUNCER_SOAK_PACK_MVP.md` (`test_pgbouncer_soak_b2.py`).

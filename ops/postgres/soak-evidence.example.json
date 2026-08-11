@@ -1,0 +1,15 @@
+{
+  "run_id": "REPLACE-WITH-OPERATOR-SOAK-ID",
+  "started_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "finished_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "database_url_host": "pgbouncer:6432",
+  "pool_mode": "transaction",
+  "show_pools_ok": false,
+  "concurrent_users": null,
+  "p95_ms": null,
+  "error_rate": null,
+  "helm_pooler_used": false,
+  "passed": false,
+  "operator": "",
+  "notes": "Stage 29 B2 schema example only — do not commit forged soak pass. See docs/PGBOUNCER_SOAK_PACK_MVP.md."
+}

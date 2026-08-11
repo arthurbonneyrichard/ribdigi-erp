@@ -172,8 +172,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 track opened (ADR-061: `test_stage28_open.py`, `docs/STAGE_28_PLAN.md`)
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
-- [ ] Stage 29 Operator Hardening & Production Cutover Fidelity (open: `docs/STAGE_29_PLAN.md`, ADR-063) — B2 next
+- [ ] Stage 29 Operator Hardening & Production Cutover Fidelity (open: `docs/STAGE_29_PLAN.md`, ADR-063) — T1 next
 - [x] Stage 29 track opened (ADR-063: `test_stage29_open.py`, `docs/STAGE_29_PLAN.md`)
+- [x] PgBouncer soak / pooler pack (Stage 29 B2: `test_pgbouncer_soak_b2.py` — `docs/PGBOUNCER_SOAK_PACK_MVP.md`, `ops/postgres/pgbouncer-soak-checklist.json`; evidence `stage29_b2_pgbouncer_soak.json`; live soak / default Helm pooler Remaining)
 - [x] Vendor pen-test / ZAP staging pack (Stage 29 V1: `test_pentest_pack_v1.py` — `docs/PENTEST_PACK_MVP.md`, `ops/security/pentest-engagement-checklist.json`; evidence `stage29_v1_pentest_pack.json`; purchased cert / live ZAP Remaining)
 - [x] Operator 1000-VU cert pack (Stage 28 C1: `test_load_cert_pack_c1.py` — `docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/`; evidence `stage28_c1_load_cert_pack.json`; live 1000-VU execution Remaining)
 - [x] Grafana / Alertmanager pack (Stage 28 A1: `test_grafana_pack_a1.py` — `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/`; evidence `stage28_a1_grafana_pack.json`; hosted SaaS Remaining)
@@ -202,7 +203,7 @@ Record as **ops follow-ups**, not Stage 7 incompletes:
 - Hosted Grafana / PagerDuty / SIEM **as SaaS Complete** (Stage 26 M1 scrape/alerts + Stage 28 A1 Grafana/Alertmanager **packaging** Complete MVP — `docs/GRAFANA_PACK_MVP.md`; examples only)
 - Operator staging PITR drill **execution** / managed-cloud PITR automation (Stage 26 W1 strategy + Stage 28 R1 drill pack Complete MVP — `docs/PITR_DRILL_PACK_MVP.md`; packaging only, not live replay)
 - Vendor penetration test / live ZAP-in-CI against staging (Stage 27 S1 OWASP baseline + Stage 29 V1 engagement pack Complete MVP — `docs/PENTEST_PACK_MVP.md`; packaging only, not purchased cert)
-- In-cluster Helm PgBouncer as default data plane (Stage 27 P1 packaging Complete MVP — `docs/PGBOUNCER_MVP.md`)
+- In-cluster Helm PgBouncer as **default** data plane (Stage 27 P1 packaging + Stage 29 B2 soak/pooler pack Complete MVP — `docs/PGBOUNCER_SOAK_PACK_MVP.md`; packaging only)
 - Operator staging ~1000-VU capacity **execution** (Stage 26 C1 CI capacity + Stage 28 C1 cert pack Complete MVP — `docs/LOAD_CERT_PACK_MVP.md`; packaging only, not forged certificate)
 - Paid billing (ADR-002); schema-per-tenant (ADR-001); i18n packs (ADR-006)
 
