@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import PlainTextResponse, Response
@@ -1625,6 +1625,45 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         for (yy, mm) in months_seq
     ]
 
+    # Daily sales & profit for the last 7 days (profit = revenue - COGS per line)
+    today = now_dt.date()
+    days_seq = [today - timedelta(days=i) for i in range(6, -1, -1)]
+    earliest_day = datetime(days_seq[0].year, days_seq[0].month, days_seq[0].day)
+    cost_rows = (
+        await db.execute(select(m.Product.id, m.Product.cost_price).where(m.Product.tenant_id == tid))
+    ).all()
+    cost_map = {pid: float(cost or 0) for pid, cost in cost_rows}
+    daily = {d: {"sales": 0.0, "profit": 0.0} for d in days_seq}
+    daily_rows = (
+        await db.execute(
+            select(m.Transaction.created_at, m.Transaction.total, m.Transaction.payload).where(
+                m.Transaction.tenant_id == tid,
+                m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+                m.Transaction.created_at >= earliest_day,
+            )
+        )
+    ).all()
+    for created_at, total, payload in daily_rows:
+        if created_at is None:
+            continue
+        d = created_at.date()
+        if d not in daily:
+            continue
+        daily[d]["sales"] += float(total or 0)
+        for it in (payload or {}).get("items") or []:
+            qty = float(it.get("quantity") or 0)
+            unit_price = float(it.get("unit_price") or 0)
+            cost = cost_map.get(it.get("product_id"), 0.0)
+            daily[d]["profit"] += qty * (unit_price - cost)
+    daily_sales = [
+        {
+            "label": d.strftime("%a"),
+            "sales": round(daily[d]["sales"], 2),
+            "profit": round(daily[d]["profit"], 2),
+        }
+        for d in days_seq
+    ]
+
     tenant = await db.get(m.Tenant, tid)
     if tenant and tenant.status == "trial":
         days_remaining = tenants_svc.calendar_days_until(tenant.trial_ends_at)
@@ -1651,6 +1690,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "customers": customers,
             "suppliers": suppliers,
             "monthly_sales": monthly_sales,
+            "daily_sales": daily_sales,
             "subscription": subscription,
         }
     )

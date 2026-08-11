@@ -22,8 +22,46 @@ type Dash = {
   customers?: number;
   suppliers?: number;
   monthly_sales?: { label: string; total: number }[];
+  daily_sales?: { label: string; sales: number; profit: number }[];
   subscription?: Subscription;
 };
+
+function DailyBars({
+  data,
+  field,
+  color,
+}: {
+  data: { label: string; sales: number; profit: number }[];
+  field: 'sales' | 'profit';
+  color: string;
+}) {
+  const n = data.length || 1;
+  const max = Math.max(1, ...data.map((x) => x[field] || 0));
+  const slot = 300 / n;
+  const bw = Math.min(26, slot * 0.55);
+  return (
+    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label={`Daily ${field}`}>
+      <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+      {data.map((t, i) => {
+        const v = t[field] || 0;
+        const h = Math.max(0, (v / max) * 112);
+        const x = i * slot + (slot - bw) / 2;
+        const y = 138 - h;
+        return (
+          <g key={t.label + i}>
+            <rect x={x} y={y} width={bw} height={h} rx={5} fill={color} />
+            <text x={x + bw / 2} y={y - 5} textAnchor="middle" className="vbar-val">
+              {v ? new Intl.NumberFormat().format(Math.round(v)) : ''}
+            </text>
+            <text x={x + bw / 2} y={156} textAnchor="middle" className="vbar-label">
+              {t.label}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
 function polar(cx: number, cy: number, r: number, angle: number): [number, number] {
   return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
@@ -141,6 +179,9 @@ export default function Page() {
   const trend = d.monthly_sales || [];
   const trendMax = Math.max(1, ...trend.map((t) => t.total || 0));
   const trendEmpty = trend.every((t) => !t.total);
+
+  const daily = d.daily_sales || [];
+  const dailyEmpty = daily.every((x) => !x.sales && !x.profit);
 
   const finItems = [
     { label: 'Sales', value: sales, color: '#22c55e' },
@@ -354,6 +395,38 @@ export default function Page() {
                 )}
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="info-grid">
+          <div className="panel">
+            <h3>
+              <span className="pico pi-daily" aria-hidden>
+                {'\ud83d\udcc5'}
+              </span>
+              Daily sales
+            </h3>
+            <p className="hint">Sales for the last 7 days</p>
+            {dailyEmpty ? (
+              <div className="empty">No sales in the last 7 days yet.</div>
+            ) : (
+              <DailyBars data={daily} field="sales" color="#22c55e" />
+            )}
+          </div>
+
+          <div className="panel">
+            <h3>
+              <span className="pico pi-profit" aria-hidden>
+                {'\ud83d\udcb9'}
+              </span>
+              Daily profit
+            </h3>
+            <p className="hint">Gross profit (revenue \u2212 cost) per day</p>
+            {dailyEmpty ? (
+              <div className="empty">No profit data in the last 7 days yet.</div>
+            ) : (
+              <DailyBars data={daily} field="profit" color="#6366f1" />
+            )}
           </div>
         </section>
 
