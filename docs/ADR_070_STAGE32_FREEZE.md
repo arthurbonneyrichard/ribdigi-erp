@@ -24,3 +24,7 @@ Stage 32 Commercial MVP Handoff Fidelity (A1, H1, N1, B1, D1, H32x) delivered MV
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Operator `LAUNCH_CHECKLIST.md` §§1–3 / §7 remain unsigned until a real environment is verified (**Stage 27 L1** / Stage 29 X1 / Stage 30 A1 / Stage 31 C1 / Stage 32 H1 packs).
 - Commercial MVP packaging / handoff / release-notes Complete does **not** mean live go-live or forged §7 Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 33 (Commercial MVP Continuity Fidelity) after Stage 32 freeze via CONTINUE/NEXT — see [ADR-071](ADR_071_STAGE33_OPEN.md) and [STAGE_33_PLAN.md](STAGE_33_PLAN.md). Stage 32 feature scope remains frozen; Stage 33 does not reopen A1–D1 / H32x.

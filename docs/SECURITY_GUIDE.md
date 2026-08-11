@@ -355,6 +355,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 32 B1** | Post-MVP backlog — `docs/POST_MVP_BACKLOG_MVP.md`, `ops/mvp/post-mvp-backlog.json` (`test_post_mvp_backlog_b1.py`); ADR-001–006 + Remaining indexed; deferred scopes Remaining |
 | **Stage 32 D1** | Handoff fidelity — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`) maps A1–B1 → readiness / launch / deploy / security |
 | **Stage 32 fidelity** | D1 maps A1–B1 handoff evidence — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`); exit/freeze `docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070 (`test_stage32_exit_h32x.py`); historical open ADR-069; live go-live / attestation / §7 / deferred ADR implementations remain Remaining |
+| **Stage 33 open** | Commercial MVP Continuity Fidelity — `docs/STAGE_33_PLAN.md`, ADR-071 (`test_stage33_open.py`); Stages 1–32 remain frozen; K1 residual risk / C1 compliance / F1 first-tenant / T1 knowledge transfer pending |
 | **Stage 30 L1** | Operator evidence ledger — `docs/EVIDENCE_LEDGER_MVP.md`, `ops/evidence/ledger.json` (`test_evidence_ledger_l1.py`); live runs / attestation Remaining |
 | **Stage 30 I1** | Incident response / on-call pack — `docs/INCIDENT_PACK_MVP.md`, `ops/incident/` (`test_incident_pack_i1.py`); hosted PagerDuty / live rota Remaining |
 | **Stage 30 S1** | Support & Admin runbook fidelity — `docs/SUPPORT_RUNBOOK_MVP.md`, `ops/support/` + ADMIN_MANUAL §§7/11/12 (`test_support_runbook_s1.py`); live ops SLA Remaining |
