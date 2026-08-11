@@ -1,6 +1,6 @@
 # Stage 52 Plan — Commercial Partnerships & Renewal Fidelity
 
-**Status:** Open — I1 next  
+**Status:** Open — I1 complete; R1 next  
 **Base:** Industry Partnerships Honesty Pack + Subscription Renewal / Annual Discount Honesty Pack → Commercial Partnerships & Renewal Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-109](ADR_109_STAGE52_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Partnerships & Renewal Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **I1** | Industry partnerships honesty packaging (not live industry partnership program / signed association deals Complete) | P0 | PENDING |
+| **I1** | Industry partnerships honesty packaging (not live industry partnership program / signed association deals Complete) | P0 | COMPLETE |
 | **R1** | Subscription renewal / annual discount honesty packaging (not live annual-discount enforcement / auto-renewal billing Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H52x** | Stage 52 exit criteria + freeze ADR | Exit | PENDING |
@@ -76,10 +76,10 @@ Commercial Partnerships & Renewal Fidelity
 
 ## I1 acceptance criteria
 
-- [ ] Industry partnerships honesty packaging consolidating PRODUCT_OVERVIEW association / federation themes and Stage 49–51 channel / marketplace adjacency (not forging live industry partnership program Complete).
-- [ ] Automated proof: `backend/tests/test_industry_partnerships_i1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 52 I1.
+- [x] Industry partnerships honesty packaging consolidating PRODUCT_OVERVIEW association / federation themes and Stage 49–51 channel / marketplace adjacency (not forging live industry partnership program Complete).
+- [x] Automated proof: `backend/tests/test_industry_partnerships_i1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 52 I1.
 
 ## R1 acceptance criteria
 

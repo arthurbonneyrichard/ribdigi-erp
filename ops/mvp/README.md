@@ -52,6 +52,7 @@
 | `freemium-trial.json` | Stage 50 F1 Freemium trial honesty — `freemium_trial_live: false` / `freemium_conversion_claimed: false` / `paid_trial_billing_claimed: false` / `no_cc_trial_claimed: false` |
 | `marketplace-presence.json` | Stage 51 M1 Marketplace presence honesty — `marketplace_listing_live: false` / `app_store_presence_claimed: false` / `plugin_marketplace_live: false` / `marketplace_revenue_share_claimed: false` |
 | `addon-services.json` | Stage 51 A1 Add-on services honesty — `addon_catalog_live: false` / `addon_billing_claimed: false` / `sms_email_credits_live: false` / `premium_ai_addon_claimed: false` |
+| `industry-partnerships.json` | Stage 52 I1 Industry partnerships honesty — `industry_partnership_program_live: false` / `signed_association_deals_claimed: false` / `federation_endorsement_claimed: false` / `guild_program_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -148,6 +149,7 @@ Authoritative MVP docs:
 - `docs/STAGE_51_FIDELITY.md` (`backend/tests/test_stage51_fidelity_d1.py`) — Stage 51 D1
 - `docs/STAGE_51_EXIT_CRITERIA.md` / `docs/ADR_108_STAGE51_FREEZE.md` (`backend/tests/test_stage51_exit_h51x.py`) — Stage 51 H51x
 - `docs/STAGE_52_PLAN.md` (`backend/tests/test_stage52_open.py`) — Stage 52 open (ADR-109)
+- `docs/INDUSTRY_PARTNERSHIPS_MVP.md` (`backend/tests/test_industry_partnerships_i1.py`) — Stage 52 I1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -593,4 +595,8 @@ H51x met — `docs/STAGE_51_EXIT_CRITERIA.md`, ADR-108. Stages 1–51 frozen for
 
 ## Stage 52 open
 
-Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109; I1 next.
+Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109; I1 complete; R1 next.
+
+## Stage 52 I1 — Industry partnerships honesty
+
+`docs/INDUSTRY_PARTNERSHIPS_MVP.md` + `ops/mvp/industry-partnerships.json` — packaging Complete; `industry_partnership_program_live` / `signed_association_deals_claimed` / `federation_endorsement_claimed` / `guild_program_live` remain false.

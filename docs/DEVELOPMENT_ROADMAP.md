@@ -524,6 +524,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 52 open (2026-08-11):** Commercial Partnerships & Renewal Fidelity track approved — `docs/ADR_109_STAGE52_OPEN.md` + `docs/STAGE_52_PLAN.md` (industry partnerships → renewal/discount → fidelity).
 
+**Stage 52 I1 (2026-08-11):** Industry partnerships honesty — `docs/INDUSTRY_PARTNERSHIPS_MVP.md`, `ops/mvp/industry-partnerships.json`, evidence `stage52_i1_industry_partnerships.json` (`test_industry_partnerships_i1.py`); live industry partnership program Remaining.
+
 
 
 
