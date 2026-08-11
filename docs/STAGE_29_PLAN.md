@@ -1,6 +1,6 @@
 # Stage 29 Plan — Operator Hardening & Production Cutover Fidelity
 
-**Status:** Open — V1–X1 complete; D1 next (ADR-063)  
+**Status:** Open — D1 complete; H29x next (ADR-063)  
 **Base:** Vendor Pen-Test / ZAP Staging Pack + PgBouncer Soak / Helm Pooler Pack + Cert-manager / TLS Ingress Pack + Production Cutover Pack → Operator Hardening & Cutover Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-063](ADR_063_STAGE29_OPEN.md)
@@ -39,7 +39,7 @@ Operator Hardening & Cutover Fidelity
 | **B2** | PgBouncer soak / Helm pooler packaging | P0 | COMPLETE |
 | **T1** | Cert-manager / TLS ingress packaging | P0 | COMPLETE |
 | **X1** | Production cutover pack (LAUNCH §§1–3 / §7 harness) | P1 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
 | **H29x** | Stage 29 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -89,9 +89,9 @@ Operator Hardening & Cutover Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_29_FIDELITY.md` maps V1–X1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 29 D1.
-- [ ] Automated proof: `backend/tests/test_stage29_fidelity_d1.py`.
+- [x] `docs/STAGE_29_FIDELITY.md` maps V1–X1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 29 D1.
+- [x] Automated proof: `backend/tests/test_stage29_fidelity_d1.py`.
 
 ## H29x acceptance criteria
 
@@ -103,4 +103,4 @@ Operator Hardening & Cutover Fidelity
 
 ## Sign-off
 
-Stage 29 open under ADR-063. V1–X1 complete; D1 next. Stages 1–28 remain frozen for their scopes.
+Stage 29 open under ADR-063. D1 complete; H29x next. Stages 1–28 remain frozen for their scopes.
