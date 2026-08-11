@@ -58,6 +58,7 @@
 | `cancellation-churn.json` | Stage 53 C1 Cancellation / refund / churn honesty — `cancellation_portal_live: false` / `refund_processing_claimed: false` / `churn_measurement_live: false` / `cancellation_policy_enforced: false` |
 | `digital-marketing.json` | Stage 54 M1 Digital marketing honesty — `digital_marketing_campaigns_live: false` / `case_studies_published_claimed: false` / `testimonials_published_claimed: false` / `paid_ads_live: false` |
 | `direct-sales.json` | Stage 54 S1 Direct sales honesty — `inside_sales_team_live: false` / `enterprise_pipeline_claimed: false` / `white_label_sales_pipeline_claimed: false` / `direct_sales_program_live: false` |
+| `white-label-licensing.json` | Stage 55 W1 White-label licensing honesty — `white_label_licensing_live: false` / `franchise_revenue_share_billing_claimed: false` / `per_tenant_licensing_fee_enforced: false` / `white_label_licensing_program_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -169,6 +170,7 @@ Authoritative MVP docs:
 - `docs/STAGE_54_FIDELITY.md` (`backend/tests/test_stage54_fidelity_d1.py`) — Stage 54 D1
 - `docs/STAGE_54_EXIT_CRITERIA.md` / `docs/ADR_114_STAGE54_FREEZE.md` (`backend/tests/test_stage54_exit_h54x.py`) — Stage 54 H54x
 - `docs/STAGE_55_PLAN.md` (`backend/tests/test_stage55_open.py`) — Stage 55 open (ADR-115)
+- `docs/WHITE_LABEL_LICENSING_MVP.md` (`backend/tests/test_white_label_licensing_w1.py`) — Stage 55 W1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -674,4 +676,8 @@ H54x met — `docs/STAGE_54_EXIT_CRITERIA.md`, ADR-114. Stages 1–54 frozen for
 
 ## Stage 55 open
 
-Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115; W1 next.
+Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115; W1 complete; U1 next.
+
+## Stage 55 W1 — White-label licensing commercial honesty
+
+`docs/WHITE_LABEL_LICENSING_MVP.md` + `ops/mvp/white-label-licensing.json` — packaging Complete; `white_label_licensing_live` / `franchise_revenue_share_billing_claimed` / `per_tenant_licensing_fee_enforced` / `white_label_licensing_program_live` remain false.

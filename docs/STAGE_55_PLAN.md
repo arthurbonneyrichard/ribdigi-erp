@@ -1,6 +1,6 @@
 # Stage 55 Plan — Commercial Licensing & Positioning Fidelity
 
-**Status:** Open — W1 next  
+**Status:** Open — W1 complete; U1 next  
 **Base:** White-Label Licensing Commercial Honesty Pack + Unit Economics / Competitive Positioning Honesty Pack → Commercial Licensing & Positioning Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-115](ADR_115_STAGE55_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Licensing & Positioning Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **W1** | White-label licensing commercial honesty packaging (not live white-label licensing / franchise revenue-share billing Complete) | P0 | PENDING |
+| **W1** | White-label licensing commercial honesty packaging (not live white-label licensing / franchise revenue-share billing Complete) | P0 | COMPLETE |
 | **U1** | Unit economics / competitive positioning honesty packaging (not measured CAC/LTV / competitive superiority proven Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H55x** | Stage 55 exit criteria + freeze ADR | Exit | PENDING |
@@ -83,10 +83,10 @@ Commercial Licensing & Positioning Fidelity
 
 ## W1 acceptance criteria
 
-- [ ] White-label licensing commercial honesty packaging consolidating PRODUCT_OVERVIEW White-Label Licensing revenue themes with Stage 49 partner / reseller and Stage 54 direct-sales adjacency (not forging live white-label licensing / franchise revenue-share billing Complete).
-- [ ] Automated proof: `backend/tests/test_white_label_licensing_w1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 55 W1.
+- [x] White-label licensing commercial honesty packaging consolidating PRODUCT_OVERVIEW White-Label Licensing revenue themes with Stage 49 partner / reseller and Stage 54 direct-sales adjacency (not forging live white-label licensing / franchise revenue-share billing Complete).
+- [x] Automated proof: `backend/tests/test_white_label_licensing_w1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 55 W1.
 
 ## U1 acceptance criteria
 
