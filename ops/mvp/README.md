@@ -65,6 +65,7 @@
 | `mobile-app-gtm.json` | Stage 57 A1 Mobile app GTM honesty — `flutter_app_live_claimed: false` / `app_store_play_publish_claimed: false` / `native_mobile_app_program_live: false` / `mobile_app_gtm_program_live: false` |
 | `success-metrics.json` | Stage 57 K1 Success metrics honesty — `mau_measured_claimed: false` / `nps_measured_claimed: false` / `uptime_sla_measured_claimed: false` / `success_metrics_program_live: false` |
 | `business-metrics.json` | Stage 58 B1 Business metrics honesty — `mrr_measured_claimed: false` / `paying_customers_measured_claimed: false` / `nrr_grr_measured_claimed: false` / `business_metrics_program_live: false` |
+| `ai-metrics.json` | Stage 58 I1 AI metrics honesty — `ai_feature_adoption_measured_claimed: false` / `prediction_accuracy_measured_claimed: false` / `chat_resolution_measured_claimed: false` / `ai_metrics_program_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -192,6 +193,7 @@ Authoritative MVP docs:
 - `docs/STAGE_57_EXIT_CRITERIA.md` / `docs/ADR_120_STAGE57_FREEZE.md` (`backend/tests/test_stage57_exit_h57x.py`) — Stage 57 H57x
 - `docs/STAGE_58_PLAN.md` (`backend/tests/test_stage58_open.py`) — Stage 58 open (ADR-121)
 - `docs/BUSINESS_METRICS_MVP.md` (`backend/tests/test_business_metrics_b1.py`) — Stage 58 B1
+- `docs/AI_METRICS_MVP.md` (`backend/tests/test_ai_metrics_i1.py`) — Stage 58 I1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -757,8 +759,12 @@ H57x met — `docs/STAGE_57_EXIT_CRITERIA.md`, ADR-120. Stages 1–57 frozen for
 
 ## Stage 58 open
 
-Commercial Business & AI Metrics Fidelity — `docs/STAGE_58_PLAN.md`, ADR-121; Open — B1 complete; I1 next.
+Commercial Business & AI Metrics Fidelity — `docs/STAGE_58_PLAN.md`, ADR-121; Open — I1 complete; D1 next.
 
 ## Stage 58 B1 — Business metrics honesty
 
 `docs/BUSINESS_METRICS_MVP.md` + `ops/mvp/business-metrics.json` — packaging Complete; `mrr_measured_claimed` / `paying_customers_measured_claimed` / `nrr_grr_measured_claimed` / `business_metrics_program_live` remain false.
+
+## Stage 58 I1 — AI metrics honesty
+
+`docs/AI_METRICS_MVP.md` + `ops/mvp/ai-metrics.json` — packaging Complete; `ai_feature_adoption_measured_claimed` / `prediction_accuracy_measured_claimed` / `chat_resolution_measured_claimed` / `ai_metrics_program_live` remain false.

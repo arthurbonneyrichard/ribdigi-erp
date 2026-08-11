@@ -1,6 +1,6 @@
 # Stage 58 Plan — Commercial Business & AI Metrics Fidelity
 
-**Status:** Open — B1 complete; I1 next  
+**Status:** Open — I1 complete; D1 next  
 **Base:** Business Metrics Honesty Pack + AI Metrics Honesty Pack → Commercial Business & AI Metrics Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-121](ADR_121_STAGE58_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Business & AI Metrics Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **B1** | Business metrics honesty packaging (not measured MRR / paying customers / NRR Complete) | P0 | COMPLETE |
-| **I1** | AI metrics honesty packaging (not measured AI adoption / prediction accuracy / chat resolution Complete) | P0 | PENDING |
+| **I1** | AI metrics honesty packaging (not measured AI adoption / prediction accuracy / chat resolution Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H58x** | Stage 58 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -94,10 +94,10 @@ Commercial Business & AI Metrics Fidelity
 
 ## I1 acceptance criteria
 
-- [ ] AI metrics honesty packaging indexing PRODUCT_OVERVIEW AI Feature Adoption / Prediction Accuracy / Chat Resolution themes with Stage 20–42 AI adjacency (not claiming measured AI adoption / prediction accuracy / chat resolution Complete).
-- [ ] Automated proof: `backend/tests/test_ai_metrics_i1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 58 I1.
+- [x] AI metrics honesty packaging indexing PRODUCT_OVERVIEW AI Feature Adoption / Prediction Accuracy / Chat Resolution themes with Stage 20–42 AI adjacency (not claiming measured AI adoption / prediction accuracy / chat resolution Complete).
+- [x] Automated proof: `backend/tests/test_ai_metrics_i1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 58 I1.
 
 ## D1 acceptance criteria
 
