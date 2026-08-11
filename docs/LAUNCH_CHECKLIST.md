@@ -187,7 +187,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Controlled business pilot honesty (Stage 65 P1: `test_business_pilot_p1.py` — `docs/BUSINESS_PILOT_MVP.md`, `ops/mvp/business-pilot.json`; evidence `stage65_p1_business_pilot.json`; live controlled business pilot Remaining)
 - [x] Stage 65 fidelity sync (D1: `test_stage65_fidelity_d1.py`, `docs/STAGE_65_FIDELITY.md` — R1–P1 + readiness + deploy / launch / security)
 - [x] Stage 65 exit + freeze (H65x: `test_stage65_exit_h65x.py`, `docs/STAGE_65_EXIT_CRITERIA.md`, ADR-136)
-- [x] Stage 66 track opened (ADR-138: `test_stage66_open.py`, `docs/STAGE_66_PLAN.md`) — MVP Production Launch Fidelity; L1 next historically, L1 complete / T1 next
+- [x] Stage 66 track opened (ADR-138: `test_stage66_open.py`, `docs/STAGE_66_PLAN.md`) — MVP Production Launch Fidelity; T1 complete / D1 next
 - [x] Production launch honesty (Stage 66 L1: `test_production_launch_l1.py` — `docs/PRODUCTION_LAUNCH_MVP.md`, `ops/mvp/production-launch.json`; evidence `stage66_l1_production_launch.json`; live cutover / §7 signed / go-live Remaining)
 - [x] First tenant go-live honesty (Stage 66 T1: `test_first_tenant_golive_t1.py` — `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json`; evidence `stage66_t1_first_tenant_golive.json`; first paying tenant / live onboarding Remaining)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
