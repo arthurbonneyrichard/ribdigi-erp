@@ -1,0 +1,64 @@
+{
+  "stage": "30",
+  "workstream": "A1",
+  "doc": "docs/ATTESTATION_PACK_MVP.md",
+  "evidence_ledger": "ops/evidence/ledger.json",
+  "launch_cert_mvp": "docs/LAUNCH_CERT_MVP.md",
+  "cutover_pack_mvp": "docs/CUTOVER_PACK_MVP.md",
+  "checklist": "docs/LAUNCH_CHECKLIST.md",
+  "checklist_map": "ops/launch/checklist-map.json",
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "launch_sections": ["1", "2", "3", "7"],
+  "required_honesty_flags": [
+    "production_signoff_claimed",
+    "operator_pitr_drill_executed",
+    "live_staging_apply_claimed",
+    "hosted_grafana_claimed",
+    "operator_1000vu_executed",
+    "vendor_pen_test_purchased",
+    "live_soak_executed",
+    "letsencrypt_issued",
+    "production_cutover_claimed",
+    "section_7_signed"
+  ],
+  "gates": [
+    {
+      "id": "config",
+      "title": "LAUNCH §1 Configuration & secrets verified in target env",
+      "maps_to": ["1"],
+      "class": "operator_required"
+    },
+    {
+      "id": "identity",
+      "title": "LAUNCH §2 Identity & security verified in target env",
+      "maps_to": ["2"],
+      "class": "operator_required"
+    },
+    {
+      "id": "integrations",
+      "title": "LAUNCH §3 Integrations verified in target env",
+      "maps_to": ["3"],
+      "class": "operator_required"
+    },
+    {
+      "id": "ops-remaining",
+      "title": "Stage 26–29 honesty flags still false until live runs recorded",
+      "maps_to": [],
+      "class": "operator_required"
+    },
+    {
+      "id": "signoff",
+      "title": "LAUNCH §7 Name/Date signed only after real Engineering/Operations/Product verification",
+      "maps_to": ["7"],
+      "class": "operator_required"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage30_a1_attestation_pack.json",
+  "deferred": [
+    "Forged go-live attestation Complete in CI",
+    "Forged LAUNCH §7 Name/Date sign-off",
+    "Treating packaging Complete as production live"
+  ]
+}

@@ -39,6 +39,10 @@ Each entry records `artifact`, `pack_doc`, `test`, and `honesty` flags that rema
 - Forged LAUNCH §7 or go-live attestation
 - Treating Stage 30 L1 Complete as “production is live”
 
+## Go-live attestation matrix (Stage 30 A1)
+
+Operators walk Remaining honesty flags via [ATTESTATION_PACK_MVP.md](ATTESTATION_PACK_MVP.md) + `ops/launch/attestation-matrix.json` (`test_attestation_pack_a1.py`). Packaging keeps `attestation_claimed: false` and does not forge §7.
+
 ## Sign-off
 
-Stage 30 L1 is met when this doc + ledger JSON + evidence JSON exist, `test_evidence_ledger_l1.py` passes, and PRODUCTION_READINESS / launch / roadmap cite Stage 30 L1 without inventing live-run success.
+Stage 30 L1 is met when this doc + ledger JSON + evidence JSON exist, `test_evidence_ledger_l1.py` passes, and PRODUCTION_READINESS / launch / roadmap cite Stage 30 L1 without inventing live-run success. Stage 30 A1 extends this ledger into an attestation matrix without claiming go-live Complete.

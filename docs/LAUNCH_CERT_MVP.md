@@ -38,6 +38,16 @@ Operator cutover / rollback / secrets-handoff packaging extends this map without
 - Optional GHA (extends Stage 28 G1; not main `ci.yml`): `ops/k8s/deploy-production.example.yml`
 - Proof: `backend/tests/test_cutover_pack_x1.py`
 
+## Go-live attestation matrix (Stage 30 A1)
+
+Attestation matrix packaging maps Remaining honesty flags across Stage 26–29 packs + LAUNCH §§1–3 / §7 without forging attestation or §7:
+
+- Pack: [ATTESTATION_PACK_MVP.md](ATTESTATION_PACK_MVP.md)
+- Matrix: `ops/launch/attestation-matrix.json`
+- Evidence schema: `ops/launch/attestation-evidence.example.json`
+- Proof: `backend/tests/test_attestation_pack_a1.py`
+- Honesty: `attestation_claimed: false`, `section_7_signed: false`, `sections_1_3_verified: false`
+
 ## Sign-off
 
-Stage 27 L1 is met when this doc + checklist map + evidence JSON exist, `test_launch_cert_l1.py` passes, and `LAUNCH_CHECKLIST.md` / roadmap cite Stage 27 L1 without fake production sign-off. Stage 29 X1 is met when the cutover pack above passes without inventing live cutover or forged §7.
+Stage 27 L1 is met when this doc + checklist map + evidence JSON exist, `test_launch_cert_l1.py` passes, and `LAUNCH_CHECKLIST.md` / roadmap cite Stage 27 L1 without fake production sign-off. Stage 29 X1 is met when the cutover pack above passes without inventing live cutover or forged §7. Stage 30 A1 is met when the attestation pack above passes without inventing attestation Complete or forged §7.
