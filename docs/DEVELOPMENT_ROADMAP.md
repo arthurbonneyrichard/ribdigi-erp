@@ -464,6 +464,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 46 open (2026-08-11):** Commercial Liability & Remedy Fidelity track approved — `docs/ADR_097_STAGE46_OPEN.md` + `docs/STAGE_46_PLAN.md` (liability/indemnity → service credit/warranty → fidelity).
 
+**Stage 46 L1 (2026-08-11):** Limitation of liability / indemnity honesty — `docs/LIABILITY_INDEMNITY_MVP.md`, `ops/mvp/liability-indemnity.json`, evidence `stage46_l1_liability_indemnity.json` (`test_liability_indemnity_l1.py`); signed liability-cap Remaining.
+
 
 
 

@@ -1,6 +1,6 @@
 # Stage 46 Plan — Commercial Liability & Remedy Fidelity
 
-**Status:** Open — L1 next  
+**Status:** Open — L1 complete; W1 next  
 **Base:** Limitation of Liability / Indemnity Honesty Pack + Service Credit / Warranty Honesty Pack → Commercial Liability & Remedy Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-097](ADR_097_STAGE46_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Liability & Remedy Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **L1** | Limitation of liability / indemnity honesty packaging (not signed liability-cap / indemnity Complete) | P0 | PENDING |
+| **L1** | Limitation of liability / indemnity honesty packaging (not signed liability-cap / indemnity Complete) | P0 | COMPLETE |
 | **W1** | Service credit / warranty honesty packaging (not live service credits / warranty Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H46x** | Stage 46 exit criteria + freeze ADR | Exit | PENDING |
@@ -67,10 +67,10 @@ Commercial Liability & Remedy Fidelity
 
 ## L1 acceptance criteria
 
-- [ ] Limitation of liability / indemnity honesty packaging consolidating Stage 39 MSA / Stage 43 ToS adjacency (not forging signed liability-cap / indemnity Complete).
-- [ ] Automated proof: `backend/tests/test_liability_indemnity_l1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 46 L1.
+- [x] Limitation of liability / indemnity honesty packaging consolidating Stage 39 MSA / Stage 43 ToS adjacency (not forging signed liability-cap / indemnity Complete).
+- [x] Automated proof: `backend/tests/test_liability_indemnity_l1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 46 L1.
 
 ## W1 acceptance criteria
 
