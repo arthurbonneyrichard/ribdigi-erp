@@ -1487,3 +1487,7 @@ Every feature in every phase must meet:
 **Stage 71 S1 (2026-08-11):** Steady-state commercial ops honesty — `docs/STEADY_STATE_OPS_MVP.md`, `ops/mvp/steady-state-ops.json`, evidence `stage71_s1_steady_state_ops.json` (`test_steady_state_ops_s1.py`); steady-state live Remaining.
 
 **Stage 71 A1 (2026-08-11):** Commercial acceptance gate honesty — `docs/COMMERCIAL_ACCEPTANCE_MVP.md`, `ops/mvp/commercial-acceptance.json`, evidence `stage71_a1_commercial_acceptance.json` (`test_commercial_acceptance_a1.py`); acceptance Remaining.
+
+**Stage 71 D1 (2026-08-11):** Commercial Steady-State fidelity sync — `docs/STAGE_71_FIDELITY.md` (`test_stage71_fidelity_d1.py`); maps S1–A1 → readiness / launch / deploy / security.
+
+**Stage 71 exit (2026-08-11):** S1, A1, D1, H71x met — `docs/STAGE_71_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_149_STAGE71_FREEZE.md`. Fidelity: `docs/STAGE_71_FIDELITY.md`.
