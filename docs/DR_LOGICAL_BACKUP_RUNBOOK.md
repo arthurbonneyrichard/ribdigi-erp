@@ -2,7 +2,7 @@
 
 **Scope:** Stage 5 B1 + Stage 10 B1 (media) + Stage 18 B1 (schedule / retention / failure notify) + Stage 19 R1 (LAUNCH §5 packaging evidence) + Stage 23 B1 (commercial MVP DR drill gate evidence) — encrypted logical tenant backup / guarded restore  
 **Infrastructure WAL / PITR / S3 offsite:** Stage 26 W1 strategy — see [DR_WAL_PITR_RUNBOOK.md](DR_WAL_PITR_RUNBOOK.md) (`ops/postgres/`, `ops/backup/`, `test_wal_pitr_w1.py`). Operator staging PITR drill execution and automatic `.ribbak` upload from `create_backup` remain Remaining.  
-**Still out of scope here:** schema-per-tenant isolation (ADR-001); restore-to-new-tenant
+**Out of scope (post-MVP for this logical runbook):** schema-per-tenant isolation (ADR-001); restore-to-new-tenant. Infrastructure WAL/PITR operator staging drill remains Remaining under Stage 26 W1.
 
 Stage 19 R1 automated packaging check: `backend/tests/test_reliability_cache_r1.py` (asserts this runbook + dry-run / `confirm_text=RESTORE` / WAL-PITR deferral).  
 Stage 23 B1 commercial MVP gate proof: `backend/tests/test_logical_dr_drill_b1.py` → evidence artifact `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json` (create → dry-run → apply → verify + foreign-tenant 404).
