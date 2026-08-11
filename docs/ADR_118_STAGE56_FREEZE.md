@@ -23,3 +23,7 @@ Stage 56 Commercial Onboarding & Expansion Fidelity delivered implementation & o
 - Stage 1–55 freezes remain in force for their scopes (Stage 55 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Onboarding & expansion packaging Complete does **not** mean live data-migration fee billing, on-site training delivery, multi-market expansion, international localization, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 57 (Commercial Mobile & Metrics Fidelity) after Stage 56 freeze via CONTINUE/NEXT — see [ADR-119](ADR_119_STAGE57_OPEN.md) and [STAGE_57_PLAN.md](STAGE_57_PLAN.md). Stage 56 feature scope remains frozen; Stage 57 does not reopen O1–D1 / H56x.

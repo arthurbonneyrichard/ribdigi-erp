@@ -182,6 +182,7 @@ Authoritative MVP docs:
 - `docs/GEOGRAPHIC_EXPANSION_MVP.md` (`backend/tests/test_geographic_expansion_g1.py`) — Stage 56 G1
 - `docs/STAGE_56_FIDELITY.md` (`backend/tests/test_stage56_fidelity_d1.py`) — Stage 56 D1
 - `docs/STAGE_56_EXIT_CRITERIA.md` / `docs/ADR_118_STAGE56_FREEZE.md` (`backend/tests/test_stage56_exit_h56x.py`) — Stage 56 H56x
+- `docs/STAGE_57_PLAN.md` (`backend/tests/test_stage57_open.py`) — Stage 57 open (ADR-119)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -724,3 +725,7 @@ Commercial Onboarding & Expansion Fidelity — `docs/STAGE_56_PLAN.md`, ADR-117;
 ## Stage 56 exit
 
 H56x met — `docs/STAGE_56_EXIT_CRITERIA.md`, ADR-118. Stages 1–56 frozen for Stage 56 feature scope.
+
+## Stage 57 open
+
+Commercial Mobile & Metrics Fidelity — `docs/STAGE_57_PLAN.md`, ADR-119; Open — A1 next.
