@@ -559,6 +559,7 @@ async def update_profile(
 
 
 VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
+VALID_TIME_FORMATS = frozenset({"24h", "12h"})
 VALID_NUMBER_FORMATS = frozenset({"1,234.56", "1.234,56", "1 234.56"})
 
 

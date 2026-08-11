@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
+import { formatDateTime } from '../../../lib/format';
+import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
 
 type PlatformUser = {
   id: string;
@@ -37,6 +39,7 @@ export default function PlatformUsersPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('platform_admin');
   const [busy, setBusy] = useState(false);
+  const [formats, setFormats] = useState(HOUSE_FORMAT_DEFAULTS);
 
   async function load() {
     setError('');
@@ -51,6 +54,7 @@ export default function PlatformUsersPage() {
   }
 
   useEffect(() => {
+    fetchHouseFormats().then(setFormats);
     load();
   }, []);
 
@@ -220,7 +224,9 @@ export default function PlatformUsersPage() {
               </td>
               <td>{u.is_active ? 'yes' : 'no'}</td>
               <td>{u.totp_enabled ? 'yes' : 'no'}</td>
-              <td className="muted">{u.last_session_at || '—'}</td>
+              <td className="muted">
+                {formatDateTime(u.last_session_at, formats.date_format, formats.time_format)}
+              </td>
               <td>{u.active_session_count ?? 0}</td>
               <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button type="button" disabled={busy} onClick={() => emailPasswordReset(u)}>

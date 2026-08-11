@@ -558,6 +558,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 91 P1** | Staff presence / health required badges / House TZ / `GET /platform/evidence` (`test_house_posture_evidence_p1.py`); packaging honesty only — not go-live Complete |
 | **Stage 91 D1** | House Operator Investigation & Evidence Ops fidelity — `docs/STAGE_91_FIDELITY.md` (`test_stage91_fidelity_d1.py`); maps I1–P1 → readiness / launch / deploy / security |
 | **Stage 91 H91x** | Exit + freeze — `docs/STAGE_91_EXIT_CRITERIA.md`, ADR-189 (`test_stage91_exit_h91x.py`); Stages 1–91 frozen for Stage 91 scope; Stage 92+ requires CONTINUE/NEXT |
+| **Stage 92 open** | House Console Workflow & Readiness Ops — `docs/STAGE_92_PLAN.md`, ADR-190 (`test_stage92_open.py`); Stages 1–91 remain frozen for prior scopes; B1 next historically |
+| **Stage 92 B1** | Investigation export + evidence download — audit `delivery_only` export + Activity window parity + evidence UI (`test_stage92_console_workflow_b1.py`); no fabricated SMTP success |
+| **Stage 92 G1** | Roster triage + commercial-metadata context — notes search / list delivery / Active·Trial links / soft-limit context / billing roster enrichment (`test_stage92_roster_context_g1.py`); no MRR |
+| **Stage 92 K1** | House regional formats + protected CORS allowlist on health/evidence (`test_stage92_readiness_formats_k1.py`); packaging honesty only — not go-live Complete |
+| **Stage 92 D1** | House Console Workflow & Readiness Ops fidelity — `docs/STAGE_92_FIDELITY.md` (`test_stage92_fidelity_d1.py`); maps B1–K1 → readiness / launch / deploy / security |
+| **Stage 92 H92x** | Exit + freeze — `docs/STAGE_92_EXIT_CRITERIA.md`, ADR-191 (`test_stage92_exit_h92x.py`); Stages 1–92 frozen for Stage 92 scope; Stage 93+ requires CONTINUE/NEXT |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |

@@ -4,6 +4,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
+import { formatDateTime } from '../../../lib/format';
+import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
 
 type AuditRow = {
   id?: string;
@@ -18,6 +20,12 @@ type AuditRow = {
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+function activityDefaultFromDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function PlatformAuditPage() {
   const pathname = usePathname();
   const isActivity = Boolean(pathname?.includes('/activity'));
@@ -31,6 +39,7 @@ export default function PlatformAuditPage() {
   const [toDate, setToDate] = useState('');
   const [deliveryOnly, setDeliveryOnly] = useState(false);
   const [verify, setVerify] = useState<any>(null);
+  const [formats, setFormats] = useState(HOUSE_FORMAT_DEFAULTS);
 
   async function load() {
     setError('');
@@ -49,6 +58,7 @@ export default function PlatformAuditPage() {
   }
 
   useEffect(() => {
+    fetchHouseFormats().then(setFormats);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listPath]);
@@ -74,8 +84,11 @@ export default function PlatformAuditPage() {
       const params = new URLSearchParams();
       if (module.trim()) params.set('module', module.trim());
       if (action.trim()) params.set('action', action.trim());
-      if (fromDate) params.set('from_date', fromDate);
+      const exportFrom =
+        fromDate || (isActivity ? activityDefaultFromDate() : '');
+      if (exportFrom) params.set('from_date', exportFrom);
       if (toDate) params.set('to_date', toDate);
+      if (deliveryOnly) params.set('delivery_only', 'true');
       params.set('format', fmt);
       const res = await fetch(`${apiBase}/platform/audit/export?${params}`, {
         headers: {
@@ -195,7 +208,9 @@ export default function PlatformAuditPage() {
         <tbody>
           {items.map((row) => (
             <tr key={row.id || `${row.action}-${row.created_at}`}>
-              <td>{row.created_at || '—'}</td>
+              <td>
+                {formatDateTime(row.created_at, formats.date_format, formats.time_format)}
+              </td>
               <td>{row.action}</td>
               <td>{row.module}</td>
               <td>

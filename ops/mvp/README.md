@@ -250,6 +250,9 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_92_EXIT_CRITERIA.md` / `docs/ADR_191_STAGE92_FREEZE.md` (`backend/tests/test_stage92_exit_h92x.py`) — Stage 92 H92x
+- `docs/STAGE_92_FIDELITY.md` (`backend/tests/test_stage92_fidelity_d1.py`) — Stage 92 D1
+- `docs/STAGE_92_PLAN.md` (`backend/tests/test_stage92_open.py`) — Stage 92 open (ADR-190)
 - `docs/STAGE_91_EXIT_CRITERIA.md` / `docs/ADR_189_STAGE91_FREEZE.md` (`backend/tests/test_stage91_exit_h91x.py`) — Stage 91 H91x
 - `docs/STAGE_91_FIDELITY.md` (`backend/tests/test_stage91_fidelity_d1.py`) — Stage 91 D1
 - `docs/STAGE_91_PLAN.md` (`backend/tests/test_stage91_open.py`) — Stage 91 open (ADR-188)
@@ -1064,6 +1067,31 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+
+
+## Stage 92 exit
+
+H92x met — `docs/STAGE_92_EXIT_CRITERIA.md`, ADR-191. Stages 1–92 frozen for Stage 92 feature scope.
+
+## Stage 92 D1 — House Console Workflow & Readiness Ops fidelity
+
+`docs/STAGE_92_FIDELITY.md` — maps B1–K1 → readiness / launch / deploy / security.
+
+## Stage 92 K1 — House regional formats + runtime evidence detail
+
+`test_stage92_readiness_formats_k1.py` — date/time formats, protected CORS allowlist, database required badge.
+
+## Stage 92 G1 — Roster triage + commercial-metadata context
+
+`test_stage92_roster_context_g1.py` — notes search, list last delivery, Active/Trial links, soft-limit context, billing roster enrichment.
+
+## Stage 92 B1 — Investigation export + evidence download
+
+`test_stage92_console_workflow_b1.py` — audit `delivery_only` export + Activity 7d materialization + evidence UI.
+
+## Stage 92 open
+
+ADR-190 + `docs/STAGE_92_PLAN.md` — House Console Workflow & Readiness Ops.
 
 ## Stage 91 exit
 

@@ -323,6 +323,8 @@ async def platform_subscriptions_roster(db: AsyncSession) -> dict:
 
     Honesty: this is not paid billing Complete (ADR-002). ``subscriptions_live_claimed``
     and fabricated MRR remain false.
+
+    Stage 92 G1: industry, admin email, user/store counts, lifecycle dates (still no MRR).
     """
     await ensure_platform_tenant(db)
     rows = (
@@ -334,6 +336,23 @@ async def platform_subscriptions_roster(db: AsyncSession) -> dict:
     ).scalars().all()
     items = []
     for t in rows:
+        admin = await get_customer_tenant_admin(db, t.id)
+        user_count = int(
+            (
+                await db.execute(
+                    select(func.count()).select_from(m.User).where(m.User.tenant_id == t.id)
+                )
+            ).scalar_one()
+            or 0
+        )
+        store_count = int(
+            (
+                await db.execute(
+                    select(func.count()).select_from(m.Store).where(m.Store.tenant_id == t.id)
+                )
+            ).scalar_one()
+            or 0
+        )
         items.append(
             {
                 "tenant_id": t.id,
@@ -341,7 +360,13 @@ async def platform_subscriptions_roster(db: AsyncSession) -> dict:
                 "company_name": t.company_name,
                 "status": t.status,
                 "plan_code": getattr(t, "plan_code", None) or "trial",
+                "industry": getattr(t, "industry", None),
+                "admin_email": admin.email if admin else None,
+                "user_count": user_count,
+                "store_count": store_count,
                 "trial_ends_at": t.trial_ends_at.isoformat() + "Z" if t.trial_ends_at else None,
+                "grace_ends_at": t.grace_ends_at.isoformat() + "Z" if t.grace_ends_at else None,
+                "created_at": t.created_at.isoformat() + "Z" if t.created_at else None,
                 "billing": "deferred",
             }
         )
@@ -522,6 +547,7 @@ async def list_customer_tenants(
                 func.lower(m.Tenant.company_name).like(like),
                 m.Tenant.id == q.strip(),
                 m.Tenant.id.in_(admin_tenant_ids),
+                func.lower(func.coalesce(m.Tenant.platform_notes, "")).like(like),
             )
         )
     total = int(
@@ -542,34 +568,57 @@ async def list_customer_tenants(
     out: list[dict] = []
     for t in rows:
         out.append(await _enrich_tenant_row(db, t))
+    deliveries = await latest_house_email_deliveries(db, [t.id for t in rows])
+    for item in out:
+        item["last_house_email_delivery"] = deliveries.get(item["id"])
     return out, total
 
 
-async def last_house_email_delivery(db: AsyncSession, tenant_id: str) -> dict | None:
-    """Stage 91 N1 — latest platform.email.delivery for a customer tenant."""
+def _delivery_summary_from_audit(row: m.AuditLog) -> dict:
+    details = row.details if isinstance(row.details, dict) else {}
+    return {
+        "created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
+        "purpose": details.get("purpose"),
+        "recipient": details.get("recipient"),
+        "related_action": details.get("related_action"),
+        "sent": details.get("sent"),
+        "mode": details.get("mode"),
+        "error": details.get("error"),
+        "fabricated_success": bool(details.get("fabricated_success"))
+        if details.get("fabricated_success") is not None
+        else False,
+    }
+
+
+async def latest_house_email_deliveries(
+    db: AsyncSession, tenant_ids: list[str]
+) -> dict[str, dict]:
+    """Stage 92 G1 — bulk latest House email delivery keyed by target_tenant_id."""
+    wanted = {tid for tid in tenant_ids if tid}
+    if not wanted:
+        return {}
     rows = await audit_svc.query_logs(
         db,
         tenant_id=PLATFORM_TENANT_ID,
         module="platform_email",
         action="platform.email.delivery",
-        limit=200,
+        limit=1000,
     )
+    out: dict[str, dict] = {}
     for row in rows:
         details = row.details if isinstance(row.details, dict) else {}
-        if details.get("target_tenant_id") == tenant_id:
-            return {
-                "created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
-                "purpose": details.get("purpose"),
-                "recipient": details.get("recipient"),
-                "related_action": details.get("related_action"),
-                "sent": details.get("sent"),
-                "mode": details.get("mode"),
-                "error": details.get("error"),
-                "fabricated_success": bool(details.get("fabricated_success"))
-                if details.get("fabricated_success") is not None
-                else False,
-            }
-    return None
+        tid = details.get("target_tenant_id")
+        if tid in wanted and tid not in out:
+            out[tid] = _delivery_summary_from_audit(row)
+            if len(out) == len(wanted):
+                break
+    return out
+
+
+async def last_house_email_delivery(db: AsyncSession, tenant_id: str) -> dict | None:
+    """Stage 91 N1 — latest platform.email.delivery for a customer tenant."""
+    found = await latest_house_email_deliveries(db, [tenant_id])
+    return found.get(tenant_id)
 
 
 async def get_customer_tenant(db: AsyncSession, tenant_ref: str) -> dict | None:
@@ -648,6 +697,10 @@ def customer_tenants_to_csv(rows: list[dict]) -> str:
             "user_count",
             "store_count",
             "last_activity_at",
+            "last_house_email_at",
+            "last_house_email_sent",
+            "last_house_email_mode",
+            "last_house_email_purpose",
             "suspended_reason",
             "created_at",
         ]
@@ -660,6 +713,7 @@ def customer_tenants_to_csv(rows: list[dict]) -> str:
                 return v.isoformat()
             return str(v)
 
+        delivery = r.get("last_house_email_delivery") or {}
         writer.writerow(
             [
                 r.get("id") or "",
@@ -674,6 +728,10 @@ def customer_tenants_to_csv(rows: list[dict]) -> str:
                 r.get("user_count") if r.get("user_count") is not None else "",
                 r.get("store_count") if r.get("store_count") is not None else "",
                 _fmt(r.get("last_activity_at")),
+                _fmt(delivery.get("created_at")),
+                "" if delivery.get("sent") is None else delivery.get("sent"),
+                delivery.get("mode") or "",
+                delivery.get("purpose") or "",
                 r.get("suspended_reason") or "",
                 _fmt(r.get("created_at")),
             ]

@@ -6,15 +6,48 @@ import { api } from '../../../lib/api';
 
 type Check = { status?: string; latency_ms?: number; reason?: string; mode?: string; required?: boolean };
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 export default function PlatformHealthPage() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     api('/platform/health')
       .then((r) => setData(r.data))
       .catch((err) => setError(err.message || 'Failed to load health'));
   }, []);
+
+  async function downloadEvidence() {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/platform/evidence`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('Evidence download failed');
+      const body = await res.json();
+      const blob = new Blob([JSON.stringify(body.data ?? body, null, 2)], {
+        type: 'application/json',
+      });
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `platform-evidence-${stamp}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Evidence JSON downloaded (packaging honesty only)');
+    } catch (err: any) {
+      setError(err.message || 'Evidence download failed');
+    }
+  }
 
   const checks: Record<string, Check> = data?.checks || {};
   const security = data?.security || {};
@@ -25,10 +58,16 @@ export default function PlatformHealthPage() {
       <h1>Platform health</h1>
       <p className="muted">Deep readiness checks for Ribdigi House operators.</p>
       {error && <p>{error}</p>}
+      {message && <p style={{ color: '#047857' }}>{message}</p>}
       {data && (
         <>
           <p style={{ marginTop: 12 }}>
             Overall: <strong>{data.status}</strong>
+          </p>
+          <p style={{ marginTop: 8 }}>
+            <button type="button" onClick={downloadEvidence}>
+              Download evidence JSON
+            </button>
           </p>
           <div className="grid" style={{ marginTop: 16 }}>
             <div className="card">
@@ -64,6 +103,11 @@ export default function PlatformHealthPage() {
                 CORS origins: {security.cors_origins_count ?? '—'}
                 {security.cors_allows_wildcard ? ' (includes *)' : ''}
               </p>
+              {Array.isArray(security.cors_origins) && (
+                <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                  Allowlist: {security.cors_origins.join(', ') || '—'}
+                </p>
+              )}
             </div>
             {Object.entries(checks).map(([name, check]) => (
               <div className="card" key={name}>
@@ -89,7 +133,7 @@ export default function PlatformHealthPage() {
             ))}
           </div>
           <p className="muted" style={{ marginTop: 16 }}>
-            Operator evidence pack:{' '}
+            Operator evidence pack via Download evidence JSON /{' '}
             <code>GET /platform/evidence</code> (packaging honesty — not go-live Complete).
           </p>
           <details style={{ marginTop: 20 }}>

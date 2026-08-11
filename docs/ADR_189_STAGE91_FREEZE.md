@@ -27,4 +27,4 @@ Stage 91 House Operator Investigation & Evidence Ops delivered audit/activity da
 
 ## Next stage
 
-Stage 92 requires CONTINUE/NEXT with a distinct product outline and open ADR after this freeze. Stage 91 feature scope remains frozen.
+Stage 92 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-190](ADR_190_STAGE92_OPEN.md) + [STAGE_92_PLAN.md](STAGE_92_PLAN.md) (Investigation Export & Evidence Download → Roster Triage & Commercial-Metadata Context → House Regional Formats & Runtime Evidence Detail → House Console Workflow & Readiness Ops). Stage 91 feature scope remains frozen.

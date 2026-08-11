@@ -24,12 +24,13 @@ async def check_database(session_factory: async_sessionmaker[AsyncSession]) -> C
     try:
         async with session_factory() as db:
             await db.execute(text("SELECT 1"))
-        return {"status": "ok", "latency_ms": _ms_since(start)}
+        return {"status": "ok", "latency_ms": _ms_since(start), "required": True}
     except Exception as exc:
         return {
             "status": "error",
             "latency_ms": _ms_since(start),
             "error": type(exc).__name__,
+            "required": True,
         }
 
 

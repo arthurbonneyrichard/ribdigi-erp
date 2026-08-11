@@ -10,6 +10,8 @@ export default function PlatformSettingsPage() {
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [timezone, setTimezone] = useState('Africa/Accra');
+  const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
+  const [timeFormat, setTimeFormat] = useState('24h');
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -23,6 +25,8 @@ export default function PlatformSettingsPage() {
       setSupportEmail(r.data?.support_email || '');
       setSupportPhone(r.data?.support_phone || '');
       setTimezone(r.data?.timezone || 'Africa/Accra');
+      setDateFormat(r.data?.date_format || 'DD/MM/YYYY');
+      setTimeFormat(r.data?.time_format || '24h');
     } catch (err: any) {
       setError(err.message || 'Failed to load settings');
     }
@@ -46,6 +50,8 @@ export default function PlatformSettingsPage() {
           support_email: supportEmail,
           support_phone: supportPhone,
           timezone,
+          date_format: dateFormat,
+          time_format: timeFormat,
         }),
       });
       setMsg('Settings saved');
@@ -107,6 +113,25 @@ export default function PlatformSettingsPage() {
           required
           style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
         />
+        <label className="muted">House date format</label>
+        <select
+          value={dateFormat}
+          onChange={(e) => setDateFormat(e.target.value)}
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+          <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+          <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+        </select>
+        <label className="muted">House time format</label>
+        <select
+          value={timeFormat}
+          onChange={(e) => setTimeFormat(e.target.value)}
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="24h">24h</option>
+          <option value="12h">12h</option>
+        </select>
         <button
           type="submit"
           disabled={busy}

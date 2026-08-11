@@ -93,6 +93,8 @@ class PlatformSettingsUpdate(BaseModel):
     support_email: str | None = None
     support_phone: str | None = None
     timezone: str | None = Field(default=None, min_length=1, max_length=64)
+    date_format: str | None = None
+    time_format: str | None = None
 
 
 @router.get("/dashboard")
@@ -296,6 +298,21 @@ async def platform_create_tenant(
     email_result = await emailer.send_verification_email(
         to=str(payload.admin_email), token=raw, company_name=tenant.company_name
     )
+    await platform_svc.record_platform_email_delivery(
+        db,
+        actor_user_id=claims.get("sub"),
+        purpose="email_verify",
+        recipient=str(payload.admin_email),
+        related_action="platform.tenant.create",
+        email_result=email_result,
+        extra={
+            "target_tenant_id": tenant.id,
+            "admin_user_id": admin.id,
+        },
+        ip_address=ip,
+        user_agent=ua,
+    )
+    await db.commit()
     data = {
         "tenant_id": tenant.id,
         "slug": tenant.slug,
@@ -306,6 +323,12 @@ async def platform_create_tenant(
             "sent": email_result.sent,
             "mode": email_result.mode,
             "error": email_result.error,
+        },
+        "email_delivery": {
+            "sent": email_result.sent,
+            "mode": email_result.mode,
+            "error": email_result.error,
+            "fabricated_success": False,
         },
     }
     if settings.DEBUG or settings.APP_ENV.lower() != "production":
@@ -769,9 +792,22 @@ def _serialize_platform_settings(tenant: m.Tenant) -> dict:
         "support_email": getattr(tenant, "email", None),
         "support_phone": getattr(tenant, "phone", None),
         "timezone": getattr(tenant, "timezone", None) or "Africa/Accra",
+        "date_format": getattr(tenant, "date_format", None) or "DD/MM/YYYY",
+        "time_format": getattr(tenant, "time_format", None) or "24h",
         "status": tenant.status,
         "plan_code": getattr(tenant, "plan_code", None) or "enterprise",
     }
+
+
+def _platform_security_detail() -> dict[str, Any]:
+    """Stage 92 K1 — protected health/evidence security detail (not public /health)."""
+    posture = security_posture()
+    sec = dict(posture.get("security") or {})
+    origins = list(settings.cors_origins)
+    sec["cors_origins"] = origins
+    sec["cors_origins_count"] = len(origins)
+    sec["cors_allows_wildcard"] = any(o == "*" for o in origins)
+    return sec
 
 
 @router.get("/settings")
@@ -817,6 +853,21 @@ async def platform_patch_settings(
             raise HTTPException(status_code=400, detail="timezone cannot be empty")
         tenant.timezone = tz
         changes["timezone"] = tenant.timezone
+    if payload.date_format is not None:
+        fmt = payload.date_format.strip().upper()
+        if fmt not in tenants_svc.VALID_DATE_FORMATS:
+            raise HTTPException(
+                status_code=400,
+                detail="date_format must be one of: DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD",
+            )
+        tenant.date_format = fmt
+        changes["date_format"] = tenant.date_format
+    if payload.time_format is not None:
+        tfmt = payload.time_format.strip().lower()
+        if tfmt not in tenants_svc.VALID_TIME_FORMATS:
+            raise HTTPException(status_code=400, detail="time_format must be 24h or 12h")
+        tenant.time_format = tfmt
+        changes["time_format"] = tenant.time_format
     if not changes:
         return env(_serialize_platform_settings(tenant), message="no changes")
     ip, ua = _client_meta(request)
@@ -1222,7 +1273,10 @@ async def platform_health(
     claims: dict = Depends(require_platform_permission("platform_health", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Deep health + Stage 90 O1 operator support contacts from platform settings."""
+    """Deep health + Stage 90 O1 operator support contacts from platform settings.
+
+    Stage 92 K1: protected CORS allowlist detail (not exposed on public /health).
+    """
     report, _status = await health_svc.assemble_health(deep=True)
     await platform_svc.ensure_platform_tenant(db)
     platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
@@ -1231,6 +1285,7 @@ async def platform_health(
         "support_phone": getattr(platform_tenant, "phone", None) if platform_tenant else None,
         "company_name": getattr(platform_tenant, "company_name", None) if platform_tenant else None,
     }
+    report["security"] = _platform_security_detail()
     return env(report)
 
 
@@ -1357,14 +1412,23 @@ async def platform_audit_export(
     action: str | None = Query(None),
     from_date: str | None = Query(None),
     to_date: str | None = Query(None),
+    delivery_only: bool = Query(False),
     format: str = Query("csv"),
 ):
-    """Stage 87 X1 — export platform-tenant audit logs (csv/pdf)."""
+    """Stage 87 X1 — export platform-tenant audit logs (csv/pdf).
+
+    Stage 92 B1: ``delivery_only`` matches list-filter semantics.
+    """
+    action_filter = (action or "").strip() or None
+    module_filter = (module or "").strip() or None
+    if delivery_only:
+        action_filter = "platform.email.delivery"
+        module_filter = module_filter or "platform_email"
     rows = await audit.query_logs(
         db,
         tenant_id=PLATFORM_TENANT_ID,
-        module=(module or "").strip() or None,
-        action=(action or "").strip() or None,
+        module=module_filter,
+        action=action_filter,
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         limit=1000,
@@ -1409,7 +1473,7 @@ async def platform_operator_evidence(
     report, _status = await health_svc.assemble_health(deep=True)
     await platform_svc.ensure_platform_tenant(db)
     platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
-    posture = security_posture()
+    report["security"] = _platform_security_detail()
     return env(
         {
             "generated_at": datetime.utcnow().isoformat() + "Z",
@@ -1424,12 +1488,18 @@ async def platform_operator_evidence(
                 if platform_tenant
                 else None,
                 "timezone": getattr(platform_tenant, "timezone", None) if platform_tenant else None,
+                "date_format": getattr(platform_tenant, "date_format", None)
+                if platform_tenant
+                else None,
+                "time_format": getattr(platform_tenant, "time_format", None)
+                if platform_tenant
+                else None,
                 "support_email": getattr(platform_tenant, "email", None)
                 if platform_tenant
                 else None,
             },
             "health": report,
-            "security": posture.get("security"),
+            "security": _platform_security_detail(),
             "honesty_flags": {
                 "mrr_fabricated_claimed": False,
                 "billing_complete_claimed": False,

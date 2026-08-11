@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
+import { formatDateTime } from '../../../lib/format';
+import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
 
 type RosterItem = {
   tenant_id: string;
@@ -11,7 +13,13 @@ type RosterItem = {
   company_name: string;
   status: string;
   plan_code: string;
+  industry?: string | null;
+  admin_email?: string | null;
+  user_count?: number;
+  store_count?: number;
   trial_ends_at?: string | null;
+  grace_ends_at?: string | null;
+  created_at?: string | null;
   billing?: string;
 };
 
@@ -19,8 +27,10 @@ export default function PlatformBillingPage() {
   const [data, setData] = useState<any>(null);
   const [roster, setRoster] = useState<RosterItem[]>([]);
   const [error, setError] = useState('');
+  const [formats, setFormats] = useState(HOUSE_FORMAT_DEFAULTS);
 
   useEffect(() => {
+    fetchHouseFormats().then(setFormats);
     Promise.all([api('/platform/billing'), api('/platform/subscriptions')])
       .then(([billing, subs]) => {
         setData(billing.data);
@@ -69,7 +79,12 @@ export default function PlatformBillingPage() {
                 <th>Slug</th>
                 <th>Status</th>
                 <th>Plan</th>
+                <th>Industry</th>
+                <th>Admin</th>
+                <th>Users</th>
+                <th>Stores</th>
                 <th>Trial ends</th>
+                <th>Created</th>
                 <th>Billing</th>
               </tr>
             </thead>
@@ -82,7 +97,16 @@ export default function PlatformBillingPage() {
                   <td>{row.slug}</td>
                   <td>{row.status}</td>
                   <td>{row.plan_code}</td>
-                  <td>{row.trial_ends_at || '—'}</td>
+                  <td>{row.industry || '—'}</td>
+                  <td className="muted">{row.admin_email || '—'}</td>
+                  <td>{row.user_count ?? '—'}</td>
+                  <td>{row.store_count ?? '—'}</td>
+                  <td>
+                    {formatDateTime(row.trial_ends_at, formats.date_format, formats.time_format)}
+                  </td>
+                  <td>
+                    {formatDateTime(row.created_at, formats.date_format, formats.time_format)}
+                  </td>
                   <td>{row.billing || 'deferred'}</td>
                 </tr>
               ))}

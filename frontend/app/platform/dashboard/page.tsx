@@ -53,10 +53,16 @@ export default function PlatformDashboardPage() {
         <div className="card">
           <div className="muted">Active</div>
           <div className="kpi">{d.active_tenants ?? '—'}</div>
+          <p style={{ marginTop: 8 }}>
+            <Link href="/platform/tenants?status=active">View active tenants →</Link>
+          </p>
         </div>
         <div className="card">
           <div className="muted">Trial</div>
           <div className="kpi">{d.trial_tenants ?? '—'}</div>
+          <p style={{ marginTop: 8 }}>
+            <Link href="/platform/tenants?status=trial">View trial tenants →</Link>
+          </p>
         </div>
         <div className="card">
           <div className="muted">Grace</div>

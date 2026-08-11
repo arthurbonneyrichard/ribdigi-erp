@@ -1705,3 +1705,15 @@ Every feature in every phase must meet:
 **Stage 91 D1 (2026-08-11):** House Operator Investigation & Evidence Ops fidelity sync — `docs/STAGE_91_FIDELITY.md` (`test_stage91_fidelity_d1.py`); maps I1–P1 → readiness / launch / deploy / security.
 
 **Stage 91 exit (2026-08-11):** I1, N1, P1, D1, H91x met — `docs/STAGE_91_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_189_STAGE91_FREEZE.md`. Fidelity: `docs/STAGE_91_FIDELITY.md`.
+
+**Stage 92 open (2026-08-11):** House Console Workflow & Readiness Ops track approved — `docs/ADR_190_STAGE92_OPEN.md` + `docs/STAGE_92_PLAN.md` (Investigation Export & Evidence Download → Roster Triage & Commercial-Metadata Context → House Regional Formats & Runtime Evidence Detail → House Console Workflow & Readiness Ops; B1 next).
+
+**Stage 92 B1 (2026-08-11):** Investigation export + evidence download — audit `delivery_only` export + Activity 7d materialization + evidence UI (`test_stage92_console_workflow_b1.py`).
+
+**Stage 92 G1 (2026-08-11):** Roster triage + commercial-metadata context — notes search, list last delivery, Active/Trial links, plan soft-limit context, billing roster enrichment (`test_stage92_roster_context_g1.py`).
+
+**Stage 92 K1 (2026-08-11):** House regional formats + runtime evidence detail — date/time formats, protected CORS allowlist, database required badge (`test_stage92_readiness_formats_k1.py`).
+
+**Stage 92 D1 (2026-08-11):** House Console Workflow & Readiness Ops fidelity sync — `docs/STAGE_92_FIDELITY.md` (`test_stage92_fidelity_d1.py`); maps B1–K1 → readiness / launch / deploy / security.
+
+**Stage 92 exit (2026-08-11):** B1, G1, K1, D1, H92x met — `docs/STAGE_92_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_191_STAGE92_FREEZE.md`. Fidelity: `docs/STAGE_92_FIDELITY.md`.

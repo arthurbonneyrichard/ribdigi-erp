@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
+import { formatDateTime } from '../../../lib/format';
+import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
 
 type TenantRow = {
   id: string;
@@ -17,6 +19,19 @@ type TenantRow = {
   created_at?: string;
   days_remaining?: number | null;
   risk_ends_at?: string;
+  last_house_email_delivery?: {
+    created_at?: string | null;
+    sent?: boolean;
+    mode?: string;
+    purpose?: string;
+  } | null;
+};
+
+type PlanItem = {
+  code: string;
+  label?: string;
+  blurb?: string;
+  soft_limits?: { stores?: number | null; users?: number | null };
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -46,6 +61,10 @@ export default function PlatformTenantsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [creating, setCreating] = useState(false);
+  const [catalog, setCatalog] = useState<PlanItem[]>([]);
+  const [formats, setFormats] = useState(HOUSE_FORMAT_DEFAULTS);
+
+  const selectedPlan = catalog.find((p) => p.code === form.plan_code);
 
   async function load(nextStatus?: string) {
     setError('');
@@ -65,6 +84,13 @@ export default function PlatformTenantsPage() {
       setError(err.message || 'Failed to load tenants');
     }
   }
+
+  useEffect(() => {
+    fetchHouseFormats().then(setFormats);
+    api('/platform/plans')
+      .then((r) => setCatalog(r.data?.catalog || []))
+      .catch(() => setCatalog([]));
+  }, []);
 
   useEffect(() => {
     const fromQuery = searchParams.get('status') || '';
@@ -194,11 +220,31 @@ export default function PlatformTenantsPage() {
           onChange={(e) => setForm({ ...form, plan_code: e.target.value })}
           style={{ width: '100%', padding: 10, margin: '6px 0', borderRadius: 8, border: '1px solid #cbd5e1' }}
         >
-          <option value="trial">trial</option>
-          <option value="starter">starter</option>
-          <option value="growth">growth</option>
-          <option value="enterprise">enterprise</option>
+          {(catalog.length
+            ? catalog
+            : [
+                { code: 'trial' },
+                { code: 'starter' },
+                { code: 'growth' },
+                { code: 'enterprise' },
+              ]
+          ).map((p) => (
+            <option key={p.code} value={p.code}>
+              {p.label || p.code}
+            </option>
+          ))}
         </select>
+        {selectedPlan && (
+          <p className="muted" style={{ margin: '4px 0 12px', fontSize: 13 }}>
+            {selectedPlan.blurb || selectedPlan.label || selectedPlan.code}
+            {selectedPlan.soft_limits
+              ? ` · Soft limits (metadata only): users=${
+                  selectedPlan.soft_limits.users ?? 'unlimited'
+                }, stores=${selectedPlan.soft_limits.stores ?? 'unlimited'}`
+              : ''}
+            . Not checkout entitlements.
+          </p>
+        )}
         <button
           type="submit"
           disabled={creating}
@@ -218,7 +264,7 @@ export default function PlatformTenantsPage() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search slug, name, or admin email"
+          placeholder="Search slug, name, admin email, or notes"
           style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 200 }}
         />
         <select
@@ -318,6 +364,7 @@ export default function PlatformTenantsPage() {
             <th>Plan</th>
             <th>Industry</th>
             <th>Users</th>
+            <th>Last House email</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -334,6 +381,15 @@ export default function PlatformTenantsPage() {
               <td>{t.plan_code || '—'}</td>
               <td>{(t as any).industry || '—'}</td>
               <td>{t.user_count ?? 0}</td>
+              <td className="muted" style={{ fontSize: 13 }}>
+                {t.last_house_email_delivery?.created_at
+                  ? `${formatDateTime(
+                      t.last_house_email_delivery.created_at,
+                      formats.date_format,
+                      formats.time_format,
+                    )} · sent=${String(t.last_house_email_delivery.sent)}`
+                  : '—'}
+              </td>
               <td style={{ display: 'flex', gap: 8 }}>
                 {t.status !== 'suspended' ? (
                   <button
@@ -357,7 +413,7 @@ export default function PlatformTenantsPage() {
           ))}
           {items.length === 0 && (
             <tr>
-              <td colSpan={7} className="muted">
+              <td colSpan={8} className="muted">
                 No customer tenants found.
               </td>
             </tr>
