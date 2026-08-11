@@ -56,6 +56,7 @@ Authoritative MVP docs:
 - `docs/STAGE_37_PLAN.md` (`backend/tests/test_stage37_open.py`) — Stage 37 open (ADR-079)
 - `docs/DATA_PORTABILITY_MVP.md` (`backend/tests/test_data_portability_p1.py`) — Stage 37 P1
 - `docs/ERASURE_HONESTY_MVP.md` (`backend/tests/test_erasure_honesty_e1.py`) — Stage 37 E1
+- `docs/STAGE_38_PLAN.md` (`backend/tests/test_stage38_open.py`) — Stage 38 open (ADR-081); V1 next
 
 ## Stage 33 K1 — Residual risk register
 
