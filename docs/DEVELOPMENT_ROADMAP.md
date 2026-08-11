@@ -392,6 +392,9 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 38 exit (2026-08-11):** V1, B1, D1, H38x met — `docs/STAGE_38_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_082_STAGE38_FREEZE.md`. Fidelity: `docs/STAGE_38_FIDELITY.md`.
 
+**Stage 39 open (2026-08-11):** Commercial Contract Evidence Fidelity track approved — `docs/ADR_083_STAGE39_OPEN.md` + `docs/STAGE_39_PLAN.md` (DPA/subprocessor → MSA security addendum → fidelity).
+
+
 
 
 ### 2.2 Features
@@ -974,7 +977,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 38 exit met (`docs/STAGE_38_EXIT_CRITERIA.md`, ADR-082). Stages 1–38 remain frozen for their scopes; Stage 39+ requires explicit open ADR after CONTINUE/NEXT.
+**Active delivery plan:** Stage 39 open — Commercial Contract Evidence Fidelity (`docs/STAGE_39_PLAN.md`, ADR-083). Stages 1–38 remain frozen for their scopes; P1 next.
 
 ### 6.2 Features
 

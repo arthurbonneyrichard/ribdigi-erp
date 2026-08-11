@@ -23,3 +23,8 @@ Stage 38 Commercial Security Disclosure Fidelity delivered vulnerability disclos
 - Stage 1–37 freezes remain in force for their scopes (Stage 37 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Security disclosure packaging Complete does **not** mean live disclosure program, bug-bounty, live breach drill, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 39 (Commercial Contract Evidence Fidelity) after Stage 38 freeze via CONTINUE/NEXT — see [ADR-083](ADR_083_STAGE39_OPEN.md) and [STAGE_39_PLAN.md](STAGE_39_PLAN.md). Stage 38 feature scope remains frozen; Stage 39 does not reopen V1–D1 / H38x.
+
