@@ -23,3 +23,7 @@ Stage 30 Go-Live Support Fidelity (L1, I1, S1, A1, D1, H30x) delivered operator 
 - Stage 1–29 freezes remain in force for their scopes.
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Operator `LAUNCH_CHECKLIST.md` §§1–3 / §7 remain unsigned until a real environment is verified (**Stage 27 L1** / Stage 29 X1 / Stage 30 A1 packs).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 31 (Commercial MVP Closeout Fidelity) after Stage 30 freeze via CONTINUE/NEXT — see [ADR-067](ADR_067_STAGE31_OPEN.md) and [STAGE_31_PLAN.md](STAGE_31_PLAN.md). Stage 30 feature scope remains frozen; Stage 31 does not reopen L1–D1 / H30x.
