@@ -207,8 +207,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Go-live attestation honesty (Stage 69 A1: `test_golive_attestation_a1.py` — `docs/GOLIVE_ATTESTATION_MVP.md`, `ops/mvp/golive-attestation.json`; evidence `stage69_a1_golive_attestation.json`; §7 signed Remaining)
 - [x] Stage 69 fidelity sync (D1: `test_stage69_fidelity_d1.py`, `docs/STAGE_69_FIDELITY.md` — V1–A1 + readiness + deploy / launch / security)
 - [x] Stage 69 exit + freeze (H69x: `test_stage69_exit_h69x.py`, `docs/STAGE_69_EXIT_CRITERIA.md`, ADR-145)
-- [x] Stage 70 track opened (ADR-146: `test_stage70_open.py`, `docs/STAGE_70_PLAN.md`) — First Commercial Day Fidelity; F1 complete / G1 next
+- [x] Stage 70 track opened (ADR-146: `test_stage70_open.py`, `docs/STAGE_70_PLAN.md`) — First Commercial Day Fidelity; G1 complete / D1 next
 - [x] First commercial day ops honesty (Stage 70 F1: `test_first_commercial_day_f1.py` — `docs/FIRST_COMMERCIAL_DAY_MVP.md`, `ops/mvp/first-commercial-day.json`; evidence `stage70_f1_first_commercial_day.json`; first-day live Remaining)
+- [x] Commercial go-live closeout honesty (Stage 70 G1: `test_commercial_golive_closeout_g1.py` — `docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md`, `ops/mvp/commercial-golive-closeout.json`; evidence `stage70_g1_commercial_golive_closeout.json`; go-live Remaining)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

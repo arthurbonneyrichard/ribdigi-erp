@@ -1,6 +1,6 @@
 # Stage 70 Plan — First Commercial Day Fidelity
 
-**Status:** Open — F1 complete; G1 next  
+**Status:** Open — G1 complete; D1 next  
 **Base:** First Commercial Day Ops Honesty Pack + MVP Commercial Go-Live Closeout Honesty Pack → First Commercial Day Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-146](ADR_146_STAGE70_OPEN.md)  
@@ -45,7 +45,7 @@ First Commercial Day Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **F1** | First commercial day ops honesty packaging (day-one ops / hypercare adjacency; not first-day live Complete) | P0 | COMPLETE |
-| **G1** | MVP commercial go-live closeout honesty packaging (closeout / declaration adjacency; not go-live Complete) | P0 | PENDING |
+| **G1** | MVP commercial go-live closeout honesty packaging (closeout / declaration adjacency; not go-live Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H70x** | Stage 70 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -73,12 +73,12 @@ First Commercial Day Fidelity
 
 ## G1 acceptance criteria
 
-- [ ] MVP commercial go-live closeout honesty packaging indexing MVP Commercial Go-Live Closeout with Stage 31 declaration / Stage 69 attestation adjacency (not claiming go-live Complete).
-- [ ] Automated proof: `backend/tests/test_commercial_golive_closeout_g1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 70 G1.
+- [x] MVP commercial go-live closeout honesty packaging indexing MVP Commercial Go-Live Closeout with Stage 31 declaration / Stage 69 attestation adjacency (not claiming go-live Complete).
+- [x] Automated proof: `backend/tests/test_commercial_golive_closeout_g1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 70 G1.
 
-**Deliverables:** `docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md`, `ops/mvp/commercial-golive-closeout.json`, evidence `stage70_g1_commercial_golive_closeout.json`.
+**Deliverables:** `docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md`, `ops/mvp/commercial-golive-closeout.json`, evidence `stage70_g1_commercial_golive_closeout.json` (`test_commercial_golive_closeout_g1.py`).
 
 ## D1 acceptance criteria
 

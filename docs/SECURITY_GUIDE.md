@@ -443,6 +443,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 69 H69x** | Exit + freeze — `docs/STAGE_69_EXIT_CRITERIA.md`, ADR-145 (`test_stage69_exit_h69x.py`); Stages 1–69 frozen for Stage 69 scope; Stage 70 opened via ADR-146 |
 | **Stage 70 open** | First Commercial Day Fidelity — `docs/STAGE_70_PLAN.md`, ADR-146 (`test_stage70_open.py`); Stages 1–69 remain frozen for prior scopes; F1 next historically |
 | **Stage 70 F1** | First commercial day ops honesty — `docs/FIRST_COMMERCIAL_DAY_MVP.md`, `ops/mvp/first-commercial-day.json` (`test_first_commercial_day_f1.py`); first-day live Remaining |
+| **Stage 70 G1** | Commercial go-live closeout honesty — `docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md`, `ops/mvp/commercial-golive-closeout.json` (`test_commercial_golive_closeout_g1.py`); go-live Remaining |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |
