@@ -436,7 +436,8 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 55 W1** | White-label licensing commercial honesty — `docs/WHITE_LABEL_LICENSING_MVP.md`, `ops/mvp/white-label-licensing.json` (`test_white_label_licensing_w1.py`); live white-label licensing Remaining |
 | **Stage 55 U1** | Unit economics / competitive positioning honesty — `docs/UNIT_ECONOMICS_POSITIONING_MVP.md`, `ops/mvp/unit-economics-positioning.json` (`test_unit_economics_positioning_u1.py`); measured CAC/LTV Remaining |
 | **Stage 55 fidelity** | D1 maps W1–U1 licensing & positioning — `docs/STAGE_55_FIDELITY.md` (`test_stage55_fidelity_d1.py`); exit/freeze `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116 (`test_stage55_exit_h55x.py`); historical open ADR-115; live white-label licensing / measured CAC/LTV / competitive superiority / go-live / §7 remain Remaining |
-| **Stage 58 open** | Commercial Business & AI Metrics Fidelity — `docs/STAGE_58_PLAN.md`, ADR-121 (`test_stage58_open.py`); Stages 1–57 remain frozen; B1 next |
+| **Stage 58 open** | Commercial Business & AI Metrics Fidelity — `docs/STAGE_58_PLAN.md`, ADR-121 (`test_stage58_open.py`); Stages 1–57 remain frozen; B1 complete; I1 next |
+| **Stage 58 B1** | Business metrics honesty — `docs/BUSINESS_METRICS_MVP.md`, `ops/mvp/business-metrics.json` (`test_business_metrics_b1.py`); measured MRR / NRR Remaining |
 | **Stage 57 open** | Commercial Mobile & Metrics Fidelity — `docs/STAGE_57_PLAN.md`, ADR-119 (`test_stage57_open.py`); Stages 1–56 remain frozen; closed under ADR-120 |
 | **Stage 57 A1** | Mobile app GTM honesty — `docs/MOBILE_APP_GTM_MVP.md`, `ops/mvp/mobile-app-gtm.json` (`test_mobile_app_gtm_a1.py`); live Flutter / store publish Remaining |
 | **Stage 57 K1** | Success metrics honesty — `docs/SUCCESS_METRICS_MVP.md`, `ops/mvp/success-metrics.json` (`test_success_metrics_k1.py`); measured MAU / NPS / uptime Remaining |
