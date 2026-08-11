@@ -130,57 +130,108 @@ export default function Login() {
   const showPasskey = needs2fa && methods.includes('webauthn');
 
   return (
-    <div className="login">
-      <div className="login-badge" aria-hidden>R</div>
-      <h1>RIBDIGI ERP</h1>
-      <p className="muted">One System. Total Business Control.</p>
-      <form onSubmit={go}>
-        {!needs2fa && (
-          <>
-            <input value={tenant} onChange={(e) => setTenant(e.target.value)} placeholder="Tenant slug or ID" required />
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" required />
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
-          </>
-        )}
-        {needs2fa && showTotp && (
-          <>
-            <p className="muted">Enter the 6-digit code from your authenticator app (or a backup code).</p>
-            <input
-              value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value)}
-              placeholder="Authenticator or backup code"
-              required={methods.includes('totp') && !methods.includes('webauthn')}
-              autoFocus
-            />
-          </>
-        )}
-        {showPasskey && (
-          <p className="muted">Or use a registered passkey for this account.</p>
-        )}
-        <button type="submit">
-          {needs2fa ? (methods.includes('totp') ? 'Verify 2FA' : 'Continue') : 'Sign in'}
-        </button>
-        {showPasskey && (
-          <button type="button" onClick={verifyPasskey}>
-            Use passkey
+    <div className="login-stage">
+      <div className="login-stage-bg" aria-hidden>
+        <span className="login-orb login-orb-a" />
+        <span className="login-orb login-orb-b" />
+        <span className="login-grid" />
+      </div>
+
+      <div className="login">
+        <div className="login-brand">
+          <div className="login-badge" aria-hidden>
+            R
+          </div>
+          <h1>RIBDIGI ERP</h1>
+          <p className="login-tagline">One System. Total Business Control.</p>
+        </div>
+
+        <form className="login-form" onSubmit={go}>
+          {!needs2fa && (
+            <>
+              <label className="login-field">
+                <span>Workspace</span>
+                <input
+                  value={tenant}
+                  onChange={(e) => setTenant(e.target.value)}
+                  placeholder="Tenant slug or ID"
+                  autoComplete="organization"
+                  required
+                />
+              </label>
+              <label className="login-field">
+                <span>Email</span>
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  type="email"
+                  autoComplete="username"
+                  required
+                />
+              </label>
+              <label className="login-field">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  required
+                />
+              </label>
+            </>
+          )}
+
+          {needs2fa && showTotp && (
+            <label className="login-field">
+              <span>Authenticator code</span>
+              <p className="login-hint">Enter the 6-digit code from your authenticator app, or a backup code.</p>
+              <input
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value)}
+                placeholder="000000"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required={methods.includes('totp') && !methods.includes('webauthn')}
+                autoFocus
+              />
+            </label>
+          )}
+
+          {showPasskey && <p className="login-hint">Or continue with a registered passkey.</p>}
+
+          <button className="login-primary" type="submit">
+            {needs2fa ? (methods.includes('totp') ? 'Verify & continue' : 'Continue') : 'Sign in'}
           </button>
-        )}
-        {needs2fa && (
-          <button
-            type="button"
-            onClick={() => {
-              setNeeds2fa(false);
-              setChallengeToken('');
-              setTotpCode('');
-              setMethods([]);
-            }}
-          >
-            Back
-          </button>
-        )}
-        {error && <p>{error}</p>}
-      </form>
-      <p className="login-foot">A Ribdigi House Product</p>
+
+          {showPasskey && (
+            <button className="login-secondary" type="button" onClick={verifyPasskey}>
+              Use passkey
+            </button>
+          )}
+
+          {needs2fa && (
+            <button
+              className="login-ghost"
+              type="button"
+              onClick={() => {
+                setNeeds2fa(false);
+                setChallengeToken('');
+                setTotpCode('');
+                setMethods([]);
+              }}
+            >
+              Back to sign in
+            </button>
+          )}
+
+          {error && <p className="login-error" role="alert">{error}</p>}
+        </form>
+
+        <p className="login-foot">A Ribdigi House Product</p>
+      </div>
     </div>
   );
 }
