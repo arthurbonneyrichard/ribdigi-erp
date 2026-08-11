@@ -24,7 +24,7 @@ Stage 71 proves the owner Commercial Steady-State path after Stage 70 freeze —
 | **S1** | `test_steady_state_ops_s1.py` — `STEADY_STATE_OPS_MVP.md`, steady-state-ops JSON | Owner Steady-State Ops / Stage 67 continuity | Steady-state live |
 | **A1** | `test_commercial_acceptance_a1.py` — `COMMERCIAL_ACCEPTANCE_MVP.md`, commercial-acceptance JSON | Owner Acceptance Gate / Stage 31 gate | Acceptance; go-live |
 | **D1** | This note + `test_stage71_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H71x** | `STAGE_71_EXIT_CRITERIA.md`; ADR-149; `test_stage71_exit_h71x.py` | Stage 71 exit + freeze | Stage 72+ requires CONTINUE/NEXT |
+| **H71x** | `STAGE_71_EXIT_CRITERIA.md`; ADR-149; `test_stage71_exit_h71x.py` | Stage 71 exit + freeze | Stage 72 opened via ADR-150 |
 
 ## Evidence tests
 

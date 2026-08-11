@@ -1,0 +1,156 @@
+{
+  "stage": "72",
+  "workstream": "R1",
+  "doc": "docs/COMMERCIAL_RESIDUAL_MVP.md",
+  "stage72_plan": "docs/STAGE_72_PLAN.md",
+  "residual_doc": "docs/RESIDUAL_RISK_MVP.md",
+  "residual": "ops/mvp/residual-risk-register.json",
+  "operator_remaining_doc": "docs/OPERATOR_REMAINING_MVP.md",
+  "operator_remaining": "ops/mvp/operator-remaining-register.json",
+  "steady_state_doc": "docs/STEADY_STATE_OPS_MVP.md",
+  "steady_state": "ops/mvp/steady-state-ops.json",
+  "acceptance_doc": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+  "acceptance": "ops/mvp/commercial-acceptance.json",
+  "backlog_doc": "docs/POST_MVP_BACKLOG_MVP.md",
+  "backlog": "ops/mvp/post-mvp-backlog.json",
+  "billing_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "billing": "ops/mvp/billing-deferred-honesty.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "residual_closed_claimed": false,
+  "packaging_archive_live_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "steady_state_ops_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage72_r1_commercial_residual.json",
+  "steps": [
+    {
+      "id": "cr-owner-outline",
+      "category": "residual",
+      "title": "Index owner Commercial Residual Remaining Register path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_72_PLAN.md",
+        "docs/ADR_150_STAGE72_OPEN.md"
+      ],
+      "source": "docs/STAGE_72_PLAN.md"
+    },
+    {
+      "id": "cr-residual-risk",
+      "category": "residual",
+      "title": "Link Stage 33 residual risk as adjacency (risks_closed Remaining \u2260 residual closed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RESIDUAL_RISK_MVP.md",
+        "ops/mvp/residual-risk-register.json"
+      ],
+      "source": "docs/RESIDUAL_RISK_MVP.md"
+    },
+    {
+      "id": "cr-operator-remaining",
+      "category": "residual",
+      "title": "Link Stage 31 operator-remaining as adjacency (Remaining flags stay false \u2260 closed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPERATOR_REMAINING_MVP.md",
+        "ops/mvp/operator-remaining-register.json"
+      ],
+      "source": "docs/OPERATOR_REMAINING_MVP.md"
+    },
+    {
+      "id": "cr-steady-state",
+      "category": "residual",
+      "title": "Link Stage 71 S1 steady-state as adjacency (steady-state live Remaining \u2260 residual closed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STEADY_STATE_OPS_MVP.md",
+        "ops/mvp/steady-state-ops.json"
+      ],
+      "source": "docs/STEADY_STATE_OPS_MVP.md"
+    },
+    {
+      "id": "cr-acceptance",
+      "category": "residual",
+      "title": "Link Stage 71 A1 acceptance as adjacency (acceptance Remaining \u2260 residual closed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+        "ops/mvp/commercial-acceptance.json"
+      ],
+      "source": "docs/COMMERCIAL_ACCEPTANCE_MVP.md"
+    },
+    {
+      "id": "cr-backlog",
+      "category": "residual",
+      "title": "Link Stage 32 post-MVP backlog as adjacency (backlog packaging \u2260 residual closed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/POST_MVP_BACKLOG_MVP.md",
+        "ops/mvp/post-mvp-backlog.json"
+      ],
+      "source": "docs/POST_MVP_BACKLOG_MVP.md"
+    },
+    {
+      "id": "cr-billing",
+      "category": "residual",
+      "title": "Link Stage 36 billing-deferred as adjacency (ADR-002 Remaining \u2260 residual closed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "cr-plan-honesty",
+      "category": "residual",
+      "title": "Confirm Stage 72 plan explicitly defers residual closed / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_72_PLAN.md",
+        "docs/COMMERCIAL_RESIDUAL_MVP.md"
+      ],
+      "source": "docs/STAGE_72_PLAN.md"
+    },
+    {
+      "id": "cr-residual-remaining",
+      "category": "honesty",
+      "title": "Residual risks closed Remaining \u2014 packaging \u2260 closed Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_72_PLAN.md",
+        "docs/COMMERCIAL_RESIDUAL_MVP.md"
+      ],
+      "source": "docs/STAGE_72_PLAN.md"
+    },
+    {
+      "id": "cr-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / acceptance / steady-state live Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_72_PLAN.md",
+        "docs/COMMERCIAL_ACCEPTANCE_MVP.md"
+      ],
+      "source": "docs/STAGE_72_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Residual risks closed Complete",
+    "Packaging archive live Complete",
+    "Commercial acceptance Complete",
+    "Steady-state commercial ops live Complete",
+    "Live go-live Complete"
+  ]
+}

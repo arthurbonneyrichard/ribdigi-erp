@@ -1,0 +1,156 @@
+{
+  "stage": "72",
+  "workstream": "P1",
+  "doc": "docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md",
+  "stage72_plan": "docs/STAGE_72_PLAN.md",
+  "acceptance_archive_doc": "docs/ACCEPTANCE_ARCHIVE_MVP.md",
+  "acceptance_archive": "ops/mvp/acceptance-archive.json",
+  "backlog_doc": "docs/POST_MVP_BACKLOG_MVP.md",
+  "backlog": "ops/mvp/post-mvp-backlog.json",
+  "release_notes_doc": "docs/RELEASE_NOTES_MVP.md",
+  "release_notes": "ops/mvp/release-notes.json",
+  "mvp_declaration_doc": "docs/MVP_DECLARATION_MVP.md",
+  "mvp_declaration": "ops/mvp/mvp-declaration.json",
+  "residual_doc": "docs/COMMERCIAL_RESIDUAL_MVP.md",
+  "residual": "ops/mvp/commercial-residual.json",
+  "acceptance_doc": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+  "acceptance": "ops/mvp/commercial-acceptance.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "packaging_archive_live_claimed": false,
+  "residual_closed_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage72_p1_commercial_packaging_archive.json",
+  "steps": [
+    {
+      "id": "cpa-owner-outline",
+      "category": "archive",
+      "title": "Index owner MVP Commercial Packaging Archive path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_72_PLAN.md",
+        "docs/ADR_150_STAGE72_OPEN.md"
+      ],
+      "source": "docs/STAGE_72_PLAN.md"
+    },
+    {
+      "id": "cpa-acceptance-archive",
+      "category": "archive",
+      "title": "Link Stage 32 acceptance archive as adjacency (archive packaging \u2260 archive live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ACCEPTANCE_ARCHIVE_MVP.md",
+        "ops/mvp/acceptance-archive.json"
+      ],
+      "source": "docs/ACCEPTANCE_ARCHIVE_MVP.md"
+    },
+    {
+      "id": "cpa-backlog",
+      "category": "archive",
+      "title": "Link Stage 32 post-MVP backlog as adjacency (backlog \u2260 archive live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/POST_MVP_BACKLOG_MVP.md",
+        "ops/mvp/post-mvp-backlog.json"
+      ],
+      "source": "docs/POST_MVP_BACKLOG_MVP.md"
+    },
+    {
+      "id": "cpa-release-notes",
+      "category": "archive",
+      "title": "Link Stage 32 release notes as adjacency (notes packaging \u2260 go-live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RELEASE_NOTES_MVP.md",
+        "ops/mvp/release-notes.json"
+      ],
+      "source": "docs/RELEASE_NOTES_MVP.md"
+    },
+    {
+      "id": "cpa-mvp-declaration",
+      "category": "archive",
+      "title": "Link Stage 31 MVP declaration as adjacency (declared packaging \u2260 archive live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MVP_DECLARATION_MVP.md",
+        "ops/mvp/mvp-declaration.json"
+      ],
+      "source": "docs/MVP_DECLARATION_MVP.md"
+    },
+    {
+      "id": "cpa-residual",
+      "category": "archive",
+      "title": "Link Stage 72 R1 residual as adjacency (residual closed Remaining \u2260 archive live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_RESIDUAL_MVP.md",
+        "ops/mvp/commercial-residual.json"
+      ],
+      "source": "docs/COMMERCIAL_RESIDUAL_MVP.md"
+    },
+    {
+      "id": "cpa-acceptance",
+      "category": "archive",
+      "title": "Link Stage 71 A1 acceptance as adjacency (acceptance Remaining \u2260 archive live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+        "ops/mvp/commercial-acceptance.json"
+      ],
+      "source": "docs/COMMERCIAL_ACCEPTANCE_MVP.md"
+    },
+    {
+      "id": "cpa-plan-honesty",
+      "category": "archive",
+      "title": "Confirm Stage 72 plan explicitly defers archive live / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_72_PLAN.md",
+        "docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md"
+      ],
+      "source": "docs/STAGE_72_PLAN.md"
+    },
+    {
+      "id": "cpa-archive-remaining",
+      "category": "honesty",
+      "title": "Packaging archive live Remaining \u2014 packaging \u2260 live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_72_PLAN.md",
+        "docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md"
+      ],
+      "source": "docs/STAGE_72_PLAN.md"
+    },
+    {
+      "id": "cpa-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / residual closed / acceptance Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_72_PLAN.md",
+        "docs/COMMERCIAL_RESIDUAL_MVP.md"
+      ],
+      "source": "docs/STAGE_72_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Packaging archive live Complete",
+    "Residual risks closed Complete",
+    "Commercial acceptance Complete",
+    "Live go-live Complete",
+    "LAUNCH \u00a77 Name/Date signed Complete"
+  ]
+}

@@ -27,4 +27,8 @@ Stage 71 Commercial Steady-State Fidelity delivered steady-state commercial ops 
 
 ## Next stage
 
-Blocked pending CONTINUE/NEXT + open ADR with a distinct product outline.
+Stage 72 opened via ADR-150 (`docs/ADR_150_STAGE72_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 72 (Commercial Packaging Closeout Fidelity — Commercial Residual Remaining Register → MVP Commercial Packaging Archive → Commercial Packaging Closeout Fidelity) after Stage 71 freeze via CONTINUE/NEXT — see [ADR-150](ADR_150_STAGE72_OPEN.md) and [STAGE_72_PLAN.md](STAGE_72_PLAN.md). Stage 71 feature scope remains frozen; Stage 72 does not reopen S1–D1 / H71x.

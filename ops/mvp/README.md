@@ -76,6 +76,8 @@
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `business-pilot.json` | Stage 65 P1 Controlled business pilot honesty — `controlled_business_pilot_live_claimed: false` / `real_workflow_feedback_claimed: false` / `pilot_bugfix_program_live: false` / `business_pilot_program_live: false` |
+| `commercial-packaging-archive.json` | Stage 72 P1 Commercial packaging archive honesty — `packaging_archive_live_claimed: false` / `residual_closed_claimed: false` / `go_live_claimed: false` |
+| `commercial-residual.json` | Stage 72 R1 Commercial residual remaining honesty — `residual_closed_claimed: false` / `packaging_archive_live_claimed: false` / `go_live_claimed: false` |
 | `commercial-acceptance.json` | Stage 71 A1 Commercial acceptance gate honesty — `commercial_acceptance_claimed: false` / `steady_state_ops_claimed: false` / `go_live_claimed: false` / `section_7_signed: false` |
 | `steady-state-ops.json` | Stage 71 S1 Steady-state commercial ops honesty — `steady_state_ops_claimed: false` / `commercial_acceptance_claimed: false` / `go_live_claimed: false` / `section_7_signed: false` |
 | `commercial-golive-closeout.json` | Stage 70 G1 Commercial go-live closeout honesty — `go_live_claimed: false` / `commercial_golive_closeout_claimed: false` / `section_7_signed: false` / `first_commercial_day_claimed: false` |
@@ -234,6 +236,11 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_72_EXIT_CRITERIA.md` / `docs/ADR_151_STAGE72_FREEZE.md` (`backend/tests/test_stage72_exit_h72x.py`) — Stage 72 H72x
+- `docs/STAGE_72_FIDELITY.md` (`backend/tests/test_stage72_fidelity_d1.py`) — Stage 72 D1
+- `docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md` (`backend/tests/test_commercial_packaging_archive_p1.py`) — Stage 72 P1
+- `docs/COMMERCIAL_RESIDUAL_MVP.md` (`backend/tests/test_commercial_residual_r1.py`) — Stage 72 R1
+- `docs/STAGE_72_PLAN.md` (`backend/tests/test_stage72_open.py`) — Stage 72 open (ADR-150)
 - `docs/STAGE_71_EXIT_CRITERIA.md` / `docs/ADR_149_STAGE71_FREEZE.md` (`backend/tests/test_stage71_exit_h71x.py`) — Stage 71 H71x
 - `docs/STAGE_71_FIDELITY.md` (`backend/tests/test_stage71_fidelity_d1.py`) — Stage 71 D1
 - `docs/COMMERCIAL_ACCEPTANCE_MVP.md` (`backend/tests/test_commercial_acceptance_a1.py`) — Stage 71 A1
@@ -971,6 +978,26 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 72 exit
+
+H72x met — `docs/STAGE_72_EXIT_CRITERIA.md`, ADR-151. Stages 1–72 frozen for Stage 72 feature scope.
+
+## Stage 72 D1 — Commercial Packaging Closeout fidelity
+
+`docs/STAGE_72_FIDELITY.md` — maps R1–P1 → readiness / launch / deploy / security (`test_stage72_fidelity_d1.py`).
+
+## Stage 72 P1 — Commercial packaging archive honesty
+
+`docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md` + `ops/mvp/commercial-packaging-archive.json` — packaging Complete; `packaging_archive_live_claimed` / `residual_closed_claimed` / `go_live_claimed` remain false.
+
+## Stage 72 R1 — Commercial residual remaining honesty
+
+`docs/COMMERCIAL_RESIDUAL_MVP.md` + `ops/mvp/commercial-residual.json` — packaging Complete; `residual_closed_claimed` / `packaging_archive_live_claimed` / `go_live_claimed` remain false.
+
+## Stage 72 open
+
+Commercial Packaging Closeout Fidelity — `docs/STAGE_72_PLAN.md`, ADR-150; Closed — exit met (H72x); freeze ADR-151.
 
 ## Stage 71 exit
 

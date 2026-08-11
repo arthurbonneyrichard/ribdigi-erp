@@ -1490,4 +1490,14 @@ Every feature in every phase must meet:
 
 **Stage 71 D1 (2026-08-11):** Commercial Steady-State fidelity sync — `docs/STAGE_71_FIDELITY.md` (`test_stage71_fidelity_d1.py`); maps S1–A1 → readiness / launch / deploy / security.
 
-**Stage 71 exit (2026-08-11):** S1, A1, D1, H71x met — `docs/STAGE_71_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_149_STAGE71_FREEZE.md`. Fidelity: `docs/STAGE_71_FIDELITY.md`.
+**Stage 71 exit (2026-08-11):** S1, A1, D1, H71x met — `docs/STAGE_71_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_149_STAGE71_FREEZE.md`. Fidelity: `docs/STAGE_71_FIDELITY.md`. Stage 72 opened via ADR-150.
+
+**Stage 72 open (2026-08-11):** Commercial Packaging Closeout Fidelity track approved — `docs/ADR_150_STAGE72_OPEN.md` + `docs/STAGE_72_PLAN.md` (Commercial Residual Remaining Register → MVP Commercial Packaging Archive → Commercial Packaging Closeout Fidelity; R1 next).
+
+**Stage 72 R1 (2026-08-11):** Commercial residual remaining honesty — `docs/COMMERCIAL_RESIDUAL_MVP.md`, `ops/mvp/commercial-residual.json`, evidence `stage72_r1_commercial_residual.json` (`test_commercial_residual_r1.py`); residual closed Remaining.
+
+**Stage 72 P1 (2026-08-11):** Commercial packaging archive honesty — `docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md`, `ops/mvp/commercial-packaging-archive.json`, evidence `stage72_p1_commercial_packaging_archive.json` (`test_commercial_packaging_archive_p1.py`); archive live Remaining.
+
+**Stage 72 D1 (2026-08-11):** Commercial Packaging Closeout fidelity sync — `docs/STAGE_72_FIDELITY.md` (`test_stage72_fidelity_d1.py`); maps R1–P1 → readiness / launch / deploy / security.
+
+**Stage 72 exit (2026-08-11):** R1, P1, D1, H72x met — `docs/STAGE_72_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_151_STAGE72_FREEZE.md`. Fidelity: `docs/STAGE_72_FIDELITY.md`.
