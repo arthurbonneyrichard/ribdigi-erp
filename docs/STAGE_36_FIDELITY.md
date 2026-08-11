@@ -1,10 +1,10 @@
 # Stage 36 Fidelity Notes — Commercial Assurance Completion Fidelity
 
-**Status:** Open — D1 complete; H36x next (ADR-077)  
+**Status:** Closed — exit met (H36x / ADR-078); historical open ADR-077  
 **Surface:** Support SLA boundary → Billing-deferred honesty → Fidelity closeout  
-**Open ADR:** [ADR-077](ADR_077_STAGE36_OPEN.md)  
+**Open ADR (historical):** [ADR-077](ADR_077_STAGE36_OPEN.md)  
 **Plan:** [STAGE_36_PLAN.md](STAGE_36_PLAN.md)  
-**Exit (pending):** [STAGE_36_EXIT_CRITERIA.md](STAGE_36_EXIT_CRITERIA.md) · [ADR-078](ADR_078_STAGE36_FREEZE.md) (reserved at H36x)
+**Exit:** [STAGE_36_EXIT_CRITERIA.md](STAGE_36_EXIT_CRITERIA.md) · [ADR-078](ADR_078_STAGE36_FREEZE.md)
 
 Stage 36 proves the owner product outline after Stage 35 freeze — Support SLA Boundary Pack + Billing-Deferred Honesty Pack → Commercial Assurance Completion Fidelity — by completing Stage 34 deferred S1/B1 packaging on Stage 30 support/incident and ADR-002 assets. It is **not** live support SLA Complete, hosted PagerDuty/helpdesk SaaS Complete, paid billing Complete, live go-live / §7 / attestation Complete, SOC 2 / ISO Complete, re-packaging Stage 26–35 packs as new Complete, or reopening Stages 1–35 frozen feature scopes beyond the deferred S1/B1 packaging named in this track.
 
@@ -23,7 +23,7 @@ Stage 36 proves the owner product outline after Stage 35 freeze — Support SLA 
 | **S1** | `test_support_sla_boundary_s1.py` — `SUPPORT_SLA_BOUNDARY_MVP.md`, support-sla JSON | Support / incident / SECURITY_GUIDE §15 | Live SLA; PagerDuty SaaS |
 | **B1** | `test_billing_deferred_honesty_b1.py` — `BILLING_DEFERRED_HONESTY_MVP.md`, billing-deferred JSON | BR-1.3 / ADR-002 | Paid billing provider |
 | **D1** | This note + `test_stage36_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H36x** | `STAGE_36_EXIT_CRITERIA.md`; ADR-078; `test_stage36_exit_h36x.py` (pending) | Stage 36 exit + freeze | Next track needs open ADR |
+| **H36x** | `STAGE_36_EXIT_CRITERIA.md`; ADR-078; `test_stage36_exit_h36x.py` | Stage 36 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -42,7 +42,8 @@ Stage 36 proves the owner product outline after Stage 35 freeze — Support SLA 
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 36 S1–B1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 36 S1–B1 / D1 cite
 - `docs/SUPPORT_SLA_BOUNDARY_MVP.md` · `docs/BILLING_DEFERRED_HONESTY_MVP.md`
-- `docs/STAGE_36_PLAN.md` — D1 complete; H36x next
+- `docs/STAGE_36_PLAN.md` — Closed (H36x / ADR-078)
+- `docs/STAGE_36_EXIT_CRITERIA.md` · `docs/ADR_078_STAGE36_FREEZE.md`
 - `docs/ADR_077_STAGE36_OPEN.md`
 
 ## Deferred (not Stage 36 D1 blockers)

@@ -1,9 +1,10 @@
 # Stage 36 Plan — Commercial Assurance Completion Fidelity
 
-**Status:** Open — D1 complete; H36x next (ADR-077)  
+**Status:** Closed — exit met (H36x / ADR-078)  
 **Base:** Support SLA Boundary Pack + Billing-Deferred Honesty Pack → Commercial Assurance Completion Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-077](ADR_077_STAGE36_OPEN.md)
+**Open ADR (historical):** [ADR-077](ADR_077_STAGE36_OPEN.md)  
+**Exit:** [STAGE_36_EXIT_CRITERIA.md](STAGE_36_EXIT_CRITERIA.md) · [ADR-078](ADR_078_STAGE36_FREEZE.md) · [STAGE_36_FIDELITY.md](STAGE_36_FIDELITY.md)
 
 Stage 36 opens after Stage 35 freeze: **Support SLA / Incident Escalation Boundary Packaging + Billing-Deferred Commercial Honesty Packaging → Commercial Assurance Completion Fidelity**. These workstreams were **owner-deferred** from Stage 34 when Stage 35 E2E operational smoke was prioritized. This track packages the remaining customer/procurement-facing assurance surfaces on proven Stage 30 support / Stage 34 assurance / ADR-002 assets — **not** claiming live support SLA Complete, paid billing Complete, hosted PagerDuty/helpdesk SaaS Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–35 packs as new Complete, or reopening Stages 1–35 frozen feature scopes (except explicitly completing the deferred S1/B1 packaging scopes in this plan).
 
@@ -34,7 +35,7 @@ Commercial Assurance Completion Fidelity
 | **S1** | Support SLA / incident escalation boundary packaging | P0 | COMPLETE |
 | **B1** | Billing-deferred commercial honesty packaging (not paid billing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H36x** | Stage 36 exit criteria + freeze ADR | Exit | PENDING |
+| **H36x** | Stage 36 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -73,12 +74,12 @@ Commercial Assurance Completion Fidelity
 
 ## H36x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for S1–D1 / H36x — `docs/STAGE_36_EXIT_CRITERIA.md`.
-- [ ] Scope freeze ADR accepted — `docs/ADR_078_STAGE36_FREEZE.md` (number reserved at close).
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
-- [ ] Automated proof: `backend/tests/test_stage36_exit_h36x.py`.
-- [ ] Stages 1–35 freezes remain; Stage 37+ requires explicit open ADR after CONTINUE/NEXT.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for S1–D1 / H36x — `docs/STAGE_36_EXIT_CRITERIA.md`.
+- [x] Scope freeze ADR accepted — `docs/ADR_078_STAGE36_FREEZE.md`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
+- [x] Automated proof: `backend/tests/test_stage36_exit_h36x.py`.
+- [x] Stages 1–35 freezes remain; Stage 37+ requires explicit open ADR after CONTINUE/NEXT.
 
 ## Sign-off
 
-Stage 36 open under ADR-077. D1 complete; H36x next. Stages 1–35 remain frozen for their scopes (Stage 34 S1/B1 packaging scopes reopen only inside this plan).
+Stage 36 exit met under ADR-078. S1–D1 / H36x complete. Stages 1–35 remain frozen for their scopes. Stage 37+ requires an explicit open ADR after CONTINUE/NEXT.

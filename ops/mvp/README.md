@@ -180,9 +180,9 @@ ADR-002 / plan_code commercial honesty boundary for procurement. See `docs/BILLI
 - Tests: `backend/tests/test_billing_deferred_honesty_b1.py`
 - Honesty: `billing_complete_claimed: false`, `payment_provider_claimed: false`, `checkout_success_claimed: false`, `deferred_implemented_claimed: false` — packaging ≠ paid billing
 
-## Stage 36 D1 — Assurance completion fidelity
+## Stage 36 D1 / H36x — Assurance completion fidelity + exit
 
-Doc-only fidelity sync. See `docs/STAGE_36_FIDELITY.md` (`backend/tests/test_stage36_fidelity_d1.py`) — maps S1–B1 → readiness / launch / deploy / security.
+Doc-only fidelity + freeze. See `docs/STAGE_36_FIDELITY.md`, `docs/STAGE_36_EXIT_CRITERIA.md`, ADR-078. Packaging Complete ≠ live SLA / paid billing / go-live / §7.
 
 
 Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false` / `customer_assurance_claimed: false` / `attestation_claimed: false` / `questionnaire_answers_certified: false` / `e2e_smoke_executed_claimed: false` / `live_bootstrap_claimed: false` / `demo_tenant_claimed: false` / `live_users_provisioned_claimed: false` / `store_membership_claimed: false` / `live_purchase_stock_claimed: false` / `po_kanban_claimed: false` / `live_sale_payment_claimed: false` / `usb_serial_drivers_claimed: false` / `live_verify_financials_claimed: false` / `tax_efile_claimed: false` / `live_backup_restore_claimed: false` / `live_pitr_drill_claimed: false` / `support_sla_claimed: false` / `pagerduty_hosted_claimed: false` / `billing_complete_claimed: false` / `payment_provider_claimed: false`.
