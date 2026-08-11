@@ -63,6 +63,7 @@ Authoritative MVP docs:
 - `docs/VULN_DISCLOSURE_MVP.md` (`backend/tests/test_vuln_disclosure_v1.py`) — Stage 38 V1
 - `docs/BREACH_NOTIFICATION_MVP.md` (`backend/tests/test_breach_notification_b1.py`) — Stage 38 B1
 - `docs/STAGE_39_PLAN.md` (`backend/tests/test_stage39_open.py`) — Stage 39 open (ADR-083)
+- `docs/STAGE_40_PLAN.md` (`backend/tests/test_stage40_open.py`) — Stage 40 open (ADR-085)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -264,4 +265,8 @@ Indexes Stage 34 assurance / Stage 38 disclosure packs as MSA security exhibit h
 
 ## Stage 39 exit
 
-H39x met — `docs/STAGE_39_EXIT_CRITERIA.md`, ADR-084. Stages 1–39 frozen; Stage 40+ requires open ADR after CONTINUE/NEXT.
+H39x met — `docs/STAGE_39_EXIT_CRITERIA.md`, ADR-084. Stages 1–39 frozen for Stage 39 feature scope.
+
+## Stage 40 open
+
+Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR-085; U1 next.

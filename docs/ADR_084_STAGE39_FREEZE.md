@@ -23,3 +23,8 @@ Stage 39 Commercial Contract Evidence Fidelity delivered DPA / subprocessor hone
 - Stage 1–38 freezes remain in force for their scopes (Stage 38 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Contract evidence packaging Complete does **not** mean signed DPA/MSA, legal counsel approval, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 40 (Commercial Availability & Supply-Chain Fidelity) after Stage 39 freeze via CONTINUE/NEXT — see [ADR-085](ADR_085_STAGE40_OPEN.md) and [STAGE_40_PLAN.md](STAGE_40_PLAN.md). Stage 39 feature scope remains frozen; Stage 40 does not reopen P1–D1 / H39x.
+
