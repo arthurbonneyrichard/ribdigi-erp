@@ -22,6 +22,7 @@ from app.rbac import (
     permissions_for_role,
     record_scope_for_role,
 )
+from app.platform_const import PLATFORM_ROLES, is_platform_tenant_id
 
 SLUG_RE = re.compile(r"^[a-z][a-z0-9_]{1,48}$")
 RESERVED_SLUGS = frozenset(VALID_ROLES) | frozenset({"admin", "root", "system", "owner"})
@@ -81,6 +82,8 @@ async def get_custom_role(db: AsyncSession, tenant_id: str, slug: str) -> m.Cust
 
 async def list_role_catalog(db: AsyncSession, tenant_id: str) -> list[dict]:
     rows = list_system_role_catalog()
+    if not is_platform_tenant_id(tenant_id):
+        rows = [r for r in rows if r.get("role") not in PLATFORM_ROLES]
     for custom in await list_custom_roles(db, tenant_id, active_only=True):
         rows.append(serialize_custom_role(custom))
     rows.sort(key=lambda r: (0 if r.get("system") else 1, r.get("label") or r.get("role") or ""))
@@ -125,6 +128,11 @@ async def assert_assignable_role(
     role = (role or "").strip()
     if not role:
         raise HTTPException(status_code=400, detail="role is required")
+    if role in PLATFORM_ROLES and not is_platform_tenant_id(tenant_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Platform roles can only be assigned on the Ribdigi House platform tenant",
+        )
     if role == "super_admin" and actor_role != "super_admin":
         raise HTTPException(status_code=403, detail="Only super_admin can assign super_admin")
     if role in VALID_ROLES:
@@ -159,7 +167,10 @@ async def permissions_for_assignment(db: AsyncSession, tenant_id: str, role: str
 
 async def known_role_slugs(db: AsyncSession, tenant_id: str) -> set[str]:
     customs = await list_custom_roles(db, tenant_id, active_only=True)
-    return set(VALID_ROLES) | {c.slug for c in customs}
+    base = set(VALID_ROLES)
+    if not is_platform_tenant_id(tenant_id):
+        base -= set(PLATFORM_ROLES)
+    return base | {c.slug for c in customs}
 
 
 def _copy_base_permissions(base_role: str | None) -> dict:
@@ -168,7 +179,7 @@ def _copy_base_permissions(base_role: str | None) -> dict:
     base = base_role.strip()
     if base not in VALID_ROLES:
         raise HTTPException(status_code=400, detail=f"base_role must be a system role; got '{base}'")
-    if base in {"super_admin", "company_admin"}:
+    if base in {"super_admin", "company_admin"} | set(PLATFORM_ROLES):
         raise HTTPException(
             status_code=400,
             detail="Cannot copy wildcard admin roles into a custom role; pick a narrower base",

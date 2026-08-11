@@ -8,6 +8,29 @@ from copy import deepcopy
 ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     "super_admin": {"*": ["*"]},
     "company_admin": {"*": ["*"]},
+    # ADR-137 — Ribdigi House platform staff (platform tenant only)
+    "platform_super_admin": {
+        "platform_dashboard": ["*"],
+        "platform_tenants": ["*"],
+        "platform_users": ["*"],
+        "platform_plans": ["*"],
+        "platform_billing": ["read"],
+        "platform_audit": ["*"],
+        "platform_health": ["*"],
+        "platform_settings": ["*"],
+        "security": ["read", "write"],
+    },
+    "platform_admin": {
+        "platform_dashboard": ["read"],
+        "platform_tenants": ["read", "write"],
+        "platform_users": ["read"],
+        "platform_plans": ["read"],
+        "platform_billing": ["read"],
+        "platform_audit": ["read"],
+        "platform_health": ["read"],
+        "platform_settings": ["read"],
+        "security": ["read", "write"],
+    },
     "store_manager": {
         "dashboard": ["read"],
         "inventory": ["read", "write"],
@@ -76,6 +99,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
 ROLE_LABELS: dict[str, str] = {
     "super_admin": "Super Admin",
     "company_admin": "Company Admin",
+    "platform_super_admin": "Platform Super Admin",
+    "platform_admin": "Platform Admin",
     "store_manager": "Store Manager",
     "sales_officer": "Sales Officer",
     "inventory_officer": "Inventory Officer",
@@ -131,6 +156,14 @@ SYSTEM_MODULES = frozenset(
         "users",
         "customers",
         "suppliers",
+        "platform_dashboard",
+        "platform_tenants",
+        "platform_users",
+        "platform_plans",
+        "platform_billing",
+        "platform_audit",
+        "platform_health",
+        "platform_settings",
     }
 )
 ALLOWED_ACTIONS = frozenset({"read", "write", "approve", "*"})
@@ -144,6 +177,8 @@ RECORD_SCOPE_KEY = "_record_scope"
 ROLE_RECORD_SCOPE: dict[str, str] = {
     "super_admin": "all",
     "company_admin": "all",
+    "platform_super_admin": "all",
+    "platform_admin": "all",
     "store_manager": "all",
     "accountant": "all",
     "inventory_officer": "all",

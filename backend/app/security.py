@@ -48,13 +48,23 @@ def hash_token(raw: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def create_access_token(user_id: str, tenant_id: str, role: str, jti: str | None = None) -> str:
+def create_access_token(
+    user_id: str,
+    tenant_id: str,
+    role: str,
+    jti: str | None = None,
+    *,
+    principal: str | None = None,
+) -> str:
+    from app.platform_const import principal_for
+
     now = datetime.now(timezone.utc)
     exp = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": user_id,
         "tenant_id": tenant_id,
         "role": role,
+        "principal": principal or principal_for(tenant_id=tenant_id, role=role),
         "type": "access",
         "jti": jti or secrets.token_hex(16),
         "iat": int(now.timestamp()),
@@ -100,6 +110,7 @@ async def _claims_from_api_key(
         "sub": f"apikey:{row.id}",
         "tenant_id": tenant_id,
         "role": "api_key",
+        "principal": "tenant",
         "type": "api_key",
         "permissions": row.permissions or {},
         "email_verified": True,
@@ -229,6 +240,14 @@ async def current_claims(
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
     data["auth_method"] = "jwt"
+    from app.platform_const import principal_for
+
+    data["principal"] = data.get("principal") or principal_for(
+        tenant_id=tenant_id, role=str(user.role or "")
+    )
+    # Prefer live role/tenant over stale JWT principal
+    data["principal"] = principal_for(tenant_id=tenant_id, role=str(user.role or ""))
+    data["role"] = user.role
     scope = record_scope_from_permissions(
         user.role, data["permissions"] if isinstance(data.get("permissions"), dict) else None
     )
@@ -252,6 +271,7 @@ async def current_claims(
         )
     request.state.user_id = user_id
     request.state.tenant_id = tenant_id
+    request.state.principal = data["principal"]
     return data
 
 
@@ -264,8 +284,43 @@ def require_roles(*roles: str):
     return dep
 
 
+def require_platform_permission(module: str, action: str = "read"):
+    """Authorize Ribdigi House platform APIs (ADR-137)."""
+
+    async def dep(claims: dict = Depends(current_claims)) -> dict:
+        if claims.get("principal") != "platform":
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "PLATFORM_PRINCIPAL_REQUIRED",
+                    "message": "Platform administration requires a Ribdigi House platform principal.",
+                },
+            )
+        role = claims.get("role", "")
+        overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+        if overrides and (overrides.get("*") == ["*"] or "*" in (overrides.get("*") or [])):
+            return claims
+        if not has_permission(role, module, action, overrides=overrides):
+            raise HTTPException(
+                status_code=403,
+                detail=f"Missing permission: {module}:{action}",
+            )
+        return claims
+
+    return dep
+
+
 def require_permission(module: str, action: str = "read"):
     async def dep(claims: dict = Depends(current_claims)) -> dict:
+        # Platform staff must use /api/v1/platform/* for SaaS ops (except security profile).
+        if claims.get("principal") == "platform" and module not in {"security"}:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "PLATFORM_USE_PLATFORM_API",
+                    "message": "Platform principals cannot access tenant ERP modules. Use /api/v1/platform/*.",
+                },
+            )
         if claims.get("read_only") and action != "read":
             raise HTTPException(
                 status_code=403,

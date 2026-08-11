@@ -43,6 +43,9 @@ export default function Login() {
     localStorage.setItem('token', data.access_token);
     if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
     localStorage.setItem('tenant', data.user.tenant_id);
+    if (data.principal || data.user?.principal) {
+      localStorage.setItem('principal', data.principal || data.user.principal);
+    }
     if (!remember) {
       // Session-only preference marker for future idle logout UX.
       sessionStorage.setItem('ribdigi_session_only', '1');
@@ -52,7 +55,13 @@ export default function Login() {
     if (data.must_enroll_2fa) {
       router.push('/security');
     } else {
-      router.push('/dashboard');
+      const dest =
+        data.redirect_path ||
+        data.user?.redirect_path ||
+        (data.principal === 'platform' || data.user?.principal === 'platform'
+          ? '/platform/dashboard'
+          : '/dashboard');
+      router.push(dest);
     }
   }
 

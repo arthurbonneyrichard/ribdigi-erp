@@ -269,6 +269,25 @@ async def create_session(
     return access, refresh_raw
 
 
+def _auth_user_payload(user: m.User, *, extra: dict | None = None) -> dict:
+    from app.platform_const import home_path_for_principal, principal_for
+
+    principal = principal_for(tenant_id=user.tenant_id, role=user.role)
+    payload = {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "tenant_id": user.tenant_id,
+        "email_verified": user.email_verified,
+        "totp_enabled": bool(user.totp_enabled),
+        "principal": principal,
+        "redirect_path": home_path_for_principal(principal),
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
 def _assert_email_verified(user: m.User) -> None:
     """BR-19.1: email must be verified before first login."""
     if not bool(user.email_verified):
@@ -340,7 +359,10 @@ async def metrics_endpoint():
 
 @api.post("/tenants")
 async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db)):
+    from app import platform as platform_svc
+
     validate_password_strength(payload.admin_password)
+    platform_svc.assert_not_reserved_tenant_slug(payload.slug)
     existing = (
         await db.execute(select(m.Tenant).where(m.Tenant.slug == payload.slug))
     ).scalar_one_or_none()
@@ -967,6 +989,9 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
     )
     await db.commit()
     has_mfa = await webauthn.user_has_mfa(db, user)
+    from app.platform_const import home_path_for_principal, principal_for
+
+    principal = principal_for(tenant_id=user.tenant_id, role=user.role)
     return env(
         {
             "access_token": access,
@@ -974,15 +999,9 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "must_enroll_2fa": totp_svc.role_requires_2fa(user.role) and not has_mfa,
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "role": user.role,
-                "tenant_id": tenant_id,
-                "email_verified": user.email_verified,
-                "totp_enabled": bool(user.totp_enabled),
-                "webauthn_enabled": has_webauthn,
-            },
+            "principal": principal,
+            "redirect_path": home_path_for_principal(principal),
+            "user": _auth_user_payload(user, extra={"webauthn_enabled": has_webauthn}),
         }
     )
 
@@ -1026,6 +1045,9 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
+    from app.platform_const import home_path_for_principal, principal_for
+
+    principal = principal_for(tenant_id=user.tenant_id, role=user.role)
     return env(
         {
             "access_token": access,
@@ -1033,14 +1055,9 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "must_enroll_2fa": False,
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "role": user.role,
-                "tenant_id": user.tenant_id,
-                "email_verified": user.email_verified,
-                "totp_enabled": True,
-            },
+            "principal": principal,
+            "redirect_path": home_path_for_principal(principal),
+            "user": _auth_user_payload(user, extra={"totp_enabled": True}),
         }
     )
 
@@ -1183,6 +1200,9 @@ async def webauthn_login_verify(
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
+    from app.platform_const import home_path_for_principal, principal_for
+
+    principal = principal_for(tenant_id=user.tenant_id, role=user.role)
     return env(
         {
             "access_token": access,
@@ -1190,15 +1210,11 @@ async def webauthn_login_verify(
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "must_enroll_2fa": False,
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "role": user.role,
-                "tenant_id": user.tenant_id,
-                "email_verified": user.email_verified,
-                "totp_enabled": bool(user.totp_enabled),
-                "webauthn_enabled": True,
-            },
+            "principal": principal,
+            "redirect_path": home_path_for_principal(principal),
+            "user": _auth_user_payload(
+                user, extra={"totp_enabled": bool(user.totp_enabled), "webauthn_enabled": True}
+            ),
         }
     )
 
@@ -1737,9 +1753,14 @@ async def resend_verification(
 
 @api.get("/me")
 async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
+    from app.platform_const import home_path_for_principal, principal_for
+
     user = await db.get(m.User, claims["sub"])
     perms = await resolve_user_permissions(db, user)
     tenant = await db.get(m.Tenant, claims["tenant_id"])
+    principal = claims.get("principal") or principal_for(
+        tenant_id=user.tenant_id, role=user.role
+    )
     return env(
         {
             "id": user.id,
@@ -1749,6 +1770,8 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "role": user.role,
             "tenant_id": user.tenant_id,
             "email_verified": user.email_verified,
+            "principal": principal,
+            "redirect_path": home_path_for_principal(principal),
             "permissions": perms,
             "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
             "inactivity_timeout_minutes": int(

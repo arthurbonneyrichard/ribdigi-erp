@@ -58,7 +58,11 @@ class Settings(BaseSettings):
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10
     TOTP_ENCRYPTION_KEY: str = ""
-    TOTP_ENFORCED_ROLES: str = "company_admin,super_admin"
+    TOTP_ENFORCED_ROLES: str = "company_admin,super_admin,platform_super_admin,platform_admin"
+    # ADR-137 — optional bootstrap of first Ribdigi House platform admin (never hard-code in code)
+    PLATFORM_ADMIN_EMAIL: str = ""
+    PLATFORM_ADMIN_PASSWORD: str = ""
+    PLATFORM_ADMIN_FULL_NAME: str = "Platform Super Admin"
     WEBAUTHN_RP_ID: str = "localhost"
     WEBAUTHN_RP_NAME: str = "RIBDIGI ERP"
     WEBAUTHN_ORIGIN: str = ""  # defaults to FRONTEND_URL

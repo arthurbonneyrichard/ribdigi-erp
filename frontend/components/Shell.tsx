@@ -57,6 +57,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [role, setRole] = useState('');
+  const [principal, setPrincipal] = useState('');
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [stores, setStores] = useState<StoreOption[]>([]);
   const [storeId, setStoreId] = useState('');
@@ -73,10 +74,27 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     let active = true;
     async function load() {
       try {
-        const [countRes, meRes] = await Promise.all([
-          api('/notifications/unread-count').catch(() => ({ data: { count: 0 } })),
-          api('/me'),
-        ]);
+        const meRes = await api('/me');
+        if (!active) return;
+        // ADR-137 — platform staff use Ribdigi House console, not tenant ERP nav
+        // (allow /security for MFA enrollment).
+        if (meRes.data?.principal === 'platform') {
+          setPrincipal('platform');
+          const path = typeof window !== 'undefined' ? window.location.pathname : '';
+          if (path !== '/security' && !path.startsWith('/security/')) {
+            window.location.replace(meRes.data?.redirect_path || '/platform/dashboard');
+            return;
+          }
+          setPermissions(meRes.data?.permissions || {});
+          setRole(meRes.data?.role || '');
+          setIdleMinutes(Number(meRes.data?.inactivity_timeout_minutes) || 30);
+          setUnread(0);
+          return;
+        }
+        setPrincipal(meRes.data?.principal || 'tenant');
+        const countRes = await api('/notifications/unread-count').catch(() => ({
+          data: { count: 0 },
+        }));
         if (!active) return;
         setUnread(countRes.data?.count || 0);
         setPermissions(meRes.data?.permissions || {});
@@ -87,6 +105,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           setUnread(0);
           setPermissions({});
           setRole('');
+          setPrincipal('');
         }
       }
     }
@@ -190,14 +209,21 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, [idleMinutes]);
 
-  const visible = items.filter(([, , module]) => canReadModule(permissions, module));
-  const showStoreSwitcher = canReadModule(permissions, 'stores') && stores.length > 0;
+  const visible =
+    principal === 'platform'
+      ? items.filter(([, h]) => h === '/security')
+      : items.filter(([, , module]) => canReadModule(permissions, module));
+  const showStoreSwitcher =
+    principal !== 'platform' && canReadModule(permissions, 'stores') && stores.length > 0;
 
   return (
     <div className="shell">
       <aside className="side">
-        <div className="brand">RIBDIGI ERP</div>
+        <div className="brand">{principal === 'platform' ? 'Ribdigi House' : 'RIBDIGI ERP'}</div>
         <nav className="nav">
+          {principal === 'platform' && (
+            <Link href="/platform/dashboard">Platform console</Link>
+          )}
           {visible.map(([n, h]) => (
             <Link key={h} href={h}>
               {n}

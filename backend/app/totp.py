@@ -21,7 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.config import settings
 
-ENFORCED_ROLES = frozenset({"company_admin", "super_admin"})
+ENFORCED_ROLES = frozenset(
+    {"company_admin", "super_admin", "platform_super_admin", "platform_admin"}
+)
 BACKUP_CODE_COUNT = 10
 CHALLENGE_TTL_MINUTES = 5
 ISSUER = "RIBDIGI ERP"
