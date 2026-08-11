@@ -21,3 +21,7 @@ Stage 24 Commerce & Ops Gate Fidelity (N1, G1, O1, D1, H24x) delivered shared do
 - Agents treat Stage 24 N1, G1, O1, D1, H24x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP (monitoring / WAL / K8s / load remain Partial or open where applicable).
 - Stage 1–23 freezes remain in force for their scopes.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 25 (Actuals → AI Analysis → Business Insights) after Stage 24 freeze via CONTINUE/NEXT — see [ADR-055](ADR_055_STAGE25_OPEN.md) and [STAGE_25_PLAN.md](STAGE_25_PLAN.md). Stage 24 feature scope remains frozen; Stage 25 does not reopen N1–D1 / H24x.

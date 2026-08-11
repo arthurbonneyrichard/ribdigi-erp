@@ -148,6 +148,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Ops Redis/Celery + AI MVP gate honesty (Stage 24 O1: `test_ops_ai_gate_closure_o1.py` — Redis/Celery + AI provider/tenant-safe/functions Complete MVP; Remaining deferred-only)
 - [x] Stage 24 fidelity sync (D1: `test_stage24_fidelity_d1.py`, `docs/STAGE_24_FIDELITY.md` — BR-20.4 + commerce/ops/AI readiness + USER_MANUAL / API / launch)
 - [x] Stage 24 exit + freeze (H24x: `test_stage24_exit_h24x.py`, `docs/STAGE_24_EXIT_CRITERIA.md`, ADR-054)
+- [ ] Stage 25 Actuals → AI Analysis → Business Insights (open: `docs/STAGE_25_PLAN.md`, ADR-055) — P1 next
+- [x] Stage 25 track opened (ADR-055: `test_stage25_open.py`, `docs/STAGE_25_PLAN.md`)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1
