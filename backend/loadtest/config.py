@@ -22,6 +22,13 @@ class BaselineTargets:
     smoke_p95_ms: float = 2000.0
     smoke_max_error_rate: float = 0.0
 
+    # Stage 26 C1 — CI capacity profile (ASGI / modest concurrency; not 1000-VU)
+    ci_capacity_concurrency: int = 10
+    ci_capacity_iterations: int = 20
+    ci_capacity_p95_ms: float = 500.0
+    ci_capacity_max_error_rate: float = 0.0
+    ci_capacity_scenarios: str = "health,login,products,dashboard"
+
 
 @dataclass
 class LoadTestSettings:

@@ -51,11 +51,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Use CI smoke defaults (health only, small concurrency)",
     )
+    parser.add_argument(
+        "--ci-capacity",
+        action="store_true",
+        help="Stage 26 C1 CI capacity profile (health+auth scenarios, modest concurrency; not 1000-VU)",
+    )
     parser.add_argument("--json", action="store_true", help="Print JSON report only")
     parser.add_argument(
         "--output",
         default=None,
-        help="Write JSON evidence report to this path (Stage 18 T1 artifact)",
+        help="Write JSON evidence report to this path (Stage 18 T1 / Stage 26 C1 artifact)",
     )
     args = parser.parse_args(argv)
 
@@ -63,11 +68,21 @@ def main(argv: list[str] | None = None) -> int:
     concurrency = args.concurrency
     iterations = args.iterations
     max_p95 = args.max_p95_ms
+    max_error_rate = args.max_error_rate
+    if args.smoke and args.ci_capacity:
+        parser.error("--smoke and --ci-capacity are mutually exclusive")
     if args.smoke:
         scenarios = "health"
         concurrency = TARGETS.smoke_concurrency
         iterations = TARGETS.smoke_iterations
         max_p95 = TARGETS.smoke_p95_ms if max_p95 is None else max_p95
+        max_error_rate = TARGETS.smoke_max_error_rate
+    elif args.ci_capacity:
+        scenarios = TARGETS.ci_capacity_scenarios
+        concurrency = TARGETS.ci_capacity_concurrency
+        iterations = TARGETS.ci_capacity_iterations
+        max_p95 = TARGETS.ci_capacity_p95_ms if max_p95 is None else max_p95
+        max_error_rate = TARGETS.ci_capacity_max_error_rate
 
     report = asyncio.run(
         run_baseline(
@@ -80,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
             password=args.password,
             tenant_slug=args.tenant,
             totp_code=args.totp,
-            max_error_rate=args.max_error_rate,
+            max_error_rate=max_error_rate,
             max_p95_ms=max_p95,
         )
     )

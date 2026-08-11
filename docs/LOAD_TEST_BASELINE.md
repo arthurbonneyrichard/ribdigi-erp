@@ -8,6 +8,7 @@
 | Tier | Concurrent users | Throughput guide | p95 latency | Error rate |
 |------|------------------|------------------|-------------|------------|
 | **CI / harness smoke** | 5 | ~health-only | < 2000 ms | 0% |
+| **CI capacity** (Stage 26 C1) | 10 | health + auth scenarios | < 500 ms | 0% |
 | **Staging capacity** (operator) | up to 1000 | ~100 TPS aspirational | < 500 ms | 0% |
 | **Product aspirational** (roadmap) | 1000 | 100 TPS | API < 200 ms (prod opt) | 0% |
 
@@ -84,6 +85,21 @@ python -m loadtest.run_baseline --smoke --output /opt/cursor/artifacts/loadtest/
 ```
 
 Automated proof: `backend/tests/test_loadtest_evidence_t1.py`. This is **harness evidence**, not a certified 1000-VU capacity certificate (still deferred).
+
+### Stage 26 C1 — CI capacity evidence
+
+| Path | Contents |
+|------|----------|
+| `/opt/cursor/artifacts/loadtest/stage26_c1_capacity_evidence.json` | Smoke + CI capacity profiles (`passed`, scenario stats, `operator_1000vu_required`) |
+
+```bash
+python -m loadtest.run_baseline --ci-capacity \
+  --email "$LOADTEST_EMAIL" --password "$LOADTEST_PASSWORD" \
+  --tenant "$LOADTEST_TENANT" \
+  --output /opt/cursor/artifacts/loadtest/stage26_c1_capacity_cli.json
+```
+
+Automated proof: `backend/tests/test_load_capacity_c1.py`. Authoritative MVP doc: `docs/LOAD_CAPACITY_MVP.md`. Operator staging ~1000-VU remains Remaining.
 
 ## Sign-off checklist (staging)
 

@@ -1197,6 +1197,10 @@ groups:
 
 ## 10. Scaling & High Availability
 
+**MVP load fidelity (Stage 26 C1):** CI smoke + CI capacity profiles via `backend/loadtest/` (`--smoke`, `--ci-capacity`); evidence `/opt/cursor/artifacts/loadtest/stage26_c1_capacity_evidence.json` (`test_load_capacity_c1.py`). Authoritative doc: `docs/LOAD_CAPACITY_MVP.md`. Operator staging ~1000-VU certificate remains Remaining.
+
+
+
 ### 10.1 Horizontal Scaling
 
 **Backend API:**

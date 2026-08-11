@@ -24,6 +24,7 @@ def test_stage26_plan_and_open_adr():
         or "C1 next" in plan
         or "C1 complete" in plan
         or "D1 next" in plan
+        or "D1 complete" in plan
         or "H26x next" in plan
         or "Closed" in plan
         or "exit met" in plan.lower()

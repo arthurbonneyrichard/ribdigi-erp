@@ -156,11 +156,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] AI UI fidelity (Stage 25 U1: `test_ai_ui_fidelity_u1.py` — `/ai` purchases + cross-domain + document analyze panels)
 - [x] Stage 25 fidelity sync (D1: `test_stage25_fidelity_d1.py`, `docs/STAGE_25_FIDELITY.md` — BR-21.2 / 21.11 / 21.12 + readiness + USER_MANUAL / API / launch)
 - [x] Stage 25 exit + freeze (H25x: `test_stage25_exit_h25x.py`, `docs/STAGE_25_EXIT_CRITERIA.md`, ADR-056)
-- [ ] Stage 26 Production Platform & Ops Fidelity (open: `docs/STAGE_26_PLAN.md`, ADR-057) — M1 / W1 / K1 complete; C1 next
+- [ ] Stage 26 Production Platform & Ops Fidelity (open: `docs/STAGE_26_PLAN.md`, ADR-057) — M1 / W1 / K1 / C1 complete; D1 next
 - [x] Stage 26 track opened (ADR-057: `test_stage26_open.py`, `docs/STAGE_26_PLAN.md`)
 - [x] Monitoring & alerting fidelity (Stage 26 M1: `test_ops_monitoring_m1.py` — `ops/prometheus` scrape/alerts + Fluent Bit log-ship example; `OPS_MONITORING_MVP.md`; readiness monitoring Complete MVP)
 - [x] WAL / PITR + S3 offsite fidelity (Stage 26 W1: `test_wal_pitr_w1.py` — `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/`, `ops/backup/sync-ribbak-offsite.sh.example`; evidence `stage26_w1_wal_pitr_strategy.json`)
 - [x] Kubernetes / Helm deploy fidelity (Stage 26 K1: `test_k8s_deploy_k1.py` — `helm/ribdigi/`, hardened `k8s/`, `ops/k8s/` smoke, `docs/K8S_DEPLOY_MVP.md`; readiness Kubernetes Complete MVP)
+- [x] Load capacity fidelity (Stage 26 C1: `test_load_capacity_c1.py` — smoke + CI capacity profiles; `docs/LOAD_CAPACITY_MVP.md`; evidence `stage26_c1_capacity_evidence.json`; readiness load Complete MVP)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1
@@ -181,7 +182,7 @@ Record as **ops follow-ups**, not Stage 7 incompletes:
 - Operator staging PITR drill execution / managed-cloud PITR automation (Stage 26 W1 strategy Complete — `docs/DR_WAL_PITR_RUNBOOK.md`)
 - Vendor penetration test / ZAP-in-CI Top 10
 - PgBouncer
-- Certified ~1000-VU staging capacity run (`docs/LOAD_TEST_BASELINE.md` scripts exist)
+- Operator staging ~1000-VU capacity certificate (Stage 26 C1 CI capacity Complete — `docs/LOAD_CAPACITY_MVP.md`; harness in `backend/loadtest/`)
 - Paid billing (ADR-002); schema-per-tenant (ADR-001); i18n packs (ADR-006)
 
 ## 7. Sign-off

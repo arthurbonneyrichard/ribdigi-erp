@@ -104,7 +104,13 @@ def test_monitoring_gate_complete_mvp():
             and "Stage 26 K1" in pr
         )
     )
-    assert "- [ ] Load/performance tests meet documented targets." in pr
+    assert (
+        "- [ ] Load/performance tests meet documented targets." in pr
+        or (
+            "- [x] Load/performance tests meet documented targets." in pr
+            and "Stage 26 C1" in pr
+        )
+    )
 
 
 def test_m1_plan_launch_roadmap_cite():
@@ -121,6 +127,8 @@ def test_m1_plan_launch_roadmap_cite():
         or "K1 complete" in plan
         or "C1 next" in plan
         or "C1 complete" in plan
+        or "D1 next" in plan
+        or "D1 complete" in plan
         or "Closed" in plan
         or "exit met" in plan.lower()
     )

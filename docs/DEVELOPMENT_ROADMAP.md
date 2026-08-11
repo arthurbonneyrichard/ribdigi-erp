@@ -230,6 +230,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 26 K1 (2026-08-11):** Kubernetes / Helm deploy fidelity — `helm/ribdigi/`, hardened `k8s/` with `/api/v1/health/ready` probes, `ops/k8s/` install/smoke, `docs/K8S_DEPLOY_MVP.md`, evidence `stage26_k1_deploy_fidelity.json` (`test_k8s_deploy_k1.py`); readiness Kubernetes Complete (MVP); live GHA→staging Remaining.
 
+**Stage 26 C1 (2026-08-11):** Load capacity evidence — CI smoke + CI capacity profiles via `backend/loadtest/` (`--ci-capacity`), `docs/LOAD_CAPACITY_MVP.md`, evidence `stage26_c1_capacity_evidence.json` (`test_load_capacity_c1.py`); readiness load Complete (MVP); operator ~1000-VU Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -810,7 +812,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 26 open (`docs/STAGE_26_PLAN.md`, ADR-057) — M1 / W1 / K1 complete; C1 next. Stages 1–25 remain frozen for their scopes (`docs/STAGE_25_EXIT_CRITERIA.md`, ADR-056).
+**Active delivery plan:** Stage 26 open (`docs/STAGE_26_PLAN.md`, ADR-057) — M1 / W1 / K1 / C1 complete; D1 next. Stages 1–25 remain frozen for their scopes (`docs/STAGE_25_EXIT_CRITERIA.md`, ADR-056).
 
 ### 6.2 Features
 

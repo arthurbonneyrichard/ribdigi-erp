@@ -69,5 +69,5 @@ def test_deferred_ops_remain_open_or_partial() -> None:
             and "Stage 26 W1" in READINESS
         )
     )
-    assert "Partial" in READINESS  # load still Partial
+    assert "Partial" in READINESS or "Remaining" in READINESS
     assert "WAL" in READINESS or "PITR" in READINESS

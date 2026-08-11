@@ -99,8 +99,14 @@ def test_kubernetes_gate_complete_mvp_and_evidence():
     assert "test_k8s_deploy_k1.py" in pr
     assert "helm/ribdigi" in pr or "K8S_DEPLOY_MVP.md" in pr
     assert "GHA" in pr or "staging" in pr.lower() or "Remaining" in pr
-    # Load remains open
-    assert "- [ ] Load/performance tests meet documented targets." in pr
+    # Load may be Complete (MVP) after C1
+    assert (
+        "- [ ] Load/performance tests meet documented targets." in pr
+        or (
+            "- [x] Load/performance tests meet documented targets." in pr
+            and "Stage 26 C1" in pr
+        )
+    )
     # Prior Stage 26 gates stay Complete
     assert "- [x] Monitoring, metrics, logging and alerting complete." in pr
     assert "- [x] Point-in-time recovery/WAL strategy complete." in pr
@@ -139,6 +145,8 @@ def test_k1_plan_launch_roadmap_cite():
         or "K1 complete" in plan
         or "C1 next" in plan
         or "C1 complete" in plan
+        or "D1 next" in plan
+        or "D1 complete" in plan
         or "Closed" in plan
         or "exit met" in plan.lower()
     )
