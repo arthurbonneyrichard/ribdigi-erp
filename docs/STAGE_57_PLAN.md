@@ -1,6 +1,6 @@
 # Stage 57 Plan — Commercial Mobile & Metrics Fidelity
 
-**Status:** Open — A1 next  
+**Status:** Open — A1 complete; K1 next  
 **Base:** Mobile App GTM Honesty Pack + Success Metrics Honesty Pack → Commercial Mobile & Metrics Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-119](ADR_119_STAGE57_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Mobile & Metrics Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **A1** | Mobile app GTM honesty packaging (not live Flutter / store publish Complete) | P0 | PENDING |
+| **A1** | Mobile app GTM honesty packaging (not live Flutter / store publish Complete) | P0 | COMPLETE |
 | **K1** | Success metrics honesty packaging (not measured MAU / NPS / uptime SLA Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H57x** | Stage 57 exit criteria + freeze ADR | Exit | PENDING |
@@ -87,10 +87,10 @@ Commercial Mobile & Metrics Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] Mobile app GTM honesty packaging indexing PRODUCT_OVERVIEW “Launch mobile apps” / Flutter roadmap themes with Stage 49–56 GTM adjacency (not claiming live Flutter / store publish Complete).
-- [ ] Automated proof: `backend/tests/test_mobile_app_gtm_a1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 57 A1.
+- [x] Mobile app GTM honesty packaging indexing PRODUCT_OVERVIEW “Launch mobile apps” / Flutter roadmap themes with Stage 49–56 GTM adjacency (not claiming live Flutter / store publish Complete).
+- [x] Automated proof: `backend/tests/test_mobile_app_gtm_a1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 57 A1.
 
 ## K1 acceptance criteria
 

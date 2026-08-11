@@ -1343,3 +1343,5 @@ Every feature in every phase must meet:
 **Stage 56 exit (2026-08-11):** O1, G1, D1, H56x met — `docs/STAGE_56_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_118_STAGE56_FREEZE.md`. Fidelity: `docs/STAGE_56_FIDELITY.md`.
 
 **Stage 57 open (2026-08-11):** Commercial Mobile & Metrics Fidelity track approved — `docs/ADR_119_STAGE57_OPEN.md` + `docs/STAGE_57_PLAN.md` (mobile app GTM → success metrics → fidelity).
+
+**Stage 57 A1 (2026-08-11):** Mobile app GTM honesty — `docs/MOBILE_APP_GTM_MVP.md`, `ops/mvp/mobile-app-gtm.json`, evidence `stage57_a1_mobile_app_gtm.json` (`test_mobile_app_gtm_a1.py`); live Flutter / store publish Remaining.
