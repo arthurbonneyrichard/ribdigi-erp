@@ -1,0 +1,158 @@
+{
+  "stage": "35",
+  "workstream": "V1",
+  "doc": "docs/E2E_VERIFY_FINANCIALS_MVP.md",
+  "e2e_sale_payment": "ops/mvp/e2e-sale-payment.json",
+  "stage14_plan": "docs/STAGE_14_PLAN.md",
+  "stage15_plan": "docs/STAGE_15_PLAN.md",
+  "stage16_plan": "docs/STAGE_16_PLAN.md",
+  "stage22_plan": "docs/STAGE_22_PLAN.md",
+  "stage23_plan": "docs/STAGE_23_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "api_docs": "docs/API_DOCUMENTATION.md",
+  "packaging_complete": true,
+  "live_verify_financials_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "tax_efile_claimed": false,
+  "steps": [
+    {
+      "id": "vf-verify-tax",
+      "category": "tax",
+      "title": "Verify tax applied on sale/POS path (rates / inclusive-exclusive)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_14_PLAN.md",
+        "docs/STAGE_15_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/STAGE_15_PLAN.md"
+    },
+    {
+      "id": "vf-verify-accounting",
+      "category": "accounting",
+      "title": "Verify AR / journal entries / ledger after sale",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_15_PLAN.md",
+        "docs/API_DOCUMENTATION.md",
+        "ops/mvp/e2e-sale-payment.json"
+      ],
+      "source": "docs/STAGE_15_PLAN.md"
+    },
+    {
+      "id": "vf-verify-credit",
+      "category": "credit",
+      "title": "Verify customer credit limit / allocate / statement surfaces",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_14_PLAN.md",
+        "docs/STAGE_22_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/STAGE_22_PLAN.md"
+    },
+    {
+      "id": "vf-verify-reports",
+      "category": "reports",
+      "title": "Verify reports suite (P&L / TB / credit-tax reports packaging)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_16_PLAN.md",
+        "docs/STAGE_23_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/STAGE_16_PLAN.md"
+    },
+    {
+      "id": "vf-verify-audit",
+      "category": "audit",
+      "title": "Verify domain audit log entries for sales/inventory/expenses path",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_15_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#audit"
+    },
+    {
+      "id": "vf-trial-balance",
+      "category": "accounting",
+      "title": "Confirm trial balance / GL integrity honesty after smoke path",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_23_PLAN.md",
+        "docs/API_DOCUMENTATION.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/STAGE_23_PLAN.md"
+    },
+    {
+      "id": "vf-tenant-isolation",
+      "category": "security",
+      "title": "Tenant header mismatch on financials/reports path returns 403",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/LAUNCH_CHECKLIST.md",
+        "ops/mvp/e2e-sale-payment.json"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "vf-ar-ap-aging",
+      "category": "reports",
+      "title": "Confirm AR/AP aging / payments packaging honesty (Stage 22)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_22_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/STAGE_22_PLAN.md"
+    },
+    {
+      "id": "vf-tax-efile-deferred",
+      "category": "deferred",
+      "title": "Confirm tax e-file portals / Open Banking remain deferred",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_23_PLAN.md",
+        "docs/STAGE_35_PLAN.md"
+      ],
+      "source": "docs/STAGE_35_PLAN.md"
+    },
+    {
+      "id": "vf-live-verify-remaining",
+      "category": "honesty",
+      "title": "Live verify-financials / E2E smoke execution Remaining \u2014 packaging \u2260 executed",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_35_PLAN.md",
+        "ops/mvp/e2e-sale-payment.json"
+      ],
+      "source": "docs/STAGE_35_PLAN.md#V1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage35_v1_e2e_verify_financials.json",
+  "deferred": [
+    "Claiming live verify-financials Complete because Stage 35 V1 packaging exists",
+    "Demo tenants / fake ledger balances as Complete",
+    "Tax e-file portals Complete",
+    "Open Banking Complete",
+    "Live E2E smoke executed Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

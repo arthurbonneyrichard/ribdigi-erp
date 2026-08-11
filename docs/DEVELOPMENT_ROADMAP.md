@@ -354,6 +354,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 35 S1 (2026-08-11):** Sale-to-payment — `docs/E2E_SALE_PAYMENT_MVP.md`, `ops/mvp/e2e-sale-payment.json`, evidence `stage35_s1_e2e_sale_payment.json` (`test_e2e_sale_payment_s1.py`); customer → POS → payment → stock reduction; live POS / USB-serial Remaining.
 
+**Stage 35 V1 (2026-08-11):** Verify financials — `docs/E2E_VERIFY_FINANCIALS_MVP.md`, `ops/mvp/e2e-verify-financials.json`, evidence `stage35_v1_e2e_verify_financials.json` (`test_e2e_verify_financials_v1.py`); tax → accounting → credit → reports → audit; live verification / tax e-file Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -934,7 +936,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 35 open (`docs/STAGE_35_PLAN.md`, ADR-075) — S1 complete; V1 next. Stages 1–34 remain frozen for their scopes (`docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074).
+**Active delivery plan:** Stage 35 open (`docs/STAGE_35_PLAN.md`, ADR-075) — V1 complete; R1 next. Stages 1–34 remain frozen for their scopes (`docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074).
 
 ### 6.2 Features
 

@@ -173,12 +173,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [ ] Stage 35 Commercial End-to-End Operational Smoke Fidelity (open: `docs/STAGE_35_PLAN.md`, ADR-075) — V1 next
+- [ ] Stage 35 Commercial End-to-End Operational Smoke Fidelity (open: `docs/STAGE_35_PLAN.md`, ADR-075) — R1 next
 - [x] Stage 35 track opened (ADR-075: `test_stage35_open.py`, `docs/STAGE_35_PLAN.md`)
 - [x] Org bootstrap (Stage 35 T1: `test_e2e_org_bootstrap_t1.py` — `docs/E2E_ORG_BOOTSTRAP_MVP.md`, `ops/mvp/e2e-org-bootstrap.json`; evidence `stage35_t1_e2e_org_bootstrap.json`; live bootstrap / demo tenants Remaining)
 - [x] Users + RBAC (Stage 35 U1: `test_e2e_users_rbac_u1.py` — `docs/E2E_USERS_RBAC_MVP.md`, `ops/mvp/e2e-users-rbac.json`; evidence `stage35_u1_e2e_users_rbac.json`; live provisioning / ADR-005 store membership Remaining)
 - [x] Purchase-to-stock (Stage 35 P1: `test_e2e_purchase_stock_p1.py` — `docs/E2E_PURCHASE_STOCK_MVP.md`, `ops/mvp/e2e-purchase-stock.json`; evidence `stage35_p1_e2e_purchase_stock.json`; live purchasing / PO Kanban Remaining)
 - [x] Sale-to-payment (Stage 35 S1: `test_e2e_sale_payment_s1.py` — `docs/E2E_SALE_PAYMENT_MVP.md`, `ops/mvp/e2e-sale-payment.json`; evidence `stage35_s1_e2e_sale_payment.json`; live POS / USB-serial Remaining)
+- [x] Verify financials (Stage 35 V1: `test_e2e_verify_financials_v1.py` — `docs/E2E_VERIFY_FINANCIALS_MVP.md`, `ops/mvp/e2e-verify-financials.json`; evidence `stage35_v1_e2e_verify_financials.json`; live verification / tax e-file Remaining)
 - [x] Stage 34 Commercial Customer Assurance Fidelity (closed: `docs/STAGE_34_PLAN.md`, ADR-074) — A1/C1/D1/H34x complete; S1/B1 deferred
 - [x] Stage 34 track opened (ADR-073: `test_stage34_open.py`, `docs/STAGE_34_PLAN.md`)
 - [x] Stage 34 exit + freeze (H34x: `test_stage34_exit_h34x.py`, `docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074)
