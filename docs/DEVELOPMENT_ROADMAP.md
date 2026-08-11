@@ -1303,3 +1303,5 @@ Every feature in every phase must meet:
 **Stage 52 exit (2026-08-11):** I1, R1, D1, H52x met — `docs/STAGE_52_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_110_STAGE52_FREEZE.md`. Fidelity: `docs/STAGE_52_FIDELITY.md`.
 
 **Stage 53 open (2026-08-11):** Commercial API & Lifecycle Fidelity track approved — `docs/ADR_111_STAGE53_OPEN.md` + `docs/STAGE_53_PLAN.md` (API/integration commercial → cancellation/churn → fidelity).
+
+**Stage 53 A1 (2026-08-11):** API & integration commercial honesty — `docs/API_INTEGRATION_COMMERCIAL_MVP.md`, `ops/mvp/api-integration-commercial.json`, evidence `stage53_a1_api_integration_commercial.json` (`test_api_integration_commercial_a1.py`); live API rate-limit upgrade billing Remaining.

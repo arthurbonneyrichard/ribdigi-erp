@@ -1,6 +1,6 @@
 # Stage 53 Plan — Commercial API & Lifecycle Fidelity
 
-**Status:** Open — A1 next  
+**Status:** Open — A1 complete; C1 next  
 **Base:** API & Integration Commercial Honesty Pack + Cancellation / Refund / Churn Policy Honesty Pack → Commercial API & Lifecycle Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-111](ADR_111_STAGE53_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial API & Lifecycle Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **A1** | API & integration commercial honesty packaging (not live API rate-limit upgrade / connector fee billing Complete) | P0 | PENDING |
+| **A1** | API & integration commercial honesty packaging (not live API rate-limit upgrade / connector fee billing Complete) | P0 | COMPLETE |
 | **C1** | Cancellation / refund / churn policy honesty packaging (not live cancellation portal / refund processing / churn measurement Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H53x** | Stage 53 exit criteria + freeze ADR | Exit | PENDING |
@@ -78,10 +78,10 @@ Commercial API & Lifecycle Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] API & integration commercial honesty packaging consolidating PRODUCT_OVERVIEW API rate-limit / connector-fee themes and Stage 36 billing-deferred / Stage 49–52 commercial adjacency (not forging live API upgrade billing Complete).
-- [ ] Automated proof: `backend/tests/test_api_integration_commercial_a1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 53 A1.
+- [x] API & integration commercial honesty packaging consolidating PRODUCT_OVERVIEW API rate-limit / connector-fee themes and Stage 36 billing-deferred / Stage 49–52 commercial adjacency (not forging live API upgrade billing Complete).
+- [x] Automated proof: `backend/tests/test_api_integration_commercial_a1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 53 A1.
 
 ## C1 acceptance criteria
 
