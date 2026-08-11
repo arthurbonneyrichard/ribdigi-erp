@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
@@ -37,6 +38,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     let active = true;
@@ -71,17 +73,26 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <aside className="side">
         <div className="brand">RIBDIGI ERP</div>
         <nav className="nav">
-          {visible.map(([n, h, , icon]) => (
-            <Link key={h} href={h} onClick={() => setMenuOpen(false)}>
-              <span className="nav-ico" aria-hidden>
-                {icon}
-              </span>
-              <span className="nav-label">
-                {n}
-                {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
-              </span>
-            </Link>
-          ))}
+          {visible.map(([n, h, , icon]) => {
+            const active = pathname === h || pathname.startsWith(`${h}/`);
+            return (
+              <Link
+                key={h}
+                href={h}
+                className={active ? 'active' : undefined}
+                aria-current={active ? 'page' : undefined}
+                onClick={() => setMenuOpen(false)}
+              >
+                <span className="nav-ico" aria-hidden>
+                  {icon}
+                </span>
+                <span className="nav-label">
+                  {n}
+                  {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
+                </span>
+              </Link>
+            );
+          })}
         </nav>
       </aside>
       <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
