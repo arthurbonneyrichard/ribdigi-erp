@@ -23,3 +23,8 @@ Stage 51 Commercial Marketplace & Add-Ons Fidelity delivered marketplace presenc
 - Stage 1–50 freezes remain in force for their scopes (Stage 50 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Marketplace & add-ons packaging Complete does **not** mean live marketplace listing, app-store presence, live add-on catalog, add-on billing, or live go-live / §7 / attestation Complete.
+
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 52 (Commercial Partnerships & Renewal Fidelity) after Stage 51 freeze via CONTINUE/NEXT — see [ADR-109](ADR_109_STAGE52_OPEN.md) and [STAGE_52_PLAN.md](STAGE_52_PLAN.md). Stage 51 feature scope remains frozen; Stage 52 does not reopen M1–D1 / H51x.
