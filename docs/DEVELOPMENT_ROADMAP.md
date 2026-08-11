@@ -1411,3 +1411,5 @@ Every feature in every phase must meet:
 **Stage 63 D1 (2026-08-11):** Capital & scale fidelity sync — `docs/STAGE_63_FIDELITY.md` (`test_stage63_fidelity_d1.py`); maps P1–G1 → readiness / launch / deploy / security.
 
 **Stage 63 exit (2026-08-11):** P1, G1, D1, H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_132_STAGE63_FREEZE.md`. Fidelity: `docs/STAGE_63_FIDELITY.md`.
+
+**Stage 64 open (2026-08-11):** Commercial Analytics & Franchise Fidelity track approved — `docs/ADR_133_STAGE64_OPEN.md` + `docs/STAGE_64_PLAN.md` (Advanced BI → franchise & chain → fidelity).

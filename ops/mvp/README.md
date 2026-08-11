@@ -216,6 +216,7 @@ Authoritative MVP docs:
 - `docs/MULTI_COUNTRY_TAX_MVP.md` (`backend/tests/test_multi_country_tax_t1.py`) — Stage 60 T1
 - `docs/STAGE_60_FIDELITY.md` (`backend/tests/test_stage60_fidelity_d1.py`) — Stage 60 D1
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
+- `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
 - `docs/IPO_READINESS_MVP.md` (`backend/tests/test_ipo_readiness_p1.py`) — Stage 63 P1
 - `docs/GLOBAL_SCALE_MVP.md` (`backend/tests/test_global_scale_g1.py`) — Stage 63 G1
@@ -916,3 +917,7 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 64 open
+
+Commercial Analytics & Franchise Fidelity — `docs/STAGE_64_PLAN.md`, ADR-133; Open — B1 next.

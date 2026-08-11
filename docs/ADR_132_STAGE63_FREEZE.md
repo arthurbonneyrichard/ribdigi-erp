@@ -23,3 +23,7 @@ Stage 63 Commercial Capital & Scale Fidelity delivered IPO readiness honesty pac
 - Stage 1–62 freezes remain in force for their scopes (Stage 62 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Capital & scale packaging Complete does **not** mean live IPO / Series B–C funding, measured 50k-customer / 20-country scale, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 64 (Commercial Analytics & Franchise Fidelity) after Stage 63 freeze via CONTINUE/NEXT — see [ADR-133](ADR_133_STAGE64_OPEN.md) and [STAGE_64_PLAN.md](STAGE_64_PLAN.md). Stage 63 feature scope remains frozen; Stage 64 does not reopen P1–D1 / H63x.
