@@ -12,6 +12,7 @@ type AuditRow = {
   entity_id?: string;
   created_at?: string;
   user_id?: string;
+  details?: Record<string, any>;
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -22,6 +23,7 @@ export default function PlatformAuditPage() {
   const [message, setMessage] = useState('');
   const [module, setModule] = useState('');
   const [action, setAction] = useState('');
+  const [deliveryOnly, setDeliveryOnly] = useState(false);
   const [verify, setVerify] = useState<any>(null);
 
   async function load() {
@@ -30,6 +32,7 @@ export default function PlatformAuditPage() {
       const params = new URLSearchParams();
       if (module.trim()) params.set('module', module.trim());
       if (action.trim()) params.set('action', action.trim());
+      if (deliveryOnly) params.set('delivery_only', 'true');
       const r = await api(`/platform/audit?${params.toString()}`);
       setItems(r.data?.items || []);
     } catch (err: any) {
@@ -84,19 +87,27 @@ export default function PlatformAuditPage() {
     }
   }
 
+  function deliverySummary(row: AuditRow) {
+    const d = row.details || {};
+    if (row.action !== 'platform.email.delivery' && d.sent == null && !d.mode) return null;
+    return `sent=${String(d.sent)} · mode=${d.mode || '—'} · to=${d.recipient || '—'}${
+      d.error ? ` · error=${d.error}` : ''
+    }`;
+  }
+
   return (
     <PlatformShell>
       <h1>Platform audit</h1>
       <p className="muted">
         Events recorded against the Ribdigi House platform tenant. Activity is an alias of this
-        surface.
+        surface. Email delivery outcomes appear as platform.email.delivery (no fabricated success).
       </p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           load();
         }}
-        style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '16px 0' }}
+        style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '16px 0', alignItems: 'center' }}
       >
         <input
           value={module}
@@ -110,6 +121,14 @@ export default function PlatformAuditPage() {
           placeholder="Action (e.g. platform.tenant.create)"
           style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 220 }}
         />
+        <label className="muted" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="checkbox"
+            checked={deliveryOnly}
+            onChange={(e) => setDeliveryOnly(e.target.checked)}
+          />
+          Delivery only
+        </label>
         <button
           type="submit"
           style={{ padding: '10px 14px', borderRadius: 8, background: '#111827', color: '#fff', border: 0 }}
@@ -143,6 +162,7 @@ export default function PlatformAuditPage() {
             <th>Module</th>
             <th>Entity</th>
             <th>User</th>
+            <th>Details</th>
           </tr>
         </thead>
         <tbody>
@@ -156,11 +176,17 @@ export default function PlatformAuditPage() {
                 {row.entity_id ? ` · ${row.entity_id}` : ''}
               </td>
               <td>{row.user_id || '—'}</td>
+              <td className="muted" style={{ maxWidth: 320, fontSize: 13 }}>
+                {deliverySummary(row) ||
+                  (row.details && Object.keys(row.details).length
+                    ? JSON.stringify(row.details)
+                    : '—')}
+              </td>
             </tr>
           ))}
           {items.length === 0 && (
             <tr>
-              <td colSpan={5} className="muted">
+              <td colSpan={6} className="muted">
                 No platform audit events yet.
               </td>
             </tr>

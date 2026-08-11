@@ -312,6 +312,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Plan catalog + billing roster depth (Stage 89 C1: `test_platform_catalog_billing_c1.py`)
 - [x] Stage 89 fidelity sync (D1: `test_stage89_fidelity_d1.py`, `docs/STAGE_89_FIDELITY.md` — A1–C1 + readiness + deploy / launch / security)
 - [x] Stage 89 exit + freeze (H89x: `test_stage89_exit_h89x.py`, `docs/STAGE_89_EXIT_CRITERIA.md`, ADR-185)
+- [x] Stage 90 track opened (ADR-186: `test_stage90_open.py`, `docs/STAGE_90_PLAN.md`) — House Operator Visibility & Delivery Ops; closed under ADR-187
+- [x] House email delivery visibility (Stage 90 E1: `test_platform_email_delivery_visibility_e1.py`)
+- [x] Operator surfaces (Stage 90 O1: `test_house_operator_surfaces_o1.py`)
+- [x] Roster findability + plan context (Stage 90 Q1: `test_platform_roster_findability_q1.py`)
+- [x] Stage 90 fidelity sync (D1: `test_stage90_fidelity_d1.py`, `docs/STAGE_90_FIDELITY.md` — E1–Q1 + readiness + deploy / launch / security)
+- [x] Stage 90 exit + freeze (H90x: `test_stage90_exit_h90x.py`, `docs/STAGE_90_EXIT_CRITERIA.md`, ADR-187)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

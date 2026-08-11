@@ -5,11 +5,13 @@ from __future__ import annotations
 import csv
 import io
 from datetime import datetime, timedelta
+from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import audit as audit_svc
 from app import models as m
 from app import tenants as tenants_svc
 from app.platform_const import (
@@ -17,6 +19,44 @@ from app.platform_const import (
     PLATFORM_TENANT_ID,
     PLATFORM_TENANT_SLUG,
 )
+
+
+async def record_platform_email_delivery(
+    db: AsyncSession,
+    *,
+    actor_user_id: str | None,
+    purpose: str,
+    recipient: str,
+    related_action: str,
+    email_result: Any,
+    extra: dict | None = None,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
+) -> None:
+    """Stage 90 E1 — append-only delivery outcome for House-initiated emails."""
+    details = {
+        "purpose": purpose,
+        "recipient": recipient,
+        "related_action": related_action,
+        "sent": bool(getattr(email_result, "sent", False)),
+        "mode": getattr(email_result, "mode", None),
+        "error": getattr(email_result, "error", None),
+        "fabricated_success": False,
+    }
+    if extra:
+        details.update(extra)
+    await audit_svc.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=actor_user_id,
+        action="platform.email.delivery",
+        entity="email",
+        entity_id=None,
+        details=details,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        module="platform_email",
+    )
 
 
 async def ensure_platform_tenant(db: AsyncSession) -> m.Tenant:
@@ -467,11 +507,21 @@ async def list_customer_tenants(
         filters.append(func.lower(m.Tenant.industry) == industry.strip().lower())
     if q and q.strip():
         like = f"%{q.strip().lower()}%"
+        admin_tenant_ids = (
+            select(m.User.tenant_id)
+            .where(
+                m.User.role == "company_admin",
+                m.User.is_active == True,  # noqa: E712
+                func.lower(m.User.email).like(like),
+            )
+            .distinct()
+        )
         filters.append(
             or_(
                 func.lower(m.Tenant.slug).like(like),
                 func.lower(m.Tenant.company_name).like(like),
                 m.Tenant.id == q.strip(),
+                m.Tenant.id.in_(admin_tenant_ids),
             )
         )
     total = int(

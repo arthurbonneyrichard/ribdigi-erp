@@ -490,6 +490,18 @@ async def platform_tenant_admin_password_reset_email(
     from app import emailer
 
     email_result = await emailer.send_password_reset_email(to=admin.email, token=raw)
+    await platform_svc.record_platform_email_delivery(
+        db,
+        actor_user_id=claims.get("sub"),
+        purpose="password_reset",
+        recipient=admin.email,
+        related_action="platform.tenant.admin_password_reset_email",
+        email_result=email_result,
+        extra={"target_tenant_id": tenant_id, "admin_user_id": admin.id},
+        ip_address=ip,
+        user_agent=ua,
+    )
+    await db.commit()
     data: dict[str, Any] = {
         "tenant_id": tenant_id,
         "admin_user_id": admin.id,
@@ -566,6 +578,18 @@ async def platform_tenant_admin_resend_verification(
     email_result = await emailer.send_verification_email(
         to=admin.email, token=raw, company_name=row.company_name
     )
+    await platform_svc.record_platform_email_delivery(
+        db,
+        actor_user_id=claims.get("sub"),
+        purpose="email_verify",
+        recipient=admin.email,
+        related_action="platform.tenant.admin_resend_verification",
+        email_result=email_result,
+        extra={"target_tenant_id": tenant_id, "admin_user_id": admin.id},
+        ip_address=ip,
+        user_agent=ua,
+    )
+    await db.commit()
     data: dict[str, Any] = {
         "tenant_id": tenant_id,
         "admin_user_id": admin.id,
@@ -977,6 +1001,18 @@ async def platform_create_user(
         from app import emailer
 
         email_result = await emailer.send_password_reset_email(to=user.email, token=reset_token)
+        await platform_svc.record_platform_email_delivery(
+            db,
+            actor_user_id=claims.get("sub"),
+            purpose="password_reset",
+            recipient=user.email,
+            related_action="platform.user.create",
+            email_result=email_result,
+            extra={"invite_by_email": True, "user_id": user.id},
+            ip_address=ip,
+            user_agent=ua,
+        )
+        await db.commit()
         data["email_delivery"] = {
             "sent": email_result.sent,
             "mode": email_result.mode,
@@ -1113,6 +1149,18 @@ async def platform_password_reset_email(
     from app import emailer
 
     email_result = await emailer.send_password_reset_email(to=user.email, token=raw)
+    await platform_svc.record_platform_email_delivery(
+        db,
+        actor_user_id=claims.get("sub"),
+        purpose="password_reset",
+        recipient=user.email,
+        related_action="platform.user.password_reset_email",
+        email_result=email_result,
+        extra={"user_id": user.id},
+        ip_address=ip,
+        user_agent=ua,
+    )
+    await db.commit()
     data: dict[str, Any] = {
         "user_id": user.id,
         "email": user.email,
@@ -1130,8 +1178,17 @@ async def platform_password_reset_email(
 @router.get("/health")
 async def platform_health(
     claims: dict = Depends(require_platform_permission("platform_health", "read")),
+    db: AsyncSession = Depends(get_db),
 ):
+    """Deep health + Stage 90 O1 operator support contacts from platform settings."""
     report, _status = await health_svc.assemble_health(deep=True)
+    await platform_svc.ensure_platform_tenant(db)
+    platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
+    report["operator_contacts"] = {
+        "support_email": getattr(platform_tenant, "email", None) if platform_tenant else None,
+        "support_phone": getattr(platform_tenant, "phone", None) if platform_tenant else None,
+        "company_name": getattr(platform_tenant, "company_name", None) if platform_tenant else None,
+    }
     return env(report)
 
 
@@ -1143,13 +1200,22 @@ async def platform_audit(
     offset: int = Query(0, ge=0),
     module: str | None = Query(None),
     action: str | None = Query(None),
+    delivery_only: bool = Query(False),
 ):
-    """Stage 86 A1 — platform audit with optional module/action filters."""
+    """Stage 86 A1 — platform audit with optional module/action filters.
+
+    Stage 90 E1: ``delivery_only`` filters to ``platform.email.delivery`` events.
+    """
+    action_filter = (action or "").strip() or None
+    module_filter = (module or "").strip() or None
+    if delivery_only:
+        action_filter = "platform.email.delivery"
+        module_filter = module_filter or "platform_email"
     rows = await audit.query_logs(
         db,
         tenant_id=PLATFORM_TENANT_ID,
-        module=(module or "").strip() or None,
-        action=(action or "").strip() or None,
+        module=module_filter,
+        action=action_filter,
         limit=min(limit + offset, 1000),
     )
     sliced = rows[offset : offset + limit]
@@ -1160,7 +1226,11 @@ async def platform_audit(
             "total": len(rows),
             "limit": limit,
             "offset": offset,
-            "filters": {"module": module, "action": action},
+            "filters": {
+                "module": module_filter,
+                "action": action_filter,
+                "delivery_only": delivery_only,
+            },
         }
     )
 
@@ -1173,13 +1243,19 @@ async def platform_activity_alias(
     offset: int = Query(0, ge=0),
     module: str | None = Query(None),
     action: str | None = Query(None),
+    delivery_only: bool = Query(False),
 ):
     """Stage 86 A1 — Activity alias for Platform Audit (parity with tenant /activity)."""
+    action_filter = (action or "").strip() or None
+    module_filter = (module or "").strip() or None
+    if delivery_only:
+        action_filter = "platform.email.delivery"
+        module_filter = module_filter or "platform_email"
     rows = await audit.query_logs(
         db,
         tenant_id=PLATFORM_TENANT_ID,
-        module=(module or "").strip() or None,
-        action=(action or "").strip() or None,
+        module=module_filter,
+        action=action_filter,
         limit=min(limit + offset, 1000),
     )
     sliced = rows[offset : offset + limit]
@@ -1190,7 +1266,11 @@ async def platform_activity_alias(
             "total": len(rows),
             "limit": limit,
             "offset": offset,
-            "filters": {"module": module, "action": action},
+            "filters": {
+                "module": module_filter,
+                "action": action_filter,
+                "delivery_only": delivery_only,
+            },
             "alias_of": "/platform/audit",
         }
     )

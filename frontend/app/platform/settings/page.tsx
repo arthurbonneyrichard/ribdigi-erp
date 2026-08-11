@@ -104,6 +104,28 @@ export default function PlatformSettingsPage() {
           Save
         </button>
       </form>
+
+      <div className="card" style={{ marginTop: 24, maxWidth: 640 }}>
+        <h2 style={{ fontSize: 16, marginTop: 0 }}>Operator runbooks (packaging links)</h2>
+        <p className="muted">
+          Curated references for Ribdigi House operators. Packaging only — not live SLA or go-live
+          attestation.
+        </p>
+        <ul>
+          <li>
+            <code>docs/SUPPORT_RUNBOOK_MVP.md</code> — support runbook
+          </li>
+          <li>
+            <code>docs/INCIDENT_PACK_MVP.md</code> — incident pack
+          </li>
+          <li>
+            <code>docs/DR_LOGICAL_BACKUP_RUNBOOK.md</code> — logical backup DR
+          </li>
+          <li>
+            <code>ops/mvp/README.md</code> — MVP evidence / ops index
+          </li>
+        </ul>
+      </div>
     </PlatformShell>
   );
 }

@@ -209,7 +209,7 @@ export default function PlatformTenantsPage() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search slug or name"
+          placeholder="Search slug, name, or admin email"
           style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 200 }}
         />
         <select

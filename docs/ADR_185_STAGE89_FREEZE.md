@@ -27,4 +27,4 @@ Stage 89 House Customer Assist & Roster Intelligence Ops delivered Tenant Admin 
 
 ## Next stage
 
-Stage 90 requires CONTINUE/NEXT with a distinct product outline, open ADR, and plan. Until then, Stage 89 feature scope remains frozen under this ADR.
+Stage 90 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-186](ADR_186_STAGE90_OPEN.md) + [STAGE_90_PLAN.md](STAGE_90_PLAN.md) (House Email Delivery Visibility → Operator Contact / Security / Runbook Surfaces → Roster Findability & Plan Context → House Operator Visibility & Delivery Ops). Stage 90 subsequently froze under [ADR-187](ADR_187_STAGE90_FREEZE.md). Stage 89 feature scope remains frozen.

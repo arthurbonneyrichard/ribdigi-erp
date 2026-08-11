@@ -14,6 +14,7 @@ export default function PlatformTenantDetailPage() {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [planCode, setPlanCode] = useState('trial');
+  const [catalog, setCatalog] = useState<any[]>([]);
   const [notes, setNotes] = useState('');
   const [extendDays, setExtendDays] = useState(14);
   const [suspendReason, setSuspendReason] = useState('');
@@ -21,14 +22,20 @@ export default function PlatformTenantDetailPage() {
   async function load() {
     setError('');
     try {
-      const r = await api(`/platform/tenants/${id}`);
+      const [r, plans] = await Promise.all([
+        api(`/platform/tenants/${id}`),
+        api('/platform/plans'),
+      ]);
       setRow(r.data);
       setPlanCode(r.data?.plan_code || 'trial');
       setNotes(r.data?.platform_notes || '');
+      setCatalog(plans.data?.catalog || []);
     } catch (err: any) {
       setError(err.message || 'Not found');
     }
   }
+
+  const selectedPlan = catalog.find((p) => p.code === planCode);
 
   useEffect(() => {
     if (id) load();
@@ -206,7 +213,7 @@ export default function PlatformTenantDetailPage() {
             )}
           </div>
 
-          <div className="card" style={{ marginTop: 16, maxWidth: 420 }}>
+          <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
             <div className="muted">Plan code (metadata — billing deferred)</div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <select
@@ -214,16 +221,29 @@ export default function PlatformTenantDetailPage() {
                 onChange={(e) => setPlanCode(e.target.value)}
                 style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
               >
-                {(row.plan_codes || ['trial', 'starter', 'growth', 'enterprise']).map((c: string) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
+                {(catalog.length
+                  ? catalog.map((p) => p.code)
+                  : row.plan_codes || ['trial', 'starter', 'growth', 'enterprise']
+                ).map((c: string) => {
+                  const meta = catalog.find((p) => p.code === c);
+                  return (
+                    <option key={c} value={c}>
+                      {meta?.label ? `${c} — ${meta.label}` : c}
+                    </option>
+                  );
+                })}
               </select>
               <button type="button" disabled={busy} onClick={savePlan}>
                 Save plan
               </button>
             </div>
+            {selectedPlan && (
+              <p className="muted" style={{ marginTop: 8 }}>
+                {selectedPlan.blurb || '—'} · Soft limits — stores:{' '}
+                {selectedPlan.soft_limits?.stores ?? 'n/a'}, users:{' '}
+                {selectedPlan.soft_limits?.users ?? 'n/a'} (informational; not checkout entitlements)
+              </p>
+            )}
           </div>
           <div className="card" style={{ marginTop: 16, maxWidth: 640 }}>
             <div className="muted">House operator notes (not visible on tenant Company profile)</div>

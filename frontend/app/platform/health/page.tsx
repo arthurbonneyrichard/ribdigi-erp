@@ -17,6 +17,8 @@ export default function PlatformHealthPage() {
   }, []);
 
   const checks: Record<string, Check> = data?.checks || {};
+  const security = data?.security || {};
+  const contacts = data?.operator_contacts || {};
 
   return (
     <PlatformShell>
@@ -29,6 +31,40 @@ export default function PlatformHealthPage() {
             Overall: <strong>{data.status}</strong>
           </p>
           <div className="grid" style={{ marginTop: 16 }}>
+            <div className="card">
+              <div className="muted">Operator support</div>
+              <p style={{ marginTop: 8 }}>{contacts.company_name || 'Ribdigi House'}</p>
+              <p className="muted">{contacts.support_email || 'No support email set'}</p>
+              <p className="muted">{contacts.support_phone || 'No support phone set'}</p>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Edit contacts under Platform settings.
+              </p>
+            </div>
+            <div className="card">
+              <div className="muted">Rate limit</div>
+              <div className="kpi" style={{ fontSize: 18 }}>
+                {security.rate_limit_enabled ? 'Enabled' : 'Disabled'}
+              </div>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Backend: {security.rate_limit_backend || '—'} · API/min:{' '}
+                {security.rate_limit_api_per_minute ?? '—'} · Auth/min:{' '}
+                {security.rate_limit_auth_per_minute ?? '—'}
+              </p>
+              <p className="muted">
+                Redis required: {String(security.rate_limit_require_redis ?? false)}
+              </p>
+            </div>
+            <div className="card">
+              <div className="muted">Security posture</div>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Env: {data.env || '—'} · OpenAPI: {String(security.openapi_enabled)} · Debug:{' '}
+                {String(security.debug)}
+              </p>
+              <p className="muted">
+                CORS origins: {security.cors_origins_count ?? '—'}
+                {security.cors_allows_wildcard ? ' (includes *)' : ''}
+              </p>
+            </div>
             {Object.entries(checks).map(([name, check]) => (
               <div className="card" key={name}>
                 <div className="muted">{name}</div>

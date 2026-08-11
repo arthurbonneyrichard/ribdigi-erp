@@ -1681,3 +1681,15 @@ Every feature in every phase must meet:
 **Stage 89 D1 (2026-08-11):** House Customer Assist & Roster Intelligence Ops fidelity sync — `docs/STAGE_89_FIDELITY.md` (`test_stage89_fidelity_d1.py`); maps A1–C1 → readiness / launch / deploy / security.
 
 **Stage 89 exit (2026-08-11):** A1, F1, C1, D1, H89x met — `docs/STAGE_89_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_185_STAGE89_FREEZE.md`. Fidelity: `docs/STAGE_89_FIDELITY.md`.
+
+**Stage 90 open (2026-08-11):** House Operator Visibility & Delivery Ops track approved — `docs/ADR_186_STAGE90_OPEN.md` + `docs/STAGE_90_PLAN.md` (House Email Delivery Visibility → Operator Contact / Security / Runbook Surfaces → Roster Findability & Plan Context → House Operator Visibility & Delivery Ops; E1 next).
+
+**Stage 90 E1 (2026-08-11):** House email delivery visibility — `platform.email.delivery` + `delivery_only` (`test_platform_email_delivery_visibility_e1.py`).
+
+**Stage 90 O1 (2026-08-11):** Operator surfaces — Health contacts/security + Settings runbook links (`test_house_operator_surfaces_o1.py`).
+
+**Stage 90 Q1 (2026-08-11):** Roster findability + plan context — admin email search + detail soft limits (`test_platform_roster_findability_q1.py`).
+
+**Stage 90 D1 (2026-08-11):** House Operator Visibility & Delivery Ops fidelity sync — `docs/STAGE_90_FIDELITY.md` (`test_stage90_fidelity_d1.py`); maps E1–Q1 → readiness / launch / deploy / security.
+
+**Stage 90 exit (2026-08-11):** E1, O1, Q1, D1, H90x met — `docs/STAGE_90_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_187_STAGE90_FREEZE.md`. Fidelity: `docs/STAGE_90_FIDELITY.md`.
