@@ -1429,3 +1429,5 @@ Every feature in every phase must meet:
 **Stage 65 P1 (2026-08-11):** Controlled business pilot honesty — `docs/BUSINESS_PILOT_MVP.md`, `ops/mvp/business-pilot.json`, evidence `stage65_p1_business_pilot.json` (`test_business_pilot_p1.py`); live controlled business pilot Remaining.
 
 **Stage 65 D1 (2026-08-11):** MVP release-candidate fidelity sync — `docs/STAGE_65_FIDELITY.md` (`test_stage65_fidelity_d1.py`); maps R1–P1 → readiness / launch / deploy / security.
+
+**Stage 65 exit (2026-08-11):** R1, P1, D1, H65x met — `docs/STAGE_65_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_136_STAGE65_FREEZE.md`. Fidelity: `docs/STAGE_65_FIDELITY.md`. Stage 66 requires explicit CONTINUE/NEXT (not opened).

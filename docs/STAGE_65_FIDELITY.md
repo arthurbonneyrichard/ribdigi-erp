@@ -1,8 +1,9 @@
 # Stage 65 Fidelity Notes — MVP Release Candidate Fidelity
 
-**Status:** Open — D1 complete; H65x next  
+**Status:** Closed — exit met (H65x); freeze ADR-136  
 **Surface:** Release pipeline → Controlled business pilot → Fidelity closeout  
-**Open ADR:** [ADR-135](ADR_135_STAGE65_OPEN.md)  
+**Open ADR (historical):** [ADR-135](ADR_135_STAGE65_OPEN.md)  
+**Exit:** [STAGE_65_EXIT_CRITERIA.md](STAGE_65_EXIT_CRITERIA.md) · [ADR-136](ADR_136_STAGE65_FREEZE.md)  
 **Plan:** [STAGE_65_PLAN.md](STAGE_65_PLAN.md)  
 **Prior freeze:** [ADR-134](ADR_134_STAGE64_FREEZE.md) · [STAGE_64_EXIT_CRITERIA.md](STAGE_64_EXIT_CRITERIA.md)
 
@@ -23,7 +24,7 @@ Stage 65 proves the owner product outline after Stage 64 freeze — Development 
 | **R1** | `test_release_pipeline_r1.py` — `RELEASE_PIPELINE_MVP.md`, release-pipeline JSON | Owner RC path / staging / attestation | Signed MVP RC; staging promotion |
 | **P1** | `test_business_pilot_p1.py` — `BUSINESS_PILOT_MVP.md`, business-pilot JSON | Owner pilot path / E2E / first-tenant | Live controlled pilot; workflow feedback |
 | **D1** | This note + `test_stage65_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H65x** | `STAGE_65_EXIT_CRITERIA.md`; ADR-136; `test_stage65_exit_h65x.py` (at close) | Stage 65 exit + freeze | Next track needs open ADR |
+| **H65x** | `STAGE_65_EXIT_CRITERIA.md`; ADR-136; `test_stage65_exit_h65x.py` | Stage 65 exit + freeze | Stage 66 needs open ADR |
 
 ## Evidence tests
 
@@ -31,6 +32,7 @@ Stage 65 proves the owner product outline after Stage 64 freeze — Development 
 - `backend/tests/test_business_pilot_p1.py`
 - `backend/tests/test_stage65_open.py`
 - `backend/tests/test_stage65_fidelity_d1.py`
+- `backend/tests/test_stage65_exit_h65x.py`
 
 ## Spec sync targets
 
@@ -42,9 +44,9 @@ Stage 65 proves the owner product outline after Stage 64 freeze — Development 
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 65 R1–P1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 65 R1–P1 / D1 cite
 - `docs/RELEASE_PIPELINE_MVP.md` · `docs/BUSINESS_PILOT_MVP.md`
-- `docs/STAGE_65_PLAN.md` — Open — D1 complete; H65x next
+- `docs/STAGE_65_PLAN.md` — Closed — exit met (H65x); freeze ADR-136
+- `docs/STAGE_65_EXIT_CRITERIA.md` · `docs/ADR_136_STAGE65_FREEZE.md`
 - `docs/ADR_135_STAGE65_OPEN.md`
-
 ## Deferred (not Stage 65 D1 blockers)
 
 - Signed MVP Release Candidate Complete

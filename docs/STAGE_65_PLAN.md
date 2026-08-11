@@ -1,9 +1,10 @@
 # Stage 65 Plan — MVP Release Candidate Fidelity
 
-**Status:** Open — D1 complete; H65x next  
+**Status:** Closed — exit met (H65x); freeze ADR-136  
 **Base:** Release Pipeline Honesty Pack + Controlled Business Pilot Honesty Pack → MVP Release Candidate Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-135](ADR_135_STAGE65_OPEN.md)  
+**Open ADR (historical):** [ADR-135](ADR_135_STAGE65_OPEN.md)  
+**Exit:** [STAGE_65_EXIT_CRITERIA.md](STAGE_65_EXIT_CRITERIA.md) · [ADR-136](ADR_136_STAGE65_FREEZE.md)  
 **Prior freeze:** [ADR-134](ADR_134_STAGE64_FREEZE.md) · [STAGE_64_EXIT_CRITERIA.md](STAGE_64_EXIT_CRITERIA.md)
 
 Stage 65 opens after Stage 64 freeze: **Release Pipeline Honesty Packaging + Controlled Business Pilot Honesty Packaging → MVP Release Candidate Fidelity**. The owner product outline is the commercial MVP path:
@@ -79,7 +80,7 @@ MVP Release Candidate Fidelity
 | **R1** | Release pipeline honesty packaging (Development → Internal QA → Staging → Regression → Security Review → MVP RC; not signed RC Complete) | P0 | COMPLETE |
 | **P1** | Controlled business pilot honesty packaging (Pilot → Real Workflow Feedback → Bug Fixes; not live pilot Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H65x** | Stage 65 exit criteria + freeze ADR | Exit | PENDING |
+| **H65x** | Stage 65 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -132,6 +133,7 @@ MVP Release Candidate Fidelity
 
 ## H65x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H65x — `docs/STAGE_65_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_136_STAGE65_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage65_exit_h65x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H65x — `docs/STAGE_65_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_136_STAGE65_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage65_exit_h65x.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS / SECURITY_GUIDE cite Stage 65 exit + ADR-136.

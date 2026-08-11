@@ -182,11 +182,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
-- [x] Stage 65 track opened (ADR-135: `test_stage65_open.py`, `docs/STAGE_65_PLAN.md`) — MVP Release Candidate Fidelity; D1 complete; H65x next
+- [x] Stage 65 track opened (ADR-135: `test_stage65_open.py`, `docs/STAGE_65_PLAN.md`) — MVP Release Candidate Fidelity; closed via H65x / ADR-136
 - [x] Release pipeline honesty (Stage 65 R1: `test_release_pipeline_r1.py` — `docs/RELEASE_PIPELINE_MVP.md`, `ops/mvp/release-pipeline.json`; evidence `stage65_r1_release_pipeline.json`; signed MVP RC / live staging promotion Remaining)
 - [x] Controlled business pilot honesty (Stage 65 P1: `test_business_pilot_p1.py` — `docs/BUSINESS_PILOT_MVP.md`, `ops/mvp/business-pilot.json`; evidence `stage65_p1_business_pilot.json`; live controlled business pilot Remaining)
 - [x] Stage 65 fidelity sync (D1: `test_stage65_fidelity_d1.py`, `docs/STAGE_65_FIDELITY.md` — R1–P1 + readiness + deploy / launch / security)
-- [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
+- [x] Stage 65 exit + freeze (H65x: `test_stage65_exit_h65x.py`, `docs/STAGE_65_EXIT_CRITERIA.md`, ADR-136)- [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
 - [x] Stage 64 fidelity sync (D1: `test_stage64_fidelity_d1.py`, `docs/STAGE_64_FIDELITY.md` — B1–F1 + readiness + deploy / launch / security)
