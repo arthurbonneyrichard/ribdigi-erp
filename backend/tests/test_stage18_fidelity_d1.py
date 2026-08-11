@@ -54,7 +54,14 @@ def test_stage18_br_checkboxes_synced():
     assert "[x] Configurable schedule (daily, weekly)" in br
     assert "[x] Retention policy (keep last N backups)" in br
     assert "[x] Failure alerts to admin" in br
-    assert "[ ] Backup storage to S3-compatible storage" in br
+    # Stage 26 W1 may complete S3 offsite strategy / PITR strategy checkboxes.
+    assert (
+        "[ ] Backup storage to S3-compatible storage" in br
+        or (
+            "[x] Backup storage to S3-compatible storage" in br
+            and "Stage 26 W1" in br
+        )
+    )
     assert "[x] **Login/Logout:**" in br
     assert "[x] **Purchases:**" in br
     assert "[x] **User Activity:**" in br
@@ -65,7 +72,13 @@ def test_stage18_br_checkboxes_synced():
     assert "[x] Retention policy: minimum 7 years for financial records" in br
     assert "[x] One-click backup initiation by Super Admin" in br
     assert "[x] Restore from backup archive" in br
-    assert "[ ] Point-in-time recovery" in br
+    assert (
+        "[ ] Point-in-time recovery" in br
+        or (
+            "[x] Point-in-time recovery (if WAL archiving enabled)" in br
+            and "Stage 26 W1" in br
+        )
+    )
 
 
 def test_stage18_security_launch_checklist():
