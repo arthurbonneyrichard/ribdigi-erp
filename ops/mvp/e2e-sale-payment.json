@@ -1,0 +1,155 @@
+{
+  "stage": "35",
+  "workstream": "S1",
+  "doc": "docs/E2E_SALE_PAYMENT_MVP.md",
+  "e2e_purchase_stock": "ops/mvp/e2e-purchase-stock.json",
+  "e2e_users_rbac": "ops/mvp/e2e-users-rbac.json",
+  "stage12_plan": "docs/STAGE_12_PLAN.md",
+  "stage13_plan": "docs/STAGE_13_PLAN.md",
+  "stage24_plan": "docs/STAGE_24_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "api_docs": "docs/API_DOCUMENTATION.md",
+  "packaging_complete": true,
+  "live_sale_payment_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "usb_serial_drivers_claimed": false,
+  "steps": [
+    {
+      "id": "sp-create-customer",
+      "category": "customer",
+      "title": "Create customer for real test tenant (no demo seed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_12_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#sales"
+    },
+    {
+      "id": "sp-pos-sale",
+      "category": "pos",
+      "title": "Sell through POS against in-stock products/warehouse",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_12_PLAN.md",
+        "docs/API_DOCUMENTATION.md",
+        "ops/mvp/e2e-purchase-stock.json"
+      ],
+      "source": "docs/STAGE_12_PLAN.md"
+    },
+    {
+      "id": "sp-receive-payment",
+      "category": "payment",
+      "title": "Receive payment (cash / multi-tender as applicable)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_13_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/STAGE_13_PLAN.md"
+    },
+    {
+      "id": "sp-verify-stock-reduction",
+      "category": "inventory",
+      "title": "Verify warehouse stock reduction and movements after POS sale",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/API_DOCUMENTATION.md",
+        "ops/mvp/e2e-purchase-stock.json"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#inventory"
+    },
+    {
+      "id": "sp-receipt-drawer",
+      "category": "pos",
+      "title": "Confirm receipt / cash-portion drawer / close path (Stage 13)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_13_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/STAGE_13_PLAN.md"
+    },
+    {
+      "id": "sp-insufficient-stock",
+      "category": "pos",
+      "title": "Confirm insufficient-stock POS sale leaves no orphans (Stage 13 H1)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_13_PLAN.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/STAGE_13_PLAN.md"
+    },
+    {
+      "id": "sp-tenant-isolation",
+      "category": "security",
+      "title": "Tenant header mismatch on POS/sales path returns 403",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/SECURITY_GUIDE.md",
+        "ops/mvp/e2e-users-rbac.json"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "sp-doc-numbering",
+      "category": "pos",
+      "title": "Confirm sales/POS document-numbering series (Stage 24 N1)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_24_PLAN.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/STAGE_24_PLAN.md#N1"
+    },
+    {
+      "id": "sp-usb-serial-deferred",
+      "category": "deferred",
+      "title": "Confirm vendor USB/serial POS drivers remain Remaining (Stage 24)",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_24_PLAN.md",
+        "docs/STAGE_35_PLAN.md"
+      ],
+      "source": "docs/STAGE_24_PLAN.md"
+    },
+    {
+      "id": "sp-live-sale-remaining",
+      "category": "honesty",
+      "title": "Live sale-to-payment / E2E smoke execution Remaining \u2014 packaging \u2260 executed",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_35_PLAN.md",
+        "ops/mvp/e2e-purchase-stock.json",
+        "ops/mvp/e2e-users-rbac.json"
+      ],
+      "source": "docs/STAGE_35_PLAN.md#S1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage35_s1_e2e_sale_payment.json",
+  "deferred": [
+    "Claiming live sale-to-payment Complete because Stage 35 S1 packaging exists",
+    "Demo tenants / seed customers / fake POS success as Complete",
+    "Vendor USB/serial POS drivers Complete (Stage 24 Remaining)",
+    "Live E2E smoke executed Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}
