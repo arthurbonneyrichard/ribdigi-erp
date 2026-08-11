@@ -1,6 +1,7 @@
 # Stage 31 Plan — Commercial MVP Closeout Fidelity
 
-**Status:** Open — G1–C1 complete; D1 next (ADR-067)  
+**Status:** Open — G1–D1 complete; H31x next (ADR-067)  
+**Fidelity:** [STAGE_31_FIDELITY.md](STAGE_31_FIDELITY.md)  
 **Base:** MVP Gate Honesty Matrix Pack + Deferred ADR Register Pack + Operator Remaining Register Pack + Commercial MVP Declaration Pack → Commercial MVP Closeout Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-067](ADR_067_STAGE31_OPEN.md)
@@ -39,7 +40,7 @@ Commercial MVP Closeout Fidelity
 | **R1** | Deferred ADR register packaging (ADR-001–006 index) | P0 | COMPLETE |
 | **O1** | Operator Remaining register (Stage 26–30 honesty flags) | P1 | COMPLETE |
 | **C1** | Commercial MVP declaration pack (packaging ≠ live go-live) | P1 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
 | **H31x** | Stage 31 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -88,9 +89,9 @@ Commercial MVP Closeout Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_31_FIDELITY.md` maps G1–C1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 31 D1.
-- [ ] Automated proof: `backend/tests/test_stage31_fidelity_d1.py`.
+- [x] `docs/STAGE_31_FIDELITY.md` maps G1–C1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 31 D1.
+- [x] Automated proof: `backend/tests/test_stage31_fidelity_d1.py`.
 
 ## H31x acceptance criteria
 
@@ -102,4 +103,4 @@ Commercial MVP Closeout Fidelity
 
 ## Sign-off
 
-Stage 31 open under ADR-067. G1–C1 complete; D1 next. Stages 1–30 remain frozen for their scopes.
+Stage 31 open under ADR-067. G1–D1 complete; H31x next. Stages 1–30 remain frozen for their scopes.

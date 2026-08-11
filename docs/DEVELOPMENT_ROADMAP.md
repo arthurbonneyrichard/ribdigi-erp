@@ -302,6 +302,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 31 C1 (2026-08-11):** Commercial MVP declaration — `docs/MVP_DECLARATION_MVP.md`, `ops/mvp/mvp-declaration.json`, evidence `stage31_c1_mvp_declaration.json` (`test_mvp_declaration_c1.py`); packaging Complete ≠ live go-live / §7.
 
+**Stage 31 D1 (2026-08-11):** Commercial MVP closeout fidelity sync — `docs/STAGE_31_FIDELITY.md` (`test_stage31_fidelity_d1.py`) maps G1–C1 → BR-16 / readiness / deploy / launch / security; H31x next.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -882,7 +884,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 31 open (`docs/STAGE_31_PLAN.md`, ADR-067) — G1–C1 complete; D1 next. Stages 1–30 remain frozen for their scopes (`docs/STAGE_30_EXIT_CRITERIA.md`, ADR-066).
+**Active delivery plan:** Stage 31 open (`docs/STAGE_31_PLAN.md`, ADR-067; fidelity `docs/STAGE_31_FIDELITY.md`) — G1–D1 complete; H31x next. Stages 1–30 remain frozen for their scopes (`docs/STAGE_30_EXIT_CRITERIA.md`, ADR-066).
 
 ### 6.2 Features
 

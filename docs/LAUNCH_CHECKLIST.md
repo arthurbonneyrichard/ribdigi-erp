@@ -173,8 +173,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [ ] Stage 31 Commercial MVP Closeout Fidelity (open: `docs/STAGE_31_PLAN.md`, ADR-067) — D1 next
+- [ ] Stage 31 Commercial MVP Closeout Fidelity (open: `docs/STAGE_31_PLAN.md`, ADR-067) — H31x next
 - [x] Stage 31 track opened (ADR-067: `test_stage31_open.py`, `docs/STAGE_31_PLAN.md`)
+- [x] Stage 31 fidelity sync (D1: `test_stage31_fidelity_d1.py`, `docs/STAGE_31_FIDELITY.md` — G1–C1 + readiness + deploy / launch / security)
 - [x] Commercial MVP declaration (Stage 31 C1: `test_mvp_declaration_c1.py` — `docs/MVP_DECLARATION_MVP.md`, `ops/mvp/mvp-declaration.json`; evidence `stage31_c1_mvp_declaration.json`; go-live / §7 Remaining)
 - [x] Operator Remaining register (Stage 31 O1: `test_operator_remaining_o1.py` — `docs/OPERATOR_REMAINING_MVP.md`, `ops/mvp/operator-remaining-register.json`; evidence `stage31_o1_operator_remaining.json`; live runs Remaining)
 - [x] Deferred ADR register (Stage 31 R1: `test_deferred_adr_register_r1.py` — `docs/DEFERRED_ADR_REGISTER_MVP.md`, `ops/mvp/deferred-adr-register.json`; evidence `stage31_r1_deferred_adr_register.json`; deferred scopes Remaining)
