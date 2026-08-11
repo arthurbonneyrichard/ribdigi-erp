@@ -1,9 +1,10 @@
 # Stage 27 Plan — Commercial MVP Release Fidelity
 
-**Status:** Open — B1 next (ADR-059)  
+**Status:** Open — B1 / P1 / S1 / L1 / D1 COMPLETE; H27x next (ADR-059)
 **Base:** Auto `.ribbak` Offsite + PgBouncer + Security Scan Evidence + Launch Certification → Release Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-059](ADR_059_STAGE27_OPEN.md)
+**Fidelity:** [STAGE_27_FIDELITY.md](STAGE_27_FIDELITY.md)
 
 Stage 27 closes the owner product outline after Stage 26 freeze: **Auto `.ribbak` Offsite Upload + PgBouncer Pooling Fidelity + Security Scan Evidence + Launch Certification Pack → Commercial MVP Release Fidelity**. Stage 26 delivered Complete (MVP) ops platform gates (monitoring, WAL/PITR strategy, Kubernetes/Helm, CI load capacity) with honest Remaining. This track extends proven Stage 5/18/23/26 assets (`create_backup`, `ops/backup/sync-ribbak-offsite.sh.example`, `docker-compose.prod.yml`, OWASP smoke suite, `docs/LAUNCH_CHECKLIST.md`) to close those Remaining items that can be evidenced without inventing hosted Grafana, vendor pen-test certificates, or live cluster apply success — **not** paid billing, schema-per-tenant, i18n packs, ADR-003/005, Open Banking, tax e-file, external LLM/Prophet, or reopening Stages 1–26.
 
@@ -37,7 +38,7 @@ Commercial MVP Release Fidelity
 | **P1** | PgBouncer connection pooling fidelity | P0 | COMPLETE |
 | **S1** | Security scan / ZAP-in-CI baseline evidence | P0 | COMPLETE |
 | **L1** | Launch certification pack (operator sign-off evidence) | P1 | COMPLETE |
-| **D1** | Spec / readiness / launch / security / deploy fidelity sync | P2 | PENDING |
+| **D1** | Spec / readiness / launch / security / deploy fidelity sync | P2 | COMPLETE |
 | **H27x** | Stage 27 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -86,9 +87,9 @@ Commercial MVP Release Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_27_FIDELITY.md` maps B1–L1 evidence → readiness / launch / security / deploy docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 27 D1.
-- [ ] Automated proof: `backend/tests/test_stage27_fidelity_d1.py`.
+- [x] `docs/STAGE_27_FIDELITY.md` maps B1–L1 evidence → readiness / launch / security / deploy docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 27 D1.
+- [x] Automated proof: `backend/tests/test_stage27_fidelity_d1.py`.
 
 ## H27x acceptance criteria
 
@@ -100,4 +101,4 @@ Commercial MVP Release Fidelity
 
 ## Sign-off
 
-Stage 27 open under ADR-059. B1 / P1 / S1 / L1 complete; D1 next. Stages 1–26 remain frozen for their scopes.
+Stage 27 open under ADR-059. B1 / P1 / S1 / L1 / D1 complete; H27x next. Stages 1–26 remain frozen for their scopes.

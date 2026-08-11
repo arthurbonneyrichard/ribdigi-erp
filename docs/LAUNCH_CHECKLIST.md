@@ -164,8 +164,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Load capacity fidelity (Stage 26 C1: `test_load_capacity_c1.py` — smoke + CI capacity profiles; `docs/LOAD_CAPACITY_MVP.md`; evidence `stage26_c1_capacity_evidence.json`; readiness load Complete MVP)
 - [x] Stage 26 fidelity sync (D1: `test_stage26_fidelity_d1.py`, `docs/STAGE_26_FIDELITY.md` — BR-16 + NFR §5.6 + readiness + deploy / launch / security)
 - [x] Stage 26 exit + freeze (H26x: `test_stage26_exit_h26x.py`, `docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058)
-- [ ] Stage 27 Commercial MVP Release Fidelity (open: `docs/STAGE_27_PLAN.md`, ADR-059) — B1 / P1 / S1 / L1 complete; D1 next
+- [ ] Stage 27 Commercial MVP Release Fidelity (open: `docs/STAGE_27_PLAN.md`, ADR-059) — B1–L1 / D1 complete; H27x next
 - [x] Stage 27 track opened (ADR-059: `test_stage27_open.py`, `docs/STAGE_27_PLAN.md`)
+- [x] Stage 27 fidelity sync (D1: `test_stage27_fidelity_d1.py`, `docs/STAGE_27_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Launch certification pack (Stage 27 L1: `test_launch_cert_l1.py` — `docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`; evidence `stage27_l1_launch_cert.json`; operator §§1–3 / §7 remain unsigned)
 - [x] Security scan baseline evidence (Stage 27 S1: `test_security_scan_s1.py` — `docs/SECURITY_SCAN_MVP.md`, evidence `stage27_s1_security_scan.json`; ZAP template `ops/security/zap-baseline.example.yml` not in main CI)
 - [x] PgBouncer pooling fidelity (Stage 27 P1: `test_pgbouncer_p1.py` — `ops/postgres/pgbouncer.ini.example`, `docs/PGBOUNCER_MVP.md`; evidence `stage27_p1_pgbouncer.json`)

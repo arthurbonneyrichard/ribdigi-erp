@@ -326,6 +326,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 27 P1** | PgBouncer pooling fidelity — `ops/postgres/pgbouncer.ini.example`, `docs/PGBOUNCER_MVP.md` (`test_pgbouncer_p1.py`); secrets in env/userlist only; live soak / Helm pooler Remaining |
 | **Stage 27 S1** | OWASP security scan baseline evidence — `docs/SECURITY_SCAN_MVP.md`, `ops/security/zap-baseline.example.yml` (`test_security_scan_s1.py`); vendor pen test / live ZAP staging Remaining; main CI deploy-free |
 | **Stage 27 L1** | Launch certification pack — `docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json` (`test_launch_cert_l1.py`); operator env / §7 sign-off remain unsigned (no fake production certificate) |
+| **Stage 27 D1** | Commercial MVP release fidelity — `docs/STAGE_27_FIDELITY.md` (`test_stage27_fidelity_d1.py`); maps B1–L1; vendor pen test / live ZAP / forged §7 sign-off remain Remaining; H27x next |
 
 ### 7.3 Tenant Lifecycle Security
 

@@ -246,6 +246,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 27 L1 (2026-08-11):** Launch certification pack — `docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`, evidence `stage27_l1_launch_cert.json` (`test_launch_cert_l1.py`); operator §§1–3 / §7 remain unsigned (no fake production sign-off).
 
+**Stage 27 D1 (2026-08-11):** Spec / BR-16 / readiness / deploy / launch / security fidelity sync — `docs/STAGE_27_FIDELITY.md` (`test_stage27_fidelity_d1.py`); open ADR `docs/ADR_059_STAGE27_OPEN.md`; plan `docs/STAGE_27_PLAN.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -826,7 +828,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 27 open (`docs/STAGE_27_PLAN.md`, ADR-059) — B1 / P1 / S1 / L1 complete; D1 next. Stages 1–26 remain frozen for their scopes (`docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058).
+**Active delivery plan:** Stage 27 open (`docs/STAGE_27_PLAN.md`, ADR-059) — B1 / P1 / S1 / L1 / D1 complete; H27x next (`docs/STAGE_27_FIDELITY.md`). Stages 1–26 remain frozen for their scopes (`docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058).
 
 ### 6.2 Features
 

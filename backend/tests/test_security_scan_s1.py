@@ -78,6 +78,7 @@ def test_s1_plan_launch_roadmap_security_readiness():
         or "L1 complete" in plan
         or "D1 next" in plan
         or "D1 complete" in plan
+        or "H27x next" in plan
         or "Closed" in plan
         or "exit met" in plan.lower()
     )
