@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
@@ -13,6 +13,7 @@ type Product = {
   selling_price: number;
   stock_qty: number;
   kind?: string;
+  has_image?: boolean;
 };
 
 type CartItem = Product & { quantity: number };
@@ -56,6 +57,74 @@ async function downloadReceiptPdf(saleId: string, paper: string) {
   URL.revokeObjectURL(url);
 }
 
+function money(n: number) {
+  return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+
+function ProductThumb({
+  productId,
+  hasImage,
+  name,
+}: {
+  productId: string;
+  hasImage?: boolean;
+  name: string;
+}) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    let objectUrl: string | null = null;
+    async function load() {
+      if (!hasImage || !productId) {
+        setSrc(null);
+        return;
+      }
+      try {
+        const token = localStorage.getItem('token');
+        const tenant = localStorage.getItem('tenant');
+        const res = await fetch(`${apiBase}/products/${productId}/image`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+          },
+          cache: 'no-store',
+        });
+        if (!res.ok) throw new Error('no image');
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (alive) setSrc(objectUrl);
+      } catch {
+        if (alive) setSrc(null);
+      }
+    }
+    load();
+    return () => {
+      alive = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [productId, hasImage]);
+
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img className="tpos-thumb-img" src={src} alt={name} draggable={false} />
+    );
+  }
+
+  const initials = name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || '')
+    .join('');
+
+  return (
+    <div className="tpos-thumb-fallback" aria-hidden>
+      <span>{initials || '?'}</span>
+    </div>
+  );
+}
+
 export default function Page() {
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<Product[]>([]);
@@ -68,15 +137,29 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+
+  const cartTotal = useMemo(
+    () => cart.reduce((sum, c) => sum + Number(c.selling_price) * c.quantity, 0),
+    [cart]
+  );
+  const cartCount = useMemo(() => cart.reduce((sum, c) => sum + c.quantity, 0), [cart]);
 
   async function refreshSession() {
     const r = await api('/pos/sessions/current');
     setSession(r.data || null);
   }
 
-  useEffect(() => {
-    refreshSession().catch((err) => setError(err.message));
+  const browse = useCallback(async (query = '') => {
+    const r = await api('/pos/products/search?q=' + encodeURIComponent(query));
+    setRows(r.data || []);
   }, []);
+
+  useEffect(() => {
+    refreshSession()
+      .then(() => browse(''))
+      .catch((err) => setError(err.message));
+  }, [browse]);
 
   async function openShift() {
     setError('');
@@ -88,6 +171,7 @@ export default function Page() {
       });
       setSession(r.data);
       setMessage(`Shift opened: ${r.data.session_number}`);
+      await browse(q);
     } catch (err: any) {
       setError(err.message);
     }
@@ -106,29 +190,42 @@ export default function Page() {
       });
       setSession(null);
       setMessage(
-        `Shift closed. Variance: ${r.data.variance ?? 0} (expected ${r.data.expected_cash})`,
+        `Shift closed. Variance: ${r.data.variance ?? 0} (expected ${r.data.expected_cash})`
       );
       setActualCash('');
+      setCart([]);
     } catch (err: any) {
       setError(err.message);
     }
   }
 
-  async function search() {
+  async function search(e?: React.FormEvent) {
+    e?.preventDefault();
     setError('');
     try {
-      const r = await api('/pos/products/search?q=' + encodeURIComponent(q));
-      setRows(r.data || []);
+      await browse(q);
     } catch (err: any) {
       setError(err.message);
     }
   }
 
   function addToCart(product: Product) {
+    if (!session) {
+      setError('Open a POS shift before selling');
+      return;
+    }
+    if (Number(product.stock_qty) <= 0) {
+      setError(`${product.name} is out of stock`);
+      return;
+    }
     const pid = product.product_id || product.id;
+    setError('');
     setCart((prev) => {
       const existing = prev.find((p) => p.id === product.id);
       if (existing) {
+        if (existing.quantity + 1 > Number(product.stock_qty)) {
+          return prev;
+        }
         return prev.map((p) => (p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p));
       }
       return [
@@ -142,6 +239,18 @@ export default function Page() {
         },
       ];
     });
+  }
+
+  function bumpQty(id: string, delta: number) {
+    setCart((prev) =>
+      prev
+        .map((p) => (p.id === id ? { ...p, quantity: p.quantity + delta } : p))
+        .filter((p) => p.quantity > 0)
+    );
+  }
+
+  function clearCart() {
+    setCart([]);
   }
 
   async function checkout() {
@@ -162,6 +271,7 @@ export default function Page() {
       quantity: c.quantity,
     }));
     const subtotal = cart.reduce((sum, c) => sum + Number(c.selling_price) * c.quantity, 0);
+    setBusy(true);
     try {
       const r = await api('/pos/sales', {
         method: 'POST',
@@ -188,197 +298,307 @@ export default function Page() {
       setMessage(`Sale recorded: ${r.data.reference} (tax ${r.data.tax ?? 0})${drawerNote}`);
       setCart([]);
       await refreshSession();
+      await browse(q);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
     <Shell>
-      <h1>Point of Sale</h1>
-      <p className="muted">Open a shift, sell from cart, print thermal receipt</p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
-
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Shift</h3>
-        {!session ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <input
-              value={openingCash}
-              onChange={(e) => setOpeningCash(e.target.value)}
-              placeholder="Opening cash"
-              style={{ padding: 10, width: 140 }}
-            />
-            <button onClick={openShift}>Open shift</button>
-          </div>
-        ) : (
+      <div className="tpos">
+        <header className="tpos-top">
           <div>
-            <p>
-              <b>{session.session_number}</b> · sales {session.sale_count} · total {session.total_sales}
-            </p>
-            <p className="muted">
-              Opening {session.opening_cash} · cash sales {session.cash_sales} · expected drawer{' '}
-              {session.expected_cash}
-            </p>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <h1>Touch POS</h1>
+            <p className="muted">Tap products to sell · image tiles · large cart controls</p>
+          </div>
+          <div className="tpos-shift">
+            {!session ? (
+              <>
+                <input
+                  className="tpos-input"
+                  value={openingCash}
+                  onChange={(e) => setOpeningCash(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="Opening cash"
+                  aria-label="Opening cash"
+                />
+                <button type="button" className="tpos-btn tpos-btn-primary" onClick={openShift}>
+                  Open shift
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="tpos-shift-meta">
+                  <strong>{session.session_number}</strong>
+                  <span>
+                    {session.sale_count} sales · {money(Number(session.total_sales || 0))}
+                  </span>
+                </div>
+                <input
+                  className="tpos-input"
+                  value={actualCash}
+                  onChange={(e) => setActualCash(e.target.value)}
+                  inputMode="decimal"
+                  placeholder={`Count ${session.expected_cash}`}
+                  aria-label="Counted cash"
+                />
+                <button type="button" className="tpos-btn" onClick={closeShift}>
+                  Close shift
+                </button>
+                <button
+                  type="button"
+                  className="tpos-btn"
+                  onClick={async () => {
+                    setError('');
+                    try {
+                      const r = await api(`/pos/sessions/${session.session_id}/drawer/open`, {
+                        method: 'POST',
+                        body: JSON.stringify({ reason: 'manual' }),
+                      });
+                      setMessage(r.data?.message || r.message || 'Drawer opened');
+                    } catch (err: any) {
+                      setError(err.message);
+                    }
+                  }}
+                >
+                  Drawer
+                </button>
+              </>
+            )}
+          </div>
+        </header>
+
+        {error && (
+          <p className="tpos-banner tpos-banner-err" role="alert">
+            {error}
+          </p>
+        )}
+        {message && <p className="tpos-banner tpos-banner-ok">{message}</p>}
+
+        <div className="tpos-body">
+          <section className="tpos-catalog" aria-label="Product catalog">
+            <form className="tpos-search" onSubmit={search}>
               <input
-                value={actualCash}
-                onChange={(e) => setActualCash(e.target.value)}
-                placeholder={`Counted cash (expected ${session.expected_cash})`}
-                style={{ padding: 10, width: 220 }}
+                className="tpos-search-input"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search name, SKU, or scan barcode"
+                disabled={!session}
+                autoComplete="off"
               />
-              <button onClick={closeShift}>Close shift</button>
+              <button type="submit" className="tpos-btn tpos-btn-primary" disabled={!session}>
+                Search
+              </button>
               <button
                 type="button"
+                className="tpos-btn"
+                disabled={!session}
+                onClick={() => {
+                  setQ('');
+                  browse('').catch((err) => setError(err.message));
+                }}
+              >
+                All
+              </button>
+            </form>
+
+            {!session && (
+              <div className="tpos-empty">
+                <p>Open a shift to unlock the touch catalog.</p>
+              </div>
+            )}
+
+            {session && rows.length === 0 && (
+              <div className="tpos-empty">
+                <p>No products match this search.</p>
+              </div>
+            )}
+
+            <div className="tpos-grid">
+              {rows.map((r) => {
+                const out = Number(r.stock_qty) <= 0;
+                const inCart = cart.find((c) => c.id === r.id)?.quantity || 0;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    className={`tpos-tile${out ? ' out' : ''}`}
+                    onClick={() => addToCart(r)}
+                    disabled={!session || out}
+                    aria-label={`Add ${r.name}`}
+                  >
+                    <div className="tpos-thumb">
+                      <ProductThumb
+                        productId={r.product_id || r.id}
+                        hasImage={r.has_image}
+                        name={r.name}
+                      />
+                      {inCart > 0 && <span className="tpos-badge">{inCart}</span>}
+                      {out && <span className="tpos-oos">Out</span>}
+                    </div>
+                    <div className="tpos-tile-body">
+                      <strong>{r.name}</strong>
+                      <span className="tpos-sku">
+                        {r.sku}
+                        {r.kind === 'variant' ? ' · variant' : ''}
+                      </span>
+                      <div className="tpos-tile-foot">
+                        <span className="tpos-price">{money(Number(r.selling_price))}</span>
+                        <span className="tpos-stock">{r.stock_qty} in stock</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <aside className="tpos-cart" aria-label="Cart">
+            <div className="tpos-cart-head">
+              <h2>Cart</h2>
+              <span>
+                {cartCount} item{cartCount === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            <div className="tpos-cart-list">
+              {cart.length === 0 && <p className="muted">Tap a product image to add it.</p>}
+              {cart.map((c) => (
+                <div key={c.id} className="tpos-cart-row">
+                  <div className="tpos-cart-mini">
+                    <ProductThumb
+                      productId={c.product_id || c.id}
+                      hasImage={c.has_image}
+                      name={c.name}
+                    />
+                  </div>
+                  <div className="tpos-cart-info">
+                    <strong>{c.name}</strong>
+                    <span>{money(Number(c.selling_price))} each</span>
+                  </div>
+                  <div className="tpos-qty">
+                    <button type="button" aria-label="Decrease" onClick={() => bumpQty(c.id, -1)}>
+                      −
+                    </button>
+                    <span>{c.quantity}</span>
+                    <button type="button" aria-label="Increase" onClick={() => bumpQty(c.id, 1)}>
+                      +
+                    </button>
+                  </div>
+                  <div className="tpos-line">{money(Number(c.selling_price) * c.quantity)}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="tpos-cart-foot">
+              <div className="tpos-total">
+                <span>Total</span>
+                <strong>{money(cartTotal)}</strong>
+              </div>
+
+              <label className="tpos-field">
+                <span>Payment</span>
+                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="wallet">Wallet</option>
+                  <option value="credit">Credit</option>
+                </select>
+              </label>
+
+              <label className="tpos-field">
+                <span>Receipt</span>
+                <select value={paper} onChange={(e) => setPaper(e.target.value)}>
+                  <option value="80mm">80mm thermal</option>
+                  <option value="58mm">58mm thermal</option>
+                </select>
+              </label>
+
+              <div className="tpos-cart-actions">
+                <button
+                  type="button"
+                  className="tpos-btn"
+                  onClick={clearCart}
+                  disabled={!cart.length}
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  className="tpos-btn tpos-btn-pay"
+                  onClick={checkout}
+                  disabled={!cart.length || !session || busy}
+                >
+                  {busy ? 'Processing…' : 'Charge · Complete sale'}
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        {receipt && (
+          <div className="tpos-receipt card">
+            <h3>Receipt</h3>
+            <p>
+              {receipt.reference} · Total {receipt.total} · {receipt.payment_method}
+            </p>
+            <pre className="tpos-receipt-text">{receipt.text}</pre>
+            <div className="tpos-receipt-actions">
+              <button
+                type="button"
+                className="tpos-btn"
                 onClick={async () => {
-                  setError('');
                   try {
-                    const r = await api(`/pos/sessions/${session.session_id}/drawer/open`, {
-                      method: 'POST',
-                      body: JSON.stringify({ reason: 'manual' }),
-                    });
-                    setMessage(r.data?.message || r.message || 'Drawer opened');
+                    await downloadReceiptPdf(receipt.sale_id, paper);
+                    setMessage('Thermal PDF downloaded');
                   } catch (err: any) {
                     setError(err.message);
                   }
                 }}
               >
-                Open cash drawer
+                Download PDF
+              </button>
+              <button
+                type="button"
+                className="tpos-btn"
+                onClick={async () => {
+                  try {
+                    const r = await api(`/pos/sales/${receipt.sale_id}/receipt/send?channel=email`, {
+                      method: 'POST',
+                      body: '{}',
+                    });
+                    setMessage(r.message || 'Receipt emailed');
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                className="tpos-btn"
+                onClick={async () => {
+                  try {
+                    const r = await api(`/pos/sales/${receipt.sale_id}/receipt/send?channel=sms`, {
+                      method: 'POST',
+                      body: '{}',
+                    });
+                    setMessage(r.message || 'Receipt SMS sent');
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                SMS
               </button>
             </div>
           </div>
         )}
       </div>
-
-      <div className="card">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search product or scan barcode"
-          style={{ padding: 12, width: '70%' }}
-          disabled={!session}
-        />
-        <button onClick={search} style={{ padding: 12 }} disabled={!session}>
-          Search
-        </button>
-      </div>
-
-      <div className="grid" style={{ marginTop: 16 }}>
-        {rows.map((r) => (
-          <div className="card" key={r.id}>
-            <b>{r.name}</b>
-            <p>
-              {r.sku}
-              {r.kind === 'variant' ? ' · variant' : ''}
-            </p>
-            <div className="kpi">{r.selling_price}</div>
-            <p className="muted">Stock: {r.stock_qty}</p>
-            <button onClick={() => addToCart(r)} disabled={!session}>
-              Add
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div className="card" style={{ marginTop: 16 }}>
-        <h3>Cart</h3>
-        {cart.length === 0 && <p className="muted">No items</p>}
-        {cart.map((c) => (
-          <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span>
-              {c.name} × {c.quantity}
-            </span>
-            <span>{(Number(c.selling_price) * c.quantity).toFixed(2)}</span>
-          </div>
-        ))}
-        <label style={{ display: 'block', marginBottom: 8 }}>
-          Payment{' '}
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-            <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="wallet">Wallet</option>
-            <option value="credit">Credit</option>
-          </select>
-        </label>
-        <label style={{ display: 'block', marginBottom: 8 }}>
-          Receipt paper{' '}
-          <select value={paper} onChange={(e) => setPaper(e.target.value)}>
-            <option value="80mm">80mm thermal</option>
-            <option value="58mm">58mm thermal</option>
-          </select>
-        </label>
-        <button onClick={checkout} disabled={!cart.length || !session}>
-          Complete sale
-        </button>
-      </div>
-
-      {receipt && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h3>Receipt</h3>
-          <p>
-            {receipt.reference} · Total {receipt.total} · {receipt.payment_method}
-          </p>
-          <pre
-            style={{
-              background: '#111',
-              color: '#eee',
-              padding: 12,
-              overflow: 'auto',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              fontSize: 12,
-              lineHeight: 1.35,
-              maxWidth: 360,
-            }}
-          >
-            {receipt.text}
-          </pre>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-            <button
-              onClick={async () => {
-                try {
-                  await downloadReceiptPdf(receipt.sale_id, paper);
-                  setMessage('Thermal PDF downloaded');
-                } catch (err: any) {
-                  setError(err.message);
-                }
-              }}
-            >
-              Download thermal PDF
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  const r = await api(`/pos/sales/${receipt.sale_id}/receipt/send?channel=email`, {
-                    method: 'POST',
-                    body: '{}',
-                  });
-                  setMessage(r.message || 'Receipt emailed');
-                } catch (err: any) {
-                  setError(err.message);
-                }
-              }}
-            >
-              Email receipt
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  const r = await api(`/pos/sales/${receipt.sale_id}/receipt/send?channel=sms`, {
-                    method: 'POST',
-                    body: '{}',
-                  });
-                  setMessage(r.message || 'Receipt SMS sent');
-                } catch (err: any) {
-                  setError(err.message);
-                }
-              }}
-            >
-              SMS receipt
-            </button>
-          </div>
-        </div>
-      )}
     </Shell>
   );
 }

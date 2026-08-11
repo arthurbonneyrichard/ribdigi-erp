@@ -3714,7 +3714,7 @@ async def pos_search(
         stmt = stmt.where(m.Product.barcode == barcode)
     elif q:
         stmt = stmt.where(m.Product.name.ilike(f"%{q}%") | m.Product.sku.ilike(f"%{q}%"))
-    products = (await db.execute(stmt.limit(30))).scalars().all()
+    products = (await db.execute(stmt.limit(48))).scalars().all()
     out = [
         {
             "id": p.id,
@@ -3726,6 +3726,7 @@ async def pos_search(
             "selling_price": float(p.selling_price or 0),
             "stock_qty": float(p.stock_qty or 0),
             "kind": "product",
+            "has_image": bool(p.image_url),
         }
         for p in products
     ]
