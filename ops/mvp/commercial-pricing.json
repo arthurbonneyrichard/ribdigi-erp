@@ -1,0 +1,154 @@
+{
+  "stage": "78",
+  "workstream": "P1",
+  "doc": "docs/COMMERCIAL_PRICING_MVP.md",
+  "stage78_plan": "docs/STAGE_78_PLAN.md",
+  "pricing_doc": "docs/PRICING_TRANSPARENCY_MVP.md",
+  "pricing": "ops/mvp/pricing-transparency.json",
+  "billing_commercial_doc": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md",
+  "billing_commercial": "ops/mvp/commercial-billing-deferred.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "terms_doc": "docs/COMMERCIAL_TERMS_MVP.md",
+  "terms": "ops/mvp/commercial-terms.json",
+  "adr_002": "docs/ADR_002_BILLING_DEFERRED.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "public_pricing_portal_claimed": false,
+  "list_price_binding_claimed": false,
+  "checkout_pricing_live": false,
+  "paid_billing_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage78_p1_commercial_pricing.json",
+  "steps": [
+    {
+      "id": "cp-owner-outline",
+      "category": "pricing",
+      "title": "Index owner Commercial Pricing Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_78_PLAN.md",
+        "docs/ADR_162_STAGE78_OPEN.md"
+      ],
+      "source": "docs/STAGE_78_PLAN.md"
+    },
+    {
+      "id": "cp-pricing-transparency",
+      "category": "pricing",
+      "title": "Link Stage 49 pricing transparency as adjacency (portal Remaining \u2260 commercial pricing live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRICING_TRANSPARENCY_MVP.md",
+        "ops/mvp/pricing-transparency.json"
+      ],
+      "source": "docs/PRICING_TRANSPARENCY_MVP.md"
+    },
+    {
+      "id": "cp-billing-commercial",
+      "category": "pricing",
+      "title": "Link Stage 76 B1 commercial billing deferred as adjacency (paid billing Remaining \u2260 pricing portal)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md",
+        "ops/mvp/commercial-billing-deferred.json"
+      ],
+      "source": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md"
+    },
+    {
+      "id": "cp-billing-deferred",
+      "category": "pricing",
+      "title": "Link Stage 36 billing-deferred honesty as adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "cp-terms",
+      "category": "pricing",
+      "title": "Link Stage 76 T1 commercial terms as adjacency (terms packaging \u2260 pricing portal)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_TERMS_MVP.md",
+        "ops/mvp/commercial-terms.json"
+      ],
+      "source": "docs/COMMERCIAL_TERMS_MVP.md"
+    },
+    {
+      "id": "cp-adr002",
+      "category": "pricing",
+      "title": "Link ADR-002 as adjacency (paid billing Remaining \u2260 pricing portal)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_002_BILLING_DEFERRED.md",
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+      ],
+      "source": "docs/ADR_002_BILLING_DEFERRED.md"
+    },
+    {
+      "id": "cp-plan-honesty",
+      "category": "pricing",
+      "title": "Confirm Stage 78 plan explicitly defers public pricing portal / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_78_PLAN.md",
+        "docs/COMMERCIAL_PRICING_MVP.md"
+      ],
+      "source": "docs/STAGE_78_PLAN.md"
+    },
+    {
+      "id": "cp-list-price-review",
+      "category": "pricing",
+      "title": "Index list-price binding Remaining as honesty step",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_PRICING_MVP.md",
+        "docs/PRICING_TRANSPARENCY_MVP.md"
+      ],
+      "source": "docs/COMMERCIAL_PRICING_MVP.md"
+    },
+    {
+      "id": "cp-pricing-remaining",
+      "category": "honesty",
+      "title": "Commercial public pricing portal Remaining \u2014 packaging \u2260 live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_78_PLAN.md",
+        "docs/COMMERCIAL_PRICING_MVP.md"
+      ],
+      "source": "docs/STAGE_78_PLAN.md"
+    },
+    {
+      "id": "cp-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / checkout pricing / paid billing Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_78_PLAN.md",
+        "docs/PRICING_TRANSPARENCY_MVP.md"
+      ],
+      "source": "docs/STAGE_78_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Public pricing portal Complete",
+    "List price binding Complete",
+    "Checkout pricing live Complete",
+    "Paid billing Complete",
+    "Live go-live Complete"
+  ]
+}

@@ -27,4 +27,8 @@ Stage 77 Commercial Legal Envelope Fidelity delivered commercial DPA honesty pac
 
 ## Next stage
 
-Stage 78+ requires CONTINUE/NEXT with a distinct open ADR after this freeze.
+Stage 78 opened via ADR-162 (`docs/ADR_162_STAGE78_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 78 (Commercial Procurement Boundary Fidelity — Commercial Pricing Boundary → Commercial Professional Services Boundary → Commercial Procurement Boundary Fidelity) after Stage 77 freeze via CONTINUE/NEXT — see [ADR-162](ADR_162_STAGE78_OPEN.md) and [STAGE_78_PLAN.md](STAGE_78_PLAN.md). Stage 77 feature scope remains frozen; Stage 78 does not reopen A1–D1 / H77x.

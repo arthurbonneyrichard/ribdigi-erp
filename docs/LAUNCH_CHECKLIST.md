@@ -247,6 +247,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Commercial liability honesty (Stage 77 L1: `test_commercial_liability_l1.py` — `docs/COMMERCIAL_LIABILITY_MVP.md`, `ops/mvp/commercial-liability.json`; evidence `stage77_l1_commercial_liability.json`; liability cap signed Remaining)
 - [x] Stage 77 fidelity sync (D1: `test_stage77_fidelity_d1.py`, `docs/STAGE_77_FIDELITY.md` — A1–L1 + readiness + deploy / launch / security)
 - [x] Stage 77 exit + freeze (H77x: `test_stage77_exit_h77x.py`, `docs/STAGE_77_EXIT_CRITERIA.md`, ADR-161)
+- [x] Stage 78 track opened (ADR-162: `test_stage78_open.py`, `docs/STAGE_78_PLAN.md`) — Commercial Procurement Boundary Fidelity; closed under ADR-163
+- [x] Commercial pricing honesty (Stage 78 P1: `test_commercial_pricing_p1.py` — `docs/COMMERCIAL_PRICING_MVP.md`, `ops/mvp/commercial-pricing.json`; evidence `stage78_p1_commercial_pricing.json`; public pricing portal Remaining)
+- [x] Commercial professional services honesty (Stage 78 S1: `test_commercial_professional_services_s1.py` — `docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md`, `ops/mvp/commercial-professional-services.json`; evidence `stage78_s1_commercial_professional_services.json`; signed SOW Remaining)
+- [x] Stage 78 fidelity sync (D1: `test_stage78_fidelity_d1.py`, `docs/STAGE_78_FIDELITY.md` — P1–S1 + readiness + deploy / launch / security)
+- [x] Stage 78 exit + freeze (H78x: `test_stage78_exit_h78x.py`, `docs/STAGE_78_EXIT_CRITERIA.md`, ADR-163)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

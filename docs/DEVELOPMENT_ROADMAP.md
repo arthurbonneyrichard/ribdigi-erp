@@ -1551,3 +1551,13 @@ Every feature in every phase must meet:
 **Stage 77 D1 (2026-08-11):** Commercial Legal Envelope fidelity sync — `docs/STAGE_77_FIDELITY.md` (`test_stage77_fidelity_d1.py`); maps A1–L1 → readiness / launch / deploy / security.
 
 **Stage 77 exit (2026-08-11):** A1, L1, D1, H77x met — `docs/STAGE_77_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_161_STAGE77_FREEZE.md`. Fidelity: `docs/STAGE_77_FIDELITY.md`.
+
+**Stage 78 open (2026-08-11):** Commercial Procurement Boundary Fidelity track approved — `docs/ADR_162_STAGE78_OPEN.md` + `docs/STAGE_78_PLAN.md` (Commercial Pricing Boundary → Commercial Professional Services Boundary → Commercial Procurement Boundary Fidelity; P1 next).
+
+**Stage 78 P1 (2026-08-11):** Commercial pricing honesty — `docs/COMMERCIAL_PRICING_MVP.md`, `ops/mvp/commercial-pricing.json`, evidence `stage78_p1_commercial_pricing.json` (`test_commercial_pricing_p1.py`); public pricing portal Remaining.
+
+**Stage 78 S1 (2026-08-11):** Commercial professional services honesty — `docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md`, `ops/mvp/commercial-professional-services.json`, evidence `stage78_s1_commercial_professional_services.json` (`test_commercial_professional_services_s1.py`); signed SOW Remaining.
+
+**Stage 78 D1 (2026-08-11):** Commercial Procurement Boundary fidelity sync — `docs/STAGE_78_FIDELITY.md` (`test_stage78_fidelity_d1.py`); maps P1–S1 → readiness / launch / deploy / security.
+
+**Stage 78 exit (2026-08-11):** P1, S1, D1, H78x met — `docs/STAGE_78_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_163_STAGE78_FREEZE.md`. Fidelity: `docs/STAGE_78_FIDELITY.md`.

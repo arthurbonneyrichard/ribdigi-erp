@@ -24,7 +24,7 @@ Stage 77 proves the owner Commercial Legal Envelope path after Stage 76 freeze �
 | **A1** | `test_commercial_dpa_a1.py` — `COMMERCIAL_DPA_MVP.md`, commercial-dpa JSON | Owner DPA Boundary / Stage 39 DPA | Signed DPA |
 | **L1** | `test_commercial_liability_l1.py` — `COMMERCIAL_LIABILITY_MVP.md`, commercial-liability JSON | Owner Liability Boundary / Stage 46 liability | Liability cap signed; go-live |
 | **D1** | This note + `test_stage77_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H77x** | `STAGE_77_EXIT_CRITERIA.md`; ADR-161; `test_stage77_exit_h77x.py` | Stage 77 exit + freeze | Stage 78+ requires CONTINUE/NEXT |
+| **H77x** | `STAGE_77_EXIT_CRITERIA.md`; ADR-161; `test_stage77_exit_h77x.py` | Stage 77 exit + freeze | Stage 78 opened via ADR-162 |
 
 ## Evidence tests
 
