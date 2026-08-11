@@ -81,7 +81,10 @@ ROLE_LABELS: dict[str, str] = {
 }
 
 # Frontend nav href → required module (read). Used for menu filtering.
+# Platform owner (super_admin) UI only surfaces /platform + a small ops set;
+# tenant roles use the business modules below (see frontend Shell ROLE_NAV_MODULES).
 MENU_MODULE_BY_PATH: dict[str, str] = {
+    "/platform": "platform",
     "/dashboard": "dashboard",
     "/company": "company",
     "/inventory": "inventory",
