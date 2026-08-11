@@ -432,6 +432,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 42 exit (2026-08-11):** A1, P1, D1, H42x met — `docs/STAGE_42_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_090_STAGE42_FREEZE.md`. Fidelity: `docs/STAGE_42_FIDELITY.md`.
 
+**Stage 43 open (2026-08-11):** Commercial Legal Notice Fidelity track approved — `docs/ADR_091_STAGE43_OPEN.md` + `docs/STAGE_43_PLAN.md` (ToS/AUP → cookie/privacy notice → fidelity).
+
 
 
 

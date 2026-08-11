@@ -23,3 +23,8 @@ Stage 42 Commercial AI Transparency Fidelity delivered AI use disclosure honesty
 - Stage 1–41 freezes remain in force for their scopes (Stage 41 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - AI transparency packaging Complete does **not** mean external LLM, Prophet, AI certification, output-PII scanner, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 43 (Commercial Legal Notice Fidelity) after Stage 42 freeze via CONTINUE/NEXT — see [ADR-091](ADR_091_STAGE43_OPEN.md) and [STAGE_43_PLAN.md](STAGE_43_PLAN.md). Stage 42 feature scope remains frozen; Stage 43 does not reopen A1–D1 / H42x.
+

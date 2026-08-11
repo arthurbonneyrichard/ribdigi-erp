@@ -84,6 +84,7 @@ Authoritative MVP docs:
 - `docs/AI_PROVIDER_BOUNDARY_MVP.md` (`backend/tests/test_ai_provider_boundary_p1.py`) — Stage 42 P1
 - `docs/STAGE_42_FIDELITY.md` (`backend/tests/test_stage42_fidelity_d1.py`) — Stage 42 D1
 - `docs/STAGE_42_EXIT_CRITERIA.md` / `docs/ADR_090_STAGE42_FREEZE.md` (`backend/tests/test_stage42_exit_h42x.py`) — Stage 42 H42x
+- `docs/STAGE_43_PLAN.md` (`backend/tests/test_stage43_open.py`) — Stage 43 open (ADR-091)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -345,4 +346,8 @@ Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; Closed
 
 ## Stage 42 exit
 
-H42x met — `docs/STAGE_42_EXIT_CRITERIA.md`, ADR-090. Stages 1–42 frozen for Stage 42 feature scope; Stage 43+ requires open ADR after CONTINUE/NEXT.
+H42x met — `docs/STAGE_42_EXIT_CRITERIA.md`, ADR-090. Stages 1–42 frozen for Stage 42 feature scope.
+
+## Stage 43 open
+
+Commercial Legal Notice Fidelity — `docs/STAGE_43_PLAN.md`, ADR-091; T1 next.

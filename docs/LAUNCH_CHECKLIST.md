@@ -173,6 +173,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
+- [x] Stage 43 track opened (ADR-091: `test_stage43_open.py`, `docs/STAGE_43_PLAN.md`) — Commercial Legal Notice Fidelity; T1 next
 - [x] Stage 42 Commercial AI Transparency Fidelity (closed: `docs/STAGE_42_PLAN.md`, ADR-090) — A1–D1 / H42x complete
 - [x] Stage 42 track opened (ADR-089: `test_stage42_open.py`, `docs/STAGE_42_PLAN.md`)
 - [x] AI use disclosure honesty (Stage 42 A1: `test_ai_use_disclosure_a1.py` — `docs/AI_USE_DISCLOSURE_MVP.md`, `ops/mvp/ai-use-disclosure.json`; evidence `stage42_a1_ai_use_disclosure.json`; AI certification Remaining)
