@@ -40,7 +40,7 @@ Fidelity closeout
 | **N1** | Shared document numbering series fidelity | P0 | COMPLETE |
 | **G1** | Commerce gates closure (Inv / Purch / Sales / POS / Multi-store) | P0 | COMPLETE |
 | **O1** | Ops Redis/Celery + AI MVP gate honesty | P1 | COMPLETE |
-| **D1** | Spec / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
+| **D1** | Spec / readiness / USER_MANUAL / API fidelity sync | P2 | COMPLETE |
 | **H24x** | Stage 24 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -87,10 +87,19 @@ Fidelity closeout
 - [x] Automated proof: `backend/tests/test_ops_ai_gate_closure_o1.py`.
 - [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan synced (Stage 24 O1).
 
-## D1–H24x acceptance criteria
+## D1 acceptance criteria
 
-Filled when each workstream starts.
+- [x] `docs/STAGE_24_FIDELITY.md` maps N1–O1 evidence → BR-20.4 / commerce / ops / AI gates and deferred items.
+- [x] BR-20.4 fidelity cite includes Stage 24 D1 / `STAGE_24_FIDELITY.md`.
+- [x] USER_MANUAL Settings numbering + Stage 24 fidelity cite synced.
+- [x] API docs `document_numbering` + Stage 24 D1 cite.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP cite Stage 24 D1.
+- [x] Automated proof: `backend/tests/test_stage24_fidelity_d1.py`.
+
+## H24x acceptance criteria
+
+Filled when exit workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-053 open. N1–G1–O1 complete; D1 next. Stages 1–23 remain frozen for their scopes.
+Plan authored; ADR-053 open. N1–G1–O1–D1 complete; H24x next (`docs/STAGE_24_FIDELITY.md`). Stages 1–23 remain frozen for their scopes.

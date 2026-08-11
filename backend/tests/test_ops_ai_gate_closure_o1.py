@@ -26,7 +26,13 @@ def test_o1_plan_marks_complete() -> None:
     o1_line = [ln for ln in PLAN.splitlines() if "| **O1** |" in ln][0]
     assert "COMPLETE" in o1_line
     assert "test_ops_ai_gate_closure_o1.py" in PLAN
-    assert "O1 complete" in PLAN or "D1 next" in PLAN or "N1–G1–O1 complete" in PLAN
+    assert (
+        "O1 complete" in PLAN
+        or "D1 next" in PLAN
+        or "N1–G1–O1 complete" in PLAN
+        or "N1–G1–O1–D1 complete" in PLAN
+        or "H24x next" in PLAN
+    )
 
 
 def test_redis_celery_mvp_complete() -> None:

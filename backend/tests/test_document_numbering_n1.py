@@ -230,6 +230,8 @@ def test_n1_plan_and_docs_cite_stage24():
         or "G1 next" in plan
         or "N1–G1 complete" in plan
         or "O1 next" in plan
+        or "N1–G1–O1–D1 complete" in plan
+        or "H24x next" in plan
     )
 
     br = (ROOT / "docs" / "BUSINESS_REQUIREMENTS_DOCUMENT.md").read_text(encoding="utf-8")

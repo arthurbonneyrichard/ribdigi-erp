@@ -15,6 +15,7 @@ def test_stage24_plan_and_open_adr():
         assert f"| **{ws}** |" in plan, ws
     assert (
         "PENDING" in plan
+        or "H24x next" in plan
         or "D1 next" in plan
         or "O1 next" in plan
         or "G1 next" in plan

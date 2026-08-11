@@ -27,7 +27,14 @@ def test_g1_plan_marks_complete() -> None:
     g1_line = [ln for ln in PLAN.splitlines() if "| **G1** |" in ln][0]
     assert "COMPLETE" in g1_line
     assert "test_commerce_gate_closure_g1.py" in PLAN
-    assert "G1 complete" in PLAN or "O1 next" in PLAN or "N1–G1–O1 complete" in PLAN or "D1 next" in PLAN
+    assert (
+        "G1 complete" in PLAN
+        or "O1 next" in PLAN
+        or "N1–G1–O1 complete" in PLAN
+        or "N1–G1–O1–D1 complete" in PLAN
+        or "D1 next" in PLAN
+        or "H24x next" in PLAN
+    )
 
 
 def test_commerce_gates_mvp_complete() -> None:
