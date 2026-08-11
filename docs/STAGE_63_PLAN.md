@@ -1,6 +1,6 @@
 # Stage 63 Plan — Commercial Capital & Scale Fidelity
 
-**Status:** Open — P1 complete; G1 next  
+**Status:** Open — G1 complete; D1 next  
 **Base:** IPO Readiness Honesty Pack + Global Scale Honesty Pack → Commercial Capital & Scale Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-131](ADR_131_STAGE63_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Capital & Scale Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **P1** | IPO readiness honesty packaging (not live IPO / Series B–C funding Complete) | P0 | COMPLETE |
-| **G1** | Global scale honesty packaging (not measured 50k customers / 20+ countries Complete) | P0 | PENDING |
+| **G1** | Global scale honesty packaging (not measured 50k customers / 20+ countries Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H63x** | Stage 63 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -103,10 +103,10 @@ Commercial Capital & Scale Fidelity
 
 ## G1 acceptance criteria
 
-- [ ] Global scale honesty packaging indexing PRODUCT_OVERVIEW 50,000+ customers / 20+ countries Long-Term themes with geographic / metrics adjacency (not claiming measured global scale Complete).
-- [ ] Automated proof: `backend/tests/test_global_scale_g1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 63 G1.
+- [x] Global scale honesty packaging indexing PRODUCT_OVERVIEW 50,000+ customers / 20+ countries Long-Term themes with geographic / metrics adjacency (not claiming measured global scale Complete).
+- [x] Automated proof: `backend/tests/test_global_scale_g1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 63 G1.
 
 ## D1 acceptance criteria
 
