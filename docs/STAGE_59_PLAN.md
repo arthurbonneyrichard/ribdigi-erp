@@ -1,10 +1,11 @@
 # Stage 59 Plan — Commercial Channel Extensions Fidelity
 
-**Status:** Open — D1 complete; H59x next  
+**Status:** Closed — exit met (H59x / ADR-124)  
 **Base:** E-Commerce Integration Honesty Pack + CRM Commercial Honesty Pack → Commercial Channel Extensions Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-123](ADR_123_STAGE59_OPEN.md)  
 **Prior freeze:** [ADR-122](ADR_122_STAGE58_FREEZE.md) · [STAGE_58_EXIT_CRITERIA.md](STAGE_58_EXIT_CRITERIA.md)
+**Exit:** [STAGE_59_EXIT_CRITERIA.md](STAGE_59_EXIT_CRITERIA.md) · [ADR-124](ADR_124_STAGE59_FREEZE.md)  
 
 Stage 59 opens after Stage 58 freeze: **E-Commerce Integration Honesty Packaging + CRM Commercial Honesty Packaging → Commercial Channel Extensions Fidelity**. PRODUCT_OVERVIEW Mid-Term Future Roadmap themes (E-commerce integration with Shopify / WooCommerce; CRM module with customer segmentation), with Stage 49–58 commercial / GTM / marketplace adjacency, lack dedicated customer-facing honesty packs for e-commerce connector Remaining and CRM commercial Remaining. This track packages those Remaining surfaces on proven Stage 36–58 commercial / GTM honesty assets — **not** claiming live Shopify / WooCommerce connector Complete, live CRM module / segmentation Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–58 packs as new Complete, or reopening Stages 1–58 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Channel Extensions Fidelity
 | **E1** | E-commerce integration honesty packaging (not live Shopify / WooCommerce connector Complete) | P0 | COMPLETE |
 | **C1** | CRM commercial honesty packaging (not live CRM module / segmentation Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H59x** | Stage 59 exit criteria + freeze ADR | Exit | PENDING |
+| **H59x** | Stage 59 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -110,6 +111,6 @@ Commercial Channel Extensions Fidelity
 
 ## H59x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for E1–D1 / H59x — `docs/STAGE_59_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_124_STAGE59_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage59_exit_h59x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for E1–D1 / H59x — `docs/STAGE_59_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_124_STAGE59_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage59_exit_h59x.py`.

@@ -436,10 +436,11 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 55 W1** | White-label licensing commercial honesty — `docs/WHITE_LABEL_LICENSING_MVP.md`, `ops/mvp/white-label-licensing.json` (`test_white_label_licensing_w1.py`); live white-label licensing Remaining |
 | **Stage 55 U1** | Unit economics / competitive positioning honesty — `docs/UNIT_ECONOMICS_POSITIONING_MVP.md`, `ops/mvp/unit-economics-positioning.json` (`test_unit_economics_positioning_u1.py`); measured CAC/LTV Remaining |
 | **Stage 55 fidelity** | D1 maps W1–U1 licensing & positioning — `docs/STAGE_55_FIDELITY.md` (`test_stage55_fidelity_d1.py`); exit/freeze `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116 (`test_stage55_exit_h55x.py`); historical open ADR-115; live white-label licensing / measured CAC/LTV / competitive superiority / go-live / §7 remain Remaining |
-| **Stage 59 open** | Commercial Channel Extensions Fidelity — `docs/STAGE_59_PLAN.md`, ADR-123 (`test_stage59_open.py`); Stages 1–58 remain frozen; D1 complete; H59x next |
+| **Stage 59 open** | Commercial Channel Extensions Fidelity — `docs/STAGE_59_PLAN.md`, ADR-123 (`test_stage59_open.py`); Stages 1–58 remain frozen; closed under ADR-124 |
 | **Stage 59 E1** | E-commerce integration honesty — `docs/ECOMMERCE_INTEGRATION_MVP.md`, `ops/mvp/ecommerce-integration.json` (`test_ecommerce_integration_e1.py`); live Shopify / WooCommerce Remaining |
 | **Stage 59 C1** | CRM commercial honesty — `docs/CRM_COMMERCIAL_MVP.md`, `ops/mvp/crm-commercial.json` (`test_crm_commercial_c1.py`); live CRM module / segmentation Remaining |
 | **Stage 59 D1** | Channel extensions fidelity — `docs/STAGE_59_FIDELITY.md` (`test_stage59_fidelity_d1.py`); maps E1–C1 → readiness / launch / deploy / security; live Shopify / CRM Remaining |
+| **Stage 59 fidelity** | D1 maps E1–C1 channel extensions — `docs/STAGE_59_FIDELITY.md` (`test_stage59_fidelity_d1.py`); exit/freeze `docs/STAGE_59_EXIT_CRITERIA.md`, ADR-124 (`test_stage59_exit_h59x.py`); historical open ADR-123; live Shopify / CRM Remaining |
 | **Stage 58 open** | Commercial Business & AI Metrics Fidelity — `docs/STAGE_58_PLAN.md`, ADR-121 (`test_stage58_open.py`); Stages 1–57 remain frozen; closed under ADR-122 |
 | **Stage 58 B1** | Business metrics honesty — `docs/BUSINESS_METRICS_MVP.md`, `ops/mvp/business-metrics.json` (`test_business_metrics_b1.py`); measured MRR / NRR Remaining |
 | **Stage 58 I1** | AI metrics honesty — `docs/AI_METRICS_MVP.md`, `ops/mvp/ai-metrics.json` (`test_ai_metrics_i1.py`); measured AI adoption / accuracy Remaining |
