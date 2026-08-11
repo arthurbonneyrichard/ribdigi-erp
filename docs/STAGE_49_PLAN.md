@@ -1,6 +1,6 @@
 # Stage 49 Plan — Commercial Channel & Pricing Fidelity
 
-**Status:** Open — R1 next  
+**Status:** Open — R1 complete; L1 next  
 **Base:** Partner / Reseller Terms Honesty Pack + Pricing Transparency Honesty Pack → Commercial Channel & Pricing Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-103](ADR_103_STAGE49_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Channel & Pricing Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **R1** | Partner / reseller / white-label terms honesty packaging (not live partner program / signed reseller Complete) | P0 | PENDING |
+| **R1** | Partner / reseller / white-label terms honesty packaging (not live partner program / signed reseller Complete) | P0 | COMPLETE |
 | **L1** | Pricing transparency / published edition price-list honesty packaging (not public pricing portal / checkout pricing Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H49x** | Stage 49 exit criteria + freeze ADR | Exit | PENDING |
@@ -72,10 +72,10 @@ Commercial Channel & Pricing Fidelity
 
 ## R1 acceptance criteria
 
-- [ ] Partner / reseller / white-label terms honesty packaging consolidating PRODUCT_OVERVIEW channel themes and Stage 43 ToS / Stage 39 MSA adjacency (not forging live partner program / signed reseller Complete).
-- [ ] Automated proof: `backend/tests/test_partner_reseller_r1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 49 R1.
+- [x] Partner / reseller / white-label terms honesty packaging consolidating PRODUCT_OVERVIEW channel themes and Stage 43 ToS / Stage 39 MSA adjacency (not forging live partner program / signed reseller Complete).
+- [x] Automated proof: `backend/tests/test_partner_reseller_r1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 49 R1.
 
 ## L1 acceptance criteria
 
