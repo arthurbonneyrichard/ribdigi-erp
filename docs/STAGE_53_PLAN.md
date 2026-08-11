@@ -1,10 +1,11 @@
 # Stage 53 Plan — Commercial API & Lifecycle Fidelity
 
-**Status:** Open — D1 complete; H53x next  
+**Status:** Closed — exit met (H53x / ADR-112)  
 **Base:** API & Integration Commercial Honesty Pack + Cancellation / Refund / Churn Policy Honesty Pack → Commercial API & Lifecycle Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-111](ADR_111_STAGE53_OPEN.md)  
-**Prior freeze:** [ADR-110](ADR_110_STAGE52_FREEZE.md) · [STAGE_52_EXIT_CRITERIA.md](STAGE_52_EXIT_CRITERIA.md)
+**Prior freeze:** [ADR-110](ADR_110_STAGE52_FREEZE.md) · [STAGE_52_EXIT_CRITERIA.md](STAGE_52_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_53_EXIT_CRITERIA.md](STAGE_53_EXIT_CRITERIA.md) · [ADR-112](ADR_112_STAGE53_FREEZE.md)
 
 Stage 53 opens after Stage 52 freeze: **API & Integration Commercial Honesty Packaging + Cancellation / Refund / Churn Policy Honesty Packaging → Commercial API & Lifecycle Fidelity**. PRODUCT_OVERVIEW API & Integration Revenue (rate-limit upgrades, third-party connector fees) and unit-economics / GTM churn themes, plus Stage 36 billing-deferred and Stage 49–52 commercial / renewal adjacency, lack dedicated customer-facing honesty packs for API commercial boundaries and cancellation / refund / churn Remaining. This track packages those Remaining surfaces on proven Stage 36–52 commercial / billing-deferred assets — **not** claiming live API rate-limit upgrade billing Complete, third-party connector fee billing Complete, live cancellation portal Complete, refund processing Complete, live churn measurement Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–52 packs as new Complete, or reopening Stages 1–52 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial API & Lifecycle Fidelity
 | **A1** | API & integration commercial honesty packaging (not live API rate-limit upgrade / connector fee billing Complete) | P0 | COMPLETE |
 | **C1** | Cancellation / refund / churn policy honesty packaging (not live cancellation portal / refund processing / churn measurement Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H53x** | Stage 53 exit criteria + freeze ADR | Exit | PENDING |
+| **H53x** | Stage 53 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -98,6 +99,6 @@ Commercial API & Lifecycle Fidelity
 
 ## H53x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H53x — `docs/STAGE_53_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_112_STAGE53_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage53_exit_h53x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H53x — `docs/STAGE_53_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_112_STAGE53_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage53_exit_h53x.py`.
