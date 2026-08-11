@@ -428,6 +428,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 42 P1 (2026-08-11):** AI model / provider boundary honesty — `docs/AI_PROVIDER_BOUNDARY_MVP.md`, `ops/mvp/ai-provider-boundary.json`, evidence `stage42_p1_ai_provider_boundary.json` (`test_ai_provider_boundary_p1.py`); external LLM Remaining.
 
+**Stage 42 D1 (2026-08-11):** Commercial AI transparency fidelity — `docs/STAGE_42_FIDELITY.md` (`test_stage42_fidelity_d1.py`); maps A1–P1 → readiness / launch / deploy / security; external LLM / AI certification Remaining.
+
 
 
 

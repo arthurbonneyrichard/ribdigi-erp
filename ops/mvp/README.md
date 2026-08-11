@@ -82,6 +82,7 @@ Authoritative MVP docs:
 - `docs/STAGE_42_PLAN.md` (`backend/tests/test_stage42_open.py`) — Stage 42 open (ADR-089)
 - `docs/AI_USE_DISCLOSURE_MVP.md` (`backend/tests/test_ai_use_disclosure_a1.py`) — Stage 42 A1
 - `docs/AI_PROVIDER_BOUNDARY_MVP.md` (`backend/tests/test_ai_provider_boundary_p1.py`) — Stage 42 P1
+- `docs/STAGE_42_FIDELITY.md` (`backend/tests/test_stage42_fidelity_d1.py`) — Stage 42 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -327,7 +328,7 @@ H41x met — `docs/STAGE_41_EXIT_CRITERIA.md`, ADR-088. Stages 1–41 frozen for
 
 ## Stage 42 open
 
-Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; A1–P1 complete; D1 next.
+Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; D1 complete; H42x next.
 
 ## Stage 42 A1 — AI use disclosure honesty
 
@@ -336,3 +337,7 @@ Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; A1–P
 ## Stage 42 P1 — AI model / provider boundary honesty
 
 `docs/AI_PROVIDER_BOUNDARY_MVP.md` + `ops/mvp/ai-provider-boundary.json` — packaging Complete; `external_llm_claimed` / `prophet_claimed` remain false.
+
+## Stage 42 D1 — Fidelity
+
+`docs/STAGE_42_FIDELITY.md` maps A1–P1 → readiness / launch / deploy / security (`test_stage42_fidelity_d1.py`).

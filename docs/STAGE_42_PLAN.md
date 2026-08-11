@@ -1,6 +1,6 @@
 # Stage 42 Plan — Commercial AI Transparency Fidelity
 
-**Status:** Open — A1–P1 complete; D1 next  
+**Status:** Open — D1 complete; H42x next  
 **Base:** AI Use Disclosure Honesty Pack + AI Model / Provider Boundary Honesty Pack → Commercial AI Transparency Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-089](ADR_089_STAGE42_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial AI Transparency Fidelity
 |----|------------|----------|---------|
 | **A1** | AI use disclosure honesty packaging (not AI certification Complete) | P0 | COMPLETE |
 | **P1** | AI model / provider boundary honesty packaging (not external LLM Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H42x** | Stage 42 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -77,9 +77,9 @@ Commercial AI Transparency Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_42_FIDELITY.md` maps A1–P1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 42 D1.
-- [ ] Automated proof: `backend/tests/test_stage42_fidelity_d1.py`.
+- [x] `docs/STAGE_42_FIDELITY.md` maps A1–P1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 42 D1.
+- [x] Automated proof: `backend/tests/test_stage42_fidelity_d1.py`.
 
 ## H42x acceptance criteria
 
