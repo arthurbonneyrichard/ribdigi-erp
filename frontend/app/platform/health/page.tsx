@@ -72,6 +72,15 @@ export default function PlatformHealthPage() {
                   {check.status || '—'}
                 </div>
                 <p className="muted" style={{ marginTop: 8 }}>
+                  {check.required === true
+                    ? 'Required'
+                    : check.required === false
+                      ? 'Optional'
+                      : null}
+                  {check.required != null &&
+                  (check.latency_ms != null || check.mode || check.reason)
+                    ? ' · '
+                    : null}
                   {check.latency_ms != null ? `${check.latency_ms} ms` : null}
                   {check.mode ? ` · ${check.mode}` : null}
                   {check.reason ? ` · ${check.reason}` : null}
@@ -79,6 +88,10 @@ export default function PlatformHealthPage() {
               </div>
             ))}
           </div>
+          <p className="muted" style={{ marginTop: 16 }}>
+            Operator evidence pack:{' '}
+            <code>GET /platform/evidence</code> (packaging honesty — not go-live Complete).
+          </p>
           <details style={{ marginTop: 20 }}>
             <summary className="muted">Raw payload</summary>
             <pre style={{ overflow: 'auto', fontSize: 13 }}>{JSON.stringify(data, null, 2)}</pre>

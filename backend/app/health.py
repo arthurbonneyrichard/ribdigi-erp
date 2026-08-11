@@ -36,9 +36,10 @@ async def check_database(session_factory: async_sessionmaker[AsyncSession]) -> C
 async def check_redis() -> CheckResult:
     """Ping Redis. Optional unless RATE_LIMIT_REQUIRE_REDIS is set."""
     start = time.perf_counter()
+    required = bool(settings.RATE_LIMIT_REQUIRE_REDIS)
     url = (settings.REDIS_URL or "").strip()
     if not url:
-        return {"status": "skipped", "reason": "REDIS_URL unset"}
+        return {"status": "skipped", "reason": "REDIS_URL unset", "required": required}
     try:
         import redis.asyncio as redis_async
 
@@ -53,9 +54,12 @@ async def check_redis() -> CheckResult:
             await client.ping()
         finally:
             await client.aclose()
-        return {"status": "ok", "latency_ms": _ms_since(start)}
+        return {
+            "status": "ok",
+            "latency_ms": _ms_since(start),
+            "required": required,
+        }
     except Exception as exc:
-        required = bool(settings.RATE_LIMIT_REQUIRE_REDIS)
         return {
             "status": "error" if required else "degraded",
             "latency_ms": _ms_since(start),
@@ -67,13 +71,27 @@ async def check_redis() -> CheckResult:
 async def check_celery_broker() -> CheckResult:
     """Probe Celery broker connectivity (RabbitMQ/Redis URL)."""
     start = time.perf_counter()
+    required = bool(settings.CELERY_ENABLED)
     if not settings.CELERY_ENABLED:
-        return {"status": "skipped", "reason": "CELERY_ENABLED=false"}
+        return {
+            "status": "skipped",
+            "reason": "CELERY_ENABLED=false",
+            "required": False,
+        }
     if settings.CELERY_TASK_ALWAYS_EAGER:
-        return {"status": "ok", "mode": "eager", "latency_ms": _ms_since(start)}
+        return {
+            "status": "ok",
+            "mode": "eager",
+            "latency_ms": _ms_since(start),
+            "required": required,
+        }
     broker = settings.celery_broker_url
     if not broker:
-        return {"status": "skipped", "reason": "broker URL unset"}
+        return {
+            "status": "skipped",
+            "reason": "broker URL unset",
+            "required": required,
+        }
     try:
         from kombu import Connection
 
@@ -83,6 +101,7 @@ async def check_celery_broker() -> CheckResult:
             "status": "ok",
             "latency_ms": _ms_since(start),
             "broker_scheme": broker.split(":", 1)[0],
+            "required": required,
         }
     except Exception as exc:
         return {
@@ -90,6 +109,7 @@ async def check_celery_broker() -> CheckResult:
             "latency_ms": _ms_since(start),
             "error": type(exc).__name__,
             "broker_scheme": broker.split(":", 1)[0],
+            "required": required,
         }
 
 

@@ -545,6 +545,33 @@ async def list_customer_tenants(
     return out, total
 
 
+async def last_house_email_delivery(db: AsyncSession, tenant_id: str) -> dict | None:
+    """Stage 91 N1 — latest platform.email.delivery for a customer tenant."""
+    rows = await audit_svc.query_logs(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        module="platform_email",
+        action="platform.email.delivery",
+        limit=200,
+    )
+    for row in rows:
+        details = row.details if isinstance(row.details, dict) else {}
+        if details.get("target_tenant_id") == tenant_id:
+            return {
+                "created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
+                "purpose": details.get("purpose"),
+                "recipient": details.get("recipient"),
+                "related_action": details.get("related_action"),
+                "sent": details.get("sent"),
+                "mode": details.get("mode"),
+                "error": details.get("error"),
+                "fabricated_success": bool(details.get("fabricated_success"))
+                if details.get("fabricated_success") is not None
+                else False,
+            }
+    return None
+
+
 async def get_customer_tenant(db: AsyncSession, tenant_ref: str) -> dict | None:
     try:
         tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
@@ -552,7 +579,9 @@ async def get_customer_tenant(db: AsyncSession, tenant_ref: str) -> dict | None:
         return None
     if tenant.id == PLATFORM_TENANT_ID:
         return None
-    return await _enrich_tenant_row(db, tenant)
+    row = await _enrich_tenant_row(db, tenant)
+    row["last_house_email_delivery"] = await last_house_email_delivery(db, tenant.id)
+    return row
 
 
 async def list_at_risk_tenants(db: AsyncSession, *, within_days: int = 14) -> dict:

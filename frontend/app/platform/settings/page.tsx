@@ -9,6 +9,7 @@ export default function PlatformSettingsPage() {
   const [idle, setIdle] = useState(30);
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
+  const [timezone, setTimezone] = useState('Africa/Accra');
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -21,6 +22,7 @@ export default function PlatformSettingsPage() {
       setIdle(Number(r.data?.inactivity_timeout_minutes) || 30);
       setSupportEmail(r.data?.support_email || '');
       setSupportPhone(r.data?.support_phone || '');
+      setTimezone(r.data?.timezone || 'Africa/Accra');
     } catch (err: any) {
       setError(err.message || 'Failed to load settings');
     }
@@ -43,6 +45,7 @@ export default function PlatformSettingsPage() {
           inactivity_timeout_minutes: idle,
           support_email: supportEmail,
           support_phone: supportPhone,
+          timezone,
         }),
       });
       setMsg('Settings saved');
@@ -94,6 +97,14 @@ export default function PlatformSettingsPage() {
         <input
           value={supportPhone}
           onChange={(e) => setSupportPhone(e.target.value)}
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        />
+        <label className="muted">House timezone</label>
+        <input
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          placeholder="Africa/Accra"
+          required
           style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
         />
         <button

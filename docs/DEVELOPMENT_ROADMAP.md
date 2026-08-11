@@ -1693,3 +1693,15 @@ Every feature in every phase must meet:
 **Stage 90 D1 (2026-08-11):** House Operator Visibility & Delivery Ops fidelity sync — `docs/STAGE_90_FIDELITY.md` (`test_stage90_fidelity_d1.py`); maps E1–Q1 → readiness / launch / deploy / security.
 
 **Stage 90 exit (2026-08-11):** E1, O1, Q1, D1, H90x met — `docs/STAGE_90_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_187_STAGE90_FREEZE.md`. Fidelity: `docs/STAGE_90_FIDELITY.md`.
+
+**Stage 91 open (2026-08-11):** House Operator Investigation & Evidence Ops track approved — `docs/ADR_188_STAGE91_OPEN.md` + `docs/STAGE_91_PLAN.md` (Audit/Activity Date-Range Investigation → Dashboard→Roster Deep-Links & Tenant Delivery Context → Staff Presence / Health Required Badges / House TZ + Operator Evidence Export → House Operator Investigation & Evidence Ops; I1 next).
+
+**Stage 91 I1 (2026-08-11):** Audit/Activity date-range investigation — `from_date`/`to_date` + Activity 7d default (`test_platform_audit_investigation_i1.py`).
+
+**Stage 91 N1 (2026-08-11):** Dashboard→roster deep-links + tenant last House email delivery (`test_platform_nav_delivery_n1.py`).
+
+**Stage 91 P1 (2026-08-11):** Staff presence, health required badges, House TZ, `GET /platform/evidence` (`test_house_posture_evidence_p1.py`).
+
+**Stage 91 D1 (2026-08-11):** House Operator Investigation & Evidence Ops fidelity sync — `docs/STAGE_91_FIDELITY.md` (`test_stage91_fidelity_d1.py`); maps I1–P1 → readiness / launch / deploy / security.
+
+**Stage 91 exit (2026-08-11):** I1, N1, P1, D1, H91x met — `docs/STAGE_91_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_189_STAGE91_FREEZE.md`. Fidelity: `docs/STAGE_91_FIDELITY.md`.

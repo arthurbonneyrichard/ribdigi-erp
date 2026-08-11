@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse, Response
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit, health as health_svc, platform as platform_svc
@@ -31,6 +31,7 @@ from app.security import (
     validate_password_strength,
 )
 from app.config import settings
+from app.security_runtime import security_posture
 
 router = APIRouter(prefix="/api/v1/platform", tags=["platform"])
 
@@ -91,6 +92,7 @@ class PlatformSettingsUpdate(BaseModel):
     company_name: str | None = Field(default=None, min_length=2, max_length=200)
     support_email: str | None = None
     support_phone: str | None = None
+    timezone: str | None = Field(default=None, min_length=1, max_length=64)
 
 
 @router.get("/dashboard")
@@ -766,6 +768,7 @@ def _serialize_platform_settings(tenant: m.Tenant) -> dict:
         ),
         "support_email": getattr(tenant, "email", None),
         "support_phone": getattr(tenant, "phone", None),
+        "timezone": getattr(tenant, "timezone", None) or "Africa/Accra",
         "status": tenant.status,
         "plan_code": getattr(tenant, "plan_code", None) or "enterprise",
     }
@@ -808,6 +811,12 @@ async def platform_patch_settings(
         phone = payload.support_phone.strip() or None
         tenant.phone = phone
         changes["support_phone"] = phone
+    if payload.timezone is not None:
+        tz = payload.timezone.strip()
+        if not tz:
+            raise HTTPException(status_code=400, detail="timezone cannot be empty")
+        tenant.timezone = tz
+        changes["timezone"] = tenant.timezone
     if not changes:
         return env(_serialize_platform_settings(tenant), message="no changes")
     ip, ua = _client_meta(request)
@@ -833,6 +842,7 @@ async def platform_list_users(
     claims: dict = Depends(require_platform_permission("platform_users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 91 P1 — includes last_session_at + active_session_count rollups."""
     await platform_svc.ensure_platform_tenant(db)
     rows = (
         await db.execute(
@@ -841,7 +851,39 @@ async def platform_list_users(
             .order_by(m.User.full_name.asc())
         )
     ).scalars().all()
-    return env([serialize_user(u) for u in rows])
+    now = datetime.utcnow()
+    last_by_user = {
+        uid: created
+        for uid, created in (
+            await db.execute(
+                select(m.AuthSession.user_id, func.max(m.AuthSession.created_at))
+                .where(m.AuthSession.tenant_id == PLATFORM_TENANT_ID)
+                .group_by(m.AuthSession.user_id)
+            )
+        ).all()
+    }
+    active_by_user = {
+        uid: int(cnt or 0)
+        for uid, cnt in (
+            await db.execute(
+                select(m.AuthSession.user_id, func.count())
+                .where(
+                    m.AuthSession.tenant_id == PLATFORM_TENANT_ID,
+                    m.AuthSession.revoked_at.is_(None),
+                    m.AuthSession.expires_at > now,
+                )
+                .group_by(m.AuthSession.user_id)
+            )
+        ).all()
+    }
+    out = []
+    for u in rows:
+        payload = serialize_user(u)
+        last = last_by_user.get(u.id)
+        payload["last_session_at"] = last.isoformat() + "Z" if last else None
+        payload["active_session_count"] = active_by_user.get(u.id, 0)
+        out.append(payload)
+    return env(out)
 
 
 @router.get("/users/sessions")
@@ -1192,6 +1234,59 @@ async def platform_health(
     return env(report)
 
 
+async def _platform_audit_list_payload(
+    db: AsyncSession,
+    *,
+    limit: int,
+    offset: int,
+    module: str | None,
+    action: str | None,
+    delivery_only: bool,
+    from_date: str | None,
+    to_date: str | None,
+    default_recent_days: int | None = None,
+) -> dict[str, Any]:
+    """Shared Audit/Activity list (Stage 91 I1 date-range investigation)."""
+    action_filter = (action or "").strip() or None
+    module_filter = (module or "").strip() or None
+    if delivery_only:
+        action_filter = "platform.email.delivery"
+        module_filter = module_filter or "platform_email"
+    parsed_from = reports_svc.parse_date(from_date)
+    parsed_to = reports_svc.parse_date(to_date, end_of_day=True)
+    default_applied = False
+    if parsed_from is None and default_recent_days is not None:
+        parsed_from = datetime.utcnow() - timedelta(days=int(default_recent_days))
+        default_applied = True
+    rows = await audit.query_logs(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        module=module_filter,
+        action=action_filter,
+        from_date=parsed_from,
+        to_date=parsed_to,
+        limit=min(limit + offset, 1000),
+    )
+    sliced = rows[offset : offset + limit]
+    items = [audit.serialize_audit(r) for r in sliced]
+    return {
+        "items": items,
+        "total": len(rows),
+        "limit": limit,
+        "offset": offset,
+        "filters": {
+            "module": module_filter,
+            "action": action_filter,
+            "delivery_only": delivery_only,
+            "from_date": from_date,
+            "to_date": to_date,
+            "default_recent_days": default_recent_days if default_applied else None,
+            "effective_from": parsed_from.isoformat() + "Z" if parsed_from else None,
+            "effective_to": parsed_to.isoformat() + "Z" if parsed_to else None,
+        },
+    }
+
+
 @router.get("/audit")
 async def platform_audit(
     claims: dict = Depends(require_platform_permission("platform_audit", "read")),
@@ -1201,37 +1296,25 @@ async def platform_audit(
     module: str | None = Query(None),
     action: str | None = Query(None),
     delivery_only: bool = Query(False),
+    from_date: str | None = Query(None),
+    to_date: str | None = Query(None),
 ):
     """Stage 86 A1 — platform audit with optional module/action filters.
 
     Stage 90 E1: ``delivery_only`` filters to ``platform.email.delivery`` events.
+    Stage 91 I1: ``from_date`` / ``to_date`` investigation window.
     """
-    action_filter = (action or "").strip() or None
-    module_filter = (module or "").strip() or None
-    if delivery_only:
-        action_filter = "platform.email.delivery"
-        module_filter = module_filter or "platform_email"
-    rows = await audit.query_logs(
-        db,
-        tenant_id=PLATFORM_TENANT_ID,
-        module=module_filter,
-        action=action_filter,
-        limit=min(limit + offset, 1000),
-    )
-    sliced = rows[offset : offset + limit]
-    items = [audit.serialize_audit(r) for r in sliced]
     return env(
-        {
-            "items": items,
-            "total": len(rows),
-            "limit": limit,
-            "offset": offset,
-            "filters": {
-                "module": module_filter,
-                "action": action_filter,
-                "delivery_only": delivery_only,
-            },
-        }
+        await _platform_audit_list_payload(
+            db,
+            limit=limit,
+            offset=offset,
+            module=module,
+            action=action,
+            delivery_only=delivery_only,
+            from_date=from_date,
+            to_date=to_date,
+        )
     )
 
 
@@ -1244,36 +1327,26 @@ async def platform_activity_alias(
     module: str | None = Query(None),
     action: str | None = Query(None),
     delivery_only: bool = Query(False),
+    from_date: str | None = Query(None),
+    to_date: str | None = Query(None),
 ):
-    """Stage 86 A1 — Activity alias for Platform Audit (parity with tenant /activity)."""
-    action_filter = (action or "").strip() or None
-    module_filter = (module or "").strip() or None
-    if delivery_only:
-        action_filter = "platform.email.delivery"
-        module_filter = module_filter or "platform_email"
-    rows = await audit.query_logs(
+    """Stage 86 A1 — Activity alias for Platform Audit (parity with tenant /activity).
+
+    Stage 91 I1: defaults to a recent 7-day window when ``from_date`` is omitted.
+    """
+    data = await _platform_audit_list_payload(
         db,
-        tenant_id=PLATFORM_TENANT_ID,
-        module=module_filter,
-        action=action_filter,
-        limit=min(limit + offset, 1000),
+        limit=limit,
+        offset=offset,
+        module=module,
+        action=action,
+        delivery_only=delivery_only,
+        from_date=from_date,
+        to_date=to_date,
+        default_recent_days=7,
     )
-    sliced = rows[offset : offset + limit]
-    items = [audit.serialize_audit(r) for r in sliced]
-    return env(
-        {
-            "items": items,
-            "total": len(rows),
-            "limit": limit,
-            "offset": offset,
-            "filters": {
-                "module": module_filter,
-                "action": action_filter,
-                "delivery_only": delivery_only,
-            },
-            "alias_of": "/platform/audit",
-        }
-    )
+    data["alias_of"] = "/platform/audit"
+    return env(data)
 
 
 @router.get("/audit/export")
@@ -1322,3 +1395,51 @@ async def platform_audit_verify(
 ):
     """Stage 87 X1 — verify integrity chain for platform-tenant audit logs."""
     return env(await audit.verify_chain(db, PLATFORM_TENANT_ID))
+
+
+@router.get("/evidence")
+async def platform_operator_evidence(
+    claims: dict = Depends(require_platform_permission("platform_health", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 91 P1 — operator evidence pack (packaging honesty only).
+
+    Not §§1–3 verified, §7 signed, or live go-live Complete.
+    """
+    report, _status = await health_svc.assemble_health(deep=True)
+    await platform_svc.ensure_platform_tenant(db)
+    platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
+    posture = security_posture()
+    return env(
+        {
+            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "packaging_only": True,
+            "note": (
+                "Operator evidence pack for Ribdigi House — packaging honesty only; "
+                "not sections 1–3 verified, section 7 signed, or go-live Complete."
+            ),
+            "house": {
+                "tenant_id": PLATFORM_TENANT_ID,
+                "company_name": getattr(platform_tenant, "company_name", None)
+                if platform_tenant
+                else None,
+                "timezone": getattr(platform_tenant, "timezone", None) if platform_tenant else None,
+                "support_email": getattr(platform_tenant, "email", None)
+                if platform_tenant
+                else None,
+            },
+            "health": report,
+            "security": posture.get("security"),
+            "honesty_flags": {
+                "mrr_fabricated_claimed": False,
+                "billing_complete_claimed": False,
+                "subscriptions_live_claimed": False,
+                "user_store_membership_claimed": False,
+                "hard_delete_claimed": False,
+                "sections_1_3_verified": False,
+                "section_7_signed": False,
+                "go_live_claimed": False,
+                "attestation_claimed": False,
+            },
+        }
+    )

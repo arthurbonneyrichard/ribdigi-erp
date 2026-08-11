@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
@@ -32,11 +33,12 @@ const emptyForm = {
 };
 
 export default function PlatformTenantsPage() {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<TenantRow[]>([]);
   const [atRisk, setAtRisk] = useState<TenantRow[]>([]);
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(() => searchParams.get('status') || '');
   const [planCode, setPlanCode] = useState('');
   const [industry, setIndustry] = useState('');
   const [error, setError] = useState('');
@@ -45,12 +47,13 @@ export default function PlatformTenantsPage() {
   const [form, setForm] = useState(emptyForm);
   const [creating, setCreating] = useState(false);
 
-  async function load() {
+  async function load(nextStatus?: string) {
     setError('');
+    const statusFilter = nextStatus !== undefined ? nextStatus : status;
     try {
       const params = new URLSearchParams();
       if (q.trim()) params.set('q', q.trim());
-      if (status) params.set('status', status);
+      if (statusFilter) params.set('status', statusFilter);
       if (planCode) params.set('plan_code', planCode);
       if (industry) params.set('industry', industry);
       const r = await api(`/platform/tenants?${params.toString()}`);
@@ -64,9 +67,15 @@ export default function PlatformTenantsPage() {
   }
 
   useEffect(() => {
-    load();
+    const fromQuery = searchParams.get('status') || '';
+    setStatus(fromQuery);
+    load(fromQuery);
+    if (searchParams.get('focus') === 'at-risk') {
+      const el = document.getElementById('at-risk-queue');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   async function setLifecycle(id: string, action: 'suspend' | 'activate') {
     setBusy(id);
@@ -261,7 +270,9 @@ export default function PlatformTenantsPage() {
       {error && <p>{error}</p>}
       {msg && <p style={{ color: '#047857' }}>{msg}</p>}
 
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>At-risk (trial/grace within 14 days)</h2>
+      <h2 id="at-risk-queue" style={{ fontSize: 16, marginTop: 24 }}>
+        At-risk (trial/grace within 14 days)
+      </h2>
       <p className="muted">{atRisk.length} tenant(s) in queue</p>
       <table className="table">
         <thead>

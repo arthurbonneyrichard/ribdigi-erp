@@ -186,6 +186,26 @@ export default function PlatformTenantDetailPage() {
                 {row.last_activity_at || '—'}
               </div>
             </div>
+            <div className="card">
+              <div className="muted">Last House email delivery</div>
+              <div className="kpi" style={{ fontSize: 14 }}>
+                {row.last_house_email_delivery?.created_at || '—'}
+              </div>
+              {row.last_house_email_delivery ? (
+                <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                  sent={String(row.last_house_email_delivery.sent)} · mode=
+                  {row.last_house_email_delivery.mode || '—'} · to=
+                  {row.last_house_email_delivery.recipient || '—'}
+                  {row.last_house_email_delivery.purpose
+                    ? ` · ${row.last_house_email_delivery.purpose}`
+                    : ''}
+                </p>
+              ) : (
+                <p className="muted" style={{ marginTop: 8 }}>
+                  No House assist email recorded for this tenant yet.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>

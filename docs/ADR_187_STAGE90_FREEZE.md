@@ -27,4 +27,4 @@ Stage 90 House Operator Visibility & Delivery Ops delivered email delivery visib
 
 ## Next stage
 
-Stage 91 requires CONTINUE/NEXT with a distinct product outline, open ADR, and plan. Until then, Stage 90 feature scope remains frozen under this ADR.
+Stage 91 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-188](ADR_188_STAGE91_OPEN.md) + [STAGE_91_PLAN.md](STAGE_91_PLAN.md) (Audit/Activity Date-Range Investigation → Dashboard→Roster Deep-Links & Tenant Delivery Context → Staff Presence / Health Required Badges / House TZ + Operator Evidence Export → House Operator Investigation & Evidence Ops). Stage 90 feature scope remains frozen.

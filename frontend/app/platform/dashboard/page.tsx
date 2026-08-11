@@ -61,17 +61,23 @@ export default function PlatformDashboardPage() {
         <div className="card">
           <div className="muted">Grace</div>
           <div className="kpi">{d.grace_tenants ?? '—'}</div>
+          <p style={{ marginTop: 8 }}>
+            <Link href="/platform/tenants?status=grace">View grace tenants →</Link>
+          </p>
         </div>
         <div className="card">
           <div className="muted">At-risk ({d.at_risk_within_days ?? 14}d)</div>
           <div className="kpi">{d.at_risk_count ?? '—'}</div>
           <p style={{ marginTop: 8 }}>
-            <Link href="/platform/tenants">View tenants / at-risk queue →</Link>
+            <Link href="/platform/tenants?focus=at-risk">View at-risk queue →</Link>
           </p>
         </div>
         <div className="card">
           <div className="muted">Suspended</div>
           <div className="kpi">{d.suspended_tenants ?? '—'}</div>
+          <p style={{ marginTop: 8 }}>
+            <Link href="/platform/tenants?status=suspended">View suspended tenants →</Link>
+          </p>
         </div>
         <div className="card">
           <div className="muted">New this month</div>

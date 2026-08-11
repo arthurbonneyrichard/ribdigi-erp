@@ -26,6 +26,7 @@ def security_posture() -> dict:
             "rate_limit_api_per_minute": int(settings.RATE_LIMIT_PER_MINUTE),
             "rate_limit_auth_per_minute": int(settings.RATE_LIMIT_AUTH_PER_MINUTE),
             "rate_limit_require_redis": bool(settings.RATE_LIMIT_REQUIRE_REDIS),
+            "celery_enabled": bool(settings.CELERY_ENABLED),
             "cors_origins_count": len(settings.cors_origins),
             "cors_allows_wildcard": any(o == "*" for o in settings.cors_origins),
             "openapi_enabled": openapi_enabled(),

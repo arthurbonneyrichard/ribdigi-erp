@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
@@ -18,11 +19,16 @@ type AuditRow = {
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function PlatformAuditPage() {
+  const pathname = usePathname();
+  const isActivity = Boolean(pathname?.includes('/activity'));
+  const listPath = isActivity ? '/platform/activity' : '/platform/audit';
   const [items, setItems] = useState<AuditRow[]>([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [module, setModule] = useState('');
   const [action, setAction] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [deliveryOnly, setDeliveryOnly] = useState(false);
   const [verify, setVerify] = useState<any>(null);
 
@@ -32,8 +38,10 @@ export default function PlatformAuditPage() {
       const params = new URLSearchParams();
       if (module.trim()) params.set('module', module.trim());
       if (action.trim()) params.set('action', action.trim());
+      if (fromDate) params.set('from_date', fromDate);
+      if (toDate) params.set('to_date', toDate);
       if (deliveryOnly) params.set('delivery_only', 'true');
-      const r = await api(`/platform/audit?${params.toString()}`);
+      const r = await api(`${listPath}?${params.toString()}`);
       setItems(r.data?.items || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load audit');
@@ -43,7 +51,7 @@ export default function PlatformAuditPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [listPath]);
 
   async function runVerify() {
     setError('');
@@ -66,6 +74,8 @@ export default function PlatformAuditPage() {
       const params = new URLSearchParams();
       if (module.trim()) params.set('module', module.trim());
       if (action.trim()) params.set('action', action.trim());
+      if (fromDate) params.set('from_date', fromDate);
+      if (toDate) params.set('to_date', toDate);
       params.set('format', fmt);
       const res = await fetch(`${apiBase}/platform/audit/export?${params}`, {
         headers: {
@@ -97,10 +107,13 @@ export default function PlatformAuditPage() {
 
   return (
     <PlatformShell>
-      <h1>Platform audit</h1>
+      <h1>{isActivity ? 'Platform activity' : 'Platform audit'}</h1>
       <p className="muted">
-        Events recorded against the Ribdigi House platform tenant. Activity is an alias of this
-        surface. Email delivery outcomes appear as platform.email.delivery (no fabricated success).
+        Events recorded against the Ribdigi House platform tenant.
+        {isActivity
+          ? ' Activity defaults to the last 7 days when from_date is omitted.'
+          : ' Activity is an alias of this surface.'}{' '}
+        Email delivery outcomes appear as platform.email.delivery (no fabricated success).
       </p>
       <form
         onSubmit={(e) => {
@@ -120,6 +133,20 @@ export default function PlatformAuditPage() {
           onChange={(e) => setAction(e.target.value)}
           placeholder="Action (e.g. platform.tenant.create)"
           style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 220 }}
+        />
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          aria-label="From date"
+          style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
+        />
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          aria-label="To date"
+          style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
         />
         <label className="muted" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <input

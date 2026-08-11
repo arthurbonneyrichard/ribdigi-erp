@@ -250,6 +250,9 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_91_EXIT_CRITERIA.md` / `docs/ADR_189_STAGE91_FREEZE.md` (`backend/tests/test_stage91_exit_h91x.py`) — Stage 91 H91x
+- `docs/STAGE_91_FIDELITY.md` (`backend/tests/test_stage91_fidelity_d1.py`) — Stage 91 D1
+- `docs/STAGE_91_PLAN.md` (`backend/tests/test_stage91_open.py`) — Stage 91 open (ADR-188)
 - `docs/STAGE_90_EXIT_CRITERIA.md` / `docs/ADR_187_STAGE90_FREEZE.md` (`backend/tests/test_stage90_exit_h90x.py`) — Stage 90 H90x
 - `docs/STAGE_90_FIDELITY.md` (`backend/tests/test_stage90_fidelity_d1.py`) — Stage 90 D1
 - `docs/STAGE_90_PLAN.md` (`backend/tests/test_stage90_open.py`) — Stage 90 open (ADR-186)
@@ -1060,6 +1063,31 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+
+## Stage 91 exit
+
+H91x met — `docs/STAGE_91_EXIT_CRITERIA.md`, ADR-189. Stages 1–91 frozen for Stage 91 feature scope.
+
+## Stage 91 D1 — House Operator Investigation & Evidence Ops fidelity
+
+`docs/STAGE_91_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security.
+
+## Stage 91 P1 — Staff presence / health required / House TZ / evidence
+
+`test_house_posture_evidence_p1.py` — users session rollups, health required badges, settings timezone, `GET /platform/evidence`.
+
+## Stage 91 N1 — Dashboard→roster deep-links + tenant delivery context
+
+`test_platform_nav_delivery_n1.py` — grace/suspended/at-risk links + `last_house_email_delivery`.
+
+## Stage 91 I1 — Audit/Activity date-range investigation
+
+`test_platform_audit_investigation_i1.py` — `from_date`/`to_date` + Activity 7d default.
+
+## Stage 91 open
+
+ADR-188 + `docs/STAGE_91_PLAN.md` — House Operator Investigation & Evidence Ops.
 
 ## Stage 90 exit
 

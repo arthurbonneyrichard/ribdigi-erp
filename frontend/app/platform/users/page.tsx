@@ -12,6 +12,8 @@ type PlatformUser = {
   is_active: boolean;
   email_verified?: boolean;
   totp_enabled?: boolean;
+  last_session_at?: string | null;
+  active_session_count?: number;
 };
 
 type StaffSession = {
@@ -203,6 +205,8 @@ export default function PlatformUsersPage() {
             <th>Role</th>
             <th>Active</th>
             <th>2FA</th>
+            <th>Last session</th>
+            <th>Active sessions</th>
             <th />
           </tr>
         </thead>
@@ -216,6 +220,8 @@ export default function PlatformUsersPage() {
               </td>
               <td>{u.is_active ? 'yes' : 'no'}</td>
               <td>{u.totp_enabled ? 'yes' : 'no'}</td>
+              <td className="muted">{u.last_session_at || '—'}</td>
+              <td>{u.active_session_count ?? 0}</td>
               <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button type="button" disabled={busy} onClick={() => emailPasswordReset(u)}>
                   Email reset link
@@ -228,7 +234,7 @@ export default function PlatformUsersPage() {
           ))}
           {items.length === 0 && (
             <tr>
-              <td colSpan={6} className="muted">
+              <td colSpan={8} className="muted">
                 No platform users yet. Use the bootstrap script or create one above.
               </td>
             </tr>
