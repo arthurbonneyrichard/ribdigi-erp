@@ -25,12 +25,13 @@ def test_stage24_fidelity_note_and_plan():
 
     plan = _read("docs/STAGE_24_PLAN.md")
     assert "STAGE_24_FIDELITY.md" in plan
-    for ws in ("N1", "G1", "O1", "D1"):
+    for ws in ("N1", "G1", "O1", "D1", "H24x"):
         line = [ln for ln in plan.splitlines() if f"| **{ws}** |" in ln][0]
         assert "COMPLETE" in line, ws
-    assert "H24x" in plan and "PENDING" in plan
     assert "ADR-053" in plan or "ADR_053" in plan
-    assert "D1 complete" in plan or "H24x next" in plan
+    assert "ADR-054" in plan or "ADR_054" in plan
+    assert "Closed" in plan or "exit met" in plan.lower()
+    assert "ADR-054" in fidelity or "ADR_054" in fidelity or "exit met" in fidelity.lower()
 
 
 def test_stage24_br_20_4_and_gate_cites():

@@ -206,6 +206,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 24 D1 (2026-08-10):** Spec / BR-20.4 / readiness / USER_MANUAL / API fidelity sync — `docs/STAGE_24_FIDELITY.md` (`test_stage24_fidelity_d1.py`); open ADR `docs/ADR_053_STAGE24_OPEN.md`; plan `docs/STAGE_24_PLAN.md`.
 
+**Stage 24 exit (2026-08-11):** N1, G1, O1, D1, H24x met — `docs/STAGE_24_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_054_STAGE24_FREEZE.md`. Fidelity: `docs/STAGE_24_FIDELITY.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -786,7 +788,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 24 open (`docs/STAGE_24_PLAN.md`, ADR-053) — N1–D1 complete; H24x next (`docs/STAGE_24_FIDELITY.md`). Stages 1–23 remain frozen for their scopes.
+**Active delivery plan:** Stages 1–24 frozen. Stage 24 exit met (`docs/STAGE_24_EXIT_CRITERIA.md`, ADR-054 / `docs/ADR_054_STAGE24_FREEZE.md`; fidelity `docs/STAGE_24_FIDELITY.md`). Next track requires CONTINUE/NEXT + open ADR with a distinct product outline.
 
 ### 6.2 Features
 

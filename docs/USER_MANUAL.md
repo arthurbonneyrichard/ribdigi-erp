@@ -1116,7 +1116,7 @@ Purchase-invoice OCR apply works only while the invoice is still **draft**. PO O
 
 ## 15. System Settings
 
-Stage 24 D1 proves shared document numbering series and commerce/ops readiness honesty — see `docs/STAGE_24_FIDELITY.md`.
+Stage 24 D1/H24x proves shared document numbering series and commerce/ops readiness honesty — see `docs/STAGE_24_FIDELITY.md` (exit `docs/STAGE_24_EXIT_CRITERIA.md`, ADR-054).
 
 ### 15.1 Company Information
 

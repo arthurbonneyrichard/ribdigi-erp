@@ -33,3 +33,7 @@ Fidelity closeout
 
 - Agents may implement Stage 24 plan items without reopening Stage 1–23 feature scope.
 - Stage 24 exit requires `docs/STAGE_24_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
+
+## Amendment (2026-08-11)
+
+Stage 24 exit criteria are met (`docs/STAGE_24_EXIT_CRITERIA.md`) and Stage 24 feature scope is frozen under [ADR-054](ADR_054_STAGE24_FREEZE.md). ADR-053 remains the historical open record for this track.

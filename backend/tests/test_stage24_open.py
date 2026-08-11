@@ -20,6 +20,9 @@ def test_stage24_plan_and_open_adr():
         or "O1 next" in plan
         or "G1 next" in plan
         or "N1 next" in plan
+        or "Closed" in plan
+        or "exit met" in plan.lower()
+        or "ADR-054" in plan
     )
     assert "Kanban" in plan or "multi-bin" in plan.lower()
     assert "WAL" in plan or "PITR" in plan

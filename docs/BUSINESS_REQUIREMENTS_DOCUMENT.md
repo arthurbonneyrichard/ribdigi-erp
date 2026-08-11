@@ -1008,7 +1008,7 @@ Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`.
   - [x] Invoice template selection and customization — Stage 19 C1 (`invoice_print_template` a4/thermal_*)
   - [x] Header/footer customization with company branding — Stage 19 C1 (`document_header` / `document_footer`)
 
-Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`. Stage 24 N1 shared series + Stage 24 D1 commerce/ops gate docs — `docs/STAGE_24_FIDELITY.md` (`test_document_numbering_n1.py`, `test_stage24_fidelity_d1.py`).
+Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`. Stage 24 N1 shared series + Stage 24 D1/H24x commerce/ops gate docs — `docs/STAGE_24_FIDELITY.md` (`test_document_numbering_n1.py`, `test_stage24_fidelity_d1.py`); exit `docs/STAGE_24_EXIT_CRITERIA.md`, ADR-054 (`test_stage24_exit_h24x.py`).
 
 ---
 

@@ -34,6 +34,9 @@ def test_g1_plan_marks_complete() -> None:
         or "N1–G1–O1–D1 complete" in PLAN
         or "D1 next" in PLAN
         or "H24x next" in PLAN
+        or "Closed" in PLAN
+        or "exit met" in PLAN.lower()
+        or "ADR-054" in PLAN
     )
 
 
