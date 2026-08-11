@@ -33,6 +33,7 @@
 | `msa-addendum.json` | Stage 39 A1 MSA security addendum honesty — `msa_signed_claimed: false` / `security_exhibit_signed: false` / `legal_counsel_claimed: false` / `contract_execution_claimed: false` |
 | `status-uptime.json` | Stage 40 U1 status page / uptime honesty — `status_page_live: false` / `uptime_sla_claimed: false` / `measured_uptime_claimed: false` / `public_dashboard_claimed: false` |
 | `sbom-disclosure.json` | Stage 40 S1 SBOM / dependency disclosure honesty — `sbom_pipeline_live: false` / `cosign_signing_claimed: false` / `snyk_saas_claimed: false` / `fossa_claimed: false` / `dependabot_live: false` |
+| `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -71,6 +72,7 @@ Authoritative MVP docs:
 - `docs/STAGE_40_FIDELITY.md` (`backend/tests/test_stage40_fidelity_d1.py`) — Stage 40 D1
 - `docs/STAGE_40_EXIT_CRITERIA.md` / `docs/ADR_086_STAGE40_FREEZE.md` (`backend/tests/test_stage40_exit_h40x.py`) — Stage 40 H40x
 - `docs/STAGE_41_PLAN.md` (`backend/tests/test_stage41_open.py`) — Stage 41 open (ADR-087)
+- `docs/ACCESSIBILITY_STATEMENT_MVP.md` (`backend/tests/test_accessibility_statement_a1.py`) — Stage 41 A1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -296,4 +298,8 @@ H40x met — `docs/STAGE_40_EXIT_CRITERIA.md`, ADR-086. Stages 1–40 frozen for
 
 ## Stage 41 open
 
-Commercial Accessibility & Change Governance Fidelity — `docs/STAGE_41_PLAN.md`, ADR-087; A1 next.
+Commercial Accessibility & Change Governance Fidelity — `docs/STAGE_41_PLAN.md`, ADR-087; A1 complete; C1 next.
+
+## Stage 41 A1 — Accessibility statement honesty
+
+`docs/ACCESSIBILITY_STATEMENT_MVP.md` + `ops/mvp/accessibility-statement.json` — packaging Complete; `wcag_aa_claimed` / `accessibility_audit_claimed` remain false.

@@ -1,6 +1,6 @@
 # Stage 41 Plan — Commercial Accessibility & Change Governance Fidelity
 
-**Status:** Open — A1 next  
+**Status:** Open — A1 complete; C1 next  
 **Base:** Accessibility Statement Honesty Pack + Change / Maintenance Governance Honesty Pack → Commercial Accessibility & Change Governance Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-087](ADR_087_STAGE41_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Accessibility & Change Governance Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **A1** | Accessibility statement honesty packaging (not WCAG AA audit Complete) | P0 | PENDING |
+| **A1** | Accessibility statement honesty packaging (not WCAG AA audit Complete) | P0 | COMPLETE |
 | **C1** | Change / maintenance governance honesty packaging (not public change calendar Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H41x** | Stage 41 exit criteria + freeze ADR | Exit | PENDING |
@@ -61,10 +61,10 @@ Commercial Accessibility & Change Governance Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] Accessibility statement honesty packaging consolidating BR WCAG 2.1 AA theme and DEVELOPMENT_ROADMAP unchecked accessibility into a customer-facing accessibility boundary (not forging WCAG AA audit Complete).
-- [ ] Automated proof: `backend/tests/test_accessibility_statement_a1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 41 A1.
+- [x] Accessibility statement honesty packaging consolidating BR WCAG 2.1 AA theme and DEVELOPMENT_ROADMAP unchecked accessibility into a customer-facing accessibility boundary (not forging WCAG AA audit Complete).
+- [x] Automated proof: `backend/tests/test_accessibility_statement_a1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 41 A1.
 
 ## C1 acceptance criteria
 

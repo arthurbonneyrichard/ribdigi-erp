@@ -1,0 +1,151 @@
+{
+  "stage": "41",
+  "workstream": "A1",
+  "doc": "docs/ACCESSIBILITY_STATEMENT_MVP.md",
+  "business_requirements": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "release_notes": "docs/RELEASE_NOTES_MVP.md",
+  "release_notes_register": "ops/mvp/release-notes.json",
+  "operator_handoff": "docs/OPERATOR_HANDOFF_MVP.md",
+  "operator_handoff_register": "ops/mvp/operator-handoff.json",
+  "frontend_package": "frontend/package.json",
+  "stage41_plan": "docs/STAGE_41_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "packaging_complete": true,
+  "wcag_aa_claimed": false,
+  "accessibility_audit_claimed": false,
+  "conformance_program_live": false,
+  "remediation_complete_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage41_a1_accessibility_statement.json",
+  "steps": [
+    {
+      "id": "as-br-wcag-target",
+      "category": "accessibility",
+      "title": "Bound BR \u00a75.5 WCAG 2.1 AA usability target as honesty packaging (not audit Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/STAGE_41_PLAN.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "as-roadmap-dod",
+      "category": "accessibility",
+      "title": "Link DEVELOPMENT_ROADMAP Definition-of-Done unchecked WCAG accessibility Remaining",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/STAGE_41_PLAN.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "as-browser-responsive",
+      "category": "usability",
+      "title": "Index browser support / mobile responsiveness adjacency from BR \u00a75.5",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "as-frontend-surface",
+      "category": "frontend",
+      "title": "Index frontend application package as accessibility UI surface packaging",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "frontend/package.json",
+        "docs/DEVELOPER_GUIDE.md"
+      ],
+      "source": "frontend/package.json"
+    },
+    {
+      "id": "as-release-notes",
+      "category": "handoff",
+      "title": "Link Stage 32 commercial release-notes packaging as accessibility disclosure adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RELEASE_NOTES_MVP.md",
+        "ops/mvp/release-notes.json"
+      ],
+      "source": "docs/RELEASE_NOTES_MVP.md"
+    },
+    {
+      "id": "as-operator-handoff",
+      "category": "handoff",
+      "title": "Link Stage 32 operator handoff packaging for training / help adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPERATOR_HANDOFF_MVP.md",
+        "ops/mvp/operator-handoff.json"
+      ],
+      "source": "docs/OPERATOR_HANDOFF_MVP.md"
+    },
+    {
+      "id": "as-i18n-deferred",
+      "category": "deferred",
+      "title": "Confirm i18n / localization remains deferred (ADR-006) alongside accessibility honesty",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "ops/mvp/deferred-adr-register.json",
+        "docs/STAGE_41_PLAN.md"
+      ],
+      "source": "ops/mvp/deferred-adr-register.json"
+    },
+    {
+      "id": "as-onboarding-help",
+      "category": "usability",
+      "title": "Index onboarding / training-material usability target as help adjacency (not AA proof)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/ADMIN_MANUAL.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "as-wcag-audit-remaining",
+      "category": "honesty",
+      "title": "WCAG 2.1 AA audit Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_41_PLAN.md",
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+      ],
+      "source": "docs/STAGE_41_PLAN.md"
+    },
+    {
+      "id": "as-conformance-remaining",
+      "category": "honesty",
+      "title": "Live accessibility conformance / remediation program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_41_PLAN.md",
+        "docs/DEVELOPMENT_ROADMAP.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    }
+  ],
+  "deferred": [
+    "WCAG 2.1 AA audit / certification Complete",
+    "Live accessibility conformance / remediation program Complete",
+    "i18n packs Complete (ADR-006)",
+    "Full UI accessibility remediation Complete"
+  ]
+}

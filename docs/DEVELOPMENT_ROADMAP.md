@@ -414,6 +414,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 41 open (2026-08-11):** Commercial Accessibility & Change Governance Fidelity track approved — `docs/ADR_087_STAGE41_OPEN.md` + `docs/STAGE_41_PLAN.md` (accessibility statement → change/maintenance governance → fidelity).
 
+**Stage 41 A1 (2026-08-11):** Accessibility statement honesty — `docs/ACCESSIBILITY_STATEMENT_MVP.md`, `ops/mvp/accessibility-statement.json`, evidence `stage41_a1_accessibility_statement.json` (`test_accessibility_statement_a1.py`); WCAG AA audit Remaining.
+
 
 
 
