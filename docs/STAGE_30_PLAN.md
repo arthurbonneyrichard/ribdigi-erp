@@ -1,6 +1,6 @@
 # Stage 30 Plan — Go-Live Support Fidelity
 
-**Status:** Open — L1 next (ADR-065)  
+**Status:** Open — L1 complete; I1 next (ADR-065)  
 **Base:** Operator Evidence Ledger Pack + Incident Response / On-Call Pack + Support & Admin Runbook Fidelity + Go-Live Attestation Matrix Pack → Go-Live Support Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-065](ADR_065_STAGE30_OPEN.md)
@@ -35,7 +35,7 @@ Go-Live Support Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **L1** | Operator evidence ledger (index Stage 26–29 artifacts + honesty flags) | P0 | PENDING |
+| **L1** | Operator evidence ledger (index Stage 26–29 artifacts + honesty flags) | P0 | COMPLETE |
 | **I1** | Incident response / on-call packaging | P0 | PENDING |
 | **S1** | Support & Admin runbook fidelity (ADMIN_MANUAL ↔ ops packs) | P1 | PENDING |
 | **A1** | Go-live attestation matrix (Remaining honesty; not forged §7) | P1 | PENDING |
@@ -60,10 +60,10 @@ Go-Live Support Fidelity
 
 ## L1 acceptance criteria
 
-- [ ] Operator evidence ledger packaging under `ops/launch/` or `ops/evidence/` indexing Stage 26–29 durable artifact paths + honesty flags (not claiming live runs Complete).
-- [ ] Automated proof: `backend/tests/test_evidence_ledger_l1.py`.
-- [ ] PRODUCTION_READINESS / launch honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 30 L1.
+- [x] Operator evidence ledger packaging under `ops/launch/` or `ops/evidence/` indexing Stage 26–29 durable artifact paths + honesty flags (not claiming live runs Complete).
+- [x] Automated proof: `backend/tests/test_evidence_ledger_l1.py`.
+- [x] PRODUCTION_READINESS / launch honesty updated.
+- [x] Plan / launch / roadmap cite Stage 30 L1.
 
 ## I1 acceptance criteria
 
@@ -102,4 +102,4 @@ Go-Live Support Fidelity
 
 ## Sign-off
 
-Stage 30 open under ADR-065. L1 next. Stages 1–29 remain frozen for their scopes.
+Stage 30 open under ADR-065. L1 complete; I1 next. Stages 1–29 remain frozen for their scopes.
