@@ -1,6 +1,6 @@
 # Stage 37 Plan — Commercial Data Protection Fidelity
 
-**Status:** Open — P1–E1 complete; D1 next  
+**Status:** Open — P1–D1 complete; H37x next  
 **Base:** Data Subject Access / Portability Pack + Erasure / Soft-Delete Honesty Pack → Commercial Data Protection Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-079](ADR_079_STAGE37_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Data Protection Fidelity
 |----|------------|----------|---------|
 | **P1** | Data subject access / portability packaging (not GDPR / DSAR Complete) | P0 | COMPLETE |
 | **E1** | Erasure / soft-delete honesty packaging (ADR-003 boundary; not hard-delete Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H37x** | Stage 37 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -71,9 +71,9 @@ Commercial Data Protection Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_37_FIDELITY.md` maps P1–E1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 37 D1.
-- [ ] Automated proof: `backend/tests/test_stage37_fidelity_d1.py`.
+- [x] `docs/STAGE_37_FIDELITY.md` maps P1–E1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 37 D1.
+- [x] Automated proof: `backend/tests/test_stage37_fidelity_d1.py`.
 
 ## H37x acceptance criteria
 
@@ -85,4 +85,4 @@ Commercial Data Protection Fidelity
 
 ## Sign-off
 
-Stage 37 P1–E1 complete. D1 next. Stages 1–36 remain frozen for their scopes.
+Stage 37 P1–D1 complete. H37x next. Stages 1–36 remain frozen for their scopes.

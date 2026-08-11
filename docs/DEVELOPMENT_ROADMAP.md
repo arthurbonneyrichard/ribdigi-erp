@@ -378,6 +378,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 37 E1 (2026-08-11):** Erasure / soft-delete honesty — `docs/ERASURE_HONESTY_MVP.md`, `ops/mvp/erasure-honesty.json`, evidence `stage37_e1_erasure_honesty.json` (`test_erasure_honesty_e1.py`); ADR-003; hard-delete Remaining.
 
+**Stage 37 D1 (2026-08-11):** Commercial data protection fidelity — `docs/STAGE_37_FIDELITY.md` (`test_stage37_fidelity_d1.py`); maps P1–E1 → readiness / launch / deploy / security; GDPR / hard-delete Remaining.
+
 
 ### 2.2 Features
 
@@ -959,7 +961,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 37 open — Commercial Data Protection Fidelity (`docs/STAGE_37_PLAN.md`, ADR-079). Stages 1–36 remain frozen for their scopes; P1–E1 complete; D1 next.
+**Active delivery plan:** Stage 37 open — Commercial Data Protection Fidelity (`docs/STAGE_37_PLAN.md`, ADR-079). Stages 1–36 remain frozen for their scopes; P1–D1 complete; H37x next.
 
 ### 6.2 Features
 
