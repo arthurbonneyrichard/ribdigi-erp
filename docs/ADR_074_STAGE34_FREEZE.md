@@ -27,3 +27,8 @@ Stage 34 Commercial Customer Assurance Fidelity delivered assurance evidence pac
 ## Amendment (2026-08-11)
 
 Product owner approved opening Stage 35 (Commercial End-to-End Operational Smoke Fidelity) after Stage 34 freeze via CONTINUE/NEXT — see [ADR-075](ADR_075_STAGE35_OPEN.md) and [STAGE_35_PLAN.md](STAGE_35_PLAN.md). Stage 34 feature scope remains frozen; Stage 35 does not reopen A1/C1/D1/H34x; Stage 34 S1/B1 remain deferred.
+
+## Amendment (2026-08-11) — Stage 36 picks up deferred S1/B1
+
+Product owner approved Stage 36 to complete Stage 34 deferred Support SLA boundary (S1) and Billing-deferred honesty (B1) packaging — see [ADR-077](ADR_077_STAGE36_OPEN.md) and [STAGE_36_PLAN.md](STAGE_36_PLAN.md). Stage 34 A1/C1/D1/H34x remain frozen; S1/B1 packaging completion happens under Stage 36, not by reopening Stage 34 feature expansion.
+

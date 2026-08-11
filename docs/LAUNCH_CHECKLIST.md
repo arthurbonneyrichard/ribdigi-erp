@@ -173,6 +173,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
+- [ ] Stage 36 Commercial Assurance Completion Fidelity (open: `docs/STAGE_36_PLAN.md`, ADR-077) — S1 next
+- [x] Stage 36 track opened (ADR-077: `test_stage36_open.py`, `docs/STAGE_36_PLAN.md`)
 - [x] Stage 35 Commercial End-to-End Operational Smoke Fidelity (closed: `docs/STAGE_35_PLAN.md`, ADR-076) — T1–D1 / H35x complete
 - [x] Stage 35 track opened (ADR-075: `test_stage35_open.py`, `docs/STAGE_35_PLAN.md`)
 - [x] Org bootstrap (Stage 35 T1: `test_e2e_org_bootstrap_t1.py` — `docs/E2E_ORG_BOOTSTRAP_MVP.md`, `ops/mvp/e2e-org-bootstrap.json`; evidence `stage35_t1_e2e_org_bootstrap.json`; live bootstrap / demo tenants Remaining)

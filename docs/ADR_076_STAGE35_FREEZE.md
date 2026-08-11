@@ -23,3 +23,8 @@ Stage 35 Commercial End-to-End Operational Smoke Fidelity delivered org bootstra
 - Stage 1–34 freezes remain in force for their scopes.
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - E2E operational smoke packaging Complete does **not** mean live E2E smoke executed, demo tenants, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 36 (Commercial Assurance Completion Fidelity) after Stage 35 freeze via CONTINUE/NEXT — see [ADR-077](ADR_077_STAGE36_OPEN.md) and [STAGE_36_PLAN.md](STAGE_36_PLAN.md). Stage 35 feature scope remains frozen; Stage 36 does not reopen T1–D1 / H35x; Stage 34 deferred S1/B1 packaging scopes are completed in Stage 36 without reopening Stage 34 A1/C1/D1/H34x.
+
