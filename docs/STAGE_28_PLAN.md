@@ -1,6 +1,6 @@
 # Stage 28 Plan — Staging Certification Fidelity
 
-**Status:** Open — R1–A1 complete; C1 next (ADR-061)  
+**Status:** Open — R1–C1 complete; D1 next (ADR-061)  
 **Base:** Operator PITR Drill Pack + Staging GHA Workflow + Grafana/Alertmanager Packaging + 1000-VU Cert Pack → Staging Certification Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-061](ADR_061_STAGE28_OPEN.md)
@@ -37,7 +37,7 @@ Staging Certification Fidelity
 | **R1** | Operator PITR drill packaging / evidence harness | P0 | COMPLETE |
 | **G1** | Staging GHA deploy workflow (not main `ci.yml`) | P0 | COMPLETE |
 | **A1** | Grafana / Alertmanager operator packaging | P0 | COMPLETE |
-| **C1** | Operator ~1000-VU certificate pack | P1 | PENDING |
+| **C1** | Operator ~1000-VU certificate pack | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
 | **H28x** | Stage 28 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -80,10 +80,10 @@ Staging Certification Fidelity
 
 ## C1 acceptance criteria
 
-- [ ] Operator ~1000-VU certificate pack extending `docs/LOAD_CAPACITY_MVP.md` / `backend/loadtest/` (checklist + artifact schema — not forged VU certificate).
-- [ ] Automated proof: `backend/tests/test_load_cert_pack_c1.py`.
-- [ ] PRODUCTION_READINESS load Remaining honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 28 C1.
+- [x] Operator ~1000-VU certificate pack extending `docs/LOAD_CAPACITY_MVP.md` / `backend/loadtest/` (checklist + artifact schema — not forged VU certificate).
+- [x] Automated proof: `backend/tests/test_load_cert_pack_c1.py`.
+- [x] PRODUCTION_READINESS load Remaining honesty updated.
+- [x] Plan / launch / roadmap cite Stage 28 C1.
 
 ## D1 acceptance criteria
 
@@ -101,4 +101,4 @@ Staging Certification Fidelity
 
 ## Sign-off
 
-Stage 28 open under ADR-061. R1–A1 complete; C1 next. Stages 1–27 remain frozen for their scopes.
+Stage 28 open under ADR-061. R1–C1 complete; D1 next. Stages 1–27 remain frozen for their scopes.

@@ -258,6 +258,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 28 A1 (2026-08-11):** Grafana / Alertmanager operator pack — `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/dashboard-ribdigi-mvp.json.example`, `ops/grafana/alertmanager.yml.example`, evidence `stage28_a1_grafana_pack.json` (`test_grafana_pack_a1.py`); hosted SaaS Remaining.
 
+**Stage 28 C1 (2026-08-11):** Operator ~1000-VU cert pack — `docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/1000vu-cert-checklist.json`, `ops/loadtest/operator_1000vu_run.example.json`, evidence `stage28_c1_load_cert_pack.json` (`test_load_cert_pack_c1.py`); live 1000-VU execution Remaining (no forged certificate).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -838,7 +840,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 28 open (`docs/STAGE_28_PLAN.md`, ADR-061) — R1–A1 complete; C1 next. Stages 1–27 remain frozen for their scopes (`docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060).
+**Active delivery plan:** Stage 28 open (`docs/STAGE_28_PLAN.md`, ADR-061) — R1–C1 complete; D1 next. Stages 1–27 remain frozen for their scopes (`docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060).
 
 ### 6.2 Features
 

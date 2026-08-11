@@ -168,8 +168,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 27 track opened (ADR-059: `test_stage27_open.py`, `docs/STAGE_27_PLAN.md`)
 - [x] Stage 27 fidelity sync (D1: `test_stage27_fidelity_d1.py`, `docs/STAGE_27_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 27 exit + freeze (H27x: `test_stage27_exit_h27x.py`, `docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060)
-- [ ] Stage 28 Staging Certification Fidelity (open: `docs/STAGE_28_PLAN.md`, ADR-061) — C1 next
+- [ ] Stage 28 Staging Certification Fidelity (open: `docs/STAGE_28_PLAN.md`, ADR-061) — D1 next
 - [x] Stage 28 track opened (ADR-061: `test_stage28_open.py`, `docs/STAGE_28_PLAN.md`)
+- [x] Operator 1000-VU cert pack (Stage 28 C1: `test_load_cert_pack_c1.py` — `docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/`; evidence `stage28_c1_load_cert_pack.json`; live 1000-VU execution Remaining)
 - [x] Grafana / Alertmanager pack (Stage 28 A1: `test_grafana_pack_a1.py` — `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/`; evidence `stage28_a1_grafana_pack.json`; hosted SaaS Remaining)
 - [x] Staging GHA deploy pack (Stage 28 G1: `test_staging_gha_g1.py` — `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml`; evidence `stage28_g1_staging_gha.json`; live apply Remaining; main CI deploy-free)
 - [x] Operator PITR drill pack (Stage 28 R1: `test_pitr_drill_pack_r1.py` — `docs/PITR_DRILL_PACK_MVP.md`, `ops/postgres/pitr-drill-checklist.json`; evidence `stage28_r1_pitr_drill_pack.json`; live drill execution remains Remaining)
@@ -197,7 +198,7 @@ Record as **ops follow-ups**, not Stage 7 incompletes:
 - Operator staging PITR drill **execution** / managed-cloud PITR automation (Stage 26 W1 strategy + Stage 28 R1 drill pack Complete MVP — `docs/PITR_DRILL_PACK_MVP.md`; packaging only, not live replay)
 - Vendor penetration test / live ZAP-in-CI against staging (Stage 27 S1 OWASP baseline Complete MVP — `docs/SECURITY_SCAN_MVP.md`; operator ZAP template only)
 - In-cluster Helm PgBouncer as default data plane (Stage 27 P1 packaging Complete MVP — `docs/PGBOUNCER_MVP.md`)
-- Operator staging ~1000-VU capacity certificate (Stage 26 C1 CI capacity Complete — `docs/LOAD_CAPACITY_MVP.md`; harness in `backend/loadtest/`)
+- Operator staging ~1000-VU capacity **execution** (Stage 26 C1 CI capacity + Stage 28 C1 cert pack Complete MVP — `docs/LOAD_CERT_PACK_MVP.md`; packaging only, not forged certificate)
 - Paid billing (ADR-002); schema-per-tenant (ADR-001); i18n packs (ADR-006)
 
 ## 7. Sign-off
