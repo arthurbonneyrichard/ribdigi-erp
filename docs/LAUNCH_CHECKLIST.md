@@ -2,7 +2,7 @@
 
 **Status:** Documented (Stage 7 L7x)  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Related:** [PRODUCTION_READINESS.md](../PRODUCTION_READINESS.md), [STAGE_7_EXIT_CRITERIA.md](STAGE_7_EXIT_CRITERIA.md), [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md), [LAUNCH_CERT_MVP.md](LAUNCH_CERT_MVP.md) (Stage 27 L1)
+**Related:** [PRODUCTION_READINESS.md](../PRODUCTION_READINESS.md), [STAGE_7_EXIT_CRITERIA.md](STAGE_7_EXIT_CRITERIA.md), [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md), [LAUNCH_CERT_MVP.md](LAUNCH_CERT_MVP.md) (Stage 27 L1), [CUTOVER_PACK_MVP.md](CUTOVER_PACK_MVP.md) (Stage 29 X1)
 
 This is the **operator go-live checklist** for a commercial MVP launch. It is **not** a claim that deferred infra (hosted Grafana/PagerDuty, vendor pen test, certified 1000-VU soak, live GHA→prod cutover) is Complete. K8s/WAL/PgBouncer packaging are Complete (MVP) under Stages 26–27 with honest Remaining.
 
@@ -172,8 +172,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 track opened (ADR-061: `test_stage28_open.py`, `docs/STAGE_28_PLAN.md`)
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
-- [ ] Stage 29 Operator Hardening & Production Cutover Fidelity (open: `docs/STAGE_29_PLAN.md`, ADR-063) — X1 next
+- [ ] Stage 29 Operator Hardening & Production Cutover Fidelity (open: `docs/STAGE_29_PLAN.md`, ADR-063) — D1 next
 - [x] Stage 29 track opened (ADR-063: `test_stage29_open.py`, `docs/STAGE_29_PLAN.md`)
+- [x] Production cutover pack (Stage 29 X1: `test_cutover_pack_x1.py` — `docs/CUTOVER_PACK_MVP.md`, `ops/launch/cutover-checklist.json`, `ops/k8s/deploy-production.example.yml`; evidence `stage29_x1_cutover_pack.json`; live cutover / §7 sign-off Remaining)
 - [x] Cert-manager / TLS ingress pack (Stage 29 T1: `test_tls_ingress_t1.py` — `docs/TLS_INGRESS_PACK_MVP.md`, `ops/k8s/cluster-issuer.example.yaml`; evidence `stage29_t1_tls_ingress.json`; live ACME issuance Remaining)
 - [x] PgBouncer soak / pooler pack (Stage 29 B2: `test_pgbouncer_soak_b2.py` — `docs/PGBOUNCER_SOAK_PACK_MVP.md`, `ops/postgres/pgbouncer-soak-checklist.json`; evidence `stage29_b2_pgbouncer_soak.json`; live soak / default Helm pooler Remaining)
 - [x] Vendor pen-test / ZAP staging pack (Stage 29 V1: `test_pentest_pack_v1.py` — `docs/PENTEST_PACK_MVP.md`, `ops/security/pentest-engagement-checklist.json`; evidence `stage29_v1_pentest_pack.json`; purchased cert / live ZAP Remaining)
@@ -201,6 +202,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 Record as **ops follow-ups**, not Stage 7 incompletes:
 
 - Live GHA → staging K8s apply (Stage 26 K1 chart Complete — `docs/K8S_DEPLOY_MVP.md`; main CI stays deploy-free)
+- Live production cutover / LAUNCH §7 Name/Date sign-off (Stage 29 X1 pack Complete MVP — `docs/CUTOVER_PACK_MVP.md`; packaging only, not forged §7)
 - Hosted Grafana / PagerDuty / SIEM **as SaaS Complete** (Stage 26 M1 scrape/alerts + Stage 28 A1 Grafana/Alertmanager **packaging** Complete MVP — `docs/GRAFANA_PACK_MVP.md`; examples only)
 - Operator staging PITR drill **execution** / managed-cloud PITR automation (Stage 26 W1 strategy + Stage 28 R1 drill pack Complete MVP — `docs/PITR_DRILL_PACK_MVP.md`; packaging only, not live replay)
 - Vendor penetration test / live ZAP-in-CI against staging (Stage 27 S1 OWASP baseline + Stage 29 V1 engagement pack Complete MVP — `docs/PENTEST_PACK_MVP.md`; packaging only, not purchased cert)
@@ -216,4 +218,4 @@ Record as **ops follow-ups**, not Stage 7 incompletes:
 | Operations | | | Env checklist §§1–5 verified |
 | Product | | | Accept deferred §6 as post-launch |
 
-**Stage 7 L7x** records that this checklist **exists and is authoritative for MVP go-live hygiene**. Stage **27** **L1** packages CI-vs-operator classification (`docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`, `test_launch_cert_l1.py`) — packaging is **not** production sign-off. Operator rows above remain unchecked until a real environment is signed off.
+**Stage 7 L7x** records that this checklist **exists and is authoritative for MVP go-live hygiene**. Stage **27** **L1** packages CI-vs-operator classification (`docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`, `test_launch_cert_l1.py`) — packaging is **not** production sign-off. Stage **29** **X1** packages the cutover / rollback / secrets harness (`docs/CUTOVER_PACK_MVP.md`, `test_cutover_pack_x1.py`) without forged §7. Operator rows above remain unchecked until a real environment is signed off.

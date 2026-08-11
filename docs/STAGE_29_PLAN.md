@@ -1,6 +1,6 @@
 # Stage 29 Plan — Operator Hardening & Production Cutover Fidelity
 
-**Status:** Open — V1–T1 complete; X1 next (ADR-063)  
+**Status:** Open — V1–X1 complete; D1 next (ADR-063)  
 **Base:** Vendor Pen-Test / ZAP Staging Pack + PgBouncer Soak / Helm Pooler Pack + Cert-manager / TLS Ingress Pack + Production Cutover Pack → Operator Hardening & Cutover Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-063](ADR_063_STAGE29_OPEN.md)
@@ -38,7 +38,7 @@ Operator Hardening & Cutover Fidelity
 | **V1** | Vendor pen-test / ZAP staging operator pack | P0 | COMPLETE |
 | **B2** | PgBouncer soak / Helm pooler packaging | P0 | COMPLETE |
 | **T1** | Cert-manager / TLS ingress packaging | P0 | COMPLETE |
-| **X1** | Production cutover pack (LAUNCH §§1–3 / §7 harness) | P1 | PENDING |
+| **X1** | Production cutover pack (LAUNCH §§1–3 / §7 harness) | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
 | **H29x** | Stage 29 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -82,10 +82,10 @@ Operator Hardening & Cutover Fidelity
 
 ## X1 acceptance criteria
 
-- [ ] Production cutover pack extending `docs/LAUNCH_CERT_MVP.md` / Stage 28 G1 (cutover/rollback/secrets handoff checklist mapping LAUNCH §§1–3 / §7 — not forged §7 sign-off).
-- [ ] Automated proof: `backend/tests/test_cutover_pack_x1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 29 X1.
+- [x] Production cutover pack extending `docs/LAUNCH_CERT_MVP.md` / Stage 28 G1 (cutover/rollback/secrets handoff checklist mapping LAUNCH §§1–3 / §7 — not forged §7 sign-off).
+- [x] Automated proof: `backend/tests/test_cutover_pack_x1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 29 X1.
 
 ## D1 acceptance criteria
 
@@ -103,4 +103,4 @@ Operator Hardening & Cutover Fidelity
 
 ## Sign-off
 
-Stage 29 open under ADR-063. V1–T1 complete; X1 next. Stages 1–28 remain frozen for their scopes.
+Stage 29 open under ADR-063. V1–X1 complete; D1 next. Stages 1–28 remain frozen for their scopes.

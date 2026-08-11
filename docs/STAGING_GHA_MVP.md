@@ -13,7 +13,7 @@ This is the **MVP staging GitHub Actions deploy packaging surface**: a versioned
 |-------|---------|
 | `operator_required` | Provision staging cluster + `ribdigi-secrets`; copy template; set secrets; run `workflow_dispatch` |
 | `ci_proven` | Chart/manifest/smoke packaging (Stage 26 K1) + this template honesty (`test_staging_gha_g1.py`) |
-| `deferred` | Live GHA→staging apply Complete; production cutover via GHA; in-cluster data plane |
+| `deferred` | Live GHA→staging apply Complete; production cutover via GHA (packaged separately as Stage 29 X1 — [CUTOVER_PACK_MVP.md](CUTOVER_PACK_MVP.md)); in-cluster data plane |
 
 ## Secrets requirements
 
@@ -36,8 +36,8 @@ Never commit real kubeconfigs or registry tokens. Prefer GitHub Environments (`s
 - Green `helm upgrade` / `kubectl apply` success from CI against a live cluster
 - Adding `deploy:` / `kubectl` / `helm upgrade` jobs to main `ci.yml`
 - Treating Stage 26 K1 / Stage 28 G1 Complete as “staging is continuously deployed”
-- Production cutover workflow
+- Production cutover success (see Stage 29 X1 `docs/CUTOVER_PACK_MVP.md` / `ops/k8s/deploy-production.example.yml` — packaging only)
 
 ## Sign-off
 
-Stage 28 G1 is met when this doc + template + evidence JSON exist, `test_staging_gha_g1.py` passes, main `ci.yml` remains deploy-free, and DEPLOYMENT_GUIDE / K8S_DEPLOY_MVP / launch / roadmap cite Stage 28 G1 without inventing live apply success.
+Stage 28 G1 is met when this doc + template + evidence JSON exist, `test_staging_gha_g1.py` passes, main `ci.yml` remains deploy-free, and DEPLOYMENT_GUIDE / K8S_DEPLOY_MVP / launch / roadmap cite Stage 28 G1 without inventing live apply success. Stage 29 X1 packages the production cutover harness without claiming live promote.

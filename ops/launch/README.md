@@ -1,9 +1,14 @@
-# Launch certification map (Stage 27 L1)
+# Launch certification & cutover maps
 
 | File | Role |
 |------|------|
-| `checklist-map.json` | CI-proven vs operator-required vs deferred classification for `docs/LAUNCH_CHECKLIST.md` |
+| `checklist-map.json` | CI-proven vs operator-required vs deferred classification for `docs/LAUNCH_CHECKLIST.md` (Stage 27 L1) |
+| `cutover-checklist.json` | Production cutover / rollback / secrets handoff phases mapping LAUNCH §§1–3 / §7 (Stage 29 X1) |
+| `cutover-evidence.example.json` | Operator evidence schema after a real cutover (not a forged certificate) |
 
-Authoritative MVP doc: `docs/LAUNCH_CERT_MVP.md` (`backend/tests/test_launch_cert_l1.py`).
+Authoritative MVP docs:
 
-Do **not** treat this packaging as production sign-off. Operator §§1–3 and §7 remain unchecked until a real environment is verified.
+- `docs/LAUNCH_CERT_MVP.md` (`backend/tests/test_launch_cert_l1.py`)
+- `docs/CUTOVER_PACK_MVP.md` (`backend/tests/test_cutover_pack_x1.py`)
+
+Do **not** treat this packaging as production sign-off. Operator §§1–3 and §7 remain unchecked until a real environment is verified. Stage 29 X1 keeps `production_cutover_claimed: false` and `section_7_signed: false`.

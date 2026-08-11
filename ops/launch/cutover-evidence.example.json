@@ -1,0 +1,18 @@
+{
+  "cutover_id": "",
+  "started_at": "",
+  "finished_at": "",
+  "image_tag": "",
+  "production_base_url": "",
+  "helm_revision_before": "",
+  "helm_revision_after": "",
+  "sections_1_3_verified": false,
+  "secrets_handoff_recorded": false,
+  "health_ready_ok": false,
+  "rollback_plan_documented": false,
+  "section_7_signed": false,
+  "passed": false,
+  "production_cutover_claimed": false,
+  "operator": "",
+  "notes": "Schema example only — not a forged cutover certificate. Copy after a real promote; keep passed=false until measured. See docs/CUTOVER_PACK_MVP.md (Stage 29 X1)."
+}

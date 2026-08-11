@@ -1,0 +1,77 @@
+# Stage 29 X1 — optional production cutover GHA (operator only).
+# NOT wired into .github/workflows/ci.yml (Stage 18 C1 deploy-free).
+# Extends Stage 28 G1 staging template pattern for production Environment + reviewers.
+# Copy to .github/workflows/ when production kubeconfig / registry secrets exist.
+# Pair with docs/CUTOVER_PACK_MVP.md + ops/launch/cutover-checklist.json (LAUNCH §§1–3 / §7).
+#
+# Required secrets (operator):
+#   KUBE_CONFIG             — base64 kubeconfig for production cluster
+#   REGISTRY_USERNAME       — container registry user (optional if public pull)
+#   REGISTRY_PASSWORD       — container registry token
+#   PRODUCTION_BASE_URL     — https://… used by post-cutover smoke (optional)
+#
+# name: deploy-production
+#
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       image_tag:
+#         description: "Image tag to promote (must already exist in registry)"
+#         required: true
+#       confirm_cutover:
+#         description: "Type CUTOVER to acknowledge LAUNCH §§1–3 verified"
+#         required: true
+#
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     environment: production
+#     steps:
+#       - uses: actions/checkout@v4
+#       - name: Guard confirm
+#         run: |
+#           test "${{ inputs.confirm_cutover }}" = "CUTOVER"
+#       - uses: azure/setup-helm@v4
+#       - uses: azure/setup-kubectl@v4
+#       - name: Configure kubeconfig
+#         run: |
+#           mkdir -p ~/.kube
+#           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+#           chmod 600 ~/.kube/config
+#       - name: Record revision before (rollback anchor)
+#         run: |
+#           helm history ribdigi -n ribdigi-production || true
+#       - name: Helm upgrade production
+#         env:
+#           IMAGE_TAG: ${{ inputs.image_tag }}
+#         run: |
+#           helm upgrade --install ribdigi ./helm/ribdigi \
+#             -f ./helm/ribdigi/values-production.yaml \
+#             -n ribdigi-production --create-namespace \
+#             --set backend.image.tag="$IMAGE_TAG" \
+#             --set frontend.image.tag="$IMAGE_TAG"
+#       - name: Post-cutover smoke
+#         env:
+#           BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
+#         run: |
+#           curl -fsS "${BASE_URL}/api/v1/health"
+#           curl -fsS "${BASE_URL}/api/v1/health/ready"
+#       - name: Reminder — fill LAUNCH §7 only after real sign-off
+#         run: |
+#           echo "Do not forge docs/LAUNCH_CHECKLIST.md §7. See docs/CUTOVER_PACK_MVP.md."
+#
+# Rollback (operator): helm rollback ribdigi <revision> -n ribdigi-production
+# Do not commit fabricated "cutover succeeded" logs. Main ci.yml must stay deploy-free.
+
+name: deploy-production-example-disabled
+on:
+  workflow_dispatch:
+jobs:
+  note:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Operator template only
+        run: |
+          echo "This file lives under ops/k8s/ as a template."
+          echo "Do not treat it as a green production cutover. See docs/CUTOVER_PACK_MVP.md."
+          echo "Stage 29 X1 — packaging only."

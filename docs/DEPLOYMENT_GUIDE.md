@@ -435,7 +435,8 @@ volumes:
 
 ## 5. Kubernetes Deployment
 
-**MVP fidelity (Stage 26 K1):** Versioned Helm chart `helm/ribdigi/` and hardened `k8s/` manifests use live probe paths `GET /api/v1/health` (liveness) and `GET /api/v1/health/ready` (readiness), `ribdigi-secrets` from `.env.production.example`, Celery worker/beat, and migration Job. Operator install/smoke: `ops/k8s/`. Authoritative MVP doc: `docs/K8S_DEPLOY_MVP.md` (`test_k8s_deploy_k1.py`). Stage 28 G1 staging GHA template: `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml` (`test_staging_gha_g1.py`) — not wired into main `ci.yml`. Live GHA→staging cluster **apply** remains Remaining — do not treat the aspirational replica counts / NetworkPolicy samples below as CI-deployed.
+**MVP fidelity (Stage 26 K1 + Stage 28 G1 + Stage 29 X1):** Versioned Helm chart `helm/ribdigi/` and hardened `k8s/` manifests use live probe paths `GET /api/v1/health` (liveness) and `GET /api/v1/health/ready` (readiness), `ribdigi-secrets` from `.env.production.example`, Celery worker/beat, and migration Job. Operator install/smoke: `ops/k8s/`. Authoritative MVP doc: `docs/K8S_DEPLOY_MVP.md` (`test_k8s_deploy_k1.py`). Stage 28 G1 staging GHA template: `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml` (`test_staging_gha_g1.py`) — not wired into main `ci.yml`. Stage 29 X1 production cutover pack: `docs/CUTOVER_PACK_MVP.md`, `ops/k8s/deploy-production.example.yml`, `ops/launch/cutover-checklist.json` (`test_cutover_pack_x1.py`) — packaging only (`production_cutover_claimed: false`; not forged §7). Live GHA→staging apply and live production cutover / §7 sign-off remain Remaining — do not treat the aspirational replica counts / NetworkPolicy samples below as CI-deployed.
+
 
 ### 5.1 Namespace Structure
 
@@ -833,7 +834,8 @@ spec:
 
 ## 6. CI/CD Pipeline
 
-**MVP fidelity:** Actual CI is `.github/workflows/ci.yml` — backend security/isolation pytest + full suite + frontend build (Stage 18 C1; `test_ci_prod_config_c1.py`). It is intentionally **deploy-free** (no `kubectl` / `helm upgrade`). Stage 26 K1 documents operator Helm/kubectl apply separately (`docs/K8S_DEPLOY_MVP.md`). Stage 28 G1 packages a staging-only GHA template under `ops/k8s/deploy-staging.example.yml` (`docs/STAGING_GHA_MVP.md`, `test_staging_gha_g1.py`) — copy when secrets exist; do not treat the disabled stub as green apply. The multi-job deploy workflow sketch below remains aspirational Remaining for live cluster execution.
+**MVP fidelity:** Actual CI is `.github/workflows/ci.yml` — backend security/isolation pytest + full suite + frontend build (Stage 18 C1; `test_ci_prod_config_c1.py`). It is intentionally **deploy-free** (no `kubectl` / `helm upgrade`). Stage 26 K1 documents operator Helm/kubectl apply separately (`docs/K8S_DEPLOY_MVP.md`). Stage 28 G1 packages a staging-only GHA template under `ops/k8s/deploy-staging.example.yml` (`docs/STAGING_GHA_MVP.md`, `test_staging_gha_g1.py`) — copy when secrets exist; do not treat the disabled stub as green apply. Stage 29 X1 packages production cutover under `ops/k8s/deploy-production.example.yml` + `docs/CUTOVER_PACK_MVP.md` (`test_cutover_pack_x1.py`) — packaging only (`production_cutover_claimed: false`; not forged §7). The multi-job deploy workflow sketch below remains aspirational Remaining for live cluster execution.
+
 
 ### 6.1 GitHub Actions Workflow
 

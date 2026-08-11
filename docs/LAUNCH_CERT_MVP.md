@@ -28,6 +28,16 @@ This is the **MVP launch certification packaging surface**: classify `LAUNCH_CHE
 - Treating Stage 7 L7x / Stage 27 L1 Complete as “production is live”
 - Marking §6 deferred items Complete
 
+## Production cutover harness (Stage 29 X1)
+
+Operator cutover / rollback / secrets-handoff packaging extends this map without claiming live promote or §7:
+
+- Pack: [CUTOVER_PACK_MVP.md](CUTOVER_PACK_MVP.md)
+- Checklist: `ops/launch/cutover-checklist.json`
+- Evidence schema: `ops/launch/cutover-evidence.example.json`
+- Optional GHA (extends Stage 28 G1; not main `ci.yml`): `ops/k8s/deploy-production.example.yml`
+- Proof: `backend/tests/test_cutover_pack_x1.py`
+
 ## Sign-off
 
-Stage 27 L1 is met when this doc + checklist map + evidence JSON exist, `test_launch_cert_l1.py` passes, and `LAUNCH_CHECKLIST.md` / roadmap cite Stage 27 L1 without fake production sign-off.
+Stage 27 L1 is met when this doc + checklist map + evidence JSON exist, `test_launch_cert_l1.py` passes, and `LAUNCH_CHECKLIST.md` / roadmap cite Stage 27 L1 without fake production sign-off. Stage 29 X1 is met when the cutover pack above passes without inventing live cutover or forged §7.
