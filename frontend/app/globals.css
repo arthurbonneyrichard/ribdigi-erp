@@ -117,3 +117,31 @@
 .uname{white-space:nowrap}
 .main .topbar-right .logout-btn{color:#dc2626;background:#fef2f2;border-color:#fecaca;font-weight:700}
 .main .topbar-right .logout-btn:hover{background:#fee2e2;border-color:#fca5a5}
+.main .topbar-right .theme-btn{padding:8px 11px;font-size:15px;line-height:1}
+
+/* ---------- Dark mode ---------- */
+[data-theme="dark"] body{background:#0b1220;color:#e5e7eb}
+[data-theme="dark"] .card,[data-theme="dark"] .main .card,[data-theme="dark"] .panel,[data-theme="dark"] .stat{background:#131c2e;border-color:#233047;box-shadow:0 6px 18px #00000059}
+[data-theme="dark"] .main h1:not(.greet),[data-theme="dark"] .main h2,[data-theme="dark"] .main .card h3,[data-theme="dark"] .panel h3,[data-theme="dark"] .stat .val,[data-theme="dark"] .kpi,[data-theme="dark"] .health .pill,[data-theme="dark"] .health .pill b{color:#f1f5f9}
+[data-theme="dark"] .muted,[data-theme="dark"] .stat .label,[data-theme="dark"] .panel .hint,[data-theme="dark"] .legend .li{color:#94a3b8}
+[data-theme="dark"] .table{background:#131c2e;border-color:#233047}
+[data-theme="dark"] .table th{background:#0f1826;color:#94a3b8;border-bottom-color:#233047}
+[data-theme="dark"] .table td{color:#cbd5e1;border-bottom-color:#1e2a3d}
+[data-theme="dark"] .table tbody tr:hover{background:#0f1826}
+[data-theme="dark"] .table tbody:empty::after,[data-theme="dark"] .empty{color:#64748b}
+[data-theme="dark"] .main input,[data-theme="dark"] .main select,[data-theme="dark"] .main textarea{background:#0f1826;border-color:#2b3a52;color:#e5e7eb}
+[data-theme="dark"] .main input[type=file]{background:#0f1826}
+[data-theme="dark"] .main button:not(.menu-btn){background:#1b2740;border-color:#2b3a52;color:#e5e7eb}
+[data-theme="dark"] .main button:not(.menu-btn):hover{background:#233047;border-color:#33445f}
+[data-theme="dark"] .main .topbar-right .logout-btn{background:#3a1518;color:#fca5a5;border-color:#7f1d1d}
+[data-theme="dark"] .main .topbar-right .logout-btn:hover{background:#4c1d1d}
+[data-theme="dark"] .bell{background:#1b2740;color:#e5e7eb}
+[data-theme="dark"] .bell:hover{background:#233047}
+[data-theme="dark"] .userchip{background:#131c2e;border-color:#233047;color:#cbd5e1}
+[data-theme="dark"] .bar-track{background:#233047}
+[data-theme="dark"] .donut-center{fill:#f1f5f9}
+[data-theme="dark"] .vbar-label,[data-theme="dark"] .vbar-val{fill:#94a3b8}
+[data-theme="dark"] .login{background:#131c2e;border-color:#233047}
+[data-theme="dark"] .login h1{color:#f1f5f9}
+[data-theme="dark"] .login input{background:#0f1826;border-color:#2b3a52;color:#e5e7eb}
+[data-theme="dark"] .login button{background:#4f46e5}

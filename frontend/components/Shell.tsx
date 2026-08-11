@@ -39,7 +39,31 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const pathname = usePathname();
+
+  useEffect(() => {
+    const el = document.documentElement;
+    setTheme((el.getAttribute('data-theme') as 'light' | 'dark') || 'light');
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (e: MediaQueryListEvent) => {
+      // Only follow the device when the user hasn't set an explicit preference.
+      if (!localStorage.getItem('theme')) {
+        const eff = e.matches ? 'dark' : 'light';
+        el.setAttribute('data-theme', eff);
+        setTheme(eff);
+      }
+    };
+    mql.addEventListener?.('change', onChange);
+    return () => mql.removeEventListener?.('change', onChange);
+  }, []);
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    setTheme(next);
+  }
 
   async function logout() {
     try {
@@ -122,6 +146,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <span aria-hidden>{'\u2630'}</span> Menu
           </button>
           <div className="topbar-right">
+            <button
+              type="button"
+              className="theme-btn"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              <span aria-hidden>{theme === 'dark' ? '\u2600\ufe0f' : '\ud83c\udf19'}</span>
+            </button>
             {canReadModule(permissions, 'notifications') && (
               <Link href="/notifications" className="bell">
                 Alerts{unread > 0 ? ` · ${unread}` : ''}
