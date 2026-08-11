@@ -420,6 +420,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 41 D1 (2026-08-11):** Commercial accessibility & change governance fidelity — `docs/STAGE_41_FIDELITY.md` (`test_stage41_fidelity_d1.py`); maps A1–C1 → readiness / launch / deploy / security; WCAG AA audit / public change calendar Remaining.
 
+**Stage 41 exit (2026-08-11):** A1, C1, D1, H41x met — `docs/STAGE_41_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_088_STAGE41_FREEZE.md`. Fidelity: `docs/STAGE_41_FIDELITY.md`.
+
 
 
 

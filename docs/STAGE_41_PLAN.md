@@ -1,10 +1,11 @@
 # Stage 41 Plan — Commercial Accessibility & Change Governance Fidelity
 
-**Status:** Open — D1 complete; H41x next  
+**Status:** Closed — exit met (H41x / ADR-088)  
 **Base:** Accessibility Statement Honesty Pack + Change / Maintenance Governance Honesty Pack → Commercial Accessibility & Change Governance Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-087](ADR_087_STAGE41_OPEN.md)  
-**Prior freeze:** [ADR-086](ADR_086_STAGE40_FREEZE.md) · [STAGE_40_EXIT_CRITERIA.md](STAGE_40_EXIT_CRITERIA.md)
+**Open ADR (historical):** [ADR-087](ADR_087_STAGE41_OPEN.md)  
+**Prior freeze:** [ADR-086](ADR_086_STAGE40_FREEZE.md) · [STAGE_40_EXIT_CRITERIA.md](STAGE_40_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_41_EXIT_CRITERIA.md](STAGE_41_EXIT_CRITERIA.md) · [ADR-088](ADR_088_STAGE41_FREEZE.md)
 
 Stage 41 opens after Stage 40 freeze: **Accessibility Statement Honesty Packaging + Change / Maintenance Governance Honesty Packaging → Commercial Accessibility & Change Governance Fidelity**. BR WCAG 2.1 AA themes, DEVELOPMENT_ROADMAP unchecked accessibility, and operator maintenance-window language (ADMIN_MANUAL / DR restore) lack dedicated customer-facing honesty packs. This track packages those Remaining surfaces on proven Stage 32 handoff / Stage 36 support / Stage 40 availability assets — **not** claiming WCAG 2.1 AA audit Complete, live accessibility conformance Complete, a public change calendar Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–40 packs as new Complete, or reopening Stages 1–40 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Accessibility & Change Governance Fidelity
 | **A1** | Accessibility statement honesty packaging (not WCAG AA audit Complete) | P0 | COMPLETE |
 | **C1** | Change / maintenance governance honesty packaging (not public change calendar Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H41x** | Stage 41 exit criteria + freeze ADR | Exit | PENDING |
+| **H41x** | Stage 41 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -81,6 +82,6 @@ Commercial Accessibility & Change Governance Fidelity
 
 ## H41x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H41x — `docs/STAGE_41_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_088_STAGE41_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage41_exit_h41x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H41x — `docs/STAGE_41_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_088_STAGE41_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage41_exit_h41x.py`.
