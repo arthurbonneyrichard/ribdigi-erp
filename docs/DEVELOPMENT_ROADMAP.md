@@ -434,6 +434,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 43 open (2026-08-11):** Commercial Legal Notice Fidelity track approved — `docs/ADR_091_STAGE43_OPEN.md` + `docs/STAGE_43_PLAN.md` (ToS/AUP → cookie/privacy notice → fidelity).
 
+**Stage 43 T1 (2026-08-11):** ToS / AUP honesty — `docs/TOS_AUP_MVP.md`, `ops/mvp/tos-aup.json`, evidence `stage43_t1_tos_aup.json` (`test_tos_aup_t1.py`); signed ToS Remaining.
+
 
 
 

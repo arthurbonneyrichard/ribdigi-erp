@@ -1,6 +1,6 @@
 # Stage 43 Plan — Commercial Legal Notice Fidelity
 
-**Status:** Open — T1 next  
+**Status:** Open — T1 complete; C1 next  
 **Base:** Terms of Service / Acceptable Use Honesty Pack + Cookie / Privacy Notice Honesty Pack → Commercial Legal Notice Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-091](ADR_091_STAGE43_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Legal Notice Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **T1** | Terms of Service / Acceptable Use honesty packaging (not signed ToS Complete) | P0 | PENDING |
+| **T1** | Terms of Service / Acceptable Use honesty packaging (not signed ToS Complete) | P0 | COMPLETE |
 | **C1** | Cookie / privacy notice honesty packaging (not live cookie-consent Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H43x** | Stage 43 exit criteria + freeze ADR | Exit | PENDING |
@@ -62,10 +62,10 @@ Commercial Legal Notice Fidelity
 
 ## T1 acceptance criteria
 
-- [ ] Terms of Service / Acceptable Use honesty packaging consolidating commercial MVP use boundaries adjacent to Stage 39 MSA / Stage 36 billing-deferred honesty (not forging signed ToS Complete).
-- [ ] Automated proof: `backend/tests/test_tos_aup_t1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 43 T1.
+- [x] Terms of Service / Acceptable Use honesty packaging consolidating commercial MVP use boundaries adjacent to Stage 39 MSA / Stage 36 billing-deferred honesty (not forging signed ToS Complete).
+- [x] Automated proof: `backend/tests/test_tos_aup_t1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 43 T1.
 
 ## C1 acceptance criteria
 
