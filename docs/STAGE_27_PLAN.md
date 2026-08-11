@@ -35,7 +35,7 @@ Commercial MVP Release Fidelity
 |----|------------|----------|---------|
 | **B1** | Automatic `.ribbak` offsite upload fidelity | P0 | COMPLETE |
 | **P1** | PgBouncer connection pooling fidelity | P0 | COMPLETE |
-| **S1** | Security scan / ZAP-in-CI baseline evidence | P0 | PENDING |
+| **S1** | Security scan / ZAP-in-CI baseline evidence | P0 | COMPLETE |
 | **L1** | Launch certification pack (operator sign-off evidence) | P1 | PENDING |
 | **D1** | Spec / readiness / launch / security / deploy fidelity sync | P2 | PENDING |
 | **H27x** | Stage 27 exit criteria + freeze ADR | Exit | PENDING |
@@ -71,11 +71,11 @@ Commercial MVP Release Fidelity
 
 ## S1 acceptance criteria
 
-- [ ] Security scan baseline evidence in CI (extend OWASP smoke / optional ZAP baseline artifact — not fake vendor pen-test Complete).
-- [ ] Durable artifact path under `/opt/cursor/artifacts/security/` (or equivalent).
-- [ ] Automated proof: `backend/tests/test_security_scan_s1.py`.
-- [ ] SECURITY_GUIDE / PRODUCTION_READINESS honesty updated (vendor pen test remains Remaining if not purchased).
-- [ ] Plan / launch / roadmap cite Stage 27 S1.
+- [x] Security scan baseline evidence in CI (extend OWASP smoke / optional ZAP baseline artifact — not fake vendor pen-test Complete).
+- [x] Durable artifact path under `/opt/cursor/artifacts/security/` (or equivalent).
+- [x] Automated proof: `backend/tests/test_security_scan_s1.py`.
+- [x] SECURITY_GUIDE / PRODUCTION_READINESS honesty updated (vendor pen test remains Remaining if not purchased).
+- [x] Plan / launch / roadmap cite Stage 27 S1.
 
 ## L1 acceptance criteria
 
@@ -100,4 +100,4 @@ Commercial MVP Release Fidelity
 
 ## Sign-off
 
-Stage 27 open under ADR-059. B1 / P1 complete; S1 next. Stages 1–26 remain frozen for their scopes.
+Stage 27 open under ADR-059. B1 / P1 / S1 complete; L1 next. Stages 1–26 remain frozen for their scopes.

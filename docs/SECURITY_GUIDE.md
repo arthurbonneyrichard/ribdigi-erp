@@ -324,6 +324,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 27 open** | Commercial MVP Release Fidelity — `docs/STAGE_27_PLAN.md`, ADR-059 (`test_stage27_open.py`); Stages 1–26 remain frozen; B1 offsite / P1 PgBouncer / S1 security scan / L1 launch cert pending |
 | **Stage 27 B1** | Opt-in `.ribbak` offsite upload after `create_backup` — `BACKUP_OFFSITE_UPLOAD_ENABLED` / `BACKUP_OFFSITE_S3_*` (`test_backup_offsite_b1.py`); failure → `Backup failed` (no fake success); secrets remain env-only |
 | **Stage 27 P1** | PgBouncer pooling fidelity — `ops/postgres/pgbouncer.ini.example`, `docs/PGBOUNCER_MVP.md` (`test_pgbouncer_p1.py`); secrets in env/userlist only; live soak / Helm pooler Remaining |
+| **Stage 27 S1** | OWASP security scan baseline evidence — `docs/SECURITY_SCAN_MVP.md`, `ops/security/zap-baseline.example.yml` (`test_security_scan_s1.py`); vendor pen test / live ZAP staging Remaining; main CI deploy-free |
 
 ### 7.3 Tenant Lifecycle Security
 
@@ -688,7 +689,7 @@ The MVP includes AI capabilities across 10 modules. Security controls include:
 
 **Stage 5 S1 verify:** `GET /api/v1/health` returns `security.rate_limit_enabled`, `openapi_enabled=false` in production, and response includes CSP + rate-limit headers.
 
-**Stage 5 O1 verify:** run `pytest tests/test_owasp_smoke.py tests/test_owasp_suite_o1.py` — covers OWASP A01/A02/A03/A05/A07 automated controls. Vendor ZAP / pen test is out of MVP scope.
+**Stage 5 O1 / Stage 27 S1 verify:** run `pytest tests/test_owasp_smoke.py tests/test_owasp_suite_o1.py tests/test_owasp_suite_t1.py tests/test_security_scan_s1.py` — covers OWASP A01/A02/A03/A05/A07 automated controls + durable baseline evidence (`docs/SECURITY_SCAN_MVP.md`). Vendor ZAP / external pen test remain Remaining.
 
 ### 16.2 Ongoing Security Operations
 
