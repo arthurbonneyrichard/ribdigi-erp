@@ -24,7 +24,7 @@ Stage 70 proves the owner First Commercial Day path after Stage 69 freeze — **
 | **F1** | `test_first_commercial_day_f1.py` — `FIRST_COMMERCIAL_DAY_MVP.md`, first-commercial-day JSON | Owner First Commercial Day Ops / Stage 66–67 | First-day live |
 | **G1** | `test_commercial_golive_closeout_g1.py` — `COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md`, commercial-golive-closeout JSON | Owner closeout / Stage 31 declaration | Go-live; §7 signed |
 | **D1** | This note + `test_stage70_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H70x** | `STAGE_70_EXIT_CRITERIA.md`; ADR-147; `test_stage70_exit_h70x.py` | Stage 70 exit + freeze | Stage 71+ requires CONTINUE/NEXT |
+| **H70x** | `STAGE_70_EXIT_CRITERIA.md`; ADR-147; `test_stage70_exit_h70x.py` | Stage 70 exit + freeze | Stage 71 opened via ADR-148 |
 
 ## Evidence tests
 

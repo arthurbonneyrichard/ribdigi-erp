@@ -1480,4 +1480,8 @@ Every feature in every phase must meet:
 
 **Stage 70 D1 (2026-08-11):** First Commercial Day fidelity sync — `docs/STAGE_70_FIDELITY.md` (`test_stage70_fidelity_d1.py`); maps F1–G1 → readiness / launch / deploy / security.
 
-**Stage 70 exit (2026-08-11):** F1, G1, D1, H70x met — `docs/STAGE_70_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_147_STAGE70_FREEZE.md`. Fidelity: `docs/STAGE_70_FIDELITY.md`.
+**Stage 70 exit (2026-08-11):** F1, G1, D1, H70x met — `docs/STAGE_70_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_147_STAGE70_FREEZE.md`. Fidelity: `docs/STAGE_70_FIDELITY.md`. Stage 71 opened via ADR-148.
+
+**Stage 71 open (2026-08-11):** Commercial Steady-State Fidelity track approved — `docs/ADR_148_STAGE71_OPEN.md` + `docs/STAGE_71_PLAN.md` (Steady-State Commercial Ops → Commercial Acceptance Gate → Commercial Steady-State Fidelity; S1 next).
+
+**Stage 71 S1 (2026-08-11):** Steady-state commercial ops honesty — `docs/STEADY_STATE_OPS_MVP.md`, `ops/mvp/steady-state-ops.json`, evidence `stage71_s1_steady_state_ops.json` (`test_steady_state_ops_s1.py`); steady-state live Remaining.

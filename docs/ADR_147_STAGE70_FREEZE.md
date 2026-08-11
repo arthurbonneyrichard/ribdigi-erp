@@ -27,4 +27,8 @@ Stage 70 First Commercial Day Fidelity delivered first commercial day ops honest
 
 ## Next stage
 
-Blocked pending CONTINUE/NEXT + open ADR with a distinct product outline.
+Stage 71 opened via ADR-148 (`docs/ADR_148_STAGE71_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 71 (Commercial Steady-State Fidelity — Steady-State Commercial Ops → Commercial Acceptance Gate → Commercial Steady-State Fidelity) after Stage 70 freeze via CONTINUE/NEXT — see [ADR-148](ADR_148_STAGE71_OPEN.md) and [STAGE_71_PLAN.md](STAGE_71_PLAN.md). Stage 70 feature scope remains frozen; Stage 71 does not reopen F1–D1 / H70x.
