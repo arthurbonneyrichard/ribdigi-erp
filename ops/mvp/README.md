@@ -166,6 +166,7 @@ Authoritative MVP docs:
 - `docs/STAGE_54_PLAN.md` (`backend/tests/test_stage54_open.py`) — Stage 54 open (ADR-113)
 - `docs/DIGITAL_MARKETING_MVP.md` (`backend/tests/test_digital_marketing_m1.py`) — Stage 54 M1
 - `docs/DIRECT_SALES_MVP.md` (`backend/tests/test_direct_sales_s1.py`) — Stage 54 S1
+- `docs/STAGE_54_FIDELITY.md` (`backend/tests/test_stage54_fidelity_d1.py`) — Stage 54 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -651,7 +652,7 @@ H53x met — `docs/STAGE_53_EXIT_CRITERIA.md`, ADR-112. Stages 1–53 frozen for
 
 ## Stage 54 open
 
-Commercial Go-To-Market Fidelity — `docs/STAGE_54_PLAN.md`, ADR-113; S1 complete; D1 next.
+Commercial Go-To-Market Fidelity — `docs/STAGE_54_PLAN.md`, ADR-113; D1 complete; H54x next.
 
 ## Stage 54 M1 — Digital marketing / case studies / testimonials honesty
 
@@ -660,3 +661,7 @@ Commercial Go-To-Market Fidelity — `docs/STAGE_54_PLAN.md`, ADR-113; S1 comple
 ## Stage 54 S1 — Direct sales honesty
 
 `docs/DIRECT_SALES_MVP.md` + `ops/mvp/direct-sales.json` — packaging Complete; `inside_sales_team_live` / `enterprise_pipeline_claimed` / `white_label_sales_pipeline_claimed` / `direct_sales_program_live` remain false.
+
+## Stage 54 D1 — Fidelity
+
+`docs/STAGE_54_FIDELITY.md` maps M1–S1 → readiness / launch / deploy / security (`test_stage54_fidelity_d1.py`).

@@ -1,6 +1,6 @@
 # Stage 54 Plan — Commercial Go-To-Market Fidelity
 
-**Status:** Open — S1 complete; D1 next  
+**Status:** Open — D1 complete; H54x next  
 **Base:** Digital Marketing / Case Studies / Testimonials Honesty Pack + Direct Sales Honesty Pack → Commercial Go-To-Market Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-113](ADR_113_STAGE54_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Go-To-Market Fidelity
 |----|------------|----------|---------|
 | **M1** | Digital marketing / case studies / testimonials honesty packaging (not live campaigns / published case studies Complete) | P0 | COMPLETE |
 | **S1** | Direct sales honesty packaging (not live inside-sales team / Enterprise pipeline Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H54x** | Stage 54 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -95,9 +95,9 @@ Commercial Go-To-Market Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_54_FIDELITY.md` maps M1–S1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 54 D1.
-- [ ] Automated proof: `backend/tests/test_stage54_fidelity_d1.py` (`docs/STAGE_54_FIDELITY.md`).
+- [x] `docs/STAGE_54_FIDELITY.md` maps M1–S1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 54 D1.
+- [x] Automated proof: `backend/tests/test_stage54_fidelity_d1.py` (`docs/STAGE_54_FIDELITY.md`).
 
 ## H54x acceptance criteria
 
