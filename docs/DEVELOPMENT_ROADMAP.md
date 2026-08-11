@@ -322,6 +322,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 33 open (2026-08-11):** Commercial MVP Continuity Fidelity track approved — `docs/ADR_071_STAGE33_OPEN.md` + `docs/STAGE_33_PLAN.md` (Residual risk → Compliance readiness → First-tenant onboarding → Knowledge transfer → fidelity).
 
+**Stage 33 K1 (2026-08-11):** Residual risk register — `docs/RESIDUAL_RISK_MVP.md`, `ops/mvp/residual-risk-register.json`, evidence `stage33_k1_residual_risk.json` (`test_residual_risk_k1.py`); risks remain open/accepted; go-live Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -902,7 +904,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 33 open (`docs/STAGE_33_PLAN.md`, ADR-071) — K1 next. Stages 1–32 remain frozen for their scopes (`docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070).
+**Active delivery plan:** Stage 33 open (`docs/STAGE_33_PLAN.md`, ADR-071) — K1 complete; C1 next. Stages 1–32 remain frozen for their scopes (`docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070).
 
 ### 6.2 Features
 

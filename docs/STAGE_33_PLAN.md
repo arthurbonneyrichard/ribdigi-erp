@@ -1,6 +1,6 @@
 # Stage 33 Plan — Commercial MVP Continuity Fidelity
 
-**Status:** Open — K1 next (ADR-071)  
+**Status:** Open — K1 complete; C1 next (ADR-071)  
 **Base:** Residual Risk Register Pack + Compliance Readiness Pack + First-Tenant Onboarding Pack + Knowledge Transfer Pack → Commercial MVP Continuity Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-071](ADR_071_STAGE33_OPEN.md)
@@ -35,7 +35,7 @@ Commercial MVP Continuity Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **K1** | Residual risk register packaging | P0 | PENDING |
+| **K1** | Residual risk register packaging | P0 | COMPLETE |
 | **C1** | Compliance readiness packaging (not SOC 2 / ISO Complete) | P0 | PENDING |
 | **F1** | First-tenant onboarding packaging | P1 | PENDING |
 | **T1** | Knowledge transfer packaging | P1 | PENDING |
@@ -62,10 +62,10 @@ Commercial MVP Continuity Fidelity
 
 ## K1 acceptance criteria
 
-- [ ] Residual risk register packaging indexing residual risks from Stage 26–32 Remaining / deferred honesty (not claiming risks closed or go-live Complete).
-- [ ] Automated proof: `backend/tests/test_residual_risk_k1.py`.
-- [ ] PRODUCTION_READINESS / launch honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 33 K1.
+- [x] Residual risk register packaging indexing residual risks from Stage 26–32 Remaining / deferred honesty (not claiming risks closed or go-live Complete).
+- [x] Automated proof: `backend/tests/test_residual_risk_k1.py`.
+- [x] PRODUCTION_READINESS / launch honesty updated.
+- [x] Plan / launch / roadmap cite Stage 33 K1.
 
 ## C1 acceptance criteria
 
@@ -104,4 +104,4 @@ Commercial MVP Continuity Fidelity
 
 ## Sign-off
 
-Stage 33 open under ADR-071. K1 next. Stages 1–32 remain frozen for their scopes.
+Stage 33 open under ADR-071. K1 complete; C1 next. Stages 1–32 remain frozen for their scopes.
