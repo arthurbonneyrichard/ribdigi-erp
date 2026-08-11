@@ -24,7 +24,7 @@ Stage 69 proves the owner Commercial Go-Live path after Stage 68 freeze — **Pl
 | **V1** | `test_preflight_verification_v1.py` — `PREFLIGHT_VERIFICATION_MVP.md`, preflight-verification JSON | Owner Pre-Flight §§1–3 / Stage 27 launch-cert | §§1–3 verified |
 | **A1** | `test_golive_attestation_a1.py` — `GOLIVE_ATTESTATION_MVP.md`, golive-attestation JSON | Owner §7 walk / Stage 30–31 attestation | §7 signed; attestation claimed |
 | **D1** | This note + `test_stage69_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H69x** | `STAGE_69_EXIT_CRITERIA.md`; ADR-145; `test_stage69_exit_h69x.py` | Stage 69 exit + freeze | Stage 70+ requires CONTINUE/NEXT |
+| **H69x** | `STAGE_69_EXIT_CRITERIA.md`; ADR-145; `test_stage69_exit_h69x.py` | Stage 69 exit + freeze | Stage 70 opened via ADR-146 |
 
 ## Evidence tests
 

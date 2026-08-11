@@ -1,0 +1,156 @@
+{
+  "stage": "70",
+  "workstream": "F1",
+  "doc": "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+  "stage70_plan": "docs/STAGE_70_PLAN.md",
+  "production_launch_doc": "docs/PRODUCTION_LAUNCH_MVP.md",
+  "production_launch": "ops/mvp/production-launch.json",
+  "first_tenant_doc": "docs/FIRST_TENANT_GOLIVE_MVP.md",
+  "first_tenant": "ops/mvp/first-tenant-golive.json",
+  "hypercare_doc": "docs/PRODUCTION_HYPERCARE_MVP.md",
+  "hypercare": "ops/mvp/production-hypercare.json",
+  "preflight_doc": "docs/PREFLIGHT_VERIFICATION_MVP.md",
+  "preflight": "ops/mvp/preflight-verification.json",
+  "golive_attestation_doc": "docs/GOLIVE_ATTESTATION_MVP.md",
+  "golive_attestation": "ops/mvp/golive-attestation.json",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "first_commercial_day_claimed": false,
+  "commercial_day_ops_live_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "attestation_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage70_f1_first_commercial_day.json",
+  "steps": [
+    {
+      "id": "fcd-owner-outline",
+      "category": "day_ops",
+      "title": "Index owner First Commercial Day Ops path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_70_PLAN.md",
+        "docs/ADR_146_STAGE70_OPEN.md"
+      ],
+      "source": "docs/STAGE_70_PLAN.md"
+    },
+    {
+      "id": "fcd-production-launch",
+      "category": "day_ops",
+      "title": "Link Stage 66 L1 production launch as adjacency (live cutover Remaining \u2260 first-day Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCTION_LAUNCH_MVP.md",
+        "ops/mvp/production-launch.json"
+      ],
+      "source": "docs/PRODUCTION_LAUNCH_MVP.md"
+    },
+    {
+      "id": "fcd-first-tenant",
+      "category": "day_ops",
+      "title": "Link Stage 66 T1 first-tenant go-live as adjacency (paying tenant Remaining \u2260 first-day Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FIRST_TENANT_GOLIVE_MVP.md",
+        "ops/mvp/first-tenant-golive.json"
+      ],
+      "source": "docs/FIRST_TENANT_GOLIVE_MVP.md"
+    },
+    {
+      "id": "fcd-hypercare",
+      "category": "day_ops",
+      "title": "Link Stage 67 H1 hypercare as day-one support adjacency (hypercare live Remaining \u2260 first-day Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCTION_HYPERCARE_MVP.md",
+        "ops/mvp/production-hypercare.json"
+      ],
+      "source": "docs/PRODUCTION_HYPERCARE_MVP.md"
+    },
+    {
+      "id": "fcd-preflight",
+      "category": "day_ops",
+      "title": "Link Stage 69 V1 pre-flight as adjacency (\u00a7\u00a71\u20133 verified Remaining \u2260 first-day Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PREFLIGHT_VERIFICATION_MVP.md",
+        "ops/mvp/preflight-verification.json"
+      ],
+      "source": "docs/PREFLIGHT_VERIFICATION_MVP.md"
+    },
+    {
+      "id": "fcd-attestation",
+      "category": "day_ops",
+      "title": "Link Stage 69 A1 attestation as adjacency (\u00a77 signed Remaining \u2260 first-day Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/GOLIVE_ATTESTATION_MVP.md",
+        "ops/mvp/golive-attestation.json"
+      ],
+      "source": "docs/GOLIVE_ATTESTATION_MVP.md"
+    },
+    {
+      "id": "fcd-support-sla",
+      "category": "day_ops",
+      "title": "Link Stage 36 support SLA as day-ops adjacency (SLA claimed Remaining \u2260 first-day Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "fcd-plan-honesty",
+      "category": "day_ops",
+      "title": "Confirm Stage 70 plan explicitly defers first-day live / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_70_PLAN.md",
+        "docs/FIRST_COMMERCIAL_DAY_MVP.md"
+      ],
+      "source": "docs/STAGE_70_PLAN.md"
+    },
+    {
+      "id": "fcd-first-day-remaining",
+      "category": "honesty",
+      "title": "First commercial day live Remaining \u2014 packaging \u2260 live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_70_PLAN.md",
+        "docs/FIRST_COMMERCIAL_DAY_MVP.md"
+      ],
+      "source": "docs/STAGE_70_PLAN.md"
+    },
+    {
+      "id": "fcd-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / \u00a77 / attestation Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_70_PLAN.md",
+        "docs/GOLIVE_ATTESTATION_MVP.md"
+      ],
+      "source": "docs/STAGE_70_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "First commercial day live Complete",
+    "Commercial day ops live Complete",
+    "Live go-live Complete",
+    "LAUNCH \u00a77 Name/Date signed Complete",
+    "LAUNCH \u00a7\u00a71\u20133 verified Complete"
+  ]
+}

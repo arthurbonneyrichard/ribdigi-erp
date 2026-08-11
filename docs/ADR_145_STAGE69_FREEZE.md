@@ -27,4 +27,8 @@ Stage 69 MVP Commercial Go-Live Fidelity delivered pre-flight verification hones
 
 ## Next stage
 
-Blocked pending CONTINUE/NEXT + open ADR with a distinct product outline (e.g. First Commercial Day Ops honesty packaging adjacent to Stage 69 Remaining).
+Stage 70 opened via ADR-146 (`docs/ADR_146_STAGE70_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 70 (First Commercial Day Fidelity — First Commercial Day Ops → MVP Commercial Go-Live Closeout → First Commercial Day Fidelity) after Stage 69 freeze via CONTINUE/NEXT — see [ADR-146](ADR_146_STAGE70_OPEN.md) and [STAGE_70_PLAN.md](STAGE_70_PLAN.md). Stage 69 feature scope remains frozen; Stage 70 does not reopen V1–D1 / H69x.

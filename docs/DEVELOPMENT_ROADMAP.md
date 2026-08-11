@@ -1470,4 +1470,8 @@ Every feature in every phase must meet:
 
 **Stage 69 D1 (2026-08-11):** MVP Commercial Go-Live fidelity sync — `docs/STAGE_69_FIDELITY.md` (`test_stage69_fidelity_d1.py`); maps V1–A1 → readiness / launch / deploy / security.
 
-**Stage 69 exit (2026-08-11):** V1, A1, D1, H69x met — `docs/STAGE_69_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_145_STAGE69_FREEZE.md`. Fidelity: `docs/STAGE_69_FIDELITY.md`.
+**Stage 69 exit (2026-08-11):** V1, A1, D1, H69x met — `docs/STAGE_69_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_145_STAGE69_FREEZE.md`. Fidelity: `docs/STAGE_69_FIDELITY.md`. Stage 70 opened via ADR-146.
+
+**Stage 70 open (2026-08-11):** First Commercial Day Fidelity track approved — `docs/ADR_146_STAGE70_OPEN.md` + `docs/STAGE_70_PLAN.md` (First Commercial Day Ops → MVP Commercial Go-Live Closeout → First Commercial Day Fidelity; F1 next).
+
+**Stage 70 F1 (2026-08-11):** First commercial day ops honesty — `docs/FIRST_COMMERCIAL_DAY_MVP.md`, `ops/mvp/first-commercial-day.json`, evidence `stage70_f1_first_commercial_day.json` (`test_first_commercial_day_f1.py`); first-day live Remaining.

@@ -440,7 +440,9 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 69 V1** | Pre-flight verification honesty — `docs/PREFLIGHT_VERIFICATION_MVP.md`, `ops/mvp/preflight-verification.json` (`test_preflight_verification_v1.py`); §§1–3 verified Remaining |
 | **Stage 69 A1** | Go-live attestation honesty — `docs/GOLIVE_ATTESTATION_MVP.md`, `ops/mvp/golive-attestation.json` (`test_golive_attestation_a1.py`); §7 signed Remaining |
 | **Stage 69 D1** | Commercial Go-Live fidelity — `docs/STAGE_69_FIDELITY.md` (`test_stage69_fidelity_d1.py`); maps V1–A1 → readiness / launch / deploy / security; §§1–3 / §7 remain Remaining |
-| **Stage 69 H69x** | Exit + freeze — `docs/STAGE_69_EXIT_CRITERIA.md`, ADR-145 (`test_stage69_exit_h69x.py`); Stages 1–69 frozen for Stage 69 scope; Stage 70+ requires CONTINUE/NEXT |
+| **Stage 69 H69x** | Exit + freeze — `docs/STAGE_69_EXIT_CRITERIA.md`, ADR-145 (`test_stage69_exit_h69x.py`); Stages 1–69 frozen for Stage 69 scope; Stage 70 opened via ADR-146 |
+| **Stage 70 open** | First Commercial Day Fidelity — `docs/STAGE_70_PLAN.md`, ADR-146 (`test_stage70_open.py`); Stages 1–69 remain frozen for prior scopes; F1 next historically |
+| **Stage 70 F1** | First commercial day ops honesty — `docs/FIRST_COMMERCIAL_DAY_MVP.md`, `ops/mvp/first-commercial-day.json` (`test_first_commercial_day_f1.py`); first-day live Remaining |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |
