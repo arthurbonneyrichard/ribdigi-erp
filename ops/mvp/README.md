@@ -228,6 +228,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_68_FIDELITY.md` (`backend/tests/test_stage68_fidelity_d1.py`) — Stage 68 D1
 - `docs/TENANT_COMPANY_CONSOLE_MVP.md` (`backend/tests/test_tenant_company_console_t1.py`) — Stage 68 T1
 - `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md` (`backend/tests/test_ribdigi_house_console_h1.py`) — Stage 68 H1
 - `docs/STAGE_68_PLAN.md` (`backend/tests/test_stage68_open.py`) — Stage 68 open (ADR-142)
@@ -949,6 +950,10 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 68 D1 — Platform ↔ Tenant console fidelity
+
+`docs/STAGE_68_FIDELITY.md` — maps H1–T1 → readiness / launch / deploy / security (`test_stage68_fidelity_d1.py`).
+
 ## Stage 68 T1 — Tenant Company console honesty
 
 `docs/TENANT_COMPANY_CONSOLE_MVP.md` + `ops/mvp/tenant-company-console.json` — packaging Complete; `tenant_modules_reclaimed_complete` / `demo_tenant_claimed` / `cross_principal_leak_claimed` remain false.
@@ -959,7 +964,7 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 ## Stage 68 open
 
-Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142; Open — T1 complete; D1 next.
+Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142; Open — D1 complete; H68x next.
 
 ## Stage 67 exit
 

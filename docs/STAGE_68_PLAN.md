@@ -1,6 +1,6 @@
 # Stage 68 Plan — Platform ↔ Tenant Console Fidelity
 
-**Status:** Open — T1 complete; D1 next  
+**Status:** Open — D1 complete; H68x next  
 **Base:** Ribdigi House Console Honesty Pack + Tenant Company Console Honesty Pack → Platform ↔ Tenant Console Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-142](ADR_142_STAGE68_OPEN.md)  
@@ -58,7 +58,7 @@ Platform ↔ Tenant Console Fidelity
 |----|------------|----------|---------|
 | **H1** | Ribdigi House (Platform Owner) console honesty packaging (Tenants → Plans/Billing deferred → Users → Security/Audit/Health/Settings; not paid billing Complete) | P0 | COMPLETE |
 | **T1** | Tenant Company console honesty packaging (POS → Sales → Inventory → Purchasing → Accounting → Expenses → Credit → Tax → Reports → Settings; not re-claiming modules) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H68x** | Stage 68 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -92,9 +92,11 @@ Platform ↔ Tenant Console Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_68_FIDELITY.md` maps H1–T1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 68 D1.
-- [ ] Automated proof: `backend/tests/test_stage68_fidelity_d1.py`.
+- [x] `docs/STAGE_68_FIDELITY.md` maps H1–T1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 68 D1.
+- [x] Automated proof: `backend/tests/test_stage68_fidelity_d1.py`.
+
+**Deliverables:** `docs/STAGE_68_FIDELITY.md` (`test_stage68_fidelity_d1.py`).
 
 ## H68x acceptance criteria
 

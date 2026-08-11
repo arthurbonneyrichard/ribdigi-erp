@@ -1457,3 +1457,5 @@ Every feature in every phase must meet:
 **Stage 68 H1 (2026-08-11):** Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json`, evidence `stage68_h1_ribdigi_house_console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining.
 
 **Stage 68 T1 (2026-08-11):** Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json`, evidence `stage68_t1_tenant_company_console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining.
+
+**Stage 68 D1 (2026-08-11):** Platform ↔ Tenant console fidelity sync — `docs/STAGE_68_FIDELITY.md` (`test_stage68_fidelity_d1.py`); maps H1–T1 → readiness / launch / deploy / security.
