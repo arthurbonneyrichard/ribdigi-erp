@@ -484,6 +484,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 48 open (2026-08-11):** Commercial Services Fidelity track approved — `docs/ADR_101_STAGE48_OPEN.md` + `docs/STAGE_48_PLAN.md` (professional services/SOW → customer training/cert → fidelity).
 
+**Stage 48 P1 (2026-08-11):** Professional services / SOW honesty — `docs/PROFESSIONAL_SERVICES_SOW_MVP.md`, `ops/mvp/professional-services-sow.json`, evidence `stage48_p1_professional_services_sow.json` (`test_professional_services_sow_p1.py`); signed SOW Remaining.
+
 
 
 

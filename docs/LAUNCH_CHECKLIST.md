@@ -178,7 +178,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 45 Commercial Continuity & Exit Fidelity (closed: `docs/STAGE_45_PLAN.md`, ADR-096) — O1–D1 / H45x complete
 - [x] Stage 46 Commercial Liability & Remedy Fidelity (closed: `docs/STAGE_46_PLAN.md`, ADR-098) — L1–D1 / H46x complete
 - [x] Stage 47 Commercial Insurance & Audit Fidelity (closed: `docs/STAGE_47_PLAN.md`, ADR-100) — I1–D1 / H47x complete
-- [x] Stage 48 track opened (ADR-101: `test_stage48_open.py`, `docs/STAGE_48_PLAN.md`) — Commercial Services Fidelity; P1 next
+- [x] Stage 48 track opened (ADR-101: `test_stage48_open.py`, `docs/STAGE_48_PLAN.md`) — Commercial Services Fidelity; P1 complete; T1 next
+- [x] Professional services / SOW honesty (Stage 48 P1: `test_professional_services_sow_p1.py` — `docs/PROFESSIONAL_SERVICES_SOW_MVP.md`, `ops/mvp/professional-services-sow.json`; evidence `stage48_p1_professional_services_sow.json`; signed SOW Remaining)
 - [x] Stage 47 track opened (ADR-099: `test_stage47_open.py`, `docs/STAGE_47_PLAN.md`)
 - [x] Cyber insurance / COI honesty (Stage 47 I1: `test_cyber_insurance_i1.py` — `docs/CYBER_INSURANCE_MVP.md`, `ops/mvp/cyber-insurance.json`; evidence `stage47_i1_cyber_insurance.json`; issued COI Remaining)
 - [x] Customer audit rights honesty (Stage 47 A1: `test_customer_audit_rights_a1.py` — `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md`, `ops/mvp/customer-audit-rights.json`; evidence `stage47_a1_customer_audit_rights.json`; customer audit executed Remaining)

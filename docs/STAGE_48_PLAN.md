@@ -1,6 +1,6 @@
 # Stage 48 Plan — Commercial Services Fidelity
 
-**Status:** Open — P1 next  
+**Status:** Open — P1 complete; T1 next  
 **Base:** Professional Services / SOW Honesty Pack + Customer Training / Certification Honesty Pack → Commercial Services Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-101](ADR_101_STAGE48_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Services Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **P1** | Professional services / SOW honesty packaging (not signed SOW / live implementation delivery Complete) | P0 | PENDING |
+| **P1** | Professional services / SOW honesty packaging (not signed SOW / live implementation delivery Complete) | P0 | COMPLETE |
 | **T1** | Customer training / certification honesty packaging (not live training / attendance cert Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H48x** | Stage 48 exit criteria + freeze ADR | Exit | PENDING |
@@ -70,10 +70,10 @@ Commercial Services Fidelity
 
 ## P1 acceptance criteria
 
-- [ ] Professional services / SOW honesty packaging consolidating PRODUCT_OVERVIEW implementation themes and Stage 33 first-tenant / Stage 39 MSA adjacency (not forging signed SOW / live implementation delivery Complete).
-- [ ] Automated proof: `backend/tests/test_professional_services_sow_p1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 48 P1.
+- [x] Professional services / SOW honesty packaging consolidating PRODUCT_OVERVIEW implementation themes and Stage 33 first-tenant / Stage 39 MSA adjacency (not forging signed SOW / live implementation delivery Complete).
+- [x] Automated proof: `backend/tests/test_professional_services_sow_p1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 48 P1.
 
 ## T1 acceptance criteria
 
