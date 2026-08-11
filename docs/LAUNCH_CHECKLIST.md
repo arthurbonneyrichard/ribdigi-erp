@@ -173,8 +173,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [ ] Stage 32 Commercial MVP Handoff Fidelity (open: `docs/STAGE_32_PLAN.md`, ADR-069) — B1 next
+- [ ] Stage 32 Commercial MVP Handoff Fidelity (open: `docs/STAGE_32_PLAN.md`, ADR-069) — D1 next
 - [x] Stage 32 track opened (ADR-069: `test_stage32_open.py`, `docs/STAGE_32_PLAN.md`)
+- [x] Post-MVP backlog (Stage 32 B1: `test_post_mvp_backlog_b1.py` — `docs/POST_MVP_BACKLOG_MVP.md`, `ops/mvp/post-mvp-backlog.json`; evidence `stage32_b1_post_mvp_backlog.json`; deferred scopes Remaining)
 - [x] Commercial release notes (Stage 32 N1: `test_release_notes_n1.py` — `docs/RELEASE_NOTES_MVP.md`, `ops/mvp/release-notes.json`; evidence `stage32_n1_release_notes.json`; production live Remaining)
 - [x] Operator handoff pack (Stage 32 H1: `test_operator_handoff_h1.py` — `docs/OPERATOR_HANDOFF_MVP.md`, `ops/mvp/operator-handoff.json`; evidence `stage32_h1_operator_handoff.json`; live handoff / §7 Remaining)
 - [x] MVP acceptance archive (Stage 32 A1: `test_acceptance_archive_a1.py` — `docs/ACCEPTANCE_ARCHIVE_MVP.md`, `ops/mvp/acceptance-archive.json`; evidence `stage32_a1_acceptance_archive.json`; go-live / §7 Remaining)

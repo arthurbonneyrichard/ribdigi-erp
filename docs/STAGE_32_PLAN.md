@@ -1,6 +1,6 @@
 # Stage 32 Plan — Commercial MVP Handoff Fidelity
 
-**Status:** Open — A1–N1 complete; B1 next (ADR-069)  
+**Status:** Open — A1–B1 complete; D1 next (ADR-069)  
 **Base:** MVP Acceptance Archive Pack + Operator Handoff Pack + Commercial Release Notes Pack + Post-MVP Backlog Pack → Commercial MVP Handoff Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-069](ADR_069_STAGE32_OPEN.md)
@@ -38,7 +38,7 @@ Commercial MVP Handoff Fidelity
 | **A1** | MVP acceptance archive (Stage 1–31 exit/freeze index) | P0 | COMPLETE |
 | **H1** | Operator handoff packaging | P0 | COMPLETE |
 | **N1** | Commercial release notes packaging | P1 | COMPLETE |
-| **B1** | Post-MVP backlog packaging (deferred ADR + Remaining index) | P1 | PENDING |
+| **B1** | Post-MVP backlog packaging (deferred ADR + Remaining index) | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
 | **H32x** | Stage 32 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -82,10 +82,10 @@ Commercial MVP Handoff Fidelity
 
 ## B1 acceptance criteria
 
-- [ ] Post-MVP backlog packaging indexing deferred ADR-001–006 + operator Remaining items as backlog (not implementing billing / schema-per-tenant / i18n / store membership / hard-delete).
-- [ ] Automated proof: `backend/tests/test_post_mvp_backlog_b1.py`.
-- [ ] SECURITY_GUIDE / BUSINESS_REQUIREMENTS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 32 B1.
+- [x] Post-MVP backlog packaging indexing deferred ADR-001–006 + operator Remaining items as backlog (not implementing billing / schema-per-tenant / i18n / store membership / hard-delete).
+- [x] Automated proof: `backend/tests/test_post_mvp_backlog_b1.py`.
+- [x] SECURITY_GUIDE / BUSINESS_REQUIREMENTS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 32 B1.
 
 ## D1 acceptance criteria
 
@@ -103,4 +103,4 @@ Commercial MVP Handoff Fidelity
 
 ## Sign-off
 
-Stage 32 open under ADR-069. A1–N1 complete; B1 next. Stages 1–31 remain frozen for their scopes.
+Stage 32 open under ADR-069. A1–B1 complete; D1 next. Stages 1–31 remain frozen for their scopes.

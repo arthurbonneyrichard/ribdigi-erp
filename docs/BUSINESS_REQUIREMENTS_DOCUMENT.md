@@ -174,7 +174,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] API requests include tenant context validation — Stage 21 I1 (JWT `tenant_id` + mismatched `X-Tenant-ID` → 403 Cross-tenant)
   - [x] Backup operations are tenant-scoped — Stage 21 I1 (`GET/POST /backup`; foreign backup id 404)
 
-Deferred ADR honesty (Stage 31 R1): index of ADR-001–006 MVP Accepted vs post-MVP Remaining — `docs/DEFERRED_ADR_REGISTER_MVP.md`, `ops/mvp/deferred-adr-register.json` (`test_deferred_adr_register_r1.py`); not an implementation of billing / schema-per-tenant / i18n / store membership / hard-delete.
+Deferred ADR honesty (Stage 31 R1): index of ADR-001–006 MVP Accepted vs post-MVP Remaining — `docs/DEFERRED_ADR_REGISTER_MVP.md`, `ops/mvp/deferred-adr-register.json` (`test_deferred_adr_register_r1.py`); not an implementation of billing / schema-per-tenant / i18n / store membership / hard-delete. Post-MVP backlog packaging (Stage 32 B1): consolidated deferred ADR + operator Remaining + product deferred index — `docs/POST_MVP_BACKLOG_MVP.md`, `ops/mvp/post-mvp-backlog.json` (`test_post_mvp_backlog_b1.py`); backlog ≠ implemented Complete.
 
 #### BR-1.5 Tenant Database Initialization
 - **Description:** Automated setup of tenant-specific database with seed data.
