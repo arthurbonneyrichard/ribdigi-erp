@@ -1,6 +1,6 @@
 # Stage 66 Plan — MVP Production Launch Fidelity
 
-**Status:** Open — L1 complete; T1 next  
+**Status:** Open — T1 complete; D1 next  
 **Base:** Production Launch Honesty Pack + First Tenant Go-Live Honesty Pack → MVP Production Launch Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-138](ADR_138_STAGE66_OPEN.md)  
@@ -61,7 +61,7 @@ MVP Production Launch Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **L1** | Production launch honesty packaging (Cutover → Attestation → Launch; not §7 signed / live cutover Complete) | P0 | COMPLETE |
-| **T1** | First tenant go-live honesty packaging (First paying tenant → onboarding adjacency; not live first-tenant Complete) | P0 | PENDING |
+| **T1** | First tenant go-live honesty packaging (First paying tenant → onboarding adjacency; not live first-tenant Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H66x** | Stage 66 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -91,12 +91,12 @@ MVP Production Launch Fidelity
 
 ## T1 acceptance criteria
 
-- [ ] First tenant go-live honesty packaging indexing First Paying Tenant Onboarding with Stage 33 F1 / Stage 65 P1 adjacency (not claiming live first paying tenant Complete).
-- [ ] Automated proof: `backend/tests/test_first_tenant_golive_t1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 66 T1.
+- [x] First tenant go-live honesty packaging indexing First Paying Tenant Onboarding with Stage 33 F1 / Stage 65 P1 adjacency (not claiming live first paying tenant Complete).
+- [x] Automated proof: `backend/tests/test_first_tenant_golive_t1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 66 T1.
 
-**Deliverables:** `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json`, evidence `stage66_t1_first_tenant_golive.json`.
+**Deliverables:** `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json`, evidence `stage66_t1_first_tenant_golive.json` (`test_first_tenant_golive_t1.py`).
 
 ## D1 acceptance criteria
 

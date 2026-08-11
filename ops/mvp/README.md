@@ -76,6 +76,7 @@
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `business-pilot.json` | Stage 65 P1 Controlled business pilot honesty — `controlled_business_pilot_live_claimed: false` / `real_workflow_feedback_claimed: false` / `pilot_bugfix_program_live: false` / `business_pilot_program_live: false` |
+| `first-tenant-golive.json` | Stage 66 T1 First tenant go-live honesty — `first_paying_tenant_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `demo_tenant_claimed: false` |
 | `production-launch.json` | Stage 66 L1 Production launch honesty — `go_live_claimed: false` / `section_7_signed: false` / `production_cutover_claimed: false` / `production_launch_live_claimed: false` / `attestation_claimed: false` |
 | `release-pipeline.json` | Stage 65 R1 Release pipeline honesty — `mvp_release_candidate_signed: false` / `release_pipeline_live_claimed: false` / `staging_promotion_live_claimed: false` / `security_review_signed_claimed: false` |
 | `advanced-bi.json` | Stage 64 B1 Advanced BI honesty — `advanced_bi_live_claimed: false` / `custom_analytics_live_claimed: false` / `custom_report_builder_live: false` / `advanced_bi_program_live: false` |
@@ -223,6 +224,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/FIRST_TENANT_GOLIVE_MVP.md` (`backend/tests/test_first_tenant_golive_t1.py`) — Stage 66 T1
 - `docs/PRODUCTION_LAUNCH_MVP.md` (`backend/tests/test_production_launch_l1.py`) — Stage 66 L1
 - `docs/STAGE_66_PLAN.md` (`backend/tests/test_stage66_open.py`) — Stage 66 open (ADR-138)
 - `docs/STAGE_65_FIDELITY.md` (`backend/tests/test_stage65_fidelity_d1.py`) — Stage 65 D1
@@ -933,13 +935,17 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 66 T1 — First tenant go-live honesty
+
+`docs/FIRST_TENANT_GOLIVE_MVP.md` + `ops/mvp/first-tenant-golive.json` — packaging Complete; `first_paying_tenant_claimed` / `first_tenant_onboarded_claimed` / `live_onboarding_success_claimed` / `demo_tenant_claimed` remain false.
+
 ## Stage 66 L1 — Production launch honesty
 
 `docs/PRODUCTION_LAUNCH_MVP.md` + `ops/mvp/production-launch.json` — packaging Complete; `go_live_claimed` / `section_7_signed` / `production_cutover_claimed` / `production_launch_live_claimed` / `attestation_claimed` remain false.
 
 ## Stage 66 open
 
-MVP Production Launch Fidelity — `docs/STAGE_66_PLAN.md`, ADR-138; Open — L1 complete; T1 next.
+MVP Production Launch Fidelity — `docs/STAGE_66_PLAN.md`, ADR-138; Open — T1 complete; D1 next.
 
 ## Stage 65 D1 — MVP release-candidate fidelity
 

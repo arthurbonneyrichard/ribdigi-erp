@@ -1435,3 +1435,5 @@ Every feature in every phase must meet:
 **Stage 66 open (2026-08-11):** MVP Production Launch Fidelity track approved — `docs/ADR_138_STAGE66_OPEN.md` + `docs/STAGE_66_PLAN.md` (MVP Release Candidate → Production Cutover → First Paying Tenant → Go-Live Attestation → MVP Production Launch; L1 next).
 
 **Stage 66 L1 (2026-08-11):** Production launch honesty — `docs/PRODUCTION_LAUNCH_MVP.md`, `ops/mvp/production-launch.json`, evidence `stage66_l1_production_launch.json` (`test_production_launch_l1.py`); live cutover / §7 signed / go-live Remaining.
+
+**Stage 66 T1 (2026-08-11):** First tenant go-live honesty — `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json`, evidence `stage66_t1_first_tenant_golive.json` (`test_first_tenant_golive_t1.py`); first paying tenant / live onboarding Remaining.

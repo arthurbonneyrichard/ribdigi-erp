@@ -189,6 +189,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 65 exit + freeze (H65x: `test_stage65_exit_h65x.py`, `docs/STAGE_65_EXIT_CRITERIA.md`, ADR-136)
 - [x] Stage 66 track opened (ADR-138: `test_stage66_open.py`, `docs/STAGE_66_PLAN.md`) — MVP Production Launch Fidelity; L1 next historically, L1 complete / T1 next
 - [x] Production launch honesty (Stage 66 L1: `test_production_launch_l1.py` — `docs/PRODUCTION_LAUNCH_MVP.md`, `ops/mvp/production-launch.json`; evidence `stage66_l1_production_launch.json`; live cutover / §7 signed / go-live Remaining)
+- [x] First tenant go-live honesty (Stage 66 T1: `test_first_tenant_golive_t1.py` — `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json`; evidence `stage66_t1_first_tenant_golive.json`; first paying tenant / live onboarding Remaining)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
