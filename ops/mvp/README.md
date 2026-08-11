@@ -68,6 +68,7 @@ Authoritative MVP docs:
 - `docs/STAGE_40_PLAN.md` (`backend/tests/test_stage40_open.py`) — Stage 40 open (ADR-085)
 - `docs/STATUS_UPTIME_MVP.md` (`backend/tests/test_status_uptime_u1.py`) — Stage 40 U1
 - `docs/SBOM_DISCLOSURE_MVP.md` (`backend/tests/test_sbom_disclosure_s1.py`) — Stage 40 S1
+- `docs/STAGE_40_FIDELITY.md` (`backend/tests/test_stage40_fidelity_d1.py`) — Stage 40 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -273,7 +274,7 @@ H39x met — `docs/STAGE_39_EXIT_CRITERIA.md`, ADR-084. Stages 1–39 frozen for
 
 ## Stage 40 open
 
-Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR-085; U1–S1 complete; D1 next.
+Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR-085; D1 complete; H40x next.
 
 ## Stage 40 U1 — Status page / uptime honesty
 
@@ -282,3 +283,7 @@ Commercial Availability & Supply-Chain Fidelity — `docs/STAGE_40_PLAN.md`, ADR
 ## Stage 40 S1 — SBOM / dependency disclosure honesty
 
 `docs/SBOM_DISCLOSURE_MVP.md` + `ops/mvp/sbom-disclosure.json` — packaging Complete; `sbom_pipeline_live` / `cosign_signing_claimed` remain false.
+
+## Stage 40 D1 — Fidelity
+
+`docs/STAGE_40_FIDELITY.md` maps U1–S1 → readiness / launch / deploy / security (`test_stage40_fidelity_d1.py`).

@@ -1,6 +1,6 @@
 # Stage 40 Plan — Commercial Availability & Supply-Chain Fidelity
 
-**Status:** Open — U1–S1 complete; D1 next  
+**Status:** Open — D1 complete; H40x next  
 **Base:** Status Page / Uptime Honesty Pack + SBOM / Dependency Disclosure Honesty Pack → Commercial Availability & Supply-Chain Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-085](ADR_085_STAGE40_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Availability & Supply-Chain Fidelity
 |----|------------|----------|---------|
 | **U1** | Status page / uptime honesty packaging (not live status page / 99.9% SLA Complete) | P0 | COMPLETE |
 | **S1** | SBOM / dependency disclosure honesty packaging (not live SBOM pipeline Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H40x** | Stage 40 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -74,9 +74,9 @@ Commercial Availability & Supply-Chain Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_40_FIDELITY.md` maps U1–S1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 40 D1.
-- [ ] Automated proof: `backend/tests/test_stage40_fidelity_d1.py`.
+- [x] `docs/STAGE_40_FIDELITY.md` maps U1–S1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 40 D1.
+- [x] Automated proof: `backend/tests/test_stage40_fidelity_d1.py`.
 
 ## H40x acceptance criteria
 
