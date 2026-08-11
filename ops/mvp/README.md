@@ -76,6 +76,7 @@
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `business-pilot.json` | Stage 65 P1 Controlled business pilot honesty — `controlled_business_pilot_live_claimed: false` / `real_workflow_feedback_claimed: false` / `pilot_bugfix_program_live: false` / `business_pilot_program_live: false` |
+| `post-launch-continuity.json` | Stage 67 C1 Post-launch continuity honesty — `post_launch_continuity_live_claimed: false` / `handoff_complete_claimed: false` / `live_training_claimed: false` / `customer_success_stabilization_claimed: false` |
 | `production-hypercare.json` | Stage 67 H1 Production hypercare honesty — `production_hypercare_live_claimed: false` / `incident_drill_executed: false` / `oncall_rota_live: false` / `support_sla_claimed: false` |
 | `first-tenant-golive.json` | Stage 66 T1 First tenant go-live honesty — `first_paying_tenant_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `demo_tenant_claimed: false` |
 | `production-launch.json` | Stage 66 L1 Production launch honesty — `go_live_claimed: false` / `section_7_signed: false` / `production_cutover_claimed: false` / `production_launch_live_claimed: false` / `attestation_claimed: false` |
@@ -225,6 +226,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/POST_LAUNCH_CONTINUITY_MVP.md` (`backend/tests/test_post_launch_continuity_c1.py`) — Stage 67 C1
 - `docs/PRODUCTION_HYPERCARE_MVP.md` (`backend/tests/test_production_hypercare_h1.py`) — Stage 67 H1
 - `docs/STAGE_67_PLAN.md` (`backend/tests/test_stage67_open.py`) — Stage 67 open (ADR-140)
 - `docs/STAGE_66_EXIT_CRITERIA.md` / `docs/ADR_139_STAGE66_FREEZE.md` (`backend/tests/test_stage66_exit_h66x.py`) — Stage 66 H66x
@@ -940,13 +942,17 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 67 C1 — Post-launch continuity honesty
+
+`docs/POST_LAUNCH_CONTINUITY_MVP.md` + `ops/mvp/post-launch-continuity.json` — packaging Complete; `post_launch_continuity_live_claimed` / `handoff_complete_claimed` / `live_training_claimed` / `customer_success_stabilization_claimed` remain false.
+
 ## Stage 67 H1 — Production hypercare honesty
 
 `docs/PRODUCTION_HYPERCARE_MVP.md` + `ops/mvp/production-hypercare.json` — packaging Complete; `production_hypercare_live_claimed` / `incident_drill_executed` / `oncall_rota_live` / `support_sla_claimed` remain false.
 
 ## Stage 67 open
 
-MVP Post-Launch Continuity Fidelity — `docs/STAGE_67_PLAN.md`, ADR-140; Open — H1 complete; C1 next.
+MVP Post-Launch Continuity Fidelity — `docs/STAGE_67_PLAN.md`, ADR-140; Open — C1 complete; D1 next.
 
 ## Stage 66 exit
 

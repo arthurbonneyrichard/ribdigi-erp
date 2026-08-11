@@ -1445,3 +1445,5 @@ Every feature in every phase must meet:
 **Stage 67 open (2026-08-11):** MVP Post-Launch Continuity Fidelity track approved — `docs/ADR_140_STAGE67_OPEN.md` + `docs/STAGE_67_PLAN.md` (MVP Production Launch → Production Hypercare → Operator Steady-State Handoff → Customer Success Stabilization → Post-Launch Continuity; H1 next).
 
 **Stage 67 H1 (2026-08-11):** Production hypercare honesty — `docs/PRODUCTION_HYPERCARE_MVP.md`, `ops/mvp/production-hypercare.json`, evidence `stage67_h1_production_hypercare.json` (`test_production_hypercare_h1.py`); live hypercare / incident drill Remaining.
+
+**Stage 67 C1 (2026-08-11):** Post-launch continuity honesty — `docs/POST_LAUNCH_CONTINUITY_MVP.md`, `ops/mvp/post-launch-continuity.json`, evidence `stage67_c1_post_launch_continuity.json` (`test_post_launch_continuity_c1.py`); live continuity / steady-state handoff Remaining.

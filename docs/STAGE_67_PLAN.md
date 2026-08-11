@@ -1,6 +1,6 @@
 # Stage 67 Plan — MVP Post-Launch Continuity Fidelity
 
-**Status:** Open — H1 complete; C1 next  
+**Status:** Open — C1 complete; D1 next  
 **Base:** Production Hypercare Honesty Pack + Post-Launch Continuity Honesty Pack → MVP Post-Launch Continuity Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-140](ADR_140_STAGE67_OPEN.md)  
@@ -61,7 +61,7 @@ MVP Post-Launch Continuity Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **H1** | Production hypercare honesty packaging (Incident → Support SLA → Hypercare window; not live hypercare Complete) | P0 | COMPLETE |
-| **C1** | Post-launch continuity honesty packaging (Steady-state handoff → knowledge transfer adjacency; not live continuity Complete) | P0 | PENDING |
+| **C1** | Post-launch continuity honesty packaging (Steady-state handoff → knowledge transfer adjacency; not live continuity Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H67x** | Stage 67 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -91,12 +91,12 @@ MVP Post-Launch Continuity Fidelity
 
 ## C1 acceptance criteria
 
-- [ ] Post-launch continuity honesty packaging indexing Operator Steady-State Handoff → Customer Success Stabilization → Post-Launch Continuity with Stage 32–33 handoff / knowledge-transfer adjacency (not claiming live continuity Complete).
-- [ ] Automated proof: `backend/tests/test_post_launch_continuity_c1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 67 C1.
+- [x] Post-launch continuity honesty packaging indexing Operator Steady-State Handoff → Customer Success Stabilization → Post-Launch Continuity with Stage 32–33 handoff / knowledge-transfer adjacency (not claiming live continuity Complete).
+- [x] Automated proof: `backend/tests/test_post_launch_continuity_c1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 67 C1.
 
-**Deliverables:** `docs/POST_LAUNCH_CONTINUITY_MVP.md`, `ops/mvp/post-launch-continuity.json`, evidence `stage67_c1_post_launch_continuity.json`.
+**Deliverables:** `docs/POST_LAUNCH_CONTINUITY_MVP.md`, `ops/mvp/post-launch-continuity.json`, evidence `stage67_c1_post_launch_continuity.json` (`test_post_launch_continuity_c1.py`).
 
 ## D1 acceptance criteria
 
