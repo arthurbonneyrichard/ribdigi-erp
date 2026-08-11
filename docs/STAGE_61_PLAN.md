@@ -1,6 +1,6 @@
 # Stage 61 Plan — Commercial Fintech & Supply-Chain Fidelity
 
-**Status:** Open — F1 next  
+**Status:** Open — F1 complete; S1 next  
 **Base:** Embedded Fintech Honesty Pack + Supply Chain Integration Honesty Pack → Commercial Fintech & Supply-Chain Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-127](ADR_127_STAGE61_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Fintech & Supply-Chain Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **F1** | Embedded fintech honesty packaging (not live lending / invoice financing Complete) | P0 | PENDING |
+| **F1** | Embedded fintech honesty packaging (not live lending / invoice financing Complete) | P0 | COMPLETE |
 | **S1** | Supply chain integration honesty packaging (not live supplier supply-chain integration Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H61x** | Stage 61 exit criteria + freeze ADR | Exit | PENDING |
@@ -94,10 +94,10 @@ Commercial Fintech & Supply-Chain Fidelity
 
 ## F1 acceptance criteria
 
-- [ ] Embedded fintech honesty packaging indexing PRODUCT_OVERVIEW lending / invoice-financing Long-Term themes with Stage 49–60 commercial / billing adjacency (not claiming live embedded fintech Complete).
-- [ ] Automated proof: `backend/tests/test_embedded_fintech_f1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 61 F1.
+- [x] Embedded fintech honesty packaging indexing PRODUCT_OVERVIEW lending / invoice-financing Long-Term themes with Stage 49–60 commercial / billing adjacency (not claiming live embedded fintech Complete).
+- [x] Automated proof: `backend/tests/test_embedded_fintech_f1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 61 F1.
 
 ## S1 acceptance criteria
 

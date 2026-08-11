@@ -182,7 +182,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
-- [x] Stage 61 track opened (ADR-127: `test_stage61_open.py`, `docs/STAGE_61_PLAN.md`) — Commercial Fintech & Supply-Chain Fidelity; F1 next
+- [x] Stage 61 track opened (ADR-127: `test_stage61_open.py`, `docs/STAGE_61_PLAN.md`) — Commercial Fintech & Supply-Chain Fidelity; F1 complete; S1 next
+- [x] Embedded fintech honesty (Stage 61 F1: `test_embedded_fintech_f1.py` — `docs/EMBEDDED_FINTECH_MVP.md`, `ops/mvp/embedded-fintech.json`; evidence `stage61_f1_embedded_fintech.json`; live lending / invoice financing Remaining)
 - [x] Stage 60 track opened (ADR-125: `test_stage60_open.py`, `docs/STAGE_60_PLAN.md`) — Commercial Manufacturing & Tax Fidelity; closed under ADR-126
 - [x] Advanced manufacturing honesty (Stage 60 M1: `test_advanced_manufacturing_m1.py` — `docs/ADVANCED_MANUFACTURING_MVP.md`, `ops/mvp/advanced-manufacturing.json`; evidence `stage60_m1_advanced_manufacturing.json`; live MRP / production scheduling Remaining)
 - [x] Multi-country tax honesty (Stage 60 T1: `test_multi_country_tax_t1.py` — `docs/MULTI_COUNTRY_TAX_MVP.md`, `ops/mvp/multi-country-tax.json`; evidence `stage60_t1_multi_country_tax.json`; live multi-country tax e-file Remaining)
