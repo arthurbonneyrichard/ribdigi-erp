@@ -1,10 +1,11 @@
 # Stage 57 Plan — Commercial Mobile & Metrics Fidelity
 
-**Status:** Open — D1 complete; H57x next  
+**Status:** Closed — exit met (H57x / ADR-120)  
 **Base:** Mobile App GTM Honesty Pack + Success Metrics Honesty Pack → Commercial Mobile & Metrics Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-119](ADR_119_STAGE57_OPEN.md)  
 **Prior freeze:** [ADR-118](ADR_118_STAGE56_FREEZE.md) · [STAGE_56_EXIT_CRITERIA.md](STAGE_56_EXIT_CRITERIA.md)
+**Exit:** [STAGE_57_EXIT_CRITERIA.md](STAGE_57_EXIT_CRITERIA.md) · [ADR-120](ADR_120_STAGE57_FREEZE.md)  
 
 Stage 57 opens after Stage 56 freeze: **Mobile App GTM Honesty Packaging + Success Metrics Honesty Packaging → Commercial Mobile & Metrics Fidelity**. PRODUCT_OVERVIEW Phase 2 “Launch mobile apps” / Flutter mobile roadmap and Success Metrics themes (MAU, NPS, 99.9% uptime SLA, feature adoption), with Stage 40 status-uptime and Stage 49–56 commercial / GTM adjacency, lack dedicated customer-facing honesty packs for mobile-app GTM Remaining and measured success-metrics Remaining. This track packages those Remaining surfaces on proven Stage 36–56 commercial / ops honesty assets — **not** claiming live Flutter / App Store / Play publish Complete, native mobile app program live Complete, measured MAU / NPS Complete, measured 99.9% uptime SLA Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–56 packs as new Complete, or reopening Stages 1–56 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Mobile & Metrics Fidelity
 | **A1** | Mobile app GTM honesty packaging (not live Flutter / store publish Complete) | P0 | COMPLETE |
 | **K1** | Success metrics honesty packaging (not measured MAU / NPS / uptime SLA Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H57x** | Stage 57 exit criteria + freeze ADR | Exit | PENDING |
+| **H57x** | Stage 57 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -107,6 +108,6 @@ Commercial Mobile & Metrics Fidelity
 
 ## H57x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H57x — `docs/STAGE_57_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_120_STAGE57_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage57_exit_h57x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for A1–D1 / H57x — `docs/STAGE_57_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_120_STAGE57_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage57_exit_h57x.py`.

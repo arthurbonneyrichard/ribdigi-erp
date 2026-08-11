@@ -182,10 +182,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
-- [x] Stage 57 track opened (ADR-119: `test_stage57_open.py`, `docs/STAGE_57_PLAN.md`) — Commercial Mobile & Metrics Fidelity; D1 complete; H57x next
+- [x] Stage 57 track opened (ADR-119: `test_stage57_open.py`, `docs/STAGE_57_PLAN.md`) — Commercial Mobile & Metrics Fidelity; closed under ADR-120
 - [x] Mobile app GTM honesty (Stage 57 A1: `test_mobile_app_gtm_a1.py` — `docs/MOBILE_APP_GTM_MVP.md`, `ops/mvp/mobile-app-gtm.json`; evidence `stage57_a1_mobile_app_gtm.json`; live Flutter / store publish Remaining)
 - [x] Success metrics honesty (Stage 57 K1: `test_success_metrics_k1.py` — `docs/SUCCESS_METRICS_MVP.md`, `ops/mvp/success-metrics.json`; evidence `stage57_k1_success_metrics.json`; measured MAU / NPS / uptime Remaining)
 - [x] Stage 57 fidelity sync (D1: `test_stage57_fidelity_d1.py`, `docs/STAGE_57_FIDELITY.md` — A1–K1 + readiness + deploy / launch / security)
+- [x] Stage 57 Commercial Mobile & Metrics Fidelity (closed: `docs/STAGE_57_PLAN.md`, ADR-120) — A1–D1 / H57x complete
+- [x] Stage 57 exit + freeze (H57x: `test_stage57_exit_h57x.py`, `docs/STAGE_57_EXIT_CRITERIA.md`, ADR-120)
 - [x] Stage 56 track opened (ADR-117: `test_stage56_open.py`, `docs/STAGE_56_PLAN.md`) — Commercial Onboarding & Expansion Fidelity; closed under ADR-118
 - [x] Implementation & onboarding commercial honesty (Stage 56 O1: `test_implementation_onboarding_o1.py` — `docs/IMPLEMENTATION_ONBOARDING_MVP.md`, `ops/mvp/implementation-onboarding.json`; evidence `stage56_o1_implementation_onboarding.json`; live data-migration fee billing Remaining)
 - [x] Geographic expansion honesty (Stage 56 G1: `test_geographic_expansion_g1.py` — `docs/GEOGRAPHIC_EXPANSION_MVP.md`, `ops/mvp/geographic-expansion.json`; evidence `stage56_g1_geographic_expansion.json`; multi-market expansion Remaining)

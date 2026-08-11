@@ -187,6 +187,8 @@ Authoritative MVP docs:
 - `docs/STAGE_57_PLAN.md` (`backend/tests/test_stage57_open.py`) — Stage 57 open (ADR-119)
 - `docs/MOBILE_APP_GTM_MVP.md` (`backend/tests/test_mobile_app_gtm_a1.py`) — Stage 57 A1
 - `docs/SUCCESS_METRICS_MVP.md` (`backend/tests/test_success_metrics_k1.py`) — Stage 57 K1
+- `docs/STAGE_57_FIDELITY.md` (`backend/tests/test_stage57_fidelity_d1.py`) — Stage 57 D1
+- `docs/STAGE_57_EXIT_CRITERIA.md` / `docs/ADR_120_STAGE57_FREEZE.md` (`backend/tests/test_stage57_exit_h57x.py`) — Stage 57 H57x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -730,9 +732,9 @@ Commercial Onboarding & Expansion Fidelity — `docs/STAGE_56_PLAN.md`, ADR-117;
 
 H56x met — `docs/STAGE_56_EXIT_CRITERIA.md`, ADR-118. Stages 1–56 frozen for Stage 56 feature scope.
 
-## Stage 57 open
+## Stage 57 open (historical)
 
-Commercial Mobile & Metrics Fidelity — `docs/STAGE_57_PLAN.md`, ADR-119; Open — K1 complete; D1 next.
+Commercial Mobile & Metrics Fidelity — `docs/STAGE_57_PLAN.md`, ADR-119; Closed — exit met (H57x / ADR-120).
 
 ## Stage 57 A1 — Mobile app GTM honesty
 
@@ -741,3 +743,11 @@ Commercial Mobile & Metrics Fidelity — `docs/STAGE_57_PLAN.md`, ADR-119; Open 
 ## Stage 57 K1 — Success metrics honesty
 
 `docs/SUCCESS_METRICS_MVP.md` + `ops/mvp/success-metrics.json` — packaging Complete; `mau_measured_claimed` / `nps_measured_claimed` / `uptime_sla_measured_claimed` / `success_metrics_program_live` remain false.
+
+## Stage 57 D1 — Mobile & metrics fidelity
+
+`docs/STAGE_57_FIDELITY.md` — maps A1–K1 → readiness / launch / deploy / security (`test_stage57_fidelity_d1.py`).
+
+## Stage 57 exit
+
+H57x met — `docs/STAGE_57_EXIT_CRITERIA.md`, ADR-120. Stages 1–57 frozen for Stage 57 feature scope.
