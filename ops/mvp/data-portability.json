@@ -1,0 +1,153 @@
+{
+  "stage": "37",
+  "workstream": "P1",
+  "doc": "docs/DATA_PORTABILITY_MVP.md",
+  "backup_runbook": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+  "compliance_questionnaire": "ops/mvp/compliance-questionnaire.json",
+  "compliance_readiness": "ops/mvp/compliance-readiness-register.json",
+  "compliance_questionnaire_doc": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+  "compliance_readiness_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "stage37_plan": "docs/STAGE_37_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "api_documentation": "docs/API_DOCUMENTATION.md",
+  "packaging_complete": true,
+  "gdpr_complete_claimed": false,
+  "dsar_portal_claimed": false,
+  "live_portability_workflow_claimed": false,
+  "consent_management_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "steps": [
+    {
+      "id": "dp-backup-download",
+      "category": "access",
+      "title": "Index tenant-scoped logical .ribbak backup download as access/portability surface",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "dp-reports-export",
+      "category": "portability",
+      "title": "Map GET /reports/export CSV/PDF/XLSX surfaces for financial/commerce reports",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+      ],
+      "source": "docs/API_DOCUMENTATION.md"
+    },
+    {
+      "id": "dp-audit-export",
+      "category": "portability",
+      "title": "Map GET /audit-logs/export CSV/PDF as audit access surface",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/API_DOCUMENTATION.md"
+    },
+    {
+      "id": "dp-catalog-export-deferred",
+      "category": "deferred",
+      "title": "Confirm dedicated catalog CSV export remains deferred (import Complete MVP)",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/STAGE_37_PLAN.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "dp-tenant-isolation",
+      "category": "access",
+      "title": "Confirm tenant isolation on backup download / export paths (foreign 404)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/SECURITY_GUIDE.md",
+        "PRODUCTION_READINESS.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "dp-compliance-questionnaire-privacy",
+      "category": "compliance",
+      "title": "Link Stage 34 C1 privacy / GDPR questionnaire theme to portability boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+        "ops/mvp/compliance-questionnaire.json"
+      ],
+      "source": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+    },
+    {
+      "id": "dp-security-guide-gdpr",
+      "category": "compliance",
+      "title": "Link SECURITY_GUIDE GDPR / data-protection themes to portability honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/COMPLIANCE_READINESS_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "dp-brd-gdpr-ready",
+      "category": "honesty",
+      "title": "BRD GDPR-ready portability theme honesty \u2014 packaging \u2260 certification",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/STAGE_37_PLAN.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "dp-dsar-portal-remaining",
+      "category": "honesty",
+      "title": "Live DSAR portal / automated subject-request workflow Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_37_PLAN.md",
+        "docs/DATA_PORTABILITY_MVP.md"
+      ],
+      "source": "docs/STAGE_37_PLAN.md#P1"
+    },
+    {
+      "id": "dp-gdpr-cert-remaining",
+      "category": "honesty",
+      "title": "GDPR / privacy certification Remaining \u2014 packaging \u2260 certified Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_37_PLAN.md",
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "ops/mvp/compliance-readiness-register.json"
+      ],
+      "source": "docs/STAGE_37_PLAN.md#P1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage37_p1_data_portability.json",
+  "deferred": [
+    "Claiming GDPR / privacy certification Complete because Stage 37 P1 packaging exists",
+    "Live DSAR portal / automated subject-request workflow Complete",
+    "Consent-management SaaS Complete",
+    "Hard-delete archival Complete (ADR-003 / Stage 37 E1)",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

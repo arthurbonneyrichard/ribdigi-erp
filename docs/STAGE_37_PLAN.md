@@ -1,6 +1,6 @@
 # Stage 37 Plan — Commercial Data Protection Fidelity
 
-**Status:** Open — P1 next  
+**Status:** Open — P1 complete; E1 next  
 **Base:** Data Subject Access / Portability Pack + Erasure / Soft-Delete Honesty Pack → Commercial Data Protection Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-079](ADR_079_STAGE37_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Data Protection Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **P1** | Data subject access / portability packaging (not GDPR / DSAR Complete) | P0 | PENDING |
+| **P1** | Data subject access / portability packaging (not GDPR / DSAR Complete) | P0 | COMPLETE |
 | **E1** | Erasure / soft-delete honesty packaging (ADR-003 boundary; not hard-delete Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H37x** | Stage 37 exit criteria + freeze ADR | Exit | PENDING |
@@ -57,10 +57,10 @@ Commercial Data Protection Fidelity
 
 ## P1 acceptance criteria
 
-- [ ] Data subject access / portability packaging consolidating existing export / backup / report surfaces into a customer-facing portability honesty boundary (not forging GDPR / live DSAR Complete).
-- [ ] Automated proof: `backend/tests/test_data_portability_p1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 37 P1.
+- [x] Data subject access / portability packaging consolidating existing export / backup / report surfaces into a customer-facing portability honesty boundary (not forging GDPR / live DSAR Complete).
+- [x] Automated proof: `backend/tests/test_data_portability_p1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 37 P1.
 
 ## E1 acceptance criteria
 
@@ -85,4 +85,4 @@ Commercial Data Protection Fidelity
 
 ## Sign-off
 
-Stage 37 opens under ADR-079. P1 is next. Stages 1–36 remain frozen for their scopes.
+Stage 37 P1 complete. E1 next. Stages 1–36 remain frozen for their scopes.
