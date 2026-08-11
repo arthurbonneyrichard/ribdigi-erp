@@ -89,6 +89,7 @@ Authoritative MVP docs:
 - `docs/STAGE_43_PLAN.md` (`backend/tests/test_stage43_open.py`) — Stage 43 open (ADR-091)
 - `docs/TOS_AUP_MVP.md` (`backend/tests/test_tos_aup_t1.py`) — Stage 43 T1
 - `docs/COOKIE_PRIVACY_NOTICE_MVP.md` (`backend/tests/test_cookie_privacy_notice_c1.py`) — Stage 43 C1
+- `docs/STAGE_43_FIDELITY.md` (`backend/tests/test_stage43_fidelity_d1.py`) — Stage 43 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -354,7 +355,7 @@ H42x met — `docs/STAGE_42_EXIT_CRITERIA.md`, ADR-090. Stages 1–42 frozen for
 
 ## Stage 43 open
 
-Commercial Legal Notice Fidelity — `docs/STAGE_43_PLAN.md`, ADR-091; C1 complete; D1 next.
+Commercial Legal Notice Fidelity — `docs/STAGE_43_PLAN.md`, ADR-091; D1 complete; H43x next.
 
 ## Stage 43 T1 — ToS / AUP honesty
 
@@ -363,3 +364,7 @@ Commercial Legal Notice Fidelity — `docs/STAGE_43_PLAN.md`, ADR-091; C1 comple
 ## Stage 43 C1 — Cookie / privacy notice honesty
 
 `docs/COOKIE_PRIVACY_NOTICE_MVP.md` + `ops/mvp/cookie-privacy-notice.json` — packaging Complete; `cookie_consent_live` / `cmp_saas_claimed` / `privacy_notice_live` / `legal_counsel_claimed` remain false.
+
+## Stage 43 D1 — Fidelity
+
+`docs/STAGE_43_FIDELITY.md` maps T1–C1 → readiness / launch / deploy / security (`test_stage43_fidelity_d1.py`).

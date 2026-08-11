@@ -438,6 +438,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 43 C1 (2026-08-11):** Cookie / privacy notice honesty — `docs/COOKIE_PRIVACY_NOTICE_MVP.md`, `ops/mvp/cookie-privacy-notice.json`, evidence `stage43_c1_cookie_privacy_notice.json` (`test_cookie_privacy_notice_c1.py`); live cookie-consent Remaining.
 
+**Stage 43 D1 (2026-08-11):** Commercial legal notice fidelity — `docs/STAGE_43_FIDELITY.md` (`test_stage43_fidelity_d1.py`); maps T1–C1 → readiness / launch / deploy / security; signed ToS / live cookie-consent Remaining.
+
 
 
 
