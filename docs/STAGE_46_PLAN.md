@@ -1,6 +1,6 @@
 # Stage 46 Plan — Commercial Liability & Remedy Fidelity
 
-**Status:** Open — W1 complete; D1 next  
+**Status:** Open — D1 complete; H46x next  
 **Base:** Limitation of Liability / Indemnity Honesty Pack + Service Credit / Warranty Honesty Pack → Commercial Liability & Remedy Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-097](ADR_097_STAGE46_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Liability & Remedy Fidelity
 |----|------------|----------|---------|
 | **L1** | Limitation of liability / indemnity honesty packaging (not signed liability-cap / indemnity Complete) | P0 | COMPLETE |
 | **W1** | Service credit / warranty honesty packaging (not live service credits / warranty Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H46x** | Stage 46 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -81,9 +81,9 @@ Commercial Liability & Remedy Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_46_FIDELITY.md` maps L1–W1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 46 D1.
-- [ ] Automated proof: `backend/tests/test_stage46_fidelity_d1.py`.
+- [x] `docs/STAGE_46_FIDELITY.md` maps L1–W1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 46 D1.
+- [x] Automated proof: `backend/tests/test_stage46_fidelity_d1.py`.
 
 ## H46x acceptance criteria
 

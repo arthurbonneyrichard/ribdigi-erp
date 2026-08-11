@@ -468,6 +468,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 46 W1 (2026-08-11):** Service credit / warranty honesty — `docs/SERVICE_CREDIT_WARRANTY_MVP.md`, `ops/mvp/service-credit-warranty.json`, evidence `stage46_w1_service_credit_warranty.json` (`test_service_credit_warranty_w1.py`); live service credits Remaining.
 
+**Stage 46 D1 (2026-08-11):** Commercial liability & remedy fidelity — `docs/STAGE_46_FIDELITY.md` (`test_stage46_fidelity_d1.py`); maps L1–W1 → readiness / launch / deploy / security; signed liability-cap / live service credits Remaining.
+
 
 
 

@@ -110,6 +110,7 @@ Authoritative MVP docs:
 - `docs/STAGE_46_PLAN.md` (`backend/tests/test_stage46_open.py`) — Stage 46 open (ADR-097)
 - `docs/LIABILITY_INDEMNITY_MVP.md` (`backend/tests/test_liability_indemnity_l1.py`) — Stage 46 L1
 - `docs/SERVICE_CREDIT_WARRANTY_MVP.md` (`backend/tests/test_service_credit_warranty_w1.py`) — Stage 46 W1
+- `docs/STAGE_46_FIDELITY.md` (`backend/tests/test_stage46_fidelity_d1.py`) — Stage 46 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -435,7 +436,7 @@ H45x met — `docs/STAGE_45_EXIT_CRITERIA.md`, ADR-096. Stages 1–45 frozen for
 
 ## Stage 46 open
 
-Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; W1 complete; D1 next.
+Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; D1 complete; H46x next.
 
 ## Stage 46 L1 — Limitation of liability / indemnity honesty
 
@@ -444,3 +445,7 @@ Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; W1 
 ## Stage 46 W1 — Service credit / warranty honesty
 
 `docs/SERVICE_CREDIT_WARRANTY_MVP.md` + `ops/mvp/service-credit-warranty.json` — packaging Complete; `service_credits_live` / `warranty_live_claimed` / `uptime_credit_claimed` / `remedy_schedule_live` remain false.
+
+## Stage 46 D1 — Fidelity
+
+`docs/STAGE_46_FIDELITY.md` maps L1–W1 → readiness / launch / deploy / security (`test_stage46_fidelity_d1.py`).
