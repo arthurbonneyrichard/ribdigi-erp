@@ -1379,3 +1379,5 @@ Every feature in every phase must meet:
 **Stage 60 T1 (2026-08-11):** Multi-country tax honesty — `docs/MULTI_COUNTRY_TAX_MVP.md`, `ops/mvp/multi-country-tax.json`, evidence `stage60_t1_multi_country_tax.json` (`test_multi_country_tax_t1.py`); live multi-country tax e-file Remaining.
 
 **Stage 60 D1 (2026-08-11):** Manufacturing & tax fidelity sync — `docs/STAGE_60_FIDELITY.md` (`test_stage60_fidelity_d1.py`); maps M1–T1 → readiness / launch / deploy / security.
+
+**Stage 60 exit (2026-08-11):** M1, T1, D1, H60x met — `docs/STAGE_60_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_126_STAGE60_FREEZE.md`. Fidelity: `docs/STAGE_60_FIDELITY.md`.

@@ -1,10 +1,11 @@
 # Stage 60 Plan — Commercial Manufacturing & Tax Fidelity
 
-**Status:** Open — D1 complete; H60x next  
+**Status:** Closed — exit met (H60x / ADR-126)  
 **Base:** Advanced Manufacturing Honesty Pack + Multi-Country Tax Honesty Pack → Commercial Manufacturing & Tax Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-125](ADR_125_STAGE60_OPEN.md)  
 **Prior freeze:** [ADR-124](ADR_124_STAGE59_FREEZE.md) · [STAGE_59_EXIT_CRITERIA.md](STAGE_59_EXIT_CRITERIA.md)
+**Exit:** [STAGE_60_EXIT_CRITERIA.md](STAGE_60_EXIT_CRITERIA.md) · [ADR-126](ADR_126_STAGE60_FREEZE.md)  
 
 Stage 60 opens after Stage 59 freeze: **Advanced Manufacturing Honesty Packaging + Multi-Country Tax Honesty Packaging → Commercial Manufacturing & Tax Fidelity**. PRODUCT_OVERVIEW Mid-Term Future Roadmap themes (Advanced Manufacturing module with MRP / production scheduling; Multi-country tax compliance for GST / VAT / Sales Tax), with Stage 49–59 commercial / channel / tax-report adjacency, lack dedicated customer-facing honesty packs for Advanced Manufacturing / MRP Remaining and multi-country tax compliance Remaining. This track packages those Remaining surfaces on proven Stage 36–59 commercial / ops honesty assets — **not** claiming live Advanced Manufacturing / MRP Complete, live multi-country tax e-file / compliance Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–59 packs as new Complete, or reopening Stages 1–59 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Manufacturing & Tax Fidelity
 | **M1** | Advanced manufacturing honesty packaging (not live MRP / production scheduling Complete) | P0 | COMPLETE |
 | **T1** | Multi-country tax honesty packaging (not live GST / VAT / Sales Tax e-file Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H60x** | Stage 60 exit criteria + freeze ADR | Exit | PENDING |
+| **H60x** | Stage 60 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -114,6 +115,6 @@ Commercial Manufacturing & Tax Fidelity
 
 ## H60x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for M1–D1 / H60x — `docs/STAGE_60_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_126_STAGE60_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage60_exit_h60x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for M1–D1 / H60x — `docs/STAGE_60_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_126_STAGE60_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage60_exit_h60x.py`.
