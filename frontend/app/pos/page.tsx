@@ -354,7 +354,7 @@ export default function Page() {
       <div className="tpos">
         <header className="tpos-top">
           <div>
-            <h1>Touch POS</h1>
+            <h1>Point of Sale</h1>
             <p className="muted">Tap tiles or scan a barcode · image catalog · large cart controls</p>
           </div>
           <div className="tpos-shift">

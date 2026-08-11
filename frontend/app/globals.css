@@ -355,7 +355,7 @@
 [data-theme="dark"] .plat-form label>span{color:#cbd5e1}
 [data-theme="dark"] .plat-form input,[data-theme="dark"] .plat-form select{background:#0b1220;border-color:#334155;color:#e2e8f0}
 
-/* ---------- Touch POS ---------- */
+/* ---------- POS ---------- */
 .tpos{display:flex;flex-direction:column;gap:14px}
 .tpos-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap}
 .tpos-top h1{margin:0}
