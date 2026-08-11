@@ -470,6 +470,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 46 D1 (2026-08-11):** Commercial liability & remedy fidelity — `docs/STAGE_46_FIDELITY.md` (`test_stage46_fidelity_d1.py`); maps L1–W1 → readiness / launch / deploy / security; signed liability-cap / live service credits Remaining.
 
+**Stage 46 exit (2026-08-11):** L1, W1, D1, H46x met — `docs/STAGE_46_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_098_STAGE46_FREEZE.md`. Fidelity: `docs/STAGE_46_FIDELITY.md`.
+
 
 
 

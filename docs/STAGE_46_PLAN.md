@@ -1,10 +1,11 @@
 # Stage 46 Plan — Commercial Liability & Remedy Fidelity
 
-**Status:** Open — D1 complete; H46x next  
+**Status:** Closed — exit met (H46x / ADR-098)  
 **Base:** Limitation of Liability / Indemnity Honesty Pack + Service Credit / Warranty Honesty Pack → Commercial Liability & Remedy Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-097](ADR_097_STAGE46_OPEN.md)  
-**Prior freeze:** [ADR-096](ADR_096_STAGE45_FREEZE.md) · [STAGE_45_EXIT_CRITERIA.md](STAGE_45_EXIT_CRITERIA.md)
+**Prior freeze:** [ADR-096](ADR_096_STAGE45_FREEZE.md) · [STAGE_45_EXIT_CRITERIA.md](STAGE_45_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_46_EXIT_CRITERIA.md](STAGE_46_EXIT_CRITERIA.md) · [ADR-098](ADR_098_STAGE46_FREEZE.md)
 
 Stage 46 opens after Stage 45 freeze: **Limitation of Liability / Indemnity Honesty Packaging + Service Credit / Warranty Honesty Packaging → Commercial Liability & Remedy Fidelity**. Stage 39 MSA security-addendum and Stage 43 ToS/AUP notice packs, plus Stage 36 support-SLA and Stage 40 uptime / Stage 45 RTO adjacency, lack dedicated customer-facing honesty packs for liability / indemnity boundaries and service-credit / warranty remedy Remaining. This track packages those Remaining surfaces on proven Stage 36–45 commercial / contract / availability assets — **not** claiming signed liability caps Complete, live indemnity Complete, live service credits Complete, warranty Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–45 packs as new Complete, or reopening Stages 1–45 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Liability & Remedy Fidelity
 | **L1** | Limitation of liability / indemnity honesty packaging (not signed liability-cap / indemnity Complete) | P0 | COMPLETE |
 | **W1** | Service credit / warranty honesty packaging (not live service credits / warranty Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H46x** | Stage 46 exit criteria + freeze ADR | Exit | PENDING |
+| **H46x** | Stage 46 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -87,6 +88,6 @@ Commercial Liability & Remedy Fidelity
 
 ## H46x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for L1–D1 / H46x — `docs/STAGE_46_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_098_STAGE46_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage46_exit_h46x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for L1–D1 / H46x — `docs/STAGE_46_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_098_STAGE46_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage46_exit_h46x.py`.

@@ -111,6 +111,7 @@ Authoritative MVP docs:
 - `docs/LIABILITY_INDEMNITY_MVP.md` (`backend/tests/test_liability_indemnity_l1.py`) — Stage 46 L1
 - `docs/SERVICE_CREDIT_WARRANTY_MVP.md` (`backend/tests/test_service_credit_warranty_w1.py`) — Stage 46 W1
 - `docs/STAGE_46_FIDELITY.md` (`backend/tests/test_stage46_fidelity_d1.py`) — Stage 46 D1
+- `docs/STAGE_46_EXIT_CRITERIA.md` / `docs/ADR_098_STAGE46_FREEZE.md` (`backend/tests/test_stage46_exit_h46x.py`) — Stage 46 H46x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -436,7 +437,7 @@ H45x met — `docs/STAGE_45_EXIT_CRITERIA.md`, ADR-096. Stages 1–45 frozen for
 
 ## Stage 46 open
 
-Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; D1 complete; H46x next.
+Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; Closed — exit met (H46x / ADR-098).
 
 ## Stage 46 L1 — Limitation of liability / indemnity honesty
 
@@ -449,3 +450,7 @@ Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097; D1 
 ## Stage 46 D1 — Fidelity
 
 `docs/STAGE_46_FIDELITY.md` maps L1–W1 → readiness / launch / deploy / security (`test_stage46_fidelity_d1.py`).
+
+## Stage 46 exit
+
+H46x met — `docs/STAGE_46_EXIT_CRITERIA.md`, ADR-098. Stages 1–46 frozen for Stage 46 feature scope.

@@ -390,10 +390,11 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 45 T1** | Data retention / return honesty — `docs/DATA_RETENTION_RETURN_MVP.md`, `ops/mvp/data-retention-return.json` (`test_data_retention_return_t1.py`); data-return portal Remaining |
 | **Stage 45 D1** | Continuity & exit fidelity — `docs/STAGE_45_FIDELITY.md` (`test_stage45_fidelity_d1.py`) maps O1–T1 → readiness / launch / deploy / security |
 | **Stage 45 fidelity** | D1 maps O1–T1 continuity & exit — `docs/STAGE_45_FIDELITY.md` (`test_stage45_fidelity_d1.py`); exit/freeze `docs/STAGE_45_EXIT_CRITERIA.md`, ADR-096 (`test_stage45_exit_h45x.py`); historical open ADR-095; measured RTO/RPO / data-return portal / go-live / §7 remain Remaining |
-| **Stage 46 open** | Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097 (`test_stage46_open.py`); Stages 1–45 remain frozen; D1 complete; H46x next |
+| **Stage 46 open** | Commercial Liability & Remedy Fidelity — `docs/STAGE_46_PLAN.md`, ADR-097 (`test_stage46_open.py`); Stages 1–45 remain frozen; closed under ADR-098 |
 | **Stage 46 L1** | Limitation of liability / indemnity honesty — `docs/LIABILITY_INDEMNITY_MVP.md`, `ops/mvp/liability-indemnity.json` (`test_liability_indemnity_l1.py`); signed liability-cap Remaining |
 | **Stage 46 W1** | Service credit / warranty honesty — `docs/SERVICE_CREDIT_WARRANTY_MVP.md`, `ops/mvp/service-credit-warranty.json` (`test_service_credit_warranty_w1.py`); live service credits Remaining |
 | **Stage 46 D1** | Liability & remedy fidelity — `docs/STAGE_46_FIDELITY.md` (`test_stage46_fidelity_d1.py`) maps L1–W1 → readiness / launch / deploy / security |
+| **Stage 46 fidelity** | D1 maps L1–W1 liability & remedy — `docs/STAGE_46_FIDELITY.md` (`test_stage46_fidelity_d1.py`); exit/freeze `docs/STAGE_46_EXIT_CRITERIA.md`, ADR-098 (`test_stage46_exit_h46x.py`); historical open ADR-097; signed liability-cap / live service credits / go-live / §7 remain Remaining |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |
