@@ -224,6 +224,9 @@ def render_quotation_text(
         lines.extend(part[:width] for part in footer_lines)
     elif tpl.startswith("thermal"):
         lines.extend(["", "Thank you!"[:width]])
+    from app.print_branding import platform_print_footer_text_lines
+
+    lines.extend(platform_print_footer_text_lines(width=width, center=tpl.startswith("thermal")))
     return "\n".join(lines)
 
 
@@ -249,7 +252,7 @@ def render_quotation_html(
 ) -> str:
     from html import escape
 
-    from app.print_branding import brand_html_block, header_footer_html
+    from app.print_branding import brand_html_block, header_footer_html, platform_print_footer_html
 
     tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
     cur = escape(currency or "GHS")
@@ -289,6 +292,7 @@ def render_quotation_html(
     footer_html = header_footer_html(document_footer, css_class="doc-footer") or (
         '<p class="muted" style="margin-top:28px">Thank you for considering us.</p>'
     )
+    footer_html = f"{footer_html}{platform_print_footer_html()}"
     q_no = escape(str(quotation_data.get("quotation_number") or ""))
     status = escape(str(quotation_data.get("status") or ""))
     rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
@@ -1377,6 +1381,9 @@ def render_credit_note_text(
         lines.extend(part[:width] for part in footer_lines)
     elif tpl.startswith("thermal"):
         lines.extend(["", "Thank you!"[:width]])
+    from app.print_branding import platform_print_footer_text_lines
+
+    lines.extend(platform_print_footer_text_lines(width=width, center=tpl.startswith("thermal")))
     return "\n".join(lines)
 
 
@@ -1403,7 +1410,7 @@ def render_credit_note_html(
 ) -> str:
     from html import escape
 
-    from app.print_branding import brand_html_block, header_footer_html
+    from app.print_branding import brand_html_block, header_footer_html, platform_print_footer_html
 
     tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
     cur = escape(currency or "GHS")
@@ -1444,6 +1451,7 @@ def render_credit_note_html(
     )
     header_html = header_footer_html(document_header, css_class="doc-header")
     footer_html = header_footer_html(document_footer, css_class="doc-footer")
+    footer_html = f"{footer_html}{platform_print_footer_html()}"
     rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
     meta_html = "<br>".join(meta)
     brand_block = brand_html_block(

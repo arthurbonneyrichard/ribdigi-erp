@@ -255,6 +255,9 @@ def render_invoice_text(
         lines.extend(part[:width] for part in footer_lines)
     elif tpl.startswith("thermal"):
         lines.extend(["", "Thank you!"[:width]])
+    from app.print_branding import platform_print_footer_text_lines
+
+    lines.extend(platform_print_footer_text_lines(width=width, center=tpl.startswith("thermal")))
     return "\n".join(lines)
 
 
@@ -280,7 +283,7 @@ def render_invoice_html(
 ) -> str:
     from html import escape
 
-    from app.print_branding import brand_html_block, header_footer_html
+    from app.print_branding import brand_html_block, header_footer_html, platform_print_footer_html
 
     tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
     cur = escape(currency or invoice_data.get("currency") or "GHS")
@@ -324,6 +327,7 @@ def render_invoice_html(
             if tpl.startswith("thermal")
             else "<p class='muted' style='margin-top:28px'>Thank you for your business.</p>"
         )
+    footer_html = f"{footer_html}{platform_print_footer_html()}"
     meta_html = "<br>".join(meta)
     rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
     inv_no = escape(str(invoice_data.get("invoice_number") or ""))

@@ -1176,6 +1176,9 @@ def render_po_text(po_data: dict, *, supplier_name: str, company_name: str) -> s
     )
     if po_data.get("notes"):
         lines.extend(["", f"Notes: {po_data['notes']}"])
+    from app.print_branding import platform_print_footer_text_lines
+
+    lines.extend(platform_print_footer_text_lines(width=72))
     return "\n".join(lines)
 
 
@@ -2214,6 +2217,9 @@ def render_debit_note_text(
     )
     if return_data.get("notes"):
         lines.extend(["", f"Notes: {return_data['notes']}"])
+    from app.print_branding import platform_print_footer_text_lines
+
+    lines.extend(platform_print_footer_text_lines(width=72))
     return "\n".join(lines)
 
 

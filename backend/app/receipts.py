@@ -193,7 +193,11 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
             lines.append(_center(part, width))
     else:
         lines.append(_center("Thank you", width))
-    lines.append(_center("Powered by RIBDIGI", width))
+    from app.print_branding import platform_print_footer_text_lines
+
+    for part in platform_print_footer_text_lines(width=width, center=True):
+        if part:
+            lines.append(part)
     lines.append("")
     return "\n".join(lines)
 

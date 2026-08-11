@@ -7,7 +7,14 @@ from datetime import datetime
 import pytest
 
 from app import storage as storage_svc
-from app.print_branding import document_company_name, load_logo_data_url, tenant_document_brand
+from app.print_branding import (
+    document_company_name,
+    load_logo_data_url,
+    platform_print_footer_html,
+    platform_print_footer_text_lines,
+    PLATFORM_PRINT_FOOTER_LINES,
+    tenant_document_brand,
+)
 from app.receipts import build_receipt_payload, render_thermal_text
 from app.sales import render_invoice_html, render_invoice_text
 from tests.conftest import auth_headers
@@ -230,3 +237,71 @@ async def test_invoice_print_html_includes_uploaded_logo(client, db_session, tmp
     assert payload["logo_data_url"].startswith("data:image/")
     assert payload["company_name"] == "Alpha Retail Limited"
     assert "[Company logo on file]" in payload["text"]
+
+def test_platform_print_footer_branding():
+    lines = platform_print_footer_text_lines(width=48, center=False)
+    assert lines[0] == ""
+    assert "RIBDIGI ERP" in lines
+    assert "One System. Total Business Control." in lines
+    assert "A Ribdigi House Product" in lines
+    assert PLATFORM_PRINT_FOOTER_LINES == (
+        "RIBDIGI ERP",
+        "One System. Total Business Control.",
+        "A Ribdigi House Product",
+    )
+    html = platform_print_footer_html()
+    assert "platform-footer" in html
+    assert "RIBDIGI ERP" in html
+    assert "One System. Total Business Control." in html
+    assert "A Ribdigi House Product" in html
+
+
+def test_invoice_and_receipt_include_platform_footer():
+    data = {
+        "invoice_number": "INV-1",
+        "status": "posted",
+        "subtotal": 10,
+        "tax_amount": 0,
+        "discount_amount": 0,
+        "total_amount": 10,
+        "paid_amount": 0,
+        "balance_due": 10,
+        "items": [{"product_id": "p1", "quantity": 1, "unit_price": 10, "line_total": 10}],
+    }
+    text = render_invoice_text(
+        data,
+        company_name="Acme",
+        customer_name="Buyer",
+        item_labels={"p1": "Widget"},
+        template="a4",
+    )
+    assert "RIBDIGI ERP" in text
+    assert "One System. Total Business Control." in text
+    assert "A Ribdigi House Product" in text
+    html = render_invoice_html(
+        data,
+        company_name="Acme",
+        customer_name="Buyer",
+        item_labels={"p1": "Widget"},
+        template="a4",
+    )
+    assert "platform-footer" in html
+    assert "A Ribdigi House Product" in html
+
+    receipt = {
+        "company_name": "Acme",
+        "receipt_number": "R1",
+        "currency": "GHS",
+        "subtotal": 10,
+        "tax": 0,
+        "discount_amount": 0,
+        "total": 10,
+        "payment_method": "cash",
+        "items": [{"name": "Widget", "quantity": 1, "unit_price": 10, "line_total": 10}],
+    }
+    rtext = render_thermal_text(receipt, paper="80mm")
+    assert "RIBDIGI ERP" in rtext
+    assert "One System. Total Business Control." in rtext
+    assert "A Ribdigi House Product" in rtext
+    assert "Powered by RIBDIGI" not in rtext
+

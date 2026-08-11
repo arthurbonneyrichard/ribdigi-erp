@@ -108,6 +108,40 @@ def header_footer_html(text: str | None, *, css_class: str) -> str:
     return f'<p class="{css_class} muted">{body}</p>'
 
 
+# Platform branding on printable documents (invoices, receipts, quotes, POs, etc.)
+PLATFORM_PRINT_FOOTER_LINES: tuple[str, ...] = (
+    "RIBDIGI ERP",
+    "One System. Total Business Control.",
+    "A Ribdigi House Product",
+)
+
+
+def platform_print_footer_text_lines(*, width: int = 42, center: bool = False) -> list[str]:
+    """Monospace platform footer lines for text / thermal / PDF-from-text prints."""
+
+    def _fit(line: str) -> str:
+        text = line if len(line) <= width else line[:width]
+        if not center:
+            return text
+        pad = max(0, width - len(text))
+        left = pad // 2
+        return (" " * left) + text
+
+    return ["", *(_fit(line) for line in PLATFORM_PRINT_FOOTER_LINES)]
+
+
+def platform_print_footer_html() -> str:
+    """HTML platform footer block appended below tenant document_footer on print views."""
+    from html import escape
+
+    body = "<br>".join(escape(line) for line in PLATFORM_PRINT_FOOTER_LINES)
+    return (
+        '<footer class="platform-footer" style="margin-top:32px;padding-top:14px;'
+        "border-top:1px solid #d6d3d1;text-align:center;color:#57534e;font-size:0.85rem;"
+        f'line-height:1.45">{body}</footer>'
+    )
+
+
 def brand_html_block(
     *,
     company_name: str,
