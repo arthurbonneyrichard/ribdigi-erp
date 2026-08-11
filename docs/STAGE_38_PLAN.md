@@ -1,6 +1,6 @@
 # Stage 38 Plan — Commercial Security Disclosure Fidelity
 
-**Status:** Open — V1 next  
+**Status:** Open — V1 complete; B1 next  
 **Base:** Vulnerability Disclosure Policy Pack + Breach Notification / Security Contact Honesty Pack → Commercial Security Disclosure Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-081](ADR_081_STAGE38_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Security Disclosure Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **V1** | Vulnerability disclosure policy packaging (not live disclosure / bug-bounty Complete) | P0 | PENDING |
+| **V1** | Vulnerability disclosure policy packaging (not live disclosure / bug-bounty Complete) | P0 | COMPLETE |
 | **B1** | Breach notification / security contact honesty packaging (not live breach drill Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H38x** | Stage 38 exit criteria + freeze ADR | Exit | PENDING |
@@ -57,10 +57,10 @@ Commercial Security Disclosure Fidelity
 
 ## V1 acceptance criteria
 
-- [ ] Vulnerability disclosure policy packaging consolidating SECURITY_GUIDE / Stage 27–29 security scan honesty into a customer-facing disclosure boundary (not forging live disclosure / bug-bounty Complete).
-- [ ] Automated proof: `backend/tests/test_vuln_disclosure_v1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 38 V1.
+- [x] Vulnerability disclosure policy packaging consolidating SECURITY_GUIDE / Stage 27–29 security scan honesty into a customer-facing disclosure boundary (not forging live disclosure / bug-bounty Complete).
+- [x] Automated proof: `backend/tests/test_vuln_disclosure_v1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 38 V1.
 
 ## B1 acceptance criteria
 
@@ -85,4 +85,4 @@ Commercial Security Disclosure Fidelity
 
 ## Sign-off
 
-Stage 38 opens under ADR-081. V1 is next. Stages 1–37 remain frozen for their scopes.
+Stage 38 V1 complete. B1 next. Stages 1–37 remain frozen for their scopes.

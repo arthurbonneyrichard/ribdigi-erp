@@ -27,7 +27,7 @@
 | `billing-deferred-honesty.json` | Stage 36 B1 billing-deferred honesty — `billing_complete_claimed: false` / `payment_provider_claimed: false` / `checkout_success_claimed: false` / `deferred_implemented_claimed: false` |
 | `data-portability.json` | Stage 37 P1 data subject access / portability — `gdpr_complete_claimed: false` / `dsar_portal_claimed: false` / `live_portability_workflow_claimed: false` / `consent_management_claimed: false` |
 | `erasure-honesty.json` | Stage 37 E1 erasure / soft-delete honesty — `hard_delete_claimed: false` / `erasure_complete_claimed: false` / `anonymize_workflow_claimed: false` / `deferred_implemented_claimed: false` |
-| *(Stage 38 open)* | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081; V1/B1 packs pending |
+| `vuln-disclosure.json` | Stage 38 V1 vulnerability disclosure — `disclosure_program_claimed: false` / `bug_bounty_claimed: false` / `continuous_disclosure_claimed: false` / `researcher_intake_live: false` |
 
 Authoritative MVP docs:
 
@@ -56,7 +56,8 @@ Authoritative MVP docs:
 - `docs/STAGE_37_PLAN.md` (`backend/tests/test_stage37_open.py`) — Stage 37 open (ADR-079)
 - `docs/DATA_PORTABILITY_MVP.md` (`backend/tests/test_data_portability_p1.py`) — Stage 37 P1
 - `docs/ERASURE_HONESTY_MVP.md` (`backend/tests/test_erasure_honesty_e1.py`) — Stage 37 E1
-- `docs/STAGE_38_PLAN.md` (`backend/tests/test_stage38_open.py`) — Stage 38 open (ADR-081); V1 next
+- `docs/STAGE_38_PLAN.md` (`backend/tests/test_stage38_open.py`) — Stage 38 open (ADR-081)
+- `docs/VULN_DISCLOSURE_MVP.md` (`backend/tests/test_vuln_disclosure_v1.py`) — Stage 38 V1
 
 ## Stage 33 K1 — Residual risk register
 
@@ -213,3 +214,11 @@ Indexes ADR-003 soft-delete-only MVP vs BR-3.1 hard-delete archival Remaining. S
 ## Stage 37 exit
 
 H37x met — `docs/STAGE_37_EXIT_CRITERIA.md`, ADR-080. Stages 1–37 frozen; Stage 38+ requires open ADR after CONTINUE/NEXT.
+
+## Stage 38 V1 — Vulnerability disclosure
+
+Indexes SECURITY_GUIDE / Stage 27–29 security packs as a coordinated disclosure honesty boundary. See `docs/VULN_DISCLOSURE_MVP.md`.
+
+- Pack: `vuln-disclosure.json`
+- Tests: `backend/tests/test_vuln_disclosure_v1.py`
+- Honesty: `disclosure_program_claimed: false`, `bug_bounty_claimed: false`, `continuous_disclosure_claimed: false`, `researcher_intake_live: false` — packaging ≠ live disclosure Complete

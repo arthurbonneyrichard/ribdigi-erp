@@ -384,6 +384,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 38 open (2026-08-11):** Commercial Security Disclosure Fidelity track approved — `docs/ADR_081_STAGE38_OPEN.md` + `docs/STAGE_38_PLAN.md` (Vulnerability disclosure → Breach notification / security contact → fidelity).
 
+**Stage 38 V1 (2026-08-11):** Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json`, evidence `stage38_v1_vuln_disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining.
+
 
 
 ### 2.2 Features
@@ -966,7 +968,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 38 open — Commercial Security Disclosure Fidelity (`docs/STAGE_38_PLAN.md`, ADR-081). Stages 1–37 remain frozen for their scopes; V1 next.
+**Active delivery plan:** Stage 38 open — Commercial Security Disclosure Fidelity (`docs/STAGE_38_PLAN.md`, ADR-081). Stages 1–37 remain frozen for their scopes; V1 complete; B1 next.
 
 ### 6.2 Features
 
