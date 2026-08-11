@@ -1,6 +1,6 @@
 # Stage 63 Plan — Commercial Capital & Scale Fidelity
 
-**Status:** Open — P1 next  
+**Status:** Open — P1 complete; G1 next  
 **Base:** IPO Readiness Honesty Pack + Global Scale Honesty Pack → Commercial Capital & Scale Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-131](ADR_131_STAGE63_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Capital & Scale Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **P1** | IPO readiness honesty packaging (not live IPO / Series B–C funding Complete) | P0 | PENDING |
+| **P1** | IPO readiness honesty packaging (not live IPO / Series B–C funding Complete) | P0 | COMPLETE |
 | **G1** | Global scale honesty packaging (not measured 50k customers / 20+ countries Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H63x** | Stage 63 exit criteria + freeze ADR | Exit | PENDING |
@@ -96,10 +96,10 @@ Commercial Capital & Scale Fidelity
 
 ## P1 acceptance criteria
 
-- [ ] IPO readiness honesty packaging indexing PRODUCT_OVERVIEW IPO / Series B–C funding Long-Term themes with compliance / metrics / commercial adjacency (not claiming live IPO / funding Complete).
-- [ ] Automated proof: `backend/tests/test_ipo_readiness_p1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 63 P1.
+- [x] IPO readiness honesty packaging indexing PRODUCT_OVERVIEW IPO / Series B–C funding Long-Term themes with compliance / metrics / commercial adjacency (not claiming live IPO / funding Complete).
+- [x] Automated proof: `backend/tests/test_ipo_readiness_p1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 63 P1.
 
 ## G1 acceptance criteria
 

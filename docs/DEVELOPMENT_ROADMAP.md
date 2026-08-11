@@ -1403,3 +1403,5 @@ Every feature in every phase must meet:
 **Stage 62 exit (2026-08-11):** I1, A1, D1, H62x met — `docs/STAGE_62_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_130_STAGE62_FREEZE.md`. Fidelity: `docs/STAGE_62_FIDELITY.md`.
 
 **Stage 63 open (2026-08-11):** Commercial Capital & Scale Fidelity track approved — `docs/ADR_131_STAGE63_OPEN.md` + `docs/STAGE_63_PLAN.md` (IPO readiness → global scale → fidelity).
+
+**Stage 63 P1 (2026-08-11):** IPO readiness honesty — `docs/IPO_READINESS_MVP.md`, `ops/mvp/ipo-readiness.json`, evidence `stage63_p1_ipo_readiness.json` (`test_ipo_readiness_p1.py`); live IPO / Series B–C funding Remaining.

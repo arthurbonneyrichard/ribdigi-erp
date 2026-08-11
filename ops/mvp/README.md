@@ -74,6 +74,7 @@
 | `supply-chain-integration.json` | Stage 61 S1 Supply chain integration honesty — `supplier_supply_chain_live_claimed: false` / `supplier_portal_live_claimed: false` / `edi_asn_program_live: false` / `supply_chain_integration_program_live: false` |
 | `iot-integration.json` | Stage 62 I1 IoT integration honesty — `iot_integration_live_claimed: false` / `smart_shelves_live_claimed: false` / `temperature_sensors_live_claimed: false` / `iot_program_live: false` |
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
+| `ipo-readiness.json` | Stage 63 P1 IPO readiness honesty — `ipo_readiness_live_claimed: false` / `series_b_c_funding_claimed: false` / `capital_raise_program_live: false` / `ipo_filing_claimed: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -215,6 +216,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_FIDELITY.md` (`backend/tests/test_stage60_fidelity_d1.py`) — Stage 60 D1
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/IPO_READINESS_MVP.md` (`backend/tests/test_ipo_readiness_p1.py`) — Stage 63 P1
 - `docs/STAGE_62_PLAN.md` (`backend/tests/test_stage62_open.py`) — Stage 62 open (ADR-129)
 - `docs/IOT_INTEGRATION_MVP.md` (`backend/tests/test_iot_integration_i1.py`) — Stage 62 I1
 - `docs/AI_MODEL_MARKETPLACE_MVP.md` (`backend/tests/test_ai_model_marketplace_a1.py`) — Stage 62 A1
@@ -892,4 +894,8 @@ H62x met — `docs/STAGE_62_EXIT_CRITERIA.md`, ADR-130. Stages 1–62 frozen for
 
 ## Stage 63 open
 
-Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Open — P1 next.
+Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Open — P1 complete; G1 next.
+
+## Stage 63 P1 — IPO readiness honesty
+
+`docs/IPO_READINESS_MVP.md` + `ops/mvp/ipo-readiness.json` — packaging Complete; `ipo_readiness_live_claimed` / `series_b_c_funding_claimed` / `capital_raise_program_live` / `ipo_filing_claimed` remain false.

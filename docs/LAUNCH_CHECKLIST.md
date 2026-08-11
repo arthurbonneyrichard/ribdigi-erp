@@ -182,7 +182,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
-- [x] Stage 63 track opened (ADR-131: `test_stage63_open.py`, `docs/STAGE_63_PLAN.md`) — Commercial Capital & Scale Fidelity; P1 next
+- [x] Stage 63 track opened (ADR-131: `test_stage63_open.py`, `docs/STAGE_63_PLAN.md`) — Commercial Capital & Scale Fidelity; P1 complete; G1 next
+- [x] IPO readiness honesty (Stage 63 P1: `test_ipo_readiness_p1.py` — `docs/IPO_READINESS_MVP.md`, `ops/mvp/ipo-readiness.json`; evidence `stage63_p1_ipo_readiness.json`; live IPO / Series B–C funding Remaining)
 - [x] Stage 62 track opened (ADR-129: `test_stage62_open.py`, `docs/STAGE_62_PLAN.md`) — Commercial IoT & AI Marketplace Fidelity; closed under ADR-130
 - [x] IoT integration honesty (Stage 62 I1: `test_iot_integration_i1.py` — `docs/IOT_INTEGRATION_MVP.md`, `ops/mvp/iot-integration.json`; evidence `stage62_i1_iot_integration.json`; live smart shelves / temperature sensors Remaining)
 - [x] AI model marketplace honesty (Stage 62 A1: `test_ai_model_marketplace_a1.py` — `docs/AI_MODEL_MARKETPLACE_MVP.md`, `ops/mvp/ai-model-marketplace.json`; evidence `stage62_a1_ai_model_marketplace.json`; live industry-prediction marketplace Remaining)

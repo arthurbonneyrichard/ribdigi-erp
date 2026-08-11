@@ -1,0 +1,159 @@
+{
+  "stage": "63",
+  "workstream": "P1",
+  "doc": "docs/IPO_READINESS_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "compliance_readiness": "ops/mvp/compliance-readiness-register.json",
+  "compliance_readiness_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "residual_risk": "ops/mvp/residual-risk-register.json",
+  "residual_risk_doc": "docs/RESIDUAL_RISK_MVP.md",
+  "business_metrics": "ops/mvp/business-metrics.json",
+  "business_metrics_doc": "docs/BUSINESS_METRICS_MVP.md",
+  "unit_economics_positioning": "ops/mvp/unit-economics-positioning.json",
+  "unit_economics_positioning_doc": "docs/UNIT_ECONOMICS_POSITIONING_MVP.md",
+  "assurance_evidence": "ops/mvp/assurance-evidence.json",
+  "assurance_evidence_doc": "docs/ASSURANCE_EVIDENCE_MVP.md",
+  "cyber_insurance": "ops/mvp/cyber-insurance.json",
+  "cyber_insurance_doc": "docs/CYBER_INSURANCE_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage63_plan": "docs/STAGE_63_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "ipo_readiness_live_claimed": false,
+  "series_b_c_funding_claimed": false,
+  "capital_raise_program_live": false,
+  "ipo_filing_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage63_p1_ipo_readiness.json",
+  "steps": [
+    {
+      "id": "ipo-product-overview",
+      "category": "capital",
+      "title": "Index PRODUCT_OVERVIEW IPO readiness / Series B\u2013C funding Long-Term themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_63_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "ipo-compliance",
+      "category": "compliance",
+      "title": "Link Stage 33 compliance readiness as control adjacency (SOC2/ISO Remaining \u2260 IPO Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "ops/mvp/compliance-readiness-register.json"
+      ],
+      "source": "docs/COMPLIANCE_READINESS_MVP.md"
+    },
+    {
+      "id": "ipo-residual-risk",
+      "category": "compliance",
+      "title": "Link Stage 33 residual risk as risk adjacency (open risks \u2260 capital raise live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RESIDUAL_RISK_MVP.md",
+        "ops/mvp/residual-risk-register.json"
+      ],
+      "source": "docs/RESIDUAL_RISK_MVP.md"
+    },
+    {
+      "id": "ipo-business-metrics",
+      "category": "metrics",
+      "title": "Link Stage 58 business metrics as growth adjacency (MRR measured Remaining \u2260 IPO readiness)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_METRICS_MVP.md",
+        "ops/mvp/business-metrics.json"
+      ],
+      "source": "docs/BUSINESS_METRICS_MVP.md"
+    },
+    {
+      "id": "ipo-unit-economics",
+      "category": "metrics",
+      "title": "Link Stage 55 unit economics as capital adjacency (CAC/LTV Remaining \u2260 Series B\u2013C funded)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/UNIT_ECONOMICS_POSITIONING_MVP.md",
+        "ops/mvp/unit-economics-positioning.json"
+      ],
+      "source": "docs/UNIT_ECONOMICS_POSITIONING_MVP.md"
+    },
+    {
+      "id": "ipo-assurance",
+      "category": "compliance",
+      "title": "Link Stage 34 assurance evidence as customer-assurance adjacency (not IPO filing)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ASSURANCE_EVIDENCE_MVP.md",
+        "ops/mvp/assurance-evidence.json"
+      ],
+      "source": "docs/ASSURANCE_EVIDENCE_MVP.md"
+    },
+    {
+      "id": "ipo-cyber-insurance",
+      "category": "capital",
+      "title": "Link Stage 47 cyber insurance as risk-transfer adjacency (COI Remaining \u2260 IPO readiness)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CYBER_INSURANCE_MVP.md",
+        "ops/mvp/cyber-insurance.json"
+      ],
+      "source": "docs/CYBER_INSURANCE_MVP.md"
+    },
+    {
+      "id": "ipo-plan-honesty",
+      "category": "capital",
+      "title": "Confirm Stage 63 plan explicitly defers live IPO / Series B\u2013C funding",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_63_PLAN.md",
+        "docs/IPO_READINESS_MVP.md"
+      ],
+      "source": "docs/STAGE_63_PLAN.md"
+    },
+    {
+      "id": "ipo-readiness-remaining",
+      "category": "honesty",
+      "title": "Live IPO readiness Remaining \u2014 packaging \u2260 IPO filing or underwriter process",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_63_PLAN.md",
+        "docs/IPO_READINESS_MVP.md"
+      ],
+      "source": "docs/STAGE_63_PLAN.md"
+    },
+    {
+      "id": "ipo-funding-remaining",
+      "category": "honesty",
+      "title": "Live Series B\u2013C funding / capital-raise program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_63_PLAN.md",
+        "docs/IPO_READINESS_MVP.md"
+      ],
+      "source": "docs/STAGE_63_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live IPO readiness Complete",
+    "Live Series B\u2013C funding Complete",
+    "Capital-raise program live Complete",
+    "IPO filing Complete",
+    "SOC 2 / ISO certification Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}
