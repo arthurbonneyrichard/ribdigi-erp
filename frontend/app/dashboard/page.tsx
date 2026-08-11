@@ -4,6 +4,15 @@ import { useEffect, useMemo, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
+type Subscription = {
+  status?: string;
+  trial_ends_at?: string | null;
+  grace_ends_at?: string | null;
+  days_remaining?: number | null;
+  read_only?: boolean;
+  trial_days?: number;
+};
+
 type Dash = {
   total_sales?: number;
   total_purchases?: number;
@@ -12,7 +21,28 @@ type Dash = {
   low_stock?: number;
   customers?: number;
   suppliers?: number;
+  subscription?: Subscription;
 };
+
+function subStatus(sub?: Subscription) {
+  const status = sub?.status;
+  const days = sub?.days_remaining;
+  const dayLabel = (n: number | null | undefined) =>
+    `${n ?? 0} day${(n ?? 0) === 1 ? '' : 's'} left`;
+  if (status === 'active') return { label: 'Active', cls: 'st-active', icon: '\u2705' };
+  if (status === 'trial') return { label: `Trial \u00b7 ${dayLabel(days)}`, cls: 'st-trial', icon: '\u23f3' };
+  if (status === 'grace')
+    return { label: `Grace \u00b7 ${dayLabel(days)} \u00b7 read-only`, cls: 'st-grace', icon: '\u26a0\ufe0f' };
+  if (status === 'suspended') return { label: 'Suspended', cls: 'st-suspended', icon: '\u26d4' };
+  return null;
+}
+
+function fmtDate(value?: string | null) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
 
 function num(v?: number) {
   return new Intl.NumberFormat().format(Math.round((v || 0) * 100) / 100);
@@ -49,6 +79,9 @@ export default function Page() {
         : '',
     [now],
   );
+
+  const sub = d.subscription;
+  const status = subStatus(sub);
 
   const sales = d.total_sales || 0;
   const purchases = d.total_purchases || 0;
@@ -92,11 +125,22 @@ export default function Page() {
           <div className="sun" />
           <div className="cloud" />
           <div className="cloud c2" />
+          {status && (
+            <span className={`status-pill ${status.cls}`}>
+              <span aria-hidden>{status.icon}</span> {status.label}
+            </span>
+          )}
           <h1 className="greet">
             {tod.greeting} <span className="wave">{tod.icon}</span>
           </h1>
           <p className="greet-sub">{tod.sub}</p>
           <p className="greet-date">{dateLabel}</p>
+          {sub?.status === 'trial' && sub?.trial_ends_at && (
+            <p className="greet-date">Trial ends {fmtDate(sub.trial_ends_at)}</p>
+          )}
+          {sub?.status === 'grace' && sub?.grace_ends_at && (
+            <p className="greet-date">Grace period ends {fmtDate(sub.grace_ends_at)}</p>
+          )}
         </section>
 
         <section className="stat-grid">

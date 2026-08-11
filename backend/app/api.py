@@ -1594,6 +1594,23 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     suppliers = await scalar(
         select(func.count(m.Party.id)).where(m.Party.tenant_id == tid, m.Party.kind == "supplier")
     )
+
+    tenant = await db.get(m.Tenant, tid)
+    if tenant and tenant.status == "trial":
+        days_remaining = tenants_svc.calendar_days_until(tenant.trial_ends_at)
+    elif tenant and tenant.status == "grace":
+        days_remaining = tenants_svc.calendar_days_until(tenant.grace_ends_at)
+    else:
+        days_remaining = None
+    subscription = {
+        "status": tenant.status if tenant else None,
+        "trial_ends_at": tenant.trial_ends_at if tenant else None,
+        "grace_ends_at": tenant.grace_ends_at if tenant else None,
+        "days_remaining": days_remaining,
+        "read_only": tenants_svc.is_read_only(tenant) if tenant else False,
+        "trial_days": int(settings.TRIAL_DAYS),
+    }
+
     return env(
         {
             "total_sales": float(sales),
@@ -1603,6 +1620,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "low_stock": low,
             "customers": customers,
             "suppliers": suppliers,
+            "subscription": subscription,
         }
     )
 
