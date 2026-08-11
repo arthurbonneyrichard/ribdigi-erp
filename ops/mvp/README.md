@@ -174,6 +174,7 @@ Authoritative MVP docs:
 - `docs/WHITE_LABEL_LICENSING_MVP.md` (`backend/tests/test_white_label_licensing_w1.py`) — Stage 55 W1
 - `docs/UNIT_ECONOMICS_POSITIONING_MVP.md` (`backend/tests/test_unit_economics_positioning_u1.py`) — Stage 55 U1
 - `docs/STAGE_55_FIDELITY.md` (`backend/tests/test_stage55_fidelity_d1.py`) — Stage 55 D1
+- `docs/STAGE_55_EXIT_CRITERIA.md` / `docs/ADR_116_STAGE55_FREEZE.md` (`backend/tests/test_stage55_exit_h55x.py`) — Stage 55 H55x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -679,7 +680,7 @@ H54x met — `docs/STAGE_54_EXIT_CRITERIA.md`, ADR-114. Stages 1–54 frozen for
 
 ## Stage 55 open
 
-Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115; D1 complete; H55x next.
+Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115; Closed — exit met (H55x / ADR-116).
 
 ## Stage 55 W1 — White-label licensing commercial honesty
 
@@ -692,3 +693,7 @@ Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115
 ## Stage 55 D1 — Fidelity
 
 `docs/STAGE_55_FIDELITY.md` maps W1–U1 → readiness / launch / deploy / security (`test_stage55_fidelity_d1.py`).
+
+## Stage 55 exit
+
+H55x met — `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116. Stages 1–55 frozen for Stage 55 feature scope.
