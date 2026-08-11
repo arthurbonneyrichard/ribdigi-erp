@@ -698,6 +698,8 @@ spec:
               cpu: "250m"
 ```
 
+**MVP fidelity (Stage 29 T1):** Operator cert-manager / TLS packaging — `docs/TLS_INGRESS_PACK_MVP.md`, `ops/k8s/cluster-issuer.example.yaml`, `ops/k8s/ingress-tls.example.yaml` (`test_tls_ingress_t1.py`). The aspirational Ingress YAML below is not proof of live Let’s Encrypt issuance; packaging keeps `letsencrypt_issued: false`.
+
 ### 5.6 Ingress Configuration
 
 ```yaml

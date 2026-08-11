@@ -336,6 +336,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 29 open** | Operator Hardening & Production Cutover Fidelity — `docs/STAGE_29_PLAN.md`, ADR-063 (`test_stage29_open.py`); Stages 1–28 remain frozen; V1 pen-test / B2 PgBouncer soak / T1 TLS / X1 cutover pending |
 | **Stage 29 V1** | Vendor pen-test / ZAP staging pack — `docs/PENTEST_PACK_MVP.md`, `ops/security/` (`test_pentest_pack_v1.py`); purchased cert / live ZAP Remaining; main CI deploy-free |
 | **Stage 29 B2** | PgBouncer soak / pooler pack — `docs/PGBOUNCER_SOAK_PACK_MVP.md`, `ops/postgres/` (`test_pgbouncer_soak_b2.py`); live soak / default Helm pooler Remaining |
+| **Stage 29 T1** | Cert-manager / TLS ingress pack — `docs/TLS_INGRESS_PACK_MVP.md`, `ops/k8s/` (`test_tls_ingress_t1.py`); live ACME issuance / TLS cutover Remaining |
 
 ### 7.3 Tenant Lifecycle Security
 

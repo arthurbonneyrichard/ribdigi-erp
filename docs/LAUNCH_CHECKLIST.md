@@ -172,8 +172,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 track opened (ADR-061: `test_stage28_open.py`, `docs/STAGE_28_PLAN.md`)
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
-- [ ] Stage 29 Operator Hardening & Production Cutover Fidelity (open: `docs/STAGE_29_PLAN.md`, ADR-063) — T1 next
+- [ ] Stage 29 Operator Hardening & Production Cutover Fidelity (open: `docs/STAGE_29_PLAN.md`, ADR-063) — X1 next
 - [x] Stage 29 track opened (ADR-063: `test_stage29_open.py`, `docs/STAGE_29_PLAN.md`)
+- [x] Cert-manager / TLS ingress pack (Stage 29 T1: `test_tls_ingress_t1.py` — `docs/TLS_INGRESS_PACK_MVP.md`, `ops/k8s/cluster-issuer.example.yaml`; evidence `stage29_t1_tls_ingress.json`; live ACME issuance Remaining)
 - [x] PgBouncer soak / pooler pack (Stage 29 B2: `test_pgbouncer_soak_b2.py` — `docs/PGBOUNCER_SOAK_PACK_MVP.md`, `ops/postgres/pgbouncer-soak-checklist.json`; evidence `stage29_b2_pgbouncer_soak.json`; live soak / default Helm pooler Remaining)
 - [x] Vendor pen-test / ZAP staging pack (Stage 29 V1: `test_pentest_pack_v1.py` — `docs/PENTEST_PACK_MVP.md`, `ops/security/pentest-engagement-checklist.json`; evidence `stage29_v1_pentest_pack.json`; purchased cert / live ZAP Remaining)
 - [x] Operator 1000-VU cert pack (Stage 28 C1: `test_load_cert_pack_c1.py` — `docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/`; evidence `stage28_c1_load_cert_pack.json`; live 1000-VU execution Remaining)

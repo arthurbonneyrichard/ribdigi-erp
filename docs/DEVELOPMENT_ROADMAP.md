@@ -270,6 +270,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 29 B2 (2026-08-11):** PgBouncer soak / pooler pack — `docs/PGBOUNCER_SOAK_PACK_MVP.md`, `ops/postgres/pgbouncer-soak-checklist.json`, `ops/postgres/pgbouncer-deployment.example.yaml`, evidence `stage29_b2_pgbouncer_soak.json` (`test_pgbouncer_soak_b2.py`); live soak / default Helm pooler Remaining.
 
+**Stage 29 T1 (2026-08-11):** Cert-manager / TLS ingress pack — `docs/TLS_INGRESS_PACK_MVP.md`, `ops/k8s/cluster-issuer.example.yaml`, `ops/k8s/ingress-tls.example.yaml`, evidence `stage29_t1_tls_ingress.json` (`test_tls_ingress_t1.py`); live ACME issuance / TLS cutover Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -850,7 +852,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 29 open (`docs/STAGE_29_PLAN.md`, ADR-063) — V1–B2 complete; T1 next. Stages 1–28 remain frozen for their scopes (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062).
+**Active delivery plan:** Stage 29 open (`docs/STAGE_29_PLAN.md`, ADR-063) — V1–T1 complete; X1 next. Stages 1–28 remain frozen for their scopes (`docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062).
 
 ### 6.2 Features
 

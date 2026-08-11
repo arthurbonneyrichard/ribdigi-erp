@@ -1,0 +1,42 @@
+# Stage 29 T1 — optional Ingress + TLS example (operator / staging only).
+# NOT applied by CI. Pair with cluster-issuer.example.yaml after cert-manager is installed.
+# Aligns paths with helm/ribdigi/templates/ingress.yaml (/api → backend, / → frontend).
+# See docs/TLS_INGRESS_PACK_MVP.md.
+#
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ribdigi-tls-example
+  namespace: ribdigi-staging
+  labels:
+    ribdigi.io/stage: "29-t1-example"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - staging.example.invalid
+      secretName: ribdigi-tls-staging
+  rules:
+    - host: staging.example.invalid
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: ribdigi-backend
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ribdigi-frontend
+                port:
+                  number: 3000
+
+# Do not treat this file as proof of green Let's Encrypt issuance.
+# Probe after Ready: curl -fsS https://staging.example.invalid/api/v1/health

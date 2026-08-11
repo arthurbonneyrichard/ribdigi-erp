@@ -17,6 +17,9 @@ This is the **MVP Kubernetes deploy surface**: versioned Helm chart + hardened `
 | `ops/k8s/helm-install-staging.sh.example` | Install helper |
 | `ops/k8s/staging-smoke.sh.example` | Rollout + ready + metrics smoke |
 | `ops/k8s/deploy-staging.example.yml` | Staging-only GHA template (Stage 28 G1) — **not** in main `ci.yml` |
+| `ops/k8s/cluster-issuer.example.yaml` | Cert-manager ClusterIssuer examples (Stage 29 T1) |
+| `ops/k8s/ingress-tls.example.yaml` | Ingress + TLS example (Stage 29 T1) |
+| `ops/k8s/tls-checklist.json` | TLS operator checklist (Stage 29 T1) |
 | `.env.production.example` | Secret source template (Stage 18 C1) |
 
 ## Probe contract
@@ -50,6 +53,12 @@ CI writes strategy/fidelity evidence only (`stage26_k1_deploy_fidelity.json` wit
 
 Optional workflow template: `ops/k8s/deploy-staging.example.yml` — documented in [STAGING_GHA_MVP.md](STAGING_GHA_MVP.md). Operators copy into `.github/workflows/` only when `KUBE_CONFIG` / registry secrets and a real staging cluster exist. Disabled stub in the template must not be treated as a green apply. Main `.github/workflows/ci.yml` stays deploy-free.
 
+## Cert-manager / TLS packaging (Stage 29 T1)
+
+Authoritative pack: [TLS_INGRESS_PACK_MVP.md](TLS_INGRESS_PACK_MVP.md) · `ops/k8s/cluster-issuer.example.yaml` · `ops/k8s/ingress-tls.example.yaml` · `ops/k8s/tls-checklist.json`.
+
+Packaging evidence keeps `letsencrypt_issued: false`, `tls_cutover_claimed: false`. Helm `templates/ingress.yaml` remains path-aligned (`/api` → backend, `/` → frontend); operators enable TLS via the examples when DNS + cert-manager exist.
+
 ## Relationship to Stage 18 C1
 
 Single-node production Compose (`docker-compose.prod.yml` + `.env.production.example`) remains a valid MVP path. Main `.github/workflows/ci.yml` stays **deploy-free** (pytest + frontend build). K1 / G1 do not add `kubectl`/`helm upgrade` to that workflow.
@@ -58,9 +67,9 @@ Single-node production Compose (`docker-compose.prod.yml` + `.env.production.exa
 
 - Live GHA → staging/production cluster apply (template packaging Complete MVP — Stage 28 G1; execution Remaining)
 - In-cluster Postgres/Redis/RabbitMQ
-- Cert-manager / production TLS automation
+- Live Let’s Encrypt issuance / production TLS **cutover** (Stage 29 T1 packs examples only)
 - Istio / full NetworkPolicy / HPA enforcement without staging proof
 
 ## Sign-off
 
-Stage 26 K1 is met when the chart/manifests encode the probe contract, operator smoke scripts exist, the guard test passes, and PRODUCTION_READINESS Kubernetes gate is Complete (MVP) with Remaining limited to live cluster apply. Stage 28 G1 is met when `docs/STAGING_GHA_MVP.md` + `ops/k8s/deploy-staging.example.yml` + `test_staging_gha_g1.py` pass without claiming live apply.
+Stage 26 K1 is met when the chart/manifests encode the probe contract, operator smoke scripts exist, the guard test passes, and PRODUCTION_READINESS Kubernetes gate is Complete (MVP) with Remaining limited to live cluster apply. Stage 28 G1 is met when `docs/STAGING_GHA_MVP.md` + `ops/k8s/deploy-staging.example.yml` + `test_staging_gha_g1.py` pass without claiming live apply. Stage 29 T1 is met when `docs/TLS_INGRESS_PACK_MVP.md` + issuer/Ingress examples + `test_tls_ingress_t1.py` pass without inventing live ACME issuance.
