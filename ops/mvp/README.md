@@ -76,6 +76,7 @@
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `business-pilot.json` | Stage 65 P1 Controlled business pilot honesty — `controlled_business_pilot_live_claimed: false` / `real_workflow_feedback_claimed: false` / `pilot_bugfix_program_live: false` / `business_pilot_program_live: false` |
+| `commercial-acceptance.json` | Stage 71 A1 Commercial acceptance gate honesty — `commercial_acceptance_claimed: false` / `steady_state_ops_claimed: false` / `go_live_claimed: false` / `section_7_signed: false` |
 | `steady-state-ops.json` | Stage 71 S1 Steady-state commercial ops honesty — `steady_state_ops_claimed: false` / `commercial_acceptance_claimed: false` / `go_live_claimed: false` / `section_7_signed: false` |
 | `commercial-golive-closeout.json` | Stage 70 G1 Commercial go-live closeout honesty — `go_live_claimed: false` / `commercial_golive_closeout_claimed: false` / `section_7_signed: false` / `first_commercial_day_claimed: false` |
 | `first-commercial-day.json` | Stage 70 F1 First commercial day ops honesty — `first_commercial_day_claimed: false` / `commercial_day_ops_live_claimed: false` / `go_live_claimed: false` / `section_7_signed: false` |
@@ -233,6 +234,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/COMMERCIAL_ACCEPTANCE_MVP.md` (`backend/tests/test_commercial_acceptance_a1.py`) — Stage 71 A1
 - `docs/STEADY_STATE_OPS_MVP.md` (`backend/tests/test_steady_state_ops_s1.py`) — Stage 71 S1
 - `docs/STAGE_71_PLAN.md` (`backend/tests/test_stage71_open.py`) — Stage 71 open (ADR-148)
 - `docs/STAGE_70_EXIT_CRITERIA.md` / `docs/ADR_147_STAGE70_FREEZE.md` (`backend/tests/test_stage70_exit_h70x.py`) — Stage 70 H70x
@@ -968,13 +970,17 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 71 A1 — Commercial acceptance gate honesty
+
+`docs/COMMERCIAL_ACCEPTANCE_MVP.md` + `ops/mvp/commercial-acceptance.json` — packaging Complete; `commercial_acceptance_claimed` / `steady_state_ops_claimed` / `go_live_claimed` / `section_7_signed` remain false.
+
 ## Stage 71 S1 — Steady-state commercial ops honesty
 
 `docs/STEADY_STATE_OPS_MVP.md` + `ops/mvp/steady-state-ops.json` — packaging Complete; `steady_state_ops_claimed` / `commercial_acceptance_claimed` / `go_live_claimed` / `section_7_signed` remain false.
 
 ## Stage 71 open
 
-Commercial Steady-State Fidelity — `docs/STAGE_71_PLAN.md`, ADR-148; Open — S1 complete; A1 next.
+Commercial Steady-State Fidelity — `docs/STAGE_71_PLAN.md`, ADR-148; Open — A1 complete; D1 next.
 
 ## Stage 70 exit
 

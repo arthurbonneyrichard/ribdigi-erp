@@ -212,8 +212,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Commercial go-live closeout honesty (Stage 70 G1: `test_commercial_golive_closeout_g1.py` — `docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md`, `ops/mvp/commercial-golive-closeout.json`; evidence `stage70_g1_commercial_golive_closeout.json`; go-live Remaining)
 - [x] Stage 70 fidelity sync (D1: `test_stage70_fidelity_d1.py`, `docs/STAGE_70_FIDELITY.md` — F1–G1 + readiness + deploy / launch / security)
 - [x] Stage 70 exit + freeze (H70x: `test_stage70_exit_h70x.py`, `docs/STAGE_70_EXIT_CRITERIA.md`, ADR-147)
-- [x] Stage 71 track opened (ADR-148: `test_stage71_open.py`, `docs/STAGE_71_PLAN.md`) — Commercial Steady-State Fidelity; S1 complete / A1 next
+- [x] Stage 71 track opened (ADR-148: `test_stage71_open.py`, `docs/STAGE_71_PLAN.md`) — Commercial Steady-State Fidelity; A1 complete / D1 next
 - [x] Steady-state commercial ops honesty (Stage 71 S1: `test_steady_state_ops_s1.py` — `docs/STEADY_STATE_OPS_MVP.md`, `ops/mvp/steady-state-ops.json`; evidence `stage71_s1_steady_state_ops.json`; steady-state live Remaining)
+- [x] Commercial acceptance gate honesty (Stage 71 A1: `test_commercial_acceptance_a1.py` — `docs/COMMERCIAL_ACCEPTANCE_MVP.md`, `ops/mvp/commercial-acceptance.json`; evidence `stage71_a1_commercial_acceptance.json`; acceptance Remaining)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

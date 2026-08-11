@@ -1,6 +1,6 @@
 # Stage 71 Plan — Commercial Steady-State Fidelity
 
-**Status:** Open — S1 complete; A1 next  
+**Status:** Open — A1 complete; D1 next  
 **Base:** Steady-State Commercial Ops Honesty Pack + Commercial Acceptance Gate Honesty Pack → Commercial Steady-State Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-148](ADR_148_STAGE71_OPEN.md)  
@@ -45,7 +45,7 @@ Commercial Steady-State Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **S1** | Steady-state commercial ops honesty packaging (day-N ops / continuity adjacency; not steady-state live Complete) | P0 | COMPLETE |
-| **A1** | Commercial acceptance gate honesty packaging (gate / declaration adjacency; not acceptance Complete) | P0 | PENDING |
+| **A1** | Commercial acceptance gate honesty packaging (gate / declaration adjacency; not acceptance Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H71x** | Stage 71 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -75,12 +75,12 @@ Commercial Steady-State Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] Commercial acceptance gate honesty packaging indexing Commercial Acceptance Gate with Stage 31 gate matrix / declaration adjacency (not claiming acceptance Complete).
-- [ ] Automated proof: `backend/tests/test_commercial_acceptance_a1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 71 A1.
+- [x] Commercial acceptance gate honesty packaging indexing Commercial Acceptance Gate with Stage 31 gate matrix / declaration adjacency (not claiming acceptance Complete).
+- [x] Automated proof: `backend/tests/test_commercial_acceptance_a1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 71 A1.
 
-**Deliverables:** `docs/COMMERCIAL_ACCEPTANCE_MVP.md`, `ops/mvp/commercial-acceptance.json`, evidence `stage71_a1_commercial_acceptance.json`.
+**Deliverables:** `docs/COMMERCIAL_ACCEPTANCE_MVP.md`, `ops/mvp/commercial-acceptance.json`, evidence `stage71_a1_commercial_acceptance.json` (`test_commercial_acceptance_a1.py`).
 
 ## D1 acceptance criteria
 

@@ -1485,3 +1485,5 @@ Every feature in every phase must meet:
 **Stage 71 open (2026-08-11):** Commercial Steady-State Fidelity track approved — `docs/ADR_148_STAGE71_OPEN.md` + `docs/STAGE_71_PLAN.md` (Steady-State Commercial Ops → Commercial Acceptance Gate → Commercial Steady-State Fidelity; S1 next).
 
 **Stage 71 S1 (2026-08-11):** Steady-state commercial ops honesty — `docs/STEADY_STATE_OPS_MVP.md`, `ops/mvp/steady-state-ops.json`, evidence `stage71_s1_steady_state_ops.json` (`test_steady_state_ops_s1.py`); steady-state live Remaining.
+
+**Stage 71 A1 (2026-08-11):** Commercial acceptance gate honesty — `docs/COMMERCIAL_ACCEPTANCE_MVP.md`, `ops/mvp/commercial-acceptance.json`, evidence `stage71_a1_commercial_acceptance.json` (`test_commercial_acceptance_a1.py`); acceptance Remaining.
