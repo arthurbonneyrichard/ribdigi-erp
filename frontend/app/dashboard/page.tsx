@@ -63,13 +63,19 @@ function arc(fraction: number, radius: number) {
 export default function Page() {
   const [d, setD] = useState<Dash>({});
   const [now, setNow] = useState<Date | null>(null);
+  const [fullName, setFullName] = useState('');
 
   useEffect(() => {
     setNow(new Date());
     api('/dashboard')
       .then((r) => setD(r.data || {}))
       .catch(() => {});
+    api('/me')
+      .then((r) => setFullName(r.data?.full_name || ''))
+      .catch(() => {});
   }, []);
+
+  const firstName = fullName.trim().split(/\s+/)[0] || '';
 
   const tod = useMemo(() => timeOfDay(now ? now.getHours() : 9), [now]);
   const dateLabel = useMemo(
@@ -131,7 +137,8 @@ export default function Page() {
             </span>
           )}
           <h1 className="greet">
-            {tod.greeting} <span className="wave">{tod.icon}</span>
+            {tod.greeting}
+            {firstName ? `, ${firstName}` : ''} <span className="wave">{tod.icon}</span>
           </h1>
           <p className="greet-sub">{tod.sub}</p>
           <p className="greet-date">{dateLabel}</p>
