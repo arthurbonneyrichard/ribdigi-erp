@@ -24,7 +24,7 @@ Stage 66 proves the owner product outline after Stage 65 freeze — MVP Release 
 | **L1** | `test_production_launch_l1.py` — `PRODUCTION_LAUNCH_MVP.md`, production-launch JSON | Owner launch path / cutover / attestation | Live cutover; §7 signed; go-live |
 | **T1** | `test_first_tenant_golive_t1.py` — `FIRST_TENANT_GOLIVE_MVP.md`, first-tenant-golive JSON | Owner first paying tenant / Stage 33 F1 / Stage 65 P1 | First paying tenant; live onboarding |
 | **D1** | This note + `test_stage66_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H66x** | `STAGE_66_EXIT_CRITERIA.md`; ADR-139; `test_stage66_exit_h66x.py` | Stage 66 exit + freeze | Stage 67 needs open ADR |
+| **H66x** | `STAGE_66_EXIT_CRITERIA.md`; ADR-139; `test_stage66_exit_h66x.py` | Stage 66 exit + freeze | Stage 67 opened via ADR-140 |
 
 ## Evidence tests
 
