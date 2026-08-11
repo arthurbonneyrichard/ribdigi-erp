@@ -1,10 +1,11 @@
 # Stage 50 Plan — Commercial Acquisition & Trial Fidelity
 
-**Status:** Open — D1 complete; H50x next  
+**Status:** Closed — exit met (H50x / ADR-106)  
 **Base:** Referral Program Honesty Pack + Freemium Trial Honesty Pack → Commercial Acquisition & Trial Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-105](ADR_105_STAGE50_OPEN.md)  
-**Prior freeze:** [ADR-104](ADR_104_STAGE49_FREEZE.md) · [STAGE_49_EXIT_CRITERIA.md](STAGE_49_EXIT_CRITERIA.md)
+**Prior freeze:** [ADR-104](ADR_104_STAGE49_FREEZE.md) · [STAGE_49_EXIT_CRITERIA.md](STAGE_49_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_50_EXIT_CRITERIA.md](STAGE_50_EXIT_CRITERIA.md) · [ADR-106](ADR_106_STAGE50_FREEZE.md)
 
 Stage 50 opens after Stage 49 freeze: **Referral Program Honesty Packaging + Freemium Trial Honesty Packaging → Commercial Acquisition & Trial Fidelity**. PRODUCT_OVERVIEW referral-program and freemium / 14-day trial acquisition themes, plus Stage 36 billing-deferred and Stage 21 tenant-trial adjacency, lack dedicated customer-facing honesty packs for referral credit boundaries and freemium trial terms Remaining. This track packages those Remaining surfaces on proven Stage 21–49 commercial / billing-deferred / trial assets — **not** claiming live referral credits Complete, referral payout Complete, live freemium conversion Complete, no-credit-card trial as paid billing Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–49 packs as new Complete, or reopening Stages 1–49 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Acquisition & Trial Fidelity
 | **R1** | Referral program honesty packaging (not live referral credits / payout Complete) | P0 | COMPLETE |
 | **F1** | Freemium / 14-day trial honesty packaging (not live freemium conversion / paid trial billing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H50x** | Stage 50 exit criteria + freeze ADR | Exit | PENDING |
+| **H50x** | Stage 50 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -95,6 +96,6 @@ Commercial Acquisition & Trial Fidelity
 
 ## H50x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H50x — `docs/STAGE_50_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_106_STAGE50_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage50_exit_h50x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H50x — `docs/STAGE_50_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_106_STAGE50_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage50_exit_h50x.py`.

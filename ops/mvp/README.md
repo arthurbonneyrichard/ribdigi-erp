@@ -139,6 +139,7 @@ Authoritative MVP docs:
 - `docs/REFERRAL_PROGRAM_MVP.md` (`backend/tests/test_referral_program_r1.py`) — Stage 50 R1
 - `docs/FREEMIUM_TRIAL_MVP.md` (`backend/tests/test_freemium_trial_f1.py`) — Stage 50 F1
 - `docs/STAGE_50_FIDELITY.md` (`backend/tests/test_stage50_fidelity_d1.py`) — Stage 50 D1
+- `docs/STAGE_50_EXIT_CRITERIA.md` / `docs/ADR_106_STAGE50_FREEZE.md` (`backend/tests/test_stage50_exit_h50x.py`) — Stage 50 H50x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -544,7 +545,7 @@ H49x met — `docs/STAGE_49_EXIT_CRITERIA.md`, ADR-104. Stages 1–49 frozen for
 
 ## Stage 50 open
 
-Commercial Acquisition & Trial Fidelity — `docs/STAGE_50_PLAN.md`, ADR-105; D1 complete; H50x next.
+Commercial Acquisition & Trial Fidelity — `docs/STAGE_50_PLAN.md`, ADR-105; Closed — exit met (H50x / ADR-106).
 
 ## Stage 50 R1 — Referral program honesty
 
@@ -557,3 +558,7 @@ Commercial Acquisition & Trial Fidelity — `docs/STAGE_50_PLAN.md`, ADR-105; D1
 ## Stage 50 D1 — Fidelity
 
 `docs/STAGE_50_FIDELITY.md` maps R1–F1 → readiness / launch / deploy / security (`test_stage50_fidelity_d1.py`).
+
+## Stage 50 exit
+
+H50x met — `docs/STAGE_50_EXIT_CRITERIA.md`, ADR-106. Stages 1–50 frozen for Stage 50 feature scope.
