@@ -21,8 +21,29 @@ type Dash = {
   low_stock?: number;
   customers?: number;
   suppliers?: number;
+  monthly_sales?: { label: string; total: number }[];
   subscription?: Subscription;
 };
+
+function polar(cx: number, cy: number, r: number, angle: number): [number, number] {
+  return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+}
+
+function pieSlices(items: { label: string; value: number; color: string }[], cx: number, cy: number, r: number) {
+  const total = items.reduce((s, i) => s + i.value, 0);
+  if (total <= 0) return [];
+  let a = -Math.PI / 2;
+  return items.map((it) => {
+    const frac = it.value / total;
+    const a2 = a + frac * 2 * Math.PI;
+    const [x1, y1] = polar(cx, cy, r, a);
+    const [x2, y2] = polar(cx, cy, r, a2);
+    const large = frac > 0.5 ? 1 : 0;
+    const path = `M${cx} ${cy} L${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+    a = a2;
+    return { path, color: it.color };
+  });
+}
 
 function subStatus(sub?: Subscription) {
   const status = sub?.status;
@@ -116,6 +137,18 @@ export default function Page() {
   const rr = 52;
   const healthFrac = products ? inStock / products : 0;
   const healthArc = arc(healthFrac, rr);
+
+  const trend = d.monthly_sales || [];
+  const trendMax = Math.max(1, ...trend.map((t) => t.total || 0));
+  const trendEmpty = trend.every((t) => !t.total);
+
+  const finItems = [
+    { label: 'Sales', value: sales, color: '#22c55e' },
+    { label: 'Purchases', value: purchases, color: '#38bdf8' },
+    { label: 'Expenses', value: expenses, color: '#fb7185' },
+  ].filter((x) => x.value > 0);
+  const finTotal = finItems.reduce((s, i) => s + i.value, 0);
+  const finSlices = pieSlices(finItems, 70, 70, 66);
 
   const stats = [
     { cls: 's-sales', ico: '\ud83d\udcb0', label: 'Total Sales', val: num(sales) },
@@ -247,6 +280,78 @@ export default function Page() {
                 <span className="li">
                   <span className="dot" style={{ background: '#6366f1' }} /> Suppliers · <b>&nbsp;{num(suppliers)}</b>
                 </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="info-grid">
+          <div className="panel">
+            <h3>
+              <span className="pico pi-trend" aria-hidden>
+                {'\ud83d\udcc8'}
+              </span>
+              Revenue trend
+            </h3>
+            <p className="hint">Sales over the last 6 months</p>
+            {trendEmpty ? (
+              <div className="empty">No sales recorded in this period yet.</div>
+            ) : (
+              <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="Monthly sales trend">
+                <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+                {trend.map((t, i) => {
+                  const h = ((t.total || 0) / trendMax) * 112;
+                  const x = i * 50 + 12;
+                  const y = 138 - h;
+                  return (
+                    <g key={t.label + i}>
+                      <rect x={x} y={y} width={26} height={h} rx={5} fill="#6366f1" />
+                      <text x={x + 13} y={y - 5} textAnchor="middle" className="vbar-val">
+                        {t.total ? num(t.total) : ''}
+                      </text>
+                      <text x={x + 13} y={156} textAnchor="middle" className="vbar-label">
+                        {t.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            )}
+          </div>
+
+          <div className="panel">
+            <h3>
+              <span className="pico pi-pie" aria-hidden>
+                {'\ud83e\udd67'}
+              </span>
+              Revenue vs costs
+            </h3>
+            <p className="hint">Share of sales, purchases &amp; expenses</p>
+            <div className="mix">
+              <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Revenue vs costs">
+                {finTotal <= 0 ? (
+                  <circle cx="70" cy="70" r="66" fill="#eef1f7" />
+                ) : finItems.length === 1 ? (
+                  <circle cx="70" cy="70" r="66" fill={finItems[0].color} />
+                ) : (
+                  finSlices.map((s, i) => <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth="1.5" />)
+                )}
+              </svg>
+              <div className="legend">
+                {finTotal <= 0 ? (
+                  <span className="li">No financial activity yet</span>
+                ) : (
+                  [
+                    { label: 'Sales', value: sales, color: '#22c55e' },
+                    { label: 'Purchases', value: purchases, color: '#38bdf8' },
+                    { label: 'Expenses', value: expenses, color: '#fb7185' },
+                  ].map((it) => (
+                    <span className="li" key={it.label}>
+                      <span className="dot" style={{ background: it.color }} /> {it.label} ·{' '}
+                      <b>&nbsp;{num(it.value)}</b>
+                    </span>
+                  ))
+                )}
               </div>
             </div>
           </div>

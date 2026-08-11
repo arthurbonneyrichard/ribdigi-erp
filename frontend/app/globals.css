@@ -46,6 +46,10 @@
 .pico.pi-flow{background:#dcfce7}
 .pico.pi-mix{background:#fef3c7}
 .pico.pi-health{background:#e0f2fe}
+.pico.pi-trend{background:#ede9fe}
+.pico.pi-pie{background:#dcfce7}
+.vbar-val{font-size:9px;fill:#64748b;font-weight:700}
+.vbar-label{font-size:11px;fill:#64748b;font-weight:600}
 
 .bars{display:flex;flex-direction:column;gap:14px}
 .bar-row{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:12px}

@@ -1595,6 +1595,36 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         select(func.count(m.Party.id)).where(m.Party.tenant_id == tid, m.Party.kind == "supplier")
     )
 
+    # Monthly sales trend (last 6 calendar months), bucketed in Python for DB portability
+    now_dt = datetime.utcnow()
+    months_seq = []
+    for i in range(5, -1, -1):
+        idx = now_dt.month - 1 - i
+        yy = now_dt.year + idx // 12
+        mm = idx % 12 + 1
+        months_seq.append((yy, mm))
+    earliest = datetime(months_seq[0][0], months_seq[0][1], 1)
+    month_totals = {k: 0.0 for k in months_seq}
+    trend_rows = (
+        await db.execute(
+            select(m.Transaction.created_at, m.Transaction.total).where(
+                m.Transaction.tenant_id == tid,
+                m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+                m.Transaction.created_at >= earliest,
+            )
+        )
+    ).all()
+    for created_at, total in trend_rows:
+        if created_at is None:
+            continue
+        key = (created_at.year, created_at.month)
+        if key in month_totals:
+            month_totals[key] += float(total or 0)
+    monthly_sales = [
+        {"label": datetime(yy, mm, 1).strftime("%b"), "total": round(month_totals[(yy, mm)], 2)}
+        for (yy, mm) in months_seq
+    ]
+
     tenant = await db.get(m.Tenant, tid)
     if tenant and tenant.status == "trial":
         days_remaining = tenants_svc.calendar_days_until(tenant.trial_ends_at)
@@ -1620,6 +1650,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "low_stock": low,
             "customers": customers,
             "suppliers": suppliers,
+            "monthly_sales": monthly_sales,
             "subscription": subscription,
         }
     )
