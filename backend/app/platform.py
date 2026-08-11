@@ -191,6 +191,88 @@ async def platform_plan_distribution(db: AsyncSession) -> dict:
     return {"slices": slices, "total": sum(s["count"] for s in slices)}
 
 
+async def provision_customer_tenant(
+    db: AsyncSession,
+    *,
+    slug: str,
+    company_name: str,
+    industry: str = "retail",
+    currency: str = "GHS",
+    timezone: str = "Africa/Accra",
+    tax_jurisdiction: str = "GH",
+    admin_email: str,
+    admin_password: str,
+    admin_full_name: str = "Company Administrator",
+    plan_code: str = "trial",
+) -> tuple[m.Tenant, m.User, str]:
+    """Provision a customer tenant with admin + defaults (Stage 86 P1).
+
+    Returns ``(tenant, admin_user, email_verification_raw_token)``.
+    Lazy-imports seed helpers to avoid circular imports with ``app.api``.
+    """
+    from app.api import seed_tenant_defaults
+    from app.rbac import permissions_for_role
+    from app.security import hash_password, issue_one_time_token, validate_password_strength
+
+    validate_password_strength(admin_password)
+    assert_not_reserved_tenant_slug(slug)
+    slug_clean = (slug or "").strip().lower()
+    existing = (
+        await db.execute(select(m.Tenant).where(m.Tenant.slug == slug_clean))
+    ).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="Tenant slug exists")
+
+    plan = (plan_code or "trial").strip().lower()
+    if plan not in tenants_svc.VALID_PLAN_CODES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"plan_code must be one of: {sorted(tenants_svc.VALID_PLAN_CODES)}",
+        )
+
+    tenant = m.Tenant(
+        slug=slug_clean,
+        company_name=company_name.strip(),
+        industry=(industry or "retail").strip() or "retail",
+        currency=(currency or "GHS").strip() or "GHS",
+        timezone=(timezone or "Africa/Accra").strip() or "Africa/Accra",
+        tax_jurisdiction=(tax_jurisdiction or "GH").strip().upper() or "GH",
+        status="trial",
+        plan_code=plan,
+        trial_ends_at=tenants_svc.default_trial_ends_at(),
+        trial_notices={},
+    )
+    db.add(tenant)
+    await db.flush()
+
+    admin_name = (admin_full_name or "Company Administrator").strip() or "Company Administrator"
+    admin = m.User(
+        tenant_id=tenant.id,
+        email=str(admin_email).strip().lower(),
+        full_name=admin_name,
+        password_hash=hash_password(admin_password),
+        role="company_admin",
+        email_verified=False,
+        permissions=permissions_for_role("company_admin"),
+    )
+    db.add(admin)
+    await db.flush()
+    await seed_tenant_defaults(db, tenant.id)
+
+    raw, token_hash, expires = issue_one_time_token()
+    db.add(
+        m.AuthToken(
+            tenant_id=tenant.id,
+            user_id=admin.id,
+            purpose="email_verify",
+            token_hash=token_hash,
+            expires_at=expires,
+        )
+    )
+    await db.flush()
+    return tenant, admin, raw
+
+
 async def platform_subscriptions_roster(db: AsyncSession) -> dict:
     """Customer tenant × plan_code roster (Stage 85 R1) — metadata only, no MRR/checkout.
 

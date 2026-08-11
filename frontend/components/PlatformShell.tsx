@@ -15,6 +15,7 @@ const items: [string, string, string][] = [
   ['Settings', '/platform/settings', 'platform_settings'],
   ['Health', '/platform/health', 'platform_health'],
   ['Audit', '/platform/audit', 'platform_audit'],
+  ['Activity', '/platform/activity', 'platform_audit'],
   ['Security', '/security', 'security'],
 ];
 

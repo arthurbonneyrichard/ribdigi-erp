@@ -250,6 +250,9 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_86_EXIT_CRITERIA.md` / `docs/ADR_179_STAGE86_FREEZE.md` (`backend/tests/test_stage86_exit_h86x.py`) — Stage 86 H86x
+- `docs/STAGE_86_FIDELITY.md` (`backend/tests/test_stage86_fidelity_d1.py`) — Stage 86 D1
+- `docs/STAGE_86_PLAN.md` (`backend/tests/test_stage86_open.py`) — Stage 86 open (ADR-178)
 - `docs/STAGE_85_EXIT_CRITERIA.md` / `docs/ADR_177_STAGE85_FREEZE.md` (`backend/tests/test_stage85_exit_h85x.py`) — Stage 85 H85x
 - `docs/STAGE_85_FIDELITY.md` (`backend/tests/test_stage85_fidelity_d1.py`) — Stage 85 D1
 - `docs/STAGE_85_PLAN.md` (`backend/tests/test_stage85_open.py`) — Stage 85 open (ADR-176)
@@ -1045,6 +1048,30 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 86 exit
+
+H86x met — `docs/STAGE_86_EXIT_CRITERIA.md`, ADR-179. Stages 1–86 frozen for Stage 86 feature scope.
+
+## Stage 86 D1 — House Provision & Platform Access Ops fidelity
+
+`docs/STAGE_86_FIDELITY.md` — maps P1–A1 → readiness / launch / deploy / security.
+
+## Stage 86 A1 — Platform audit Activity depth
+
+`test_platform_audit_activity_a1.py` — filters + `/platform/activity`.
+
+## Stage 86 E1 — Platform email password reset
+
+`test_platform_email_reset_e1.py` — `POST /platform/users/{id}/password-reset-email`.
+
+## Stage 86 P1 — House tenant provision
+
+`test_platform_tenant_provision_p1.py` — `POST /platform/tenants`.
+
+## Stage 86 open
+
+ADR-178 + `docs/STAGE_86_PLAN.md` — House Provision & Platform Access Ops.
 
 ## Stage 85 exit
 

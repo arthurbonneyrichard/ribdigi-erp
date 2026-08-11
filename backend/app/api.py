@@ -361,51 +361,17 @@ async def metrics_endpoint():
 async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db)):
     from app import platform as platform_svc
 
-    validate_password_strength(payload.admin_password)
-    platform_svc.assert_not_reserved_tenant_slug(payload.slug)
-    existing = (
-        await db.execute(select(m.Tenant).where(m.Tenant.slug == payload.slug))
-    ).scalar_one_or_none()
-    if existing:
-        raise HTTPException(status_code=409, detail="Tenant slug exists")
-
-    tenant = m.Tenant(
+    tenant, _admin, raw = await platform_svc.provision_customer_tenant(
+        db,
         slug=payload.slug,
         company_name=payload.company_name,
         industry=payload.industry,
         currency=payload.currency,
         timezone=(payload.timezone or "Africa/Accra").strip() or "Africa/Accra",
         tax_jurisdiction=(payload.tax_jurisdiction or "GH").strip().upper() or "GH",
-        status="trial",
-        trial_ends_at=tenants_svc.default_trial_ends_at(),
-        trial_notices={},
-    )
-    db.add(tenant)
-    await db.flush()
-
-    admin_name = (payload.admin_full_name or "Company Administrator").strip() or "Company Administrator"
-    admin = m.User(
-        tenant_id=tenant.id,
-        email=payload.admin_email,
-        full_name=admin_name,
-        password_hash=hash_password(payload.admin_password),
-        role="company_admin",
-        email_verified=False,
-        permissions=permissions_for_role("company_admin"),
-    )
-    db.add(admin)
-    await db.flush()
-    await seed_tenant_defaults(db, tenant.id)
-
-    raw, token_hash, expires = issue_one_time_token()
-    db.add(
-        m.AuthToken(
-            tenant_id=tenant.id,
-            user_id=admin.id,
-            purpose="email_verify",
-            token_hash=token_hash,
-            expires_at=expires,
-        )
+        admin_email=str(payload.admin_email),
+        admin_password=payload.admin_password,
+        admin_full_name=payload.admin_full_name or "Company Administrator",
     )
     await db.commit()
     await db.refresh(tenant)
@@ -414,7 +380,7 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
     from app import emailer
 
     email_result = await emailer.send_verification_email(
-        to=payload.admin_email, token=raw, company_name=tenant.company_name
+        to=str(payload.admin_email), token=raw, company_name=tenant.company_name
     )
     data["email"] = {
         "sent": email_result.sent,

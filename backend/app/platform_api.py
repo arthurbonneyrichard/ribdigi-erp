@@ -22,9 +22,11 @@ from app.platform_const import (
 from app.rbac import permissions_for_role, serialize_user
 from app.security import (
     hash_password,
+    issue_one_time_token,
     require_platform_permission,
     validate_password_strength,
 )
+from app.config import settings
 
 router = APIRouter(prefix="/api/v1/platform", tags=["platform"])
 
@@ -49,6 +51,19 @@ class PlatformUserUpdate(BaseModel):
     role: str | None = None
     is_active: bool | None = None
     password: str | None = None
+
+
+class PlatformTenantCreate(BaseModel):
+    company_name: str = Field(min_length=1, max_length=200)
+    slug: str = Field(min_length=2, max_length=80)
+    industry: str = "retail"
+    currency: str = "GHS"
+    timezone: str | None = None
+    tax_jurisdiction: str | None = None
+    admin_email: EmailStr
+    admin_password: str
+    admin_full_name: str = "Company Administrator"
+    plan_code: str = "trial"
 
 
 class PlatformPlanUpdate(BaseModel):
@@ -140,6 +155,77 @@ async def platform_list_tenants(
         db, q=q, status=status, limit=limit, offset=offset
     )
     return env({"items": items, "total": total, "limit": limit, "offset": offset})
+
+
+@router.post("/tenants")
+async def platform_create_tenant(
+    payload: PlatformTenantCreate,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 86 P1 — House-provisioned customer tenant (public /register remains)."""
+    if claims.get("role") != PLATFORM_SUPER_ADMIN:
+        raise HTTPException(
+            status_code=403,
+            detail="Only platform_super_admin can provision customer tenants",
+        )
+    await platform_svc.ensure_platform_tenant(db)
+    tenant, admin, raw = await platform_svc.provision_customer_tenant(
+        db,
+        slug=payload.slug,
+        company_name=payload.company_name,
+        industry=payload.industry,
+        currency=payload.currency,
+        timezone=(payload.timezone or "Africa/Accra").strip() or "Africa/Accra",
+        tax_jurisdiction=(payload.tax_jurisdiction or "GH").strip().upper() or "GH",
+        admin_email=str(payload.admin_email),
+        admin_password=payload.admin_password,
+        admin_full_name=payload.admin_full_name or "Company Administrator",
+        plan_code=payload.plan_code or "trial",
+    )
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.tenant.create",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={
+            "slug": tenant.slug,
+            "company_name": tenant.company_name,
+            "plan_code": getattr(tenant, "plan_code", None),
+            "admin_email": admin.email,
+            "admin_user_id": admin.id,
+        },
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_tenants",
+    )
+    await db.commit()
+    await db.refresh(tenant)
+
+    from app import emailer
+
+    email_result = await emailer.send_verification_email(
+        to=str(payload.admin_email), token=raw, company_name=tenant.company_name
+    )
+    data = {
+        "tenant_id": tenant.id,
+        "slug": tenant.slug,
+        "status": tenant.status,
+        "plan_code": getattr(tenant, "plan_code", None) or "trial",
+        "admin_user_id": admin.id,
+        "email": {
+            "sent": email_result.sent,
+            "mode": email_result.mode,
+            "error": email_result.error,
+        },
+    }
+    if settings.DEBUG or settings.APP_ENV.lower() != "production":
+        data["email_verification_token"] = raw
+    return env(data, "Customer tenant provisioned by Ribdigi House")
 
 
 @router.get("/tenants/{tenant_id}")
@@ -553,6 +639,61 @@ async def platform_update_user(
     return env(serialize_user(user), message="platform user updated")
 
 
+@router.post("/users/{user_id}/password-reset-email")
+async def platform_password_reset_email(
+    user_id: str,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 86 E1 — House admin-initiated email password reset for platform staff."""
+    await platform_svc.ensure_platform_tenant(db)
+    user = await db.get(m.User, user_id)
+    if not user or user.tenant_id != PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Cannot email reset for inactive user")
+    raw, token_hash, expires = issue_one_time_token()
+    db.add(
+        m.AuthToken(
+            tenant_id=PLATFORM_TENANT_ID,
+            user_id=user.id,
+            purpose="password_reset",
+            token_hash=token_hash,
+            expires_at=expires,
+        )
+    )
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.user.password_reset_email",
+        entity="user",
+        entity_id=user.id,
+        details={"email": user.email, "initiated_by": claims.get("sub")},
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_users",
+    )
+    await db.commit()
+    from app import emailer
+
+    email_result = await emailer.send_password_reset_email(to=user.email, token=raw)
+    data: dict[str, Any] = {
+        "user_id": user.id,
+        "email": user.email,
+        "email_delivery": {
+            "sent": email_result.sent,
+            "mode": email_result.mode,
+            "error": email_result.error,
+        },
+    }
+    if settings.DEBUG or settings.APP_ENV.lower() != "production":
+        data["reset_token"] = raw
+    return env(data, "Password reset email issued")
+
+
 @router.get("/health")
 async def platform_health(
     claims: dict = Depends(require_platform_permission("platform_health", "read")),
@@ -567,12 +708,56 @@ async def platform_audit(
     db: AsyncSession = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    module: str | None = Query(None),
+    action: str | None = Query(None),
 ):
+    """Stage 86 A1 — platform audit with optional module/action filters."""
     rows = await audit.query_logs(
         db,
         tenant_id=PLATFORM_TENANT_ID,
+        module=(module or "").strip() or None,
+        action=(action or "").strip() or None,
         limit=min(limit + offset, 1000),
     )
     sliced = rows[offset : offset + limit]
     items = [audit.serialize_audit(r) for r in sliced]
-    return env({"items": items, "total": len(rows), "limit": limit, "offset": offset})
+    return env(
+        {
+            "items": items,
+            "total": len(rows),
+            "limit": limit,
+            "offset": offset,
+            "filters": {"module": module, "action": action},
+        }
+    )
+
+
+@router.get("/activity")
+async def platform_activity_alias(
+    claims: dict = Depends(require_platform_permission("platform_audit", "read")),
+    db: AsyncSession = Depends(get_db),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    module: str | None = Query(None),
+    action: str | None = Query(None),
+):
+    """Stage 86 A1 — Activity alias for Platform Audit (parity with tenant /activity)."""
+    rows = await audit.query_logs(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        module=(module or "").strip() or None,
+        action=(action or "").strip() or None,
+        limit=min(limit + offset, 1000),
+    )
+    sliced = rows[offset : offset + limit]
+    items = [audit.serialize_audit(r) for r in sliced]
+    return env(
+        {
+            "items": items,
+            "total": len(rows),
+            "limit": limit,
+            "offset": offset,
+            "filters": {"module": module, "action": action},
+            "alias_of": "/platform/audit",
+        }
+    )

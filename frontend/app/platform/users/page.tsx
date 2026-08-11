@@ -81,6 +81,29 @@ export default function PlatformUsersPage() {
     }
   }
 
+  async function emailPasswordReset(u: PlatformUser) {
+    if (!window.confirm(`Send a password reset email to ${u.email}?`)) return;
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      const r = await api(`/platform/users/${u.id}/password-reset-email`, {
+        method: 'POST',
+        body: '{}',
+      });
+      const sent = r.data?.email_delivery?.sent;
+      setMsg(
+        sent
+          ? `Reset email sent to ${u.email}`
+          : `Reset token issued for ${u.email} (email mode: ${r.data?.email_delivery?.mode || 'n/a'})`,
+      );
+    } catch (err: any) {
+      setError(err.message || 'Email reset failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <PlatformShell>
       <h1>Platform users</h1>
@@ -152,7 +175,10 @@ export default function PlatformUsersPage() {
               </td>
               <td>{u.is_active ? 'yes' : 'no'}</td>
               <td>{u.totp_enabled ? 'yes' : 'no'}</td>
-              <td>
+              <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" disabled={busy} onClick={() => emailPasswordReset(u)}>
+                  Email reset link
+                </button>
                 <button type="button" disabled={busy} onClick={() => toggleActive(u)}>
                   {u.is_active ? 'Deactivate' : 'Activate'}
                 </button>

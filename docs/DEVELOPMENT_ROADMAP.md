@@ -1633,3 +1633,15 @@ Every feature in every phase must meet:
 **Stage 85 D1 (2026-08-11):** House Roster & Tenant Access Ops fidelity sync — `docs/STAGE_85_FIDELITY.md` (`test_stage85_fidelity_d1.py`); maps R1–L1 → readiness / launch / deploy / security.
 
 **Stage 85 exit (2026-08-11):** R1, E1, L1, D1, H85x met — `docs/STAGE_85_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_177_STAGE85_FREEZE.md`. Fidelity: `docs/STAGE_85_FIDELITY.md`.
+
+**Stage 86 open (2026-08-11):** House Provision & Platform Access Ops track approved — `docs/ADR_178_STAGE86_OPEN.md` + `docs/STAGE_86_PLAN.md` (House Tenant Provision → Platform Email Password Reset → Platform Audit Activity Depth → House Provision & Platform Access Ops; P1 next).
+
+**Stage 86 P1 (2026-08-11):** House tenant provision — `POST /platform/tenants` (`test_platform_tenant_provision_p1.py`).
+
+**Stage 86 E1 (2026-08-11):** Platform email password reset — `POST /platform/users/{id}/password-reset-email` (`test_platform_email_reset_e1.py`).
+
+**Stage 86 A1 (2026-08-11):** Platform audit Activity depth — filters + `/platform/activity` (`test_platform_audit_activity_a1.py`).
+
+**Stage 86 D1 (2026-08-11):** House Provision & Platform Access Ops fidelity sync — `docs/STAGE_86_FIDELITY.md` (`test_stage86_fidelity_d1.py`); maps P1–A1 → readiness / launch / deploy / security.
+
+**Stage 86 exit (2026-08-11):** P1, E1, A1, D1, H86x met — `docs/STAGE_86_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_179_STAGE86_FREEZE.md`. Fidelity: `docs/STAGE_86_FIDELITY.md`.

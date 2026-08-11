@@ -522,6 +522,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 85 L1** | Org-chart role catalog — Manager/Tenant Admin labels + system matrix (`test_org_role_catalog_l1.py`) |
 | **Stage 85 D1** | House Roster & Tenant Access Ops fidelity — `docs/STAGE_85_FIDELITY.md` (`test_stage85_fidelity_d1.py`); maps R1–L1 → readiness / launch / deploy / security |
 | **Stage 85 H85x** | Exit + freeze — `docs/STAGE_85_EXIT_CRITERIA.md`, ADR-177 (`test_stage85_exit_h85x.py`); Stages 1–85 frozen for Stage 85 scope; Stage 86+ requires CONTINUE/NEXT |
+| **Stage 86 open** | House Provision & Platform Access Ops — `docs/STAGE_86_PLAN.md`, ADR-178 (`test_stage86_open.py`); Stages 1–85 remain frozen for prior scopes; P1 next historically |
+| **Stage 86 P1** | House tenant provision — `POST /platform/tenants` (`test_platform_tenant_provision_p1.py`) |
+| **Stage 86 E1** | Platform email password reset — `POST /platform/users/{id}/password-reset-email` (`test_platform_email_reset_e1.py`) |
+| **Stage 86 A1** | Platform audit Activity depth — filters + `/platform/activity` (`test_platform_audit_activity_a1.py`) |
+| **Stage 86 D1** | House Provision & Platform Access Ops fidelity — `docs/STAGE_86_FIDELITY.md` (`test_stage86_fidelity_d1.py`); maps P1–A1 → readiness / launch / deploy / security |
+| **Stage 86 H86x** | Exit + freeze — `docs/STAGE_86_EXIT_CRITERIA.md`, ADR-179 (`test_stage86_exit_h86x.py`); Stages 1–86 frozen for Stage 86 scope; Stage 87+ requires CONTINUE/NEXT |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |

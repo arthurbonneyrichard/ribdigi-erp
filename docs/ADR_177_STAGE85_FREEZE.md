@@ -27,4 +27,4 @@ Stage 85 House Roster & Tenant Access Ops delivered platform subscriptions roste
 
 ## Next stage
 
-Stage 86+ requires CONTINUE/NEXT with a distinct product outline and open ADR.
+Stage 86 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-178](ADR_178_STAGE86_OPEN.md) + [STAGE_86_PLAN.md](STAGE_86_PLAN.md) (House Tenant Provision → Platform Email Password Reset → Platform Audit Activity Depth → House Provision & Platform Access Ops). Stage 85 feature scope remains frozen.
