@@ -1,6 +1,6 @@
 # Stage 37 Plan — Commercial Data Protection Fidelity
 
-**Status:** Open — P1 complete; E1 next  
+**Status:** Open — P1–E1 complete; D1 next  
 **Base:** Data Subject Access / Portability Pack + Erasure / Soft-Delete Honesty Pack → Commercial Data Protection Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-079](ADR_079_STAGE37_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Data Protection Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **P1** | Data subject access / portability packaging (not GDPR / DSAR Complete) | P0 | COMPLETE |
-| **E1** | Erasure / soft-delete honesty packaging (ADR-003 boundary; not hard-delete Complete) | P0 | PENDING |
+| **E1** | Erasure / soft-delete honesty packaging (ADR-003 boundary; not hard-delete Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H37x** | Stage 37 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -64,10 +64,10 @@ Commercial Data Protection Fidelity
 
 ## E1 acceptance criteria
 
-- [ ] Erasure / soft-delete honesty packaging indexing ADR-003 soft-delete MVP vs hard-delete archival Remaining (not claiming hard-delete Complete).
-- [ ] Automated proof: `backend/tests/test_erasure_honesty_e1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 37 E1.
+- [x] Erasure / soft-delete honesty packaging indexing ADR-003 soft-delete MVP vs hard-delete archival Remaining (not claiming hard-delete Complete).
+- [x] Automated proof: `backend/tests/test_erasure_honesty_e1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 37 E1.
 
 ## D1 acceptance criteria
 
@@ -85,4 +85,4 @@ Commercial Data Protection Fidelity
 
 ## Sign-off
 
-Stage 37 P1 complete. E1 next. Stages 1–36 remain frozen for their scopes.
+Stage 37 P1–E1 complete. D1 next. Stages 1–36 remain frozen for their scopes.

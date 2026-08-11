@@ -26,6 +26,7 @@
 | `support-sla-boundary.json` | Stage 36 S1 support SLA boundary — `support_sla_claimed: false` / `pagerduty_hosted_claimed: false` / `oncall_rota_live: false` / `incident_drill_executed: false` |
 | `billing-deferred-honesty.json` | Stage 36 B1 billing-deferred honesty — `billing_complete_claimed: false` / `payment_provider_claimed: false` / `checkout_success_claimed: false` / `deferred_implemented_claimed: false` |
 | `data-portability.json` | Stage 37 P1 data subject access / portability — `gdpr_complete_claimed: false` / `dsar_portal_claimed: false` / `live_portability_workflow_claimed: false` / `consent_management_claimed: false` |
+| `erasure-honesty.json` | Stage 37 E1 erasure / soft-delete honesty — `hard_delete_claimed: false` / `erasure_complete_claimed: false` / `anonymize_workflow_claimed: false` / `deferred_implemented_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -53,6 +54,7 @@ Authoritative MVP docs:
 - `docs/BILLING_DEFERRED_HONESTY_MVP.md` (`backend/tests/test_billing_deferred_honesty_b1.py`) — Stage 36 B1
 - `docs/STAGE_37_PLAN.md` (`backend/tests/test_stage37_open.py`) — Stage 37 open (ADR-079)
 - `docs/DATA_PORTABILITY_MVP.md` (`backend/tests/test_data_portability_p1.py`) — Stage 37 P1
+- `docs/ERASURE_HONESTY_MVP.md` (`backend/tests/test_erasure_honesty_e1.py`) — Stage 37 E1
 
 ## Stage 33 K1 — Residual risk register
 
@@ -197,3 +199,11 @@ Indexes existing backup download / report export / audit export surfaces against
 - Pack: `data-portability.json`
 - Tests: `backend/tests/test_data_portability_p1.py`
 - Honesty: `gdpr_complete_claimed: false`, `dsar_portal_claimed: false`, `live_portability_workflow_claimed: false`, `consent_management_claimed: false` — packaging ≠ GDPR / DSAR Complete
+
+## Stage 37 E1 — Erasure / soft-delete honesty
+
+Indexes ADR-003 soft-delete-only MVP vs BR-3.1 hard-delete archival Remaining. See `docs/ERASURE_HONESTY_MVP.md`.
+
+- Pack: `erasure-honesty.json`
+- Tests: `backend/tests/test_erasure_honesty_e1.py`
+- Honesty: `hard_delete_claimed: false`, `erasure_complete_claimed: false`, `anonymize_workflow_claimed: false`, `deferred_implemented_claimed: false` — packaging ≠ hard-delete Complete

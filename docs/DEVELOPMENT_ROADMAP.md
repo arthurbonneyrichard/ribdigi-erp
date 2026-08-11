@@ -376,6 +376,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 37 P1 (2026-08-11):** Data subject access / portability — `docs/DATA_PORTABILITY_MVP.md`, `ops/mvp/data-portability.json`, evidence `stage37_p1_data_portability.json` (`test_data_portability_p1.py`); GDPR / DSAR Remaining.
 
+**Stage 37 E1 (2026-08-11):** Erasure / soft-delete honesty — `docs/ERASURE_HONESTY_MVP.md`, `ops/mvp/erasure-honesty.json`, evidence `stage37_e1_erasure_honesty.json` (`test_erasure_honesty_e1.py`); ADR-003; hard-delete Remaining.
+
 
 ### 2.2 Features
 
@@ -957,7 +959,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 37 open — Commercial Data Protection Fidelity (`docs/STAGE_37_PLAN.md`, ADR-079). Stages 1–36 remain frozen for their scopes; P1 complete; E1 next.
+**Active delivery plan:** Stage 37 open — Commercial Data Protection Fidelity (`docs/STAGE_37_PLAN.md`, ADR-079). Stages 1–36 remain frozen for their scopes; P1–E1 complete; D1 next.
 
 ### 6.2 Features
 
