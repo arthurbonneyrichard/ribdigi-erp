@@ -25,6 +25,7 @@
 | `e2e-backup-restore.json` | Stage 35 R1 backup + restore — `live_backup_restore_claimed: false` / `e2e_smoke_executed_claimed: false` / `demo_tenant_claimed: false` / `live_pitr_drill_claimed: false` |
 | `support-sla-boundary.json` | Stage 36 S1 support SLA boundary — `support_sla_claimed: false` / `pagerduty_hosted_claimed: false` / `oncall_rota_live: false` / `incident_drill_executed: false` |
 | `billing-deferred-honesty.json` | Stage 36 B1 billing-deferred honesty — `billing_complete_claimed: false` / `payment_provider_claimed: false` / `checkout_success_claimed: false` / `deferred_implemented_claimed: false` |
+| *(Stage 37 open)* | Commercial Data Protection Fidelity — `docs/STAGE_37_PLAN.md`, ADR-079; P1/E1 packs pending |
 
 Authoritative MVP docs:
 
@@ -50,6 +51,7 @@ Authoritative MVP docs:
 - `docs/E2E_BACKUP_RESTORE_MVP.md` (`backend/tests/test_e2e_backup_restore_r1.py`) — Stage 35 R1
 - `docs/SUPPORT_SLA_BOUNDARY_MVP.md` (`backend/tests/test_support_sla_boundary_s1.py`) — Stage 36 S1
 - `docs/BILLING_DEFERRED_HONESTY_MVP.md` (`backend/tests/test_billing_deferred_honesty_b1.py`) — Stage 36 B1
+- `docs/STAGE_37_PLAN.md` (`backend/tests/test_stage37_open.py`) — Stage 37 open (ADR-079); P1 next
 
 ## Stage 33 K1 — Residual risk register
 

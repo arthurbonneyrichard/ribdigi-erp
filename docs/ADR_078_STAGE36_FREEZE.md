@@ -23,3 +23,8 @@ Stage 36 Commercial Assurance Completion Fidelity delivered support SLA boundary
 - Stage 1–35 freezes remain in force for their scopes (Stage 35 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Assurance completion packaging Complete does **not** mean live support SLA, hosted PagerDuty/helpdesk SaaS, paid billing, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 37 (Commercial Data Protection Fidelity) after Stage 36 freeze via CONTINUE/NEXT — see [ADR-079](ADR_079_STAGE37_OPEN.md) and [STAGE_37_PLAN.md](STAGE_37_PLAN.md). Stage 36 feature scope remains frozen; Stage 37 does not reopen S1–D1 / H36x.
+

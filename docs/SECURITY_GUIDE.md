@@ -355,6 +355,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 32 B1** | Post-MVP backlog — `docs/POST_MVP_BACKLOG_MVP.md`, `ops/mvp/post-mvp-backlog.json` (`test_post_mvp_backlog_b1.py`); ADR-001–006 + Remaining indexed; deferred scopes Remaining |
 | **Stage 32 D1** | Handoff fidelity — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`) maps A1–B1 → readiness / launch / deploy / security |
 | **Stage 32 fidelity** | D1 maps A1–B1 handoff evidence — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`); exit/freeze `docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070 (`test_stage32_exit_h32x.py`); historical open ADR-069; live go-live / attestation / §7 / deferred ADR implementations remain Remaining |
+| **Stage 37 open** | Commercial Data Protection Fidelity — `docs/STAGE_37_PLAN.md`, ADR-079 (`test_stage37_open.py`); Stages 1–36 remain frozen; P1 next |
 | **Stage 36 open** | Commercial Assurance Completion Fidelity — `docs/STAGE_36_PLAN.md`, ADR-077 (`test_stage36_open.py`); Stages 1–35 remain frozen; closed under ADR-078 |
 | **Stage 36 S1** | Support SLA boundary — `docs/SUPPORT_SLA_BOUNDARY_MVP.md`, `ops/mvp/support-sla-boundary.json` (`test_support_sla_boundary_s1.py`); live SLA Remaining; PagerDuty deferred |
 | **Stage 36 B1** | Billing-deferred honesty — `docs/BILLING_DEFERRED_HONESTY_MVP.md`, `ops/mvp/billing-deferred-honesty.json` (`test_billing_deferred_honesty_b1.py`); paid billing Remaining; ADR-002 |

@@ -173,6 +173,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
+- [ ] Stage 37 Commercial Data Protection Fidelity (open: `docs/STAGE_37_PLAN.md`, ADR-079) — P1 next; Stages 1–36 frozen
+- [x] Stage 37 track opened (ADR-079: `test_stage37_open.py`, `docs/STAGE_37_PLAN.md`)
 - [x] Stage 36 Commercial Assurance Completion Fidelity (closed: `docs/STAGE_36_PLAN.md`, ADR-078) — S1–D1 / H36x complete
 - [x] Stage 36 track opened (ADR-077: `test_stage36_open.py`, `docs/STAGE_36_PLAN.md`)
 - [x] Support SLA boundary (Stage 36 S1: `test_support_sla_boundary_s1.py` — `docs/SUPPORT_SLA_BOUNDARY_MVP.md`, `ops/mvp/support-sla-boundary.json`; evidence `stage36_s1_support_sla_boundary.json`; live SLA / PagerDuty Remaining)
