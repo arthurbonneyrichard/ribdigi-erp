@@ -23,3 +23,7 @@ Stage 61 Commercial Fintech & Supply-Chain Fidelity delivered embedded fintech h
 - Stage 1–60 freezes remain in force for their scopes (Stage 60 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Fintech & supply-chain packaging Complete does **not** mean live lending / invoice financing, live supplier supply-chain / portal / EDI-ASN, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 62 (Commercial IoT & AI Marketplace Fidelity) after Stage 61 freeze via CONTINUE/NEXT — see [ADR-129](ADR_129_STAGE62_OPEN.md) and [STAGE_62_PLAN.md](STAGE_62_PLAN.md). Stage 61 feature scope remains frozen; Stage 62 does not reopen F1–D1 / H61x.

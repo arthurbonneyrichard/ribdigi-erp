@@ -1391,3 +1391,5 @@ Every feature in every phase must meet:
 **Stage 61 D1 (2026-08-11):** Fintech & supply-chain fidelity sync — `docs/STAGE_61_FIDELITY.md` (`test_stage61_fidelity_d1.py`); maps F1–S1 → readiness / launch / deploy / security.
 
 **Stage 61 exit (2026-08-11):** F1, S1, D1, H61x met — `docs/STAGE_61_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_128_STAGE61_FREEZE.md`. Fidelity: `docs/STAGE_61_FIDELITY.md`.
+
+**Stage 62 open (2026-08-11):** Commercial IoT & AI Marketplace Fidelity track approved — `docs/ADR_129_STAGE62_OPEN.md` + `docs/STAGE_62_PLAN.md` (IoT integration → AI model marketplace → fidelity).
