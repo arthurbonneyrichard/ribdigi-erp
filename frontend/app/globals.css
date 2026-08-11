@@ -307,3 +307,36 @@
   .login{padding:26px 18px 20px;border-radius:18px;width:min(420px,100%)}
   .login h1{letter-spacing:-.2px}
 }
+
+/* ---------- Platform owner console ---------- */
+.plat{display:flex;flex-direction:column;gap:18px}
+.plat-hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;flex-wrap:wrap;
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#0f766e 140%);
+  color:#f8fafc;border-radius:18px;padding:26px 28px;box-shadow:0 14px 34px #0f172a33}
+.plat-kicker{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8}
+.plat-hero h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.4px}
+.plat-sub{margin:8px 0 0;max-width:520px;color:#cbd5e1;font-size:14px;line-height:1.45;font-weight:500}
+.plat-filters{display:flex;flex-wrap:wrap;gap:8px}
+.plat-chip{border:1px solid #475569;background:#0f172a99;color:#e2e8f0;border-radius:999px;padding:7px 12px;
+  font-size:13px;font-weight:700;cursor:pointer}
+.plat-chip.active,.plat-chip:hover{background:#f8fafc;color:#0f172a;border-color:#f8fafc}
+.plat-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.plat-stat{background:#fff;border:1px solid #eef1f7;border-radius:14px;padding:14px 16px;box-shadow:0 4px 14px #0b112612}
+.plat-stat span{display:block;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.plat-stat strong{display:block;margin-top:6px;font-size:26px;font-weight:800;color:#0f172a}
+.plat-stat.ok strong{color:#15803d}
+.plat-stat.trial strong{color:#a16207}
+.plat-stat.grace strong{color:#c2410c}
+.plat-stat.bad strong{color:#b91c1c}
+.plat-panel{background:#fff;border:1px solid #eef1f7;border-radius:16px;padding:18px;box-shadow:0 6px 18px #0b112617}
+.plat-panel h2{margin:0 0 12px;font-size:17px}
+.plat-co{font-weight:700}
+.plat-actions{display:flex;gap:8px;flex-wrap:wrap}
+.plat-actions button{padding:7px 11px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;font-weight:700;font-size:13px;cursor:pointer}
+.plat-actions button:hover{background:#f1f5f9}
+.plat-actions button.danger{border-color:#fecaca;color:#b91c1c;background:#fef2f2}
+.plat-actions button.danger:hover{background:#fee2e2}
+.plat-actions button:disabled{opacity:.55;cursor:not-allowed}
+[data-theme="dark"] .plat-stat,[data-theme="dark"] .plat-panel{background:#131c2e;border-color:#233047}
+[data-theme="dark"] .plat-stat strong,[data-theme="dark"] .plat-panel h2,[data-theme="dark"] .plat-co{color:#f1f5f9}
+[data-theme="dark"] .plat-actions button{background:#0f1826;border-color:#334155;color:#e2e8f0}

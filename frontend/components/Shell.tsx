@@ -27,6 +27,8 @@ const items: [string, string, string][] = [
   ['Users', '/users', 'users'],
 ];
 
+const platformItem: [string, string, string] = ['Platform', '/platform', 'platform'];
+
 // Monochrome line icons (inherit the nav text color via currentColor).
 const ICONS: Record<string, React.ReactNode> = {
   dashboard: (
@@ -147,6 +149,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </>
   ),
+  platform: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </>
+  ),
 };
 
 function NavIcon({ name }: { name: string }) {
@@ -177,6 +185,7 @@ function canReadModule(permissions: Record<string, string[]> | null | undefined,
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
+  const [role, setRole] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [fullName, setFullName] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -228,11 +237,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         if (!active) return;
         setUnread(countRes.data?.count || 0);
         setPermissions(meRes.data?.permissions || {});
+        setRole(meRes.data?.role || '');
         setFullName(meRes.data?.full_name || '');
       } catch {
         if (active) {
           setUnread(0);
           setPermissions({});
+          setRole('');
         }
       }
     }
@@ -244,7 +255,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const visible = items.filter(([, , module]) => canReadModule(permissions, module));
+  const visible = [
+    ...(role === 'super_admin' ? [platformItem] : []),
+    ...items.filter(([, , module]) => canReadModule(permissions, module)),
+  ];
 
   return (
     <div className={`shell${menuOpen ? ' nav-open' : ''}`}>

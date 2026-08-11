@@ -39,6 +39,8 @@ export default function Login() {
     localStorage.setItem('tenant', data.user.tenant_id);
     if (data.must_enroll_2fa) {
       router.push('/security');
+    } else if (data.user?.role === 'super_admin') {
+      router.push('/platform');
     } else {
       router.push('/dashboard');
     }
