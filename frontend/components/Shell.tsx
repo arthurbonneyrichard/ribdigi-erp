@@ -35,6 +35,7 @@ function canReadModule(permissions: Record<string, string[]> | null | undefined,
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -65,20 +66,30 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const visible = items.filter(([, , module]) => canReadModule(permissions, module));
 
   return (
-    <div className="shell">
+    <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
       <aside className="side">
         <div className="brand">RIBDIGI ERP</div>
         <nav className="nav">
           {visible.map(([n, h]) => (
-            <Link key={h} href={h}>
+            <Link key={h} href={h} onClick={() => setMenuOpen(false)}>
               {n}
               {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
             </Link>
           ))}
         </nav>
       </aside>
+      <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
       <main className="main">
         <div className="topbar">
+          <button
+            type="button"
+            className="menu-btn"
+            aria-label="Toggle navigation menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <span aria-hidden>{'\u2630'}</span> Menu
+          </button>
           {canReadModule(permissions, 'notifications') && (
             <Link href="/notifications" className="bell">
               Alerts{unread > 0 ? ` · ${unread}` : ''}
