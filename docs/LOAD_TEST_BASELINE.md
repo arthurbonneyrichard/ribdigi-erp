@@ -99,7 +99,7 @@ python -m loadtest.run_baseline --ci-capacity \
   --output /opt/cursor/artifacts/loadtest/stage26_c1_capacity_cli.json
 ```
 
-Automated proof: `backend/tests/test_load_capacity_c1.py`. Authoritative MVP doc: `docs/LOAD_CAPACITY_MVP.md`. Operator staging ~1000-VU remains Remaining.
+Automated proof: `backend/tests/test_load_capacity_c1.py`. Authoritative MVP doc: `docs/LOAD_CAPACITY_MVP.md`. Stage 28 C1 packages the operator ~1000-VU checklist/schema (`docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/`, `test_load_cert_pack_c1.py`) — live staging ~1000-VU **execution** remains Remaining.
 
 ## Sign-off checklist (staging)
 
