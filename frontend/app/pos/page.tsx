@@ -10,11 +10,18 @@ type Product = {
   variant_id?: string | null;
   name: string;
   sku: string;
+  barcode?: string | null;
   selling_price: number;
   stock_qty: number;
   kind?: string;
   has_image?: boolean;
 };
+
+function looksLikeBarcode(value: string) {
+  const text = value.trim();
+  if (!text || /\s/.test(text)) return false;
+  return /^[A-Za-z0-9\-._]{4,48}$/.test(text);
+}
 
 type CartItem = Product & { quantity: number };
 
@@ -153,6 +160,7 @@ export default function Page() {
   const browse = useCallback(async (query = '') => {
     const r = await api('/pos/products/search?q=' + encodeURIComponent(query));
     setRows(r.data || []);
+    return (r.data || []) as Product[];
   }, []);
 
   useEffect(() => {
@@ -202,8 +210,43 @@ export default function Page() {
   async function search(e?: React.FormEvent) {
     e?.preventDefault();
     setError('');
+    const query = q.trim();
     try {
-      await browse(q);
+      // USB/Bluetooth wedge scanners type digits then Enter — accept as barcode.
+      if (looksLikeBarcode(query)) {
+        const exact = await api(
+          '/pos/products/search?barcode=' + encodeURIComponent(query)
+        );
+        const hits: Product[] = exact.data || [];
+        if (hits.length === 1) {
+          addToCart(hits[0]);
+          setMessage(`Scanned ${hits[0].name} (${hits[0].barcode || hits[0].sku})`);
+          setQ('');
+          await browse('');
+          return;
+        }
+        if (hits.length === 0) {
+          // Fall back to SKU / name search for the same token.
+          const soft = await browse(query);
+          if (soft.length === 1) {
+            addToCart(soft[0]);
+            setMessage(`Added ${soft[0].name}`);
+            setQ('');
+            await browse('');
+            return;
+          }
+          if (soft.length === 0) {
+            setError(`No product for barcode ${query}`);
+            return;
+          }
+          setMessage(`${soft.length} matches — tap a tile`);
+          return;
+        }
+        setRows(hits);
+        setMessage(`${hits.length} barcode matches — tap a tile`);
+        return;
+      }
+      await browse(query);
     } catch (err: any) {
       setError(err.message);
     }
@@ -312,7 +355,7 @@ export default function Page() {
         <header className="tpos-top">
           <div>
             <h1>Touch POS</h1>
-            <p className="muted">Tap products to sell · image tiles · large cart controls</p>
+            <p className="muted">Tap tiles or scan a barcode · image catalog · large cart controls</p>
           </div>
           <div className="tpos-shift">
             {!session ? (
@@ -385,12 +428,15 @@ export default function Page() {
                 className="tpos-search-input"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search name, SKU, or scan barcode"
+                placeholder="Scan barcode or search name / SKU"
                 disabled={!session}
                 autoComplete="off"
+                autoFocus
+                inputMode="text"
+                aria-label="Barcode scan or product search"
               />
               <button type="submit" className="tpos-btn tpos-btn-primary" disabled={!session}>
-                Search
+                Scan / Search
               </button>
               <button
                 type="button"

@@ -42,6 +42,7 @@ from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
 from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
+from app import barcodes as barcodes_svc
 from app.config import settings
 from app.schemas import (
     BrandCreate,
@@ -1761,6 +1762,14 @@ async def add_product(
     data["category_id"] = category_id
     data["brand_id"] = brand_id
     data["unit_id"] = unit_id
+    if data.get("barcode") is not None:
+        data["barcode"] = barcodes_svc.normalize_barcode(data.get("barcode"))
+        if data["barcode"]:
+            await barcodes_svc.assert_barcode_unique(
+                db,
+                tenant_id=claims["tenant_id"],
+                barcode_value=data["barcode"],
+            )
     product = m.Product(tenant_id=claims["tenant_id"], **data)
     db.add(product)
     await db.flush()
@@ -1865,7 +1874,15 @@ async def patch_product(
                 raise HTTPException(status_code=400, detail="name is required")
             product.name = name
         elif key == "barcode":
-            product.barcode = (str(value).strip() if value else None) or None
+            code = barcodes_svc.normalize_barcode(str(value) if value is not None else None)
+            if code:
+                await barcodes_svc.assert_barcode_unique(
+                    db,
+                    tenant_id=claims["tenant_id"],
+                    barcode_value=code,
+                    exclude_product_id=product.id,
+                )
+            product.barcode = code
         elif key in {"cost_price", "selling_price", "reorder_level"} and value is not None:
             setattr(product, key, float(value))
         elif key == "tax_rate_id":
@@ -2212,6 +2229,131 @@ async def product_images_delete(
     )
     await db.commit()
     return env(None, "Product image removed")
+
+
+@api.post("/products/{product_id}/barcode/generate")
+async def product_barcode_generate(
+    product_id: str,
+    force: bool = False,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Assign a Code128 barcode from the SKU when missing (or when force=true)."""
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    if product.barcode and not force:
+        return env(catalog_meta_svc.serialize_product(product), "Barcode already set")
+
+    candidate = barcodes_svc.suggest_barcode_from_sku(product.sku)
+    # Ensure uniqueness within tenant by suffixing if needed.
+    base = candidate
+    for i in range(0, 50):
+        try_code = base if i == 0 else f"{base[:40]}-{i}"
+        try_code = barcodes_svc.normalize_barcode(try_code)
+        assert try_code
+        clash = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == claims["tenant_id"],
+                    m.Product.barcode == try_code,
+                    m.Product.id != product.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not clash:
+            candidate = try_code
+            break
+    else:
+        raise HTTPException(status_code=409, detail="Could not allocate a unique barcode")
+
+    product.barcode = candidate
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="barcode_generate",
+        entity="product",
+        entity_id=product.id,
+        details={"barcode": product.barcode, "sku": product.sku},
+    )
+    await db.commit()
+    await db.refresh(product)
+    return env(catalog_meta_svc.serialize_product(product), "Barcode generated")
+
+
+@api.get("/products/{product_id}/barcode.png")
+async def product_barcode_png(
+    product_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    code = product.barcode or product.sku
+    if not code:
+        raise HTTPException(status_code=404, detail="No barcode or SKU available")
+    png = barcodes_svc.render_code128_png(str(code))
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Content-Disposition": f'inline; filename="barcode-{product.sku}.png"'},
+    )
+
+
+@api.get("/products/{product_id}/barcode/label")
+async def product_barcode_label(
+    product_id: str,
+    copies: int = 1,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable HTML label sheet (Code128) for shelf / price tags."""
+    import base64
+
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    code = product.barcode or product.sku
+    if not code:
+        raise HTTPException(status_code=404, detail="No barcode or SKU available")
+    png = barcodes_svc.render_code128_png(str(code))
+    data_uri = "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+    page = barcodes_svc.label_html(
+        company_name=(tenant.company_name if tenant else "RIBDIGI ERP"),
+        product_name=product.name,
+        sku=product.sku,
+        barcode_value=str(code),
+        price=float(product.selling_price or 0),
+        currency=(tenant.currency if tenant else "GHS"),
+        png_data_uri=data_uri,
+        copies=copies,
+    )
+    return Response(content=page, media_type="text/html; charset=utf-8")
 
 
 @api.get("/inventory/low-stock")
@@ -3710,10 +3852,23 @@ async def pos_search(
         m.Product.tenant_id == claims["tenant_id"],
         m.Product.is_active == True,  # noqa: E712
     )
-    if barcode:
-        stmt = stmt.where(m.Product.barcode == barcode)
-    elif q:
-        stmt = stmt.where(m.Product.name.ilike(f"%{q}%") | m.Product.sku.ilike(f"%{q}%"))
+    q_clean = (q or "").strip()
+    # Exact barcode param, or treat scanner wedge input in `q` as a barcode first.
+    barcode_key = (barcode or "").strip() or (q_clean if barcodes_svc.looks_like_barcode(q_clean) else "")
+    if barcode_key:
+        stmt = stmt.where(
+            (m.Product.barcode == barcode_key)
+            | (m.Product.sku == barcode_key)
+            | (func.lower(m.Product.barcode) == barcode_key.lower())
+            | (func.lower(m.Product.sku) == barcode_key.lower())
+        )
+    elif q_clean:
+        like = f"%{q_clean}%"
+        stmt = stmt.where(
+            m.Product.name.ilike(like)
+            | m.Product.sku.ilike(like)
+            | m.Product.barcode.ilike(like)
+        )
     products = (await db.execute(stmt.limit(48))).scalars().all()
     out = [
         {
@@ -3735,11 +3890,19 @@ async def pos_search(
         m.ProductVariant.tenant_id == claims["tenant_id"],
         m.ProductVariant.is_active == True,  # noqa: E712
     )
-    if barcode:
-        vstmt = vstmt.where(m.ProductVariant.barcode == barcode)
-    elif q:
+    if barcode_key:
         vstmt = vstmt.where(
-            m.ProductVariant.name.ilike(f"%{q}%") | m.ProductVariant.sku.ilike(f"%{q}%")
+            (m.ProductVariant.barcode == barcode_key)
+            | (m.ProductVariant.sku == barcode_key)
+            | (func.lower(m.ProductVariant.barcode) == barcode_key.lower())
+            | (func.lower(m.ProductVariant.sku) == barcode_key.lower())
+        )
+    elif q_clean:
+        like = f"%{q_clean}%"
+        vstmt = vstmt.where(
+            m.ProductVariant.name.ilike(like)
+            | m.ProductVariant.sku.ilike(like)
+            | m.ProductVariant.barcode.ilike(like)
         )
     else:
         vstmt = None
@@ -3757,6 +3920,7 @@ async def pos_search(
                     "selling_price": float(v.selling_price or 0),
                     "stock_qty": float(v.stock_qty or 0),
                     "kind": "variant",
+                    "has_image": False,
                 }
             )
     return env(out[:40])

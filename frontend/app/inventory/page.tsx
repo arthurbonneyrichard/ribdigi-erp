@@ -35,6 +35,9 @@ export default function Page() {
   const [productUnitId, setProductUnitId] = useState('');
   const [editReorder, setEditReorder] = useState('0');
   const [editPrice, setEditPrice] = useState('0');
+  const [editBarcode, setEditBarcode] = useState('');
+  const [productBarcode, setProductBarcode] = useState('');
+  const [labelCopies, setLabelCopies] = useState('1');
 
   const [catCode, setCatCode] = useState('');
   const [catName, setCatName] = useState('');
@@ -95,6 +98,7 @@ export default function Page() {
       if (p) {
         setEditReorder(String(p.reorder_level ?? 0));
         setEditPrice(String(p.selling_price ?? 0));
+        setEditBarcode(String(p.barcode || ''));
       }
     }
   }, [selectedId, products]);
@@ -108,10 +112,56 @@ export default function Page() {
         body: JSON.stringify({
           reorder_level: Number(editReorder) || 0,
           selling_price: Number(editPrice) || 0,
+          barcode: editBarcode.trim() || null,
         }),
       });
       setMessage('Product updated');
       await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function generateBarcode() {
+    if (!selectedId) return;
+    setError('');
+    try {
+      const r = await api(`/products/${selectedId}/barcode/generate`, { method: 'POST', body: '{}' });
+      setEditBarcode(r.data?.barcode || '');
+      setMessage(`Barcode set to ${r.data?.barcode}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function printBarcodeLabel() {
+    if (!selectedId) return;
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const copies = Math.max(1, Math.min(40, Number(labelCopies) || 1));
+      const res = await fetch(
+        `${apiBase}/products/${selectedId}/barcode/label?copies=${copies}`,
+        {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+          },
+        }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Label failed');
+      }
+      const html = await res.text();
+      const w = window.open('', '_blank', 'noopener,noreferrer,width=720,height=640');
+      if (!w) throw new Error('Pop-up blocked — allow pop-ups to print labels');
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      setMessage('Barcode label opened — use Print labels');
     } catch (err: any) {
       setError(err.message);
     }
@@ -195,6 +245,7 @@ export default function Page() {
         body: JSON.stringify({
           name: productName,
           sku: productSku,
+          barcode: productBarcode.trim() || null,
           selling_price: Number(productPrice) || 0,
           category_id: productCategoryId || null,
           brand_id: productBrandId || null,
@@ -204,6 +255,7 @@ export default function Page() {
       setMessage(`Product ${r.data.sku} created`);
       setProductName('');
       setProductSku('');
+      setProductBarcode('');
       setProductPrice('0');
       await refresh();
       setSelectedId(r.data.id);
@@ -413,6 +465,27 @@ export default function Page() {
         )}
         {selectedId && (
           <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+            <label className="muted">Barcode</label>
+            <input
+              value={editBarcode}
+              onChange={(e) => setEditBarcode(e.target.value)}
+              placeholder="Scan or type barcode"
+            />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button type="button" onClick={generateBarcode}>
+                Generate barcode
+              </button>
+              <input
+                value={labelCopies}
+                onChange={(e) => setLabelCopies(e.target.value)}
+                style={{ width: 64 }}
+                title="Label copies"
+                aria-label="Label copies"
+              />
+              <button type="button" onClick={printBarcodeLabel}>
+                Print barcode label
+              </button>
+            </div>
             <label className="muted">Reorder level</label>
             <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
             <label className="muted">Selling price</label>
@@ -430,6 +503,11 @@ export default function Page() {
             <h3>Add product</h3>
             <input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Name" />
             <input value={productSku} onChange={(e) => setProductSku(e.target.value)} placeholder="SKU" />
+            <input
+              value={productBarcode}
+              onChange={(e) => setProductBarcode(e.target.value)}
+              placeholder="Barcode (optional)"
+            />
             <input value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="Selling price" />
             <select value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}>
               <option value="">Category</option>
@@ -464,6 +542,7 @@ export default function Page() {
               <tr>
                 <th>Name</th>
                 <th>SKU</th>
+                <th>Barcode</th>
                 <th>Category</th>
                 <th>Stock</th>
                 <th>Batches?</th>
@@ -483,6 +562,7 @@ export default function Page() {
                     </button>
                   </td>
                   <td>{p.sku}</td>
+                  <td>{p.barcode || '—'}</td>
                   <td>{p.category}</td>
                   <td>{p.stock_qty}</td>
                   <td>{p.tracks_batches ? 'yes' : 'no'}</td>
