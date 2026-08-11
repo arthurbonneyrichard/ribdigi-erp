@@ -1,10 +1,11 @@
 # Stage 58 Plan — Commercial Business & AI Metrics Fidelity
 
-**Status:** Open — D1 complete; H58x next  
+**Status:** Closed — exit met (H58x / ADR-122)  
 **Base:** Business Metrics Honesty Pack + AI Metrics Honesty Pack → Commercial Business & AI Metrics Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-121](ADR_121_STAGE58_OPEN.md)  
 **Prior freeze:** [ADR-120](ADR_120_STAGE57_FREEZE.md) · [STAGE_57_EXIT_CRITERIA.md](STAGE_57_EXIT_CRITERIA.md)
+**Exit:** [STAGE_58_EXIT_CRITERIA.md](STAGE_58_EXIT_CRITERIA.md) · [ADR-122](ADR_122_STAGE58_FREEZE.md)  
 
 Stage 58 opens after Stage 57 freeze: **Business Metrics Honesty Packaging + AI Metrics Honesty Packaging → Commercial Business & AI Metrics Fidelity**. PRODUCT_OVERVIEW Success Metrics Business Metrics (Paying Customers, MRR, Gross/Net Revenue Retention, Trial-to-Paid) and AI Metrics (AI Feature Adoption, Prediction Accuracy, Chat Assistant Resolution Rate), with Stage 57 product-metrics / Stage 55 unit-economics / Stage 20–42 AI adjacency, lack dedicated customer-facing honesty packs for measured business-metrics Remaining and measured AI-metrics Remaining. This track packages those Remaining surfaces on proven Stage 36–57 commercial / AI honesty assets — **not** claiming measured MRR / paying-customers Complete, measured NRR / GRR / trial conversion Complete, measured AI adoption / prediction accuracy / chat resolution Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–57 packs as new Complete, or reopening Stages 1–57 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Business & AI Metrics Fidelity
 | **B1** | Business metrics honesty packaging (not measured MRR / paying customers / NRR Complete) | P0 | COMPLETE |
 | **I1** | AI metrics honesty packaging (not measured AI adoption / prediction accuracy / chat resolution Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H58x** | Stage 58 exit criteria + freeze ADR | Exit | PENDING |
+| **H58x** | Stage 58 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -107,6 +108,6 @@ Commercial Business & AI Metrics Fidelity
 
 ## H58x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for B1–D1 / H58x — `docs/STAGE_58_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_122_STAGE58_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage58_exit_h58x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for B1–D1 / H58x — `docs/STAGE_58_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_122_STAGE58_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage58_exit_h58x.py`.

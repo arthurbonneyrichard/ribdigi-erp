@@ -194,6 +194,8 @@ Authoritative MVP docs:
 - `docs/STAGE_58_PLAN.md` (`backend/tests/test_stage58_open.py`) — Stage 58 open (ADR-121)
 - `docs/BUSINESS_METRICS_MVP.md` (`backend/tests/test_business_metrics_b1.py`) — Stage 58 B1
 - `docs/AI_METRICS_MVP.md` (`backend/tests/test_ai_metrics_i1.py`) — Stage 58 I1
+- `docs/STAGE_58_FIDELITY.md` (`backend/tests/test_stage58_fidelity_d1.py`) — Stage 58 D1
+- `docs/STAGE_58_EXIT_CRITERIA.md` / `docs/ADR_122_STAGE58_FREEZE.md` (`backend/tests/test_stage58_exit_h58x.py`) — Stage 58 H58x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -757,9 +759,9 @@ Commercial Mobile & Metrics Fidelity — `docs/STAGE_57_PLAN.md`, ADR-119; Close
 
 H57x met — `docs/STAGE_57_EXIT_CRITERIA.md`, ADR-120. Stages 1–57 frozen for Stage 57 feature scope.
 
-## Stage 58 open
+## Stage 58 open (historical)
 
-Commercial Business & AI Metrics Fidelity — `docs/STAGE_58_PLAN.md`, ADR-121; Open — I1 complete; D1 next.
+Commercial Business & AI Metrics Fidelity — `docs/STAGE_58_PLAN.md`, ADR-121; Closed — exit met (H58x / ADR-122).
 
 ## Stage 58 B1 — Business metrics honesty
 
@@ -768,3 +770,11 @@ Commercial Business & AI Metrics Fidelity — `docs/STAGE_58_PLAN.md`, ADR-121; 
 ## Stage 58 I1 — AI metrics honesty
 
 `docs/AI_METRICS_MVP.md` + `ops/mvp/ai-metrics.json` — packaging Complete; `ai_feature_adoption_measured_claimed` / `prediction_accuracy_measured_claimed` / `chat_resolution_measured_claimed` / `ai_metrics_program_live` remain false.
+
+## Stage 58 D1 — Business & AI metrics fidelity
+
+`docs/STAGE_58_FIDELITY.md` — maps B1–I1 → readiness / launch / deploy / security (`test_stage58_fidelity_d1.py`).
+
+## Stage 58 exit
+
+H58x met — `docs/STAGE_58_EXIT_CRITERIA.md`, ADR-122. Stages 1–58 frozen for Stage 58 feature scope.
