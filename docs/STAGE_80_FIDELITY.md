@@ -24,7 +24,7 @@ Stage 80 proves Dual-Console Dashboard Fidelity after Stage 79 freeze — **Plat
 | **P1** | `test_platform_dashboard_charts_p1.py` — `/api/v1/platform/dashboard/*` charts | ADR-137 / platform_dashboard:read | Paid MRR (ADR-002) |
 | **T1** | `test_tenant_role_dashboard_t1.py` — role views + permission filter | BR-4 dashboard / tenant RBAC | Store-assignment UI polish; dotted permission aliases |
 | **D1** | This note + `test_stage80_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H80x** | `STAGE_80_EXIT_CRITERIA.md`; ADR-167; `test_stage80_exit_h80x.py` | Stage 80 exit + freeze | Stage 81+ requires CONTINUE/NEXT |
+| **H80x** | `STAGE_80_EXIT_CRITERIA.md`; ADR-167; `test_stage80_exit_h80x.py` | Stage 80 exit + freeze | Stage 81 opened via ADR-168 |
 
 ## Evidence tests
 

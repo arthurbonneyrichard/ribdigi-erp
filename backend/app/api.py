@@ -2473,7 +2473,14 @@ async def deactivate_user(
 async def dashboard(claims=Depends(require_permission("dashboard", "read")), db: AsyncSession = Depends(get_db)):
     tid = claims["tenant_id"]
     role = claims.get("role") or "cashier"
-    dash_key = cache_svc.app_cache.dashboard_key(tid, role=role)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_ids = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dash_key = cache_svc.app_cache.dashboard_key(
+        tid,
+        role=role,
+        user_id=claims.get("sub") if managed_ids is not None else None,
+    )
     cached = await cache_svc.app_cache.get_json(dash_key)
     if cached is not None:
         return env(cached)
@@ -2758,6 +2765,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "recent_logins_7d": int(recent_logins),
         },
         "role_label": ROLE_LABELS.get(role, role),
+        "store_scope": dashboard_scope_svc.store_scope_payload(managed_ids),
         # BR-4.1 click-through targets (Stage 1 F17 / Stage 21 V1)
         "kpi_links": {
             "total_sales": "/sales?tab=invoices",
@@ -2778,6 +2786,18 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "user_stats": "/users",
         },
     }
+    # Stage 81 S1 — Store Manager aggregates limited to stores.manager_id
+    if managed_ids is not None:
+        scoped = await dashboard_scope_svc.scoped_financial_kpis(
+            db,
+            tenant_id=tid,
+            store_ids=managed_ids,
+            day_start=day_start,
+            yesterday_start=yesterday_start,
+            month_start=month_start,
+            prior_month_start=prior_month_start,
+        )
+        payload.update(scoped)
     # Stage 80 T1 — permission + role scoped view (cashier omits accounting/users/etc.)
     _ = has_permission  # imported for clarity; filtering uses dashboard_views
     payload = dashboard_views_svc.filter_dashboard_payload(payload, claims)

@@ -75,7 +75,7 @@ def filter_dashboard_payload(payload: dict, claims: dict) -> dict:
     """Return a copy of payload with disallowed sections removed."""
     sections = allowed_sections(claims)
     allowed = set(sections)
-    keep_fields: set[str] = {"view", "sections", "kpi_links", "role_label"}
+    keep_fields: set[str] = {"view", "sections", "kpi_links", "role_label", "store_scope"}
     for section in sections:
         keep_fields.update(SECTION_FIELDS.get(section, ()))
     # Always keep dashboard-level identity metadata

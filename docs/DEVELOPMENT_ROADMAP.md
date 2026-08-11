@@ -1581,3 +1581,13 @@ Every feature in every phase must meet:
 **Stage 80 D1 (2026-08-11):** Dual-Console Dashboard fidelity sync — `docs/STAGE_80_FIDELITY.md` (`test_stage80_fidelity_d1.py`); maps P1–T1 → readiness / launch / deploy / security.
 
 **Stage 80 exit (2026-08-11):** P1, T1, D1, H80x met — `docs/STAGE_80_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_167_STAGE80_FREEZE.md`. Fidelity: `docs/STAGE_80_FIDELITY.md`.
+
+**Stage 81 open (2026-08-11):** Dual-Console Admin Fidelity track approved — `docs/ADR_168_STAGE81_OPEN.md` + `docs/STAGE_81_PLAN.md` (Tenant Admin RBAC Console Surfaces → Store-Scoped Manager Ops → Dual-Console Admin Fidelity; A1 next).
+
+**Stage 81 A1 (2026-08-11):** Tenant Admin RBAC console surfaces — `/users`, `/admin/roles`, `/admin/permissions` (`test_admin_console_a1.py`).
+
+**Stage 81 S1 (2026-08-11):** Store-scoped manager ops — `store_scope` / `stores.manager_id` (`test_store_scoped_manager_s1.py`); ADR-005 membership Remaining.
+
+**Stage 81 D1 (2026-08-11):** Dual-Console Admin fidelity sync — `docs/STAGE_81_FIDELITY.md` (`test_stage81_fidelity_d1.py`); maps A1–S1 → readiness / launch / deploy / security.
+
+**Stage 81 exit (2026-08-11):** A1, S1, D1, H81x met — `docs/STAGE_81_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_169_STAGE81_FREEZE.md`. Fidelity: `docs/STAGE_81_FIDELITY.md`.

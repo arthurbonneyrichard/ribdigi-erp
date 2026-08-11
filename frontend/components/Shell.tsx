@@ -29,6 +29,8 @@ const items: [string, string, string][] = [
   ['Security', '/security', 'security'],
   ['AI Assistant', '/ai', 'ai'],
   ['Users', '/users', 'users'],
+  ['Roles', '/admin/roles', 'users'],
+  ['Permissions', '/admin/permissions', 'users'],
 ];
 
 type StoreOption = { id: string; code: string; name: string; is_active?: boolean };
@@ -215,7 +217,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       : items.filter(([, , module]) => canReadModule(permissions, module));
   const showStoreSwitcher =
     principal !== 'platform' && canReadModule(permissions, 'stores') && stores.length > 0;
-  const adminHrefs = new Set(['/users', '/audit', '/backup', '/security']);
+  const adminHrefs = new Set([
+    '/users',
+    '/admin/roles',
+    '/admin/permissions',
+    '/audit',
+    '/backup',
+    '/security',
+  ]);
   const primaryNav = visible.filter(([, h]) => !adminHrefs.has(h));
   const adminNav = visible.filter(([, h]) => adminHrefs.has(h));
 
@@ -240,7 +249,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </div>
               {adminNav.map(([n, h]) => (
                 <Link key={h} href={h}>
-                  {n === 'Users' ? 'Users & Roles' : n}
+                  {n}
                 </Link>
               ))}
             </>

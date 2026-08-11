@@ -27,4 +27,8 @@ Stage 80 Dual-Console Dashboard Fidelity delivered platform owner dashboard char
 
 ## Next stage
 
-Stage 81+ requires CONTINUE/NEXT with a distinct product outline and open ADR.
+Stage 81 opened via ADR-168 (`docs/ADR_168_STAGE81_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 81 (Dual-Console Admin Fidelity — Tenant Admin RBAC Console Surfaces → Store-Scoped Manager Ops → Dual-Console Admin Fidelity) after Stage 80 freeze via CONTINUE/NEXT — see [ADR-168](ADR_168_STAGE81_OPEN.md) and [STAGE_81_PLAN.md](STAGE_81_PLAN.md). Stage 80 feature scope remains frozen; Stage 81 does not reopen P1–D1 / H80x.

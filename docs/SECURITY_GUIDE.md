@@ -495,7 +495,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 80 P1** | Platform owner dashboard charts — `/api/v1/platform/dashboard/*` (`test_platform_dashboard_charts_p1.py`); no fabricated MRR (ADR-002) |
 | **Stage 80 T1** | Tenant role-scoped dashboards — `dashboard_views` (`test_tenant_role_dashboard_t1.py`); cashier omits accounting/users aggregates |
 | **Stage 80 D1** | Dual-Console Dashboard fidelity — `docs/STAGE_80_FIDELITY.md` (`test_stage80_fidelity_d1.py`); maps P1–T1 → readiness / launch / deploy / security; billing remains Remaining |
-| **Stage 80 H80x** | Exit + freeze — `docs/STAGE_80_EXIT_CRITERIA.md`, ADR-167 (`test_stage80_exit_h80x.py`); Stages 1–80 frozen for Stage 80 scope; Stage 81+ requires CONTINUE/NEXT |
+| **Stage 80 H80x** | Exit + freeze — `docs/STAGE_80_EXIT_CRITERIA.md`, ADR-167 (`test_stage80_exit_h80x.py`); Stages 1–80 frozen for Stage 80 scope; Stage 81 opened via ADR-168 |
+| **Stage 81 open** | Dual-Console Admin Fidelity — `docs/STAGE_81_PLAN.md`, ADR-168 (`test_stage81_open.py`); Stages 1–80 remain frozen for prior scopes; A1 next historically |
+| **Stage 81 A1** | Tenant Admin RBAC console surfaces — `/users`, `/admin/roles`, `/admin/permissions` (`test_admin_console_a1.py`) |
+| **Stage 81 S1** | Store-scoped manager ops + isolation — `store_scope` (`test_store_scoped_manager_s1.py`); ADR-005 membership Remaining |
+| **Stage 81 D1** | Dual-Console Admin fidelity — `docs/STAGE_81_FIDELITY.md` (`test_stage81_fidelity_d1.py`); maps A1–S1 → readiness / launch / deploy / security |
+| **Stage 81 H81x** | Exit + freeze — `docs/STAGE_81_EXIT_CRITERIA.md`, ADR-169 (`test_stage81_exit_h81x.py`); Stages 1–81 frozen for Stage 81 scope; Stage 82+ requires CONTINUE/NEXT |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |

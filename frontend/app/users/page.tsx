@@ -24,26 +24,6 @@ type UserRow = {
   record_scope?: string;
 };
 
-const MODULES = [
-  'dashboard',
-  'inventory',
-  'sales',
-  'pos',
-  'purchasing',
-  'expenses',
-  'accounting',
-  'credit',
-  'tax',
-  'stores',
-  'reports',
-  'notifications',
-  'audit',
-  'ai',
-  'security',
-  'users',
-  'customers',
-  'suppliers',
-];
 
 const emptyForm = {
   email: '',
@@ -56,12 +36,6 @@ const emptyForm = {
   record_scope: '',
 };
 
-const emptyRoleForm = {
-  slug: '',
-  label: '',
-  base_role: 'cashier',
-  record_scope: 'own',
-};
 
 export default function Page() {
   const [rows, setRows] = useState<UserRow[]>([]);
@@ -69,10 +43,6 @@ export default function Page() {
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [form, setForm] = useState(emptyForm);
-  const [roleForm, setRoleForm] = useState(emptyRoleForm);
-  const [editRole, setEditRole] = useState<string>('');
-  const [matrix, setMatrix] = useState<Record<string, string[]>>({});
-  const [matrixScope, setMatrixScope] = useState('own');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -107,13 +77,6 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
-  useEffect(() => {
-    if (!editRole) return;
-    const role = roles.find((r) => r.role === editRole);
-    if (!role || role.system) return;
-    setMatrix({ ...(role.permissions || {}) });
-    setMatrixScope(role.record_scope || 'own');
-  }, [editRole, roles]);
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
@@ -194,72 +157,6 @@ export default function Page() {
     }
   }
 
-  async function createRole(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setMessage('');
-    setBusy(true);
-    try {
-      await api('/roles', {
-        method: 'POST',
-        body: JSON.stringify({
-          slug: roleForm.slug.trim().toLowerCase(),
-          label: roleForm.label.trim(),
-          base_role: roleForm.base_role,
-          record_scope: roleForm.record_scope,
-        }),
-      });
-      setRoleForm(emptyRoleForm);
-      setMessage('Custom role created');
-      await refresh();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveMatrix() {
-    if (!editRole) return;
-    setError('');
-    setMessage('');
-    try {
-      await api(`/roles/${editRole}/permissions`, {
-        method: 'PUT',
-        body: JSON.stringify({ permissions: matrix, record_scope: matrixScope }),
-      });
-      setMessage('Role permissions updated');
-      await refresh();
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
-  function toggleAction(module: string, action: string) {
-    setMatrix((prev) => {
-      const current = new Set(prev[module] || []);
-      if (current.has(action)) current.delete(action);
-      else current.add(action);
-      const next = { ...prev };
-      if (current.size) next[module] = Array.from(current);
-      else delete next[module];
-      return next;
-    });
-  }
-
-  async function deleteRole(slug: string) {
-    setError('');
-    setMessage('');
-    try {
-      await api(`/roles/${slug}`, { method: 'DELETE' });
-      if (editRole === slug) setEditRole('');
-      setMessage('Custom role deleted');
-      await refresh();
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
   async function setRole(userId: string, role: string) {
     setError('');
     setMessage('');
@@ -295,147 +192,16 @@ export default function Page() {
     }
   }
 
-  const systemBases = roles.filter((r) => r.system && r.role !== 'super_admin' && r.role !== 'company_admin');
-  const customRoles = roles.filter((r) => !r.system);
-
   return (
     <Shell>
-      <h1>User Management</h1>
+      <h1>Users</h1>
       <p className="muted">
-        Users, custom roles, org assignment, and module permission matrix. Deactivate soft-disables
-        login (no permanent delete in MVP).
+        Tenant user lifecycle and branch/department assignment. Manage custom roles at Admin → Roles
+        and permission matrices at Admin → Permissions. Deactivate soft-disables login (no permanent
+        delete in MVP).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
-
-      {canWrite && (
-        <form onSubmit={createRole} style={{ margin: '20px 0', maxWidth: 520 }}>
-          <h2 style={{ fontSize: 18 }}>Create custom role</h2>
-          <input
-            value={roleForm.slug}
-            onChange={(e) => setRoleForm({ ...roleForm, slug: e.target.value })}
-            placeholder="Slug (e.g. floor_lead)"
-            required
-            style={{ width: '100%', padding: 10, marginBottom: 8 }}
-          />
-          <input
-            value={roleForm.label}
-            onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
-            placeholder="Label"
-            required
-            style={{ width: '100%', padding: 10, marginBottom: 8 }}
-          />
-          <select
-            value={roleForm.base_role}
-            onChange={(e) => setRoleForm({ ...roleForm, base_role: e.target.value })}
-            style={{ width: '100%', padding: 10, marginBottom: 8 }}
-          >
-            {systemBases.map((r) => (
-              <option key={r.role} value={r.role}>
-                Copy permissions from {r.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={roleForm.record_scope}
-            onChange={(e) => setRoleForm({ ...roleForm, record_scope: e.target.value })}
-            style={{ width: '100%', padding: 10, marginBottom: 8 }}
-          >
-            <option value="own">Record scope: own</option>
-            <option value="department">Record scope: department</option>
-            <option value="branch">Record scope: branch</option>
-            <option value="all">Record scope: all</option>
-          </select>
-          <button type="submit" disabled={busy} style={{ padding: '10px 16px' }}>
-            {busy ? 'Saving…' : 'Create role'}
-          </button>
-        </form>
-      )}
-
-      {customRoles.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 18 }}>Custom roles</h2>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Slug</th>
-                <th>Label</th>
-                <th>Scope</th>
-                {canWrite && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {customRoles.map((r) => (
-                <tr key={r.role}>
-                  <td>{r.role}</td>
-                  <td>{r.label}</td>
-                  <td>{r.record_scope || 'own'}</td>
-                  {canWrite && (
-                    <td style={{ display: 'flex', gap: 8 }}>
-                      <button type="button" onClick={() => setEditRole(r.role)}>
-                        Permissions
-                      </button>
-                      <button type="button" onClick={() => deleteRole(r.role)}>
-                        Delete
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {canWrite && editRole && (
-        <div className="card" style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 18 }}>Permission matrix · {editRole}</h2>
-          <select
-            value={matrixScope}
-            onChange={(e) => setMatrixScope(e.target.value)}
-            style={{ marginBottom: 12, padding: 8 }}
-          >
-            <option value="own">own</option>
-            <option value="department">department</option>
-            <option value="branch">branch</option>
-            <option value="all">all</option>
-          </select>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Module</th>
-                <th>read</th>
-                <th>write</th>
-                <th>approve</th>
-              </tr>
-            </thead>
-            <tbody>
-              {MODULES.map((mod) => (
-                <tr key={mod}>
-                  <td>{mod}</td>
-                  {(['read', 'write', 'approve'] as const).map((action) => (
-                    <td key={action}>
-                      <input
-                        type="checkbox"
-                        checked={(matrix[mod] || []).includes(action)}
-                        onChange={() => toggleAction(mod, action)}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button type="button" onClick={saveMatrix}>
-              Save permissions
-            </button>
-            <button type="button" onClick={() => setEditRole('')}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
 
       {canWrite && (
         <div className="card" style={{ margin: '20px 0', maxWidth: 640 }}>

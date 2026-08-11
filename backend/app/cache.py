@@ -76,9 +76,13 @@ class AppCache:
     def _prefix(self) -> str:
         return (settings.CACHE_REDIS_PREFIX or "ribdigi:cache").rstrip(":")
 
-    def dashboard_key(self, tenant_id: str, *, role: str | None = None) -> str:
-        # Architecture: dashboard:{tenant_id}:{metric} — role suffix for Stage 80 scoped views
+    def dashboard_key(
+        self, tenant_id: str, *, role: str | None = None, user_id: str | None = None
+    ) -> str:
+        # Architecture: dashboard:{tenant_id}:{metric} — role (+ user for store_manager) suffix
         role_part = (role or "any").strip().lower() or "any"
+        if user_id and role_part == "store_manager":
+            return f"{self._prefix()}:dashboard:{tenant_id}:summary:{role_part}:{user_id}"
         return f"{self._prefix()}:dashboard:{tenant_id}:summary:{role_part}"
 
     def products_key(self, tenant_id: str) -> str:

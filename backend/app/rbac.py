@@ -128,6 +128,8 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/security": "security",
     "/ai": "ai",
     "/users": "users",
+    "/admin/roles": "users",
+    "/admin/permissions": "users",
 }
 
 VALID_ROLES = set(ROLE_PERMISSIONS.keys())
