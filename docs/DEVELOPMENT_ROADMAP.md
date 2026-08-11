@@ -218,6 +218,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 25 U1 (2026-08-11):** AI UI fidelity — `/ai` purchases analysis, cross-domain analysis, and document analyze panels (`test_ai_ui_fidelity_u1.py`; `frontend/app/ai/page.tsx`).
 
+**Stage 25 D1 (2026-08-11):** Spec / BR-21.2 / 21.11 / 21.12 / readiness / USER_MANUAL / API fidelity sync — `docs/STAGE_25_FIDELITY.md` (`test_stage25_fidelity_d1.py`); open ADR `docs/ADR_055_STAGE25_OPEN.md`; plan `docs/STAGE_25_PLAN.md`.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -798,7 +800,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 25 open (`docs/STAGE_25_PLAN.md`, ADR-055) — P1 / X1 / B1 / U1 complete; D1 next. Stages 1–24 remain frozen for their scopes.
+**Active delivery plan:** Stage 25 open (`docs/STAGE_25_PLAN.md`, ADR-055) — P1 / X1 / B1 / U1 / D1 complete; H25x next (`docs/STAGE_25_FIDELITY.md`). Stages 1–24 remain frozen for their scopes.
 
 ### 6.2 Features
 

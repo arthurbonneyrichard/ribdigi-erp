@@ -293,6 +293,8 @@ def test_p1_plan_and_docs_cite_stage25():
         or "U1 next" in plan
         or "U1 complete" in plan
         or "D1 next" in plan
+        or "D1 complete" in plan
+        or "H25x next" in plan
         or "Closed" in plan
         or "exit met" in plan.lower()
     )

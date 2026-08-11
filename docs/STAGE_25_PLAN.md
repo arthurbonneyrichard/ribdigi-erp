@@ -1,9 +1,10 @@
 # Stage 25 Plan — Actuals → AI Analysis → Business Insights
 
-**Status:** Open — P1 / X1 / B1 / U1 COMPLETE; D1 next (ADR-055)  
+**Status:** Open — P1 / X1 / B1 / U1 / D1 COMPLETE; H25x next (ADR-055)  
 **Base:** Commerce actuals → Basic RIBDIGI AI analysis → Business insights  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-055](ADR_055_STAGE25_OPEN.md)
+**Open ADR:** [ADR-055](ADR_055_STAGE25_OPEN.md)  
+**Fidelity:** [STAGE_25_FIDELITY.md](STAGE_25_FIDELITY.md)
 
 Stage 25 closes the owner product outline after Stage 24 freeze: **actual Inventory + Sales + Purchases + Expenses → basic RIBDIGI AI analysis → business insights**. Inventory, sales, and expense AI engines already exist and are Complete under Stage 20 (BR-21); commerce actuals are Complete under Stages 11–18 / 24 G1. This track extends proven `ai_*.py` / `/ai/*` surfaces for the missing purchases analysis path, cross-domain synthesis, and insights/UI fidelity — **not** external LLM/Prophet/IsolationForest, PO OCR auto-apply, paid billing, schema-per-tenant, i18n packs, ADR-003/005, Open Banking, tax e-file, K8s/WAL/PITR, Grafana, certified 1000-VU, or reopening Stages 1–24.
 
@@ -39,7 +40,7 @@ Business Insights
 | **X1** | Cross-domain analysis (Inv + Sales + Purch + Exp) | P0 | COMPLETE |
 | **B1** | Business Insights surface (all four actuals) | P1 | COMPLETE |
 | **U1** | AI UI fidelity (purchases + analysis panels) | P1 | COMPLETE |
-| **D1** | Spec / BR / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
+| **D1** | Spec / BR / readiness / USER_MANUAL / API fidelity sync | P2 | COMPLETE |
 | **H25x** | Stage 25 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -94,7 +95,12 @@ Business Insights
 
 ## D1 acceptance criteria
 
-Filled when workstream starts.
+- [x] `docs/STAGE_25_FIDELITY.md` maps P1–U1 evidence → BR-21.2 / 21.11 / 21.12 and deferred items.
+- [x] BR-21 fidelity cites include Stage 25 D1 / `STAGE_25_FIDELITY.md`.
+- [x] USER_MANUAL §14 purchases / cross-domain / document analyze + Stage 25 fidelity cite synced.
+- [x] API docs purchases / cross-domain / insights / documents + Stage 25 D1 cite.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP cite Stage 25 D1.
+- [x] Automated proof: `backend/tests/test_stage25_fidelity_d1.py`.
 
 ## H25x acceptance criteria
 
@@ -102,4 +108,4 @@ Filled when exit workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-055 open. P1 / X1 / B1 / U1 complete; D1 next. Stages 1–24 remain frozen for their scopes.
+Plan authored; ADR-055 open. P1 / X1 / B1 / U1 / D1 complete; H25x next (`docs/STAGE_25_FIDELITY.md`). Stages 1–24 remain frozen for their scopes.

@@ -1120,7 +1120,7 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`. Stage 24 N1 shared s
   - [x] Extends proven `ai_inventory` / `ai_sales` / `ai_purchases` / `ai_expenses` — no parallel stack
   - Remaining post-MVP: external LLM / Prophet upgrades (not Stage 25)
 
-Fidelity sync: Stage 20 D1 — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`). Stage 25 P1/X1 — `test_ai_purchases_analysis_p1.py` / `test_ai_cross_domain_x1.py` / `docs/STAGE_25_PLAN.md`.
+Fidelity sync: Stage 20 D1 — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`). Stage 25 P1/X1/B1/U1 + Stage 25 D1 commerce actuals AI docs — `docs/STAGE_25_FIDELITY.md` (`test_ai_purchases_analysis_p1.py`, `test_ai_cross_domain_x1.py`, `test_ai_business_insights_b1.py`, `test_ai_ui_fidelity_u1.py`, `test_stage25_fidelity_d1.py`).
 
 ---
 

@@ -1051,6 +1051,8 @@ Stage 16 N1 proves emission for outline buckets (low stock, new order, credit, p
 
 ## 14. AI Business Assistant
 
+Stage 25 D1 proves purchases analysis, cross-domain synthesis, and four-actual business insights — see `docs/STAGE_25_FIDELITY.md`.
+
 Commercial-MVP AI surfaces (Stage 20) use deterministic, tenant-scoped rules — not an external LLM. See `docs/STAGE_20_FIDELITY.md`.
 
 ### 14.1 AI ERP Chat Assistant
