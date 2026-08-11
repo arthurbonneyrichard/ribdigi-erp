@@ -27,4 +27,8 @@ Stage 72 Commercial Packaging Closeout Fidelity delivered commercial residual re
 
 ## Next stage
 
-Blocked pending CONTINUE/NEXT + open ADR with a distinct product outline.
+Stage 73 opened via ADR-152 (`docs/ADR_152_STAGE73_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 73 (Commercial Assurance Fidelity — Commercial Evidence Chain → Commercial Assurance Boundary → Commercial Assurance Fidelity) after Stage 72 freeze via CONTINUE/NEXT — see [ADR-152](ADR_152_STAGE73_OPEN.md) and [STAGE_73_PLAN.md](STAGE_73_PLAN.md). Stage 72 feature scope remains frozen; Stage 73 does not reopen R1–D1 / H72x.

@@ -1,0 +1,157 @@
+{
+  "stage": "73",
+  "workstream": "A1",
+  "doc": "docs/COMMERCIAL_ASSURANCE_MVP.md",
+  "stage73_plan": "docs/STAGE_73_PLAN.md",
+  "assurance_doc": "docs/ASSURANCE_EVIDENCE_MVP.md",
+  "assurance": "ops/mvp/assurance-evidence.json",
+  "evidence_chain_doc": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md",
+  "evidence_chain": "ops/mvp/commercial-evidence-chain.json",
+  "acceptance_doc": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+  "acceptance": "ops/mvp/commercial-acceptance.json",
+  "residual_doc": "docs/COMMERCIAL_RESIDUAL_MVP.md",
+  "residual": "ops/mvp/commercial-residual.json",
+  "golive_attestation_doc": "docs/GOLIVE_ATTESTATION_MVP.md",
+  "golive_attestation": "ops/mvp/golive-attestation.json",
+  "compliance_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "compliance": "ops/mvp/compliance-readiness-register.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "assurance_claimed": false,
+  "evidence_chain_live_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage73_a1_commercial_assurance.json",
+  "steps": [
+    {
+      "id": "ca-owner-outline",
+      "category": "assurance",
+      "title": "Index owner Commercial Assurance Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_73_PLAN.md",
+        "docs/ADR_152_STAGE73_OPEN.md"
+      ],
+      "source": "docs/STAGE_73_PLAN.md"
+    },
+    {
+      "id": "ca-assurance-evidence",
+      "category": "assurance",
+      "title": "Link Stage 34 assurance evidence as adjacency (customer_assurance Remaining \u2260 assurance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ASSURANCE_EVIDENCE_MVP.md",
+        "ops/mvp/assurance-evidence.json"
+      ],
+      "source": "docs/ASSURANCE_EVIDENCE_MVP.md"
+    },
+    {
+      "id": "ca-evidence-chain",
+      "category": "assurance",
+      "title": "Link Stage 73 E1 evidence chain as adjacency (evidence chain live Remaining \u2260 assurance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md",
+        "ops/mvp/commercial-evidence-chain.json"
+      ],
+      "source": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md"
+    },
+    {
+      "id": "ca-acceptance",
+      "category": "assurance",
+      "title": "Link Stage 71 A1 acceptance as adjacency (acceptance Remaining \u2260 assurance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+        "ops/mvp/commercial-acceptance.json"
+      ],
+      "source": "docs/COMMERCIAL_ACCEPTANCE_MVP.md"
+    },
+    {
+      "id": "ca-residual",
+      "category": "assurance",
+      "title": "Link Stage 72 R1 residual as adjacency (residual closed Remaining \u2260 assurance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_RESIDUAL_MVP.md",
+        "ops/mvp/commercial-residual.json"
+      ],
+      "source": "docs/COMMERCIAL_RESIDUAL_MVP.md"
+    },
+    {
+      "id": "ca-golive-attest",
+      "category": "assurance",
+      "title": "Link Stage 69 A1 attestation as adjacency (\u00a77 signed Remaining \u2260 assurance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/GOLIVE_ATTESTATION_MVP.md",
+        "ops/mvp/golive-attestation.json"
+      ],
+      "source": "docs/GOLIVE_ATTESTATION_MVP.md"
+    },
+    {
+      "id": "ca-compliance",
+      "category": "assurance",
+      "title": "Link Stage 33 compliance readiness as adjacency (SOC2 Remaining \u2260 assurance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "ops/mvp/compliance-readiness-register.json"
+      ],
+      "source": "docs/COMPLIANCE_READINESS_MVP.md"
+    },
+    {
+      "id": "ca-plan-honesty",
+      "category": "assurance",
+      "title": "Confirm Stage 73 plan explicitly defers assurance / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_73_PLAN.md",
+        "docs/COMMERCIAL_ASSURANCE_MVP.md"
+      ],
+      "source": "docs/STAGE_73_PLAN.md"
+    },
+    {
+      "id": "ca-assurance-remaining",
+      "category": "honesty",
+      "title": "Customer assurance claimed Remaining \u2014 packaging \u2260 Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_73_PLAN.md",
+        "docs/COMMERCIAL_ASSURANCE_MVP.md"
+      ],
+      "source": "docs/STAGE_73_PLAN.md"
+    },
+    {
+      "id": "ca-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / evidence chain live / \u00a77 Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_73_PLAN.md",
+        "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md"
+      ],
+      "source": "docs/STAGE_73_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Customer assurance Complete",
+    "Evidence chain live Complete",
+    "Commercial acceptance Complete",
+    "Live go-live Complete",
+    "LAUNCH \u00a77 Name/Date signed Complete"
+  ]
+}

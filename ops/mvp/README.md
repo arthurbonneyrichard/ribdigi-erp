@@ -76,6 +76,8 @@
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
 | `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `business-pilot.json` | Stage 65 P1 Controlled business pilot honesty — `controlled_business_pilot_live_claimed: false` / `real_workflow_feedback_claimed: false` / `pilot_bugfix_program_live: false` / `business_pilot_program_live: false` |
+| `commercial-assurance.json` | Stage 73 A1 Commercial assurance boundary honesty — `customer_assurance_claimed: false` / `assurance_claimed: false` / `go_live_claimed: false` |
+| `commercial-evidence-chain.json` | Stage 73 E1 Commercial evidence chain honesty — `evidence_chain_live_claimed: false` / `customer_assurance_claimed: false` / `go_live_claimed: false` |
 | `commercial-packaging-archive.json` | Stage 72 P1 Commercial packaging archive honesty — `packaging_archive_live_claimed: false` / `residual_closed_claimed: false` / `go_live_claimed: false` |
 | `commercial-residual.json` | Stage 72 R1 Commercial residual remaining honesty — `residual_closed_claimed: false` / `packaging_archive_live_claimed: false` / `go_live_claimed: false` |
 | `commercial-acceptance.json` | Stage 71 A1 Commercial acceptance gate honesty — `commercial_acceptance_claimed: false` / `steady_state_ops_claimed: false` / `go_live_claimed: false` / `section_7_signed: false` |
@@ -236,6 +238,11 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_73_EXIT_CRITERIA.md` / `docs/ADR_153_STAGE73_FREEZE.md` (`backend/tests/test_stage73_exit_h73x.py`) — Stage 73 H73x
+- `docs/STAGE_73_FIDELITY.md` (`backend/tests/test_stage73_fidelity_d1.py`) — Stage 73 D1
+- `docs/COMMERCIAL_ASSURANCE_MVP.md` (`backend/tests/test_commercial_assurance_a1.py`) — Stage 73 A1
+- `docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md` (`backend/tests/test_commercial_evidence_chain_e1.py`) — Stage 73 E1
+- `docs/STAGE_73_PLAN.md` (`backend/tests/test_stage73_open.py`) — Stage 73 open (ADR-152)
 - `docs/STAGE_72_EXIT_CRITERIA.md` / `docs/ADR_151_STAGE72_FREEZE.md` (`backend/tests/test_stage72_exit_h72x.py`) — Stage 72 H72x
 - `docs/STAGE_72_FIDELITY.md` (`backend/tests/test_stage72_fidelity_d1.py`) — Stage 72 D1
 - `docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md` (`backend/tests/test_commercial_packaging_archive_p1.py`) — Stage 72 P1
@@ -978,6 +985,26 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 73 exit
+
+H73x met — `docs/STAGE_73_EXIT_CRITERIA.md`, ADR-153. Stages 1–73 frozen for Stage 73 feature scope.
+
+## Stage 73 D1 — Commercial Assurance fidelity
+
+`docs/STAGE_73_FIDELITY.md` — maps E1–A1 → readiness / launch / deploy / security (`test_stage73_fidelity_d1.py`).
+
+## Stage 73 A1 — Commercial assurance boundary honesty
+
+`docs/COMMERCIAL_ASSURANCE_MVP.md` + `ops/mvp/commercial-assurance.json` — packaging Complete; `customer_assurance_claimed` / `assurance_claimed` / `go_live_claimed` remain false.
+
+## Stage 73 E1 — Commercial evidence chain honesty
+
+`docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md` + `ops/mvp/commercial-evidence-chain.json` — packaging Complete; `evidence_chain_live_claimed` / `customer_assurance_claimed` / `go_live_claimed` remain false.
+
+## Stage 73 open
+
+Commercial Assurance Fidelity — `docs/STAGE_73_PLAN.md`, ADR-152; Closed — exit met (H73x); freeze ADR-153.
 
 ## Stage 72 exit
 

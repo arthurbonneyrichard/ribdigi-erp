@@ -1500,4 +1500,14 @@ Every feature in every phase must meet:
 
 **Stage 72 D1 (2026-08-11):** Commercial Packaging Closeout fidelity sync — `docs/STAGE_72_FIDELITY.md` (`test_stage72_fidelity_d1.py`); maps R1–P1 → readiness / launch / deploy / security.
 
-**Stage 72 exit (2026-08-11):** R1, P1, D1, H72x met — `docs/STAGE_72_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_151_STAGE72_FREEZE.md`. Fidelity: `docs/STAGE_72_FIDELITY.md`.
+**Stage 72 exit (2026-08-11):** R1, P1, D1, H72x met — `docs/STAGE_72_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_151_STAGE72_FREEZE.md`. Fidelity: `docs/STAGE_72_FIDELITY.md`. Stage 73 opened via ADR-152.
+
+**Stage 73 open (2026-08-11):** Commercial Assurance Fidelity track approved — `docs/ADR_152_STAGE73_OPEN.md` + `docs/STAGE_73_PLAN.md` (Commercial Evidence Chain → Commercial Assurance Boundary → Commercial Assurance Fidelity; E1 next).
+
+**Stage 73 E1 (2026-08-11):** Commercial evidence chain honesty — `docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md`, `ops/mvp/commercial-evidence-chain.json`, evidence `stage73_e1_commercial_evidence_chain.json` (`test_commercial_evidence_chain_e1.py`); evidence chain live Remaining.
+
+**Stage 73 A1 (2026-08-11):** Commercial assurance boundary honesty — `docs/COMMERCIAL_ASSURANCE_MVP.md`, `ops/mvp/commercial-assurance.json`, evidence `stage73_a1_commercial_assurance.json` (`test_commercial_assurance_a1.py`); customer assurance Remaining.
+
+**Stage 73 D1 (2026-08-11):** Commercial Assurance fidelity sync — `docs/STAGE_73_FIDELITY.md` (`test_stage73_fidelity_d1.py`); maps E1–A1 → readiness / launch / deploy / security.
+
+**Stage 73 exit (2026-08-11):** E1, A1, D1, H73x met — `docs/STAGE_73_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_153_STAGE73_FREEZE.md`. Fidelity: `docs/STAGE_73_FIDELITY.md`.

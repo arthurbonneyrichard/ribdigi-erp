@@ -24,7 +24,7 @@ Stage 72 proves the owner Commercial Packaging Closeout path after Stage 71 free
 | **R1** | `test_commercial_residual_r1.py` — `COMMERCIAL_RESIDUAL_MVP.md`, commercial-residual JSON | Owner Residual Register / Stage 33 residual | Residual closed |
 | **P1** | `test_commercial_packaging_archive_p1.py` — `COMMERCIAL_PACKAGING_ARCHIVE_MVP.md`, commercial-packaging-archive JSON | Owner Packaging Archive / Stage 32 archive | Archive live; go-live |
 | **D1** | This note + `test_stage72_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H72x** | `STAGE_72_EXIT_CRITERIA.md`; ADR-151; `test_stage72_exit_h72x.py` | Stage 72 exit + freeze | Stage 73+ requires CONTINUE/NEXT |
+| **H72x** | `STAGE_72_EXIT_CRITERIA.md`; ADR-151; `test_stage72_exit_h72x.py` | Stage 72 exit + freeze | Stage 73 opened via ADR-152 |
 
 ## Evidence tests
 

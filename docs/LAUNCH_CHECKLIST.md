@@ -222,6 +222,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Commercial packaging archive honesty (Stage 72 P1: `test_commercial_packaging_archive_p1.py` — `docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md`, `ops/mvp/commercial-packaging-archive.json`; evidence `stage72_p1_commercial_packaging_archive.json`; archive live Remaining)
 - [x] Stage 72 fidelity sync (D1: `test_stage72_fidelity_d1.py`, `docs/STAGE_72_FIDELITY.md` — R1–P1 + readiness + deploy / launch / security)
 - [x] Stage 72 exit + freeze (H72x: `test_stage72_exit_h72x.py`, `docs/STAGE_72_EXIT_CRITERIA.md`, ADR-151)
+- [x] Stage 73 track opened (ADR-152: `test_stage73_open.py`, `docs/STAGE_73_PLAN.md`) — Commercial Assurance Fidelity; closed under ADR-153
+- [x] Commercial evidence chain honesty (Stage 73 E1: `test_commercial_evidence_chain_e1.py` — `docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md`, `ops/mvp/commercial-evidence-chain.json`; evidence `stage73_e1_commercial_evidence_chain.json`; evidence chain live Remaining)
+- [x] Commercial assurance boundary honesty (Stage 73 A1: `test_commercial_assurance_a1.py` — `docs/COMMERCIAL_ASSURANCE_MVP.md`, `ops/mvp/commercial-assurance.json`; evidence `stage73_a1_commercial_assurance.json`; customer assurance Remaining)
+- [x] Stage 73 fidelity sync (D1: `test_stage73_fidelity_d1.py`, `docs/STAGE_73_FIDELITY.md` — E1–A1 + readiness + deploy / launch / security)
+- [x] Stage 73 exit + freeze (H73x: `test_stage73_exit_h73x.py`, `docs/STAGE_73_EXIT_CRITERIA.md`, ADR-153)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
