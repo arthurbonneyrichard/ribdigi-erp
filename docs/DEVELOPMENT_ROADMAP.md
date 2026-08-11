@@ -476,6 +476,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 47 I1 (2026-08-11):** Cyber insurance / COI honesty — `docs/CYBER_INSURANCE_MVP.md`, `ops/mvp/cyber-insurance.json`, evidence `stage47_i1_cyber_insurance.json` (`test_cyber_insurance_i1.py`); issued COI Remaining.
 
+**Stage 47 A1 (2026-08-11):** Customer audit rights honesty — `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md`, `ops/mvp/customer-audit-rights.json`, evidence `stage47_a1_customer_audit_rights.json` (`test_customer_audit_rights_a1.py`); customer audit executed Remaining.
+
 
 
 

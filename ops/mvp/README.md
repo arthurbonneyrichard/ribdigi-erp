@@ -43,6 +43,7 @@
 | `liability-indemnity.json` | Stage 46 L1 Limitation of liability / indemnity honesty — `liability_cap_claimed: false` / `indemnity_signed_claimed: false` / `legal_counsel_claimed: false` / `contract_liability_live: false` |
 | `service-credit-warranty.json` | Stage 46 W1 Service credit / warranty honesty — `service_credits_live: false` / `warranty_live_claimed: false` / `uptime_credit_claimed: false` / `remedy_schedule_live: false` |
 | `cyber-insurance.json` | Stage 47 I1 Cyber insurance / COI honesty — `insurance_certificate_claimed: false` / `cyber_insurance_live: false` / `coi_issued_claimed: false` / `broker_attestation_claimed: false` |
+| `customer-audit-rights.json` | Stage 47 A1 Customer audit rights honesty — `customer_audit_rights_live: false` / `on_site_audit_claimed: false` / `audit_executed_claimed: false` / `audit_schedule_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -115,6 +116,7 @@ Authoritative MVP docs:
 - `docs/STAGE_46_EXIT_CRITERIA.md` / `docs/ADR_098_STAGE46_FREEZE.md` (`backend/tests/test_stage46_exit_h46x.py`) — Stage 46 H46x
 - `docs/STAGE_47_PLAN.md` (`backend/tests/test_stage47_open.py`) — Stage 47 open (ADR-099)
 - `docs/CYBER_INSURANCE_MVP.md` (`backend/tests/test_cyber_insurance_i1.py`) — Stage 47 I1
+- `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md` (`backend/tests/test_customer_audit_rights_a1.py`) — Stage 47 A1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -460,8 +462,12 @@ H46x met — `docs/STAGE_46_EXIT_CRITERIA.md`, ADR-098. Stages 1–46 frozen for
 
 ## Stage 47 open
 
-Commercial Insurance & Audit Fidelity — `docs/STAGE_47_PLAN.md`, ADR-099; I1 complete; A1 next.
+Commercial Insurance & Audit Fidelity — `docs/STAGE_47_PLAN.md`, ADR-099; A1 complete; D1 next.
 
 ## Stage 47 I1 — Cyber insurance / COI honesty
 
 `docs/CYBER_INSURANCE_MVP.md` + `ops/mvp/cyber-insurance.json` — packaging Complete; `insurance_certificate_claimed` / `cyber_insurance_live` / `coi_issued_claimed` / `broker_attestation_claimed` remain false.
+
+## Stage 47 A1 — Customer audit rights honesty
+
+`docs/CUSTOMER_AUDIT_RIGHTS_MVP.md` + `ops/mvp/customer-audit-rights.json` — packaging Complete; `customer_audit_rights_live` / `on_site_audit_claimed` / `audit_executed_claimed` / `audit_schedule_live` remain false.

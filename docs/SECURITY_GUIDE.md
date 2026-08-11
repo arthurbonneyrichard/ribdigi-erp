@@ -395,8 +395,9 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 46 W1** | Service credit / warranty honesty — `docs/SERVICE_CREDIT_WARRANTY_MVP.md`, `ops/mvp/service-credit-warranty.json` (`test_service_credit_warranty_w1.py`); live service credits Remaining |
 | **Stage 46 D1** | Liability & remedy fidelity — `docs/STAGE_46_FIDELITY.md` (`test_stage46_fidelity_d1.py`) maps L1–W1 → readiness / launch / deploy / security |
 | **Stage 46 fidelity** | D1 maps L1–W1 liability & remedy — `docs/STAGE_46_FIDELITY.md` (`test_stage46_fidelity_d1.py`); exit/freeze `docs/STAGE_46_EXIT_CRITERIA.md`, ADR-098 (`test_stage46_exit_h46x.py`); historical open ADR-097; signed liability-cap / live service credits / go-live / §7 remain Remaining |
-| **Stage 47 open** | Commercial Insurance & Audit Fidelity — `docs/STAGE_47_PLAN.md`, ADR-099 (`test_stage47_open.py`); Stages 1–46 remain frozen; I1 complete; A1 next |
+| **Stage 47 open** | Commercial Insurance & Audit Fidelity — `docs/STAGE_47_PLAN.md`, ADR-099 (`test_stage47_open.py`); Stages 1–46 remain frozen; A1 complete; D1 next |
 | **Stage 47 I1** | Cyber insurance / COI honesty — `docs/CYBER_INSURANCE_MVP.md`, `ops/mvp/cyber-insurance.json` (`test_cyber_insurance_i1.py`); issued COI Remaining |
+| **Stage 47 A1** | Customer audit rights honesty — `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md`, `ops/mvp/customer-audit-rights.json` (`test_customer_audit_rights_a1.py`); customer audit executed Remaining |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |

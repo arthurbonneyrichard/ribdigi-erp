@@ -1,6 +1,6 @@
 # Stage 47 Plan — Commercial Insurance & Audit Fidelity
 
-**Status:** Open — I1 complete; A1 next  
+**Status:** Open — A1 complete; D1 next  
 **Base:** Cyber Insurance / Certificate of Insurance Honesty Pack + Customer Audit Rights Honesty Pack → Commercial Insurance & Audit Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-099](ADR_099_STAGE47_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Insurance & Audit Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **I1** | Cyber insurance / certificate of insurance honesty packaging (not issued COI / live cyber policy Complete) | P0 | COMPLETE |
-| **A1** | Customer audit rights honesty packaging (not customer audit executed Complete) | P0 | PENDING |
+| **A1** | Customer audit rights honesty packaging (not customer audit executed Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H47x** | Stage 47 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -76,10 +76,10 @@ Commercial Insurance & Audit Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] Customer audit rights honesty packaging indexing Stage 34 assurance / Stage 29 pen-test / Stage 39 MSA adjacency (not claiming customer audit executed Complete).
-- [ ] Automated proof: `backend/tests/test_customer_audit_rights_a1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 47 A1.
+- [x] Customer audit rights honesty packaging indexing Stage 34 assurance / Stage 29 pen-test / Stage 39 MSA adjacency (not claiming customer audit executed Complete).
+- [x] Automated proof: `backend/tests/test_customer_audit_rights_a1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 47 A1.
 
 ## D1 acceptance criteria
 
