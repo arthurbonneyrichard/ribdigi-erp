@@ -168,6 +168,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 27 track opened (ADR-059: `test_stage27_open.py`, `docs/STAGE_27_PLAN.md`)
 - [x] Stage 27 fidelity sync (D1: `test_stage27_fidelity_d1.py`, `docs/STAGE_27_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 27 exit + freeze (H27x: `test_stage27_exit_h27x.py`, `docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060)
+- [ ] Stage 28 Staging Certification Fidelity (open: `docs/STAGE_28_PLAN.md`, ADR-061) — R1 next
+- [x] Stage 28 track opened (ADR-061: `test_stage28_open.py`, `docs/STAGE_28_PLAN.md`)
 - [x] Launch certification pack (Stage 27 L1: `test_launch_cert_l1.py` — `docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`; evidence `stage27_l1_launch_cert.json`; operator §§1–3 / §7 remain unsigned)
 - [x] Security scan baseline evidence (Stage 27 S1: `test_security_scan_s1.py` — `docs/SECURITY_SCAN_MVP.md`, evidence `stage27_s1_security_scan.json`; ZAP template `ops/security/zap-baseline.example.yml` not in main CI)
 - [x] PgBouncer pooling fidelity (Stage 27 P1: `test_pgbouncer_p1.py` — `ops/postgres/pgbouncer.ini.example`, `docs/PGBOUNCER_MVP.md`; evidence `stage27_p1_pgbouncer.json`)

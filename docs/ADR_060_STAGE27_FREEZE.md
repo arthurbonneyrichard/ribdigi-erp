@@ -23,3 +23,7 @@ Stage 27 Commercial MVP Release Fidelity (B1, P1, S1, L1, D1, H27x) delivered op
 - Stage 1–26 freezes remain in force for their scopes.
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Operator `LAUNCH_CHECKLIST.md` §§1–3 / §7 remain unsigned until a real environment is verified (**Stage 27 L1**).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 28 (Staging Certification Fidelity) after Stage 27 freeze via CONTINUE/NEXT — see [ADR-061](ADR_061_STAGE28_OPEN.md) and [STAGE_28_PLAN.md](STAGE_28_PLAN.md). Stage 27 feature scope remains frozen; Stage 28 does not reopen B1–D1 / H27x.

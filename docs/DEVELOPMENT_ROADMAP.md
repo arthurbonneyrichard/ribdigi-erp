@@ -250,6 +250,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 27 exit (2026-08-11):** B1, P1, S1, L1, D1, H27x met — `docs/STAGE_27_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_060_STAGE27_FREEZE.md`. Fidelity: `docs/STAGE_27_FIDELITY.md`.
 
+**Stage 28 open (2026-08-11):** Staging Certification Fidelity track approved — `docs/ADR_061_STAGE28_OPEN.md` + `docs/STAGE_28_PLAN.md` (Operator PITR drill → Staging GHA → Grafana/Alertmanager → 1000-VU cert → fidelity).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -830,7 +832,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 27 closed (`docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060) — B1–D1 / H27x complete (`docs/STAGE_27_FIDELITY.md`). Stages 1–27 remain frozen for their scopes. Next delivery track requires an explicit open ADR after CONTINUE/NEXT.
+**Active delivery plan:** Stage 28 open (`docs/STAGE_28_PLAN.md`, ADR-061) — R1 next. Stages 1–27 remain frozen for their scopes (`docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060).
 
 ### 6.2 Features
 
