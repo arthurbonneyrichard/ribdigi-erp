@@ -27,4 +27,4 @@ Stage 83 Dual-Console Ops Fidelity delivered store-scoped chart/slice depth (S1)
 
 ## Next stage
 
-Stage 84+ requires CONTINUE/NEXT with a distinct product outline and open ADR.
+Stage 84 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-174](ADR_174_STAGE84_OPEN.md) + [STAGE_84_PLAN.md](STAGE_84_PLAN.md) (Dotted Permission Aliases → Tenant Dashboard Slice Depth → Dual-Console Permission & Slice Fidelity). Stage 83 feature scope remains frozen.

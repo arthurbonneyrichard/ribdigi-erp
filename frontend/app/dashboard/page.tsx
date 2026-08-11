@@ -11,6 +11,9 @@ type Dash = {
   total_sales?: number;
   total_purchases?: number;
   total_expenses?: number;
+  expenses_by_category?: { category: string; total: number }[];
+  credit_outstanding?: number;
+  ar_total_due?: number;
   products?: number;
   low_stock?: number;
   out_of_stock?: number;
@@ -40,6 +43,14 @@ type Dash = {
     recent_logins_7d?: number;
   };
 };
+
+type PosShift = {
+  session_id?: string;
+  status?: string;
+  store_id?: string;
+  opened_at?: string;
+  opening_cash?: number;
+} | null;
 
 type InsightCard = {
   id: string;
@@ -75,6 +86,8 @@ export default function Page() {
   const [unread, setUnread] = useState(0);
   const [formats, setFormats] = useState<RegionalFormats>({});
   const [error, setError] = useState('');
+  const [posShift, setPosShift] = useState<PosShift>(undefined as unknown as PosShift);
+  const [posShiftLoaded, setPosShiftLoaded] = useState(false);
 
   useEffect(() => {
     api('/me')
@@ -87,7 +100,21 @@ export default function Page() {
       )
       .catch(() => undefined);
     api('/dashboard')
-      .then((r) => setD(r.data || {}))
+      .then((r) => {
+        const data = r.data || {};
+        setD(data);
+        if (data.view === 'cashier') {
+          api('/pos/sessions/current')
+            .then((sr) => {
+              setPosShift(sr.data || null);
+              setPosShiftLoaded(true);
+            })
+            .catch(() => {
+              setPosShift(null);
+              setPosShiftLoaded(true);
+            });
+        }
+      })
       .catch((err) => setError(err.message));
     api('/ai/insights')
       .then((r) => setInsightCards(r.data?.cards || []))
@@ -112,6 +139,12 @@ export default function Page() {
     { key: 'total_sales', label: 'Total Sales', value: d.total_sales ?? 0, href: links.total_sales },
     { key: 'total_purchases', label: 'Purchases', value: d.total_purchases ?? 0, href: links.total_purchases },
     { key: 'total_expenses', label: 'Expenses', value: d.total_expenses ?? 0, href: links.total_expenses },
+    {
+      key: 'credit_outstanding',
+      label: 'AR Outstanding',
+      value: d.credit_outstanding ?? d.ar_total_due ?? 0,
+      href: links.credit_outstanding || links.ar_total_due,
+    },
     { key: 'customers', label: 'Customers', value: d.customers ?? 0, href: links.customers },
     { key: 'suppliers', label: 'Suppliers', value: d.suppliers ?? 0, href: links.suppliers },
     { key: 'products', label: 'Products', value: d.products ?? 0, href: links.products },
@@ -231,13 +264,54 @@ export default function Page() {
       {view === 'cashier' && (
         <div className="card" style={{ marginTop: 20 }}>
           <h3 style={{ marginTop: 0 }}>POS</h3>
-          <p className="muted">Open the register to start selling.</p>
+          {posShiftLoaded ? (
+            posShift ? (
+              <p>
+                Shift open
+                {posShift.opened_at ? (
+                  <span className="muted">
+                    {' '}
+                    · since {formatDateTime(posShift.opened_at, formats.date_format, formats.time_format)}
+                  </span>
+                ) : null}
+              </p>
+            ) : (
+              <p className="muted">No open POS shift — open the register to start selling.</p>
+            )
+          ) : (
+            <p className="muted">Checking shift status…</p>
+          )}
           <Link href="/pos" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
-            Open POS
+            {posShift ? 'Continue POS' : 'Open POS'}
           </Link>
         </div>
       )}
 
+      {has('expenses_by_category') && view !== 'cashier' && (
+        <div className="card" style={{ marginTop: 20 }}>
+          <h3 style={{ marginTop: 0 }}>Expenses by category</h3>
+          {(d.expenses_by_category || []).length === 0 ? (
+            <p className="muted">No approved expenses yet</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(d.expenses_by_category || []).map((row) => (
+                  <tr key={row.category}>
+                    <td>{row.category}</td>
+                    <td>{n(row.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
       <div className="card" style={{ marginTop: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
           <h3 style={{ margin: 0 }}>Notifications</h3>

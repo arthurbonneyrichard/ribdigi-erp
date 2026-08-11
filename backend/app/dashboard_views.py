@@ -36,11 +36,13 @@ SECTION_FIELDS: dict[str, tuple[str, ...]] = {
         "monthly_revenue_series",
     ),
     "purchasing": ("total_purchases",),
-    "expenses": ("total_expenses",),
+    "expenses": ("total_expenses", "expenses_by_category"),
     "inventory": ("products", "low_stock", "out_of_stock", "expiring_batches"),
+    "credit": ("credit_outstanding", "ar_total_due"),
     "customers": ("customers",),
     "suppliers": ("suppliers",),
     "users": ("user_stats",),
+    "pos": ("open_pos_session",),
     "charts_revenue": ("daily_revenue_series", "monthly_revenue_series"),
 }
 

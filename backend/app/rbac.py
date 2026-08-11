@@ -171,6 +171,82 @@ SYSTEM_MODULES = frozenset(
 )
 ALLOWED_ACTIONS = frozenset({"read", "write", "approve", "*"})
 _MODULE_KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
+# Stage 84 A1 — common dotted/colon aliases → canonical actions
+_ACTION_ALIASES = {
+    "view": "read",
+    "edit": "write",
+    "update": "write",
+    "create": "write",
+    "delete": "write",
+}
+
+
+def canonicalize_action(action: str) -> str:
+    """Map aliased actions (e.g. view→read) to ALLOWED_ACTIONS names."""
+    a = str(action or "").strip().lower()
+    return _ACTION_ALIASES.get(a, a)
+
+
+def _split_permission_key(key: str) -> tuple[str, list[str] | None]:
+    """Parse module-only or dotted/colon keys.
+
+    Returns ``(module, None)`` for plain modules, or
+    ``(module, [action])`` for ``inventory.view`` / ``inventory:read``.
+    """
+    key = str(key or "").strip().lower()
+    if not key:
+        return "", None
+    if ":" in key:
+        module, _, action = key.partition(":")
+        module, action = module.strip(), action.strip()
+        if module and action and "." not in module:
+            return module, [canonicalize_action(action)]
+    if "." in key:
+        module, _, action = key.partition(".")
+        module, action = module.strip(), action.strip()
+        # Only treat as module.action when the right side looks like an action alias
+        if module and action and (
+            action in ALLOWED_ACTIONS or action in _ACTION_ALIASES
+        ):
+            return module, [canonicalize_action(action)]
+    return key, None
+
+
+def expand_permission_aliases(raw: dict | None) -> dict[str, list[str]]:
+    """Best-effort expand dotted/colon keys and action aliases for runtime checks.
+
+    Never raises — invalid entries are skipped.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, list[str]] = {}
+
+    def _add(module: str, actions: list[str]) -> None:
+        if not module:
+            return
+        bucket = out.setdefault(module, [])
+        for act in actions:
+            if act and act not in bucket:
+                bucket.append(act)
+
+    for key, actions in raw.items():
+        module, dotted = _split_permission_key(str(key or ""))
+        if not module or module == RECORD_SCOPE_KEY:
+            continue
+        if dotted is not None:
+            _add(module, dotted)
+        if isinstance(actions, str):
+            action_list = [canonicalize_action(actions)]
+        elif isinstance(actions, list):
+            action_list = [canonicalize_action(a) for a in actions if str(a).strip()]
+        elif actions in (True, 1, "1"):
+            action_list = ["read"] if dotted is None else []
+        else:
+            action_list = []
+        if action_list:
+            _add(module, action_list)
+    return out
+
 
 # Record-level scope (BR-3.3). department/branch use peer users in the same org unit.
 RECORD_SCOPES = frozenset({"own", "department", "branch", "all"})
@@ -211,30 +287,45 @@ def normalize_permissions_map(
     if not isinstance(raw, dict):
         raise ValueError("permissions must be an object")
     out: dict[str, list[str]] = {}
+
+    def _merge(module: str, action_list: list[str]) -> None:
+        if module not in out:
+            out[module] = []
+        for action in action_list:
+            if action not in out[module]:
+                out[module].append(action)
+
     for key, actions in raw.items():
-        module = str(key or "").strip().lower()
-        if not module or module == RECORD_SCOPE_KEY:
+        raw_key = str(key or "").strip().lower()
+        if not raw_key or raw_key == RECORD_SCOPE_KEY:
             continue
+        module, dotted_actions = _split_permission_key(raw_key)
         if module == "*":
             if not allow_wildcard:
                 raise ValueError("Custom roles cannot use wildcard '*' module permissions")
             if actions == ["*"] or actions == "*" or (isinstance(actions, list) and "*" in actions):
                 return {"*": ["*"]}
             raise ValueError("Wildcard module must map to ['*']")
-        if module in PLATFORM_MODULES and not allow_platform_modules:
-            raise ValueError(
-                f"Platform module '{module}' cannot be granted on customer-tenant custom roles"
-            )
-        if module not in SYSTEM_MODULES and not _MODULE_KEY_RE.fullmatch(module):
-            raise ValueError(f"Invalid permission module '{module}'")
-        if module not in SYSTEM_MODULES:
+        if module in PLATFORM_MODULES:
+            if not allow_platform_modules:
+                raise ValueError(
+                    f"Platform module '{module}' cannot be granted on customer-tenant custom roles"
+                )
+        elif module not in SYSTEM_MODULES:
+            if not _MODULE_KEY_RE.fullmatch(module):
+                raise ValueError(f"Invalid permission module '{module}'")
             raise ValueError(f"Unknown permission module '{module}'")
         if isinstance(actions, str):
-            action_list = [actions]
+            action_list = [canonicalize_action(actions)]
         elif isinstance(actions, list):
-            action_list = [str(a).strip().lower() for a in actions if str(a).strip()]
+            action_list = [canonicalize_action(a) for a in actions if str(a).strip()]
+        elif dotted_actions is not None:
+            # Dotted/colon key grants the parsed action; truthy scalar values are ignored
+            action_list = []
         else:
             raise ValueError(f"Actions for module '{module}' must be a list")
+        if dotted_actions is not None:
+            action_list = list(dotted_actions) + action_list
         cleaned: list[str] = []
         for action in action_list:
             if action not in ALLOWED_ACTIONS:
@@ -244,7 +335,7 @@ def normalize_permissions_map(
             if action not in cleaned:
                 cleaned.append(action)
         if cleaned:
-            out[module] = cleaned
+            _merge(module, cleaned)
     return out
 
 
@@ -358,8 +449,12 @@ def has_permission(
     When ``overrides`` is provided (typically ``user.permissions``), it is the
     authoritative map so custom roles cannot inherit cashier defaults by mistake.
     """
+    action = canonicalize_action(action)
     if overrides is not None:
-        perms = {k: v for k, v in dict(overrides).items() if k != RECORD_SCOPE_KEY}
+        # Stage 84 A1 — expand dotted/colon aliases before check
+        perms = expand_permission_aliases(dict(overrides))
+        if not perms:
+            perms = {k: v for k, v in dict(overrides).items() if k != RECORD_SCOPE_KEY}
     else:
         perms = permissions_for_role(role)
 
@@ -367,6 +462,10 @@ def has_permission(
         return True
 
     module_perms = perms.get(module) or []
+    if isinstance(module_perms, str):
+        module_perms = [canonicalize_action(module_perms)]
+    else:
+        module_perms = [canonicalize_action(a) for a in (module_perms or [])]
     if "*" in module_perms or action in module_perms:
         return True
     if action == "read" and "write" in module_perms:

@@ -1611,3 +1611,13 @@ Every feature in every phase must meet:
 **Stage 83 D1 (2026-08-11):** Dual-Console Ops fidelity sync — `docs/STAGE_83_FIDELITY.md` (`test_stage83_fidelity_d1.py`); maps S1–U1 → readiness / launch / deploy / security.
 
 **Stage 83 exit (2026-08-11):** S1, U1, D1, H83x met — `docs/STAGE_83_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_173_STAGE83_FREEZE.md`. Fidelity: `docs/STAGE_83_FIDELITY.md`.
+
+**Stage 84 open (2026-08-11):** Dual-Console Permission & Slice Fidelity track approved — `docs/ADR_174_STAGE84_OPEN.md` + `docs/STAGE_84_PLAN.md` (Dotted Permission Aliases → Tenant Dashboard Slice Depth → Dual-Console Permission & Slice Fidelity; A1 next).
+
+**Stage 84 A1 (2026-08-11):** Dotted permission aliases — `view`→`read`; `module.action` / `module:action` (`test_permission_aliases_a1.py`).
+
+**Stage 84 S1 (2026-08-11):** Dashboard slice depth — expenses-by-category + credit outstanding + cashier open-shift UI (`test_dashboard_slice_depth_s1.py`).
+
+**Stage 84 D1 (2026-08-11):** Dual-Console Permission & Slice fidelity sync — `docs/STAGE_84_FIDELITY.md` (`test_stage84_fidelity_d1.py`); maps A1–S1 → readiness / launch / deploy / security.
+
+**Stage 84 exit (2026-08-11):** A1, S1, D1, H84x met — `docs/STAGE_84_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_175_STAGE84_FREEZE.md`. Fidelity: `docs/STAGE_84_FIDELITY.md`.

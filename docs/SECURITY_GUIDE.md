@@ -511,6 +511,11 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 83 U1** | Tenant Admin user-ops — reset password + org assignment (`test_admin_user_ops_u1.py`) |
 | **Stage 83 D1** | Dual-Console Ops fidelity — `docs/STAGE_83_FIDELITY.md` (`test_stage83_fidelity_d1.py`); maps S1–U1 → readiness / launch / deploy / security |
 | **Stage 83 H83x** | Exit + freeze — `docs/STAGE_83_EXIT_CRITERIA.md`, ADR-173 (`test_stage83_exit_h83x.py`); Stages 1–83 frozen for Stage 83 scope; Stage 84+ requires CONTINUE/NEXT |
+| **Stage 84 open** | Dual-Console Permission & Slice Fidelity — `docs/STAGE_84_PLAN.md`, ADR-174 (`test_stage84_open.py`); Stages 1–83 remain frozen for prior scopes; A1 next historically |
+| **Stage 84 A1** | Dotted permission aliases — `view`→`read`; `inventory.view` / `inventory:read` (`test_permission_aliases_a1.py`) |
+| **Stage 84 S1** | Dashboard slice depth — expenses-by-category + credit + cashier shift (`test_dashboard_slice_depth_s1.py`) |
+| **Stage 84 D1** | Dual-Console Permission & Slice fidelity — `docs/STAGE_84_FIDELITY.md` (`test_stage84_fidelity_d1.py`); maps A1–S1 → readiness / launch / deploy / security |
+| **Stage 84 H84x** | Exit + freeze — `docs/STAGE_84_EXIT_CRITERIA.md`, ADR-175 (`test_stage84_exit_h84x.py`); Stages 1–84 frozen for Stage 84 scope; Stage 85+ requires CONTINUE/NEXT |
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |

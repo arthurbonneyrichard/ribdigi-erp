@@ -2703,6 +2703,8 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
 
     from app import dashboard_charts as dashboard_charts_svc
     from app import dashboard_views as dashboard_views_svc
+    from app import dashboard_slices as dashboard_slices_svc
+    from app import credit as credit_svc
     from app.rbac import ROLE_LABELS, has_permission
 
     chart_series = await dashboard_charts_svc.load_revenue_chart_series(
@@ -2729,6 +2731,10 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         )
     )
 
+    expenses_by_category = await dashboard_slices_svc.expenses_by_category(db, tid)
+    ar_aging = await credit_svc.ar_aging(db, tid)
+    ar_total_due = float(ar_aging.get("total_due") or 0)
+
     payload = {
         "total_sales": float(sales) + float(
             await scalar(
@@ -2740,6 +2746,9 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         ),
         "total_purchases": float(purchases),
         "total_expenses": float(expenses),
+        "expenses_by_category": expenses_by_category,
+        "credit_outstanding": ar_total_due,
+        "ar_total_due": ar_total_due,
         "products": products,
         "low_stock": low,
         "out_of_stock": out_of_stock,
@@ -2771,6 +2780,8 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "total_sales": "/sales?tab=invoices",
             "total_purchases": "/purchasing?tab=invoices",
             "total_expenses": "/expenses",
+            "credit_outstanding": "/credit",
+            "ar_total_due": "/credit",
             "customers": "/sales?tab=customers",
             "suppliers": "/purchasing?tab=suppliers",
             "products": "/inventory?tab=products",
@@ -2845,6 +2856,16 @@ async def dashboard_expenses(
     from app import dashboard_slices as slices_svc
 
     return env(await slices_svc.expenses_slice(db, claims))
+
+
+@api.get("/dashboard/credit")
+async def dashboard_credit(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import dashboard_slices as slices_svc
+
+    return env(await slices_svc.credit_slice(db, claims))
 
 
 @api.get("/dashboard/stock-alerts")
