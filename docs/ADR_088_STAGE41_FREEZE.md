@@ -23,3 +23,8 @@ Stage 41 Commercial Accessibility & Change Governance Fidelity delivered accessi
 - Stage 1–40 freezes remain in force for their scopes (Stage 40 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Accessibility & change governance packaging Complete does **not** mean WCAG 2.1 AA audit, live conformance, public change calendar, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 42 (Commercial AI Transparency Fidelity) after Stage 41 freeze via CONTINUE/NEXT — see [ADR-089](ADR_089_STAGE42_OPEN.md) and [STAGE_42_PLAN.md](STAGE_42_PLAN.md). Stage 41 feature scope remains frozen; Stage 42 does not reopen A1–D1 / H41x.
+

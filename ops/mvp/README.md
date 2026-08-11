@@ -77,6 +77,7 @@ Authoritative MVP docs:
 - `docs/CHANGE_GOVERNANCE_MVP.md` (`backend/tests/test_change_governance_c1.py`) — Stage 41 C1
 - `docs/STAGE_41_FIDELITY.md` (`backend/tests/test_stage41_fidelity_d1.py`) — Stage 41 D1
 - `docs/STAGE_41_EXIT_CRITERIA.md` / `docs/ADR_088_STAGE41_FREEZE.md` (`backend/tests/test_stage41_exit_h41x.py`) — Stage 41 H41x
+- `docs/STAGE_42_PLAN.md` (`backend/tests/test_stage42_open.py`) — Stage 42 open (ADR-089)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -318,4 +319,8 @@ Commercial Accessibility & Change Governance Fidelity — `docs/STAGE_41_PLAN.md
 
 ## Stage 41 exit
 
-H41x met — `docs/STAGE_41_EXIT_CRITERIA.md`, ADR-088. Stages 1–41 frozen for Stage 41 feature scope; Stage 42+ requires open ADR after CONTINUE/NEXT.
+H41x met — `docs/STAGE_41_EXIT_CRITERIA.md`, ADR-088. Stages 1–41 frozen for Stage 41 feature scope.
+
+## Stage 42 open
+
+Commercial AI Transparency Fidelity — `docs/STAGE_42_PLAN.md`, ADR-089; A1 next.

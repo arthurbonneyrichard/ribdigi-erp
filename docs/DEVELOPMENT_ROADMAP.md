@@ -422,6 +422,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 41 exit (2026-08-11):** A1, C1, D1, H41x met — `docs/STAGE_41_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_088_STAGE41_FREEZE.md`. Fidelity: `docs/STAGE_41_FIDELITY.md`.
 
+**Stage 42 open (2026-08-11):** Commercial AI Transparency Fidelity track approved — `docs/ADR_089_STAGE42_OPEN.md` + `docs/STAGE_42_PLAN.md` (AI use disclosure → AI model/provider boundary → fidelity).
+
 
 
 
