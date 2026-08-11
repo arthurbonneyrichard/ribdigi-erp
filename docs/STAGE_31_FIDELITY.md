@@ -1,9 +1,10 @@
 # Stage 31 Fidelity Notes — Commercial MVP Closeout Fidelity
 
-**Status:** Open with Stage 31 D1; H31x next (ADR-067)  
+**Status:** Closed — exit met (H31x / ADR-068); historical open ADR-067  
 **Surface:** Gate honesty → Deferred ADR register → Operator Remaining → MVP declaration → Fidelity closeout  
-**Open ADR:** [ADR-067](ADR_067_STAGE31_OPEN.md)  
-**Plan:** [STAGE_31_PLAN.md](STAGE_31_PLAN.md)
+**Open ADR (historical):** [ADR-067](ADR_067_STAGE31_OPEN.md)  
+**Plan:** [STAGE_31_PLAN.md](STAGE_31_PLAN.md)  
+**Exit:** [STAGE_31_EXIT_CRITERIA.md](STAGE_31_EXIT_CRITERIA.md) · [ADR-068](ADR_068_STAGE31_FREEZE.md)
 
 Stage 31 proves the owner product outline after Stage 30 freeze — MVP Gate Honesty Matrix Pack + Deferred ADR Register Pack + Operator Remaining Register Pack + Commercial MVP Declaration Pack → Commercial MVP Closeout Fidelity — by extending proven Stage 23 G1 / Stage 26–30 assets. It is **not** paid billing (ADR-002), schema-per-tenant (ADR-001), i18n packs (ADR-006), user↔store membership (ADR-005), hard-delete archival (ADR-003), Open Banking, tax e-file portals, claiming hosted Grafana/PagerDuty/SIEM as SaaS Complete, live production cutover via main `ci.yml`, purchased vendor pen-test certificates, green live soak / ACME / PITR / 1000-VU execution, forged production §7 / attestation Complete, re-packaging Stage 26–30 packs as new Complete, implementing deferred ADR post-MVP scopes, external LLM/Prophet, or reopening Stages 1–30.
 
@@ -36,18 +37,20 @@ Stage 31 proves the owner product outline after Stage 30 freeze — MVP Gate Hon
 - `backend/tests/test_mvp_declaration_c1.py`
 - `backend/tests/test_stage31_open.py`
 - `backend/tests/test_stage31_fidelity_d1.py`
+- `backend/tests/test_stage31_exit_h31x.py`
 
 ## Spec sync targets
 
-- `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16 fidelity (+ Stage 31 G1–C1 / D1 cite)
-- `docs/API_DOCUMENTATION.md` — Stage 31 G1–C1 / D1 cite
-- `PRODUCTION_READINESS.md` — closeout Completes + Stage 31 D1 cite
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 31 D1
-- `docs/LAUNCH_CHECKLIST.md` — G1–C1 / D1 evidence
-- `docs/DEPLOYMENT_GUIDE.md` — Stage 31 G1 / O1 / C1 / D1
-- `docs/SECURITY_GUIDE.md` — Stage 31 G1–C1 / D1 cite
+- `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16 fidelity (+ Stage 31 G1–C1 / D1 / H31x cite)
+- `docs/API_DOCUMENTATION.md` — Stage 31 G1–C1 / D1 / H31x cite
+- `PRODUCTION_READINESS.md` — closeout Completes + Stage 31 D1 / H31x cite
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 31 D1 / H31x exit
+- `docs/LAUNCH_CHECKLIST.md` — G1–C1 / D1 / H31x evidence
+- `docs/DEPLOYMENT_GUIDE.md` — Stage 31 G1 / O1 / C1 / D1 / H31x
+- `docs/SECURITY_GUIDE.md` — Stage 31 G1–C1 / D1 / H31x cite
 - `docs/MVP_GATE_MATRIX_MVP.md` · `docs/DEFERRED_ADR_REGISTER_MVP.md` · `docs/OPERATOR_REMAINING_MVP.md` · `docs/MVP_DECLARATION_MVP.md`
-- `docs/STAGE_31_PLAN.md` — D1 complete; H31x next
+- `docs/STAGE_31_PLAN.md` — Closed (H31x / ADR-068)
+- `docs/STAGE_31_EXIT_CRITERIA.md` · `docs/ADR_068_STAGE31_FREEZE.md`
 - `docs/ADR_067_STAGE31_OPEN.md`
 
 ## Deferred (not Stage 31 blockers)

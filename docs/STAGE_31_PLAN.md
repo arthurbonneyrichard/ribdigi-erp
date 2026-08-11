@@ -1,10 +1,10 @@
 # Stage 31 Plan — Commercial MVP Closeout Fidelity
 
-**Status:** Open — G1–D1 complete; H31x next (ADR-067)  
-**Fidelity:** [STAGE_31_FIDELITY.md](STAGE_31_FIDELITY.md)  
+**Status:** Closed — exit met (H31x / ADR-068)  
 **Base:** MVP Gate Honesty Matrix Pack + Deferred ADR Register Pack + Operator Remaining Register Pack + Commercial MVP Declaration Pack → Commercial MVP Closeout Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-067](ADR_067_STAGE31_OPEN.md)
+**Open ADR (historical):** [ADR-067](ADR_067_STAGE31_OPEN.md)  
+**Exit:** [STAGE_31_EXIT_CRITERIA.md](STAGE_31_EXIT_CRITERIA.md) · [ADR-068](ADR_068_STAGE31_FREEZE.md) · [STAGE_31_FIDELITY.md](STAGE_31_FIDELITY.md)
 
 Stage 31 closes the owner product outline after Stage 30 freeze: **MVP Gate Honesty Matrix Packaging + Deferred ADR Register Packaging + Operator Remaining Register Packaging + Commercial MVP Declaration Packaging → Commercial MVP Closeout Fidelity**. Stages 26–30 delivered Complete (MVP) ops platform, release, staging-certification, operator-hardening, and go-live support **packaging** with honest Remaining for live execution, purchased vendor pen tests, hosted SaaS observability, and production §7 sign-off. This track packages **commercial MVP closeout** surfaces on proven Stage 23 G1 / Stage 26–30 assets (`PRODUCTION_READINESS.md`, ADR-001–006, `ops/evidence/ledger.json`, `ops/launch/attestation-matrix.json`, `LAUNCH_CHECKLIST.md`) — **not** inventing live pen-test/soak/TLS/cutover/attestation success, re-packaging Stage 26–30 packs as new Complete, implementing deferred ADRs, or paid billing / schema-per-tenant / i18n / ADR-003/005 / Open Banking / tax e-file / external LLM/Prophet — and **not** reopening Stages 1–30.
 
@@ -41,7 +41,7 @@ Commercial MVP Closeout Fidelity
 | **O1** | Operator Remaining register (Stage 26–30 honesty flags) | P1 | COMPLETE |
 | **C1** | Commercial MVP declaration pack (packaging ≠ live go-live) | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
-| **H31x** | Stage 31 exit criteria + freeze ADR | Exit | PENDING |
+| **H31x** | Stage 31 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -95,12 +95,12 @@ Commercial MVP Closeout Fidelity
 
 ## H31x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for G1–D1 / H31x — `docs/STAGE_31_EXIT_CRITERIA.md`.
-- [ ] Scope freeze ADR accepted — `docs/ADR_068_STAGE31_FREEZE.md` (number reserved at close).
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
-- [ ] Automated proof: `backend/tests/test_stage31_exit_h31x.py`.
-- [ ] Stages 1–30 freezes remain; Stage 32+ requires explicit open ADR after CONTINUE/NEXT.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for G1–D1 / H31x — `docs/STAGE_31_EXIT_CRITERIA.md`.
+- [x] Scope freeze ADR accepted — `docs/ADR_068_STAGE31_FREEZE.md` (number reserved at close).
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
+- [x] Automated proof: `backend/tests/test_stage31_exit_h31x.py`.
+- [x] Stages 1–30 freezes remain; Stage 32+ requires explicit open ADR after CONTINUE/NEXT.
 
 ## Sign-off
 
-Stage 31 open under ADR-067. G1–D1 complete; H31x next. Stages 1–30 remain frozen for their scopes.
+Stage 31 exit met under ADR-068. G1–D1 / H31x complete. Stages 1–30 remain frozen for their scopes. Stage 32+ requires an explicit open ADR after CONTINUE/NEXT.
