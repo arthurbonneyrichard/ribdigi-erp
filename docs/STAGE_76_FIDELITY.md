@@ -24,7 +24,7 @@ Stage 76 proves the owner Commercial Contract Boundary path after Stage 75 freez
 | **T1** | `test_commercial_terms_t1.py` — `COMMERCIAL_TERMS_MVP.md`, commercial-terms JSON | Owner Terms Boundary / Stage 43 ToS | Signed ToS |
 | **B1** | `test_commercial_billing_deferred_b1.py` — `COMMERCIAL_BILLING_DEFERRED_MVP.md`, commercial-billing-deferred JSON | Owner Billing Deferred Boundary / ADR-002 | Paid billing; go-live |
 | **D1** | This note + `test_stage76_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H76x** | `STAGE_76_EXIT_CRITERIA.md`; ADR-159; `test_stage76_exit_h76x.py` | Stage 76 exit + freeze | Stage 77+ requires CONTINUE/NEXT |
+| **H76x** | `STAGE_76_EXIT_CRITERIA.md`; ADR-159; `test_stage76_exit_h76x.py` | Stage 76 exit + freeze | Stage 77 opened via ADR-160 |
 
 ## Evidence tests
 

@@ -242,6 +242,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Commercial billing deferred honesty (Stage 76 B1: `test_commercial_billing_deferred_b1.py` — `docs/COMMERCIAL_BILLING_DEFERRED_MVP.md`, `ops/mvp/commercial-billing-deferred.json`; evidence `stage76_b1_commercial_billing_deferred.json`; paid billing Remaining)
 - [x] Stage 76 fidelity sync (D1: `test_stage76_fidelity_d1.py`, `docs/STAGE_76_FIDELITY.md` — T1–B1 + readiness + deploy / launch / security)
 - [x] Stage 76 exit + freeze (H76x: `test_stage76_exit_h76x.py`, `docs/STAGE_76_EXIT_CRITERIA.md`, ADR-159)
+- [x] Stage 77 track opened (ADR-160: `test_stage77_open.py`, `docs/STAGE_77_PLAN.md`) — Commercial Legal Envelope Fidelity; closed under ADR-161
+- [x] Commercial DPA honesty (Stage 77 A1: `test_commercial_dpa_a1.py` — `docs/COMMERCIAL_DPA_MVP.md`, `ops/mvp/commercial-dpa.json`; evidence `stage77_a1_commercial_dpa.json`; signed DPA Remaining)
+- [x] Commercial liability honesty (Stage 77 L1: `test_commercial_liability_l1.py` — `docs/COMMERCIAL_LIABILITY_MVP.md`, `ops/mvp/commercial-liability.json`; evidence `stage77_l1_commercial_liability.json`; liability cap signed Remaining)
+- [x] Stage 77 fidelity sync (D1: `test_stage77_fidelity_d1.py`, `docs/STAGE_77_FIDELITY.md` — A1–L1 + readiness + deploy / launch / security)
+- [x] Stage 77 exit + freeze (H77x: `test_stage77_exit_h77x.py`, `docs/STAGE_77_EXIT_CRITERIA.md`, ADR-161)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

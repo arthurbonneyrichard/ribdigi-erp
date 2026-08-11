@@ -27,4 +27,8 @@ Stage 76 Commercial Contract Boundary Fidelity delivered commercial terms honest
 
 ## Next stage
 
-Stage 77+ requires CONTINUE/NEXT with a distinct open ADR after this freeze.
+Stage 77 opened via ADR-160 (`docs/ADR_160_STAGE77_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 77 (Commercial Legal Envelope Fidelity — Commercial DPA Boundary → Commercial Liability Boundary → Commercial Legal Envelope Fidelity) after Stage 76 freeze via CONTINUE/NEXT — see [ADR-160](ADR_160_STAGE77_OPEN.md) and [STAGE_77_PLAN.md](STAGE_77_PLAN.md). Stage 76 feature scope remains frozen; Stage 77 does not reopen T1–D1 / H76x.
