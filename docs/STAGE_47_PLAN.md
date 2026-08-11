@@ -1,10 +1,11 @@
 # Stage 47 Plan — Commercial Insurance & Audit Fidelity
 
-**Status:** Open — D1 complete; H47x next  
+**Status:** Closed — exit met (H47x / ADR-100)  
 **Base:** Cyber Insurance / Certificate of Insurance Honesty Pack + Customer Audit Rights Honesty Pack → Commercial Insurance & Audit Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-099](ADR_099_STAGE47_OPEN.md)  
-**Prior freeze:** [ADR-098](ADR_098_STAGE46_FREEZE.md) · [STAGE_46_EXIT_CRITERIA.md](STAGE_46_EXIT_CRITERIA.md)
+**Prior freeze:** [ADR-098](ADR_098_STAGE46_FREEZE.md) · [STAGE_46_EXIT_CRITERIA.md](STAGE_46_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_47_EXIT_CRITERIA.md](STAGE_47_EXIT_CRITERIA.md) · [ADR-100](ADR_100_STAGE47_FREEZE.md)
 
 Stage 47 opens after Stage 46 freeze: **Cyber Insurance / Certificate of Insurance Honesty Packaging + Customer Audit Rights Honesty Packaging → Commercial Insurance & Audit Fidelity**. Stage 46 liability / remedy and Stage 39 MSA security-addendum packs, plus Stage 34 assurance / Stage 29 pen-test adjacency, lack dedicated customer-facing honesty packs for cyber / COI proof boundaries and contractual customer audit-rights Remaining. This track packages those Remaining surfaces on proven Stage 29–46 commercial / assurance / contract assets — **not** claiming issued COI Complete, live cyber policy Complete, customer audit executed Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–46 packs as new Complete, or reopening Stages 1–46 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Insurance & Audit Fidelity
 | **I1** | Cyber insurance / certificate of insurance honesty packaging (not issued COI / live cyber policy Complete) | P0 | COMPLETE |
 | **A1** | Customer audit rights honesty packaging (not customer audit executed Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H47x** | Stage 47 exit criteria + freeze ADR | Exit | PENDING |
+| **H47x** | Stage 47 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -89,6 +90,6 @@ Commercial Insurance & Audit Fidelity
 
 ## H47x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for I1–D1 / H47x — `docs/STAGE_47_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_100_STAGE47_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage47_exit_h47x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for I1–D1 / H47x — `docs/STAGE_47_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_100_STAGE47_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage47_exit_h47x.py`.

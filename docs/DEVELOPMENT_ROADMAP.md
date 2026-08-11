@@ -480,6 +480,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 47 D1 (2026-08-11):** Commercial insurance & audit fidelity — `docs/STAGE_47_FIDELITY.md` (`test_stage47_fidelity_d1.py`); maps I1–A1 → readiness / launch / deploy / security; issued COI / customer audit executed Remaining.
 
+**Stage 47 exit (2026-08-11):** I1, A1, D1, H47x met — `docs/STAGE_47_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_100_STAGE47_FREEZE.md`. Fidelity: `docs/STAGE_47_FIDELITY.md`.
+
 
 
 

@@ -1,9 +1,10 @@
 # Stage 47 Fidelity Notes — Commercial Insurance & Audit Fidelity
 
-**Status:** Open — D1 complete; H47x next  
+**Status:** Closed — exit met (H47x / ADR-100); historical open ADR-099  
 **Surface:** Cyber insurance / COI → Customer audit rights → Fidelity closeout  
-**Open ADR:** [ADR-099](ADR_099_STAGE47_OPEN.md)  
+**Open ADR (historical):** [ADR-099](ADR_099_STAGE47_OPEN.md)  
 **Plan:** [STAGE_47_PLAN.md](STAGE_47_PLAN.md)  
+**Exit:** [STAGE_47_EXIT_CRITERIA.md](STAGE_47_EXIT_CRITERIA.md) · [ADR-100](ADR_100_STAGE47_FREEZE.md)  
 **Prior freeze:** [ADR-098](ADR_098_STAGE46_FREEZE.md)
 
 Stage 47 proves the owner product outline after Stage 46 freeze — Cyber Insurance / Certificate of Insurance Honesty Pack + Customer Audit Rights Honesty Pack → Commercial Insurance & Audit Fidelity — by packaging Stage 46 liability / Stage 39 MSA / Stage 34 assurance adjacency and Stage 29 pen-test adjacency into customer-facing insurance-and-audit honesty. It is **not** issued COI Complete, live cyber policy Complete, customer audit executed Complete, live go-live / §7 / attestation Complete, SOC 2 / ISO Complete, re-packaging Stage 26–46 packs as new Complete, or reopening Stages 1–46 frozen feature scopes.
@@ -23,7 +24,7 @@ Stage 47 proves the owner product outline after Stage 46 freeze — Cyber Insura
 | **I1** | `test_cyber_insurance_i1.py` — `CYBER_INSURANCE_MVP.md`, cyber-insurance JSON | Stage 46 liability / Stage 39 MSA | Issued COI; live cyber policy |
 | **A1** | `test_customer_audit_rights_a1.py` — `CUSTOMER_AUDIT_RIGHTS_MVP.md`, customer-audit-rights JSON | Stage 34 assurance / Stage 29 pen-test | Customer audit executed; schedule |
 | **D1** | This note + `test_stage47_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H47x** | `STAGE_47_EXIT_CRITERIA.md`; ADR-100 (planned); `test_stage47_exit_h47x.py` | Stage 47 exit + freeze | Next track needs open ADR |
+| **H47x** | `STAGE_47_EXIT_CRITERIA.md`; ADR-100; `test_stage47_exit_h47x.py` | Stage 47 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -37,12 +38,13 @@ Stage 47 proves the owner product outline after Stage 46 freeze — Cyber Insura
 - `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16 fidelity (+ Stage 47 I1–A1 / D1 cite)
 - `docs/API_DOCUMENTATION.md` — Stage 47 I1–A1 / D1 cite
 - `PRODUCTION_READINESS.md` — Insurance & Audit Completes + Stage 47 D1 cite
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 47 D1
-- `docs/LAUNCH_CHECKLIST.md` — I1–A1 / D1 evidence
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 47 D1 / H47x
+- `docs/LAUNCH_CHECKLIST.md` — I1–A1 / D1 / H47x evidence
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 47 I1–A1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 47 I1–A1 / D1 cite
 - `docs/CYBER_INSURANCE_MVP.md` · `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md`
-- `docs/STAGE_47_PLAN.md` — Open (D1 complete; H47x next)
+- `docs/STAGE_47_PLAN.md` — Closed (H47x / ADR-100)
+- `docs/STAGE_47_EXIT_CRITERIA.md` · `docs/ADR_100_STAGE47_FREEZE.md`
 - `docs/ADR_099_STAGE47_OPEN.md`
 
 ## Deferred (not Stage 47 D1 blockers)
