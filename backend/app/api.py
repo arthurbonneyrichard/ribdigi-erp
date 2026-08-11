@@ -654,57 +654,59 @@ async def tenant_me_logo_delete(
 @api.get("/tenants")
 async def tenants_list(
     status: str | None = None,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await tenants_svc.list_tenants(db, status=status)
-    return env([tenants_svc.serialize_tenant(t) for t in rows])
+    """ADR-137: cross-tenant listing moved to /api/v1/platform/tenants."""
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "code": "PLATFORM_API_REQUIRED",
+            "message": "Cross-tenant tenant listing moved to /api/v1/platform/tenants (ADR-137).",
+            "migrate_to": "/api/v1/platform/tenants",
+        },
+    )
 
 
 @api.post("/tenants/{tenant_ref}/suspend")
 async def tenant_suspend_by_ref(
     tenant_ref: str,
     payload: TenantSuspendRequest | None = None,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
-    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
-    reason = payload.reason if payload else None
-    tenant = await tenants_svc.suspend_tenant(db, tenant, reason=reason)
-    await audit_svc.record_event(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        module="tenants",
-        action="suspend",
-        entity="tenant",
-        entity_id=tenant.id,
-        details={"reason": reason, "target_tenant": tenant.id},
+    """ADR-137: cross-tenant suspend moved to /api/v1/platform/tenants/{id}/suspend."""
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "code": "PLATFORM_API_REQUIRED",
+            "message": (
+                f"Cross-tenant suspend moved to /api/v1/platform/tenants/{tenant_ref}/suspend "
+                "(ADR-137)."
+            ),
+            "migrate_to": f"/api/v1/platform/tenants/{tenant_ref}/suspend",
+        },
     )
-    await db.commit()
-    return env(tenants_svc.serialize_tenant(tenant), "Tenant suspended")
 
 
 @api.post("/tenants/{tenant_ref}/activate")
 async def tenant_activate_by_ref(
     tenant_ref: str,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
-    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
-    tenant = await tenants_svc.activate_tenant(db, tenant)
-    await audit_svc.record_event(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        module="tenants",
-        action="activate",
-        entity="tenant",
-        entity_id=tenant.id,
-        details={"target_tenant": tenant.id},
+    """ADR-137: cross-tenant activate moved to /api/v1/platform/tenants/{id}/activate."""
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "code": "PLATFORM_API_REQUIRED",
+            "message": (
+                f"Cross-tenant activate moved to /api/v1/platform/tenants/{tenant_ref}/activate "
+                "(ADR-137)."
+            ),
+            "migrate_to": f"/api/v1/platform/tenants/{tenant_ref}/activate",
+        },
     )
-    await db.commit()
-    return env(tenants_svc.serialize_tenant(tenant), "Tenant activated")
 
 
 @api.get("/settings/email")

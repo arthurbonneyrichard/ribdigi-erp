@@ -16,7 +16,8 @@ Commercial MVP requires a Ribdigi House **Platform Owner** console distinct from
 4. Tenant ERP APIs remain tenant-scoped; platform principals cannot use them for business modules (allowlist: `/me`, auth, security enrollment).
 5. Customer registration cannot claim slug/id `ribdigi-platform`.
 6. **ADR-002** remains: no fake MRR/payments; platform billing cards show deferred until a provider ships.
-7. Legacy customer-tenant `super_admin` retains temporary dual support for existing `/tenants` lifecycle endpoints; new console uses platform principal only.
+7. Legacy customer-tenant `super_admin` cross-tenant `/tenants` list/suspend/activate endpoints are **retired** (HTTP 410 → `/api/v1/platform/*`). Tenant self-service remains on `/tenants/me`.
+8. Platform settings (`GET/PATCH /api/v1/platform/settings`) cover House idle timeout and support contacts on the reserved tenant row only.
 
 ## Consequences
 
@@ -26,3 +27,5 @@ Commercial MVP requires a Ribdigi House **Platform Owner** console distinct from
 - The reserved platform tenant cannot be suspended or listed as a customer tenant (legacy `/tenants*` and `/platform/*`).
 - Platform principals are allowlisted to `/api/v1/platform/*`, `/me`, and auth/security paths only (enforced in `current_claims`).
 - Platform staff management lives under `/api/v1/platform/users`; plan_code edits are metadata-only under `/platform/tenants/{id}/plan`.
+- Legacy `GET/POST /tenants` cross-tenant lifecycle returns **410** with `migrate_to` pointing at `/api/v1/platform/*`.
+- Platform settings are House-scoped only (`/api/v1/platform/settings`).

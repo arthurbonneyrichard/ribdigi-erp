@@ -74,13 +74,12 @@ async def test_legacy_super_admin_cannot_suspend_platform_tenant(client, db_engi
     )
 
     listed = await ac.get("/api/v1/tenants", headers=headers)
-    assert listed.status_code == 200
-    ids = {t["id"] for t in listed.json()["data"]}
-    assert PLATFORM_TENANT_ID not in ids
+    assert listed.status_code == 410
+    assert listed.json()["detail"]["code"] == "PLATFORM_API_REQUIRED"
 
     bad = await ac.post(f"/api/v1/tenants/{PLATFORM_TENANT_ID}/suspend", headers=headers)
-    assert bad.status_code == 400
-    assert "platform" in bad.json()["detail"].lower()
+    assert bad.status_code == 410
+    assert bad.json()["detail"]["code"] == "PLATFORM_API_REQUIRED"
 
 
 @pytest.mark.asyncio
@@ -155,6 +154,19 @@ async def test_platform_users_and_plan_and_billing(client, db_engine):
     assert body["deferred"] is True
     assert body["mrr"] is None
     assert body["checkout_enabled"] is False
+
+    settings = await ac.get("/api/v1/platform/settings", headers=headers)
+    assert settings.status_code == 200
+    assert settings.json()["data"]["slug"] == PLATFORM_TENANT_SLUG
+
+    patched = await ac.patch(
+        "/api/v1/platform/settings",
+        headers=headers,
+        json={"inactivity_timeout_minutes": 45, "support_email": "house@ribdigi.example.com"},
+    )
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["data"]["inactivity_timeout_minutes"] == 45
+    assert patched.json()["data"]["support_email"] == "house@ribdigi.example.com"
 
 
 def test_normalize_permissions_rejects_platform_modules_for_customer_roles():

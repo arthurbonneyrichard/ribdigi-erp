@@ -11,6 +11,7 @@ const items: [string, string, string][] = [
   ['Tenants', '/platform/tenants', 'platform_tenants'],
   ['Users', '/platform/users', 'platform_users'],
   ['Billing', '/platform/billing', 'platform_billing'],
+  ['Settings', '/platform/settings', 'platform_settings'],
   ['Health', '/platform/health', 'platform_health'],
   ['Audit', '/platform/audit', 'platform_audit'],
   ['Security', '/security', 'security'],

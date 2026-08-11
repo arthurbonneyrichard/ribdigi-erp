@@ -301,22 +301,11 @@ async def test_subscription_statuses_reminders_grace_plan(client, db_session):
     await db_session.refresh(tenant)
     assert tenant.status == "active"
 
-    import pyotp
-
-    code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    super_h = await auth_headers(
-        ac,
-        email="super@alpha.example.com",
-        tenant_slug="alpha",
-        totp_code=code,
-    )
-    sus = await ac.post(
-        f"/api/v1/tenants/{tenant.id}/suspend",
-        headers=super_h,
-        json={"reason": "Stage 21 T1 proof"},
-    )
-    assert sus.status_code == 200, sus.text
-    assert sus.json()["data"]["status"] == "suspended"
+    # ADR-137: cross-tenant HTTP suspend retired — use service (same as platform API)
+    await tenants_svc.suspend_tenant(db_session, tenant, reason="Stage 21 T1 proof")
+    await db_session.commit()
+    await db_session.refresh(tenant)
+    assert tenant.status == "suspended"
     denied = await ac.post(
         "/api/v1/auth/login",
         json={

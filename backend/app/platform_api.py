@@ -55,6 +55,13 @@ class PlatformPlanUpdate(BaseModel):
     plan_code: str
 
 
+class PlatformSettingsUpdate(BaseModel):
+    inactivity_timeout_minutes: int | None = Field(default=None, ge=5, le=480)
+    company_name: str | None = Field(default=None, min_length=2, max_length=200)
+    support_email: str | None = None
+    support_phone: str | None = None
+
+
 @router.get("/dashboard")
 async def platform_dashboard(
     claims: dict = Depends(require_platform_permission("platform_dashboard", "read")),
@@ -224,6 +231,78 @@ async def platform_billing_honesty(
             "plan_codes": sorted(tenants_svc.VALID_PLAN_CODES),
         }
     )
+
+
+def _serialize_platform_settings(tenant: m.Tenant) -> dict:
+    return {
+        "tenant_id": tenant.id,
+        "slug": tenant.slug,
+        "company_name": tenant.company_name,
+        "inactivity_timeout_minutes": int(
+            getattr(tenant, "inactivity_timeout_minutes", None) or 30
+        ),
+        "support_email": getattr(tenant, "email", None),
+        "support_phone": getattr(tenant, "phone", None),
+        "status": tenant.status,
+        "plan_code": getattr(tenant, "plan_code", None) or "enterprise",
+    }
+
+
+@router.get("/settings")
+async def platform_get_settings(
+    claims: dict = Depends(require_platform_permission("platform_settings", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await platform_svc.ensure_platform_tenant(db)
+    return env(_serialize_platform_settings(tenant))
+
+
+@router.patch("/settings")
+async def platform_patch_settings(
+    payload: PlatformSettingsUpdate,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_settings", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    if claims.get("role") != PLATFORM_SUPER_ADMIN:
+        raise HTTPException(
+            status_code=403,
+            detail="Only platform_super_admin can update platform settings",
+        )
+    tenant = await platform_svc.ensure_platform_tenant(db)
+    changes: dict[str, Any] = {}
+    if payload.inactivity_timeout_minutes is not None:
+        tenant.inactivity_timeout_minutes = int(payload.inactivity_timeout_minutes)
+        changes["inactivity_timeout_minutes"] = tenant.inactivity_timeout_minutes
+    if payload.company_name is not None:
+        tenant.company_name = payload.company_name.strip()
+        changes["company_name"] = tenant.company_name
+    if payload.support_email is not None:
+        email = payload.support_email.strip() or None
+        tenant.email = email
+        changes["support_email"] = email
+    if payload.support_phone is not None:
+        phone = payload.support_phone.strip() or None
+        tenant.phone = phone
+        changes["support_phone"] = phone
+    if not changes:
+        return env(_serialize_platform_settings(tenant), message="no changes")
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.settings.update",
+        entity="tenant",
+        entity_id=PLATFORM_TENANT_ID,
+        details=changes,
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_settings",
+    )
+    await db.commit()
+    await db.refresh(tenant)
+    return env(_serialize_platform_settings(tenant), message="platform settings updated")
 
 
 @router.get("/users")
