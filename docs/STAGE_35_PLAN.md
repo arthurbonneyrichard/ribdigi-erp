@@ -1,6 +1,6 @@
 # Stage 35 Plan — Commercial End-to-End Operational Smoke Fidelity
 
-**Status:** Open — R1 complete; D1 next (ADR-075)  
+**Status:** Open — D1 complete; H35x next (ADR-075)  
 **Base:** Org Bootstrap Pack + Users/RBAC Pack + Purchase-to-Stock Pack + Sale-to-Payment Pack + Verify Financials Pack + Backup/Restore Pack → Commercial End-to-End Operational Smoke Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-075](ADR_075_STAGE35_OPEN.md)
@@ -79,7 +79,7 @@ Commercial End-to-End Operational Smoke Fidelity
 | **S1** | Sale-to-payment packaging (customer → POS → payment → stock reduction) | P0 | COMPLETE |
 | **V1** | Verify financials packaging (tax → accounting → credit → reports → audit) | P1 | COMPLETE |
 | **R1** | Backup + restore test packaging | P1 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
 | **H35x** | Stage 35 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -141,9 +141,9 @@ Commercial End-to-End Operational Smoke Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_35_FIDELITY.md` maps T1–R1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 35 D1.
-- [ ] Automated proof: `backend/tests/test_stage35_fidelity_d1.py`.
+- [x] `docs/STAGE_35_FIDELITY.md` maps T1–R1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 35 D1.
+- [x] Automated proof: `backend/tests/test_stage35_fidelity_d1.py`.
 
 ## H35x acceptance criteria
 
@@ -155,4 +155,4 @@ Commercial End-to-End Operational Smoke Fidelity
 
 ## Sign-off
 
-Stage 35 open under ADR-075. R1 complete; D1 next. Stages 1–34 remain frozen for their scopes.
+Stage 35 open under ADR-075. D1 complete; H35x next. Stages 1–34 remain frozen for their scopes.

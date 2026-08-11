@@ -119,6 +119,8 @@ def test_t1_plan_launch_roadmap_readiness():
         or "R1 next" in plan
         or "R1 complete" in plan
         or "D1 next" in plan
+        or "D1 complete" in plan
+        or "H35x next" in plan
         or "Closed" in plan
         or "exit met" in plan.lower()
     )

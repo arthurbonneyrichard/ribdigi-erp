@@ -358,6 +358,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 35 R1 (2026-08-11):** Backup + restore — `docs/E2E_BACKUP_RESTORE_MVP.md`, `ops/mvp/e2e-backup-restore.json`, evidence `stage35_r1_e2e_backup_restore.json` (`test_e2e_backup_restore_r1.py`); logical backup → dry-run → apply → verify; live restore / PITR drill Remaining.
 
+**Stage 35 D1 (2026-08-11):** E2E operational smoke fidelity — `docs/STAGE_35_FIDELITY.md` (`test_stage35_fidelity_d1.py`); maps T1–R1 → readiness / launch / deploy / security; live E2E smoke Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -938,7 +940,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 35 open (`docs/STAGE_35_PLAN.md`, ADR-075) — R1 complete; D1 next. Stages 1–34 remain frozen for their scopes (`docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074).
+**Active delivery plan:** Stage 35 open (`docs/STAGE_35_PLAN.md`, ADR-075) — D1 complete; H35x next. Stages 1–34 remain frozen for their scopes (`docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074).
 
 ### 6.2 Features
 
