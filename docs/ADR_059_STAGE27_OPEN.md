@@ -32,3 +32,7 @@ Commercial MVP Release Fidelity
 - Agents may implement Stage 27 plan items without reopening Stage 1–26 feature scope.
 - Stage 27 exit requires `docs/STAGE_27_EXIT_CRITERIA.md` (created at close) with no CRITICAL/MISSING rows for planned workstreams.
 - Main `ci.yml` remains deploy-free for production cluster apply (**Stage 18 C1**); security-scan / certification evidence may add non-deploy CI jobs.
+
+## Amendment (2026-08-11)
+
+Stage 27 exit criteria are met (`docs/STAGE_27_EXIT_CRITERIA.md`) and Stage 27 feature scope is frozen under [ADR-060](ADR_060_STAGE27_FREEZE.md). ADR-059 remains the historical open record for this track.

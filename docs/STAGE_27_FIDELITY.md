@@ -26,7 +26,7 @@ Stage 27 proves the owner product outline after Stage 26 freeze — Auto `.ribba
 | **S1** | `test_security_scan_s1.py` — `SECURITY_SCAN_MVP.md`, OWASP suites | OWASP/security gate | Vendor pen test; live ZAP staging |
 | **L1** | `test_launch_cert_l1.py` — `LAUNCH_CERT_MVP.md`, `checklist-map.json` | Launch checklist hygiene | Operator §§1–3 / §7 sign-off |
 | **D1** | This note + `test_stage27_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H27x** | Exit + freeze (pending) | Stage 27 exit + ADR-060 | Next track needs open ADR |
+| **H27x** | `STAGE_27_EXIT_CRITERIA.md`; ADR-060; `test_stage27_exit_h27x.py` | Stage 27 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -36,18 +36,20 @@ Stage 27 proves the owner product outline after Stage 26 freeze — Auto `.ribba
 - `backend/tests/test_launch_cert_l1.py`
 - `backend/tests/test_stage27_open.py`
 - `backend/tests/test_stage27_fidelity_d1.py`
+- `backend/tests/test_stage27_exit_h27x.py`
 
 ## Spec sync targets
 
 - `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md` — BR-16.2 (+ Stage 27 B1 / D1 cite)
-- `docs/API_DOCUMENTATION.md` — Stage 27 B1–L1 / D1 cite
-- `PRODUCTION_READINESS.md` — backup / OWASP / PgBouncer / launch Completes + Stage 27 D1 cite
-- `docs/DEVELOPMENT_ROADMAP.md` — Stage 27 D1
-- `docs/LAUNCH_CHECKLIST.md` — B1–L1 / D1 evidence
-- `docs/DEPLOYMENT_GUIDE.md` — PgBouncer + Stage 27 D1
-- `docs/SECURITY_GUIDE.md` — Stage 27 B1–L1 / D1 cite
+- `docs/API_DOCUMENTATION.md` — Stage 27 B1–L1 / D1 / H27x cite
+- `PRODUCTION_READINESS.md` — backup / OWASP / PgBouncer / launch Completes + Stage 27 D1 / H27x cite
+- `docs/DEVELOPMENT_ROADMAP.md` — Stage 27 D1 / H27x exit
+- `docs/LAUNCH_CHECKLIST.md` — B1–L1 / D1 / H27x evidence
+- `docs/DEPLOYMENT_GUIDE.md` — PgBouncer + Stage 27 D1 / H27x
+- `docs/SECURITY_GUIDE.md` — Stage 27 B1–L1 / D1 / H27x cite
 - `docs/PGBOUNCER_MVP.md` · `docs/SECURITY_SCAN_MVP.md` · `docs/LAUNCH_CERT_MVP.md`
-- `docs/STAGE_27_PLAN.md` — D1 complete; H27x next
+- `docs/STAGE_27_PLAN.md` — Closed (H27x / ADR-060)
+- `docs/STAGE_27_EXIT_CRITERIA.md` · `docs/ADR_060_STAGE27_FREEZE.md`
 - `docs/ADR_059_STAGE27_OPEN.md`
 
 ## Deferred (not Stage 27 blockers)
@@ -63,4 +65,4 @@ Stage 27 proves the owner product outline after Stage 26 freeze — Auto `.ribba
 - User↔store membership (ADR-005); hard-delete with archival (ADR-003)
 - Open Banking; tax e-file portals
 - External LLM / Prophet; PO OCR auto-apply
-- Reopening Stages 1–26 frozen feature scopes
+- Reopening Stages 1–27 frozen feature scopes
