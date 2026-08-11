@@ -1,6 +1,6 @@
 # Stage 49 Plan — Commercial Channel & Pricing Fidelity
 
-**Status:** Open — R1 complete; L1 next  
+**Status:** Open — L1 complete; D1 next  
 **Base:** Partner / Reseller Terms Honesty Pack + Pricing Transparency Honesty Pack → Commercial Channel & Pricing Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-103](ADR_103_STAGE49_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Channel & Pricing Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **R1** | Partner / reseller / white-label terms honesty packaging (not live partner program / signed reseller Complete) | P0 | COMPLETE |
-| **L1** | Pricing transparency / published edition price-list honesty packaging (not public pricing portal / checkout pricing Complete) | P0 | PENDING |
+| **L1** | Pricing transparency / published edition price-list honesty packaging (not public pricing portal / checkout pricing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H49x** | Stage 49 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -79,10 +79,10 @@ Commercial Channel & Pricing Fidelity
 
 ## L1 acceptance criteria
 
-- [ ] Pricing transparency honesty packaging indexing PRODUCT_OVERVIEW edition prices and Stage 36 billing-deferred adjacency (not claiming public pricing portal / checkout pricing Complete).
-- [ ] Automated proof: `backend/tests/test_pricing_transparency_l1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 49 L1.
+- [x] Pricing transparency honesty packaging indexing PRODUCT_OVERVIEW edition prices and Stage 36 billing-deferred adjacency (not claiming public pricing portal / checkout pricing Complete).
+- [x] Automated proof: `backend/tests/test_pricing_transparency_l1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 49 L1.
 
 ## D1 acceptance criteria
 

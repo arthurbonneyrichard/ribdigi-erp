@@ -496,6 +496,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 49 R1 (2026-08-11):** Partner / reseller terms honesty — `docs/PARTNER_RESELLER_MVP.md`, `ops/mvp/partner-reseller.json`, evidence `stage49_r1_partner_reseller.json` (`test_partner_reseller_r1.py`); live partner program Remaining.
 
+**Stage 49 L1 (2026-08-11):** Pricing transparency honesty — `docs/PRICING_TRANSPARENCY_MVP.md`, `ops/mvp/pricing-transparency.json`, evidence `stage49_l1_pricing_transparency.json` (`test_pricing_transparency_l1.py`); public pricing portal Remaining.
+
 
 
 

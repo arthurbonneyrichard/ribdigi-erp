@@ -47,6 +47,7 @@
 | `professional-services-sow.json` | Stage 48 P1 Professional services / SOW honesty — `signed_sow_claimed: false` / `professional_services_live: false` / `implementation_delivery_claimed: false` / `data_migration_complete_claimed: false` |
 | `customer-training-cert.json` | Stage 48 T1 Customer training / certification honesty — `customer_training_delivered_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false` / `training_certification_claimed: false` |
 | `partner-reseller.json` | Stage 49 R1 Partner / reseller terms honesty — `partner_program_live: false` / `signed_reseller_agreement_claimed: false` / `white_label_live_claimed: false` / `channel_commission_claimed: false` |
+| `pricing-transparency.json` | Stage 49 L1 Pricing transparency honesty — `public_pricing_portal_claimed: false` / `list_price_binding_claimed: false` / `checkout_pricing_live: false` / `paid_billing_claimed: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -129,6 +130,7 @@ Authoritative MVP docs:
 - `docs/STAGE_48_EXIT_CRITERIA.md` / `docs/ADR_102_STAGE48_FREEZE.md` (`backend/tests/test_stage48_exit_h48x.py`) — Stage 48 H48x
 - `docs/STAGE_49_PLAN.md` (`backend/tests/test_stage49_open.py`) — Stage 49 open (ADR-103)
 - `docs/PARTNER_RESELLER_MVP.md` (`backend/tests/test_partner_reseller_r1.py`) — Stage 49 R1
+- `docs/PRICING_TRANSPARENCY_MVP.md` (`backend/tests/test_pricing_transparency_l1.py`) — Stage 49 L1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -519,3 +521,7 @@ Commercial Channel & Pricing Fidelity — `docs/STAGE_49_PLAN.md`, ADR-103; R1 c
 ## Stage 49 R1 — Partner / reseller terms honesty
 
 `docs/PARTNER_RESELLER_MVP.md` + `ops/mvp/partner-reseller.json` — packaging Complete; `partner_program_live` / `signed_reseller_agreement_claimed` / `white_label_live_claimed` / `channel_commission_claimed` remain false.
+
+## Stage 49 L1 — Pricing transparency honesty
+
+`docs/PRICING_TRANSPARENCY_MVP.md` + `ops/mvp/pricing-transparency.json` — packaging Complete; `public_pricing_portal_claimed` / `list_price_binding_claimed` / `checkout_pricing_live` / `paid_billing_claimed` remain false.
