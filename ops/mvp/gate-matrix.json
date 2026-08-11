@@ -1,0 +1,287 @@
+{
+  "stage": "31",
+  "workstream": "G1",
+  "doc": "docs/MVP_GATE_MATRIX_MVP.md",
+  "readiness": "PRODUCTION_READINESS.md",
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "classes": {
+    "complete_mvp": "Checkbox Complete (MVP) — packaging / product fidelity evidenced",
+    "remaining_post_mvp": "Operator live run / purchased service still Remaining (honesty false)",
+    "deferred_adr": "Deferred product ADR or post-MVP product scope (not implemented as Complete)"
+  },
+  "gates": [
+    {
+      "id": "schema-tenancy",
+      "section": "Platform & tenancy",
+      "checkbox": "Schema-per-tenant strategy implemented as specified, or architecture documents formally revised to an approved equivalent.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": ["docs/ADR_001_TENANCY.md"]
+    },
+    {
+      "id": "isolation",
+      "section": "Platform & tenancy",
+      "checkbox": "Cross-tenant isolation integration tests pass for every tenant-owned resource.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": ["docs/ADR_001_TENANCY.md", "backend/tests/test_isolation_matrix_s1.py"]
+    },
+    {
+      "id": "tenant-lifecycle",
+      "section": "Platform & tenancy",
+      "checkbox": "Tenant provisioning, suspension, activation and lifecycle management complete.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": ["docs/ADR_002_BILLING_DEFERRED.md"]
+    },
+    {
+      "id": "auth-tokens",
+      "section": "Identity & security",
+      "checkbox": "Login/logout/refresh token flow complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "email-password",
+      "section": "Identity & security",
+      "checkbox": "Email verification and password reset complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "totp",
+      "section": "Identity & security",
+      "checkbox": "2FA/TOTP complete for required roles.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "sessions",
+      "section": "Identity & security",
+      "checkbox": "Session listing and revocation complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "rbac",
+      "section": "Identity & security",
+      "checkbox": "Granular module/menu/record RBAC complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "rate-limit-cors",
+      "section": "Identity & security",
+      "checkbox": "Rate limiting, security headers and production CORS complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "owasp",
+      "section": "Identity & security",
+      "checkbox": "OWASP/security tests completed.",
+      "class": "complete_mvp",
+      "honesty": ["remaining_post_mvp"],
+      "refs": ["docs/PENTEST_PACK_MVP.md", "docs/SECURITY_SCAN_MVP.md"]
+    },
+    {
+      "id": "inventory",
+      "section": "ERP operations",
+      "checkbox": "Inventory catalog, variants, batches/expiry, stock movements and adjustments complete.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": []
+    },
+    {
+      "id": "purchasing",
+      "section": "ERP operations",
+      "checkbox": "Purchasing/PO/GRN/supplier workflow complete.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": []
+    },
+    {
+      "id": "sales",
+      "section": "ERP operations",
+      "checkbox": "Sales/invoice/payment/customer workflow complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "pos",
+      "section": "ERP operations",
+      "checkbox": "POS cart, barcode, payment, receipt, shift and stock deduction complete.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": []
+    },
+    {
+      "id": "expenses",
+      "section": "ERP operations",
+      "checkbox": "Expenses and approval workflow complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "accounting",
+      "section": "ERP operations",
+      "checkbox": "Double-entry accounting, journals, COA and financial statements complete.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": []
+    },
+    {
+      "id": "credit",
+      "section": "ERP operations",
+      "checkbox": "Credit limits, balances, payments and aging complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "tax",
+      "section": "ERP operations",
+      "checkbox": "VAT/tax calculation and reporting complete.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": []
+    },
+    {
+      "id": "multistore",
+      "section": "ERP operations",
+      "checkbox": "Multi-store/warehouse inventory and transfer workflow complete.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": ["docs/ADR_005_USER_STORE_ASSIGNMENT.md"]
+    },
+    {
+      "id": "reports",
+      "section": "ERP operations",
+      "checkbox": "Reports and exports complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "notifications",
+      "section": "ERP operations",
+      "checkbox": "In-app notifications and channel preferences complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "logical-backup",
+      "section": "Reliability & operations",
+      "checkbox": "Automated backup and tested restore complete (logical MVP).",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": ["docs/DR_LOGICAL_BACKUP_RUNBOOK.md"]
+    },
+    {
+      "id": "wal-pitr",
+      "section": "Reliability & operations",
+      "checkbox": "Point-in-time recovery/WAL strategy complete.",
+      "class": "complete_mvp",
+      "honesty": ["remaining_post_mvp"],
+      "refs": ["docs/DR_WAL_PITR_RUNBOOK.md", "docs/PITR_DRILL_PACK_MVP.md"]
+    },
+    {
+      "id": "audit",
+      "section": "Reliability & operations",
+      "checkbox": "Immutable audit logging for sensitive operations complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "redis-celery",
+      "section": "Reliability & operations",
+      "checkbox": "Redis/Celery/RabbitMQ used for intended production workloads.",
+      "class": "complete_mvp",
+      "honesty": ["remaining_post_mvp"],
+      "refs": ["docs/PGBOUNCER_MVP.md", "docs/PGBOUNCER_SOAK_PACK_MVP.md"]
+    },
+    {
+      "id": "monitoring",
+      "section": "Reliability & operations",
+      "checkbox": "Monitoring, metrics, logging and alerting complete.",
+      "class": "complete_mvp",
+      "honesty": ["remaining_post_mvp"],
+      "refs": ["docs/OPS_MONITORING_MVP.md", "docs/GRAFANA_PACK_MVP.md", "docs/INCIDENT_PACK_MVP.md"]
+    },
+    {
+      "id": "kubernetes",
+      "section": "Reliability & operations",
+      "checkbox": "Kubernetes production deployment reviewed.",
+      "class": "complete_mvp",
+      "honesty": ["remaining_post_mvp"],
+      "refs": ["docs/K8S_DEPLOY_MVP.md", "docs/TLS_INGRESS_PACK_MVP.md", "docs/CUTOVER_PACK_MVP.md", "docs/ATTESTATION_PACK_MVP.md"]
+    },
+    {
+      "id": "load",
+      "section": "Reliability & operations",
+      "checkbox": "Load/performance tests meet documented targets.",
+      "class": "complete_mvp",
+      "honesty": ["remaining_post_mvp"],
+      "refs": ["docs/LOAD_CAPACITY_MVP.md", "docs/LOAD_CERT_PACK_MVP.md"]
+    },
+    {
+      "id": "dr-drill",
+      "section": "Reliability & operations",
+      "checkbox": "Disaster recovery drill passes.",
+      "class": "complete_mvp",
+      "honesty": ["remaining_post_mvp"],
+      "refs": ["docs/PITR_DRILL_PACK_MVP.md"]
+    },
+    {
+      "id": "ai-provider",
+      "section": "AI",
+      "checkbox": "AI provider configured securely.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": []
+    },
+    {
+      "id": "ai-tenant-safe",
+      "section": "AI",
+      "checkbox": "Tenant-safe data access enforced.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    },
+    {
+      "id": "ai-functions",
+      "section": "AI",
+      "checkbox": "AI functions use real tenant data and satisfy documented acceptance criteria.",
+      "class": "complete_mvp",
+      "honesty": ["deferred_adr"],
+      "refs": []
+    },
+    {
+      "id": "ai-audit",
+      "section": "AI",
+      "checkbox": "AI audit logging and prompt/data protections complete.",
+      "class": "complete_mvp",
+      "honesty": [],
+      "refs": []
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage31_g1_mvp_gate_matrix.json",
+  "deferred": [
+    "Treating Complete (MVP) packaging as live production go-live",
+    "Forged LAUNCH §7 / attestation Complete",
+    "Implementing ADR-001/002/003/005/006 as Complete in this pack",
+    "Re-packaging Stage 26–30 packs as new Complete"
+  ]
+}
