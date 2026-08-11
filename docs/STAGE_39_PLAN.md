@@ -1,6 +1,6 @@
 # Stage 39 Plan — Commercial Contract Evidence Fidelity
 
-**Status:** Open — P1 complete; A1 next  
+**Status:** Open — P1–A1 complete; D1 next  
 **Base:** DPA / Subprocessor Honesty Pack + MSA Security Addendum Honesty Pack → Commercial Contract Evidence Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-083](ADR_083_STAGE39_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Contract Evidence Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **P1** | DPA / subprocessor honesty packaging (not signed DPA Complete) | P0 | COMPLETE |
-| **A1** | MSA security addendum honesty packaging (not signed MSA Complete) | P0 | PENDING |
+| **A1** | MSA security addendum honesty packaging (not signed MSA Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H39x** | Stage 39 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -63,10 +63,10 @@ Commercial Contract Evidence Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] MSA security addendum honesty packaging indexing Stage 34 assurance / Stage 38 disclosure themes for MSA security exhibit honesty (not claiming signed MSA Complete).
-- [ ] Automated proof: `backend/tests/test_msa_addendum_a1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 39 A1.
+- [x] MSA security addendum honesty packaging indexing Stage 34 assurance / Stage 38 disclosure themes for MSA security exhibit honesty (not claiming signed MSA Complete).
+- [x] Automated proof: `backend/tests/test_msa_addendum_a1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 39 A1.
 
 ## D1 acceptance criteria
 
@@ -84,4 +84,4 @@ Commercial Contract Evidence Fidelity
 
 ## Sign-off
 
-Stage 39 P1 complete. A1 next. Stages 1–38 remain frozen for their scopes.
+Stage 39 P1–A1 complete. D1 next. Stages 1–38 remain frozen for their scopes.

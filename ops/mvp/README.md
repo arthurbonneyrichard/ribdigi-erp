@@ -30,6 +30,7 @@
 | `vuln-disclosure.json` | Stage 38 V1 vulnerability disclosure — `disclosure_program_claimed: false` / `bug_bounty_claimed: false` / `continuous_disclosure_claimed: false` / `researcher_intake_live: false` |
 | `breach-notification.json` | Stage 38 B1 breach notification / security contact — `breach_drill_claimed: false` / `regulatory_filing_claimed: false` / `customer_notify_saas_claimed: false` / `security_mailbox_live: false` |
 | `dpa-subprocessor.json` | Stage 39 P1 DPA / subprocessor honesty — `dpa_signed_claimed: false` / `subprocessor_register_live: false` / `legal_counsel_claimed: false` / `contract_execution_claimed: false` |
+| `msa-addendum.json` | Stage 39 A1 MSA security addendum honesty — `msa_signed_claimed: false` / `security_exhibit_signed: false` / `legal_counsel_claimed: false` / `contract_execution_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -63,6 +64,7 @@ Authoritative MVP docs:
 - `docs/BREACH_NOTIFICATION_MVP.md` (`backend/tests/test_breach_notification_b1.py`) — Stage 38 B1
 - `docs/STAGE_39_PLAN.md` (`backend/tests/test_stage39_open.py`) — Stage 39 open (ADR-083)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
+- `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
 ## Stage 33 K1 — Residual risk register
 
@@ -251,3 +253,11 @@ Indexes infrastructure processing roles against compliance privacy themes. See `
 - Pack: `dpa-subprocessor.json`
 - Tests: `backend/tests/test_dpa_subprocessor_p1.py`
 - Honesty: `dpa_signed_claimed: false`, `subprocessor_register_live: false`, `legal_counsel_claimed: false`, `contract_execution_claimed: false` — packaging ≠ signed DPA Complete
+
+## Stage 39 A1 — MSA security addendum honesty
+
+Indexes Stage 34 assurance / Stage 38 disclosure packs as MSA security exhibit honesty. See `docs/MSA_ADDENDUM_MVP.md`.
+
+- Pack: `msa-addendum.json`
+- Tests: `backend/tests/test_msa_addendum_a1.py`
+- Honesty: `msa_signed_claimed: false`, `security_exhibit_signed: false`, `legal_counsel_claimed: false`, `contract_execution_claimed: false` — packaging ≠ signed MSA Complete

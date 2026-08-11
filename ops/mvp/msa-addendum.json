@@ -1,0 +1,156 @@
+{
+  "stage": "39",
+  "workstream": "A1",
+  "doc": "docs/MSA_ADDENDUM_MVP.md",
+  "assurance_evidence": "ops/mvp/assurance-evidence.json",
+  "assurance_evidence_doc": "docs/ASSURANCE_EVIDENCE_MVP.md",
+  "vuln_disclosure": "ops/mvp/vuln-disclosure.json",
+  "vuln_disclosure_doc": "docs/VULN_DISCLOSURE_MVP.md",
+  "breach_notification": "ops/mvp/breach-notification.json",
+  "breach_notification_doc": "docs/BREACH_NOTIFICATION_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "dpa_subprocessor": "ops/mvp/dpa-subprocessor.json",
+  "dpa_subprocessor_doc": "docs/DPA_SUBPROCESSOR_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "compliance_questionnaire_doc": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+  "stage39_plan": "docs/STAGE_39_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "msa_signed_claimed": false,
+  "security_exhibit_signed": false,
+  "legal_counsel_claimed": false,
+  "contract_execution_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "steps": [
+    {
+      "id": "msa-assurance-evidence",
+      "category": "assurance",
+      "title": "Link Stage 34 A1 assurance evidence map as MSA security exhibit source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ASSURANCE_EVIDENCE_MVP.md",
+        "ops/mvp/assurance-evidence.json"
+      ],
+      "source": "docs/ASSURANCE_EVIDENCE_MVP.md"
+    },
+    {
+      "id": "msa-vuln-disclosure",
+      "category": "disclosure",
+      "title": "Link Stage 38 V1 vulnerability disclosure pack as MSA exhibit adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/VULN_DISCLOSURE_MVP.md",
+        "ops/mvp/vuln-disclosure.json"
+      ],
+      "source": "docs/VULN_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "msa-breach-notification",
+      "category": "disclosure",
+      "title": "Link Stage 38 B1 breach notification pack as MSA exhibit adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BREACH_NOTIFICATION_MVP.md",
+        "ops/mvp/breach-notification.json"
+      ],
+      "source": "docs/BREACH_NOTIFICATION_MVP.md"
+    },
+    {
+      "id": "msa-support-sla",
+      "category": "assurance",
+      "title": "Link Stage 36 S1 support SLA boundary as MSA service exhibit adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "msa-dpa-adjacency",
+      "category": "contract",
+      "title": "Link Stage 39 P1 DPA / subprocessor pack as MSA data-protection exhibit adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DPA_SUBPROCESSOR_MVP.md",
+        "ops/mvp/dpa-subprocessor.json"
+      ],
+      "source": "docs/DPA_SUBPROCESSOR_MVP.md"
+    },
+    {
+      "id": "msa-security-guide",
+      "category": "assurance",
+      "title": "Index SECURITY_GUIDE security posture narrative for MSA exhibit references",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "msa-compliance-themes",
+      "category": "assurance",
+      "title": "Link compliance questionnaire / readiness themes to MSA control exhibit honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+        "docs/ASSURANCE_EVIDENCE_MVP.md"
+      ],
+      "source": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+    },
+    {
+      "id": "msa-attestation-remaining",
+      "category": "deferred",
+      "title": "Confirm attestation / \u00a77 Remaining honesty (not forged in MSA packaging)",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/ASSURANCE_EVIDENCE_MVP.md",
+        "docs/STAGE_39_PLAN.md"
+      ],
+      "source": "docs/ASSURANCE_EVIDENCE_MVP.md"
+    },
+    {
+      "id": "msa-signed-remaining",
+      "category": "honesty",
+      "title": "Signed customer MSA Remaining \u2014 packaging \u2260 executed contract",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_39_PLAN.md",
+        "docs/MSA_ADDENDUM_MVP.md"
+      ],
+      "source": "docs/STAGE_39_PLAN.md#A1"
+    },
+    {
+      "id": "msa-exhibit-signed-remaining",
+      "category": "honesty",
+      "title": "Legal counsel / countersigned security exhibit Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_39_PLAN.md",
+        "docs/MSA_ADDENDUM_MVP.md"
+      ],
+      "source": "docs/STAGE_39_PLAN.md#A1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage39_a1_msa_addendum.json",
+  "deferred": [
+    "Claiming signed customer MSA Complete because Stage 39 A1 packaging exists",
+    "Countersigned security exhibit Complete",
+    "Legal counsel / outside counsel approval Complete",
+    "Live contract execution Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

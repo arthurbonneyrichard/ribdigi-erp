@@ -357,6 +357,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 32 fidelity** | D1 maps A1–B1 handoff evidence — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`); exit/freeze `docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070 (`test_stage32_exit_h32x.py`); historical open ADR-069; live go-live / attestation / §7 / deferred ADR implementations remain Remaining |
 | **Stage 39 open** | Commercial Contract Evidence Fidelity — `docs/STAGE_39_PLAN.md`, ADR-083 (`test_stage39_open.py`); Stages 1–38 remain frozen; P1 next |
 | **Stage 39 P1** | DPA / subprocessor honesty — `docs/DPA_SUBPROCESSOR_MVP.md`, `ops/mvp/dpa-subprocessor.json` (`test_dpa_subprocessor_p1.py`); signed DPA Remaining |
+| **Stage 39 A1** | MSA security addendum honesty — `docs/MSA_ADDENDUM_MVP.md`, `ops/mvp/msa-addendum.json` (`test_msa_addendum_a1.py`); signed MSA Remaining |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |
