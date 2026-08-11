@@ -230,6 +230,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_69_FIDELITY.md` (`backend/tests/test_stage69_fidelity_d1.py`) — Stage 69 D1
 - `docs/GOLIVE_ATTESTATION_MVP.md` (`backend/tests/test_golive_attestation_a1.py`) — Stage 69 A1
 - `docs/PREFLIGHT_VERIFICATION_MVP.md` (`backend/tests/test_preflight_verification_v1.py`) — Stage 69 V1
 - `docs/STAGE_69_PLAN.md` (`backend/tests/test_stage69_open.py`) — Stage 69 open (ADR-144)
@@ -956,6 +957,10 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 69 D1 — Commercial Go-Live fidelity
+
+`docs/STAGE_69_FIDELITY.md` — maps V1–A1 → readiness / launch / deploy / security (`test_stage69_fidelity_d1.py`).
+
 ## Stage 69 A1 — Go-live attestation honesty
 
 `docs/GOLIVE_ATTESTATION_MVP.md` + `ops/mvp/golive-attestation.json` — packaging Complete; `section_7_signed` / `attestation_claimed` / `go_live_claimed` / `golive_attestation_walk_claimed` remain false.
@@ -966,7 +971,7 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 ## Stage 69 open
 
-MVP Commercial Go-Live Fidelity — `docs/STAGE_69_PLAN.md`, ADR-144; Open — A1 complete; D1 next.
+MVP Commercial Go-Live Fidelity — `docs/STAGE_69_PLAN.md`, ADR-144; Open — D1 complete; H69x next.
 
 ## Stage 68 exit
 

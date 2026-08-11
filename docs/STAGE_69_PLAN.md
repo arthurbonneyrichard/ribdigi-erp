@@ -1,6 +1,6 @@
 # Stage 69 Plan — MVP Commercial Go-Live Fidelity
 
-**Status:** Open — A1 complete; D1 next  
+**Status:** Open — D1 complete; H69x next  
 **Base:** Pre-Flight Verification Honesty Pack + Go-Live Attestation Honesty Pack → MVP Commercial Go-Live Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-144](ADR_144_STAGE69_OPEN.md)  
@@ -48,7 +48,7 @@ MVP Commercial Go-Live Fidelity
 |----|------------|----------|---------|
 | **V1** | Pre-flight verification honesty packaging (§§1–3 / launch-cert adjacency; not §§1–3 verified Complete) | P0 | COMPLETE |
 | **A1** | Go-live attestation honesty packaging (§7 walk / attestation adjacency; not §7 signed Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H69x** | Stage 69 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -83,9 +83,9 @@ MVP Commercial Go-Live Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_69_FIDELITY.md` maps V1–A1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 69 D1.
-- [ ] Automated proof: `backend/tests/test_stage69_fidelity_d1.py`.
+- [x] `docs/STAGE_69_FIDELITY.md` maps V1–A1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 69 D1.
+- [x] Automated proof: `backend/tests/test_stage69_fidelity_d1.py`.
 
 ## H69x acceptance criteria
 

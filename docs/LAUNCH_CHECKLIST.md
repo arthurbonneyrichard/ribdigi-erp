@@ -202,9 +202,10 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Tenant Company console honesty (Stage 68 T1: `test_tenant_company_console_t1.py` — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json`; evidence `stage68_t1_tenant_company_console.json`; module re-Complete / demo tenant Remaining)
 - [x] Stage 68 fidelity sync (D1: `test_stage68_fidelity_d1.py`, `docs/STAGE_68_FIDELITY.md` — H1–T1 + readiness + deploy / launch / security)
 - [x] Stage 68 exit + freeze (H68x: `test_stage68_exit_h68x.py`, `docs/STAGE_68_EXIT_CRITERIA.md`, ADR-143)
-- [x] Stage 69 track opened (ADR-144: `test_stage69_open.py`, `docs/STAGE_69_PLAN.md`) — MVP Commercial Go-Live Fidelity; A1 complete / D1 next
+- [x] Stage 69 track opened (ADR-144: `test_stage69_open.py`, `docs/STAGE_69_PLAN.md`) — MVP Commercial Go-Live Fidelity; D1 complete / H69x next
 - [x] Pre-flight verification honesty (Stage 69 V1: `test_preflight_verification_v1.py` — `docs/PREFLIGHT_VERIFICATION_MVP.md`, `ops/mvp/preflight-verification.json`; evidence `stage69_v1_preflight_verification.json`; §§1–3 verified Remaining)
 - [x] Go-live attestation honesty (Stage 69 A1: `test_golive_attestation_a1.py` — `docs/GOLIVE_ATTESTATION_MVP.md`, `ops/mvp/golive-attestation.json`; evidence `stage69_a1_golive_attestation.json`; §7 signed Remaining)
+- [x] Stage 69 fidelity sync (D1: `test_stage69_fidelity_d1.py`, `docs/STAGE_69_FIDELITY.md` — V1–A1 + readiness + deploy / launch / security)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
