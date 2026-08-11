@@ -1,0 +1,42 @@
+# Stage 26 K1 — frontend Deployment + Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ribdigi-frontend
+  labels:
+    app: ribdigi-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ribdigi-frontend
+  template:
+    metadata:
+      labels:
+        app: ribdigi-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ribdigi/erp-frontend:1.0.0
+          ports:
+            - name: http
+              containerPort: 3000
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ribdigi-frontend
+spec:
+  selector:
+    app: ribdigi-frontend
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

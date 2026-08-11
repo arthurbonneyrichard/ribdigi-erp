@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Stage 26 K1 — post-apply staging smoke (operator template; not CI).
+set -euo pipefail
+
+NS="${RIBDIGI_NS:-ribdigi-staging}"
+# Port-forward or set BASE_URL to ingress host.
+BASE_URL="${RIBDIGI_BASE_URL:-http://127.0.0.1:8000}"
+
+kubectl -n "$NS" rollout status deploy/ribdigi-backend --timeout=180s
+kubectl -n "$NS" get deploy,svc,pods
+
+# Optional local port-forward when BASE_URL points at localhost:
+# kubectl -n "$NS" port-forward svc/ribdigi-backend 8000:8000 &
+
+curl -fsS "$BASE_URL/api/v1/health/ready" | tee /tmp/ribdigi-ready.json
+grep -q '"status"' /tmp/ribdigi-ready.json
+
+curl -fsS "$BASE_URL/api/v1/metrics" | head -n 20 | tee /tmp/ribdigi-metrics.txt
+grep -q 'ribdigi_up' /tmp/ribdigi-metrics.txt
+
+echo "Stage 26 K1 staging smoke OK"

@@ -1,0 +1,14 @@
+# Stage 26 K1 — example namespaces (create before apply)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ribdigi-staging
+  labels:
+    app.kubernetes.io/part-of: ribdigi
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ribdigi-production
+  labels:
+    app.kubernetes.io/part-of: ribdigi

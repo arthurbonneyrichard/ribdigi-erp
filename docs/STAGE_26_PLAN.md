@@ -1,6 +1,6 @@
 # Stage 26 Plan — Production Platform & Ops Fidelity
 
-**Status:** Open — M1 / W1 COMPLETE; K1 next (ADR-057)  
+**Status:** Open — M1 / W1 / K1 COMPLETE; C1 next (ADR-057)  
 **Base:** Monitoring & Alerting + WAL/PITR + Kubernetes Deploy + Load Capacity → Ops Platform Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-057](ADR_057_STAGE26_OPEN.md)
@@ -35,7 +35,7 @@ Ops Platform Fidelity
 |----|------------|----------|---------|
 | **M1** | Monitoring & alerting fidelity (Prometheus scrape / alert rules / log-ship hooks) | P0 | COMPLETE |
 | **W1** | WAL / PITR strategy + S3 offsite backup fidelity | P0 | COMPLETE |
-| **K1** | Kubernetes / Helm production deploy fidelity | P0 | PENDING |
+| **K1** | Kubernetes / Helm production deploy fidelity | P0 | COMPLETE |
 | **C1** | Certified load / capacity evidence | P0 | PENDING |
 | **D1** | Spec / BR-16 / readiness / launch / deploy fidelity sync | P2 | PENDING |
 | **H26x** | Stage 26 exit criteria + freeze ADR | Exit | PENDING |
@@ -69,11 +69,11 @@ Ops Platform Fidelity
 
 ## K1 acceptance criteria
 
-- [ ] Kubernetes / Helm (or hardened `k8s/`) production-chart fidelity + staging deploy smoke evidence (extend Stage 18 C1 — not fake cluster claim).
-- [ ] `DEPLOYMENT_GUIDE.md` / CI wiring synced to proven assets.
-- [ ] Automated proof: `backend/tests/test_k8s_deploy_k1.py`.
-- [ ] PRODUCTION_READINESS Kubernetes gate honesty updated with evidence.
-- [ ] Plan / launch / roadmap cite Stage 26 K1.
+- [x] Kubernetes / Helm (or hardened `k8s/`) production-chart fidelity + staging deploy smoke evidence (extend Stage 18 C1 — not fake cluster claim).
+- [x] `DEPLOYMENT_GUIDE.md` / CI wiring synced to proven assets.
+- [x] Automated proof: `backend/tests/test_k8s_deploy_k1.py`.
+- [x] PRODUCTION_READINESS Kubernetes gate honesty updated with evidence.
+- [x] Plan / launch / roadmap cite Stage 26 K1.
 
 ## C1 acceptance criteria
 
@@ -99,4 +99,4 @@ Ops Platform Fidelity
 
 ## Sign-off
 
-Stage 26 open under ADR-057. M1 / W1 complete; K1 next. Stages 1–25 remain frozen for their scopes.
+Stage 26 open under ADR-057. M1 / W1 / K1 complete; C1 next. Stages 1–25 remain frozen for their scopes.

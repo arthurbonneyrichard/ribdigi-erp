@@ -97,7 +97,13 @@ def test_monitoring_gate_complete_mvp():
             and "Stage 26 W1" in pr
         )
     )
-    assert "- [ ] Kubernetes production deployment reviewed." in pr
+    assert (
+        "- [ ] Kubernetes production deployment reviewed." in pr
+        or (
+            "- [x] Kubernetes production deployment reviewed." in pr
+            and "Stage 26 K1" in pr
+        )
+    )
     assert "- [ ] Load/performance tests meet documented targets." in pr
 
 

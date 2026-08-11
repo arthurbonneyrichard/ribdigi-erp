@@ -318,6 +318,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 26 open** | Production Platform & Ops Fidelity — `docs/STAGE_26_PLAN.md`, ADR-057 (`test_stage26_open.py`); Stages 1–25 remain frozen |
 | **Stage 26 M1** | Monitoring scrape/alerts/log-ship — `ops/prometheus/`, `ops/logging/`, `docs/OPS_MONITORING_MVP.md` (`test_ops_monitoring_m1.py`) |
 | **Stage 26 W1** | WAL/PITR strategy + S3 offsite — `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/`, `ops/backup/` (`test_wal_pitr_w1.py`) |
+| **Stage 26 K1** | Kubernetes/Helm deploy fidelity — `helm/ribdigi/`, `k8s/`, `docs/K8S_DEPLOY_MVP.md` (`test_k8s_deploy_k1.py`); live GHA→staging deferred |
 
 ### 7.3 Tenant Lifecycle Security
 

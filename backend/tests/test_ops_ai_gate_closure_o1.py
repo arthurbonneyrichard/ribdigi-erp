@@ -66,7 +66,7 @@ def test_ai_gates_mvp_complete() -> None:
 
 
 def test_monitoring_wal_k8s_load_remain_open() -> None:
-    # Stage 26 M1/W1 may close monitoring/WAL; O1 must not fake-close K8s / load.
+    # Stage 26 M1/W1/K1 may close monitoring/WAL/K8s; O1 must not fake-close load.
     assert (
         "- [ ] Point-in-time recovery/WAL strategy complete." in READINESS
         or (
@@ -74,6 +74,12 @@ def test_monitoring_wal_k8s_load_remain_open() -> None:
             and "Stage 26 W1" in READINESS
         )
     )
-    assert "- [ ] Kubernetes production deployment reviewed." in READINESS
+    assert (
+        "- [ ] Kubernetes production deployment reviewed." in READINESS
+        or (
+            "- [x] Kubernetes production deployment reviewed." in READINESS
+            and "Stage 26 K1" in READINESS
+        )
+    )
     assert "- [ ] Load/performance tests meet documented targets." in READINESS
     assert "Partial" in READINESS  # load Partial until closed

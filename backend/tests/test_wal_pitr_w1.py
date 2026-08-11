@@ -78,8 +78,14 @@ def test_wal_gate_complete_mvp_and_evidence():
     assert "ops/postgres" in pr
     # Remaining honesty
     assert "operator" in pr.lower() or "staging" in pr.lower() or "Remaining" in pr
-    # Other Stage 26 gates stay open
-    assert "- [ ] Kubernetes production deployment reviewed." in pr
+    # K8s may be Complete (MVP) after K1; load stays open
+    assert (
+        "- [ ] Kubernetes production deployment reviewed." in pr
+        or (
+            "- [x] Kubernetes production deployment reviewed." in pr
+            and "Stage 26 K1" in pr
+        )
+    )
     assert "- [ ] Load/performance tests meet documented targets." in pr
     # Monitoring already Complete (MVP) from M1
     assert "- [x] Monitoring, metrics, logging and alerting complete." in pr

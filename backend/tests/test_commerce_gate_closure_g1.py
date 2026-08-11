@@ -72,7 +72,13 @@ def test_ops_platform_gates_not_fake_completed() -> None:
             and "Stage 26 W1" in READINESS
         )
     )
-    assert "- [ ] Kubernetes production deployment reviewed." in READINESS
+    assert (
+        "- [ ] Kubernetes production deployment reviewed." in READINESS
+        or (
+            "- [x] Kubernetes production deployment reviewed." in READINESS
+            and "Stage 26 K1" in READINESS
+        )
+    )
     assert "- [ ] Load/performance tests meet documented targets." in READINESS
-    # Stage 26 M1/W1 may mark monitoring/WAL Complete (MVP); G1 must not be the closer.
+    # Stage 26 M1/W1/K1 may mark monitoring/WAL/K8s Complete (MVP); G1 must not be the closer.
     assert "Partial" in READINESS  # load Partial until closed
