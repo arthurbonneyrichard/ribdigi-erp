@@ -141,9 +141,10 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Logical DR drill automation evidence (Stage 23 B1: `test_logical_dr_drill_b1.py` — create/dry-run/RESTORE/verify + foreign 404; artifact `stage23_b1_logical_drill.json`; WAL/PITR deferred)
 - [x] Stage 23 fidelity sync (D1: `test_stage23_fidelity_d1.py`, `docs/STAGE_23_FIDELITY.md` — BR-14 + readiness + USER_MANUAL / API / launch)
 - [x] Stage 23 exit + freeze (H23x: `test_stage23_exit_h23x.py`, `docs/STAGE_23_EXIT_CRITERIA.md`, ADR-052)
-- [ ] Stage 24 Commerce & Ops Gate Fidelity (open: `docs/STAGE_24_PLAN.md`, ADR-053) — N1 complete; G1 next
+- [ ] Stage 24 Commerce & Ops Gate Fidelity (open: `docs/STAGE_24_PLAN.md`, ADR-053) — N1–G1 complete; O1 next
 - [x] Stage 24 track opened (ADR-053: `test_stage24_open.py`, `docs/STAGE_24_PLAN.md`)
 - [x] Shared document numbering series fidelity (Stage 24 N1: `test_document_numbering_n1.py` — configure/preview all DOC_KEYS; live QT/SO/INV/SR/CN/PO/GRN prefixes)
+- [x] Commerce gates closure (Stage 24 G1: `test_commerce_gate_closure_g1.py` — Inventory/Purchasing/Sales/POS/Multi-store Complete MVP; Remaining deferred-only)
 - [x] Expense create → approve → journal (Stage 18 T1 launch smoke + Stage 14 E1)
 - [x] Trial balance / P&L readable for the fiscal period (Stage 18 T1 launch smoke + Stage 14 A2/E1)
 - [x] Logical backup create → verify → dry-run restore (`confirm_text=RESTORE` only on intentional restore) — Stage 18 T1 / B1 / Stage 5 B1

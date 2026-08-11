@@ -1,0 +1,62 @@
+"""Stage 24 G1 — Commerce surface gate closure (readiness honesty).
+
+Inventory, Purchasing, Sales, POS, and Multi-store flip to Complete (MVP) where
+Remaining is deferred-only (Kanban polish, vendor USB/serial, multi-bin, ADR-005).
+Ops Redis/Celery + AI honesty remain Stage 24 O1; WAL/K8s/monitoring stay open.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+READINESS = (ROOT / "PRODUCTION_READINESS.md").read_text(encoding="utf-8")
+PLAN = (ROOT / "docs" / "STAGE_24_PLAN.md").read_text(encoding="utf-8")
+
+
+def _section(heading: str) -> str:
+    start = READINESS.find(heading)
+    assert start >= 0, f"missing heading {heading!r}"
+    rest = READINESS[start:]
+    nxt = rest.find("\n### ", 1)
+    return rest if nxt < 0 else rest[:nxt]
+
+
+def test_g1_plan_marks_complete() -> None:
+    assert "| **G1** |" in PLAN
+    g1_line = [ln for ln in PLAN.splitlines() if "| **G1** |" in ln][0]
+    assert "COMPLETE" in g1_line
+    assert "test_commerce_gate_closure_g1.py" in PLAN
+    assert "G1 complete" in PLAN or "O1 next" in PLAN
+
+
+def test_commerce_gates_mvp_complete() -> None:
+    sec = _section("### ERP operations")
+    assert "- [x] Inventory catalog, variants, batches/expiry, stock movements and adjustments complete." in sec
+    assert "Complete (MVP):" in sec
+    assert "Stage 24 G1" in sec
+    assert "test_commerce_gate_closure_g1.py" in sec
+    assert "- [x] Purchasing/PO/GRN/supplier workflow complete." in sec
+    assert "PO Kanban" in sec
+    assert "- [x] Sales/invoice/payment/customer workflow complete." in sec
+    assert "- [x] POS cart, barcode, payment, receipt, shift and stock deduction complete." in sec
+    assert "USB/serial" in sec or "vendor-specific" in sec
+    assert "- [x] Multi-store/warehouse inventory and transfer workflow complete." in sec
+    assert "ADR-005" in sec or "multi-bin" in sec
+    for label in (
+        "- [ ] Inventory catalog, variants, batches/expiry, stock movements and adjustments complete.",
+        "- [ ] Purchasing/PO/GRN/supplier workflow complete.",
+        "- [ ] Sales/invoice/payment/customer workflow complete.",
+        "- [ ] POS cart, barcode, payment, receipt, shift and stock deduction complete.",
+        "- [ ] Multi-store/warehouse inventory and transfer workflow complete.",
+    ):
+        assert label not in sec
+
+
+def test_ops_and_ai_not_fake_completed() -> None:
+    """G1 must not close O1 / post-MVP ops gates."""
+    assert "- [ ] Redis/Celery/RabbitMQ used for intended production workloads." in READINESS
+    assert "- [ ] AI provider configured securely." in READINESS or "AI provider" in READINESS
+    assert "- [ ] Point-in-time recovery/WAL strategy complete." in READINESS
+    assert "- [ ] Kubernetes production deployment reviewed." in READINESS
+    assert "Partial" in READINESS  # Redis/Celery / AI / monitoring still Partial

@@ -225,7 +225,12 @@ def test_n1_plan_and_docs_cite_stage24():
     n1_line = [ln for ln in plan.splitlines() if "| **N1** |" in ln][0]
     assert "COMPLETE" in n1_line
     assert "test_document_numbering_n1.py" in plan
-    assert "N1 complete" in plan or "G1 next" in plan
+    assert (
+        "N1 complete" in plan
+        or "G1 next" in plan
+        or "N1–G1 complete" in plan
+        or "O1 next" in plan
+    )
 
     br = (ROOT / "docs" / "BUSINESS_REQUIREMENTS_DOCUMENT.md").read_text(encoding="utf-8")
     s204 = br.split("#### BR-20.4 Numbering & Templates")[1].split("### 4.21")[0]

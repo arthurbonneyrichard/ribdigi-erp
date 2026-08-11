@@ -38,7 +38,7 @@ Fidelity closeout
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **N1** | Shared document numbering series fidelity | P0 | COMPLETE |
-| **G1** | Commerce gates closure (Inv / Purch / Sales / POS / Multi-store) | P0 | PENDING |
+| **G1** | Commerce gates closure (Inv / Purch / Sales / POS / Multi-store) | P0 | COMPLETE |
 | **O1** | Ops Redis/Celery + AI MVP gate honesty | P1 | PENDING |
 | **D1** | Spec / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
 | **H24x** | Stage 24 exit criteria + freeze ADR | Exit | PENDING |
@@ -66,10 +66,21 @@ Fidelity closeout
 - [x] Automated proof: `backend/tests/test_document_numbering_n1.py`.
 - [x] BR-20.4 / launch / roadmap / readiness Sales Remaining cite Stage 24 N1.
 
-## G1–H24x acceptance criteria
+## G1 acceptance criteria
+
+- [x] Inventory gate Complete (MVP); Remaining multi-bin + PO Kanban polish only.
+- [x] Purchasing gate Complete (MVP); Remaining PO Kanban polish only.
+- [x] Sales gate Complete (MVP); Remaining percentage discount UI polish only.
+- [x] POS gate Complete (MVP); Remaining vendor USB/serial drivers only.
+- [x] Multi-store gate Complete (MVP); Remaining multi-bin + ADR-005 only.
+- [x] No fake-complete of Redis/Celery, AI provider, WAL, K8s, monitoring, or load gates (O1 / post-MVP).
+- [x] Automated proof: `backend/tests/test_commerce_gate_closure_g1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan synced (Stage 24 G1).
+
+## O1–H24x acceptance criteria
 
 Filled when each workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-053 open. N1 complete; G1 next. Stages 1–23 remain frozen for their scopes.
+Plan authored; ADR-053 open. N1–G1 complete; O1 next. Stages 1–23 remain frozen for their scopes.

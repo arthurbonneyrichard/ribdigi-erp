@@ -200,6 +200,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 24 N1 (2026-08-10):** Shared document numbering series fidelity — configure/preview all `DOC_KEYS`; live QT/SO/INV/SR/CN/PO/GRN allocation (`test_document_numbering_n1.py`).
 
+**Stage 24 G1 (2026-08-10):** Commerce gates closure — Inventory, Purchasing, Sales, POS, Multi-store Complete (MVP) (`test_commerce_gate_closure_g1.py`); Remaining deferred-only (Kanban, USB/serial, multi-bin, ADR-005).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -780,7 +782,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 24 open (`docs/STAGE_24_PLAN.md`, ADR-053) — N1 complete; G1 next. Stages 1–23 remain frozen for their scopes.
+**Active delivery plan:** Stage 24 open (`docs/STAGE_24_PLAN.md`, ADR-053) — N1–G1 complete; O1 next. Stages 1–23 remain frozen for their scopes.
 
 ### 6.2 Features
 
