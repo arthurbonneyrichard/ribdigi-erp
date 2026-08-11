@@ -1,6 +1,6 @@
 # Stage 44 Plan — Commercial Data Trust Fidelity
 
-**Status:** Open — E1 complete; D1 next  
+**Status:** Open — D1 complete; H44x next  
 **Base:** Data Residency / Localization Honesty Pack + Encryption / Key-Management Honesty Pack → Commercial Data Trust Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-093](ADR_093_STAGE44_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Data Trust Fidelity
 |----|------------|----------|---------|
 | **R1** | Data residency / localization honesty packaging (not multi-region residency Complete) | P0 | COMPLETE |
 | **E1** | Encryption / key-management honesty packaging (not HSM / live Vault Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H44x** | Stage 44 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -77,9 +77,9 @@ Commercial Data Trust Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_44_FIDELITY.md` maps R1–E1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 44 D1.
-- [ ] Automated proof: `backend/tests/test_stage44_fidelity_d1.py`.
+- [x] `docs/STAGE_44_FIDELITY.md` maps R1–E1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 44 D1.
+- [x] Automated proof: `backend/tests/test_stage44_fidelity_d1.py`.
 
 ## H44x acceptance criteria
 

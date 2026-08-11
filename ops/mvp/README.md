@@ -96,6 +96,7 @@ Authoritative MVP docs:
 - `docs/STAGE_44_PLAN.md` (`backend/tests/test_stage44_open.py`) — Stage 44 open (ADR-093)
 - `docs/DATA_RESIDENCY_MVP.md` (`backend/tests/test_data_residency_r1.py`) — Stage 44 R1
 - `docs/ENCRYPTION_KMS_MVP.md` (`backend/tests/test_encryption_kms_e1.py`) — Stage 44 E1
+- `docs/STAGE_44_FIDELITY.md` (`backend/tests/test_stage44_fidelity_d1.py`) — Stage 44 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -381,7 +382,7 @@ H43x met — `docs/STAGE_43_EXIT_CRITERIA.md`, ADR-092. Stages 1–43 frozen for
 
 ## Stage 44 open
 
-Commercial Data Trust Fidelity — `docs/STAGE_44_PLAN.md`, ADR-093; E1 complete; D1 next.
+Commercial Data Trust Fidelity — `docs/STAGE_44_PLAN.md`, ADR-093; D1 complete; H44x next.
 
 ## Stage 44 R1 — Data residency / localization honesty
 
@@ -390,3 +391,7 @@ Commercial Data Trust Fidelity — `docs/STAGE_44_PLAN.md`, ADR-093; E1 complete
 ## Stage 44 E1 — Encryption / key-management honesty
 
 `docs/ENCRYPTION_KMS_MVP.md` + `ops/mvp/encryption-kms.json` — packaging Complete; `hsm_claimed` / `vault_saas_live` / `customer_managed_keys_claimed` / `mtls_mesh_claimed` remain false.
+
+## Stage 44 D1 — Fidelity
+
+`docs/STAGE_44_FIDELITY.md` maps R1–E1 → readiness / launch / deploy / security (`test_stage44_fidelity_d1.py`).

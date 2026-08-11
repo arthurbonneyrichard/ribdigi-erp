@@ -448,6 +448,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 44 E1 (2026-08-11):** Encryption / key-management honesty — `docs/ENCRYPTION_KMS_MVP.md`, `ops/mvp/encryption-kms.json`, evidence `stage44_e1_encryption_kms.json` (`test_encryption_kms_e1.py`); HSM / live Vault Remaining.
 
+**Stage 44 D1 (2026-08-11):** Commercial data trust fidelity — `docs/STAGE_44_FIDELITY.md` (`test_stage44_fidelity_d1.py`); maps R1–E1 → readiness / launch / deploy / security; multi-region residency / HSM / Vault Remaining.
+
 
 
 
