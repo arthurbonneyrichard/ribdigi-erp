@@ -1465,3 +1465,5 @@ Every feature in every phase must meet:
 **Stage 69 open (2026-08-11):** MVP Commercial Go-Live Fidelity track approved — `docs/ADR_144_STAGE69_OPEN.md` + `docs/STAGE_69_PLAN.md` (Platform ↔ Tenant Consoles Ready → Pre-Flight §§1–3 → Go-Live Attestation §7 → First Commercial Day Ops → MVP Commercial Go-Live; V1 next).
 
 **Stage 69 V1 (2026-08-11):** Pre-flight verification honesty — `docs/PREFLIGHT_VERIFICATION_MVP.md`, `ops/mvp/preflight-verification.json`, evidence `stage69_v1_preflight_verification.json` (`test_preflight_verification_v1.py`); §§1–3 verified Remaining.
+
+**Stage 69 A1 (2026-08-11):** Go-live attestation honesty — `docs/GOLIVE_ATTESTATION_MVP.md`, `ops/mvp/golive-attestation.json`, evidence `stage69_a1_golive_attestation.json` (`test_golive_attestation_a1.py`); §7 signed Remaining.

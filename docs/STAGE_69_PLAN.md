@@ -1,6 +1,6 @@
 # Stage 69 Plan — MVP Commercial Go-Live Fidelity
 
-**Status:** Open — V1 complete; A1 next  
+**Status:** Open — A1 complete; D1 next  
 **Base:** Pre-Flight Verification Honesty Pack + Go-Live Attestation Honesty Pack → MVP Commercial Go-Live Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-144](ADR_144_STAGE69_OPEN.md)  
@@ -47,7 +47,7 @@ MVP Commercial Go-Live Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **V1** | Pre-flight verification honesty packaging (§§1–3 / launch-cert adjacency; not §§1–3 verified Complete) | P0 | COMPLETE |
-| **A1** | Go-live attestation honesty packaging (§7 walk / attestation adjacency; not §7 signed Complete) | P0 | PENDING |
+| **A1** | Go-live attestation honesty packaging (§7 walk / attestation adjacency; not §7 signed Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H69x** | Stage 69 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -74,12 +74,12 @@ MVP Commercial Go-Live Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] Go-live attestation honesty packaging indexing Go-Live Attestation Walk (§7) with Stage 30 attestation / Stage 31 MVP declaration adjacency (not claiming §7 signed Complete).
-- [ ] Automated proof: `backend/tests/test_golive_attestation_a1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 69 A1.
+- [x] Go-live attestation honesty packaging indexing Go-Live Attestation Walk (§7) with Stage 30 attestation / Stage 31 MVP declaration adjacency (not claiming §7 signed Complete).
+- [x] Automated proof: `backend/tests/test_golive_attestation_a1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 69 A1.
 
-**Deliverables:** `docs/GOLIVE_ATTESTATION_MVP.md`, `ops/mvp/golive-attestation.json`, evidence `stage69_a1_golive_attestation.json`.
+**Deliverables:** `docs/GOLIVE_ATTESTATION_MVP.md`, `ops/mvp/golive-attestation.json`, evidence `stage69_a1_golive_attestation.json` (`test_golive_attestation_a1.py`).
 
 ## D1 acceptance criteria
 
