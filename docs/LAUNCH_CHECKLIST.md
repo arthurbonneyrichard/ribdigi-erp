@@ -168,8 +168,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 27 track opened (ADR-059: `test_stage27_open.py`, `docs/STAGE_27_PLAN.md`)
 - [x] Stage 27 fidelity sync (D1: `test_stage27_fidelity_d1.py`, `docs/STAGE_27_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 27 exit + freeze (H27x: `test_stage27_exit_h27x.py`, `docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060)
-- [ ] Stage 28 Staging Certification Fidelity (open: `docs/STAGE_28_PLAN.md`, ADR-061) — G1 next
+- [ ] Stage 28 Staging Certification Fidelity (open: `docs/STAGE_28_PLAN.md`, ADR-061) — A1 next
 - [x] Stage 28 track opened (ADR-061: `test_stage28_open.py`, `docs/STAGE_28_PLAN.md`)
+- [x] Staging GHA deploy pack (Stage 28 G1: `test_staging_gha_g1.py` — `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml`; evidence `stage28_g1_staging_gha.json`; live apply Remaining; main CI deploy-free)
 - [x] Operator PITR drill pack (Stage 28 R1: `test_pitr_drill_pack_r1.py` — `docs/PITR_DRILL_PACK_MVP.md`, `ops/postgres/pitr-drill-checklist.json`; evidence `stage28_r1_pitr_drill_pack.json`; live drill execution remains Remaining)
 - [x] Launch certification pack (Stage 27 L1: `test_launch_cert_l1.py` — `docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`; evidence `stage27_l1_launch_cert.json`; operator §§1–3 / §7 remain unsigned)
 - [x] Security scan baseline evidence (Stage 27 S1: `test_security_scan_s1.py` — `docs/SECURITY_SCAN_MVP.md`, evidence `stage27_s1_security_scan.json`; ZAP template `ops/security/zap-baseline.example.yml` not in main CI)

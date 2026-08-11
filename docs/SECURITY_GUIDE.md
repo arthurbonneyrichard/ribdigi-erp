@@ -329,6 +329,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 27 fidelity** | D1 maps B1–L1 release evidence — `docs/STAGE_27_FIDELITY.md` (`test_stage27_fidelity_d1.py`); exit/freeze ADR-060 (`test_stage27_exit_h27x.py`); historical open ADR-059; vendor pen test / live ZAP / forged §7 sign-off remain Remaining |
 | **Stage 28 open** | Staging Certification Fidelity — `docs/STAGE_28_PLAN.md`, ADR-061 (`test_stage28_open.py`); Stages 1–27 remain frozen; R1 PITR drill / G1 staging GHA / A1 Grafana / C1 1000-VU cert pending |
 | **Stage 28 R1** | Operator PITR drill pack — `docs/PITR_DRILL_PACK_MVP.md`, `ops/postgres/pitr-drill-checklist.json` (`test_pitr_drill_pack_r1.py`); live base+WAL replay / managed-cloud Remaining; no CI PITR success claimed |
+| **Stage 28 G1** | Staging GHA deploy pack — `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml` (`test_staging_gha_g1.py`); not in main `ci.yml`; live staging apply Remaining |
 
 ### 7.3 Tenant Lifecycle Security
 

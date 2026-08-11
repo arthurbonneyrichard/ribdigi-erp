@@ -1,6 +1,6 @@
 # Stage 28 Plan — Staging Certification Fidelity
 
-**Status:** Open — R1 complete; G1 next (ADR-061)  
+**Status:** Open — R1–G1 complete; A1 next (ADR-061)  
 **Base:** Operator PITR Drill Pack + Staging GHA Workflow + Grafana/Alertmanager Packaging + 1000-VU Cert Pack → Staging Certification Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-061](ADR_061_STAGE28_OPEN.md)
@@ -35,7 +35,7 @@ Staging Certification Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **R1** | Operator PITR drill packaging / evidence harness | P0 | COMPLETE |
-| **G1** | Staging GHA deploy workflow (not main `ci.yml`) | P0 | PENDING |
+| **G1** | Staging GHA deploy workflow (not main `ci.yml`) | P0 | COMPLETE |
 | **A1** | Grafana / Alertmanager operator packaging | P0 | PENDING |
 | **C1** | Operator ~1000-VU certificate pack | P1 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
@@ -65,11 +65,11 @@ Staging Certification Fidelity
 
 ## G1 acceptance criteria
 
-- [ ] Staging-only GHA deploy workflow template (Helm/kubectl) — **not** wired into main `.github/workflows/ci.yml` (Stage 18 C1).
-- [ ] Operator docs + secrets requirements; no invented green staging apply.
-- [ ] Automated proof: `backend/tests/test_staging_gha_g1.py`.
-- [ ] DEPLOYMENT_GUIDE / K8S_DEPLOY_MVP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 28 G1.
+- [x] Staging-only GHA deploy workflow template (Helm/kubectl) — **not** wired into main `.github/workflows/ci.yml` (Stage 18 C1).
+- [x] Operator docs + secrets requirements; no invented green staging apply.
+- [x] Automated proof: `backend/tests/test_staging_gha_g1.py`.
+- [x] DEPLOYMENT_GUIDE / K8S_DEPLOY_MVP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 28 G1.
 
 ## A1 acceptance criteria
 
@@ -101,4 +101,4 @@ Staging Certification Fidelity
 
 ## Sign-off
 
-Stage 28 open under ADR-061. R1 complete; G1 next. Stages 1–27 remain frozen for their scopes.
+Stage 28 open under ADR-061. R1–G1 complete; A1 next. Stages 1–27 remain frozen for their scopes.

@@ -1,11 +1,12 @@
 # Kubernetes Deploy MVP (Stage 26 K1)
 
-**Status:** Documented — Stage 26 K1 chart / manifest / smoke fidelity  
+**Status:** Documented — Stage 26 K1 chart / manifest / smoke fidelity; Stage 28 G1 staging GHA template packaging  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Related:** Stage 18 C1 (`test_ci_prod_config_c1.py`), Stage 26 K1 (`test_k8s_deploy_k1.py`)  
-**Evidence:** `/opt/cursor/artifacts/k8s/stage26_k1_deploy_fidelity.json`
+**Related:** Stage 18 C1 (`test_ci_prod_config_c1.py`), Stage 26 K1 (`test_k8s_deploy_k1.py`), Stage 28 G1 (`test_staging_gha_g1.py`)  
+**Evidence (K1):** `/opt/cursor/artifacts/k8s/stage26_k1_deploy_fidelity.json`  
+**Evidence (G1):** `/opt/cursor/artifacts/k8s/stage28_g1_staging_gha.json` · [STAGING_GHA_MVP.md](STAGING_GHA_MVP.md)
 
-This is the **MVP Kubernetes deploy surface**: versioned Helm chart + hardened `k8s/` manifests with correct health probes, secret refs, and operator staging smoke scripts. It is **not** a claim that CI deploys to a live cluster or that managed data-plane services are provisioned by the chart.
+This is the **MVP Kubernetes deploy surface**: versioned Helm chart + hardened `k8s/` manifests with correct health probes, secret refs, and operator staging smoke scripts. Stage 28 G1 adds an optional staging GHA workflow **template** under `ops/k8s/` (not main `ci.yml`). It is **not** a claim that CI deploys to a live cluster or that managed data-plane services are provisioned by the chart.
 
 ## Artifacts
 
@@ -15,6 +16,7 @@ This is the **MVP Kubernetes deploy surface**: versioned Helm chart + hardened `
 | `k8s/` | kubectl-friendly hardened manifests |
 | `ops/k8s/helm-install-staging.sh.example` | Install helper |
 | `ops/k8s/staging-smoke.sh.example` | Rollout + ready + metrics smoke |
+| `ops/k8s/deploy-staging.example.yml` | Staging-only GHA template (Stage 28 G1) — **not** in main `ci.yml` |
 | `.env.production.example` | Secret source template (Stage 18 C1) |
 
 ## Probe contract
@@ -42,19 +44,23 @@ Managed PostgreSQL / Redis / RabbitMQ / object storage are **external**. Create 
 3. Run `ops/k8s/helm-install-staging.sh.example` (or `kubectl apply -f k8s/…`).
 4. Run `ops/k8s/staging-smoke.sh.example` — expects `/api/v1/health/ready` 200 and `ribdigi_up` in metrics.
 
-CI writes strategy/fidelity evidence only (`stage26_k1_deploy_fidelity.json` with `gha_staging_deploy_deferred=true`).
+CI writes strategy/fidelity evidence only (`stage26_k1_deploy_fidelity.json` with `gha_staging_deploy_deferred=true`). Stage 28 G1 packaging evidence (`stage28_g1_staging_gha.json`) keeps `live_staging_apply_claimed=false` and `gha_staging_wired_into_main_ci=false`.
+
+## Staging GHA template (Stage 28 G1)
+
+Optional workflow template: `ops/k8s/deploy-staging.example.yml` — documented in [STAGING_GHA_MVP.md](STAGING_GHA_MVP.md). Operators copy into `.github/workflows/` only when `KUBE_CONFIG` / registry secrets and a real staging cluster exist. Disabled stub in the template must not be treated as a green apply. Main `.github/workflows/ci.yml` stays deploy-free.
 
 ## Relationship to Stage 18 C1
 
-Single-node production Compose (`docker-compose.prod.yml` + `.env.production.example`) remains a valid MVP path. Main `.github/workflows/ci.yml` stays **deploy-free** (pytest + frontend build). K1 does not add `kubectl`/`helm upgrade` to that workflow.
+Single-node production Compose (`docker-compose.prod.yml` + `.env.production.example`) remains a valid MVP path. Main `.github/workflows/ci.yml` stays **deploy-free** (pytest + frontend build). K1 / G1 do not add `kubectl`/`helm upgrade` to that workflow.
 
 ## Explicitly deferred
 
-- Live GHA → staging/production cluster apply
+- Live GHA → staging/production cluster apply (template packaging Complete MVP — Stage 28 G1; execution Remaining)
 - In-cluster Postgres/Redis/RabbitMQ
 - Cert-manager / production TLS automation
 - Istio / full NetworkPolicy / HPA enforcement without staging proof
 
 ## Sign-off
 
-Stage 26 K1 is met when the chart/manifests encode the probe contract, operator smoke scripts exist, the guard test passes, and PRODUCTION_READINESS Kubernetes gate is Complete (MVP) with Remaining limited to live cluster apply.
+Stage 26 K1 is met when the chart/manifests encode the probe contract, operator smoke scripts exist, the guard test passes, and PRODUCTION_READINESS Kubernetes gate is Complete (MVP) with Remaining limited to live cluster apply. Stage 28 G1 is met when `docs/STAGING_GHA_MVP.md` + `ops/k8s/deploy-staging.example.yml` + `test_staging_gha_g1.py` pass without claiming live apply.
