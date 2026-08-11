@@ -1,6 +1,6 @@
 # Stage 62 Plan — Commercial IoT & AI Marketplace Fidelity
 
-**Status:** Open — I1 complete; A1 next  
+**Status:** Open — A1 complete; D1 next  
 **Base:** IoT Integration Honesty Pack + AI Model Marketplace Honesty Pack → Commercial IoT & AI Marketplace Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-129](ADR_129_STAGE62_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial IoT & AI Marketplace Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **I1** | IoT integration honesty packaging (not live smart shelves / temperature sensors Complete) | P0 | COMPLETE |
-| **A1** | AI model marketplace honesty packaging (not live industry-prediction marketplace Complete) | P0 | PENDING |
+| **A1** | AI model marketplace honesty packaging (not live industry-prediction marketplace Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H62x** | Stage 62 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -101,10 +101,10 @@ Commercial IoT & AI Marketplace Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] AI model marketplace honesty packaging indexing PRODUCT_OVERVIEW industry-prediction marketplace Long-Term themes with AI / marketplace adjacency (not claiming live AI model marketplace Complete).
-- [ ] Automated proof: `backend/tests/test_ai_model_marketplace_a1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 62 A1.
+- [x] AI model marketplace honesty packaging indexing PRODUCT_OVERVIEW industry-prediction marketplace Long-Term themes with AI / marketplace adjacency (not claiming live AI model marketplace Complete).
+- [x] Automated proof: `backend/tests/test_ai_model_marketplace_a1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 62 A1.
 
 ## D1 acceptance criteria
 
