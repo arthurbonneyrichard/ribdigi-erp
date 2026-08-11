@@ -23,3 +23,7 @@ Stage 53 Commercial API & Lifecycle Fidelity delivered API & integration commerc
 - Stage 1–52 freezes remain in force for their scopes (Stage 52 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - API & lifecycle packaging Complete does **not** mean live API rate-limit upgrade billing, connector fee billing, live cancellation portal, refund processing, live churn measurement, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 54 (Commercial Go-To-Market Fidelity) after Stage 53 freeze via CONTINUE/NEXT — see [ADR-113](ADR_113_STAGE54_OPEN.md) and [STAGE_54_PLAN.md](STAGE_54_PLAN.md). Stage 53 feature scope remains frozen; Stage 54 does not reopen A1–D1 / H53x.
