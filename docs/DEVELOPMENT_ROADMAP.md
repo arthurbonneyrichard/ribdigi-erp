@@ -340,6 +340,12 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 34 C1 (2026-08-11):** Compliance questionnaire — `docs/COMPLIANCE_QUESTIONNAIRE_MVP.md`, `ops/mvp/compliance-questionnaire.json`, evidence `stage34_c1_compliance_questionnaire.json` (`test_compliance_questionnaire_c1.py`); SOC 2 / ISO certification Remaining.
 
+**Stage 34 D1 (2026-08-11):** Commercial customer assurance fidelity sync — `docs/STAGE_34_FIDELITY.md` (`test_stage34_fidelity_d1.py`) maps A1–C1 → BR-16 / readiness / deploy / launch / security; S1/B1 deferred.
+
+**Stage 34 exit (2026-08-11):** A1, C1, D1, H34x met; S1/B1 deferred — `docs/STAGE_34_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_074_STAGE34_FREEZE.md`. Fidelity: `docs/STAGE_34_FIDELITY.md`.
+
+**Stage 35 open (2026-08-11):** Commercial End-to-End Operational Smoke Fidelity track approved — `docs/ADR_075_STAGE35_OPEN.md` + `docs/STAGE_35_PLAN.md` (Org bootstrap → Users/RBAC → Purchase-to-stock → Sale-to-payment → Verify financials → Backup/restore → fidelity).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -920,7 +926,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 34 open (`docs/STAGE_34_PLAN.md`, ADR-073) — C1 complete; S1 next. Stages 1–33 remain frozen for their scopes (`docs/STAGE_33_EXIT_CRITERIA.md`, ADR-072).
+**Active delivery plan:** Stage 35 open (`docs/STAGE_35_PLAN.md`, ADR-075) — T1 next. Stages 1–34 remain frozen for their scopes (`docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074).
 
 ### 6.2 Features
 

@@ -91,4 +91,8 @@ Maps customer questionnaire themes to Stage 33 C1 controls. See `docs/COMPLIANCE
 - Tests: `backend/tests/test_compliance_questionnaire_c1.py`
 - Honesty: `soc2_complete_claimed: false`, `iso27001_complete_claimed: false`, `questionnaire_answers_certified: false` — mapping ≠ certification
 
+## Stage 34 D1 / H34x — Assurance fidelity + exit
+
+Doc-only fidelity + freeze. See `docs/STAGE_34_FIDELITY.md`, `docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074. S1/B1 owner-deferred to Stage 35+.
+
 Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false` / `customer_assurance_claimed: false` / `attestation_claimed: false` / `questionnaire_answers_certified: false`.

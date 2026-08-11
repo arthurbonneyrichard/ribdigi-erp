@@ -355,9 +355,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 32 B1** | Post-MVP backlog — `docs/POST_MVP_BACKLOG_MVP.md`, `ops/mvp/post-mvp-backlog.json` (`test_post_mvp_backlog_b1.py`); ADR-001–006 + Remaining indexed; deferred scopes Remaining |
 | **Stage 32 D1** | Handoff fidelity — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`) maps A1–B1 → readiness / launch / deploy / security |
 | **Stage 32 fidelity** | D1 maps A1–B1 handoff evidence — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`); exit/freeze `docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070 (`test_stage32_exit_h32x.py`); historical open ADR-069; live go-live / attestation / §7 / deferred ADR implementations remain Remaining |
-| **Stage 34 open** | Commercial Customer Assurance Fidelity — `docs/STAGE_34_PLAN.md`, ADR-073 (`test_stage34_open.py`); Stages 1–33 remain frozen; C1 complete; S1 next |
+| **Stage 35 open** | Commercial End-to-End Operational Smoke Fidelity — `docs/STAGE_35_PLAN.md`, ADR-075 (`test_stage35_open.py`); Stages 1–34 remain frozen; T1 next |
+| **Stage 34 open** | Commercial Customer Assurance Fidelity — `docs/STAGE_34_PLAN.md`, ADR-073 (`test_stage34_open.py`); Stages 1–33 remain frozen; closed under ADR-074; S1/B1 deferred |
 | **Stage 34 A1** | Assurance evidence — `docs/ASSURANCE_EVIDENCE_MVP.md`, `ops/mvp/assurance-evidence.json` (`test_assurance_evidence_a1.py`); live attestation / §7 Remaining |
 | **Stage 34 C1** | Compliance questionnaire — `docs/COMPLIANCE_QUESTIONNAIRE_MVP.md`, `ops/mvp/compliance-questionnaire.json` (`test_compliance_questionnaire_c1.py`); SOC 2 / ISO certification Remaining |
+| **Stage 34 D1** | Assurance fidelity — `docs/STAGE_34_FIDELITY.md` (`test_stage34_fidelity_d1.py`) maps A1–C1 → readiness / launch / deploy / security |
+| **Stage 34 fidelity** | D1 maps A1–C1 assurance evidence — `docs/STAGE_34_FIDELITY.md` (`test_stage34_fidelity_d1.py`); exit/freeze `docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074 (`test_stage34_exit_h34x.py`); historical open ADR-073; S1/B1 deferred; live attestation / §7 / SOC 2 / ISO remain Remaining |
 | **Stage 33 open** | Commercial MVP Continuity Fidelity — `docs/STAGE_33_PLAN.md`, ADR-071 (`test_stage33_open.py`); Stages 1–32 remain frozen; closed under ADR-072 |
 | **Stage 33 K1** | Residual risk register — `docs/RESIDUAL_RISK_MVP.md`, `ops/mvp/residual-risk-register.json` (`test_residual_risk_k1.py`); risks closed / go-live Remaining |
 | **Stage 33 C1** | Compliance readiness — `docs/COMPLIANCE_READINESS_MVP.md`, `ops/mvp/compliance-readiness-register.json` (`test_compliance_readiness_c1.py`); SOC 2 / ISO certification Remaining |

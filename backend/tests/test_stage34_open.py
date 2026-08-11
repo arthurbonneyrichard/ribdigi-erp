@@ -18,6 +18,12 @@ def test_stage34_plan_and_open_adr():
     assert "ADR-073" in plan or "ADR_073" in plan
     for ws in ("A1", "C1", "S1", "B1", "D1", "H34x"):
         assert f"| **{ws}** |" in plan, ws
+    for ws in ("A1", "C1"):
+        line = [ln for ln in plan.splitlines() if f"| **{ws}** |" in ln][0]
+        assert "COMPLETE" in line or "PENDING" in line or "DEFERRED" in line, ws
+    for ws in ("S1", "B1"):
+        line = [ln for ln in plan.splitlines() if f"| **{ws}** |" in ln][0]
+        assert "PENDING" in line or "DEFERRED" in line or "COMPLETE" in line, ws
     assert (
         "PENDING" in plan
         or "A1 next" in plan
