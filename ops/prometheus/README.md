@@ -26,8 +26,8 @@ Open `http://127.0.0.1:9090` and confirm target `ribdigi-backend` and rules unde
 
 ## Deferred
 
-- Hosted Grafana dashboards
-- Alertmanager → PagerDuty wiring
+- Hosted Grafana-as-a-service Complete (Stage 28 A1 packages examples under `ops/grafana/` — see `docs/GRAFANA_PACK_MVP.md`)
+- Alertmanager → PagerDuty production wiring Complete
 - Centralized SIEM
 
-See `docs/OPS_MONITORING_MVP.md`.
+See `docs/OPS_MONITORING_MVP.md` and `docs/GRAFANA_PACK_MVP.md` (`test_grafana_pack_a1.py`).

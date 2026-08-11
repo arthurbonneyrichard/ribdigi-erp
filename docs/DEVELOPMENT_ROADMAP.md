@@ -256,6 +256,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 28 G1 (2026-08-11):** Staging GHA deploy workflow pack — `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml` (not main `ci.yml`), evidence `stage28_g1_staging_gha.json` (`test_staging_gha_g1.py`); live staging apply Remaining.
 
+**Stage 28 A1 (2026-08-11):** Grafana / Alertmanager operator pack — `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/dashboard-ribdigi-mvp.json.example`, `ops/grafana/alertmanager.yml.example`, evidence `stage28_a1_grafana_pack.json` (`test_grafana_pack_a1.py`); hosted SaaS Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -836,7 +838,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 28 open (`docs/STAGE_28_PLAN.md`, ADR-061) — R1–G1 complete; A1 next. Stages 1–27 remain frozen for their scopes (`docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060).
+**Active delivery plan:** Stage 28 open (`docs/STAGE_28_PLAN.md`, ADR-061) — R1–A1 complete; C1 next. Stages 1–27 remain frozen for their scopes (`docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060).
 
 ### 6.2 Features
 

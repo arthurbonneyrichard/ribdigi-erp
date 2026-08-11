@@ -1,0 +1,94 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Prometheus scraping RIBDIGI /api/v1/metrics",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "title": "ribdigi_up",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "ribdigi_up",
+          "legendFormat": "up",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+      "id": 2,
+      "title": "HTTP request rate by status",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(ribdigi_http_requests_total[5m]))",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "title": "Mean request latency",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(ribdigi_http_request_duration_seconds_sum[5m])) / clamp_min(sum(rate(ribdigi_http_request_duration_seconds_count[5m])), 1e-9)",
+          "legendFormat": "mean",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "title": "HTTP 5xx error rate",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(ribdigi_http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(ribdigi_http_requests_total[5m])), 1e-9)",
+          "legendFormat": "5xx rate",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "tags": ["ribdigi", "mvp", "stage28-a1"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "RIBDIGI ERP MVP (operator example)",
+  "uid": "ribdigi-mvp-example",
+  "version": 1,
+  "description": "Stage 28 A1 operator example dashboard over Stage 5/26 metrics. Not a hosted Grafana SaaS Complete claim. See docs/GRAFANA_PACK_MVP.md."
+}

@@ -168,8 +168,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 27 track opened (ADR-059: `test_stage27_open.py`, `docs/STAGE_27_PLAN.md`)
 - [x] Stage 27 fidelity sync (D1: `test_stage27_fidelity_d1.py`, `docs/STAGE_27_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 27 exit + freeze (H27x: `test_stage27_exit_h27x.py`, `docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060)
-- [ ] Stage 28 Staging Certification Fidelity (open: `docs/STAGE_28_PLAN.md`, ADR-061) — A1 next
+- [ ] Stage 28 Staging Certification Fidelity (open: `docs/STAGE_28_PLAN.md`, ADR-061) — C1 next
 - [x] Stage 28 track opened (ADR-061: `test_stage28_open.py`, `docs/STAGE_28_PLAN.md`)
+- [x] Grafana / Alertmanager pack (Stage 28 A1: `test_grafana_pack_a1.py` — `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/`; evidence `stage28_a1_grafana_pack.json`; hosted SaaS Remaining)
 - [x] Staging GHA deploy pack (Stage 28 G1: `test_staging_gha_g1.py` — `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml`; evidence `stage28_g1_staging_gha.json`; live apply Remaining; main CI deploy-free)
 - [x] Operator PITR drill pack (Stage 28 R1: `test_pitr_drill_pack_r1.py` — `docs/PITR_DRILL_PACK_MVP.md`, `ops/postgres/pitr-drill-checklist.json`; evidence `stage28_r1_pitr_drill_pack.json`; live drill execution remains Remaining)
 - [x] Launch certification pack (Stage 27 L1: `test_launch_cert_l1.py` — `docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`; evidence `stage27_l1_launch_cert.json`; operator §§1–3 / §7 remain unsigned)
@@ -192,7 +193,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 Record as **ops follow-ups**, not Stage 7 incompletes:
 
 - Live GHA → staging K8s apply (Stage 26 K1 chart Complete — `docs/K8S_DEPLOY_MVP.md`; main CI stays deploy-free)
-- Hosted Grafana / PagerDuty / SIEM (Stage 26 M1 scrape/alerts Complete)
+- Hosted Grafana / PagerDuty / SIEM **as SaaS Complete** (Stage 26 M1 scrape/alerts + Stage 28 A1 Grafana/Alertmanager **packaging** Complete MVP — `docs/GRAFANA_PACK_MVP.md`; examples only)
 - Operator staging PITR drill **execution** / managed-cloud PITR automation (Stage 26 W1 strategy + Stage 28 R1 drill pack Complete MVP — `docs/PITR_DRILL_PACK_MVP.md`; packaging only, not live replay)
 - Vendor penetration test / live ZAP-in-CI against staging (Stage 27 S1 OWASP baseline Complete MVP — `docs/SECURITY_SCAN_MVP.md`; operator ZAP template only)
 - In-cluster Helm PgBouncer as default data plane (Stage 27 P1 packaging Complete MVP — `docs/PGBOUNCER_MVP.md`)

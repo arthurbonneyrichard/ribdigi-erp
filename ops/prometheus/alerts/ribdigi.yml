@@ -1,6 +1,8 @@
 # Stage 26 M1 — Prometheus alert rules over ribdigi_* series and readiness probe.
 # Evaluated when ops/prometheus/prometheus.yml rule_files are loaded.
-# Hosted Grafana / Alertmanager → PagerDuty remains deferred (see OPS_MONITORING_MVP.md).
+# Stage 28 A1 packages Alertmanager example under ops/grafana/alertmanager.yml.example
+# (PagerDuty commented). Hosted Grafana / Alertmanager → PagerDuty remains deferred
+# (see OPS_MONITORING_MVP.md / GRAFANA_PACK_MVP.md).
 
 groups:
   - name: ribdigi-mvp

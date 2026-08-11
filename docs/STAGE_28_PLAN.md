@@ -1,6 +1,6 @@
 # Stage 28 Plan — Staging Certification Fidelity
 
-**Status:** Open — R1–G1 complete; A1 next (ADR-061)  
+**Status:** Open — R1–A1 complete; C1 next (ADR-061)  
 **Base:** Operator PITR Drill Pack + Staging GHA Workflow + Grafana/Alertmanager Packaging + 1000-VU Cert Pack → Staging Certification Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-061](ADR_061_STAGE28_OPEN.md)
@@ -36,7 +36,7 @@ Staging Certification Fidelity
 |----|------------|----------|---------|
 | **R1** | Operator PITR drill packaging / evidence harness | P0 | COMPLETE |
 | **G1** | Staging GHA deploy workflow (not main `ci.yml`) | P0 | COMPLETE |
-| **A1** | Grafana / Alertmanager operator packaging | P0 | PENDING |
+| **A1** | Grafana / Alertmanager operator packaging | P0 | COMPLETE |
 | **C1** | Operator ~1000-VU certificate pack | P1 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
 | **H28x** | Stage 28 exit criteria + freeze ADR | Exit | PENDING |
@@ -73,10 +73,10 @@ Staging Certification Fidelity
 
 ## A1 acceptance criteria
 
-- [ ] Grafana / Alertmanager operator packaging extending `docs/OPS_MONITORING_MVP.md` / `ops/prometheus/` (dashboards/alerts as examples — not hosted SaaS Complete).
-- [ ] Automated proof: `backend/tests/test_grafana_pack_a1.py`.
-- [ ] PRODUCTION_READINESS monitoring Remaining honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 28 A1.
+- [x] Grafana / Alertmanager operator packaging extending `docs/OPS_MONITORING_MVP.md` / `ops/prometheus/` (dashboards/alerts as examples — not hosted SaaS Complete).
+- [x] Automated proof: `backend/tests/test_grafana_pack_a1.py`.
+- [x] PRODUCTION_READINESS monitoring Remaining honesty updated.
+- [x] Plan / launch / roadmap cite Stage 28 A1.
 
 ## C1 acceptance criteria
 
@@ -101,4 +101,4 @@ Staging Certification Fidelity
 
 ## Sign-off
 
-Stage 28 open under ADR-061. R1–G1 complete; A1 next. Stages 1–27 remain frozen for their scopes.
+Stage 28 open under ADR-061. R1–A1 complete; C1 next. Stages 1–27 remain frozen for their scopes.
