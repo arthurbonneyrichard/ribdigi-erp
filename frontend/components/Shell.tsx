@@ -25,6 +25,7 @@ const items: [string, string, string][] = [
   ['Reports', '/reports', 'reports'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
+  ['Activity', '/activity', 'audit'],
   ['Backup', '/backup', 'backup'],
   ['Security', '/security', 'security'],
   ['AI Assistant', '/ai', 'ai'],
@@ -222,6 +223,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     '/admin/roles',
     '/admin/permissions',
     '/audit',
+    '/activity',
     '/backup',
     '/security',
   ]);

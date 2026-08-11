@@ -2807,6 +2807,66 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     return env(payload)
 
 
+@api.get("/dashboard/summary")
+async def dashboard_summary(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import dashboard_slices as slices_svc
+
+    return env(await slices_svc.summary_slice(db, claims))
+
+
+@api.get("/dashboard/sales-trend")
+async def dashboard_sales_trend(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import dashboard_slices as slices_svc
+
+    return env(await slices_svc.sales_trend(db, claims))
+
+
+@api.get("/dashboard/top-products")
+async def dashboard_top_products(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import dashboard_slices as slices_svc
+
+    return env(await slices_svc.top_products(db, claims))
+
+
+@api.get("/dashboard/expenses")
+async def dashboard_expenses(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import dashboard_slices as slices_svc
+
+    return env(await slices_svc.expenses_slice(db, claims))
+
+
+@api.get("/dashboard/stock-alerts")
+async def dashboard_stock_alerts(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import dashboard_slices as slices_svc
+
+    return env(await slices_svc.stock_alerts(db, claims))
+
+
+@api.get("/dashboard/user-stats")
+async def dashboard_user_stats(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import dashboard_slices as slices_svc
+
+    return env(await slices_svc.user_stats_slice(db, claims))
+
+
 @api.get("/products")
 async def products(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
     tid = claims["tenant_id"]

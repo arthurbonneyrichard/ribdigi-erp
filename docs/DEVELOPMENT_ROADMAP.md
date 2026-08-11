@@ -1591,3 +1591,13 @@ Every feature in every phase must meet:
 **Stage 81 D1 (2026-08-11):** Dual-Console Admin fidelity sync — `docs/STAGE_81_FIDELITY.md` (`test_stage81_fidelity_d1.py`); maps A1–S1 → readiness / launch / deploy / security.
 
 **Stage 81 exit (2026-08-11):** A1, S1, D1, H81x met — `docs/STAGE_81_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_169_STAGE81_FREEZE.md`. Fidelity: `docs/STAGE_81_FIDELITY.md`.
+
+**Stage 82 open (2026-08-11):** Dual-Console Surface Parity track approved — `docs/ADR_170_STAGE82_OPEN.md` + `docs/STAGE_82_PLAN.md` (Tenant Dashboard Chart Subroutes → Platform Plans Console → Dual-Console Surface Parity; C1 next).
+
+**Stage 82 C1 (2026-08-11):** Tenant dashboard chart/KPI subroutes — `/api/v1/dashboard/*` slices (`test_dashboard_slices_c1.py`).
+
+**Stage 82 P1 (2026-08-11):** Platform Plans console + Activity alias — `/platform/plans` (`test_platform_plans_p1.py`); ADR-002 billing Remaining.
+
+**Stage 82 D1 (2026-08-11):** Dual-Console Surface Parity fidelity sync — `docs/STAGE_82_FIDELITY.md` (`test_stage82_fidelity_d1.py`); maps C1–P1 → readiness / launch / deploy / security.
+
+**Stage 82 exit (2026-08-11):** C1, P1, D1, H82x met — `docs/STAGE_82_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_171_STAGE82_FREEZE.md`. Fidelity: `docs/STAGE_82_FIDELITY.md`.

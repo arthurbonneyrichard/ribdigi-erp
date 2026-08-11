@@ -267,6 +267,28 @@ async def platform_set_tenant_plan(
     return env(data, message="plan_code updated (billing deferred)")
 
 
+@router.get("/plans")
+async def platform_plans_catalog(
+    claims: dict = Depends(require_platform_permission("platform_plans", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Metadata plan catalog + distribution (ADR-002 — no payment / fabricated MRR)."""
+    distribution = await platform_svc.platform_plan_distribution(db)
+    return env(
+        {
+            "deferred_billing": True,
+            "mrr": None,
+            "checkout_enabled": False,
+            "message": (
+                "Plan codes are commercial metadata only. Subscription billing is deferred "
+                "(ADR-002); no payment provider and no fabricated MRR."
+            ),
+            "plan_codes": sorted(tenants_svc.VALID_PLAN_CODES),
+            "distribution": distribution,
+        }
+    )
+
+
 @router.get("/billing")
 async def platform_billing_honesty(
     claims: dict = Depends(require_platform_permission("platform_billing", "read")),

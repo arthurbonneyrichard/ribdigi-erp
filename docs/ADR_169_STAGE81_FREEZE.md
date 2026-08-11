@@ -27,4 +27,8 @@ Stage 81 Dual-Console Admin Fidelity delivered Tenant Admin RBAC console surface
 
 ## Next stage
 
-Stage 82+ requires CONTINUE/NEXT with a distinct product outline and open ADR.
+Stage 82 opened via ADR-170 (`docs/ADR_170_STAGE82_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 82 (Dual-Console Surface Parity — Tenant Dashboard Chart Subroutes → Platform Plans Console → Dual-Console Surface Parity) after Stage 81 freeze via CONTINUE/NEXT — see [ADR-170](ADR_170_STAGE82_OPEN.md) and [STAGE_82_PLAN.md](STAGE_82_PLAN.md). Stage 81 feature scope remains frozen; Stage 82 does not reopen A1–D1 / H81x.

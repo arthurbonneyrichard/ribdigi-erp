@@ -1,0 +1,220 @@
+"""Tenant dashboard KPI/chart slices (Stage 82 C1) — permission-filtered subroute payloads."""
+
+from __future__ import annotations
+
+from datetime import datetime
+
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import models as m
+from app import dashboard_charts as dashboard_charts_svc
+from app import dashboard_views as dashboard_views_svc
+from app.rbac import ROLE_LABELS, list_system_role_catalog
+
+
+def _meta(claims: dict) -> dict:
+    role = claims.get("role") or ""
+    return {
+        "role_label": ROLE_LABELS.get(role, role),
+        "kpi_links": {},
+    }
+
+
+async def sales_trend(db: AsyncSession, claims: dict) -> dict:
+    tid = claims["tenant_id"]
+    series = await dashboard_charts_svc.load_revenue_chart_series(
+        db, tenant_id=tid, now=datetime.utcnow()
+    )
+    payload = {
+        **_meta(claims),
+        "daily_revenue_series": series["daily_revenue_series"],
+        "monthly_revenue_series": series["monthly_revenue_series"],
+    }
+    return dashboard_views_svc.filter_dashboard_payload(payload, claims)
+
+
+async def top_products(db: AsyncSession, claims: dict) -> dict:
+    tid = claims["tenant_id"]
+    top_rows = (
+        await db.execute(
+            select(
+                m.Product.id,
+                m.Product.name,
+                m.Product.sku,
+                func.coalesce(func.sum(m.SalesInvoiceItem.quantity), 0).label("qty"),
+                func.coalesce(func.sum(m.SalesInvoiceItem.line_total), 0).label("revenue"),
+            )
+            .join(m.SalesInvoiceItem, m.SalesInvoiceItem.product_id == m.Product.id)
+            .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
+            .where(
+                m.Product.tenant_id == tid,
+                m.SalesInvoice.tenant_id == tid,
+                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+            )
+            .group_by(m.Product.id, m.Product.name, m.Product.sku)
+            .order_by(func.coalesce(func.sum(m.SalesInvoiceItem.line_total), 0).desc())
+            .limit(5)
+        )
+    ).all()
+    products = [
+        {
+            "id": row.id,
+            "name": row.name,
+            "sku": row.sku,
+            "quantity": float(row.qty or 0),
+            "revenue": float(row.revenue or 0),
+        }
+        for row in top_rows
+    ]
+    payload = {**_meta(claims), "top_products": products}
+    return dashboard_views_svc.filter_dashboard_payload(payload, claims)
+
+
+async def stock_alerts(db: AsyncSession, claims: dict) -> dict:
+    tid = claims["tenant_id"]
+    now = datetime.utcnow()
+    from datetime import timedelta
+
+    expiry_horizon = now + timedelta(days=30)
+
+    async def scalar(stmt):
+        return (await db.execute(stmt)).scalar() or 0
+
+    low = await scalar(
+        select(func.count(m.Product.id)).where(
+            m.Product.tenant_id == tid,
+            m.Product.stock_qty <= m.Product.reorder_level,
+        )
+    )
+    out_of_stock = await scalar(
+        select(func.count(m.Product.id)).where(
+            m.Product.tenant_id == tid,
+            m.Product.stock_qty <= 0,
+        )
+    )
+    expiring_batches = await scalar(
+        select(func.count(m.ProductBatch.id)).where(
+            m.ProductBatch.tenant_id == tid,
+            m.ProductBatch.expiry_date.is_not(None),
+            m.ProductBatch.expiry_date >= now,
+            m.ProductBatch.expiry_date <= expiry_horizon,
+            m.ProductBatch.quantity > 0,
+        )
+    )
+    products = await scalar(select(func.count(m.Product.id)).where(m.Product.tenant_id == tid))
+    payload = {
+        **_meta(claims),
+        "products": int(products),
+        "low_stock": int(low),
+        "out_of_stock": int(out_of_stock),
+        "expiring_batches": int(expiring_batches),
+    }
+    return dashboard_views_svc.filter_dashboard_payload(payload, claims)
+
+
+async def expenses_slice(db: AsyncSession, claims: dict) -> dict:
+    tid = claims["tenant_id"]
+    total = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
+                m.Expense.tenant_id == tid,
+                m.Expense.status == "approved",
+            )
+        )
+    ).scalar() or 0
+    payload = {**_meta(claims), "total_expenses": float(total)}
+    return dashboard_views_svc.filter_dashboard_payload(payload, claims)
+
+
+async def user_stats_slice(db: AsyncSession, claims: dict) -> dict:
+    tid = claims["tenant_id"]
+    from datetime import timedelta
+
+    day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    async def scalar(stmt):
+        return (await db.execute(stmt)).scalar() or 0
+
+    user_total = await scalar(select(func.count(m.User.id)).where(m.User.tenant_id == tid))
+    user_active = await scalar(
+        select(func.count(m.User.id)).where(m.User.tenant_id == tid, m.User.is_active == True)  # noqa: E712
+    )
+    role_count = await scalar(
+        select(func.count(m.CustomRole.id)).where(m.CustomRole.tenant_id == tid)
+    )
+    recent_logins = await scalar(
+        select(func.count(func.distinct(m.AuthSession.user_id))).where(
+            m.AuthSession.tenant_id == tid,
+            m.AuthSession.revoked_at.is_(None),
+            m.AuthSession.created_at >= day_start - timedelta(days=7),
+        )
+    )
+    payload = {
+        **_meta(claims),
+        "user_stats": {
+            "total_users": int(user_total),
+            "active_users": int(user_active),
+            "inactive_users": int(user_total) - int(user_active),
+            "custom_roles": int(role_count),
+            "system_roles": len(list_system_role_catalog()),
+            "recent_logins_7d": int(recent_logins),
+        },
+    }
+    return dashboard_views_svc.filter_dashboard_payload(payload, claims)
+
+
+async def summary_slice(db: AsyncSession, claims: dict) -> dict:
+    """Compact KPI card payload (permission-filtered)."""
+    tid = claims["tenant_id"]
+
+    async def scalar(stmt):
+        return (await db.execute(stmt)).scalar() or 0
+
+    sales = float(
+        await scalar(
+            select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+                m.SalesInvoice.tenant_id == tid,
+                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+            )
+        )
+    )
+    pos = float(
+        await scalar(
+            select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+                m.Transaction.tenant_id == tid,
+                m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+            )
+        )
+    )
+    expenses = float(
+        await scalar(
+            select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
+                m.Expense.tenant_id == tid,
+                m.Expense.status == "approved",
+            )
+        )
+    )
+    products = int(await scalar(select(func.count(m.Product.id)).where(m.Product.tenant_id == tid)))
+    low = int(
+        await scalar(
+            select(func.count(m.Product.id)).where(
+                m.Product.tenant_id == tid,
+                m.Product.stock_qty <= m.Product.reorder_level,
+            )
+        )
+    )
+    customers = int(
+        await scalar(
+            select(func.count(m.Party.id)).where(m.Party.tenant_id == tid, m.Party.kind == "customer")
+        )
+    )
+    payload = {
+        **_meta(claims),
+        "total_sales": sales + pos,
+        "total_expenses": expenses,
+        "products": products,
+        "low_stock": low,
+        "customers": customers,
+    }
+    return dashboard_views_svc.filter_dashboard_payload(payload, claims)

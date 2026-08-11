@@ -9,6 +9,7 @@ import { canReadModule } from '../lib/rbac';
 const items: [string, string, string][] = [
   ['Dashboard', '/platform/dashboard', 'platform_dashboard'],
   ['Tenants', '/platform/tenants', 'platform_tenants'],
+  ['Plans', '/platform/plans', 'platform_plans'],
   ['Users', '/platform/users', 'platform_users'],
   ['Billing', '/platform/billing', 'platform_billing'],
   ['Settings', '/platform/settings', 'platform_settings'],

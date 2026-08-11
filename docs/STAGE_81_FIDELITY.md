@@ -24,7 +24,7 @@ Stage 81 proves Dual-Console Admin Fidelity after Stage 80 freeze — **Tenant A
 | **A1** | `test_admin_console_a1.py` — Shell + `/admin/roles` + `/admin/permissions` | BR-3 users / Tenant Admin | Activity route alias polish |
 | **S1** | `test_store_scoped_manager_s1.py` — store_scope + isolation matrix | ADR-005 adjacency / BR-4 | Full membership table (ADR-005) |
 | **D1** | This note + `test_stage81_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H81x** | `STAGE_81_EXIT_CRITERIA.md`; ADR-169; `test_stage81_exit_h81x.py` | Stage 81 exit + freeze | Stage 82+ requires CONTINUE/NEXT |
+| **H81x** | `STAGE_81_EXIT_CRITERIA.md`; ADR-169; `test_stage81_exit_h81x.py` | Stage 81 exit + freeze | Stage 82 opened via ADR-170 |
 
 ## Evidence tests
 

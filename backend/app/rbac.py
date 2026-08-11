@@ -124,6 +124,7 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/reports": "reports",
     "/notifications": "notifications",
     "/audit": "audit",
+    "/activity": "audit",
     "/backup": "backup",
     "/security": "security",
     "/ai": "ai",
