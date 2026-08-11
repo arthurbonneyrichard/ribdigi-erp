@@ -67,6 +67,7 @@
 | `business-metrics.json` | Stage 58 B1 Business metrics honesty — `mrr_measured_claimed: false` / `paying_customers_measured_claimed: false` / `nrr_grr_measured_claimed: false` / `business_metrics_program_live: false` |
 | `ai-metrics.json` | Stage 58 I1 AI metrics honesty — `ai_feature_adoption_measured_claimed: false` / `prediction_accuracy_measured_claimed: false` / `chat_resolution_measured_claimed: false` / `ai_metrics_program_live: false` |
 | `ecommerce-integration.json` | Stage 59 E1 E-commerce integration honesty — `shopify_connector_live_claimed: false` / `woocommerce_connector_live_claimed: false` / `ecommerce_sync_program_live: false` / `ecommerce_integration_program_live: false` |
+| `crm-commercial.json` | Stage 59 C1 CRM commercial honesty — `crm_module_live_claimed: false` / `customer_segmentation_live_claimed: false` / `crm_pipeline_program_live: false` / `crm_commercial_program_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -199,6 +200,7 @@ Authoritative MVP docs:
 - `docs/STAGE_58_EXIT_CRITERIA.md` / `docs/ADR_122_STAGE58_FREEZE.md` (`backend/tests/test_stage58_exit_h58x.py`) — Stage 58 H58x
 - `docs/STAGE_59_PLAN.md` (`backend/tests/test_stage59_open.py`) — Stage 59 open (ADR-123)
 - `docs/ECOMMERCE_INTEGRATION_MVP.md` (`backend/tests/test_ecommerce_integration_e1.py`) — Stage 59 E1
+- `docs/CRM_COMMERCIAL_MVP.md` (`backend/tests/test_crm_commercial_c1.py`) — Stage 59 C1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -784,8 +786,12 @@ H58x met — `docs/STAGE_58_EXIT_CRITERIA.md`, ADR-122. Stages 1–58 frozen for
 
 ## Stage 59 open
 
-Commercial Channel Extensions Fidelity — `docs/STAGE_59_PLAN.md`, ADR-123; Open — E1 complete; C1 next.
+Commercial Channel Extensions Fidelity — `docs/STAGE_59_PLAN.md`, ADR-123; Open — C1 complete; D1 next.
 
 ## Stage 59 E1 — E-commerce integration honesty
 
 `docs/ECOMMERCE_INTEGRATION_MVP.md` + `ops/mvp/ecommerce-integration.json` — packaging Complete; `shopify_connector_live_claimed` / `woocommerce_connector_live_claimed` / `ecommerce_sync_program_live` / `ecommerce_integration_program_live` remain false.
+
+## Stage 59 C1 — CRM commercial honesty
+
+`docs/CRM_COMMERCIAL_MVP.md` + `ops/mvp/crm-commercial.json` — packaging Complete; `crm_module_live_claimed` / `customer_segmentation_live_claimed` / `crm_pipeline_program_live` / `crm_commercial_program_live` remain false.

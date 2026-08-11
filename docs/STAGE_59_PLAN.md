@@ -1,6 +1,6 @@
 # Stage 59 Plan — Commercial Channel Extensions Fidelity
 
-**Status:** Open — E1 complete; C1 next  
+**Status:** Open — C1 complete; D1 next  
 **Base:** E-Commerce Integration Honesty Pack + CRM Commercial Honesty Pack → Commercial Channel Extensions Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-123](ADR_123_STAGE59_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Channel Extensions Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **E1** | E-commerce integration honesty packaging (not live Shopify / WooCommerce connector Complete) | P0 | COMPLETE |
-| **C1** | CRM commercial honesty packaging (not live CRM module / segmentation Complete) | P0 | PENDING |
+| **C1** | CRM commercial honesty packaging (not live CRM module / segmentation Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H59x** | Stage 59 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -97,10 +97,10 @@ Commercial Channel Extensions Fidelity
 
 ## C1 acceptance criteria
 
-- [ ] CRM commercial honesty packaging indexing PRODUCT_OVERVIEW CRM / customer segmentation Mid-Term themes with Stage 49–58 GTM / sales adjacency (not claiming live CRM module / segmentation Complete).
-- [ ] Automated proof: `backend/tests/test_crm_commercial_c1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 59 C1.
+- [x] CRM commercial honesty packaging indexing PRODUCT_OVERVIEW CRM / customer segmentation Mid-Term themes with Stage 49–58 GTM / sales adjacency (not claiming live CRM module / segmentation Complete).
+- [x] Automated proof: `backend/tests/test_crm_commercial_c1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 59 C1.
 
 ## D1 acceptance criteria
 

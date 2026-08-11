@@ -182,8 +182,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 49 Commercial Channel & Pricing Fidelity (closed: `docs/STAGE_49_PLAN.md`, ADR-104) — R1–D1 / H49x complete
 - [x] Stage 50 Commercial Acquisition & Trial Fidelity (closed: `docs/STAGE_50_PLAN.md`, ADR-106) — R1–D1 / H50x complete
 - [x] Stage 51 Commercial Marketplace & Add-Ons Fidelity (closed: `docs/STAGE_51_PLAN.md`, ADR-108) — M1–D1 / H51x complete
-- [x] Stage 59 track opened (ADR-123: `test_stage59_open.py`, `docs/STAGE_59_PLAN.md`) — Commercial Channel Extensions Fidelity; E1 complete; C1 next
+- [x] Stage 59 track opened (ADR-123: `test_stage59_open.py`, `docs/STAGE_59_PLAN.md`) — Commercial Channel Extensions Fidelity; C1 complete; D1 next
 - [x] E-commerce integration honesty (Stage 59 E1: `test_ecommerce_integration_e1.py` — `docs/ECOMMERCE_INTEGRATION_MVP.md`, `ops/mvp/ecommerce-integration.json`; evidence `stage59_e1_ecommerce_integration.json`; live Shopify / WooCommerce Remaining)
+- [x] CRM commercial honesty (Stage 59 C1: `test_crm_commercial_c1.py` — `docs/CRM_COMMERCIAL_MVP.md`, `ops/mvp/crm-commercial.json`; evidence `stage59_c1_crm_commercial.json`; live CRM module / segmentation Remaining)
 - [x] Stage 58 track opened (ADR-121: `test_stage58_open.py`, `docs/STAGE_58_PLAN.md`) — Commercial Business & AI Metrics Fidelity; closed under ADR-122
 - [x] Business metrics honesty (Stage 58 B1: `test_business_metrics_b1.py` — `docs/BUSINESS_METRICS_MVP.md`, `ops/mvp/business-metrics.json`; evidence `stage58_b1_business_metrics.json`; measured MRR / NRR Remaining)
 - [x] AI metrics honesty (Stage 58 I1: `test_ai_metrics_i1.py` — `docs/AI_METRICS_MVP.md`, `ops/mvp/ai-metrics.json`; evidence `stage58_i1_ai_metrics.json`; measured AI adoption / accuracy Remaining)
