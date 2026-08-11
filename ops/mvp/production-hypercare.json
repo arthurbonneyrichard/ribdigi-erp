@@ -1,0 +1,153 @@
+{
+  "stage": "67",
+  "workstream": "H1",
+  "doc": "docs/PRODUCTION_HYPERCARE_MVP.md",
+  "stage67_plan": "docs/STAGE_67_PLAN.md",
+  "incident_doc": "docs/INCIDENT_PACK_MVP.md",
+  "incident_checklist": "ops/incident/incident-checklist.json",
+  "support_runbook_doc": "docs/SUPPORT_RUNBOOK_MVP.md",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "ops_monitoring_doc": "docs/OPS_MONITORING_MVP.md",
+  "production_launch_doc": "docs/PRODUCTION_LAUNCH_MVP.md",
+  "production_launch": "ops/mvp/production-launch.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "production_hypercare_live_claimed": false,
+  "incident_drill_executed": false,
+  "oncall_rota_live": false,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage67_h1_production_hypercare.json",
+  "steps": [
+    {
+      "id": "ph-owner-outline",
+      "category": "hypercare",
+      "title": "Index owner Production Hypercare Window path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_67_PLAN.md",
+        "docs/ADR_140_STAGE67_OPEN.md"
+      ],
+      "source": "docs/STAGE_67_PLAN.md"
+    },
+    {
+      "id": "ph-incident",
+      "category": "hypercare",
+      "title": "Link Stage 30 incident pack as hypercare adjacency (incident drill Remaining \u2260 hypercare Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "ops/incident/incident-checklist.json"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "ph-support-runbook",
+      "category": "hypercare",
+      "title": "Link Stage 30 support runbook as hypercare support adjacency (runbook \u2260 live support)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_RUNBOOK_MVP.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "docs/SUPPORT_RUNBOOK_MVP.md"
+    },
+    {
+      "id": "ph-support-sla",
+      "category": "hypercare",
+      "title": "Link Stage 36 support SLA boundary as adjacency (SLA claimed Remaining \u2260 hypercare Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "ph-monitoring",
+      "category": "hypercare",
+      "title": "Link Stage 26 ops monitoring as observability adjacency (monitoring packaging \u2260 hypercare live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPS_MONITORING_MVP.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "docs/OPS_MONITORING_MVP.md"
+    },
+    {
+      "id": "ph-production-launch",
+      "category": "hypercare",
+      "title": "Link Stage 66 L1 production launch as adjacency (live cutover / \u00a77 Remaining \u2260 hypercare Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCTION_LAUNCH_MVP.md",
+        "ops/mvp/production-launch.json"
+      ],
+      "source": "docs/PRODUCTION_LAUNCH_MVP.md"
+    },
+    {
+      "id": "ph-plan-honesty",
+      "category": "hypercare",
+      "title": "Confirm Stage 67 plan explicitly defers live hypercare / incident drill / support SLA",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_67_PLAN.md",
+        "docs/PRODUCTION_HYPERCARE_MVP.md"
+      ],
+      "source": "docs/STAGE_67_PLAN.md"
+    },
+    {
+      "id": "ph-hypercare-remaining",
+      "category": "honesty",
+      "title": "Live production hypercare Remaining \u2014 packaging \u2260 hypercare Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_67_PLAN.md",
+        "docs/PRODUCTION_HYPERCARE_MVP.md"
+      ],
+      "source": "docs/STAGE_67_PLAN.md"
+    },
+    {
+      "id": "ph-incident-remaining",
+      "category": "honesty",
+      "title": "Live incident drill / on-call rota Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_67_PLAN.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "docs/STAGE_67_PLAN.md"
+    },
+    {
+      "id": "ph-sla-remaining",
+      "category": "honesty",
+      "title": "Support SLA live / hosted PagerDuty Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_67_PLAN.md",
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+      ],
+      "source": "docs/STAGE_67_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live production hypercare Complete",
+    "Live incident drill / on-call rota Complete",
+    "Support SLA live / hosted PagerDuty Complete",
+    "Live go-live / \u00a77 / attestation Complete",
+    "Live production cutover Complete"
+  ]
+}

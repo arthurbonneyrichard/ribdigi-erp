@@ -26,4 +26,8 @@ Stage 66 MVP Production Launch Fidelity delivered production launch honesty pack
 
 ## Next stage
 
-Stage 67 requires explicit CONTINUE/NEXT (not opened).
+Stage 67 opened via ADR-140 (`docs/ADR_140_STAGE67_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 67 (MVP Post-Launch Continuity Fidelity — MVP Production Launch → Production Hypercare → Operator Steady-State Handoff → Customer Success Stabilization → Post-Launch Continuity) after Stage 66 freeze via CONTINUE/NEXT — see [ADR-140](ADR_140_STAGE67_OPEN.md) and [STAGE_67_PLAN.md](STAGE_67_PLAN.md). Stage 66 feature scope remains frozen; Stage 67 does not reopen L1–D1 / H66x.

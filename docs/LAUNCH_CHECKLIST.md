@@ -192,6 +192,8 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] First tenant go-live honesty (Stage 66 T1: `test_first_tenant_golive_t1.py` — `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json`; evidence `stage66_t1_first_tenant_golive.json`; first paying tenant / live onboarding Remaining)
 - [x] Stage 66 fidelity sync (D1: `test_stage66_fidelity_d1.py`, `docs/STAGE_66_FIDELITY.md` — L1–T1 + readiness + deploy / launch / security)
 - [x] Stage 66 exit + freeze (H66x: `test_stage66_exit_h66x.py`, `docs/STAGE_66_EXIT_CRITERIA.md`, ADR-139)
+- [x] Stage 67 track opened (ADR-140: `test_stage67_open.py`, `docs/STAGE_67_PLAN.md`) — MVP Post-Launch Continuity Fidelity; H1 complete / C1 next
+- [x] Production hypercare honesty (Stage 67 H1: `test_production_hypercare_h1.py` — `docs/PRODUCTION_HYPERCARE_MVP.md`, `ops/mvp/production-hypercare.json`; evidence `stage67_h1_production_hypercare.json`; live hypercare / incident drill Remaining)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

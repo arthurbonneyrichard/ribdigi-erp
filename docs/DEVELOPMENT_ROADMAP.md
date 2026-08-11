@@ -1440,4 +1440,8 @@ Every feature in every phase must meet:
 
 **Stage 66 D1 (2026-08-11):** MVP production-launch fidelity sync — `docs/STAGE_66_FIDELITY.md` (`test_stage66_fidelity_d1.py`); maps L1–T1 → readiness / launch / deploy / security.
 
-**Stage 66 exit (2026-08-11):** L1, T1, D1, H66x met — `docs/STAGE_66_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_139_STAGE66_FREEZE.md`. Fidelity: `docs/STAGE_66_FIDELITY.md`. Stage 67 requires explicit CONTINUE/NEXT (not opened).
+**Stage 66 exit (2026-08-11):** L1, T1, D1, H66x met — `docs/STAGE_66_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_139_STAGE66_FREEZE.md`. Fidelity: `docs/STAGE_66_FIDELITY.md`. Stage 67 opened via ADR-140.
+
+**Stage 67 open (2026-08-11):** MVP Post-Launch Continuity Fidelity track approved — `docs/ADR_140_STAGE67_OPEN.md` + `docs/STAGE_67_PLAN.md` (MVP Production Launch → Production Hypercare → Operator Steady-State Handoff → Customer Success Stabilization → Post-Launch Continuity; H1 next).
+
+**Stage 67 H1 (2026-08-11):** Production hypercare honesty — `docs/PRODUCTION_HYPERCARE_MVP.md`, `ops/mvp/production-hypercare.json`, evidence `stage67_h1_production_hypercare.json` (`test_production_hypercare_h1.py`); live hypercare / incident drill Remaining.
