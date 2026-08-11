@@ -1,9 +1,10 @@
 # Stage 66 Plan — MVP Production Launch Fidelity
 
-**Status:** Open — D1 complete; H66x next  
+**Status:** Closed — exit met (H66x); freeze ADR-139  
 **Base:** Production Launch Honesty Pack + First Tenant Go-Live Honesty Pack → MVP Production Launch Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-138](ADR_138_STAGE66_OPEN.md)  
+**Open ADR (historical):** [ADR-138](ADR_138_STAGE66_OPEN.md)  
+**Exit:** [STAGE_66_EXIT_CRITERIA.md](STAGE_66_EXIT_CRITERIA.md) · [ADR-139](ADR_139_STAGE66_FREEZE.md)  
 **Prior freeze:** [ADR-136](ADR_136_STAGE65_FREEZE.md) · [STAGE_65_EXIT_CRITERIA.md](STAGE_65_EXIT_CRITERIA.md)
 
 Stage 66 opens after Stage 65 freeze: **Production Launch Honesty Packaging + First Tenant Go-Live Honesty Packaging → MVP Production Launch Fidelity**. The owner product outline continues past MVP Release Candidate:
@@ -63,7 +64,7 @@ MVP Production Launch Fidelity
 | **L1** | Production launch honesty packaging (Cutover → Attestation → Launch; not §7 signed / live cutover Complete) | P0 | COMPLETE |
 | **T1** | First tenant go-live honesty packaging (First paying tenant → onboarding adjacency; not live first-tenant Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H66x** | Stage 66 exit criteria + freeze ADR | Exit | PENDING |
+| **H66x** | Stage 66 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -108,6 +109,8 @@ MVP Production Launch Fidelity
 
 ## H66x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for L1–D1 / H66x — `docs/STAGE_66_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_139_STAGE66_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage66_exit_h66x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for L1–D1 / H66x — `docs/STAGE_66_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_139_STAGE66_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage66_exit_h66x.py`.
+
+**Deliverables:** `docs/STAGE_66_EXIT_CRITERIA.md`, `docs/ADR_139_STAGE66_FREEZE.md` (`test_stage66_exit_h66x.py`).

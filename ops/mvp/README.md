@@ -224,6 +224,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_66_EXIT_CRITERIA.md` / `docs/ADR_139_STAGE66_FREEZE.md` (`backend/tests/test_stage66_exit_h66x.py`) — Stage 66 H66x
 - `docs/STAGE_66_FIDELITY.md` (`backend/tests/test_stage66_fidelity_d1.py`) — Stage 66 D1
 - `docs/FIRST_TENANT_GOLIVE_MVP.md` (`backend/tests/test_first_tenant_golive_t1.py`) — Stage 66 T1
 - `docs/PRODUCTION_LAUNCH_MVP.md` (`backend/tests/test_production_launch_l1.py`) — Stage 66 L1
@@ -936,6 +937,10 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
 
+## Stage 66 exit
+
+H66x met — `docs/STAGE_66_EXIT_CRITERIA.md`, ADR-139. Stages 1–66 frozen for Stage 66 feature scope.
+
 ## Stage 66 D1 — MVP production-launch fidelity
 
 `docs/STAGE_66_FIDELITY.md` — maps L1–T1 → readiness / launch / deploy / security (`test_stage66_fidelity_d1.py`).
@@ -950,7 +955,7 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 ## Stage 66 open
 
-MVP Production Launch Fidelity — `docs/STAGE_66_PLAN.md`, ADR-138; Open — D1 complete; H66x next.
+MVP Production Launch Fidelity — `docs/STAGE_66_PLAN.md`, ADR-138; Closed — exit met (H66x / ADR-139).
 
 ## Stage 65 D1 — MVP release-candidate fidelity
 

@@ -1439,3 +1439,5 @@ Every feature in every phase must meet:
 **Stage 66 T1 (2026-08-11):** First tenant go-live honesty — `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json`, evidence `stage66_t1_first_tenant_golive.json` (`test_first_tenant_golive_t1.py`); first paying tenant / live onboarding Remaining.
 
 **Stage 66 D1 (2026-08-11):** MVP production-launch fidelity sync — `docs/STAGE_66_FIDELITY.md` (`test_stage66_fidelity_d1.py`); maps L1–T1 → readiness / launch / deploy / security.
+
+**Stage 66 exit (2026-08-11):** L1, T1, D1, H66x met — `docs/STAGE_66_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_139_STAGE66_FREEZE.md`. Fidelity: `docs/STAGE_66_FIDELITY.md`. Stage 67 requires explicit CONTINUE/NEXT (not opened).

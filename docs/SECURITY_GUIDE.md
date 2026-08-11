@@ -440,6 +440,8 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 66 L1** | Production launch honesty — `docs/PRODUCTION_LAUNCH_MVP.md`, `ops/mvp/production-launch.json` (`test_production_launch_l1.py`); live cutover / §7 signed / go-live Remaining |
 | **Stage 66 T1** | First tenant go-live honesty — `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json` (`test_first_tenant_golive_t1.py`); first paying tenant / live onboarding Remaining |
 | **Stage 66 D1** | MVP production-launch fidelity — `docs/STAGE_66_FIDELITY.md` (`test_stage66_fidelity_d1.py`); maps L1–T1 → readiness / launch / deploy / security; live cutover / first paying tenant / §7 Remaining |
+| **Stage 66 H66x** | Exit + freeze — `docs/STAGE_66_EXIT_CRITERIA.md`, ADR-139 (`test_stage66_exit_h66x.py`); Stages 1–66 frozen for Stage 66 scope; Stage 67 needs open ADR |
+| **Stage 66 fidelity** | D1 maps L1–T1 production launch & first-tenant go-live — `docs/STAGE_66_FIDELITY.md` (`test_stage66_fidelity_d1.py`); historical open ADR-138; live cutover / first paying tenant / §7 Remaining |
 | **Stage 65 open** | MVP Release Candidate Fidelity — `docs/STAGE_65_PLAN.md`, ADR-135 (`test_stage65_open.py`); historical open; closed via H65x / ADR-136 |
 | **Stage 65 R1** | Release pipeline honesty — `docs/RELEASE_PIPELINE_MVP.md`, `ops/mvp/release-pipeline.json` (`test_release_pipeline_r1.py`); signed MVP RC / live staging promotion Remaining |
 | **Stage 65 P1** | Controlled business pilot honesty — `docs/BUSINESS_PILOT_MVP.md`, `ops/mvp/business-pilot.json` (`test_business_pilot_p1.py`); live controlled business pilot Remaining |

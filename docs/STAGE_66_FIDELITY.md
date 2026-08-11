@@ -1,8 +1,9 @@
 # Stage 66 Fidelity Notes — MVP Production Launch Fidelity
 
-**Status:** Open — D1 complete; H66x next  
+**Status:** Closed — exit met (H66x); freeze ADR-139  
 **Surface:** Production launch → First tenant go-live → Fidelity closeout  
-**Open ADR:** [ADR-138](ADR_138_STAGE66_OPEN.md)  
+**Open ADR (historical):** [ADR-138](ADR_138_STAGE66_OPEN.md)  
+**Exit:** [STAGE_66_EXIT_CRITERIA.md](STAGE_66_EXIT_CRITERIA.md) · [ADR-139](ADR_139_STAGE66_FREEZE.md)  
 **Plan:** [STAGE_66_PLAN.md](STAGE_66_PLAN.md)  
 **Prior freeze:** [ADR-136](ADR_136_STAGE65_FREEZE.md) · [STAGE_65_EXIT_CRITERIA.md](STAGE_65_EXIT_CRITERIA.md)
 
@@ -23,7 +24,7 @@ Stage 66 proves the owner product outline after Stage 65 freeze — MVP Release 
 | **L1** | `test_production_launch_l1.py` — `PRODUCTION_LAUNCH_MVP.md`, production-launch JSON | Owner launch path / cutover / attestation | Live cutover; §7 signed; go-live |
 | **T1** | `test_first_tenant_golive_t1.py` — `FIRST_TENANT_GOLIVE_MVP.md`, first-tenant-golive JSON | Owner first paying tenant / Stage 33 F1 / Stage 65 P1 | First paying tenant; live onboarding |
 | **D1** | This note + `test_stage66_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H66x** | `STAGE_66_EXIT_CRITERIA.md`; ADR-139 (planned); `test_stage66_exit_h66x.py` | Stage 66 exit + freeze | Pending exit |
+| **H66x** | `STAGE_66_EXIT_CRITERIA.md`; ADR-139; `test_stage66_exit_h66x.py` | Stage 66 exit + freeze | Stage 67 needs open ADR |
 
 ## Evidence tests
 
@@ -31,6 +32,7 @@ Stage 66 proves the owner product outline after Stage 65 freeze — MVP Release 
 - `backend/tests/test_first_tenant_golive_t1.py`
 - `backend/tests/test_stage66_open.py`
 - `backend/tests/test_stage66_fidelity_d1.py`
+- `backend/tests/test_stage66_exit_h66x.py`
 
 ## Spec sync targets
 
@@ -42,7 +44,8 @@ Stage 66 proves the owner product outline after Stage 65 freeze — MVP Release 
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 66 L1–T1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 66 L1–T1 / D1 cite
 - `docs/PRODUCTION_LAUNCH_MVP.md` · `docs/FIRST_TENANT_GOLIVE_MVP.md`
-- `docs/STAGE_66_PLAN.md` — Open — D1 complete; H66x next
+- `docs/STAGE_66_PLAN.md` — Closed — exit met (H66x); freeze ADR-139
+- `docs/STAGE_66_EXIT_CRITERIA.md` · `docs/ADR_139_STAGE66_FREEZE.md`
 - `docs/ADR_138_STAGE66_OPEN.md`
 
 ## Deferred (not Stage 66 D1 blockers)
