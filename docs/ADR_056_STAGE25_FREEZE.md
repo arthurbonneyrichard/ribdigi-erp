@@ -21,3 +21,7 @@ Stage 25 Actuals → AI Analysis → Business Insights (P1, X1, B1, U1, D1, H25x
 - Agents treat Stage 25 P1, X1, B1, U1, D1, H25x as closed unless fixing a regression.
 - `PRODUCTION_READINESS.md` continues to track module-level Partial/Complete for the whole commercial MVP (monitoring / WAL / K8s / load remain Partial or open where applicable; external LLM / Prophet remain deferred).
 - Stage 1–24 freezes remain in force for their scopes.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 26 (Production Platform & Ops Fidelity) after Stage 25 freeze via CONTINUE/NEXT — see [ADR-057](ADR_057_STAGE26_OPEN.md) and [STAGE_26_PLAN.md](STAGE_26_PLAN.md). Stage 25 feature scope remains frozen; Stage 26 does not reopen P1–D1 / H25x.

@@ -222,6 +222,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 25 exit (2026-08-11):** P1, X1, B1, U1, D1, H25x met — `docs/STAGE_25_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_056_STAGE25_FREEZE.md`. Fidelity: `docs/STAGE_25_FIDELITY.md`.
 
+**Stage 26 open (2026-08-11):** Production Platform & Ops Fidelity track approved — `docs/ADR_057_STAGE26_OPEN.md` + `docs/STAGE_26_PLAN.md` (Monitoring → WAL/PITR → K8s → Load capacity → fidelity).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -802,7 +804,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 25 open (`docs/STAGE_25_PLAN.md`, ADR-055) — P1 / X1 / B1 / U1 / D1 complete; H25x next (`docs/STAGE_25_FIDELITY.md`). Stages 1–24 remain frozen for their scopes.
+**Active delivery plan:** Stage 26 open (`docs/STAGE_26_PLAN.md`, ADR-057) — M1 next. Stages 1–25 remain frozen for their scopes (`docs/STAGE_25_EXIT_CRITERIA.md`, ADR-056).
 
 ### 6.2 Features
 
