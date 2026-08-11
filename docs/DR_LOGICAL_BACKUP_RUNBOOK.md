@@ -1,7 +1,7 @@
 # Disaster Recovery Runbook — Logical Tenant Backup (`.ribbak`)
 
 **Scope:** Stage 5 B1 + Stage 10 B1 (media) + Stage 18 B1 (schedule / retention / failure notify) + Stage 19 R1 (LAUNCH §5 packaging evidence) + Stage 23 B1 (commercial MVP DR drill gate evidence) — encrypted logical tenant backup / guarded restore  
-**Infrastructure WAL / PITR / S3 offsite:** Stage 26 W1 strategy — see [DR_WAL_PITR_RUNBOOK.md](DR_WAL_PITR_RUNBOOK.md) (`ops/postgres/`, `ops/backup/`, `test_wal_pitr_w1.py`). Stage 27 B1 opt-in automatic `.ribbak` upload from `create_backup` (`BACKUP_OFFSITE_UPLOAD_ENABLED`; `test_backup_offsite_b1.py`). Operator staging PITR drill execution remains Remaining.  
+**Infrastructure WAL / PITR / S3 offsite:** Stage 26 W1 strategy — see [DR_WAL_PITR_RUNBOOK.md](DR_WAL_PITR_RUNBOOK.md) (`ops/postgres/`, `ops/backup/`, `test_wal_pitr_w1.py`). Stage 27 B1 opt-in automatic `.ribbak` upload from `create_backup` (`BACKUP_OFFSITE_UPLOAD_ENABLED`; `test_backup_offsite_b1.py`). Stage 28 R1 operator drill pack — [PITR_DRILL_PACK_MVP.md](PITR_DRILL_PACK_MVP.md) (`test_pitr_drill_pack_r1.py`); live staging PITR drill **execution** remains Remaining.  
 **Out of scope (post-MVP for this logical runbook):** schema-per-tenant isolation (ADR-001); restore-to-new-tenant. Infrastructure WAL/PITR operator staging drill remains Remaining under Stage 26 W1.
 
 Stage 19 R1 automated packaging check: `backend/tests/test_reliability_cache_r1.py` (asserts this runbook + dry-run / `confirm_text=RESTORE` / WAL-PITR deferral).  
@@ -18,7 +18,7 @@ Prove that a tenant can recover business data from an encrypted logical backup a
 | RPO | Last successful `.ribbak` | Schedule via backup settings + Celery due runner |
 | RTO | Operator-driven (maintenance window) | Dry-run → confirm `RESTORE` → verify |
 
-Infrastructure PITR targets are documented under Stage 26 W1 (`docs/DR_WAL_PITR_RUNBOOK.md`); operator staging PITR drill execution remains Remaining.
+Infrastructure PITR targets are documented under Stage 26 W1 (`docs/DR_WAL_PITR_RUNBOOK.md`); Stage 28 R1 packages the operator drill checklist (`docs/PITR_DRILL_PACK_MVP.md`); operator staging PITR drill **execution** remains Remaining.
 
 ## Preconditions
 

@@ -20,6 +20,17 @@ Versioned operator configs for continuous WAL archiving to S3-compatible storage
 
 Authoritative procedure: `docs/DR_WAL_PITR_RUNBOOK.md`. Logical tenant DR remains `.ribbak` (`docs/DR_LOGICAL_BACKUP_RUNBOOK.md`).
 
+## Stage 28 R1 — Operator PITR drill pack
+
+Versioned checklist packaging for staging drills. **Not** CI `pg_basebackup` / WAL replay success.
+
+| File | Role |
+|------|------|
+| `pitr-drill-checklist.json` | Seven operator steps + pass criteria; `operator_pitr_drill_executed: false` |
+| `docs/PITR_DRILL_PACK_MVP.md` | MVP pack doc + honesty rules |
+
+Evidence: `test_pitr_drill_pack_r1.py` → `/opt/cursor/artifacts/dr/stage28_r1_pitr_drill_pack.json`.
+
 ## Stage 27 P1 — PgBouncer
 
 Optional connection pooler packaging. **Not** default compose/CI; **not** an in-cluster Helm claim.

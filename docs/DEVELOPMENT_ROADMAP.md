@@ -252,6 +252,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 28 open (2026-08-11):** Staging Certification Fidelity track approved — `docs/ADR_061_STAGE28_OPEN.md` + `docs/STAGE_28_PLAN.md` (Operator PITR drill → Staging GHA → Grafana/Alertmanager → 1000-VU cert → fidelity).
 
+**Stage 28 R1 (2026-08-11):** Operator PITR drill pack — `docs/PITR_DRILL_PACK_MVP.md`, `ops/postgres/pitr-drill-checklist.json`, evidence `stage28_r1_pitr_drill_pack.json` (`test_pitr_drill_pack_r1.py`); extends `docs/DR_WAL_PITR_RUNBOOK.md`; live staging drill execution Remaining (no fake CI PITR success).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -832,7 +834,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 28 open (`docs/STAGE_28_PLAN.md`, ADR-061) — R1 next. Stages 1–27 remain frozen for their scopes (`docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060).
+**Active delivery plan:** Stage 28 open (`docs/STAGE_28_PLAN.md`, ADR-061) — R1 complete; G1 next. Stages 1–27 remain frozen for their scopes (`docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060).
 
 ### 6.2 Features
 

@@ -1,6 +1,6 @@
 # Stage 28 Plan — Staging Certification Fidelity
 
-**Status:** Open — R1 next (ADR-061)  
+**Status:** Open — R1 complete; G1 next (ADR-061)  
 **Base:** Operator PITR Drill Pack + Staging GHA Workflow + Grafana/Alertmanager Packaging + 1000-VU Cert Pack → Staging Certification Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-061](ADR_061_STAGE28_OPEN.md)
@@ -34,7 +34,7 @@ Staging Certification Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **R1** | Operator PITR drill packaging / evidence harness | P0 | PENDING |
+| **R1** | Operator PITR drill packaging / evidence harness | P0 | COMPLETE |
 | **G1** | Staging GHA deploy workflow (not main `ci.yml`) | P0 | PENDING |
 | **A1** | Grafana / Alertmanager operator packaging | P0 | PENDING |
 | **C1** | Operator ~1000-VU certificate pack | P1 | PENDING |
@@ -57,11 +57,11 @@ Staging Certification Fidelity
 
 ## R1 acceptance criteria
 
-- [ ] Operator PITR drill packaging — checklist + evidence path extending `docs/DR_WAL_PITR_RUNBOOK.md` / `ops/postgres/` (not fake CI PITR success).
-- [ ] Durable artifact path under `/opt/cursor/artifacts/dr/` (or equivalent).
-- [ ] Automated proof: `backend/tests/test_pitr_drill_pack_r1.py`.
-- [ ] PRODUCTION_READINESS WAL Remaining honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 28 R1.
+- [x] Operator PITR drill packaging — checklist + evidence path extending `docs/DR_WAL_PITR_RUNBOOK.md` / `ops/postgres/` (not fake CI PITR success).
+- [x] Durable artifact path under `/opt/cursor/artifacts/dr/` (or equivalent).
+- [x] Automated proof: `backend/tests/test_pitr_drill_pack_r1.py`.
+- [x] PRODUCTION_READINESS WAL Remaining honesty updated.
+- [x] Plan / launch / roadmap cite Stage 28 R1.
 
 ## G1 acceptance criteria
 
@@ -101,4 +101,4 @@ Staging Certification Fidelity
 
 ## Sign-off
 
-Stage 28 open under ADR-061. R1 next. Stages 1–27 remain frozen for their scopes.
+Stage 28 open under ADR-061. R1 complete; G1 next. Stages 1–27 remain frozen for their scopes.

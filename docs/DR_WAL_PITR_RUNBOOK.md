@@ -1,11 +1,13 @@
 # Disaster Recovery Runbook — WAL / PITR + S3 Offsite (Stage 26 W1)
 
-**Scope:** Stage 26 W1 — PostgreSQL WAL archiving strategy, S3-compatible offsite packaging for WAL + encrypted `.ribbak`, operator PITR outline  
+**Scope:** Stage 26 W1 — PostgreSQL WAL archiving strategy, S3-compatible offsite packaging for WAL + encrypted `.ribbak`, operator PITR outline; Stage 28 R1 adds operator drill pack packaging  
 **Related logical DR:** [DR_LOGICAL_BACKUP_RUNBOOK.md](DR_LOGICAL_BACKUP_RUNBOOK.md) (Stages 5/10/18/23 — Complete)  
-**Evidence:** `backend/tests/test_wal_pitr_w1.py` → `/opt/cursor/artifacts/dr/stage26_w1_wal_pitr_strategy.json`  
+**Evidence (W1):** `backend/tests/test_wal_pitr_w1.py` → `/opt/cursor/artifacts/dr/stage26_w1_wal_pitr_strategy.json`  
+**Evidence (R1 pack):** `backend/tests/test_pitr_drill_pack_r1.py` → `/opt/cursor/artifacts/dr/stage28_r1_pitr_drill_pack.json`  
+**Drill pack:** [PITR_DRILL_PACK_MVP.md](PITR_DRILL_PACK_MVP.md) · `ops/postgres/pitr-drill-checklist.json`  
 **Configs:** `ops/postgres/`, `ops/backup/`
 
-This runbook documents the **MVP WAL/PITR strategy** and offsite fidelity. It does **not** claim that CI executes `pg_basebackup` / WAL replay or that a managed-cloud PITR product is wired. Stage 27 B1 adds opt-in `create_backup` → S3 upload (`BACKUP_OFFSITE_UPLOAD_ENABLED`).
+This runbook documents the **MVP WAL/PITR strategy** and offsite fidelity. It does **not** claim that CI executes `pg_basebackup` / WAL replay or that a managed-cloud PITR product is wired. Stage 27 B1 adds opt-in `create_backup` → S3 upload (`BACKUP_OFFSITE_UPLOAD_ENABLED`). Stage 28 R1 packages the operator drill checklist without claiming live staging drill success (`operator_pitr_drill_executed: false` in packaging evidence).
 
 ## Relationship to logical `.ribbak` DR
 
@@ -55,13 +57,24 @@ Stage **27** **B1**: opt-in automatic in-app upload from `create_backup` when `B
 
 ## Operator PITR drill (staging — not CI)
 
+Authoritative packaging: [PITR_DRILL_PACK_MVP.md](PITR_DRILL_PACK_MVP.md) + `ops/postgres/pitr-drill-checklist.json` (Stage 28 R1). Optional compose sketch: `ops/backup/docker-compose.wal-drill.example.yml`.
+
 1. Provision an empty Postgres data directory.
 2. Restore the latest base backup.
 3. Configure `restore_command` to fetch from `s3://…/ribdigi/postgres/wal/%f` (aws/mc helper).
 4. Set recovery target time (or promote immediately after catch-up).
 5. Start Postgres; verify `pg_is_in_recovery()` then promote.
 6. Smoke: `GET /api/v1/health/ready`, login, spot-check a tenant.
-7. Record outcomes in the ops change log. CI writes strategy evidence only (`stage26_w1_wal_pitr_strategy.json` with `operator_pitr_drill_required=true`).
+7. Record outcomes in the ops change log (date, operator, base backup id, recovery target, pass/fail). CI writes packaging evidence only (`stage28_r1_pitr_drill_pack.json` with `operator_pitr_drill_executed=false`); Stage 26 W1 strategy evidence retains `operator_pitr_drill_required=true`.
+
+### Pass criteria (operator log — not CI)
+
+- Postgres promotes cleanly after WAL catch-up
+- `GET /api/v1/health/ready` returns healthy
+- Login + one tenant spot-check succeed
+- Ops change log entry recorded
+
+Do **not** mark live drill Complete in readiness until the ops change log documents a real staging run.
 
 ## Failure / escalation
 
@@ -81,4 +94,4 @@ Stage **27** **B1**: opt-in automatic in-app upload from `create_backup` when `B
 
 ## Sign-off
 
-Stage 26 W1 strategy is met when versioned configs + this runbook exist, the guard test passes, and PRODUCTION_READINESS WAL gate is Complete (MVP) with Remaining limited to operator staging PITR drill execution and managed-cloud automation.
+Stage 26 W1 strategy is met when versioned configs + this runbook exist, the guard test passes, and PRODUCTION_READINESS WAL gate is Complete (MVP) with Remaining limited to operator staging PITR drill **execution** and managed-cloud automation. Stage 28 R1 drill **packaging** is met when `docs/PITR_DRILL_PACK_MVP.md` + `ops/postgres/pitr-drill-checklist.json` + `test_pitr_drill_pack_r1.py` pass without claiming `operator_pitr_drill_executed`.

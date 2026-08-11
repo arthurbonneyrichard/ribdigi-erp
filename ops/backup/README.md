@@ -9,4 +9,4 @@ Mirrors encrypted `.ribbak` archives (Stages 5/10/18/23) to S3-compatible storag
 
 RIBDIGI `create_backup` still writes local `BACKUP_DIR` first. Stage 27 B1 adds opt-in in-app upload (`BACKUP_OFFSITE_UPLOAD_ENABLED`); this script remains the bulk/cron mirror complement.
 
-See `docs/DR_WAL_PITR_RUNBOOK.md` and `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`.
+See `docs/DR_WAL_PITR_RUNBOOK.md`, `docs/PITR_DRILL_PACK_MVP.md` (Stage 28 R1), and `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`.
