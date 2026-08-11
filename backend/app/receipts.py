@@ -51,11 +51,19 @@ def _lr(left: str, right: str, width: int) -> str:
     return left + (" " * gap) + right
 
 
+def _clean_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
 def build_receipt_payload(
     *,
     tx: m.Transaction,
     tenant: m.Tenant | None,
     cashier_name: str | None = None,
+    store: m.Store | None = None,
 ) -> dict[str, Any]:
     payload = tx.payload or {}
     items = payload.get("items") or []
@@ -92,12 +100,29 @@ def build_receipt_payload(
         customer_name = customer_name.strip() or None
     else:
         customer_name = None
+
+    company_name = _clean_text(tenant.company_name if tenant else None) or "RIBDIGI ERP"
+    store_name = _clean_text(store.name if store else None)
+    # Prefer the selling store's contact/location; fall back to company profile.
+    company_phone = _clean_text(store.phone if store else None) or _clean_text(
+        tenant.phone if tenant else None
+    )
+    company_email = _clean_text(tenant.email if tenant else None)
+    company_website = _clean_text(tenant.website if tenant else None)
+    company_address = _clean_text(store.address if store else None) or _clean_text(
+        tenant.address if tenant else None
+    )
+
     return {
         "sale_id": tx.id,
         "reference": tx.reference,
-        "company_name": tenant.company_name if tenant else "RIBDIGI ERP",
-        "company_phone": tenant.phone if tenant else None,
-        "company_address": tenant.address if tenant else None,
+        "company_name": company_name,
+        "store_name": store_name,
+        "store_id": store.id if store else None,
+        "company_phone": company_phone,
+        "company_email": company_email,
+        "company_website": company_website,
+        "company_address": company_address,
         "currency": tenant.currency if tenant else "GHS",
         "cashier_name": cashier_name,
         "customer_name": customer_name,
@@ -106,7 +131,7 @@ def build_receipt_payload(
         "total": float(tx.total or 0),
         "items": normalized_items,
         "payment_method": payload.get("payment_method", "cash"),
-        "session_id": payload.get("session_id"),
+        "session_id": payload.get("session_id") or getattr(tx, "session_id", None),
         "created_at": tx.created_at,
         "format": "json",
     }
@@ -116,10 +141,17 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     width = THERMAL_WIDTHS.get(paper, THERMAL_WIDTHS["80mm"])
     lines: list[str] = []
     lines.append(_center(str(receipt.get("company_name") or "RIBDIGI ERP"), width))
+    if receipt.get("store_name"):
+        lines.append(_center(str(receipt["store_name"]), width))
     if receipt.get("company_address"):
-        lines.extend(_wrap(str(receipt["company_address"]), width))
+        for part in _wrap(str(receipt["company_address"]), width):
+            lines.append(_center(part, width))
     if receipt.get("company_phone"):
-        lines.append(_center(str(receipt["company_phone"]), width))
+        lines.append(_center(f"Tel: {receipt['company_phone']}", width))
+    if receipt.get("company_email"):
+        lines.append(_center(str(receipt["company_email"]), width))
+    if receipt.get("company_website"):
+        lines.append(_center(str(receipt["company_website"]), width))
     lines.append("-" * width)
     lines.append(_lr("Sale", str(receipt.get("reference") or ""), width))
     created = receipt.get("created_at")
@@ -241,4 +273,21 @@ async def build_sale_receipt(
     if user_id:
         user = await db.get(m.User, user_id)
         cashier_name = user.full_name if user else None
-    return build_receipt_payload(tx=tx, tenant=tenant, cashier_name=cashier_name)
+
+    store = None
+    session_id = tx.session_id or (tx.payload or {}).get("session_id")
+    if session_id:
+        session = await db.get(m.PosSession, session_id)
+        if session and session.tenant_id == tenant_id and session.store_id:
+            store = (
+                await db.execute(
+                    select(m.Store).where(
+                        m.Store.id == session.store_id,
+                        m.Store.tenant_id == tenant_id,
+                    )
+                )
+            ).scalar_one_or_none()
+
+    return build_receipt_payload(
+        tx=tx, tenant=tenant, cashier_name=cashier_name, store=store
+    )
