@@ -257,6 +257,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Commercial customer audit honesty (Stage 79 A1: `test_commercial_customer_audit_a1.py` — `docs/COMMERCIAL_CUSTOMER_AUDIT_MVP.md`, `ops/mvp/commercial-customer-audit.json`; evidence `stage79_a1_commercial_customer_audit.json`; customer audit rights live Remaining)
 - [x] Stage 79 fidelity sync (D1: `test_stage79_fidelity_d1.py`, `docs/STAGE_79_FIDELITY.md` — R1–A1 + readiness + deploy / launch / security)
 - [x] Stage 79 exit + freeze (H79x: `test_stage79_exit_h79x.py`, `docs/STAGE_79_EXIT_CRITERIA.md`, ADR-165)
+- [x] Stage 80 track opened (ADR-166: `test_stage80_open.py`, `docs/STAGE_80_PLAN.md`) — Dual-Console Dashboard Fidelity; closed under ADR-167
+- [x] Platform owner dashboard charts (Stage 80 P1: `test_platform_dashboard_charts_p1.py` — `/api/v1/platform/dashboard/*`; no fabricated MRR)
+- [x] Tenant role-scoped dashboards (Stage 80 T1: `test_tenant_role_dashboard_t1.py` — executive / store_manager / cashier views)
+- [x] Stage 80 fidelity sync (D1: `test_stage80_fidelity_d1.py`, `docs/STAGE_80_FIDELITY.md` — P1–T1 + readiness + deploy / launch / security)
+- [x] Stage 80 exit + freeze (H80x: `test_stage80_exit_h80x.py`, `docs/STAGE_80_EXIT_CRITERIA.md`, ADR-167)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

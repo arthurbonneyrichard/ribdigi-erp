@@ -68,7 +68,63 @@ async def platform_dashboard(
     db: AsyncSession = Depends(get_db),
 ):
     data = await platform_svc.platform_dashboard_kpis(db)
+    # Attach chart payloads for single-request UI load (also available as sub-routes).
+    data["tenant_growth"] = await platform_svc.platform_tenant_growth(db)
+    data["tenant_status"] = await platform_svc.platform_tenant_status_chart(db)
+    data["plan_distribution"] = await platform_svc.platform_plan_distribution(db)
+    data["industry_distribution"] = await platform_svc.platform_industry_distribution(db)
+    data["user_growth"] = await platform_svc.platform_user_growth(db)
     return env(data)
+
+
+@router.get("/dashboard/summary")
+async def platform_dashboard_summary(
+    claims: dict = Depends(require_platform_permission("platform_dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_svc.platform_dashboard_kpis(db))
+
+
+@router.get("/dashboard/tenant-growth")
+async def platform_dashboard_tenant_growth(
+    months: int = Query(12, ge=1, le=36),
+    claims: dict = Depends(require_platform_permission("platform_dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_svc.platform_tenant_growth(db, months=months))
+
+
+@router.get("/dashboard/tenant-status")
+async def platform_dashboard_tenant_status(
+    claims: dict = Depends(require_platform_permission("platform_dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_svc.platform_tenant_status_chart(db))
+
+
+@router.get("/dashboard/industry-distribution")
+async def platform_dashboard_industry_distribution(
+    claims: dict = Depends(require_platform_permission("platform_dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_svc.platform_industry_distribution(db))
+
+
+@router.get("/dashboard/plan-distribution")
+async def platform_dashboard_plan_distribution(
+    claims: dict = Depends(require_platform_permission("platform_dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_svc.platform_plan_distribution(db))
+
+
+@router.get("/dashboard/user-growth")
+async def platform_dashboard_user_growth(
+    months: int = Query(12, ge=1, le=36),
+    claims: dict = Depends(require_platform_permission("platform_dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_svc.platform_user_growth(db, months=months))
 
 
 @router.get("/tenants")

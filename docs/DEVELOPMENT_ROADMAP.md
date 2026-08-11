@@ -1571,3 +1571,13 @@ Every feature in every phase must meet:
 **Stage 79 D1 (2026-08-11):** Commercial Data Exit fidelity sync — `docs/STAGE_79_FIDELITY.md` (`test_stage79_fidelity_d1.py`); maps R1–A1 → readiness / launch / deploy / security.
 
 **Stage 79 exit (2026-08-11):** R1, A1, D1, H79x met — `docs/STAGE_79_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_165_STAGE79_FREEZE.md`. Fidelity: `docs/STAGE_79_FIDELITY.md`.
+
+**Stage 80 open (2026-08-11):** Dual-Console Dashboard Fidelity track approved — `docs/ADR_166_STAGE80_OPEN.md` + `docs/STAGE_80_PLAN.md` (Platform Owner Dashboard Charts → Tenant Role-Scoped Dashboards → Dual-Console Dashboard Fidelity; P1 next).
+
+**Stage 80 P1 (2026-08-11):** Platform owner dashboard charts — `/api/v1/platform/dashboard/*` (`test_platform_dashboard_charts_p1.py`); `mrr_fabricated_claimed: false` (ADR-002).
+
+**Stage 80 T1 (2026-08-11):** Tenant role-scoped dashboards — `dashboard_views` (`test_tenant_role_dashboard_t1.py`).
+
+**Stage 80 D1 (2026-08-11):** Dual-Console Dashboard fidelity sync — `docs/STAGE_80_FIDELITY.md` (`test_stage80_fidelity_d1.py`); maps P1–T1 → readiness / launch / deploy / security.
+
+**Stage 80 exit (2026-08-11):** P1, T1, D1, H80x met — `docs/STAGE_80_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_167_STAGE80_FREEZE.md`. Fidelity: `docs/STAGE_80_FIDELITY.md`.

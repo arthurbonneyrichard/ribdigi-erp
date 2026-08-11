@@ -98,7 +98,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
 
 ROLE_LABELS: dict[str, str] = {
     "super_admin": "Super Admin",
-    "company_admin": "Company Admin",
+    "company_admin": "Tenant Admin",
     "platform_super_admin": "Platform Super Admin",
     "platform_admin": "Platform Admin",
     "store_manager": "Store Manager",

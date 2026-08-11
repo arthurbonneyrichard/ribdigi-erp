@@ -76,9 +76,10 @@ class AppCache:
     def _prefix(self) -> str:
         return (settings.CACHE_REDIS_PREFIX or "ribdigi:cache").rstrip(":")
 
-    def dashboard_key(self, tenant_id: str) -> str:
-        # Architecture: dashboard:{tenant_id}:{metric} — MVP caches full summary blob
-        return f"{self._prefix()}:dashboard:{tenant_id}:summary"
+    def dashboard_key(self, tenant_id: str, *, role: str | None = None) -> str:
+        # Architecture: dashboard:{tenant_id}:{metric} — role suffix for Stage 80 scoped views
+        role_part = (role or "any").strip().lower() or "any"
+        return f"{self._prefix()}:dashboard:{tenant_id}:summary:{role_part}"
 
     def products_key(self, tenant_id: str) -> str:
         # Architecture: products:{tenant_id}:{category_id} — MVP full list = all
@@ -159,14 +160,26 @@ class AppCache:
             logger.warning("App cache delete failed: %s", exc)
 
     async def invalidate_dashboard(self, tenant_id: str) -> None:
-        await self.delete(self.dashboard_key(tenant_id))
+        # Stage 80 — dashboard cache is role-scoped; clear common role variants.
+        roles = (
+            "any",
+            "cashier",
+            "store_manager",
+            "company_admin",
+            "super_admin",
+            "accountant",
+            "sales_officer",
+            "inventory_officer",
+        )
+        await self.delete(*(self.dashboard_key(tenant_id, role=r) for r in roles))
 
     async def invalidate_catalog(self, tenant_id: str) -> None:
         await self.delete(*self.catalog_keys(tenant_id))
 
     async def invalidate_tenant(self, tenant_id: str) -> None:
         """Invalidate dashboard + catalog read models for a tenant."""
-        await self.delete(self.dashboard_key(tenant_id), *self.catalog_keys(tenant_id))
+        await self.invalidate_dashboard(tenant_id)
+        await self.invalidate_catalog(tenant_id)
 
     async def invalidate_user_permissions(self, tenant_id: str, user_id: str) -> None:
         await self.delete(self.permissions_key(tenant_id, user_id))

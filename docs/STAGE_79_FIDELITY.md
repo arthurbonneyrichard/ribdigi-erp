@@ -24,7 +24,7 @@ Stage 79 proves the owner Commercial Data Exit path after Stage 78 freeze — **
 | **R1** | `test_commercial_data_retention_r1.py` — `COMMERCIAL_DATA_RETENTION_MVP.md`, commercial-data-retention JSON | Owner Retention Boundary / Stage 45 retention | Data return portal |
 | **A1** | `test_commercial_customer_audit_a1.py` — `COMMERCIAL_CUSTOMER_AUDIT_MVP.md`, commercial-customer-audit JSON | Owner Customer Audit Boundary / Stage 47 audit | Audit rights live; go-live |
 | **D1** | This note + `test_stage79_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H79x** | `STAGE_79_EXIT_CRITERIA.md`; ADR-165; `test_stage79_exit_h79x.py` | Stage 79 exit + freeze | Stage 80+ requires CONTINUE/NEXT |
+| **H79x** | `STAGE_79_EXIT_CRITERIA.md`; ADR-165; `test_stage79_exit_h79x.py` | Stage 79 exit + freeze | Stage 80 opened via ADR-166 |
 
 ## Evidence tests
 

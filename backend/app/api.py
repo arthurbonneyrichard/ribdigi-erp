@@ -2472,7 +2472,8 @@ async def deactivate_user(
 @api.get("/dashboard")
 async def dashboard(claims=Depends(require_permission("dashboard", "read")), db: AsyncSession = Depends(get_db)):
     tid = claims["tenant_id"]
-    dash_key = cache_svc.app_cache.dashboard_key(tid)
+    role = claims.get("role") or "cashier"
+    dash_key = cache_svc.app_cache.dashboard_key(tid, role=role)
     cached = await cache_svc.app_cache.get_json(dash_key)
     if cached is not None:
         return env(cached)
@@ -2694,9 +2695,31 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     ]
 
     from app import dashboard_charts as dashboard_charts_svc
+    from app import dashboard_views as dashboard_views_svc
+    from app.rbac import ROLE_LABELS, has_permission
 
     chart_series = await dashboard_charts_svc.load_revenue_chart_series(
         db, tenant_id=tid, now=now
+    )
+
+    # Tenant user management KPIs (Tenant Admin / users:read only after filter)
+    user_total = await scalar(select(func.count(m.User.id)).where(m.User.tenant_id == tid))
+    user_active = await scalar(
+        select(func.count(m.User.id)).where(m.User.tenant_id == tid, m.User.is_active == True)  # noqa: E712
+    )
+    role_count = await scalar(
+        select(func.count(m.CustomRole.id)).where(m.CustomRole.tenant_id == tid)
+    )
+    # System roles + custom roles for catalog size
+    from app.rbac import list_system_role_catalog
+
+    system_role_count = len(list_system_role_catalog())
+    recent_logins = await scalar(
+        select(func.count(func.distinct(m.AuthSession.user_id))).where(
+            m.AuthSession.tenant_id == tid,
+            m.AuthSession.revoked_at.is_(None),
+            m.AuthSession.created_at >= day_start - timedelta(days=7),
+        )
     )
 
     payload = {
@@ -2726,6 +2749,15 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         "top_products": top_products,
         "daily_revenue_series": chart_series["daily_revenue_series"],
         "monthly_revenue_series": chart_series["monthly_revenue_series"],
+        "user_stats": {
+            "total_users": int(user_total),
+            "active_users": int(user_active),
+            "inactive_users": int(user_total) - int(user_active),
+            "custom_roles": int(role_count),
+            "system_roles": int(system_role_count),
+            "recent_logins_7d": int(recent_logins),
+        },
+        "role_label": ROLE_LABELS.get(role, role),
         # BR-4.1 click-through targets (Stage 1 F17 / Stage 21 V1)
         "kpi_links": {
             "total_sales": "/sales?tab=invoices",
@@ -2743,8 +2775,12 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "monthly_revenue": "/reports?tab=sales",
             "prior_month_revenue": "/reports?tab=sales",
             "mom_change_pct": "/reports?tab=sales",
+            "user_stats": "/users",
         },
     }
+    # Stage 80 T1 — permission + role scoped view (cashier omits accounting/users/etc.)
+    _ = has_permission  # imported for clarity; filtering uses dashboard_views
+    payload = dashboard_views_svc.filter_dashboard_payload(payload, claims)
     await cache_svc.app_cache.set_json(
         dash_key, payload, ttl_seconds=int(settings.CACHE_DASHBOARD_TTL_SECONDS)
     )

@@ -215,6 +215,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       : items.filter(([, , module]) => canReadModule(permissions, module));
   const showStoreSwitcher =
     principal !== 'platform' && canReadModule(permissions, 'stores') && stores.length > 0;
+  const adminHrefs = new Set(['/users', '/audit', '/backup', '/security']);
+  const primaryNav = visible.filter(([, h]) => !adminHrefs.has(h));
+  const adminNav = visible.filter(([, h]) => adminHrefs.has(h));
 
   return (
     <div className="shell">
@@ -224,12 +227,24 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           {principal === 'platform' && (
             <Link href="/platform/dashboard">Platform console</Link>
           )}
-          {visible.map(([n, h]) => (
+          {primaryNav.map(([n, h]) => (
             <Link key={h} href={h}>
               {n}
               {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
             </Link>
           ))}
+          {adminNav.length > 0 && (
+            <>
+              <div className="muted" style={{ marginTop: 12, marginBottom: 4, fontSize: 12 }}>
+                Admin
+              </div>
+              {adminNav.map(([n, h]) => (
+                <Link key={h} href={h}>
+                  {n === 'Users' ? 'Users & Roles' : n}
+                </Link>
+              ))}
+            </>
+          )}
         </nav>
       </aside>
       <main className="main">

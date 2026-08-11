@@ -28,6 +28,17 @@ type Dash = {
   daily_revenue_series?: { date: string; revenue: number }[];
   monthly_revenue_series?: { month: string; revenue: number }[];
   kpi_links?: Record<string, string>;
+  view?: string;
+  sections?: string[];
+  role_label?: string;
+  user_stats?: {
+    total_users?: number;
+    active_users?: number;
+    inactive_users?: number;
+    custom_roles?: number;
+    system_roles?: number;
+    recent_logins_7d?: number;
+  };
 };
 
 type InsightCard = {
@@ -94,8 +105,10 @@ export default function Page() {
 
   const n = (v: number | string | null | undefined) => formatNumber(v, formats.number_format);
   const links = d.kpi_links || {};
+  const view = d.view || 'executive';
+  const has = (key: string) => Object.prototype.hasOwnProperty.call(d, key);
 
-  const cards: KpiCard[] = [
+  const allCards: KpiCard[] = [
     { key: 'total_sales', label: 'Total Sales', value: d.total_sales ?? 0, href: links.total_sales },
     { key: 'total_purchases', label: 'Purchases', value: d.total_purchases ?? 0, href: links.total_purchases },
     { key: 'total_expenses', label: 'Expenses', value: d.total_expenses ?? 0, href: links.total_expenses },
@@ -110,7 +123,7 @@ export default function Page() {
       value: d.expiring_batches ?? 0,
       href: links.expiring_batches,
     },
-    { key: 'daily_revenue', label: 'Today Revenue', value: d.daily_revenue ?? 0, href: links.daily_revenue },
+    { key: 'daily_revenue', label: "Today's Sales", value: d.daily_revenue ?? 0, href: links.daily_revenue },
     {
       key: 'yesterday_revenue',
       label: 'Yesterday Revenue',
@@ -123,7 +136,7 @@ export default function Page() {
       value: d.dod_change_pct == null ? '—' : `${n(d.dod_change_pct)}%`,
       href: links.dod_change_pct,
     },
-    { key: 'monthly_revenue', label: 'Month Revenue', value: d.monthly_revenue ?? 0, href: links.monthly_revenue },
+    { key: 'monthly_revenue', label: 'Monthly Sales', value: d.monthly_revenue ?? 0, href: links.monthly_revenue },
     {
       key: 'prior_month_revenue',
       label: 'Prior Month',
@@ -137,13 +150,40 @@ export default function Page() {
       href: links.mom_change_pct,
     },
   ];
+  const cards = allCards.filter((c) => has(c.key));
+  if (d.user_stats) {
+    cards.push(
+      { key: 'user_total', label: 'Tenant Users', value: d.user_stats.total_users ?? 0, href: links.user_stats },
+      { key: 'user_active', label: 'Active Users', value: d.user_stats.active_users ?? 0, href: links.user_stats },
+      { key: 'user_inactive', label: 'Inactive Users', value: d.user_stats.inactive_users ?? 0, href: links.user_stats },
+      { key: 'user_roles', label: 'Custom Roles', value: d.user_stats.custom_roles ?? 0, href: links.user_stats },
+      {
+        key: 'user_recent',
+        label: 'Logins (7d)',
+        value: d.user_stats.recent_logins_7d ?? 0,
+        href: links.user_stats,
+      },
+    );
+  }
 
   const maxTop = Math.max(1, ...(d.top_products || []).map((p) => Number(p.revenue) || 0));
+  const title =
+    view === 'cashier'
+      ? 'Cashier Dashboard'
+      : view === 'store_manager'
+        ? 'Store Manager Dashboard'
+        : 'Tenant Admin Dashboard';
+  const subtitle =
+    view === 'cashier'
+      ? 'POS-focused KPIs for your shift — company accounting is hidden'
+      : view === 'store_manager'
+        ? 'Store operations KPIs from your tenant data'
+        : `Live KPIs for ${d.role_label || 'Tenant Admin'} — click a card to open the related module`;
 
   return (
     <Shell>
-      <h1>Executive Dashboard</h1>
-      <p className="muted">Live KPIs from your tenant data — click a card to open the related report or module</p>
+      <h1>{title}</h1>
+      <p className="muted">{subtitle}</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       <div className="grid">
         {cards.map((card) => {
@@ -173,14 +213,30 @@ export default function Page() {
         })}
       </div>
 
-      <div className="grid" style={{ marginTop: 20 }}>
-        <div className="card">
-          <DailyRevenueLineChart series={d.daily_revenue_series || []} formatValue={n} />
+      {(has('daily_revenue_series') || has('monthly_revenue_series')) && (
+        <div className="grid" style={{ marginTop: 20 }}>
+          {has('daily_revenue_series') && (
+            <div className="card">
+              <DailyRevenueLineChart series={d.daily_revenue_series || []} formatValue={n} />
+            </div>
+          )}
+          {has('monthly_revenue_series') && (
+            <div className="card">
+              <MonthlyRevenueBarChart series={d.monthly_revenue_series || []} formatValue={n} />
+            </div>
+          )}
         </div>
-        <div className="card">
-          <MonthlyRevenueBarChart series={d.monthly_revenue_series || []} formatValue={n} />
+      )}
+
+      {view === 'cashier' && (
+        <div className="card" style={{ marginTop: 20 }}>
+          <h3 style={{ marginTop: 0 }}>POS</h3>
+          <p className="muted">Open the register to start selling.</p>
+          <Link href="/pos" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
+            Open POS
+          </Link>
         </div>
-      </div>
+      )}
 
       <div className="card" style={{ marginTop: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
@@ -216,7 +272,7 @@ export default function Page() {
         )}
       </div>
 
-      {insightCards.length > 0 && (
+      {insightCards.length > 0 && view !== 'cashier' && (
         <div className="card" style={{ marginTop: 20 }}>
           <h3>AI insights</h3>
           <p className="muted" style={{ marginBottom: 8 }}>
@@ -242,63 +298,61 @@ export default function Page() {
         </div>
       )}
 
-      <div className="grid" style={{ marginTop: 20 }}>
-        <div className="card">
-          <h3>Top products</h3>
-          {(d.top_products || []).length === 0 && <p className="muted">No posted invoice lines yet</p>}
-          {(d.top_products || []).map((p) => (
-            <div key={p.sku} style={{ marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                <span>
-                  {p.name} <span className="muted">({p.sku})</span>
-                </span>
-                <span>{n(p.revenue)}</span>
-              </div>
-              <div
-                style={{
-                  height: 6,
-                  background: '#e5e7eb',
-                  marginTop: 4,
-                }}
-              >
-                <div
-                  style={{
-                    height: 6,
-                    width: `${Math.round((Number(p.revenue) / maxTop) * 100)}%`,
-                    background: '#0f766e',
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="card">
-          <h3>Recent sales</h3>
-          {(d.recent_sales || []).length === 0 && <p className="muted">No recent sales</p>}
-          <table className="table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Ref</th>
-                <th>Source</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(d.recent_sales || []).map((r) => (
-                <tr key={`${r.source}-${r.reference}`}>
-                  <td>
-                    {formatDateTime(r.at, formats.date_format, formats.time_format)}
-                  </td>
-                  <td>{r.reference}</td>
-                  <td>{r.source}</td>
-                  <td>{n(r.total)}</td>
-                </tr>
+      {(has('top_products') || has('recent_sales')) && (
+        <div className="grid" style={{ marginTop: 20 }}>
+          {has('top_products') && (
+            <div className="card">
+              <h3>Top products</h3>
+              {(d.top_products || []).length === 0 && <p className="muted">No posted invoice lines yet</p>}
+              {(d.top_products || []).map((p) => (
+                <div key={p.sku} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                    <span>
+                      {p.name} <span className="muted">({p.sku})</span>
+                    </span>
+                    <span>{n(p.revenue)}</span>
+                  </div>
+                  <div style={{ height: 6, background: '#e5e7eb', marginTop: 4 }}>
+                    <div
+                      style={{
+                        height: 6,
+                        width: `${Math.round((Number(p.revenue) / maxTop) * 100)}%`,
+                        background: '#0f766e',
+                      }}
+                    />
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
+          {has('recent_sales') && (
+            <div className="card">
+              <h3>Recent sales</h3>
+              {(d.recent_sales || []).length === 0 && <p className="muted">No recent sales</p>}
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Ref</th>
+                    <th>Source</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(d.recent_sales || []).map((r) => (
+                    <tr key={`${r.source}-${r.reference}`}>
+                      <td>{formatDateTime(r.at, formats.date_format, formats.time_format)}</td>
+                      <td>{r.reference}</td>
+                      <td>{r.source}</td>
+                      <td>{n(r.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </Shell>
   );
 }

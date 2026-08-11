@@ -124,6 +124,125 @@ async def platform_dashboard_kpis(db: AsyncSession) -> dict:
     }
 
 
+async def platform_tenant_growth(db: AsyncSession, *, months: int = 12) -> dict:
+    """Tenants created by calendar month (customer tenants only).
+
+    Aggregates in Python so SQLite tests and PostgreSQL prod share one path
+    (avoids Postgres-only ``date_trunc``).
+    """
+    await ensure_platform_tenant(db)
+    months = max(1, min(int(months or 12), 36))
+    now = datetime.utcnow()
+    # Inclusive window: first day of (months-1) months ago through now.
+    year = now.year
+    month = now.month - (months - 1)
+    while month <= 0:
+        month += 12
+        year -= 1
+    window_start = datetime(year, month, 1)
+    created_ats = (
+        await db.execute(
+            select(m.Tenant.created_at).where(
+                _customer_tenant_filter(), m.Tenant.created_at >= window_start
+            )
+        )
+    ).scalars().all()
+    by_month: dict[str, int] = {}
+    for created_at in created_ats:
+        if created_at is None:
+            continue
+        key = created_at.strftime("%Y-%m")
+        by_month[key] = by_month.get(key, 0) + 1
+    series: list[dict] = []
+    y, mo = year, month
+    for _ in range(months):
+        key = f"{y:04d}-{mo:02d}"
+        series.append({"month": key, "tenants": by_month.get(key, 0)})
+        mo += 1
+        if mo > 12:
+            mo = 1
+            y += 1
+    return {"series": series, "months": months}
+
+
+async def platform_tenant_status_chart(db: AsyncSession) -> dict:
+    kpis = await platform_dashboard_kpis(db)
+    breakdown = kpis.get("status_breakdown") or {}
+    slices = [
+        {"status": status, "count": int(count)}
+        for status, count in sorted(breakdown.items(), key=lambda x: (-x[1], x[0]))
+    ]
+    return {"slices": slices, "total": int(kpis.get("total_tenants") or 0)}
+
+
+async def platform_plan_distribution(db: AsyncSession) -> dict:
+    await ensure_platform_tenant(db)
+    rows = (
+        await db.execute(
+            select(m.Tenant.plan_code, func.count())
+            .where(_customer_tenant_filter())
+            .group_by(m.Tenant.plan_code)
+            .order_by(func.count().desc())
+        )
+    ).all()
+    slices = [
+        {"plan_code": str(plan or "unset"), "count": int(count)} for plan, count in rows
+    ]
+    return {"slices": slices, "total": sum(s["count"] for s in slices)}
+
+
+async def platform_industry_distribution(db: AsyncSession) -> dict:
+    await ensure_platform_tenant(db)
+    rows = (
+        await db.execute(
+            select(m.Tenant.industry, func.count())
+            .where(_customer_tenant_filter())
+            .group_by(m.Tenant.industry)
+            .order_by(func.count().desc())
+        )
+    ).all()
+    slices = [
+        {"industry": str(ind or "unset"), "count": int(count)} for ind, count in rows
+    ]
+    return {"slices": slices, "total": sum(s["count"] for s in slices)}
+
+
+async def platform_user_growth(db: AsyncSession, *, months: int = 12) -> dict:
+    """Customer-tenant users created by calendar month (dialect-portable)."""
+    await ensure_platform_tenant(db)
+    months = max(1, min(int(months or 12), 36))
+    now = datetime.utcnow()
+    year = now.year
+    month = now.month - (months - 1)
+    while month <= 0:
+        month += 12
+        year -= 1
+    window_start = datetime(year, month, 1)
+    created_ats = (
+        await db.execute(
+            select(m.User.created_at)
+            .join(m.Tenant, m.Tenant.id == m.User.tenant_id)
+            .where(m.Tenant.id != PLATFORM_TENANT_ID, m.User.created_at >= window_start)
+        )
+    ).scalars().all()
+    by_month: dict[str, int] = {}
+    for created_at in created_ats:
+        if created_at is None:
+            continue
+        key = created_at.strftime("%Y-%m")
+        by_month[key] = by_month.get(key, 0) + 1
+    series: list[dict] = []
+    y, mo = year, month
+    for _ in range(months):
+        key = f"{y:04d}-{mo:02d}"
+        series.append({"month": key, "users": by_month.get(key, 0)})
+        mo += 1
+        if mo > 12:
+            mo = 1
+            y += 1
+    return {"series": series, "months": months}
+
+
 async def _enrich_tenant_row(db: AsyncSession, t: m.Tenant) -> dict:
     user_count = int(
         (

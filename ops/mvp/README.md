@@ -250,6 +250,9 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_80_EXIT_CRITERIA.md` / `docs/ADR_167_STAGE80_FREEZE.md` (`backend/tests/test_stage80_exit_h80x.py`) — Stage 80 H80x
+- `docs/STAGE_80_FIDELITY.md` (`backend/tests/test_stage80_fidelity_d1.py`) — Stage 80 D1
+- `docs/STAGE_80_PLAN.md` (`backend/tests/test_stage80_open.py`) — Stage 80 open (ADR-166)
 - `docs/STAGE_79_EXIT_CRITERIA.md` / `docs/ADR_165_STAGE79_FREEZE.md` (`backend/tests/test_stage79_exit_h79x.py`) — Stage 79 H79x
 - `docs/STAGE_79_FIDELITY.md` (`backend/tests/test_stage79_fidelity_d1.py`) — Stage 79 D1
 - `docs/COMMERCIAL_CUSTOMER_AUDIT_MVP.md` (`backend/tests/test_commercial_customer_audit_a1.py`) — Stage 79 A1
@@ -1027,6 +1030,26 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 80 exit
+
+H80x met — `docs/STAGE_80_EXIT_CRITERIA.md`, ADR-167. Stages 1–80 frozen for Stage 80 feature scope.
+
+## Stage 80 D1 — Dual-Console Dashboard fidelity
+
+`docs/STAGE_80_FIDELITY.md` — maps P1–T1 → readiness / launch / deploy / security.
+
+## Stage 80 T1 — Tenant role-scoped dashboards
+
+`test_tenant_role_dashboard_t1.py` — executive / store_manager / cashier views; permission-driven sections.
+
+## Stage 80 P1 — Platform owner dashboard charts
+
+`test_platform_dashboard_charts_p1.py` — real aggregates; `mrr_fabricated_claimed: false`.
+
+## Stage 80 open
+
+ADR-166 + `docs/STAGE_80_PLAN.md` — Dual-Console Dashboard Fidelity.
 
 ## Stage 79 exit
 

@@ -27,4 +27,8 @@ Stage 79 Commercial Data Exit Fidelity delivered commercial data retention hones
 
 ## Next stage
 
-Stage 80+ requires CONTINUE/NEXT with a distinct open ADR after this freeze.
+Stage 80 opened via ADR-166 (`docs/ADR_166_STAGE80_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 80 (Dual-Console Dashboard Fidelity — Platform Owner Dashboard Charts → Tenant Role-Scoped Dashboards → Dual-Console Dashboard Fidelity) after Stage 79 freeze via CONTINUE/NEXT — see [ADR-166](ADR_166_STAGE80_OPEN.md) and [STAGE_80_PLAN.md](STAGE_80_PLAN.md). Stage 79 feature scope remains frozen; Stage 80 does not reopen R1–D1 / H79x.
