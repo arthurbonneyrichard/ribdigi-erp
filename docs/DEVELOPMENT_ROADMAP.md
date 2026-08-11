@@ -502,6 +502,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 49 exit (2026-08-11):** R1, L1, D1, H49x met — `docs/STAGE_49_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_104_STAGE49_FREEZE.md`. Fidelity: `docs/STAGE_49_FIDELITY.md`.
 
+**Stage 50 open (2026-08-11):** Commercial Acquisition & Trial Fidelity track approved — `docs/ADR_105_STAGE50_OPEN.md` + `docs/STAGE_50_PLAN.md` (referral → freemium trial → fidelity).
+
 
 
 

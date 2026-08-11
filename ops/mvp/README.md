@@ -133,6 +133,7 @@ Authoritative MVP docs:
 - `docs/PRICING_TRANSPARENCY_MVP.md` (`backend/tests/test_pricing_transparency_l1.py`) — Stage 49 L1
 - `docs/STAGE_49_FIDELITY.md` (`backend/tests/test_stage49_fidelity_d1.py`) — Stage 49 D1
 - `docs/STAGE_49_EXIT_CRITERIA.md` / `docs/ADR_104_STAGE49_FREEZE.md` (`backend/tests/test_stage49_exit_h49x.py`) — Stage 49 H49x
+- `docs/STAGE_50_PLAN.md` (`backend/tests/test_stage50_open.py`) — Stage 50 open (ADR-105)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -535,3 +536,7 @@ Commercial Channel & Pricing Fidelity — `docs/STAGE_49_PLAN.md`, ADR-103; Clos
 ## Stage 49 exit
 
 H49x met — `docs/STAGE_49_EXIT_CRITERIA.md`, ADR-104. Stages 1–49 frozen for Stage 49 feature scope.
+
+## Stage 50 open
+
+Commercial Acquisition & Trial Fidelity — `docs/STAGE_50_PLAN.md`, ADR-105; R1 next.

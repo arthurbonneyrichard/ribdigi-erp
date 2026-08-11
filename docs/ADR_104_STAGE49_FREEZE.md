@@ -23,3 +23,8 @@ Stage 49 Commercial Channel & Pricing Fidelity delivered partner / reseller term
 - Stage 1–48 freezes remain in force for their scopes (Stage 48 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Channel & pricing packaging Complete does **not** mean live partner program, signed reseller agreement, white-label live, public pricing portal, checkout pricing, paid billing, or live go-live / §7 / attestation Complete.
+
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 50 (Commercial Acquisition & Trial Fidelity) after Stage 49 freeze via CONTINUE/NEXT — see [ADR-105](ADR_105_STAGE50_OPEN.md) and [STAGE_50_PLAN.md](STAGE_50_PLAN.md). Stage 49 feature scope remains frozen; Stage 50 does not reopen R1–D1 / H49x.
