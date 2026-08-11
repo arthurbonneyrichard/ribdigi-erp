@@ -1100,7 +1100,17 @@ Fidelity sync: Stage 19 D1 — `docs/STAGE_19_FIDELITY.md`. Stage 24 N1 shared s
   - [x] Flag suspicious transaction patterns — Stage 20 U1 (`suspicious_transaction_burst`)
   - [x] Alert admins on potential fraud indicators — Stage 20 U1 (`notify=true` → security `Notification`)
 
-Fidelity sync: Stage 20 D1 — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`).
+#### BR-21.11 AI Purchases Analysis
+- **Description:** Basic purchasing pattern recognition over live PO / GRN / purchase-invoice actuals.
+- **Priority:** Medium
+- **Acceptance Criteria:**
+  - [x] Purchase spend trend + short-horizon forecast — Stage 25 P1 (`GET /ai/purchases/analysis` `trend`; `test_ai_purchases_analysis_p1.py`)
+  - [x] Supplier concentration / spend share — Stage 25 P1 (`suppliers.rows` / `top_spend_share`)
+  - [x] PO fill / open backlog signals — Stage 25 P1 (`purchase_orders.fill` + draft/partial counts)
+  - [x] Overdue purchase-invoice + optimization suggestions — Stage 25 P1 (`purchase_invoices.overdue` / `suggestions`)
+  - Remaining post-MVP: external LLM / Prophet upgrades (not Stage 25)
+
+Fidelity sync: Stage 20 D1 — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`). Stage 25 P1 purchases analysis — `test_ai_purchases_analysis_p1.py` / `docs/STAGE_25_PLAN.md`.
 
 ---
 

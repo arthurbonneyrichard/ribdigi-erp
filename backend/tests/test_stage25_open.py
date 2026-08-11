@@ -21,6 +21,9 @@ def test_stage25_plan_and_open_adr():
         or "U1 next" in plan
         or "D1 next" in plan
         or "H25x next" in plan
+        or "P1 complete" in plan
+        or "Closed" in plan
+        or "exit met" in plan.lower()
     )
     assert "Actual Inventory" in plan
     assert "Actual Purchases" in plan

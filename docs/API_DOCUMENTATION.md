@@ -1351,6 +1351,10 @@ Returns `trend` (incl. 7/14/30 forecast), `rfm`, `product_affinity`, `peaks`.
 ### 16.6 AI Expense Analysis
 **Endpoint:** `GET /ai/expenses/analysis?from_date=&to_date=`
 
+### 16.6a AI Purchases Analysis (Stage 25 P1 / BR-21.11)
+**Endpoint:** `GET /ai/purchases/analysis?from_date=&to_date=&lookback_days=90`  
+Returns `trend` (incl. 7/14/30 forecast from posted PI totals), `suppliers` (spend share), `purchase_orders` (status/fill), `goods_receipts`, `purchase_invoices.overdue`, and `suggestions`. Method `rules_v1` (not Prophet). Evidence: `test_ai_purchases_analysis_p1.py`.
+
 ### 16.7 AI Report Generator
 **Endpoint:** `POST /ai/reports/generate` (optional `?export=true` for file download)  
 **Templates:** `GET/POST /ai/reports/templates`, `DELETE /ai/reports/templates/{template_id}`

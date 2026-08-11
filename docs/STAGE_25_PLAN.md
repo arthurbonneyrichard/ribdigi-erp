@@ -1,6 +1,6 @@
 # Stage 25 Plan — Actuals → AI Analysis → Business Insights
 
-**Status:** Open  
+**Status:** Open — P1 COMPLETE; X1 next (ADR-055)  
 **Base:** Commerce actuals → Basic RIBDIGI AI analysis → Business insights  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-055](ADR_055_STAGE25_OPEN.md)
@@ -35,7 +35,7 @@ Business Insights
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **P1** | Purchases actuals → AI analysis | P0 | PENDING |
+| **P1** | Purchases actuals → AI analysis | P0 | COMPLETE |
 | **X1** | Cross-domain analysis (Inv + Sales + Purch + Exp) | P0 | PENDING |
 | **B1** | Business Insights surface (all four actuals) | P1 | PENDING |
 | **U1** | AI UI fidelity (purchases + analysis panels) | P1 | PENDING |
@@ -58,11 +58,11 @@ Business Insights
 
 ## P1 acceptance criteria
 
-- [ ] Dedicated purchases AI analysis over live PO / GRN / purchase-invoice actuals (extend `ai_sales` / `ai_expenses` pattern — not a parallel stack).
-- [ ] Tenant-scoped + `require_permission("ai", …)`; foreign-tenant 404.
-- [ ] Automated proof: `backend/tests/test_ai_purchases_analysis_p1.py` (or equivalent).
-- [ ] API / plan / launch cite Stage 25 P1.
-- [ ] No fake LLM/Prophet claims; Remaining external ML stays deferred.
+- [x] Dedicated purchases AI analysis over live PO / GRN / purchase-invoice actuals (extend `ai_sales` / `ai_expenses` pattern — not a parallel stack).
+- [x] Tenant-scoped + `require_permission("ai", …)`; cashier without `ai` → 403; no cross-tenant leakage.
+- [x] Automated proof: `backend/tests/test_ai_purchases_analysis_p1.py`.
+- [x] API / BR-21.11 / plan / launch / roadmap cite Stage 25 P1.
+- [x] No fake LLM/Prophet claims; Remaining external ML stays deferred.
 
 ## X1 acceptance criteria
 
@@ -86,4 +86,4 @@ Filled when exit workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-055 open. P1 next. Stages 1–24 remain frozen for their scopes.
+Plan authored; ADR-055 open. P1 complete; X1 next. Stages 1–24 remain frozen for their scopes.

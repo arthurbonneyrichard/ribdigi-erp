@@ -210,6 +210,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 25 open (2026-08-11):** Actuals → AI Analysis → Business Insights track approved — `docs/ADR_055_STAGE25_OPEN.md` + `docs/STAGE_25_PLAN.md` (Inv/Sales/Purch/Exp actuals → basic AI → insights).
 
+**Stage 25 P1 (2026-08-11):** Purchases actuals → AI analysis — `GET /ai/purchases/analysis` spend trend, supplier concentration, PO fill/open backlog, overdue PI suggestions (`test_ai_purchases_analysis_p1.py`; BR-21.11).
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -790,7 +792,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 25 open (`docs/STAGE_25_PLAN.md`, ADR-055) — P1 next. Stages 1–24 remain frozen for their scopes.
+**Active delivery plan:** Stage 25 open (`docs/STAGE_25_PLAN.md`, ADR-055) — P1 complete; X1 next. Stages 1–24 remain frozen for their scopes.
 
 ### 6.2 Features
 

@@ -11187,6 +11187,27 @@ async def ai_expenses_analysis(
     return env(data)
 
 
+@api.get("/ai/purchases/analysis")
+async def ai_purchases_analysis(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    lookback_days: int = 90,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 25 P1 / BR-21.11 — PO/GRN/PI spend trends, supplier concentration, fill & overdue."""
+    from app import ai_purchases as ai_purchases_svc
+
+    data = await ai_purchases_svc.analyze_purchases(
+        db,
+        claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+        lookback_days=lookback_days,
+    )
+    return env(data)
+
+
 @api.get("/ai/security/alerts")
 async def ai_security_alerts(
     lookback_hours: int = 72,
