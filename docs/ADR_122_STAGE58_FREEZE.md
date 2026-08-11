@@ -23,3 +23,7 @@ Stage 58 Commercial Business & AI Metrics Fidelity delivered business metrics ho
 - Stage 1–57 freezes remain in force for their scopes (Stage 57 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Business & AI metrics packaging Complete does **not** mean measured MRR / paying customers / NRR, measured AI adoption / prediction accuracy / chat resolution, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 59 (Commercial Channel Extensions Fidelity) after Stage 58 freeze via CONTINUE/NEXT — see [ADR-123](ADR_123_STAGE59_OPEN.md) and [STAGE_59_PLAN.md](STAGE_59_PLAN.md). Stage 58 feature scope remains frozen; Stage 59 does not reopen B1–D1 / H58x.

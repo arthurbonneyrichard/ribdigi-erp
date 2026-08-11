@@ -196,6 +196,7 @@ Authoritative MVP docs:
 - `docs/AI_METRICS_MVP.md` (`backend/tests/test_ai_metrics_i1.py`) — Stage 58 I1
 - `docs/STAGE_58_FIDELITY.md` (`backend/tests/test_stage58_fidelity_d1.py`) — Stage 58 D1
 - `docs/STAGE_58_EXIT_CRITERIA.md` / `docs/ADR_122_STAGE58_FREEZE.md` (`backend/tests/test_stage58_exit_h58x.py`) — Stage 58 H58x
+- `docs/STAGE_59_PLAN.md` (`backend/tests/test_stage59_open.py`) — Stage 59 open (ADR-123)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -778,3 +779,7 @@ Commercial Business & AI Metrics Fidelity — `docs/STAGE_58_PLAN.md`, ADR-121; 
 ## Stage 58 exit
 
 H58x met — `docs/STAGE_58_EXIT_CRITERIA.md`, ADR-122. Stages 1–58 frozen for Stage 58 feature scope.
+
+## Stage 59 open
+
+Commercial Channel Extensions Fidelity — `docs/STAGE_59_PLAN.md`, ADR-123; Open — E1 next.

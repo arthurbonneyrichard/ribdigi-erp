@@ -1361,3 +1361,5 @@ Every feature in every phase must meet:
 **Stage 58 D1 (2026-08-11):** Business & AI metrics fidelity sync — `docs/STAGE_58_FIDELITY.md` (`test_stage58_fidelity_d1.py`); maps B1–I1 → readiness / launch / deploy / security.
 
 **Stage 58 exit (2026-08-11):** B1, I1, D1, H58x met — `docs/STAGE_58_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_122_STAGE58_FREEZE.md`. Fidelity: `docs/STAGE_58_FIDELITY.md`.
+
+**Stage 59 open (2026-08-11):** Commercial Channel Extensions Fidelity track approved — `docs/ADR_123_STAGE59_OPEN.md` + `docs/STAGE_59_PLAN.md` (e-commerce integration → CRM commercial → fidelity).
