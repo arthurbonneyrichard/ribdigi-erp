@@ -1,6 +1,6 @@
 # Stage 54 Plan — Commercial Go-To-Market Fidelity
 
-**Status:** Open — M1 next  
+**Status:** Open — M1 complete; S1 next  
 **Base:** Digital Marketing / Case Studies / Testimonials Honesty Pack + Direct Sales Honesty Pack → Commercial Go-To-Market Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-113](ADR_113_STAGE54_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Go-To-Market Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **M1** | Digital marketing / case studies / testimonials honesty packaging (not live campaigns / published case studies Complete) | P0 | PENDING |
+| **M1** | Digital marketing / case studies / testimonials honesty packaging (not live campaigns / published case studies Complete) | P0 | COMPLETE |
 | **S1** | Direct sales honesty packaging (not live inside-sales team / Enterprise pipeline Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H54x** | Stage 54 exit criteria + freeze ADR | Exit | PENDING |
@@ -81,10 +81,10 @@ Commercial Go-To-Market Fidelity
 
 ## M1 acceptance criteria
 
-- [ ] Digital marketing / case studies / testimonials honesty packaging consolidating PRODUCT_OVERVIEW Digital Marketing and GTM case-study themes with Stage 49–53 channel / acquisition adjacency (not forging live campaigns / published case studies Complete).
-- [ ] Automated proof: `backend/tests/test_digital_marketing_m1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 54 M1.
+- [x] Digital marketing / case studies / testimonials honesty packaging consolidating PRODUCT_OVERVIEW Digital Marketing and GTM case-study themes with Stage 49–53 channel / acquisition adjacency (not forging live campaigns / published case studies Complete).
+- [x] Automated proof: `backend/tests/test_digital_marketing_m1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 54 M1.
 
 ## S1 acceptance criteria
 

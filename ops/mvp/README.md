@@ -56,6 +56,7 @@
 | `subscription-renewal.json` | Stage 52 R1 Subscription renewal honesty — `annual_discount_enforcement_claimed: false` / `auto_renewal_billing_live: false` / `upgrade_downgrade_live: false` / `renewal_program_live: false` |
 | `api-integration-commercial.json` | Stage 53 A1 API & integration commercial honesty — `api_rate_limit_upgrade_billing_live: false` / `connector_fee_billing_claimed: false` / `api_commercial_catalog_live: false` / `integration_revenue_live: false` |
 | `cancellation-churn.json` | Stage 53 C1 Cancellation / refund / churn honesty — `cancellation_portal_live: false` / `refund_processing_claimed: false` / `churn_measurement_live: false` / `cancellation_policy_enforced: false` |
+| `digital-marketing.json` | Stage 54 M1 Digital marketing honesty — `digital_marketing_campaigns_live: false` / `case_studies_published_claimed: false` / `testimonials_published_claimed: false` / `paid_ads_live: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -162,6 +163,7 @@ Authoritative MVP docs:
 - `docs/STAGE_53_FIDELITY.md` (`backend/tests/test_stage53_fidelity_d1.py`) — Stage 53 D1
 - `docs/STAGE_53_EXIT_CRITERIA.md` / `docs/ADR_112_STAGE53_FREEZE.md` (`backend/tests/test_stage53_exit_h53x.py`) — Stage 53 H53x
 - `docs/STAGE_54_PLAN.md` (`backend/tests/test_stage54_open.py`) — Stage 54 open (ADR-113)
+- `docs/DIGITAL_MARKETING_MVP.md` (`backend/tests/test_digital_marketing_m1.py`) — Stage 54 M1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -647,4 +649,8 @@ H53x met — `docs/STAGE_53_EXIT_CRITERIA.md`, ADR-112. Stages 1–53 frozen for
 
 ## Stage 54 open
 
-Commercial Go-To-Market Fidelity — `docs/STAGE_54_PLAN.md`, ADR-113; M1 next.
+Commercial Go-To-Market Fidelity — `docs/STAGE_54_PLAN.md`, ADR-113; M1 complete; S1 next.
+
+## Stage 54 M1 — Digital marketing / case studies / testimonials honesty
+
+`docs/DIGITAL_MARKETING_MVP.md` + `ops/mvp/digital-marketing.json` — packaging Complete; `digital_marketing_campaigns_live` / `case_studies_published_claimed` / `testimonials_published_claimed` / `paid_ads_live` remain false.

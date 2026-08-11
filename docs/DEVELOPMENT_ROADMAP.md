@@ -1313,3 +1313,5 @@ Every feature in every phase must meet:
 **Stage 53 exit (2026-08-11):** A1, C1, D1, H53x met — `docs/STAGE_53_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_112_STAGE53_FREEZE.md`. Fidelity: `docs/STAGE_53_FIDELITY.md`.
 
 **Stage 54 open (2026-08-11):** Commercial Go-To-Market Fidelity track approved — `docs/ADR_113_STAGE54_OPEN.md` + `docs/STAGE_54_PLAN.md` (digital marketing/testimonials → direct sales → fidelity).
+
+**Stage 54 M1 (2026-08-11):** Digital marketing / case studies / testimonials honesty — `docs/DIGITAL_MARKETING_MVP.md`, `ops/mvp/digital-marketing.json`, evidence `stage54_m1_digital_marketing.json` (`test_digital_marketing_m1.py`); live digital marketing campaigns Remaining.
