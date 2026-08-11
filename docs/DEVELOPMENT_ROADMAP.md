@@ -346,6 +346,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 35 open (2026-08-11):** Commercial End-to-End Operational Smoke Fidelity track approved — `docs/ADR_075_STAGE35_OPEN.md` + `docs/STAGE_35_PLAN.md` (Org bootstrap → Users/RBAC → Purchase-to-stock → Sale-to-payment → Verify financials → Backup/restore → fidelity).
 
+**Stage 35 T1 (2026-08-11):** Org bootstrap — `docs/E2E_ORG_BOOTSTRAP_MVP.md`, `ops/mvp/e2e-org-bootstrap.json`, evidence `stage35_t1_e2e_org_bootstrap.json` (`test_e2e_org_bootstrap_t1.py`); tenant → company → branch → store → warehouse; live bootstrap / demo tenants Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -926,7 +928,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 35 open (`docs/STAGE_35_PLAN.md`, ADR-075) — T1 next. Stages 1–34 remain frozen for their scopes (`docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074).
+**Active delivery plan:** Stage 35 open (`docs/STAGE_35_PLAN.md`, ADR-075) — T1 complete; U1 next. Stages 1–34 remain frozen for their scopes (`docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074).
 
 ### 6.2 Features
 

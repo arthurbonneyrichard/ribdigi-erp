@@ -1,6 +1,6 @@
 # Stage 35 Plan — Commercial End-to-End Operational Smoke Fidelity
 
-**Status:** Open — T1 next (ADR-075)  
+**Status:** Open — T1 complete; U1 next (ADR-075)  
 **Base:** Org Bootstrap Pack + Users/RBAC Pack + Purchase-to-Stock Pack + Sale-to-Payment Pack + Verify Financials Pack + Backup/Restore Pack → Commercial End-to-End Operational Smoke Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-075](ADR_075_STAGE35_OPEN.md)
@@ -73,7 +73,7 @@ Commercial End-to-End Operational Smoke Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **T1** | Org bootstrap packaging (tenant → company → branch → store → warehouse) | P0 | PENDING |
+| **T1** | Org bootstrap packaging (tenant → company → branch → store → warehouse) | P0 | COMPLETE |
 | **U1** | Users + RBAC assignment packaging | P0 | PENDING |
 | **P1** | Purchase-to-stock packaging (supplier → products → PO → receive → verify stock) | P0 | PENDING |
 | **S1** | Sale-to-payment packaging (customer → POS → payment → stock reduction) | P0 | PENDING |
@@ -99,10 +99,10 @@ Commercial End-to-End Operational Smoke Fidelity
 
 ## T1 acceptance criteria
 
-- [ ] Org bootstrap packaging consolidating real-test-tenant → company → branch → store → warehouse checklist (extends Stage 21 T1 / Stage 33 F1; not forging live bootstrap success or demo tenants).
-- [ ] Automated proof: `backend/tests/test_e2e_org_bootstrap_t1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 35 T1.
+- [x] Org bootstrap packaging consolidating real-test-tenant → company → branch → store → warehouse checklist (extends Stage 21 T1 / Stage 33 F1; not forging live bootstrap success or demo tenants).
+- [x] Automated proof: `backend/tests/test_e2e_org_bootstrap_t1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 35 T1.
 
 ## U1 acceptance criteria
 
@@ -155,4 +155,4 @@ Commercial End-to-End Operational Smoke Fidelity
 
 ## Sign-off
 
-Stage 35 open under ADR-075. T1 next. Stages 1–34 remain frozen for their scopes.
+Stage 35 open under ADR-075. T1 complete; U1 next. Stages 1–34 remain frozen for their scopes.
