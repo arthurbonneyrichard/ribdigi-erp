@@ -140,6 +140,7 @@ Authoritative MVP docs:
 - `docs/FREEMIUM_TRIAL_MVP.md` (`backend/tests/test_freemium_trial_f1.py`) — Stage 50 F1
 - `docs/STAGE_50_FIDELITY.md` (`backend/tests/test_stage50_fidelity_d1.py`) — Stage 50 D1
 - `docs/STAGE_50_EXIT_CRITERIA.md` / `docs/ADR_106_STAGE50_FREEZE.md` (`backend/tests/test_stage50_exit_h50x.py`) — Stage 50 H50x
+- `docs/STAGE_51_PLAN.md` (`backend/tests/test_stage51_open.py`) — Stage 51 open (ADR-107)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -562,3 +563,7 @@ Commercial Acquisition & Trial Fidelity — `docs/STAGE_50_PLAN.md`, ADR-105; Cl
 ## Stage 50 exit
 
 H50x met — `docs/STAGE_50_EXIT_CRITERIA.md`, ADR-106. Stages 1–50 frozen for Stage 50 feature scope.
+
+## Stage 51 open
+
+Commercial Marketplace & Add-Ons Fidelity — `docs/STAGE_51_PLAN.md`, ADR-107; M1 next.

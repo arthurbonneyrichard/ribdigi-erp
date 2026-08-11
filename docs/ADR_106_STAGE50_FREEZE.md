@@ -23,3 +23,8 @@ Stage 50 Commercial Acquisition & Trial Fidelity delivered referral program hone
 - Stage 1–49 freezes remain in force for their scopes (Stage 49 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Acquisition & trial packaging Complete does **not** mean live referral credits, referral payout, live freemium conversion, paid trial billing, or live go-live / §7 / attestation Complete.
+
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 51 (Commercial Marketplace & Add-Ons Fidelity) after Stage 50 freeze via CONTINUE/NEXT — see [ADR-107](ADR_107_STAGE51_OPEN.md) and [STAGE_51_PLAN.md](STAGE_51_PLAN.md). Stage 50 feature scope remains frozen; Stage 51 does not reopen R1–D1 / H50x.
