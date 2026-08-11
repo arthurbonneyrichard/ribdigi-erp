@@ -1,6 +1,6 @@
 # Stage 34 Plan — Commercial Customer Assurance Fidelity
 
-**Status:** Open — A1 complete; C1 next (ADR-073)  
+**Status:** Open — C1 complete; S1 next (ADR-073)  
 **Base:** Assurance Evidence Pack + Compliance Questionnaire Pack + Support SLA Boundary Pack + Billing-Deferred Honesty Pack → Commercial Customer Assurance Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-073](ADR_073_STAGE34_OPEN.md)
@@ -36,7 +36,7 @@ Commercial Customer Assurance Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **A1** | Customer assurance evidence / attestation readiness packaging | P0 | COMPLETE |
-| **C1** | Compliance / certification questionnaire boundary packaging (not SOC 2 / ISO Complete) | P0 | PENDING |
+| **C1** | Compliance / certification questionnaire boundary packaging (not SOC 2 / ISO Complete) | P0 | COMPLETE |
 | **S1** | Support SLA / incident escalation boundary packaging | P1 | PENDING |
 | **B1** | Billing-deferred commercial honesty packaging (not paid billing Complete) | P1 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
@@ -70,10 +70,10 @@ Commercial Customer Assurance Fidelity
 
 ## C1 acceptance criteria
 
-- [ ] Compliance / certification questionnaire boundary packaging mapping common customer questionnaire themes to Stage 33 C1 controls (not claiming SOC 2 / ISO certification Complete).
-- [ ] Automated proof: `backend/tests/test_compliance_questionnaire_c1.py`.
-- [ ] SECURITY_GUIDE / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 34 C1.
+- [x] Compliance / certification questionnaire boundary packaging mapping common customer questionnaire themes to Stage 33 C1 controls (not claiming SOC 2 / ISO certification Complete).
+- [x] Automated proof: `backend/tests/test_compliance_questionnaire_c1.py`.
+- [x] SECURITY_GUIDE / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 34 C1.
 
 ## S1 acceptance criteria
 
@@ -105,4 +105,4 @@ Commercial Customer Assurance Fidelity
 
 ## Sign-off
 
-Stage 34 open under ADR-073. A1 complete; C1 next. Stages 1–33 remain frozen for their scopes.
+Stage 34 open under ADR-073. C1 complete; S1 next. Stages 1–33 remain frozen for their scopes.

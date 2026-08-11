@@ -338,6 +338,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 34 A1 (2026-08-11):** Assurance evidence — `docs/ASSURANCE_EVIDENCE_MVP.md`, `ops/mvp/assurance-evidence.json`, evidence `stage34_a1_assurance_evidence.json` (`test_assurance_evidence_a1.py`); live attestation / §7 Remaining.
 
+**Stage 34 C1 (2026-08-11):** Compliance questionnaire — `docs/COMPLIANCE_QUESTIONNAIRE_MVP.md`, `ops/mvp/compliance-questionnaire.json`, evidence `stage34_c1_compliance_questionnaire.json` (`test_compliance_questionnaire_c1.py`); SOC 2 / ISO certification Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -918,7 +920,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 34 open (`docs/STAGE_34_PLAN.md`, ADR-073) — A1 complete; C1 next. Stages 1–33 remain frozen for their scopes (`docs/STAGE_33_EXIT_CRITERIA.md`, ADR-072).
+**Active delivery plan:** Stage 34 open (`docs/STAGE_34_PLAN.md`, ADR-073) — C1 complete; S1 next. Stages 1–33 remain frozen for their scopes (`docs/STAGE_33_EXIT_CRITERIA.md`, ADR-072).
 
 ### 6.2 Features
 
