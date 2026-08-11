@@ -1353,11 +1353,11 @@ Returns `trend` (incl. 7/14/30 forecast), `rfm`, `product_affinity`, `peaks`.
 
 ### 16.6a AI Purchases Analysis (Stage 25 P1 / BR-21.11)
 **Endpoint:** `GET /ai/purchases/analysis?from_date=&to_date=&lookback_days=90`  
-Returns `trend` (incl. 7/14/30 forecast from posted PI totals), `suppliers` (spend share), `purchase_orders` (status/fill), `goods_receipts`, `purchase_invoices.overdue`, and `suggestions`. Method `rules_v1` (not Prophet). Evidence: `test_ai_purchases_analysis_p1.py`.
+Returns `trend` (incl. 7/14/30 forecast from posted PI totals), `suppliers` (spend share), `purchase_orders` (status/fill), `goods_receipts`, `purchase_invoices.overdue`, and `suggestions`. Method `rules_v1` (not Prophet). Evidence: `test_ai_purchases_analysis_p1.py`. Stage 25 U1 wires this on `frontend/app/ai/page.tsx` (`test_ai_ui_fidelity_u1.py`).
 
 ### 16.6b Cross-Domain AI Analysis (Stage 25 X1 / BR-21.12)
 **Endpoint:** `GET /ai/cross-domain/analysis?from_date=&to_date=&lookback_days=90`  
-Orchestrates inventory / sales / purchases / expenses analyzers. Returns `domains` (per-domain summaries + endpoint cites) and `cross_signals` (multi-domain synthesis). Method `rules_v1`. Evidence: `test_ai_cross_domain_x1.py`.
+Orchestrates inventory / sales / purchases / expenses analyzers. Returns `domains` (per-domain summaries + endpoint cites) and `cross_signals` (multi-domain synthesis). Method `rules_v1`. Evidence: `test_ai_cross_domain_x1.py`. Stage 25 U1 wires this on `frontend/app/ai/page.tsx`.
 
 ### 16.7 AI Report Generator
 **Endpoint:** `POST /ai/reports/generate` (optional `?export=true` for file download)  
@@ -1375,7 +1375,7 @@ Reuse a saved template with `{ "template_id": "…" }`. Export sets `Content-Dis
 ### 16.8 AI Document Assistant
 **Endpoint:** `POST /ai/documents/analyze`
 
-**Content-Type:** `multipart/form-data`
+**Content-Type:** `multipart/form-data` (`file` + query/form `document_type`)
 
 ```json
 {
@@ -1384,7 +1384,7 @@ Reuse a saved template with `{ "template_id": "…" }`. Export sets `Content-Dis
 }
 ```
 
-Human-confirmed OCR apply to expense/PI drafts uses the Stage 10 `ocr-apply` paths (`confirm: true`); PO OCR apply remains deferred.
+Human-confirmed OCR apply to expense/PI drafts uses the Stage 10 `ocr-apply` paths (`confirm: true`); PO OCR apply remains deferred. Stage 25 U1 wires suggest-only analyze on `frontend/app/ai/page.tsx` (`test_ai_ui_fidelity_u1.py`).
 
 ### 16.9 AI Customer Assistant
 **Endpoints:**  

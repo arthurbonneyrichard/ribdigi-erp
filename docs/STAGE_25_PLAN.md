@@ -1,6 +1,6 @@
 # Stage 25 Plan — Actuals → AI Analysis → Business Insights
 
-**Status:** Open — P1 / X1 / B1 COMPLETE; U1 next (ADR-055)  
+**Status:** Open — P1 / X1 / B1 / U1 COMPLETE; D1 next (ADR-055)  
 **Base:** Commerce actuals → Basic RIBDIGI AI analysis → Business insights  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-055](ADR_055_STAGE25_OPEN.md)
@@ -38,7 +38,7 @@ Business Insights
 | **P1** | Purchases actuals → AI analysis | P0 | COMPLETE |
 | **X1** | Cross-domain analysis (Inv + Sales + Purch + Exp) | P0 | COMPLETE |
 | **B1** | Business Insights surface (all four actuals) | P1 | COMPLETE |
-| **U1** | AI UI fidelity (purchases + analysis panels) | P1 | PENDING |
+| **U1** | AI UI fidelity (purchases + analysis panels) | P1 | COMPLETE |
 | **D1** | Spec / BR / readiness / USER_MANUAL / API fidelity sync | P2 | PENDING |
 | **H25x** | Stage 25 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -85,7 +85,12 @@ Business Insights
 
 ## U1 acceptance criteria
 
-Filled when workstream starts.
+- [x] `/ai` UI loads purchases analysis (`GET /ai/purchases/analysis`).
+- [x] `/ai` UI loads cross-domain analysis (`GET /ai/cross-domain/analysis`).
+- [x] `/ai` UI wires document analyze (`POST /ai/documents/analyze` multipart) — suggest-only.
+- [x] Sales/expense/insights panels remain (extend, do not rewrite).
+- [x] Automated proof: `backend/tests/test_ai_ui_fidelity_u1.py`.
+- [x] USER_MANUAL / API / plan / launch / roadmap cite Stage 25 U1.
 
 ## D1 acceptance criteria
 
@@ -97,4 +102,4 @@ Filled when exit workstream starts.
 
 ## Sign-off
 
-Plan authored; ADR-055 open. P1 / X1 / B1 complete; U1 next. Stages 1–24 remain frozen for their scopes.
+Plan authored; ADR-055 open. P1 / X1 / B1 / U1 complete; D1 next. Stages 1–24 remain frozen for their scopes.

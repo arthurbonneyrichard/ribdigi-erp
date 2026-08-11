@@ -211,7 +211,13 @@ def test_b1_plan_and_docs_cite_stage25():
     b1_line = [ln for ln in plan.splitlines() if "| **B1** |" in ln][0]
     assert "COMPLETE" in b1_line
     assert "test_ai_business_insights_b1.py" in plan
-    assert "B1 next" in plan or "B1 complete" in plan or "U1 next" in plan
+    assert (
+        "B1 next" in plan
+        or "B1 complete" in plan
+        or "U1 next" in plan
+        or "U1 complete" in plan
+        or "D1 next" in plan
+    )
 
     br = (ROOT / "docs" / "BUSINESS_REQUIREMENTS_DOCUMENT.md").read_text(encoding="utf-8")
     s212 = br.split("#### BR-21.2 AI Dashboard Insight")[1].split("#### BR-21.3")[0]

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 type Prediction = {
   product_id: string;
   sku: string;
@@ -104,6 +106,33 @@ export default function Page() {
   const [expenseSuggestions, setExpenseSuggestions] = useState<
     { kind: string; summary: string }[]
   >([]);
+  const [purchaseSummary, setPurchaseSummary] = useState<{
+    total_spend: number;
+    purchase_order_count: number;
+    open_po_count: number;
+    overdue_invoice_count: number;
+    trend_direction: string;
+    top_supplier_spend_share?: number;
+  } | null>(null);
+  const [purchaseSuggestions, setPurchaseSuggestions] = useState<
+    { kind: string; summary: string }[]
+  >([]);
+  const [purchaseOverdue, setPurchaseOverdue] = useState<
+    { invoice_number?: string; supplier_name?: string; balance: number }[]
+  >([]);
+  const [crossSummary, setCrossSummary] = useState<{
+    total_sales: number;
+    total_purchase_spend: number;
+    total_approved_expenses: number;
+    at_risk_sku_count: number;
+    cross_signal_count: number;
+  } | null>(null);
+  const [crossSignals, setCrossSignals] = useState<
+    { kind: string; severity: string; title: string; summary: string; domains?: string[] }[]
+  >([]);
+  const [docType, setDocType] = useState('receipt');
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docResult, setDocResult] = useState<any>(null);
   const [securityAlerts, setSecurityAlerts] = useState<
     { id: string; kind: string; title: string; detail: string; severity: string; score: number }[]
   >([]);
@@ -169,6 +198,61 @@ export default function Page() {
       setExpenseSuggestions(r.data?.optimization_suggestions || []);
     } catch (err: any) {
       setError(err.message || 'Unable to load expense analysis');
+    }
+  }
+
+  async function loadPurchasesAnalysis() {
+    try {
+      const r = await api('/ai/purchases/analysis');
+      setPurchaseSummary(r.data?.summary || null);
+      setPurchaseSuggestions(r.data?.suggestions || []);
+      setPurchaseOverdue(r.data?.purchase_invoices?.overdue || []);
+    } catch (err: any) {
+      setError(err.message || 'Unable to load purchases analysis');
+    }
+  }
+
+  async function loadCrossDomainAnalysis() {
+    try {
+      const r = await api('/ai/cross-domain/analysis');
+      setCrossSummary(r.data?.summary || null);
+      setCrossSignals(r.data?.cross_signals || []);
+    } catch (err: any) {
+      setError(err.message || 'Unable to load cross-domain analysis');
+    }
+  }
+
+  async function analyzeDocument() {
+    setError('');
+    setMessage('');
+    if (!docFile) {
+      setError('Choose a document file to analyze');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const form = new FormData();
+      form.append('file', docFile);
+      const res = await fetch(
+        `${apiBase}/ai/documents/analyze?document_type=${encodeURIComponent(docType)}`,
+        {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+          },
+          body: form,
+        },
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.detail?.message || body.detail || body.message || 'Analyze failed');
+      }
+      setDocResult(body.data || body);
+      setMessage('Document analyzed (suggest-only — apply via expense/PI OCR confirm paths)');
+    } catch (err: any) {
+      setError(typeof err.message === 'string' ? err.message : 'Unable to analyze document');
     }
   }
 
@@ -292,6 +376,8 @@ export default function Page() {
     loadDeadStock().catch(() => undefined);
     loadSalesAnalysis().catch(() => undefined);
     loadExpenseAnalysis().catch(() => undefined);
+    loadPurchasesAnalysis().catch(() => undefined);
+    loadCrossDomainAnalysis().catch(() => undefined);
     loadCustomerInsights().catch(() => undefined);
     loadReportTemplates().catch(() => undefined);
     loadSecurityAlerts().catch(() => undefined);
@@ -537,6 +623,128 @@ export default function Page() {
             {a.category || 'Pattern'}: {a.description} ({a.amount})
           </p>
         ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Purchases analysis</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Spend trend, supplier concentration, PO fill/open backlog, and overdue bills from live PO /
+          GRN / purchase invoices.
+        </p>
+        <button type="button" onClick={loadPurchasesAnalysis} style={{ marginBottom: 12 }}>
+          Refresh purchases analysis
+        </button>
+        {purchaseSummary && (
+          <p>
+            Spend: {purchaseSummary.total_spend} · POs: {purchaseSummary.purchase_order_count} · Open
+            POs: {purchaseSummary.open_po_count} · Overdue PIs:{' '}
+            {purchaseSummary.overdue_invoice_count} · Trend: {purchaseSummary.trend_direction}
+            {purchaseSummary.top_supplier_spend_share != null
+              ? ` · Top supplier share: ${Math.round(purchaseSummary.top_supplier_spend_share * 100)}%`
+              : ''}
+          </p>
+        )}
+        {purchaseSuggestions.length > 0 && (
+          <ul>
+            {purchaseSuggestions.slice(0, 8).map((s, i) => (
+              <li key={i}>
+                <strong>{s.kind}</strong>: {s.summary}
+              </li>
+            ))}
+          </ul>
+        )}
+        {purchaseOverdue.slice(0, 5).map((row) => (
+          <p key={row.invoice_number || String(row.balance)} className="muted">
+            {row.invoice_number || 'Invoice'} · {row.supplier_name || 'Supplier'} · balance{' '}
+            {row.balance}
+          </p>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Cross-domain analysis</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Orchestrates Inventory, Sales, Purchases, and Expenses analyzers into synthesis signals.
+        </p>
+        <button type="button" onClick={loadCrossDomainAnalysis} style={{ marginBottom: 12 }}>
+          Refresh cross-domain analysis
+        </button>
+        {crossSummary && (
+          <p>
+            Sales: {crossSummary.total_sales} · Purchases: {crossSummary.total_purchase_spend} ·
+            Expenses: {crossSummary.total_approved_expenses} · At-risk SKUs:{' '}
+            {crossSummary.at_risk_sku_count} · Signals: {crossSummary.cross_signal_count}
+          </p>
+        )}
+        {crossSignals.length === 0 && crossSummary && (
+          <p className="muted">No cross-domain alerts for the current window.</p>
+        )}
+        {crossSignals.slice(0, 8).map((s) => (
+          <div key={s.kind + s.title} style={{ marginBottom: 10, borderTop: '1px solid #e5e7eb', paddingTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+              <strong>{s.title}</strong>
+              <span className="muted">
+                {s.kind} · {s.severity}
+              </span>
+            </div>
+            <p>{s.summary}</p>
+            {Array.isArray(s.domains) && s.domains.length > 0 && (
+              <p className="muted">Actuals: {s.domains.join(' · ')}</p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Document analyze</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          OCR extract / match / discrepancy flags via <code>POST /ai/documents/analyze</code>. Suggest
+          only — apply reviewed fields on expense or purchase-invoice OCR paths with confirm.
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <select value={docType} onChange={(e) => setDocType(e.target.value)}>
+            <option value="receipt">receipt</option>
+            <option value="invoice">invoice</option>
+            <option value="purchase_order">purchase_order</option>
+            <option value="purchase_invoice">purchase_invoice</option>
+          </select>
+          <input
+            type="file"
+            accept="image/*,.pdf,.txt"
+            onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+          />
+          <button type="button" onClick={analyzeDocument}>
+            Analyze document
+          </button>
+        </div>
+        {docResult && (
+          <div>
+            <p className="muted">
+              Type: {docResult.document_type || docType}
+              {docResult.method ? ` · Method: ${docResult.method}` : ''}
+            </p>
+            {docResult.extracted_fields && (
+              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12, maxHeight: 180, overflow: 'auto' }}>
+                {JSON.stringify(docResult.extracted_fields, null, 2)}
+              </pre>
+            )}
+            {docResult.matches && (
+              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12, maxHeight: 140, overflow: 'auto' }}>
+                {JSON.stringify(docResult.matches, null, 2)}
+              </pre>
+            )}
+            {Array.isArray(docResult.discrepancies) && docResult.discrepancies.length > 0 && (
+              <ul>
+                {docResult.discrepancies.slice(0, 8).map((d: any, i: number) => (
+                  <li key={i}>
+                    {typeof d === 'string' ? d : d.detail || d.message || JSON.stringify(d)}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {docResult.apply_hint && <p className="muted">{docResult.apply_hint}</p>}
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
