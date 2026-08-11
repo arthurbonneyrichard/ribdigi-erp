@@ -1,0 +1,156 @@
+{
+  "stage": "64",
+  "workstream": "B1",
+  "doc": "docs/ADVANCED_BI_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "business_requirements": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+  "addon_services": "ops/mvp/addon-services.json",
+  "addon_services_doc": "docs/ADDON_SERVICES_MVP.md",
+  "business_metrics": "ops/mvp/business-metrics.json",
+  "business_metrics_doc": "docs/BUSINESS_METRICS_MVP.md",
+  "success_metrics": "ops/mvp/success-metrics.json",
+  "success_metrics_doc": "docs/SUCCESS_METRICS_MVP.md",
+  "ai_metrics": "ops/mvp/ai-metrics.json",
+  "ai_metrics_doc": "docs/AI_METRICS_MVP.md",
+  "stage23_fidelity": "docs/STAGE_23_FIDELITY.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage64_plan": "docs/STAGE_64_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "advanced_bi_live_claimed": false,
+  "custom_analytics_live_claimed": false,
+  "custom_report_builder_live": false,
+  "advanced_bi_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage64_b1_advanced_bi.json",
+  "steps": [
+    {
+      "id": "abi-product-overview",
+      "category": "analytics",
+      "title": "Index PRODUCT_OVERVIEW Phase 3 Advanced BI / custom analytics themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_64_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "abi-br-report-builder",
+      "category": "analytics",
+      "title": "Link BR Advanced BI / custom report builder as product-requirement adjacency (not live BI Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/ADVANCED_BI_MVP.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "abi-addon-custom-report",
+      "category": "addon",
+      "title": "Link Stage 51 add-on custom-report as commercial adjacency (add-on Remaining \u2260 Advanced BI Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADDON_SERVICES_MVP.md",
+        "ops/mvp/addon-services.json"
+      ],
+      "source": "docs/ADDON_SERVICES_MVP.md"
+    },
+    {
+      "id": "abi-business-metrics",
+      "category": "metrics",
+      "title": "Link Stage 58 business metrics as analytics adjacency (MRR measured Remaining \u2260 Advanced BI Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_METRICS_MVP.md",
+        "ops/mvp/business-metrics.json"
+      ],
+      "source": "docs/BUSINESS_METRICS_MVP.md"
+    },
+    {
+      "id": "abi-success-metrics",
+      "category": "metrics",
+      "title": "Link Stage 57 success metrics as product-analytics adjacency (MAU/NPS Remaining \u2260 custom analytics live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUCCESS_METRICS_MVP.md",
+        "ops/mvp/success-metrics.json"
+      ],
+      "source": "docs/SUCCESS_METRICS_MVP.md"
+    },
+    {
+      "id": "abi-ai-metrics",
+      "category": "metrics",
+      "title": "Link Stage 58 AI metrics as prediction-analytics adjacency (AI metrics Remaining \u2260 Advanced BI Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/AI_METRICS_MVP.md",
+        "ops/mvp/ai-metrics.json"
+      ],
+      "source": "docs/AI_METRICS_MVP.md"
+    },
+    {
+      "id": "abi-stage23-reports",
+      "category": "reporting",
+      "title": "Link Stage 23 report-dimension fidelity as MVP reporting adjacency (filters \u2260 Advanced BI Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_23_FIDELITY.md",
+        "docs/STAGE_23_PLAN.md"
+      ],
+      "source": "docs/STAGE_23_FIDELITY.md"
+    },
+    {
+      "id": "abi-plan-honesty",
+      "category": "analytics",
+      "title": "Confirm Stage 64 plan explicitly defers live Advanced BI / custom analytics",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_64_PLAN.md",
+        "docs/ADVANCED_BI_MVP.md"
+      ],
+      "source": "docs/STAGE_64_PLAN.md"
+    },
+    {
+      "id": "abi-advanced-bi-remaining",
+      "category": "honesty",
+      "title": "Live Advanced BI Remaining \u2014 packaging \u2260 live custom analytics or BI suite",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_64_PLAN.md",
+        "docs/ADVANCED_BI_MVP.md"
+      ],
+      "source": "docs/STAGE_64_PLAN.md"
+    },
+    {
+      "id": "abi-report-builder-remaining",
+      "category": "honesty",
+      "title": "Custom report builder / Advanced BI program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_64_PLAN.md",
+        "docs/ADVANCED_BI_MVP.md"
+      ],
+      "source": "docs/STAGE_64_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live Advanced BI Complete",
+    "Live custom analytics Complete",
+    "Custom report builder live Complete",
+    "Advanced BI program live Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

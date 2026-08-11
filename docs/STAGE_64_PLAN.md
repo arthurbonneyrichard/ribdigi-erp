@@ -1,6 +1,6 @@
 # Stage 64 Plan — Commercial Analytics & Franchise Fidelity
 
-**Status:** Open — B1 next  
+**Status:** Open — B1 complete; F1 next  
 **Base:** Advanced BI Honesty Pack + Franchise & Chain Enterprise Honesty Pack → Commercial Analytics & Franchise Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-133](ADR_133_STAGE64_OPEN.md)  
@@ -32,7 +32,7 @@ Commercial Analytics & Franchise Fidelity
 
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
-| **B1** | Advanced BI honesty packaging (not live custom analytics / BI Complete) | P0 | PENDING |
+| **B1** | Advanced BI honesty packaging (not live custom analytics / BI Complete) | P0 | COMPLETE |
 | **F1** | Franchise & chain enterprise honesty packaging (not live franchise / chain deals Complete) | P0 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H64x** | Stage 64 exit criteria + freeze ADR | Exit | PENDING |
@@ -99,10 +99,12 @@ Commercial Analytics & Franchise Fidelity
 
 ## B1 acceptance criteria
 
-- [ ] Advanced BI honesty packaging indexing PRODUCT_OVERVIEW Phase 3 Advanced BI / custom analytics themes with reporting / metrics adjacency (not claiming live Advanced BI Complete).
-- [ ] Automated proof: `backend/tests/test_advanced_bi_b1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 64 B1.
+- [x] Advanced BI honesty packaging indexing PRODUCT_OVERVIEW Phase 3 Advanced BI / custom analytics themes with reporting / metrics adjacency (not claiming live Advanced BI Complete).
+- [x] Automated proof: `backend/tests/test_advanced_bi_b1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 64 B1.
+
+**Deliverables:** `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`, evidence `stage64_b1_advanced_bi.json`.
 
 ## F1 acceptance criteria
 
