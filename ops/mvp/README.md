@@ -207,3 +207,7 @@ Indexes ADR-003 soft-delete-only MVP vs BR-3.1 hard-delete archival Remaining. S
 - Pack: `erasure-honesty.json`
 - Tests: `backend/tests/test_erasure_honesty_e1.py`
 - Honesty: `hard_delete_claimed: false`, `erasure_complete_claimed: false`, `anonymize_workflow_claimed: false`, `deferred_implemented_claimed: false` — packaging ≠ hard-delete Complete
+
+## Stage 37 exit
+
+H37x met — `docs/STAGE_37_EXIT_CRITERIA.md`, ADR-080. Stages 1–37 frozen; Stage 38+ requires open ADR after CONTINUE/NEXT.

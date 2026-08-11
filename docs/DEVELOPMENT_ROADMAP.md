@@ -380,6 +380,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 37 D1 (2026-08-11):** Commercial data protection fidelity — `docs/STAGE_37_FIDELITY.md` (`test_stage37_fidelity_d1.py`); maps P1–E1 → readiness / launch / deploy / security; GDPR / hard-delete Remaining.
 
+**Stage 37 exit (2026-08-11):** P1, E1, D1, H37x met — `docs/STAGE_37_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_080_STAGE37_FREEZE.md`. Fidelity: `docs/STAGE_37_FIDELITY.md`.
+
 
 ### 2.2 Features
 
@@ -961,7 +963,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 37 open — Commercial Data Protection Fidelity (`docs/STAGE_37_PLAN.md`, ADR-079). Stages 1–36 remain frozen for their scopes; P1–D1 complete; H37x next.
+**Active delivery plan:** Stage 37 exit met (`docs/STAGE_37_EXIT_CRITERIA.md`, ADR-080). Stages 1–37 remain frozen for their scopes; Stage 38+ requires explicit open ADR after CONTINUE/NEXT.
 
 ### 6.2 Features
 
