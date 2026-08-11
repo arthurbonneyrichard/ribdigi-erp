@@ -1,10 +1,10 @@
 # Stage 35 Fidelity Notes — Commercial End-to-End Operational Smoke Fidelity
 
-**Status:** Open — D1 complete; H35x next (ADR-075)  
+**Status:** Closed — exit met (H35x / ADR-076); historical open ADR-075  
 **Surface:** Org bootstrap → Users/RBAC → Purchase-to-stock → Sale-to-payment → Verify financials → Backup/restore → Fidelity closeout  
-**Open ADR:** [ADR-075](ADR_075_STAGE35_OPEN.md)  
+**Open ADR (historical):** [ADR-075](ADR_075_STAGE35_OPEN.md)  
 **Plan:** [STAGE_35_PLAN.md](STAGE_35_PLAN.md)  
-**Exit (pending):** [STAGE_35_EXIT_CRITERIA.md](STAGE_35_EXIT_CRITERIA.md) · [ADR-076](ADR_076_STAGE35_FREEZE.md) (reserved at H35x)
+**Exit:** [STAGE_35_EXIT_CRITERIA.md](STAGE_35_EXIT_CRITERIA.md) · [ADR-076](ADR_076_STAGE35_FREEZE.md)
 
 Stage 35 proves the owner product outline after Stage 34 freeze — Org Bootstrap Pack + Users/RBAC Pack + Purchase-to-Stock Pack + Sale-to-Payment Pack + Verify Financials Pack + Backup/Restore Pack → Commercial End-to-End Operational Smoke Fidelity — by extending Stage 21–24 commerce, Stage 33 F1 first-tenant, and Stage 18–28 DR honesty patterns. It is **not** live E2E smoke executed Complete, demo tenants / seed passwords, live go-live / §7 / attestation Complete, SOC 2 / ISO Complete, ADR-005 store membership Complete, PO Kanban / USB-serial / tax e-file / Open Banking Complete, live PITR drill Complete, re-packaging Stage 26–34 packs as new Complete, or reopening Stages 1–34.
 
@@ -31,7 +31,7 @@ Stage 35 proves the owner product outline after Stage 34 freeze — Org Bootstra
 | **V1** | `test_e2e_verify_financials_v1.py` — `E2E_VERIFY_FINANCIALS_MVP.md`, verify-financials JSON | Tax / accounting / reports | Live verification; tax e-file |
 | **R1** | `test_e2e_backup_restore_r1.py` — `E2E_BACKUP_RESTORE_MVP.md`, backup-restore JSON | BR-16.3 / DR | Live restore; PITR drill |
 | **D1** | This note + `test_stage35_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H35x** | `STAGE_35_EXIT_CRITERIA.md`; ADR-076; `test_stage35_exit_h35x.py` (pending) | Stage 35 exit + freeze | Next track needs open ADR |
+| **H35x** | `STAGE_35_EXIT_CRITERIA.md`; ADR-076; `test_stage35_exit_h35x.py` | Stage 35 exit + freeze | Next track needs open ADR |
 
 ## Evidence tests
 
@@ -54,7 +54,8 @@ Stage 35 proves the owner product outline after Stage 34 freeze — Org Bootstra
 - `docs/DEPLOYMENT_GUIDE.md` — Stage 35 T1–R1 / D1
 - `docs/SECURITY_GUIDE.md` — Stage 35 T1–R1 / D1 cite
 - `docs/E2E_ORG_BOOTSTRAP_MVP.md` · `docs/E2E_USERS_RBAC_MVP.md` · `docs/E2E_PURCHASE_STOCK_MVP.md` · `docs/E2E_SALE_PAYMENT_MVP.md` · `docs/E2E_VERIFY_FINANCIALS_MVP.md` · `docs/E2E_BACKUP_RESTORE_MVP.md`
-- `docs/STAGE_35_PLAN.md` — D1 complete; H35x next
+- `docs/STAGE_35_PLAN.md` — Closed (H35x / ADR-076)
+- `docs/STAGE_35_EXIT_CRITERIA.md` · `docs/ADR_076_STAGE35_FREEZE.md`
 - `docs/ADR_075_STAGE35_OPEN.md`
 
 ## Deferred (not Stage 35 D1 blockers)

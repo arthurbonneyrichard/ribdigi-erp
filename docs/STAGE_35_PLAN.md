@@ -1,9 +1,10 @@
 # Stage 35 Plan — Commercial End-to-End Operational Smoke Fidelity
 
-**Status:** Open — D1 complete; H35x next (ADR-075)  
+**Status:** Closed — exit met (H35x / ADR-076)  
 **Base:** Org Bootstrap Pack + Users/RBAC Pack + Purchase-to-Stock Pack + Sale-to-Payment Pack + Verify Financials Pack + Backup/Restore Pack → Commercial End-to-End Operational Smoke Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-075](ADR_075_STAGE35_OPEN.md)
+**Open ADR (historical):** [ADR-075](ADR_075_STAGE35_OPEN.md)  
+**Exit:** [STAGE_35_EXIT_CRITERIA.md](STAGE_35_EXIT_CRITERIA.md) · [ADR-076](ADR_076_STAGE35_FREEZE.md) · [STAGE_35_FIDELITY.md](STAGE_35_FIDELITY.md)
 
 Stage 35 opens after Stage 34 freeze: **Org Bootstrap Packaging + Users/RBAC Packaging + Purchase-to-Stock Packaging + Sale-to-Payment Packaging + Verify Financials Packaging + Backup/Restore Packaging → Commercial End-to-End Operational Smoke Fidelity**. Stages 26–34 delivered Complete (MVP) ops, release, certification, hardening, go-live support, closeout, handoff, continuity, and customer-assurance **packaging** with honest Remaining for live execution and deferred ADRs. This track packages an **operator end-to-end smoke checklist** for a real test tenant (not demo seed) covering company setup through POS/accounting/audit and backup/restore — **not** forging live smoke success, inventing demo tenants, claiming production go-live / §7 Complete, or reopening Stages 1–34.
 
@@ -80,7 +81,7 @@ Commercial End-to-End Operational Smoke Fidelity
 | **V1** | Verify financials packaging (tax → accounting → credit → reports → audit) | P1 | COMPLETE |
 | **R1** | Backup + restore test packaging | P1 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
-| **H35x** | Stage 35 exit criteria + freeze ADR | Exit | PENDING |
+| **H35x** | Stage 35 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -147,12 +148,12 @@ Commercial End-to-End Operational Smoke Fidelity
 
 ## H35x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for T1–D1 / H35x — `docs/STAGE_35_EXIT_CRITERIA.md`.
-- [ ] Scope freeze ADR accepted — `docs/ADR_076_STAGE35_FREEZE.md` (number reserved at close).
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
-- [ ] Automated proof: `backend/tests/test_stage35_exit_h35x.py`.
-- [ ] Stages 1–34 freezes remain; Stage 36+ requires explicit open ADR after CONTINUE/NEXT.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for T1–D1 / H35x — `docs/STAGE_35_EXIT_CRITERIA.md`.
+- [x] Scope freeze ADR accepted — `docs/ADR_076_STAGE35_FREEZE.md`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / PRODUCTION_READINESS cite exit + freeze.
+- [x] Automated proof: `backend/tests/test_stage35_exit_h35x.py`.
+- [x] Stages 1–34 freezes remain; Stage 36+ requires explicit open ADR after CONTINUE/NEXT.
 
 ## Sign-off
 
-Stage 35 open under ADR-075. D1 complete; H35x next. Stages 1–34 remain frozen for their scopes.
+Stage 35 exit met under ADR-076. T1–D1 / H35x complete. Stages 1–34 remain frozen for their scopes. Stage 36+ requires an explicit open ADR after CONTINUE/NEXT.
