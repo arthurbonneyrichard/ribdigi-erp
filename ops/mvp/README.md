@@ -159,6 +159,7 @@ Authoritative MVP docs:
 - `docs/STAGE_53_PLAN.md` (`backend/tests/test_stage53_open.py`) — Stage 53 open (ADR-111)
 - `docs/API_INTEGRATION_COMMERCIAL_MVP.md` (`backend/tests/test_api_integration_commercial_a1.py`) — Stage 53 A1
 - `docs/CANCELLATION_CHURN_MVP.md` (`backend/tests/test_cancellation_churn_c1.py`) — Stage 53 C1
+- `docs/STAGE_53_FIDELITY.md` (`backend/tests/test_stage53_fidelity_d1.py`) — Stage 53 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -624,7 +625,7 @@ H52x met — `docs/STAGE_52_EXIT_CRITERIA.md`, ADR-110. Stages 1–52 frozen for
 
 ## Stage 53 open
 
-Commercial API & Lifecycle Fidelity — `docs/STAGE_53_PLAN.md`, ADR-111; C1 complete; D1 next.
+Commercial API & Lifecycle Fidelity — `docs/STAGE_53_PLAN.md`, ADR-111; D1 complete; H53x next.
 
 ## Stage 53 A1 — API & integration commercial honesty
 
@@ -633,3 +634,7 @@ Commercial API & Lifecycle Fidelity — `docs/STAGE_53_PLAN.md`, ADR-111; C1 com
 ## Stage 53 C1 — Cancellation / refund / churn policy honesty
 
 `docs/CANCELLATION_CHURN_MVP.md` + `ops/mvp/cancellation-churn.json` — packaging Complete; `cancellation_portal_live` / `refund_processing_claimed` / `churn_measurement_live` / `cancellation_policy_enforced` remain false.
+
+## Stage 53 D1 — Fidelity
+
+`docs/STAGE_53_FIDELITY.md` maps A1–C1 → readiness / launch / deploy / security (`test_stage53_fidelity_d1.py`).

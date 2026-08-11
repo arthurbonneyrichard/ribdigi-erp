@@ -1,6 +1,6 @@
 # Stage 53 Plan — Commercial API & Lifecycle Fidelity
 
-**Status:** Open — C1 complete; D1 next  
+**Status:** Open — D1 complete; H53x next  
 **Base:** API & Integration Commercial Honesty Pack + Cancellation / Refund / Churn Policy Honesty Pack → Commercial API & Lifecycle Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-111](ADR_111_STAGE53_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial API & Lifecycle Fidelity
 |----|------------|----------|---------|
 | **A1** | API & integration commercial honesty packaging (not live API rate-limit upgrade / connector fee billing Complete) | P0 | COMPLETE |
 | **C1** | Cancellation / refund / churn policy honesty packaging (not live cancellation portal / refund processing / churn measurement Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H53x** | Stage 53 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -92,9 +92,9 @@ Commercial API & Lifecycle Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_53_FIDELITY.md` maps A1–C1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 53 D1.
-- [ ] Automated proof: `backend/tests/test_stage53_fidelity_d1.py` (`docs/STAGE_53_FIDELITY.md`).
+- [x] `docs/STAGE_53_FIDELITY.md` maps A1–C1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 53 D1.
+- [x] Automated proof: `backend/tests/test_stage53_fidelity_d1.py` (`docs/STAGE_53_FIDELITY.md`).
 
 ## H53x acceptance criteria
 

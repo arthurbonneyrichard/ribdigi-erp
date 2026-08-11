@@ -424,9 +424,10 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 52 I1** | Industry partnerships honesty — `docs/INDUSTRY_PARTNERSHIPS_MVP.md`, `ops/mvp/industry-partnerships.json` (`test_industry_partnerships_i1.py`); live industry partnership program Remaining |
 | **Stage 52 R1** | Subscription renewal / annual discount honesty — `docs/SUBSCRIPTION_RENEWAL_MVP.md`, `ops/mvp/subscription-renewal.json` (`test_subscription_renewal_r1.py`); live annual-discount enforcement Remaining |
 | **Stage 52 fidelity** | D1 maps I1–R1 partnerships & renewal — `docs/STAGE_52_FIDELITY.md` (`test_stage52_fidelity_d1.py`); exit/freeze `docs/STAGE_52_EXIT_CRITERIA.md`, ADR-110 (`test_stage52_exit_h52x.py`); historical open ADR-109; live industry partnership program / annual-discount enforcement / auto-renewal / go-live / §7 remain Remaining |
-| **Stage 53 open** | Commercial API & Lifecycle Fidelity — `docs/STAGE_53_PLAN.md`, ADR-111 (`test_stage53_open.py`); Stages 1–52 remain frozen; C1 complete; D1 next |
+| **Stage 53 open** | Commercial API & Lifecycle Fidelity — `docs/STAGE_53_PLAN.md`, ADR-111 (`test_stage53_open.py`); Stages 1–52 remain frozen; D1 complete; H53x next |
 | **Stage 53 A1** | API & integration commercial honesty — `docs/API_INTEGRATION_COMMERCIAL_MVP.md`, `ops/mvp/api-integration-commercial.json` (`test_api_integration_commercial_a1.py`); live API rate-limit upgrade billing Remaining |
 | **Stage 53 C1** | Cancellation / refund / churn policy honesty — `docs/CANCELLATION_CHURN_MVP.md`, `ops/mvp/cancellation-churn.json` (`test_cancellation_churn_c1.py`); live cancellation portal Remaining |
+| **Stage 53 D1** | API & lifecycle fidelity — `docs/STAGE_53_FIDELITY.md` (`test_stage53_fidelity_d1.py`) maps A1–C1 → readiness / launch / deploy / security |
 | **Stage 38 open** | Commercial Security Disclosure Fidelity — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`); Stages 1–37 remain frozen; closed under ADR-082 |
 | **Stage 38 V1** | Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining |
 | **Stage 38 B1** | Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining |
