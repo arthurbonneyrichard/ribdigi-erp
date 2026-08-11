@@ -132,6 +132,7 @@ Authoritative MVP docs:
 - `docs/PARTNER_RESELLER_MVP.md` (`backend/tests/test_partner_reseller_r1.py`) — Stage 49 R1
 - `docs/PRICING_TRANSPARENCY_MVP.md` (`backend/tests/test_pricing_transparency_l1.py`) — Stage 49 L1
 - `docs/STAGE_49_FIDELITY.md` (`backend/tests/test_stage49_fidelity_d1.py`) — Stage 49 D1
+- `docs/STAGE_49_EXIT_CRITERIA.md` / `docs/ADR_104_STAGE49_FREEZE.md` (`backend/tests/test_stage49_exit_h49x.py`) — Stage 49 H49x
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -517,7 +518,7 @@ H48x met — `docs/STAGE_48_EXIT_CRITERIA.md`, ADR-102. Stages 1–48 frozen for
 
 ## Stage 49 open
 
-Commercial Channel & Pricing Fidelity — `docs/STAGE_49_PLAN.md`, ADR-103; R1 complete; L1 next.
+Commercial Channel & Pricing Fidelity — `docs/STAGE_49_PLAN.md`, ADR-103; Closed — exit met (H49x / ADR-104).
 
 ## Stage 49 R1 — Partner / reseller terms honesty
 
@@ -530,3 +531,7 @@ Commercial Channel & Pricing Fidelity — `docs/STAGE_49_PLAN.md`, ADR-103; R1 c
 ## Stage 49 D1 — Fidelity
 
 `docs/STAGE_49_FIDELITY.md` maps R1–L1 → readiness / launch / deploy / security (`test_stage49_fidelity_d1.py`).
+
+## Stage 49 exit
+
+H49x met — `docs/STAGE_49_EXIT_CRITERIA.md`, ADR-104. Stages 1–49 frozen for Stage 49 feature scope.

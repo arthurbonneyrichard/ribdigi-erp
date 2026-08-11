@@ -1,10 +1,11 @@
 # Stage 49 Plan — Commercial Channel & Pricing Fidelity
 
-**Status:** Open — D1 complete; H49x next  
+**Status:** Closed — exit met (H49x / ADR-104)  
 **Base:** Partner / Reseller Terms Honesty Pack + Pricing Transparency Honesty Pack → Commercial Channel & Pricing Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-103](ADR_103_STAGE49_OPEN.md)  
-**Prior freeze:** [ADR-102](ADR_102_STAGE48_FREEZE.md) · [STAGE_48_EXIT_CRITERIA.md](STAGE_48_EXIT_CRITERIA.md)
+**Prior freeze:** [ADR-102](ADR_102_STAGE48_FREEZE.md) · [STAGE_48_EXIT_CRITERIA.md](STAGE_48_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_49_EXIT_CRITERIA.md](STAGE_49_EXIT_CRITERIA.md) · [ADR-104](ADR_104_STAGE49_FREEZE.md)
 
 Stage 49 opens after Stage 48 freeze: **Partner / Reseller Terms Honesty Packaging + Pricing Transparency Honesty Packaging → Commercial Channel & Pricing Fidelity**. PRODUCT_OVERVIEW white-label / reseller and transparent published pricing themes, plus Stage 36 billing-deferred and Stage 43/39 ToS/MSA adjacency, lack dedicated customer-facing honesty packs for partner / reseller / white-label boundaries and published edition price-list transparency Remaining. This track packages those Remaining surfaces on proven Stage 36–48 commercial / billing-deferred / legal assets — **not** claiming live partner program Complete, signed reseller agreement Complete, white-label live Complete, public pricing portal Complete, checkout pricing Complete, paid billing Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–48 packs as new Complete, or reopening Stages 1–48 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Channel & Pricing Fidelity
 | **R1** | Partner / reseller / white-label terms honesty packaging (not live partner program / signed reseller Complete) | P0 | COMPLETE |
 | **L1** | Pricing transparency / published edition price-list honesty packaging (not public pricing portal / checkout pricing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H49x** | Stage 49 exit criteria + freeze ADR | Exit | PENDING |
+| **H49x** | Stage 49 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -92,6 +93,6 @@ Commercial Channel & Pricing Fidelity
 
 ## H49x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H49x — `docs/STAGE_49_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_104_STAGE49_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage49_exit_h49x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H49x — `docs/STAGE_49_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_104_STAGE49_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage49_exit_h49x.py`.
