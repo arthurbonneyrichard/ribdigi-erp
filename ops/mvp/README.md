@@ -22,6 +22,7 @@
 | `e2e-purchase-stock.json` | Stage 35 P1 purchase-to-stock — `live_purchase_stock_claimed: false` / `e2e_smoke_executed_claimed: false` / `demo_tenant_claimed: false` / `po_kanban_claimed: false` |
 | `e2e-sale-payment.json` | Stage 35 S1 sale-to-payment — `live_sale_payment_claimed: false` / `e2e_smoke_executed_claimed: false` / `demo_tenant_claimed: false` / `usb_serial_drivers_claimed: false` |
 | `e2e-verify-financials.json` | Stage 35 V1 verify financials — `live_verify_financials_claimed: false` / `e2e_smoke_executed_claimed: false` / `demo_tenant_claimed: false` / `tax_efile_claimed: false` |
+| `e2e-backup-restore.json` | Stage 35 R1 backup + restore — `live_backup_restore_claimed: false` / `e2e_smoke_executed_claimed: false` / `demo_tenant_claimed: false` / `live_pitr_drill_claimed: false` |
 
 Authoritative MVP docs:
 
@@ -44,6 +45,7 @@ Authoritative MVP docs:
 - `docs/E2E_PURCHASE_STOCK_MVP.md` (`backend/tests/test_e2e_purchase_stock_p1.py`) — Stage 35 P1
 - `docs/E2E_SALE_PAYMENT_MVP.md` (`backend/tests/test_e2e_sale_payment_s1.py`) — Stage 35 S1
 - `docs/E2E_VERIFY_FINANCIALS_MVP.md` (`backend/tests/test_e2e_verify_financials_v1.py`) — Stage 35 V1
+- `docs/E2E_BACKUP_RESTORE_MVP.md` (`backend/tests/test_e2e_backup_restore_r1.py`) — Stage 35 R1
 
 ## Stage 33 K1 — Residual risk register
 
@@ -145,4 +147,12 @@ Tax → accounting → credit → reports → audit checklist. See `docs/E2E_VER
 - Tests: `backend/tests/test_e2e_verify_financials_v1.py`
 - Honesty: `live_verify_financials_claimed: false`, `e2e_smoke_executed_claimed: false`, `demo_tenant_claimed: false`, `tax_efile_claimed: false` — packaging ≠ live verification; tax e-file / Open Banking remain deferred
 
-Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false` / `customer_assurance_claimed: false` / `attestation_claimed: false` / `questionnaire_answers_certified: false` / `e2e_smoke_executed_claimed: false` / `live_bootstrap_claimed: false` / `demo_tenant_claimed: false` / `live_users_provisioned_claimed: false` / `store_membership_claimed: false` / `live_purchase_stock_claimed: false` / `po_kanban_claimed: false` / `live_sale_payment_claimed: false` / `usb_serial_drivers_claimed: false` / `live_verify_financials_claimed: false` / `tax_efile_claimed: false`.
+## Stage 35 R1 — E2E backup + restore
+
+Logical backup → dry-run → apply → verify checklist. See `docs/E2E_BACKUP_RESTORE_MVP.md`.
+
+- Pack: `e2e-backup-restore.json`
+- Tests: `backend/tests/test_e2e_backup_restore_r1.py`
+- Honesty: `live_backup_restore_claimed: false`, `e2e_smoke_executed_claimed: false`, `demo_tenant_claimed: false`, `live_pitr_drill_claimed: false` — packaging ≠ live restore; PITR drill remains Remaining
+
+Do **not** treat this packaging as production go-live, deferred ADR implementation, residual risks closed, or live-run certification. Top-level flags stay `go_live_claimed: false` / `deferred_implemented_claimed: false` / `live_runs_certified: false` / `section_7_signed: false` / `handoff_complete_claimed: false` / `production_live_claimed: false` / `risks_closed_claimed: false` / `soc2_complete_claimed: false` / `iso27001_complete_claimed: false` / `certification_complete_claimed: false` / `first_tenant_onboarded_claimed: false` / `live_onboarding_success_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false` / `customer_assurance_claimed: false` / `attestation_claimed: false` / `questionnaire_answers_certified: false` / `e2e_smoke_executed_claimed: false` / `live_bootstrap_claimed: false` / `demo_tenant_claimed: false` / `live_users_provisioned_claimed: false` / `store_membership_claimed: false` / `live_purchase_stock_claimed: false` / `po_kanban_claimed: false` / `live_sale_payment_claimed: false` / `usb_serial_drivers_claimed: false` / `live_verify_financials_claimed: false` / `tax_efile_claimed: false` / `live_backup_restore_claimed: false` / `live_pitr_drill_claimed: false`.
