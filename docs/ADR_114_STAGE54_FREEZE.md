@@ -23,3 +23,7 @@ Stage 54 Commercial Go-To-Market Fidelity delivered digital marketing / case stu
 - Stage 1–53 freezes remain in force for their scopes (Stage 53 included).
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Go-to-market packaging Complete does **not** mean live digital marketing campaigns, published case studies / testimonials, live inside-sales team, Enterprise / White-Label sales pipeline, or live go-live / §7 / attestation Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 55 (Commercial Licensing & Positioning Fidelity) after Stage 54 freeze via CONTINUE/NEXT — see [ADR-115](ADR_115_STAGE55_OPEN.md) and [STAGE_55_PLAN.md](STAGE_55_PLAN.md). Stage 54 feature scope remains frozen; Stage 55 does not reopen M1–D1 / H54x.

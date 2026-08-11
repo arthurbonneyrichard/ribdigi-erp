@@ -168,6 +168,7 @@ Authoritative MVP docs:
 - `docs/DIRECT_SALES_MVP.md` (`backend/tests/test_direct_sales_s1.py`) — Stage 54 S1
 - `docs/STAGE_54_FIDELITY.md` (`backend/tests/test_stage54_fidelity_d1.py`) — Stage 54 D1
 - `docs/STAGE_54_EXIT_CRITERIA.md` / `docs/ADR_114_STAGE54_FREEZE.md` (`backend/tests/test_stage54_exit_h54x.py`) — Stage 54 H54x
+- `docs/STAGE_55_PLAN.md` (`backend/tests/test_stage55_open.py`) — Stage 55 open (ADR-115)
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -670,3 +671,7 @@ Commercial Go-To-Market Fidelity — `docs/STAGE_54_PLAN.md`, ADR-113; Closed �
 ## Stage 54 exit
 
 H54x met — `docs/STAGE_54_EXIT_CRITERIA.md`, ADR-114. Stages 1–54 frozen for Stage 54 feature scope.
+
+## Stage 55 open
+
+Commercial Licensing & Positioning Fidelity — `docs/STAGE_55_PLAN.md`, ADR-115; W1 next.
