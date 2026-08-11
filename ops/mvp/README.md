@@ -250,6 +250,9 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_88_EXIT_CRITERIA.md` / `docs/ADR_183_STAGE88_FREEZE.md` (`backend/tests/test_stage88_exit_h88x.py`) — Stage 88 H88x
+- `docs/STAGE_88_FIDELITY.md` (`backend/tests/test_stage88_fidelity_d1.py`) — Stage 88 D1
+- `docs/STAGE_88_PLAN.md` (`backend/tests/test_stage88_open.py`) — Stage 88 open (ADR-182)
 - `docs/STAGE_87_EXIT_CRITERIA.md` / `docs/ADR_181_STAGE87_FREEZE.md` (`backend/tests/test_stage87_exit_h87x.py`) — Stage 87 H87x
 - `docs/STAGE_87_FIDELITY.md` (`backend/tests/test_stage87_fidelity_d1.py`) — Stage 87 D1
 - `docs/STAGE_87_PLAN.md` (`backend/tests/test_stage87_open.py`) — Stage 87 open (ADR-180)
@@ -1051,6 +1054,30 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 88 exit
+
+H88x met — `docs/STAGE_88_EXIT_CRITERIA.md`, ADR-183. Stages 1–88 frozen for Stage 88 feature scope.
+
+## Stage 88 D1 — House Lifecycle & Staff Security Ops fidelity
+
+`docs/STAGE_88_FIDELITY.md` — maps L1–S1 → readiness / launch / deploy / security.
+
+## Stage 88 S1 — Platform staff invite + session ops
+
+`test_platform_staff_security_s1.py` — email invite + `GET/DELETE /platform/users/sessions`.
+
+## Stage 88 R1 — Tenant roster export + at-risk queue
+
+`test_platform_tenant_roster_r1.py` — `GET /platform/tenants/export` / `GET /platform/tenants/at-risk`.
+
+## Stage 88 L1 — Tenant lifecycle controls
+
+`test_platform_tenant_lifecycle_l1.py` — `PATCH /platform/tenants/{id}/lifecycle` + suspend reason.
+
+## Stage 88 open
+
+ADR-182 + `docs/STAGE_88_PLAN.md` — House Lifecycle & Staff Security Ops.
 
 ## Stage 87 exit
 

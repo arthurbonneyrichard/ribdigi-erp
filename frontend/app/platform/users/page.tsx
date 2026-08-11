@@ -14,8 +14,20 @@ type PlatformUser = {
   totp_enabled?: boolean;
 };
 
+type StaffSession = {
+  id: string;
+  user_id: string;
+  email: string;
+  full_name: string;
+  ip_address?: string;
+  user_agent?: string;
+  created_at?: string;
+  current?: boolean;
+};
+
 export default function PlatformUsersPage() {
   const [items, setItems] = useState<PlatformUser[]>([]);
+  const [sessions, setSessions] = useState<StaffSession[]>([]);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [email, setEmail] = useState('');
@@ -29,6 +41,8 @@ export default function PlatformUsersPage() {
     try {
       const r = await api('/platform/users');
       setItems(r.data || []);
+      const s = await api('/platform/users/sessions');
+      setSessions(s.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load users');
     }
@@ -44,19 +58,24 @@ export default function PlatformUsersPage() {
     setError('');
     setMsg('');
     try {
-      await api('/platform/users', {
+      const body: Record<string, string> = {
+        email,
+        full_name: fullName,
+        role,
+      };
+      if (password.trim()) body.password = password.trim();
+      const r = await api('/platform/users', {
         method: 'POST',
-        body: JSON.stringify({
-          email,
-          full_name: fullName,
-          password,
-          role,
-        }),
+        body: JSON.stringify(body),
       });
       setEmail('');
       setFullName('');
       setPassword('');
-      setMsg('Platform user created');
+      setMsg(
+        r.data?.invite_by_email
+          ? `Invite email issued for ${r.data.email || email}`
+          : 'Platform user created',
+      );
       await load();
     } catch (err: any) {
       setError(err.message || 'Create failed');
@@ -104,6 +123,23 @@ export default function PlatformUsersPage() {
     }
   }
 
+  async function revokeSession(s: StaffSession) {
+    if (s.current) {
+      if (!window.confirm('Revoke your current session? You may be signed out.')) return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/platform/users/sessions/${s.id}`, { method: 'DELETE' });
+      setMsg('Session revoked');
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Revoke failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <PlatformShell>
       <h1>Platform users</h1>
@@ -117,7 +153,9 @@ export default function PlatformUsersPage() {
 
       <form onSubmit={createUser} className="card" style={{ marginTop: 16, maxWidth: 480 }}>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>Invite platform user</h2>
-        <p className="muted">Requires platform_super_admin. Password from env-style strength rules.</p>
+        <p className="muted">
+          Requires platform_super_admin. Leave password blank to send a set-password email invite.
+        </p>
         <input
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
@@ -136,9 +174,8 @@ export default function PlatformUsersPage() {
         <input
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Temporary password"
+          placeholder="Temporary password (optional)"
           type="password"
-          required
           style={{ width: '100%', padding: 10, margin: '6px 0', borderRadius: 8, border: '1px solid #cbd5e1' }}
         />
         <select
@@ -154,7 +191,7 @@ export default function PlatformUsersPage() {
           disabled={busy}
           style={{ padding: '10px 14px', borderRadius: 8, background: '#111827', color: '#fff', border: 0 }}
         >
-          Create
+          {password.trim() ? 'Create' : 'Invite by email'}
         </button>
       </form>
 
@@ -193,6 +230,42 @@ export default function PlatformUsersPage() {
             <tr>
               <td colSpan={6} className="muted">
                 No platform users yet. Use the bootstrap script or create one above.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      <h2 style={{ fontSize: 16, marginTop: 32 }}>Active staff sessions</h2>
+      <p className="muted">House operators can revoke platform staff AuthSessions.</p>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>IP</th>
+            <th>Created</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {sessions.map((s) => (
+            <tr key={s.id}>
+              <td>
+                {s.full_name} ({s.email}){s.current ? ' · current' : ''}
+              </td>
+              <td>{s.ip_address || '—'}</td>
+              <td>{s.created_at || '—'}</td>
+              <td>
+                <button type="button" disabled={busy} onClick={() => revokeSession(s)}>
+                  Revoke
+                </button>
+              </td>
+            </tr>
+          ))}
+          {sessions.length === 0 && (
+            <tr>
+              <td colSpan={4} className="muted">
+                No active platform staff sessions.
               </td>
             </tr>
           )}

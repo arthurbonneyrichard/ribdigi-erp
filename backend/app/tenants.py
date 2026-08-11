@@ -219,6 +219,38 @@ async def activate_tenant(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
     return tenant
 
 
+async def extend_trial(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    days: int,
+    now: datetime | None = None,
+) -> m.Tenant:
+    """House ops: extend or reopen trial window (metadata lifecycle — not paid billing)."""
+    assert_mutable_customer_tenant(tenant)
+    days = int(days)
+    if days < 1 or days > 365:
+        raise HTTPException(status_code=400, detail="extend_trial_days must be between 1 and 365")
+    now = now or datetime.utcnow()
+    base = tenant.trial_ends_at or now
+    if base < now:
+        base = now
+    tenant.trial_ends_at = base + timedelta(days=days)
+    # Returning to trial from grace/suspended is an operator lifecycle action (not checkout).
+    if tenant.status in {"grace", "suspended", "trial"}:
+        tenant.status = "trial"
+        tenant.suspended_at = None
+        tenant.suspended_reason = None
+        tenant.grace_ends_at = None
+    elif tenant.status == "active":
+        # Keep active; only push trial_ends_at for roster visibility / future grace.
+        pass
+    else:
+        raise HTTPException(status_code=400, detail=f"Cannot extend trial from status {tenant.status}")
+    await db.flush()
+    return tenant
+
+
 async def ensure_trial_state(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
     """Apply overdue trial→grace or grace→suspend transitions (idempotent)."""
     if tenant.id == PLATFORM_TENANT_ID:

@@ -14,7 +14,11 @@ type TenantRow = {
   user_count?: number;
   store_count?: number;
   created_at?: string;
+  days_remaining?: number | null;
+  risk_ends_at?: string;
 };
+
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 const emptyForm = {
   company_name: '',
@@ -29,6 +33,7 @@ const emptyForm = {
 
 export default function PlatformTenantsPage() {
   const [items, setItems] = useState<TenantRow[]>([]);
+  const [atRisk, setAtRisk] = useState<TenantRow[]>([]);
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
@@ -47,6 +52,8 @@ export default function PlatformTenantsPage() {
       const r = await api(`/platform/tenants?${params.toString()}`);
       setItems(r.data?.items || []);
       setTotal(r.data?.total || 0);
+      const risk = await api('/platform/tenants/at-risk?within_days=14');
+      setAtRisk(risk.data?.items || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load tenants');
     }
@@ -87,6 +94,36 @@ export default function PlatformTenantsPage() {
       setError(err.message || 'Provision failed');
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function exportFmt(fmt: 'csv' | 'pdf') {
+    setError('');
+    setMsg('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const params = new URLSearchParams();
+      if (q.trim()) params.set('q', q.trim());
+      if (status) params.set('status', status);
+      params.set('format', fmt);
+      const res = await fetch(`${apiBase}/platform/tenants/export?${params}`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error(`${fmt.toUpperCase()} export failed`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `platform-tenants.${fmt}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMsg(`${fmt.toUpperCase()} downloaded`);
+    } catch (err: any) {
+      setError(err.message);
     }
   }
 
@@ -183,10 +220,53 @@ export default function PlatformTenantsPage() {
         <button type="submit" style={{ padding: '10px 14px', borderRadius: 8, background: '#111827', color: '#fff', border: 0 }}>
           Search
         </button>
+        <button type="button" onClick={() => exportFmt('csv')}>
+          Export CSV
+        </button>
+        <button type="button" onClick={() => exportFmt('pdf')}>
+          Export PDF
+        </button>
       </form>
       {error && <p>{error}</p>}
       {msg && <p style={{ color: '#047857' }}>{msg}</p>}
-      <p className="muted">{total} tenant(s)</p>
+
+      <h2 style={{ fontSize: 16, marginTop: 24 }}>At-risk (trial/grace within 14 days)</h2>
+      <p className="muted">{atRisk.length} tenant(s) in queue</p>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Ends</th>
+            <th>Days left</th>
+          </tr>
+        </thead>
+        <tbody>
+          {atRisk.map((t) => (
+            <tr key={t.id}>
+              <td>
+                <Link href={`/platform/tenants/${t.id}`}>{t.company_name}</Link>
+              </td>
+              <td>
+                <span className="badge">{t.status}</span>
+              </td>
+              <td>{t.risk_ends_at || '—'}</td>
+              <td>{t.days_remaining ?? '—'}</td>
+            </tr>
+          ))}
+          {atRisk.length === 0 && (
+            <tr>
+              <td colSpan={4} className="muted">
+                No at-risk tenants in the 14-day window.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      <p className="muted" style={{ marginTop: 24 }}>
+        {total} tenant(s)
+      </p>
       <table className="table">
         <thead>
           <tr>

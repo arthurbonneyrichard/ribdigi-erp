@@ -27,4 +27,4 @@ Stage 87 House Integrity & Console Boundary Ops delivered platform audit export/
 
 ## Next stage
 
-Stage 88 requires CONTINUE/NEXT with a distinct product outline, open ADR, and plan. Until then, Stage 87 feature scope remains frozen under this ADR.
+Stage 88 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-182](ADR_182_STAGE88_OPEN.md) + [STAGE_88_PLAN.md](STAGE_88_PLAN.md) (Tenant Lifecycle Controls → Tenant Roster Export & At-Risk Queue → Platform Staff Invite & Session Ops → House Lifecycle & Staff Security Ops). Stage 88 subsequently froze under [ADR-183](ADR_183_STAGE88_FREEZE.md). Stage 87 feature scope remains frozen.

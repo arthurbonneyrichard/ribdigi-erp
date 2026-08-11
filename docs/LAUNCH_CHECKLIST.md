@@ -300,6 +300,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Console boundary hardening (Stage 87 Z1: `test_console_boundary_z1.py`)
 - [x] Stage 87 fidelity sync (D1: `test_stage87_fidelity_d1.py`, `docs/STAGE_87_FIDELITY.md` — X1–Z1 + readiness + deploy / launch / security)
 - [x] Stage 87 exit + freeze (H87x: `test_stage87_exit_h87x.py`, `docs/STAGE_87_EXIT_CRITERIA.md`, ADR-181)
+- [x] Stage 88 track opened (ADR-182: `test_stage88_open.py`, `docs/STAGE_88_PLAN.md`) — House Lifecycle & Staff Security Ops; closed under ADR-183
+- [x] Tenant lifecycle controls (Stage 88 L1: `test_platform_tenant_lifecycle_l1.py`)
+- [x] Tenant roster export + at-risk queue (Stage 88 R1: `test_platform_tenant_roster_r1.py`)
+- [x] Platform staff invite + session ops (Stage 88 S1: `test_platform_staff_security_s1.py`)
+- [x] Stage 88 fidelity sync (D1: `test_stage88_fidelity_d1.py`, `docs/STAGE_88_FIDELITY.md` — L1–S1 + readiness + deploy / launch / security)
+- [x] Stage 88 exit + freeze (H88x: `test_stage88_exit_h88x.py`, `docs/STAGE_88_EXIT_CRITERIA.md`, ADR-183)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

@@ -15,6 +15,8 @@ export default function PlatformTenantDetailPage() {
   const [busy, setBusy] = useState(false);
   const [planCode, setPlanCode] = useState('trial');
   const [notes, setNotes] = useState('');
+  const [extendDays, setExtendDays] = useState(14);
+  const [suspendReason, setSuspendReason] = useState('');
 
   async function load() {
     setError('');
@@ -35,11 +37,35 @@ export default function PlatformTenantDetailPage() {
 
   async function setLifecycle(action: 'suspend' | 'activate') {
     setBusy(true);
+    setError('');
     try {
-      await api(`/platform/tenants/${id}/${action}`, { method: 'POST', body: '{}' });
+      const body =
+        action === 'suspend'
+          ? JSON.stringify({ reason: suspendReason.trim() || undefined })
+          : '{}';
+      await api(`/platform/tenants/${id}/${action}`, { method: 'POST', body });
+      setMsg(action === 'suspend' ? 'Tenant suspended' : 'Tenant activated (billing deferred)');
       await load();
     } catch (err: any) {
       setError(err.message || `Failed to ${action}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function extendTrial() {
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      await api(`/platform/tenants/${id}/lifecycle`, {
+        method: 'PATCH',
+        body: JSON.stringify({ extend_trial_days: extendDays }),
+      });
+      setMsg(`Trial extended by ${extendDays} day(s) — not paid billing`);
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to extend trial');
     } finally {
       setBusy(false);
     }
@@ -103,12 +129,22 @@ export default function PlatformTenantDetailPage() {
               </div>
             </div>
             <div className="card">
-              <div className="muted">Users</div>
-              <div className="kpi">{row.user_count ?? 0}</div>
+              <div className="muted">Days remaining</div>
+              <div className="kpi" style={{ fontSize: 18 }}>
+                {row.days_remaining ?? '—'}
+              </div>
             </div>
             <div className="card">
-              <div className="muted">Stores</div>
-              <div className="kpi">{row.store_count ?? 0}</div>
+              <div className="muted">Trial ends</div>
+              <div className="kpi" style={{ fontSize: 14 }}>
+                {row.trial_ends_at || '—'}
+              </div>
+            </div>
+            <div className="card">
+              <div className="muted">Grace ends</div>
+              <div className="kpi" style={{ fontSize: 14 }}>
+                {row.grace_ends_at || '—'}
+              </div>
             </div>
             <div className="card">
               <div className="muted">Last activity</div>
@@ -117,6 +153,32 @@ export default function PlatformTenantDetailPage() {
               </div>
             </div>
           </div>
+
+          <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
+            <div className="muted">Lifecycle (metadata — not paid billing / checkout)</div>
+            <p className="muted" style={{ marginTop: 8 }}>
+              Extend trial or reopen from grace/suspended without claiming billing Complete.
+            </p>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={extendDays}
+                onChange={(e) => setExtendDays(Number(e.target.value) || 1)}
+                style={{ width: 90, padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
+              />
+              <button type="button" disabled={busy} onClick={extendTrial}>
+                Extend trial
+              </button>
+            </div>
+            {row.suspended_reason && (
+              <p className="muted" style={{ marginTop: 8 }}>
+                Suspended reason: {row.suspended_reason}
+              </p>
+            )}
+          </div>
+
           <div className="card" style={{ marginTop: 16, maxWidth: 420 }}>
             <div className="muted">Plan code (metadata — billing deferred)</div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
@@ -152,11 +214,19 @@ export default function PlatformTenantDetailPage() {
           <p className="muted" style={{ marginTop: 16 }}>
             Suspension changes status only — no data wipe. Active sessions are revoked.
           </p>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             {row.status !== 'suspended' ? (
-              <button type="button" disabled={busy} onClick={() => setLifecycle('suspend')}>
-                Suspend
-              </button>
+              <>
+                <input
+                  value={suspendReason}
+                  onChange={(e) => setSuspendReason(e.target.value)}
+                  placeholder="Suspend reason (optional)"
+                  style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 220 }}
+                />
+                <button type="button" disabled={busy} onClick={() => setLifecycle('suspend')}>
+                  Suspend
+                </button>
+              </>
             ) : (
               <button type="button" disabled={busy} onClick={() => setLifecycle('activate')}>
                 Activate

@@ -1657,3 +1657,15 @@ Every feature in every phase must meet:
 **Stage 87 D1 (2026-08-11):** House Integrity & Console Boundary Ops fidelity sync — `docs/STAGE_87_FIDELITY.md` (`test_stage87_fidelity_d1.py`); maps X1–Z1 → readiness / launch / deploy / security.
 
 **Stage 87 exit (2026-08-11):** X1, Y1, Z1, D1, H87x met — `docs/STAGE_87_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_181_STAGE87_FREEZE.md`. Fidelity: `docs/STAGE_87_FIDELITY.md`.
+
+**Stage 88 open (2026-08-11):** House Lifecycle & Staff Security Ops track approved — `docs/ADR_182_STAGE88_OPEN.md` + `docs/STAGE_88_PLAN.md` (Tenant Lifecycle Controls → Tenant Roster Export & At-Risk Queue → Platform Staff Invite & Session Ops → House Lifecycle & Staff Security Ops; L1 next).
+
+**Stage 88 L1 (2026-08-11):** Tenant lifecycle controls — `PATCH /platform/tenants/{id}/lifecycle` + suspend reason (`test_platform_tenant_lifecycle_l1.py`).
+
+**Stage 88 R1 (2026-08-11):** Tenant roster export + at-risk queue — `GET /platform/tenants/export` / `GET /platform/tenants/at-risk` (`test_platform_tenant_roster_r1.py`).
+
+**Stage 88 S1 (2026-08-11):** Platform staff invite + session ops — email invite + `GET/DELETE /platform/users/sessions` (`test_platform_staff_security_s1.py`).
+
+**Stage 88 D1 (2026-08-11):** House Lifecycle & Staff Security Ops fidelity sync — `docs/STAGE_88_FIDELITY.md` (`test_stage88_fidelity_d1.py`); maps L1–S1 → readiness / launch / deploy / security.
+
+**Stage 88 exit (2026-08-11):** L1, R1, S1, D1, H88x met — `docs/STAGE_88_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_183_STAGE88_FREEZE.md`. Fidelity: `docs/STAGE_88_FIDELITY.md`.

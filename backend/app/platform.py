@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+import csv
+import io
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import func, or_, select
@@ -464,3 +466,114 @@ async def get_customer_tenant(db: AsyncSession, tenant_ref: str) -> dict | None:
     if tenant.id == PLATFORM_TENANT_ID:
         return None
     return await _enrich_tenant_row(db, tenant)
+
+
+async def list_at_risk_tenants(db: AsyncSession, *, within_days: int = 14) -> dict:
+    """Trial/grace tenants nearing (or past) expiry — Stage 88 R1 ops queue."""
+    await ensure_platform_tenant(db)
+    within_days = max(1, min(int(within_days or 14), 90))
+    now = datetime.utcnow()
+    cutoff = now + timedelta(days=within_days)
+    rows = (
+        await db.execute(
+            select(m.Tenant)
+            .where(
+                _customer_tenant_filter(),
+                or_(
+                    (m.Tenant.status == "trial")
+                    & (m.Tenant.trial_ends_at.is_not(None))
+                    & (m.Tenant.trial_ends_at <= cutoff),
+                    (m.Tenant.status == "grace")
+                    & (m.Tenant.grace_ends_at.is_not(None))
+                    & (m.Tenant.grace_ends_at <= cutoff),
+                ),
+            )
+            .order_by(m.Tenant.trial_ends_at.asc().nulls_last(), m.Tenant.grace_ends_at.asc().nulls_last())
+        )
+    ).scalars().all()
+    items = []
+    for t in rows:
+        row = await _enrich_tenant_row(db, t)
+        ends = t.grace_ends_at if t.status == "grace" else t.trial_ends_at
+        items.append(
+            {
+                **{k: row.get(k) for k in (
+                    "id",
+                    "slug",
+                    "company_name",
+                    "status",
+                    "plan_code",
+                    "trial_ends_at",
+                    "grace_ends_at",
+                    "days_remaining",
+                    "platform_notes",
+                )},
+                "risk_ends_at": ends.isoformat() + "Z" if ends else None,
+                "within_days": within_days,
+            }
+        )
+    return {"within_days": within_days, "items": items, "total": len(items)}
+
+
+def customer_tenants_to_csv(rows: list[dict]) -> str:
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        [
+            "id",
+            "slug",
+            "company_name",
+            "status",
+            "plan_code",
+            "industry",
+            "trial_ends_at",
+            "grace_ends_at",
+            "days_remaining",
+            "user_count",
+            "store_count",
+            "last_activity_at",
+            "suspended_reason",
+            "created_at",
+        ]
+    )
+    for r in rows:
+        def _fmt(v):
+            if v is None:
+                return ""
+            if hasattr(v, "isoformat"):
+                return v.isoformat()
+            return str(v)
+
+        writer.writerow(
+            [
+                r.get("id") or "",
+                r.get("slug") or "",
+                r.get("company_name") or "",
+                r.get("status") or "",
+                r.get("plan_code") or "",
+                r.get("industry") or "",
+                _fmt(r.get("trial_ends_at")),
+                _fmt(r.get("grace_ends_at")),
+                "" if r.get("days_remaining") is None else r.get("days_remaining"),
+                r.get("user_count") if r.get("user_count") is not None else "",
+                r.get("store_count") if r.get("store_count") is not None else "",
+                _fmt(r.get("last_activity_at")),
+                r.get("suspended_reason") or "",
+                _fmt(r.get("created_at")),
+            ]
+        )
+    return buf.getvalue()
+
+
+def customer_tenants_to_pdf(rows: list[dict]) -> bytes:
+    from app.report_export import to_pdf as build_pdf
+
+    lines = [
+        f"{r.get('slug') or '-'} | {r.get('company_name') or '-'} | "
+        f"{r.get('status') or '-'} | plan={r.get('plan_code') or '-'} | "
+        f"days={r.get('days_remaining') if r.get('days_remaining') is not None else '-'}"
+        for r in rows
+    ]
+    if not lines:
+        lines = ["No customer tenants in selection."]
+    return build_pdf("Customer tenants", lines, subtitle=f"{len(rows)} tenant(s)")

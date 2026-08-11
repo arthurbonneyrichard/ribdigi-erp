@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import secrets
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -44,7 +46,7 @@ def _client_meta(request: Request) -> tuple[str | None, str | None]:
 class PlatformUserCreate(BaseModel):
     email: EmailStr
     full_name: str = Field(min_length=1, max_length=200)
-    password: str
+    password: str | None = None
     role: str = PLATFORM_ADMIN
 
 
@@ -74,6 +76,14 @@ class PlatformPlanUpdate(BaseModel):
 
 class PlatformTenantNotesUpdate(BaseModel):
     platform_notes: str | None = None
+
+
+class PlatformTenantLifecycleUpdate(BaseModel):
+    extend_trial_days: int | None = Field(default=None, ge=1, le=365)
+
+
+class PlatformSuspendBody(BaseModel):
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class PlatformSettingsUpdate(BaseModel):
@@ -161,6 +171,44 @@ async def platform_list_tenants(
         db, q=q, status=status, limit=limit, offset=offset
     )
     return env({"items": items, "total": total, "limit": limit, "offset": offset})
+
+
+@router.get("/tenants/export")
+async def platform_tenants_export(
+    claims: dict = Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+    q: str | None = Query(None),
+    status: str | None = Query(None),
+    format: str = Query("csv"),
+):
+    """Stage 88 R1 — export customer tenant roster (csv/pdf)."""
+    items, _total = await platform_svc.list_customer_tenants(
+        db, q=q, status=status, limit=500, offset=0
+    )
+    fmt = (format or "csv").strip().lower()
+    if fmt == "pdf":
+        return Response(
+            content=platform_svc.customer_tenants_to_pdf(items),
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=platform-tenants.pdf"},
+        )
+    if fmt != "csv":
+        raise HTTPException(status_code=400, detail="format must be csv or pdf")
+    return PlainTextResponse(
+        content=platform_svc.customer_tenants_to_csv(items),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=platform-tenants.csv"},
+    )
+
+
+@router.get("/tenants/at-risk")
+async def platform_tenants_at_risk(
+    claims: dict = Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+    within_days: int = Query(14, ge=1, le=90),
+):
+    """Stage 88 R1 — trial/grace tenants nearing expiry."""
+    return env(await platform_svc.list_at_risk_tenants(db, within_days=within_days))
 
 
 @router.post("/tenants")
@@ -252,6 +300,7 @@ async def platform_get_tenant(
 async def platform_suspend_tenant(
     tenant_id: str,
     request: Request,
+    payload: PlatformSuspendBody | None = None,
     claims: dict = Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -263,7 +312,8 @@ async def platform_suspend_tenant(
     if row.status == "suspended":
         return env({"id": row.id, "status": row.status}, message="already suspended")
     prev = row.status
-    row = await tenants_svc.suspend_tenant(db, row, reason="Suspended by Ribdigi House platform")
+    reason = (payload.reason if payload else None) or "Suspended by Ribdigi House platform"
+    row = await tenants_svc.suspend_tenant(db, row, reason=reason.strip())
     ip, ua = _client_meta(request)
     await audit.record_event(
         db,
@@ -272,13 +322,63 @@ async def platform_suspend_tenant(
         action="platform.tenant.suspend",
         entity="tenant",
         entity_id=tenant_id,
-        details={"previous_status": prev, "target_tenant_id": tenant_id, "sessions_revoked": True},
+        details={
+            "previous_status": prev,
+            "target_tenant_id": tenant_id,
+            "sessions_revoked": True,
+            "reason": row.suspended_reason,
+        },
         ip_address=ip,
         user_agent=ua,
         module="platform_tenants",
     )
     await db.commit()
-    return env({"id": row.id, "status": row.status}, message="tenant suspended")
+    data = await platform_svc.get_customer_tenant(db, tenant_id)
+    return env(data or {"id": row.id, "status": row.status}, message="tenant suspended")
+
+
+@router.patch("/tenants/{tenant_id}/lifecycle")
+async def platform_tenant_lifecycle(
+    tenant_id: str,
+    payload: PlatformTenantLifecycleUpdate,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 88 L1 — extend trial / reopen trial window (not paid billing)."""
+    if tenant_id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=400, detail="Cannot alter platform tenant lifecycle here")
+    row = await db.get(m.Tenant, tenant_id)
+    if not row or row.id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    if payload.extend_trial_days is None:
+        raise HTTPException(status_code=400, detail="extend_trial_days is required")
+    prev = {
+        "status": row.status,
+        "trial_ends_at": row.trial_ends_at.isoformat() + "Z" if row.trial_ends_at else None,
+    }
+    row = await tenants_svc.extend_trial(db, row, days=payload.extend_trial_days)
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.tenant.lifecycle_extended",
+        entity="tenant",
+        entity_id=tenant_id,
+        details={
+            "target_tenant_id": tenant_id,
+            "extend_trial_days": payload.extend_trial_days,
+            "previous": prev,
+            "billing_deferred": True,
+        },
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_tenants",
+    )
+    await db.commit()
+    data = await platform_svc.get_customer_tenant(db, tenant_id)
+    return env(data, message="tenant lifecycle updated (billing deferred)")
 
 
 @router.post("/tenants/{tenant_id}/activate")
@@ -545,6 +645,83 @@ async def platform_list_users(
     return env([serialize_user(u) for u in rows])
 
 
+@router.get("/users/sessions")
+async def platform_list_staff_sessions(
+    claims: dict = Depends(require_platform_permission("platform_users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 88 S1 — active AuthSessions for platform staff (House ops)."""
+    await platform_svc.ensure_platform_tenant(db)
+    rows = (
+        await db.execute(
+            select(m.AuthSession, m.User)
+            .join(m.User, m.User.id == m.AuthSession.user_id)
+            .where(
+                m.AuthSession.tenant_id == PLATFORM_TENANT_ID,
+                m.AuthSession.revoked_at.is_(None),
+            )
+            .order_by(m.AuthSession.created_at.desc())
+            .limit(200)
+        )
+    ).all()
+    return env(
+        [
+            {
+                "id": s.id,
+                "user_id": s.user_id,
+                "email": u.email,
+                "full_name": u.full_name,
+                "jti": s.jti,
+                "ip_address": s.ip_address,
+                "user_agent": s.user_agent,
+                "expires_at": s.expires_at,
+                "created_at": s.created_at,
+                "current": s.jti == claims.get("jti"),
+            }
+            for s, u in rows
+        ]
+    )
+
+
+@router.delete("/users/sessions/{session_id}")
+async def platform_revoke_staff_session(
+    session_id: str,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 88 S1 — revoke a platform staff AuthSession."""
+    if claims.get("role") != PLATFORM_SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only platform_super_admin can revoke staff sessions")
+    session = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.id == session_id,
+                m.AuthSession.tenant_id == PLATFORM_TENANT_ID,
+            )
+        )
+    ).scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.revoked_at is None:
+        session.revoked_at = datetime.utcnow()
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.user.session_revoke",
+        entity="auth_session",
+        entity_id=session.id,
+        details={"target_user_id": session.user_id, "jti": session.jti},
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_users",
+    )
+    await db.commit()
+    return env({"id": session.id, "revoked": True}, message="session revoked")
+
+
 @router.post("/users")
 async def platform_create_user(
     payload: PlatformUserCreate,
@@ -552,6 +729,7 @@ async def platform_create_user(
     claims: dict = Depends(require_platform_permission("platform_users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Create platform staff; omit password to invite via set-password email (Stage 88 S1)."""
     if claims.get("role") != PLATFORM_SUPER_ADMIN:
         raise HTTPException(status_code=403, detail="Only platform_super_admin can create platform users")
     role = (payload.role or "").strip()
@@ -560,7 +738,12 @@ async def platform_create_user(
             status_code=400,
             detail=f"role must be one of: {sorted(PLATFORM_ROLES)}",
         )
-    validate_password_strength(payload.password)
+    invite_by_email = not (payload.password and str(payload.password).strip())
+    if invite_by_email:
+        password = secrets.token_urlsafe(18) + "Aa1!"
+    else:
+        password = str(payload.password)
+    validate_password_strength(password)
     await platform_svc.ensure_platform_tenant(db)
     email = str(payload.email).strip().lower()
     exists = (
@@ -574,7 +757,7 @@ async def platform_create_user(
         tenant_id=PLATFORM_TENANT_ID,
         email=email,
         full_name=payload.full_name.strip(),
-        password_hash=hash_password(payload.password),
+        password_hash=hash_password(password),
         role=role,
         permissions=permissions_for_role(role),
         email_verified=True,
@@ -583,6 +766,19 @@ async def platform_create_user(
     )
     db.add(user)
     await db.flush()
+    reset_token: str | None = None
+    if invite_by_email:
+        raw, token_hash, expires = issue_one_time_token()
+        db.add(
+            m.AuthToken(
+                tenant_id=PLATFORM_TENANT_ID,
+                user_id=user.id,
+                purpose="password_reset",
+                token_hash=token_hash,
+                expires_at=expires,
+            )
+        )
+        reset_token = raw
     ip, ua = _client_meta(request)
     await audit.record_event(
         db,
@@ -591,13 +787,32 @@ async def platform_create_user(
         action="platform.user.create",
         entity="user",
         entity_id=user.id,
-        details={"email": user.email, "role": user.role},
+        details={
+            "email": user.email,
+            "role": user.role,
+            "invite_by_email": invite_by_email,
+        },
         ip_address=ip,
         user_agent=ua,
         module="platform_users",
     )
     await db.commit()
-    return env(serialize_user(user), message="platform user created")
+    data: dict[str, Any] = {**serialize_user(user), "invite_by_email": invite_by_email}
+    if invite_by_email and reset_token:
+        from app import emailer
+
+        email_result = await emailer.send_password_reset_email(to=user.email, token=reset_token)
+        data["email_delivery"] = {
+            "sent": email_result.sent,
+            "mode": email_result.mode,
+            "error": email_result.error,
+        }
+        if settings.DEBUG or settings.APP_ENV.lower() != "production":
+            data["reset_token"] = reset_token
+    return env(
+        data,
+        message="platform user invited" if invite_by_email else "platform user created",
+    )
 
 
 @router.patch("/users/{user_id}")
