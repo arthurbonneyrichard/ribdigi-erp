@@ -1,0 +1,155 @@
+{
+  "stage": "76",
+  "workstream": "T1",
+  "doc": "docs/COMMERCIAL_TERMS_MVP.md",
+  "stage76_plan": "docs/STAGE_76_PLAN.md",
+  "tos_aup_doc": "docs/TOS_AUP_MVP.md",
+  "tos_aup": "ops/mvp/tos-aup.json",
+  "msa_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "msa": "ops/mvp/msa-addendum.json",
+  "privacy_doc": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md",
+  "privacy": "ops/mvp/commercial-privacy-notice.json",
+  "security_contact_doc": "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md",
+  "security_contact": "ops/mvp/commercial-security-contact.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "tos_signed_claimed": false,
+  "aup_enforced_claimed": false,
+  "clickwrap_live": false,
+  "legal_counsel_claimed": false,
+  "privacy_notice_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage76_t1_commercial_terms.json",
+  "steps": [
+    {
+      "id": "ct-owner-outline",
+      "category": "terms",
+      "title": "Index owner Commercial Terms Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_76_PLAN.md",
+        "docs/ADR_158_STAGE76_OPEN.md"
+      ],
+      "source": "docs/STAGE_76_PLAN.md"
+    },
+    {
+      "id": "ct-tos-aup",
+      "category": "terms",
+      "title": "Link Stage 43 ToS/AUP as adjacency (signed ToS Remaining ≠ commercial terms live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/TOS_AUP_MVP.md",
+        "ops/mvp/tos-aup.json"
+      ],
+      "source": "docs/TOS_AUP_MVP.md"
+    },
+    {
+      "id": "ct-msa",
+      "category": "terms",
+      "title": "Link Stage 39 MSA addendum as adjacency (MSA packaging ≠ signed ToS)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MSA_ADDENDUM_MVP.md",
+        "ops/mvp/msa-addendum.json"
+      ],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "ct-privacy",
+      "category": "terms",
+      "title": "Link Stage 75 P1 privacy notice as adjacency (privacy packaging ≠ signed ToS)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md",
+        "ops/mvp/commercial-privacy-notice.json"
+      ],
+      "source": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md"
+    },
+    {
+      "id": "ct-security-contact",
+      "category": "terms",
+      "title": "Link Stage 75 C1 security contact as adjacency (contact packaging ≠ signed ToS)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md",
+        "ops/mvp/commercial-security-contact.json"
+      ],
+      "source": "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md"
+    },
+    {
+      "id": "ct-billing-deferred",
+      "category": "terms",
+      "title": "Link Stage 36 billing-deferred as adjacency (paid billing Remaining ≠ signed ToS)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "ct-plan-honesty",
+      "category": "terms",
+      "title": "Confirm Stage 76 plan explicitly defers signed ToS / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_76_PLAN.md",
+        "docs/COMMERCIAL_TERMS_MVP.md"
+      ],
+      "source": "docs/STAGE_76_PLAN.md"
+    },
+    {
+      "id": "ct-counsel-review",
+      "category": "terms",
+      "title": "Index commercial-terms legal counsel Remaining as honesty step",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_TERMS_MVP.md",
+        "docs/TOS_AUP_MVP.md"
+      ],
+      "source": "docs/COMMERCIAL_TERMS_MVP.md"
+    },
+    {
+      "id": "ct-tos-remaining",
+      "category": "honesty",
+      "title": "Commercial signed ToS Remaining — packaging ≠ live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_76_PLAN.md",
+        "docs/COMMERCIAL_TERMS_MVP.md"
+      ],
+      "source": "docs/STAGE_76_PLAN.md"
+    },
+    {
+      "id": "ct-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / clickwrap / paid billing Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_76_PLAN.md",
+        "docs/TOS_AUP_MVP.md"
+      ],
+      "source": "docs/STAGE_76_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Signed ToS Complete",
+    "AUP enforced Complete",
+    "Clickwrap live Complete",
+    "Paid billing Complete",
+    "Live go-live Complete"
+  ]
+}

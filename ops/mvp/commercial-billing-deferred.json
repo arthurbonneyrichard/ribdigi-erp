@@ -1,0 +1,154 @@
+{
+  "stage": "76",
+  "workstream": "B1",
+  "doc": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md",
+  "stage76_plan": "docs/STAGE_76_PLAN.md",
+  "adr_002": "docs/ADR_002_BILLING_DEFERRED.md",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "terms_doc": "docs/COMMERCIAL_TERMS_MVP.md",
+  "terms": "ops/mvp/commercial-terms.json",
+  "tos_aup_doc": "docs/TOS_AUP_MVP.md",
+  "tos_aup": "ops/mvp/tos-aup.json",
+  "deferred_adr_doc": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+  "deferred_adr": "ops/mvp/deferred-adr-register.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "checkout_success_claimed": false,
+  "deferred_implemented_claimed": false,
+  "tos_signed_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage76_b1_commercial_billing_deferred.json",
+  "steps": [
+    {
+      "id": "cbd-owner-outline",
+      "category": "billing",
+      "title": "Index owner Commercial Billing Deferred Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_76_PLAN.md",
+        "docs/ADR_158_STAGE76_OPEN.md"
+      ],
+      "source": "docs/STAGE_76_PLAN.md"
+    },
+    {
+      "id": "cbd-adr002",
+      "category": "billing",
+      "title": "Link ADR-002 as adjacency (paid billing Remaining ≠ deferred honesty as live billing)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_002_BILLING_DEFERRED.md",
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+      ],
+      "source": "docs/ADR_002_BILLING_DEFERRED.md"
+    },
+    {
+      "id": "cbd-stage36",
+      "category": "billing",
+      "title": "Link Stage 36 B1 billing-deferred honesty as adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "cbd-terms",
+      "category": "billing",
+      "title": "Link Stage 76 T1 commercial terms as adjacency (terms packaging ≠ paid billing)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_TERMS_MVP.md",
+        "ops/mvp/commercial-terms.json"
+      ],
+      "source": "docs/COMMERCIAL_TERMS_MVP.md"
+    },
+    {
+      "id": "cbd-tos-aup",
+      "category": "billing",
+      "title": "Link Stage 43 ToS/AUP as adjacency (signed ToS Remaining ≠ paid billing)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/TOS_AUP_MVP.md",
+        "ops/mvp/tos-aup.json"
+      ],
+      "source": "docs/TOS_AUP_MVP.md"
+    },
+    {
+      "id": "cbd-deferred-register",
+      "category": "billing",
+      "title": "Link deferred ADR register as adjacency (ADR-002 row Remaining ≠ paid billing)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEFERRED_ADR_REGISTER_MVP.md",
+        "ops/mvp/deferred-adr-register.json"
+      ],
+      "source": "docs/DEFERRED_ADR_REGISTER_MVP.md"
+    },
+    {
+      "id": "cbd-plan-honesty",
+      "category": "billing",
+      "title": "Confirm Stage 76 plan explicitly defers paid billing / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_76_PLAN.md",
+        "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md"
+      ],
+      "source": "docs/STAGE_76_PLAN.md"
+    },
+    {
+      "id": "cbd-provider-ownership",
+      "category": "billing",
+      "title": "Index payment-provider selection Remaining as honesty step",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md",
+        "docs/ADR_002_BILLING_DEFERRED.md"
+      ],
+      "source": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md"
+    },
+    {
+      "id": "cbd-billing-remaining",
+      "category": "honesty",
+      "title": "Commercial paid billing Remaining — packaging ≠ live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_76_PLAN.md",
+        "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md"
+      ],
+      "source": "docs/STAGE_76_PLAN.md"
+    },
+    {
+      "id": "cbd-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / checkout / signed ToS Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_76_PLAN.md",
+        "docs/ADR_002_BILLING_DEFERRED.md"
+      ],
+      "source": "docs/STAGE_76_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Paid billing Complete",
+    "Payment provider Complete",
+    "Checkout success Complete",
+    "Signed ToS Complete",
+    "Live go-live Complete"
+  ]
+}

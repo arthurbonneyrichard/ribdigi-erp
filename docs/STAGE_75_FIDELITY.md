@@ -24,7 +24,7 @@ Stage 75 proves the owner Commercial Trust Boundary path after Stage 74 freeze �
 | **C1** | `test_commercial_security_contact_c1.py` — `COMMERCIAL_SECURITY_CONTACT_MVP.md`, commercial-security-contact JSON | Owner Security Contact Boundary / Stage 38 breach | Security contact live |
 | **P1** | `test_commercial_privacy_notice_p1.py` — `COMMERCIAL_PRIVACY_NOTICE_MVP.md`, commercial-privacy-notice JSON | Owner Privacy Notice Boundary / Stage 43 cookie | Privacy notice live; go-live |
 | **D1** | This note + `test_stage75_fidelity_d1.py` | BR-16 + readiness + deploy / launch / security | — |
-| **H75x** | `STAGE_75_EXIT_CRITERIA.md`; ADR-157; `test_stage75_exit_h75x.py` | Stage 75 exit + freeze | Stage 76+ requires CONTINUE/NEXT |
+| **H75x** | `STAGE_75_EXIT_CRITERIA.md`; ADR-157; `test_stage75_exit_h75x.py` | Stage 75 exit + freeze | Stage 76 opened via ADR-158 |
 
 ## Evidence tests
 

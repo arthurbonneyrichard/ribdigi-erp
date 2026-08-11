@@ -237,6 +237,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Commercial privacy notice honesty (Stage 75 P1: `test_commercial_privacy_notice_p1.py` — `docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md`, `ops/mvp/commercial-privacy-notice.json`; evidence `stage75_p1_commercial_privacy_notice.json`; privacy notice live Remaining)
 - [x] Stage 75 fidelity sync (D1: `test_stage75_fidelity_d1.py`, `docs/STAGE_75_FIDELITY.md` — C1–P1 + readiness + deploy / launch / security)
 - [x] Stage 75 exit + freeze (H75x: `test_stage75_exit_h75x.py`, `docs/STAGE_75_EXIT_CRITERIA.md`, ADR-157)
+- [x] Stage 76 track opened (ADR-158: `test_stage76_open.py`, `docs/STAGE_76_PLAN.md`) — Commercial Contract Boundary Fidelity; closed under ADR-159
+- [x] Commercial terms honesty (Stage 76 T1: `test_commercial_terms_t1.py` — `docs/COMMERCIAL_TERMS_MVP.md`, `ops/mvp/commercial-terms.json`; evidence `stage76_t1_commercial_terms.json`; signed ToS Remaining)
+- [x] Commercial billing deferred honesty (Stage 76 B1: `test_commercial_billing_deferred_b1.py` — `docs/COMMERCIAL_BILLING_DEFERRED_MVP.md`, `ops/mvp/commercial-billing-deferred.json`; evidence `stage76_b1_commercial_billing_deferred.json`; paid billing Remaining)
+- [x] Stage 76 fidelity sync (D1: `test_stage76_fidelity_d1.py`, `docs/STAGE_76_FIDELITY.md` — T1–B1 + readiness + deploy / launch / security)
+- [x] Stage 76 exit + freeze (H76x: `test_stage76_exit_h76x.py`, `docs/STAGE_76_EXIT_CRITERIA.md`, ADR-159)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

@@ -1531,3 +1531,13 @@ Every feature in every phase must meet:
 **Stage 75 D1 (2026-08-11):** Commercial Trust Boundary fidelity sync — `docs/STAGE_75_FIDELITY.md` (`test_stage75_fidelity_d1.py`); maps C1–P1 → readiness / launch / deploy / security.
 
 **Stage 75 exit (2026-08-11):** C1, P1, D1, H75x met — `docs/STAGE_75_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_157_STAGE75_FREEZE.md`. Fidelity: `docs/STAGE_75_FIDELITY.md`.
+
+**Stage 76 open (2026-08-11):** Commercial Contract Boundary Fidelity track approved — `docs/ADR_158_STAGE76_OPEN.md` + `docs/STAGE_76_PLAN.md` (Commercial Terms Boundary → Commercial Billing Deferred Boundary → Commercial Contract Boundary Fidelity; T1 next).
+
+**Stage 76 T1 (2026-08-11):** Commercial terms honesty — `docs/COMMERCIAL_TERMS_MVP.md`, `ops/mvp/commercial-terms.json`, evidence `stage76_t1_commercial_terms.json` (`test_commercial_terms_t1.py`); signed ToS Remaining.
+
+**Stage 76 B1 (2026-08-11):** Commercial billing deferred honesty — `docs/COMMERCIAL_BILLING_DEFERRED_MVP.md`, `ops/mvp/commercial-billing-deferred.json`, evidence `stage76_b1_commercial_billing_deferred.json` (`test_commercial_billing_deferred_b1.py`); paid billing Remaining.
+
+**Stage 76 D1 (2026-08-11):** Commercial Contract Boundary fidelity sync — `docs/STAGE_76_FIDELITY.md` (`test_stage76_fidelity_d1.py`); maps T1–B1 → readiness / launch / deploy / security.
+
+**Stage 76 exit (2026-08-11):** T1, B1, D1, H76x met — `docs/STAGE_76_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_159_STAGE76_FREEZE.md`. Fidelity: `docs/STAGE_76_FIDELITY.md`.

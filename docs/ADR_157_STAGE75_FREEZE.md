@@ -27,4 +27,8 @@ Stage 75 Commercial Trust Boundary Fidelity delivered commercial security contac
 
 ## Next stage
 
-Stage 76+ requires CONTINUE/NEXT with a distinct open ADR after this freeze.
+Stage 76 opened via ADR-158 (`docs/ADR_158_STAGE76_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 76 (Commercial Contract Boundary Fidelity — Commercial Terms Boundary → Commercial Billing Deferred Boundary → Commercial Contract Boundary Fidelity) after Stage 75 freeze via CONTINUE/NEXT — see [ADR-158](ADR_158_STAGE76_OPEN.md) and [STAGE_76_PLAN.md](STAGE_76_PLAN.md). Stage 75 feature scope remains frozen; Stage 76 does not reopen C1–D1 / H75x.
