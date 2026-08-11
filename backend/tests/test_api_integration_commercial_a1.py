@@ -90,8 +90,6 @@ def test_api_integration_commercial_aligns_sources():
     addon = json.loads(ADDON.read_text(encoding="utf-8"))
     assert mapping["api_rate_limit_upgrade_billing_live"] is False
     assert mapping["connector_fee_billing_claimed"] is False
-    assert billing.get("billing_complete_claimed") is False or billing.get("payment_provider_claimed") is False or True
-    # billing-deferred honesty flags stay false where present
     for key in ("billing_complete_claimed", "payment_provider_claimed", "checkout_success_claimed"):
         if key in billing:
             assert billing[key] is False
