@@ -124,6 +124,7 @@ Authoritative MVP docs:
 - `docs/STAGE_48_PLAN.md` (`backend/tests/test_stage48_open.py`) — Stage 48 open (ADR-101)
 - `docs/PROFESSIONAL_SERVICES_SOW_MVP.md` (`backend/tests/test_professional_services_sow_p1.py`) — Stage 48 P1
 - `docs/CUSTOMER_TRAINING_CERT_MVP.md` (`backend/tests/test_customer_training_cert_t1.py`) — Stage 48 T1
+- `docs/STAGE_48_FIDELITY.md` (`backend/tests/test_stage48_fidelity_d1.py`) — Stage 48 D1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -489,7 +490,7 @@ H47x met — `docs/STAGE_47_EXIT_CRITERIA.md`, ADR-100. Stages 1–47 frozen for
 
 ## Stage 48 open
 
-Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101; T1 complete; D1 next.
+Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101; D1 complete; H48x next.
 
 ## Stage 48 P1 — Professional services / SOW honesty
 
@@ -498,3 +499,7 @@ Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101; T1 complete; 
 ## Stage 48 T1 — Customer training / certification honesty
 
 `docs/CUSTOMER_TRAINING_CERT_MVP.md` + `ops/mvp/customer-training-cert.json` — packaging Complete; `customer_training_delivered_claimed` / `live_training_claimed` / `training_complete_claimed` / `training_certification_claimed` remain false.
+
+## Stage 48 D1 — Fidelity
+
+`docs/STAGE_48_FIDELITY.md` maps P1–T1 → readiness / launch / deploy / security (`test_stage48_fidelity_d1.py`).

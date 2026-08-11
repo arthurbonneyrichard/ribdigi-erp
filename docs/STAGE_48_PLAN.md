@@ -1,6 +1,6 @@
 # Stage 48 Plan — Commercial Services Fidelity
 
-**Status:** Open — T1 complete; D1 next  
+**Status:** Open — D1 complete; H48x next  
 **Base:** Professional Services / SOW Honesty Pack + Customer Training / Certification Honesty Pack → Commercial Services Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-101](ADR_101_STAGE48_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Services Fidelity
 |----|------------|----------|---------|
 | **P1** | Professional services / SOW honesty packaging (not signed SOW / live implementation delivery Complete) | P0 | COMPLETE |
 | **T1** | Customer training / certification honesty packaging (not live training / attendance cert Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H48x** | Stage 48 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -84,9 +84,9 @@ Commercial Services Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_48_FIDELITY.md` maps P1–T1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 48 D1.
-- [ ] Automated proof: `backend/tests/test_stage48_fidelity_d1.py`.
+- [x] `docs/STAGE_48_FIDELITY.md` maps P1–T1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 48 D1.
+- [x] Automated proof: `backend/tests/test_stage48_fidelity_d1.py`.
 
 ## H48x acceptance criteria
 

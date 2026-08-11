@@ -488,6 +488,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 48 T1 (2026-08-11):** Customer training / certification honesty — `docs/CUSTOMER_TRAINING_CERT_MVP.md`, `ops/mvp/customer-training-cert.json`, evidence `stage48_t1_customer_training_cert.json` (`test_customer_training_cert_t1.py`); live training Remaining.
 
+**Stage 48 D1 (2026-08-11):** Commercial services fidelity — `docs/STAGE_48_FIDELITY.md` (`test_stage48_fidelity_d1.py`); maps P1–T1 → readiness / launch / deploy / security; signed SOW / live training Remaining.
+
 
 
 
