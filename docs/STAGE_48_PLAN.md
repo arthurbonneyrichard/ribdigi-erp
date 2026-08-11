@@ -1,6 +1,6 @@
 # Stage 48 Plan — Commercial Services Fidelity
 
-**Status:** Open — P1 complete; T1 next  
+**Status:** Open — T1 complete; D1 next  
 **Base:** Professional Services / SOW Honesty Pack + Customer Training / Certification Honesty Pack → Commercial Services Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-101](ADR_101_STAGE48_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Services Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **P1** | Professional services / SOW honesty packaging (not signed SOW / live implementation delivery Complete) | P0 | COMPLETE |
-| **T1** | Customer training / certification honesty packaging (not live training / attendance cert Complete) | P0 | PENDING |
+| **T1** | Customer training / certification honesty packaging (not live training / attendance cert Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H48x** | Stage 48 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -77,10 +77,10 @@ Commercial Services Fidelity
 
 ## T1 acceptance criteria
 
-- [ ] Customer training / certification honesty packaging indexing Stage 33 knowledge-transfer and PRODUCT_OVERVIEW training adjacency (not claiming live training / attendance cert Complete).
-- [ ] Automated proof: `backend/tests/test_customer_training_cert_t1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 48 T1.
+- [x] Customer training / certification honesty packaging indexing Stage 33 knowledge-transfer and PRODUCT_OVERVIEW training adjacency (not claiming live training / attendance cert Complete).
+- [x] Automated proof: `backend/tests/test_customer_training_cert_t1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 48 T1.
 
 ## D1 acceptance criteria
 

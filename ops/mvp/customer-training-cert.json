@@ -1,0 +1,155 @@
+{
+  "stage": "48",
+  "workstream": "T1",
+  "doc": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+  "knowledge_transfer": "ops/mvp/knowledge-transfer.json",
+  "knowledge_transfer_doc": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "professional_services_sow": "ops/mvp/professional-services-sow.json",
+  "professional_services_sow_doc": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+  "first_tenant_onboarding": "ops/mvp/first-tenant-onboarding.json",
+  "first_tenant_onboarding_doc": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "support_runbook_doc": "docs/SUPPORT_RUNBOOK_MVP.md",
+  "business_requirements": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+  "stage48_plan": "docs/STAGE_48_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "customer_training_delivered_claimed": false,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "training_certification_claimed": false,
+  "training_attendance_signed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage48_t1_customer_training_cert.json",
+  "steps": [
+    {
+      "id": "ct-knowledge-transfer",
+      "category": "training",
+      "title": "Link Stage 33 knowledge-transfer as curriculum adjacency (not live customer training)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/KNOWLEDGE_TRANSFER_MVP.md",
+        "ops/mvp/knowledge-transfer.json"
+      ],
+      "source": "docs/KNOWLEDGE_TRANSFER_MVP.md"
+    },
+    {
+      "id": "ct-product-overview",
+      "category": "training",
+      "title": "Index PRODUCT_OVERVIEW on-site / training themes as customer-facing training boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_48_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "ct-sow-adjacency",
+      "category": "certification",
+      "title": "Link Stage 48 P1 professional services / SOW as services adjacency (not training cert)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+        "ops/mvp/professional-services-sow.json"
+      ],
+      "source": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md"
+    },
+    {
+      "id": "ct-first-tenant",
+      "category": "training",
+      "title": "Link Stage 33 first-tenant onboarding as operator adjacency (not attendance cert)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+        "ops/mvp/first-tenant-onboarding.json"
+      ],
+      "source": "docs/FIRST_TENANT_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "ct-support-sla",
+      "category": "training",
+      "title": "Link Stage 36 support SLA as post-training support boundary adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "ct-support-runbook",
+      "category": "certification",
+      "title": "Link Stage 30 support / admin runbook as operator training adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_RUNBOOK_MVP.md",
+        "docs/KNOWLEDGE_TRANSFER_MVP.md"
+      ],
+      "source": "docs/SUPPORT_RUNBOOK_MVP.md"
+    },
+    {
+      "id": "ct-br-training",
+      "category": "training",
+      "title": "Index BUSINESS_REQUIREMENTS training-material themes as training honesty source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "ct-plan-honesty",
+      "category": "certification",
+      "title": "Confirm Stage 48 plan explicitly defers live training / attendance certification",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_48_PLAN.md",
+        "docs/CUSTOMER_TRAINING_CERT_MVP.md"
+      ],
+      "source": "docs/STAGE_48_PLAN.md"
+    },
+    {
+      "id": "ct-training-remaining",
+      "category": "honesty",
+      "title": "Live customer training Remaining \u2014 packaging \u2260 delivered training",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_48_PLAN.md",
+        "docs/CUSTOMER_TRAINING_CERT_MVP.md"
+      ],
+      "source": "docs/STAGE_48_PLAN.md"
+    },
+    {
+      "id": "ct-cert-remaining",
+      "category": "honesty",
+      "title": "Attendance / certification Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_48_PLAN.md",
+        "docs/CUSTOMER_TRAINING_CERT_MVP.md"
+      ],
+      "source": "docs/STAGE_48_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live customer training Complete",
+    "Training attendance certification Complete",
+    "Signed training attendance Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

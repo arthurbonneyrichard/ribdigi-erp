@@ -486,6 +486,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 48 P1 (2026-08-11):** Professional services / SOW honesty — `docs/PROFESSIONAL_SERVICES_SOW_MVP.md`, `ops/mvp/professional-services-sow.json`, evidence `stage48_p1_professional_services_sow.json` (`test_professional_services_sow_p1.py`); signed SOW Remaining.
 
+**Stage 48 T1 (2026-08-11):** Customer training / certification honesty — `docs/CUSTOMER_TRAINING_CERT_MVP.md`, `ops/mvp/customer-training-cert.json`, evidence `stage48_t1_customer_training_cert.json` (`test_customer_training_cert_t1.py`); live training Remaining.
+
 
 
 

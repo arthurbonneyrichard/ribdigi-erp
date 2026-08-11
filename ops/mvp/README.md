@@ -45,6 +45,7 @@
 | `cyber-insurance.json` | Stage 47 I1 Cyber insurance / COI honesty — `insurance_certificate_claimed: false` / `cyber_insurance_live: false` / `coi_issued_claimed: false` / `broker_attestation_claimed: false` |
 | `customer-audit-rights.json` | Stage 47 A1 Customer audit rights honesty — `customer_audit_rights_live: false` / `on_site_audit_claimed: false` / `audit_executed_claimed: false` / `audit_schedule_live: false` |
 | `professional-services-sow.json` | Stage 48 P1 Professional services / SOW honesty — `signed_sow_claimed: false` / `professional_services_live: false` / `implementation_delivery_claimed: false` / `data_migration_complete_claimed: false` |
+| `customer-training-cert.json` | Stage 48 T1 Customer training / certification honesty — `customer_training_delivered_claimed: false` / `live_training_claimed: false` / `training_complete_claimed: false` / `training_certification_claimed: false` |
 | `data-retention-return.json` | Stage 45 T1 Data retention / return honesty — `data_return_portal_claimed: false` / `hot_audit_purge_claimed: false` / `contract_exit_return_live: false` / `offboarding_workflow_claimed: false` |
 | `accessibility-statement.json` | Stage 41 A1 accessibility statement honesty — `wcag_aa_claimed: false` / `accessibility_audit_claimed: false` / `conformance_program_live: false` / `remediation_complete_claimed: false` |
 | `change-governance.json` | Stage 41 C1 change / maintenance governance honesty — `change_calendar_live: false` / `maintenance_portal_claimed: false` / `customer_change_notices_live: false` / `ops_changelog_saas_claimed: false` |
@@ -122,6 +123,7 @@ Authoritative MVP docs:
 - `docs/STAGE_47_EXIT_CRITERIA.md` / `docs/ADR_100_STAGE47_FREEZE.md` (`backend/tests/test_stage47_exit_h47x.py`) — Stage 47 H47x
 - `docs/STAGE_48_PLAN.md` (`backend/tests/test_stage48_open.py`) — Stage 48 open (ADR-101)
 - `docs/PROFESSIONAL_SERVICES_SOW_MVP.md` (`backend/tests/test_professional_services_sow_p1.py`) — Stage 48 P1
+- `docs/CUSTOMER_TRAINING_CERT_MVP.md` (`backend/tests/test_customer_training_cert_t1.py`) — Stage 48 T1
 - `docs/DPA_SUBPROCESSOR_MVP.md` (`backend/tests/test_dpa_subprocessor_p1.py`) — Stage 39 P1
 - `docs/MSA_ADDENDUM_MVP.md` (`backend/tests/test_msa_addendum_a1.py`) — Stage 39 A1
 
@@ -487,8 +489,12 @@ H47x met — `docs/STAGE_47_EXIT_CRITERIA.md`, ADR-100. Stages 1–47 frozen for
 
 ## Stage 48 open
 
-Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101; P1 complete; T1 next.
+Commercial Services Fidelity — `docs/STAGE_48_PLAN.md`, ADR-101; T1 complete; D1 next.
 
 ## Stage 48 P1 — Professional services / SOW honesty
 
 `docs/PROFESSIONAL_SERVICES_SOW_MVP.md` + `ops/mvp/professional-services-sow.json` — packaging Complete; `signed_sow_claimed` / `professional_services_live` / `implementation_delivery_claimed` / `data_migration_complete_claimed` remain false.
+
+## Stage 48 T1 — Customer training / certification honesty
+
+`docs/CUSTOMER_TRAINING_CERT_MVP.md` + `ops/mvp/customer-training-cert.json` — packaging Complete; `customer_training_delivered_claimed` / `live_training_claimed` / `training_complete_claimed` / `training_certification_claimed` remain false.
