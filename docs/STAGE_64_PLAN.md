@@ -1,6 +1,6 @@
 # Stage 64 Plan — Commercial Analytics & Franchise Fidelity
 
-**Status:** Open — F1 complete; D1 next  
+**Status:** Open — D1 complete; H64x next  
 **Base:** Advanced BI Honesty Pack + Franchise & Chain Enterprise Honesty Pack → Commercial Analytics & Franchise Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-133](ADR_133_STAGE64_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Analytics & Franchise Fidelity
 |----|------------|----------|---------|
 | **B1** | Advanced BI honesty packaging (not live custom analytics / BI Complete) | P0 | COMPLETE |
 | **F1** | Franchise & chain enterprise honesty packaging (not live franchise / chain deals Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H64x** | Stage 64 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -117,9 +117,11 @@ Commercial Analytics & Franchise Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_64_FIDELITY.md` maps B1–F1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 64 D1.
-- [ ] Automated proof: `backend/tests/test_stage64_fidelity_d1.py` (`docs/STAGE_64_FIDELITY.md`).
+- [x] `docs/STAGE_64_FIDELITY.md` maps B1–F1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 64 D1.
+- [x] Automated proof: `backend/tests/test_stage64_fidelity_d1.py` (`docs/STAGE_64_FIDELITY.md`).
+
+**Deliverables:** `docs/STAGE_64_FIDELITY.md`, `backend/tests/test_stage64_fidelity_d1.py`.
 
 ## H64x acceptance criteria
 

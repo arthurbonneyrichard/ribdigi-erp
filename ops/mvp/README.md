@@ -220,6 +220,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/STAGE_64_FIDELITY.md` (`backend/tests/test_stage64_fidelity_d1.py`) — Stage 64 D1
 - `docs/FRANCHISE_CHAIN_MVP.md` (`backend/tests/test_franchise_chain_f1.py`) — Stage 64 F1
 - `docs/ADVANCED_BI_MVP.md` (`backend/tests/test_advanced_bi_b1.py`) — Stage 64 B1
 - `docs/IPO_READINESS_MVP.md` (`backend/tests/test_ipo_readiness_p1.py`) — Stage 63 P1
@@ -921,6 +922,10 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 64 D1 — Analytics & franchise fidelity
+
+`docs/STAGE_64_FIDELITY.md` — maps B1–F1 → readiness / launch / deploy / security (`test_stage64_fidelity_d1.py`).
 
 ## Stage 64 F1 — Franchise & chain enterprise honesty
 
