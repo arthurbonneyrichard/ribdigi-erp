@@ -1430,4 +1430,8 @@ Every feature in every phase must meet:
 
 **Stage 65 D1 (2026-08-11):** MVP release-candidate fidelity sync — `docs/STAGE_65_FIDELITY.md` (`test_stage65_fidelity_d1.py`); maps R1–P1 → readiness / launch / deploy / security.
 
-**Stage 65 exit (2026-08-11):** R1, P1, D1, H65x met — `docs/STAGE_65_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_136_STAGE65_FREEZE.md`. Fidelity: `docs/STAGE_65_FIDELITY.md`. Stage 66 requires explicit CONTINUE/NEXT (not opened).
+**Stage 65 exit (2026-08-11):** R1, P1, D1, H65x met — `docs/STAGE_65_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_136_STAGE65_FREEZE.md`. Fidelity: `docs/STAGE_65_FIDELITY.md`. Stage 66 opened via ADR-138.
+
+**Stage 66 open (2026-08-11):** MVP Production Launch Fidelity track approved — `docs/ADR_138_STAGE66_OPEN.md` + `docs/STAGE_66_PLAN.md` (MVP Release Candidate → Production Cutover → First Paying Tenant → Go-Live Attestation → MVP Production Launch; L1 next).
+
+**Stage 66 L1 (2026-08-11):** Production launch honesty — `docs/PRODUCTION_LAUNCH_MVP.md`, `ops/mvp/production-launch.json`, evidence `stage66_l1_production_launch.json` (`test_production_launch_l1.py`); live cutover / §7 signed / go-live Remaining.

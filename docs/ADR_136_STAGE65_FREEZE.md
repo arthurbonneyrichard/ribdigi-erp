@@ -28,4 +28,8 @@ Adjacent commercial work during this open window (e.g. ADR-137 Platform Principa
 
 ## Next stage
 
-Stage 66 requires an explicit CONTINUE/NEXT with a distinct product outline and open ADR (not opened by this freeze).
+Stage 66 opened via ADR-138 (`docs/ADR_138_STAGE66_OPEN.md`).
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 66 (MVP Production Launch Fidelity — MVP Release Candidate → Production Cutover → First Paying Tenant → Go-Live Attestation → MVP Production Launch) after Stage 65 freeze via CONTINUE/NEXT — see [ADR-138](ADR_138_STAGE66_OPEN.md) and [STAGE_66_PLAN.md](STAGE_66_PLAN.md). Stage 65 feature scope remains frozen; Stage 66 does not reopen R1–D1 / H65x.

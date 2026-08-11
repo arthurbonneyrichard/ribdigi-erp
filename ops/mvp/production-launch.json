@@ -1,0 +1,170 @@
+{
+  "stage": "66",
+  "workstream": "L1",
+  "doc": "docs/PRODUCTION_LAUNCH_MVP.md",
+  "stage66_plan": "docs/STAGE_66_PLAN.md",
+  "cutover_doc": "docs/CUTOVER_PACK_MVP.md",
+  "cutover_checklist": "ops/launch/cutover-checklist.json",
+  "attestation_doc": "docs/ATTESTATION_PACK_MVP.md",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "mvp_declaration_doc": "docs/MVP_DECLARATION_MVP.md",
+  "mvp_declaration": "ops/mvp/mvp-declaration.json",
+  "mvp_gate_doc": "docs/MVP_GATE_MATRIX_MVP.md",
+  "mvp_gate": "ops/mvp/gate-matrix.json",
+  "launch_cert_doc": "docs/LAUNCH_CERT_MVP.md",
+  "prod_gha_template": "ops/k8s/deploy-production.example.yml",
+  "release_pipeline_doc": "docs/RELEASE_PIPELINE_MVP.md",
+  "release_pipeline": "ops/mvp/release-pipeline.json",
+  "first_tenant_doc": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "production_cutover_claimed": false,
+  "production_launch_live_claimed": false,
+  "attestation_claimed": false,
+  "mvp_production_launch_complete_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage66_l1_production_launch.json",
+  "steps": [
+    {
+      "id": "pl-owner-outline",
+      "category": "launch",
+      "title": "Index owner MVP RC \u2192 Production Cutover \u2192 Go-Live Attestation (\u00a77) \u2192 MVP Production Launch path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_66_PLAN.md",
+        "docs/ADR_138_STAGE66_OPEN.md"
+      ],
+      "source": "docs/STAGE_66_PLAN.md"
+    },
+    {
+      "id": "pl-cutover",
+      "category": "cutover",
+      "title": "Link Stage 29 cutover pack as production-cutover adjacency (live cutover Remaining \u2260 launch Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CUTOVER_PACK_MVP.md",
+        "ops/launch/cutover-checklist.json"
+      ],
+      "source": "docs/CUTOVER_PACK_MVP.md"
+    },
+    {
+      "id": "pl-attestation",
+      "category": "attestation",
+      "title": "Link Stage 30 attestation as go-live / \u00a77 adjacency (attestation Remaining \u2260 \u00a77 signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ATTESTATION_PACK_MVP.md",
+        "ops/launch/attestation-matrix.json"
+      ],
+      "source": "docs/ATTESTATION_PACK_MVP.md"
+    },
+    {
+      "id": "pl-mvp-declaration",
+      "category": "launch",
+      "title": "Link Stage 31 MVP declaration / gate matrix as packaging adjacency (declared packaging \u2260 go-live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MVP_DECLARATION_MVP.md",
+        "ops/mvp/mvp-declaration.json",
+        "ops/mvp/gate-matrix.json"
+      ],
+      "source": "docs/MVP_DECLARATION_MVP.md"
+    },
+    {
+      "id": "pl-prod-gha",
+      "category": "cutover",
+      "title": "Link Stage 29 production GHA / launch-cert as promote adjacency (templates \u2260 live promote / \u00a77)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CERT_MVP.md",
+        "ops/k8s/deploy-production.example.yml"
+      ],
+      "source": "docs/LAUNCH_CERT_MVP.md"
+    },
+    {
+      "id": "pl-release-pipeline",
+      "category": "launch",
+      "title": "Link Stage 65 release-pipeline as MVP RC adjacency (signed RC Remaining \u2260 production launch)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RELEASE_PIPELINE_MVP.md",
+        "ops/mvp/release-pipeline.json"
+      ],
+      "source": "docs/RELEASE_PIPELINE_MVP.md"
+    },
+    {
+      "id": "pl-first-tenant-adj",
+      "category": "launch",
+      "title": "Index Stage 33 first-tenant onboarding as adjacency (live first tenant Remaining \u2014 Stage 66 T1)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+        "docs/STAGE_66_PLAN.md"
+      ],
+      "source": "docs/FIRST_TENANT_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "pl-plan-honesty",
+      "category": "launch",
+      "title": "Confirm Stage 66 plan explicitly defers live cutover / \u00a77 signed / go-live",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_66_PLAN.md",
+        "docs/PRODUCTION_LAUNCH_MVP.md"
+      ],
+      "source": "docs/STAGE_66_PLAN.md"
+    },
+    {
+      "id": "pl-cutover-remaining",
+      "category": "honesty",
+      "title": "Live production cutover Remaining \u2014 packaging \u2260 cutover Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_66_PLAN.md",
+        "docs/CUTOVER_PACK_MVP.md"
+      ],
+      "source": "docs/STAGE_66_PLAN.md"
+    },
+    {
+      "id": "pl-section7-remaining",
+      "category": "honesty",
+      "title": "LAUNCH \u00a77 Name/Date signed / go-live attestation Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_66_PLAN.md",
+        "docs/ATTESTATION_PACK_MVP.md"
+      ],
+      "source": "docs/STAGE_66_PLAN.md"
+    },
+    {
+      "id": "pl-launch-remaining",
+      "category": "honesty",
+      "title": "MVP Production Launch Complete Remaining \u2014 packaging \u2260 live launch",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_66_PLAN.md",
+        "docs/PRODUCTION_LAUNCH_MVP.md"
+      ],
+      "source": "docs/STAGE_66_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live production cutover Complete",
+    "LAUNCH \u00a77 Name/Date signed Complete",
+    "Go-live attestation Complete",
+    "MVP Production Launch Complete",
+    "First paying tenant onboarded Complete"
+  ]
+}
