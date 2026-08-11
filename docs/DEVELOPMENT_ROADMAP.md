@@ -398,6 +398,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 39 A1 (2026-08-11):** MSA security addendum honesty — `docs/MSA_ADDENDUM_MVP.md`, `ops/mvp/msa-addendum.json`, evidence `stage39_a1_msa_addendum.json` (`test_msa_addendum_a1.py`); signed MSA Remaining.
 
+**Stage 39 D1 (2026-08-11):** Commercial contract evidence fidelity — `docs/STAGE_39_FIDELITY.md` (`test_stage39_fidelity_d1.py`); maps P1–A1 → readiness / launch / deploy / security; signed DPA/MSA Remaining.
+
 
 
 
@@ -981,7 +983,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 39 open — Commercial Contract Evidence Fidelity (`docs/STAGE_39_PLAN.md`, ADR-083). Stages 1–38 remain frozen for their scopes; P1–A1 complete; D1 next.
+**Active delivery plan:** Stage 39 open — Commercial Contract Evidence Fidelity (`docs/STAGE_39_PLAN.md`, ADR-083). Stages 1–38 remain frozen for their scopes; P1–D1 complete; H39x next.
 
 ### 6.2 Features
 

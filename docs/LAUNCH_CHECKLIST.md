@@ -173,10 +173,11 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 28 exit + freeze (H28x: `test_stage28_exit_h28x.py`, `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062)
 - [x] Stage 29 Operator Hardening & Production Cutover Fidelity (closed: `docs/STAGE_29_PLAN.md`, ADR-064) — V1–D1 / H29x complete
-- [ ] Stage 39 Commercial Contract Evidence Fidelity (open: `docs/STAGE_39_PLAN.md`, ADR-083) — P1–A1 complete; D1 next; Stages 1–38 frozen
+- [ ] Stage 39 Commercial Contract Evidence Fidelity (open: `docs/STAGE_39_PLAN.md`, ADR-083) — P1–D1 complete; H39x next; Stages 1–38 frozen
 - [x] Stage 39 track opened (ADR-083: `test_stage39_open.py`, `docs/STAGE_39_PLAN.md`)
 - [x] DPA / subprocessor honesty (Stage 39 P1: `test_dpa_subprocessor_p1.py` — `docs/DPA_SUBPROCESSOR_MVP.md`, `ops/mvp/dpa-subprocessor.json`; evidence `stage39_p1_dpa_subprocessor.json`; signed DPA Remaining)
 - [x] MSA security addendum honesty (Stage 39 A1: `test_msa_addendum_a1.py` — `docs/MSA_ADDENDUM_MVP.md`, `ops/mvp/msa-addendum.json`; evidence `stage39_a1_msa_addendum.json`; signed MSA Remaining)
+- [x] Stage 39 fidelity sync (D1: `test_stage39_fidelity_d1.py`, `docs/STAGE_39_FIDELITY.md` — P1–A1 + readiness + deploy / launch / security)
 - [x] Stage 38 Commercial Security Disclosure Fidelity (closed: `docs/STAGE_38_PLAN.md`, ADR-082) — V1–D1 / H38x complete
 - [x] Stage 38 track opened (ADR-081: `test_stage38_open.py`, `docs/STAGE_38_PLAN.md`)
 - [x] Vulnerability disclosure (Stage 38 V1: `test_vuln_disclosure_v1.py` — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json`; evidence `stage38_v1_vuln_disclosure.json`; live disclosure / bug-bounty Remaining)

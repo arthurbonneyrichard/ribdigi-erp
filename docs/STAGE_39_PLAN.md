@@ -1,6 +1,6 @@
 # Stage 39 Plan — Commercial Contract Evidence Fidelity
 
-**Status:** Open — P1–A1 complete; D1 next  
+**Status:** Open — P1–D1 complete; H39x next  
 **Base:** DPA / Subprocessor Honesty Pack + MSA Security Addendum Honesty Pack → Commercial Contract Evidence Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-083](ADR_083_STAGE39_OPEN.md)  
@@ -34,7 +34,7 @@ Commercial Contract Evidence Fidelity
 |----|------------|----------|---------|
 | **P1** | DPA / subprocessor honesty packaging (not signed DPA Complete) | P0 | COMPLETE |
 | **A1** | MSA security addendum honesty packaging (not signed MSA Complete) | P0 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
 | **H39x** | Stage 39 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -70,9 +70,9 @@ Commercial Contract Evidence Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_39_FIDELITY.md` maps P1–A1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 39 D1.
-- [ ] Automated proof: `backend/tests/test_stage39_fidelity_d1.py`.
+- [x] `docs/STAGE_39_FIDELITY.md` maps P1–A1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 39 D1.
+- [x] Automated proof: `backend/tests/test_stage39_fidelity_d1.py`.
 
 ## H39x acceptance criteria
 
@@ -84,4 +84,4 @@ Commercial Contract Evidence Fidelity
 
 ## Sign-off
 
-Stage 39 P1–A1 complete. D1 next. Stages 1–38 remain frozen for their scopes.
+Stage 39 P1–D1 complete. H39x next. Stages 1–38 remain frozen for their scopes.
