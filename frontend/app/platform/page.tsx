@@ -21,6 +21,17 @@ type TenantRow = {
   created_at?: string | null;
 };
 
+const emptyCreate = {
+  company_name: '',
+  slug: '',
+  industry: 'retail',
+  currency: 'GHS',
+  admin_email: '',
+  admin_password: '',
+};
+
+const INDUSTRIES = ['retail', 'mart', 'pharmacy', 'restaurant', 'bakery', 'wholesale', 'manufacturing'];
+
 function statusClass(status: string) {
   if (status === 'active') return 'st-active';
   if (status === 'trial') return 'st-trial';
@@ -42,13 +53,24 @@ function fmtDate(value?: string | null) {
   }
 }
 
+function slugify(name: string) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
 export default function PlatformConsole() {
   const router = useRouter();
   const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [filter, setFilter] = useState('all');
+  const [form, setForm] = useState(emptyCreate);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [ready, setReady] = useState(false);
 
   async function refresh() {
@@ -57,8 +79,7 @@ export default function PlatformConsole() {
       router.replace('/dashboard');
       return;
     }
-    const q = filter === 'all' ? '' : `?status=${encodeURIComponent(filter)}`;
-    const res = await api(`/tenants${q}`);
+    const res = await api('/tenants');
     setTenants(res.data || []);
     setReady(true);
   }
@@ -66,19 +87,53 @@ export default function PlatformConsole() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message || 'Failed to load platform console'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, []);
 
   const stats = useMemo(() => {
-    const all = tenants;
-    const count = (s: string) => all.filter((t) => t.status === s).length;
+    const count = (s: string) => tenants.filter((t) => t.status === s).length;
     return {
-      total: all.length,
+      total: tenants.length,
       active: count('active'),
       trial: count('trial'),
       grace: count('grace'),
       suspended: count('suspended'),
     };
   }, [tenants]);
+
+  const visible = useMemo(
+    () => (filter === 'all' ? tenants : tenants.filter((t) => t.status === filter)),
+    [tenants, filter]
+  );
+
+  async function createTenant(e: React.FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/tenants', {
+        method: 'POST',
+        body: JSON.stringify({
+          company_name: form.company_name.trim(),
+          slug: form.slug.trim().toLowerCase(),
+          industry: form.industry,
+          currency: form.currency.trim().toUpperCase() || 'GHS',
+          admin_email: form.admin_email.trim(),
+          admin_password: form.admin_password,
+        }),
+      });
+      setForm(emptyCreate);
+      setMessage(
+        `Created tenant ${r.data?.slug || form.slug} (trial). Admin must verify email before production use.`
+      );
+      setFilter('all');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Create tenant failed');
+    } finally {
+      setCreating(false);
+    }
+  }
 
   async function suspendTenant(row: TenantRow) {
     const reason = window.prompt(`Suspend ${row.company_name}? Optional reason:`, '') ?? null;
@@ -131,7 +186,9 @@ export default function PlatformConsole() {
           <div>
             <p className="plat-kicker">Software owner</p>
             <h1>Platform console</h1>
-            <p className="plat-sub">Tenant lifecycle across RIBDIGI ERP — activate, monitor, and suspend workspaces.</p>
+            <p className="plat-sub">
+              Create workspaces, monitor trial/active/grace status, and suspend or activate tenants.
+            </p>
           </div>
           <div className="plat-filters">
             {['all', 'active', 'trial', 'grace', 'suspended'].map((s) => (
@@ -170,8 +227,90 @@ export default function PlatformConsole() {
           </div>
         </div>
 
-        {error && <p className="login-error">{error}</p>}
-        {message && <p className="muted">{message}</p>}
+        {error && (
+          <p className="login-error" role="alert">
+            {error}
+          </p>
+        )}
+        {message && <p className="plat-msg">{message}</p>}
+
+        <div className="plat-panel">
+          <h2>Create tenant</h2>
+          <form className="plat-form" onSubmit={createTenant}>
+            <label>
+              <span>Company name</span>
+              <input
+                value={form.company_name}
+                onChange={(e) => {
+                  const company_name = e.target.value;
+                  setForm((f) => ({
+                    ...f,
+                    company_name,
+                    slug: f.slug && f.slug !== slugify(f.company_name) ? f.slug : slugify(company_name),
+                  }));
+                }}
+                placeholder="Sunrise Mart Ltd"
+                required
+              />
+            </label>
+            <label>
+              <span>Slug</span>
+              <input
+                value={form.slug}
+                onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value.toLowerCase() }))}
+                placeholder="sunrise-mart"
+                pattern="[a-z0-9-]{2,80}"
+                required
+              />
+            </label>
+            <label>
+              <span>Industry</span>
+              <select
+                value={form.industry}
+                onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
+              >
+                {INDUSTRIES.map((i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Currency</span>
+              <input
+                value={form.currency}
+                onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))}
+                placeholder="GHS"
+                maxLength={10}
+                required
+              />
+            </label>
+            <label>
+              <span>Admin email</span>
+              <input
+                type="email"
+                value={form.admin_email}
+                onChange={(e) => setForm((f) => ({ ...f, admin_email: e.target.value }))}
+                placeholder="admin@company.example.com"
+                required
+              />
+            </label>
+            <label>
+              <span>Admin password</span>
+              <input
+                type="password"
+                value={form.admin_password}
+                onChange={(e) => setForm((f) => ({ ...f, admin_password: e.target.value }))}
+                placeholder="Min 8 chars, upper/lower/number/symbol"
+                required
+              />
+            </label>
+            <button type="submit" disabled={creating}>
+              {creating ? 'Creating…' : 'Create tenant'}
+            </button>
+          </form>
+        </div>
 
         <div className="plat-panel">
           <h2>Tenant management</h2>
@@ -188,7 +327,7 @@ export default function PlatformConsole() {
               </tr>
             </thead>
             <tbody>
-              {tenants.map((t) => (
+              {visible.map((t) => (
                 <tr key={t.id}>
                   <td>
                     <div className="plat-co">{t.company_name}</div>
@@ -209,11 +348,7 @@ export default function PlatformConsole() {
                   <td>
                     <div className="plat-actions">
                       {t.status === 'suspended' ? (
-                        <button
-                          type="button"
-                          disabled={busy === t.id}
-                          onClick={() => activateTenant(t)}
-                        >
+                        <button type="button" disabled={busy === t.id} onClick={() => activateTenant(t)}>
                           Activate
                         </button>
                       ) : (

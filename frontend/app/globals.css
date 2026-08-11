@@ -340,3 +340,17 @@
 [data-theme="dark"] .plat-stat,[data-theme="dark"] .plat-panel{background:#131c2e;border-color:#233047}
 [data-theme="dark"] .plat-stat strong,[data-theme="dark"] .plat-panel h2,[data-theme="dark"] .plat-co{color:#f1f5f9}
 [data-theme="dark"] .plat-actions button{background:#0f1826;border-color:#334155;color:#e2e8f0}
+
+.plat-msg{margin:0;padding:10px 12px;border-radius:10px;background:#ecfdf5;color:#047857;font-size:13px;font-weight:600;border:1px solid #a7f3d0}
+.plat-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px;align-items:end}
+.plat-form label{display:flex;flex-direction:column;gap:6px;text-align:left}
+.plat-form label>span{font-size:12px;font-weight:700;color:#334155;letter-spacing:.02em;text-transform:uppercase}
+.plat-form input,.plat-form select{width:100%;padding:11px 12px;border:1px solid #d7deea;border-radius:10px;font-size:14px;font-family:inherit;background:#f8fafc}
+.plat-form input:focus,.plat-form select:focus{outline:none;border-color:#0f766e;box-shadow:0 0 0 3px #0f766e26;background:#fff}
+.plat-form button{grid-column:1/-1;justify-self:start;padding:11px 18px;border:0;border-radius:10px;background:#1e293b;color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+.plat-form button:hover{background:#0f172a}
+.plat-form button:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:720px){.plat-form{grid-template-columns:1fr}}
+[data-theme="dark"] .plat-msg{background:#052e1a;border-color:#14532d;color:#86efac}
+[data-theme="dark"] .plat-form label>span{color:#cbd5e1}
+[data-theme="dark"] .plat-form input,[data-theme="dark"] .plat-form select{background:#0b1220;border-color:#334155;color:#e2e8f0}
