@@ -24,3 +24,7 @@ Stage 33 Commercial MVP Continuity Fidelity (K1, C1, F1, T1, D1, H33x) delivered
 - Main `ci.yml` remains deploy-free (**Stage 18 C1**).
 - Operator `LAUNCH_CHECKLIST.md` §§1–3 / §7 remain unsigned until a real environment is verified (**Stage 27 L1** / Stage 29 X1 / Stage 30 A1 / Stage 31 C1 / Stage 32 H1 / Stage 33 F1 packs).
 - Commercial MVP continuity packaging Complete does **not** mean live go-live, residual risks closed, SOC 2 / ISO Complete, live onboarding / training Complete, or forged §7 Complete.
+
+## Amendment (2026-08-11)
+
+Product owner approved opening Stage 34 (Commercial Customer Assurance Fidelity) after Stage 33 freeze via CONTINUE/NEXT — see [ADR-073](ADR_073_STAGE34_OPEN.md) and [STAGE_34_PLAN.md](STAGE_34_PLAN.md). Stage 33 feature scope remains frozen; Stage 34 does not reopen K1–D1 / H33x.

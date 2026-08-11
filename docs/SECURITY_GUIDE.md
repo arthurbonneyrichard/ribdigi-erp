@@ -355,6 +355,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 32 B1** | Post-MVP backlog — `docs/POST_MVP_BACKLOG_MVP.md`, `ops/mvp/post-mvp-backlog.json` (`test_post_mvp_backlog_b1.py`); ADR-001–006 + Remaining indexed; deferred scopes Remaining |
 | **Stage 32 D1** | Handoff fidelity — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`) maps A1–B1 → readiness / launch / deploy / security |
 | **Stage 32 fidelity** | D1 maps A1–B1 handoff evidence — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`); exit/freeze `docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070 (`test_stage32_exit_h32x.py`); historical open ADR-069; live go-live / attestation / §7 / deferred ADR implementations remain Remaining |
+| **Stage 34 open** | Commercial Customer Assurance Fidelity — `docs/STAGE_34_PLAN.md`, ADR-073 (`test_stage34_open.py`); Stages 1–33 remain frozen; A1 next |
 | **Stage 33 open** | Commercial MVP Continuity Fidelity — `docs/STAGE_33_PLAN.md`, ADR-071 (`test_stage33_open.py`); Stages 1–32 remain frozen; closed under ADR-072 |
 | **Stage 33 K1** | Residual risk register — `docs/RESIDUAL_RISK_MVP.md`, `ops/mvp/residual-risk-register.json` (`test_residual_risk_k1.py`); risks closed / go-live Remaining |
 | **Stage 33 C1** | Compliance readiness — `docs/COMPLIANCE_READINESS_MVP.md`, `ops/mvp/compliance-readiness-register.json` (`test_compliance_readiness_c1.py`); SOC 2 / ISO certification Remaining |
