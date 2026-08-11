@@ -64,9 +64,15 @@ def test_commerce_gates_mvp_complete() -> None:
 
 
 def test_ops_platform_gates_not_fake_completed() -> None:
-    """G1 must not close post-MVP ops platform gates (WAL / K8s / load)."""
-    assert "- [ ] Point-in-time recovery/WAL strategy complete." in READINESS
+    """G1 must not close post-MVP ops platform gates (K8s / load)."""
+    assert (
+        "- [ ] Point-in-time recovery/WAL strategy complete." in READINESS
+        or (
+            "- [x] Point-in-time recovery/WAL strategy complete." in READINESS
+            and "Stage 26 W1" in READINESS
+        )
+    )
     assert "- [ ] Kubernetes production deployment reviewed." in READINESS
     assert "- [ ] Load/performance tests meet documented targets." in READINESS
-    # Stage 26 M1 may mark monitoring Complete (MVP); G1 must not be the closer.
-    assert "Partial" in READINESS  # load (and historically monitoring) Partial until closed
+    # Stage 26 M1/W1 may mark monitoring/WAL Complete (MVP); G1 must not be the closer.
+    assert "Partial" in READINESS  # load Partial until closed

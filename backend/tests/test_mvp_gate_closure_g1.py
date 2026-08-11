@@ -61,6 +61,13 @@ def test_expenses_accounting_tax_reports_mvp_complete() -> None:
 
 def test_deferred_ops_remain_open_or_partial() -> None:
     """G1 must not fake-complete ops items that remain post-MVP / still Partial."""
-    assert "- [ ] Point-in-time recovery/WAL strategy complete." in READINESS
-    assert "Partial" in READINESS  # monitoring / load still Partial
+    # Stage 26 W1 may close WAL strategy; load (and historically monitoring) stay Partial/open.
+    assert (
+        "- [ ] Point-in-time recovery/WAL strategy complete." in READINESS
+        or (
+            "- [x] Point-in-time recovery/WAL strategy complete." in READINESS
+            and "Stage 26 W1" in READINESS
+        )
+    )
+    assert "Partial" in READINESS  # load still Partial
     assert "WAL" in READINESS or "PITR" in READINESS

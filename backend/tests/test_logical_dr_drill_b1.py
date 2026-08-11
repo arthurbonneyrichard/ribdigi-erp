@@ -180,7 +180,14 @@ def test_dr_gate_runbook_and_plan_cite_stage23_b1() -> None:
     assert "Stage 23 B1" in readiness
     assert "test_logical_dr_drill_b1.py" in readiness
     assert "WAL" in readiness or "PITR" in readiness
-    assert "- [ ] Point-in-time recovery/WAL strategy complete." in readiness
+    # Stage 26 W1 may mark WAL strategy Complete (MVP); logical DR gate stays Complete.
+    assert (
+        "- [ ] Point-in-time recovery/WAL strategy complete." in readiness
+        or (
+            "- [x] Point-in-time recovery/WAL strategy complete." in readiness
+            and "Stage 26 W1" in readiness
+        )
+    )
 
     assert "Stage 23 B1" in runbook
     assert "stage23_b1_logical_drill.json" in runbook

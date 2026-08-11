@@ -20,6 +20,7 @@ def test_stage26_plan_and_open_adr():
         or "W1 next" in plan
         or "W1 complete" in plan
         or "K1 next" in plan
+        or "K1 complete" in plan
         or "C1 next" in plan
         or "D1 next" in plan
         or "H26x next" in plan

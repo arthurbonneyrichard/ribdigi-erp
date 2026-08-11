@@ -89,8 +89,14 @@ def test_monitoring_gate_complete_mvp():
     # Hosted stack remains deferred
     assert "Grafana" in pr or "PagerDuty" in pr
     assert "SIEM" in pr
-    # Other Stage 26 platform gates stay open
-    assert "- [ ] Point-in-time recovery/WAL strategy complete." in pr
+    # Other Stage 26 platform gates: WAL may be Complete (MVP) after W1; K8s/load stay open
+    assert (
+        "- [ ] Point-in-time recovery/WAL strategy complete." in pr
+        or (
+            "- [x] Point-in-time recovery/WAL strategy complete." in pr
+            and "Stage 26 W1" in pr
+        )
+    )
     assert "- [ ] Kubernetes production deployment reviewed." in pr
     assert "- [ ] Load/performance tests meet documented targets." in pr
 

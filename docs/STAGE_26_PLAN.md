@@ -1,6 +1,6 @@
 # Stage 26 Plan — Production Platform & Ops Fidelity
 
-**Status:** Open — M1 COMPLETE; W1 next (ADR-057)  
+**Status:** Open — M1 / W1 COMPLETE; K1 next (ADR-057)  
 **Base:** Monitoring & Alerting + WAL/PITR + Kubernetes Deploy + Load Capacity → Ops Platform Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-057](ADR_057_STAGE26_OPEN.md)
@@ -34,7 +34,7 @@ Ops Platform Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **M1** | Monitoring & alerting fidelity (Prometheus scrape / alert rules / log-ship hooks) | P0 | COMPLETE |
-| **W1** | WAL / PITR strategy + S3 offsite backup fidelity | P0 | PENDING |
+| **W1** | WAL / PITR strategy + S3 offsite backup fidelity | P0 | COMPLETE |
 | **K1** | Kubernetes / Helm production deploy fidelity | P0 | PENDING |
 | **C1** | Certified load / capacity evidence | P0 | PENDING |
 | **D1** | Spec / BR-16 / readiness / launch / deploy fidelity sync | P2 | PENDING |
@@ -61,11 +61,11 @@ Ops Platform Fidelity
 
 ## W1 acceptance criteria
 
-- [ ] WAL / PITR strategy + S3-compatible offsite packaging documented and evidence-tested (extend logical DR — not fake pg_dump success).
-- [ ] Operator runbook + durable drill/config artifact path.
-- [ ] Automated proof: `backend/tests/test_wal_pitr_w1.py`.
-- [ ] PRODUCTION_READINESS WAL gate honesty updated with evidence.
-- [ ] Plan / launch / roadmap cite Stage 26 W1.
+- [x] WAL / PITR strategy + S3-compatible offsite packaging documented and evidence-tested (extend logical DR — not fake pg_dump success).
+- [x] Operator runbook + durable drill/config artifact path.
+- [x] Automated proof: `backend/tests/test_wal_pitr_w1.py`.
+- [x] PRODUCTION_READINESS WAL gate honesty updated with evidence.
+- [x] Plan / launch / roadmap cite Stage 26 W1.
 
 ## K1 acceptance criteria
 
@@ -99,4 +99,4 @@ Ops Platform Fidelity
 
 ## Sign-off
 
-Stage 26 open under ADR-057. M1 complete; W1 next. Stages 1–25 remain frozen for their scopes.
+Stage 26 open under ADR-057. M1 / W1 complete; K1 next. Stages 1–25 remain frozen for their scopes.

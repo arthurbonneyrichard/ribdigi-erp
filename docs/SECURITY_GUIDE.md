@@ -317,6 +317,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 25 fidelity** | D1 maps purchases / cross-domain / four-actual insights / AI UI evidence — `docs/STAGE_25_FIDELITY.md` (`test_stage25_fidelity_d1.py`); exit/freeze ADR-056 (`test_stage25_exit_h25x.py`); historical open ADR-055 |
 | **Stage 26 open** | Production Platform & Ops Fidelity — `docs/STAGE_26_PLAN.md`, ADR-057 (`test_stage26_open.py`); Stages 1–25 remain frozen |
 | **Stage 26 M1** | Monitoring scrape/alerts/log-ship — `ops/prometheus/`, `ops/logging/`, `docs/OPS_MONITORING_MVP.md` (`test_ops_monitoring_m1.py`) |
+| **Stage 26 W1** | WAL/PITR strategy + S3 offsite — `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/`, `ops/backup/` (`test_wal_pitr_w1.py`) |
 
 ### 7.3 Tenant Lifecycle Security
 
@@ -515,8 +516,9 @@ All security-relevant events are captured in an immutable audit log:
 ### 11.3 Recovery Procedures
 
 **Point-in-Time Recovery (PITR):**
-- PostgreSQL WAL archiving enables recovery to any point within retention window
-- Recovery tested quarterly; RTO < 4 hours, RPO < 15 minutes
+- Stage 26 W1 MVP strategy: WAL archiving → S3-compatible store + `.ribbak` offsite sync — `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/`, `ops/backup/` (`test_wal_pitr_w1.py`)
+- Operator staging PITR drill (base + WAL replay) remains Remaining; strategy RTO < 4 hours / RPO < 15 minutes when archive health is proven
+- Logical tenant restore remains `.ribbak` (`docs/DR_LOGICAL_BACKUP_RUNBOOK.md`)
 
 **Tenant-Level Restore:**
 - Individual tenant schemas can be restored without affecting other tenants

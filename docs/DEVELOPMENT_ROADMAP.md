@@ -226,6 +226,8 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 
 **Stage 26 M1 (2026-08-11):** Monitoring & alerting fidelity — Prometheus scrape `ops/prometheus/prometheus.yml`, alerts `ops/prometheus/alerts/ribdigi.yml`, Fluent Bit example `ops/logging/fluent-bit-ribdigi.conf.example`, `docs/OPS_MONITORING_MVP.md` (`test_ops_monitoring_m1.py`); readiness monitoring Complete (MVP).
 
+**Stage 26 W1 (2026-08-11):** WAL / PITR strategy + S3 offsite — `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/` WAL archive configs, `ops/backup/sync-ribbak-offsite.sh.example`, evidence `stage26_w1_wal_pitr_strategy.json` (`test_wal_pitr_w1.py`); readiness WAL Complete (MVP); operator PITR drill Remaining.
+
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -806,7 +808,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 
 **Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
 
-**Active delivery plan:** Stage 26 open (`docs/STAGE_26_PLAN.md`, ADR-057) — M1 complete; W1 next. Stages 1–25 remain frozen for their scopes (`docs/STAGE_25_EXIT_CRITERIA.md`, ADR-056).
+**Active delivery plan:** Stage 26 open (`docs/STAGE_26_PLAN.md`, ADR-057) — M1 / W1 complete; K1 next. Stages 1–25 remain frozen for their scopes (`docs/STAGE_25_EXIT_CRITERIA.md`, ADR-056).
 
 ### 6.2 Features
 

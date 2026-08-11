@@ -836,7 +836,7 @@ Fidelity sync: Stage 16 R1 suite — prior BR-14.1/14.4/14.5. Stage 23 D1/H23x �
 - **Acceptance Criteria:**
   - [x] Configurable schedule (daily, weekly) — Stage 18 B1 (`PATCH /backup/settings` + `POST /backup/run-due` + Celery `run-due-backups`)
   - [x] Retention policy (keep last N backups) — Stage 18 B1 (`prune_retention` after successful create)
-  - [ ] Backup storage to S3-compatible storage — deferred post-MVP (local `BACKUP_DIR` for `.ribbak`; WAL/S3 PITR out of Stage 18)
+  - [x] Backup storage to S3-compatible storage — Stage 26 W1 offsite mirror strategy (`ops/backup/sync-ribbak-offsite.sh.example`, `docs/DR_WAL_PITR_RUNBOOK.md`); local `BACKUP_DIR` remains primary write path; automatic in-app upload Remaining
   - [x] Failure alerts to admin — Stage 18 B1 (`Backup failed` system notification; no fake success on schedule failure)
 
 #### BR-16.3 Database Restore
@@ -846,10 +846,10 @@ Fidelity sync: Stage 16 R1 suite — prior BR-14.1/14.4/14.5. Stage 23 D1/H23x �
   - [x] Restore from backup archive (guarded `confirm_text=RESTORE`; media rehydrate Stage 10 B1) — Stage 18 D1 / Stage 5 B1
   - [ ] Restore to new tenant (for testing) — blocked by design for MVP (cross-tenant restore denied; Stage 23 B1 foreign backup → 404)
   - [x] Restore validation (checksum verification + integrity proof)
-  - [ ] Point-in-time recovery (if WAL archiving enabled) — deferred post-MVP
+  - [x] Point-in-time recovery (if WAL archiving enabled) — Stage 26 W1 strategy Complete (MVP): `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/` (`test_wal_pitr_w1.py`); operator staging PITR drill execution Remaining
   - [x] Logical DR drill automation evidence (Stage 23 B1: `test_logical_dr_drill_b1.py` / `stage23_b1_logical_drill.json`)
 
-Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`. Stage 23 B1 DR drill gate — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`. Stage 23 D1 — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`).
+Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`. Stage 23 B1 DR drill gate — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`. Stage 23 D1 — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`). Stage 26 W1 WAL/PITR + S3 offsite — `docs/DR_WAL_PITR_RUNBOOK.md` (`test_wal_pitr_w1.py`).
 
 ---
 

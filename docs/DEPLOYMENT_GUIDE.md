@@ -1234,6 +1234,8 @@ groups:
 
 ## 11. Backup & Disaster Recovery
 
+**MVP fidelity:** Logical `.ribbak` DR is Complete (`docs/DR_LOGICAL_BACKUP_RUNBOOK.md`, Stage 23 B1). Stage 26 W1 documents WAL archiving → S3-compatible offsite + `.ribbak` mirror scripts (`docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/`, `ops/backup/`, `test_wal_pitr_w1.py`). Operator staging PITR drill execution and managed-cloud automation remain Remaining — do not treat the aspirational schedule below as CI-certified.
+
 ### 11.1 Backup Schedule
 
 | Component | Frequency | Retention | Method |

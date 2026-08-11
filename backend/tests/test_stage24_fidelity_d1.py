@@ -77,8 +77,14 @@ def test_stage24_readiness_and_roadmap():
     assert "- [x] Inventory catalog" in pr
     assert "- [x] Redis/Celery/RabbitMQ used for intended production workloads." in pr
     assert "- [x] AI functions use real tenant data" in pr
-    # Monitoring may be Complete (MVP) after Stage 26 M1; WAL stays open until W1.
-    assert "- [ ] Point-in-time recovery/WAL strategy complete." in pr
+    # Monitoring/WAL may be Complete (MVP) after Stage 26 M1/W1.
+    assert (
+        "- [ ] Point-in-time recovery/WAL strategy complete." in pr
+        or (
+            "- [x] Point-in-time recovery/WAL strategy complete." in pr
+            and "Stage 26 W1" in pr
+        )
+    )
     assert (
         "- [ ] Monitoring, metrics, logging and alerting complete." in pr
         or (

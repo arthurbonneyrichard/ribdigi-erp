@@ -92,8 +92,14 @@ def test_stage25_readiness_and_roadmap():
     assert "Stage 25 P1" in pr or "test_ai_purchases_analysis_p1.py" in pr
     assert "Stage 25 X1" in pr or "test_ai_cross_domain_x1.py" in pr
     assert "- [x] AI functions use real tenant data" in pr
-    # Monitoring may be Complete (MVP) after Stage 26 M1; WAL stays open until W1.
-    assert "- [ ] Point-in-time recovery/WAL strategy complete." in pr
+    # Monitoring/WAL may be Complete (MVP) after Stage 26 M1/W1.
+    assert (
+        "- [ ] Point-in-time recovery/WAL strategy complete." in pr
+        or (
+            "- [x] Point-in-time recovery/WAL strategy complete." in pr
+            and "Stage 26 W1" in pr
+        )
+    )
     assert (
         "- [ ] Monitoring, metrics, logging and alerting complete." in pr
         or (
