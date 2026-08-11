@@ -1,10 +1,11 @@
 # Stage 52 Plan — Commercial Partnerships & Renewal Fidelity
 
-**Status:** Open — D1 complete; H52x next  
+**Status:** Closed — exit met (H52x / ADR-110)  
 **Base:** Industry Partnerships Honesty Pack + Subscription Renewal / Annual Discount Honesty Pack → Commercial Partnerships & Renewal Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-109](ADR_109_STAGE52_OPEN.md)  
-**Prior freeze:** [ADR-108](ADR_108_STAGE51_FREEZE.md) · [STAGE_51_EXIT_CRITERIA.md](STAGE_51_EXIT_CRITERIA.md)
+**Prior freeze:** [ADR-108](ADR_108_STAGE51_FREEZE.md) · [STAGE_51_EXIT_CRITERIA.md](STAGE_51_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_52_EXIT_CRITERIA.md](STAGE_52_EXIT_CRITERIA.md) · [ADR-110](ADR_110_STAGE52_FREEZE.md)
 
 Stage 52 opens after Stage 51 freeze: **Industry Partnerships Honesty Packaging + Subscription Renewal / Annual Discount Honesty Packaging → Commercial Partnerships & Renewal Fidelity**. PRODUCT_OVERVIEW industry-partnership (pharmacy associations, retail federations, restaurant guilds) and annual billing / auto-renewal themes, plus Stage 36 billing-deferred and Stage 49–51 channel / marketplace / acquisition adjacency, lack dedicated customer-facing honesty packs for industry-partnership boundaries and renewal / annual-discount Remaining. This track packages those Remaining surfaces on proven Stage 36–51 commercial / billing-deferred assets — **not** claiming live industry partnership program Complete, signed association deals Complete, live annual-discount enforcement Complete, auto-renewal billing Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–51 packs as new Complete, or reopening Stages 1–51 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Partnerships & Renewal Fidelity
 | **I1** | Industry partnerships honesty packaging (not live industry partnership program / signed association deals Complete) | P0 | COMPLETE |
 | **R1** | Subscription renewal / annual discount honesty packaging (not live annual-discount enforcement / auto-renewal billing Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H52x** | Stage 52 exit criteria + freeze ADR | Exit | PENDING |
+| **H52x** | Stage 52 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -96,6 +97,6 @@ Commercial Partnerships & Renewal Fidelity
 
 ## H52x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for I1–D1 / H52x — `docs/STAGE_52_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_110_STAGE52_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage52_exit_h52x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for I1–D1 / H52x — `docs/STAGE_52_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_110_STAGE52_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage52_exit_h52x.py`.

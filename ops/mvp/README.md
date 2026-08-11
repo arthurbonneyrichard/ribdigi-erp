@@ -598,7 +598,7 @@ H51x met — `docs/STAGE_51_EXIT_CRITERIA.md`, ADR-108. Stages 1–51 frozen for
 
 ## Stage 52 open
 
-Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109; D1 complete; H52x next.
+Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109; Closed — exit met (H52x / ADR-110).
 
 ## Stage 52 I1 — Industry partnerships honesty
 
@@ -611,3 +611,7 @@ Commercial Partnerships & Renewal Fidelity — `docs/STAGE_52_PLAN.md`, ADR-109;
 ## Stage 52 D1 — Fidelity
 
 `docs/STAGE_52_FIDELITY.md` maps I1–R1 → readiness / launch / deploy / security (`test_stage52_fidelity_d1.py`).
+
+## Stage 52 exit
+
+H52x met — `docs/STAGE_52_EXIT_CRITERIA.md`, ADR-110. Stages 1–52 frozen for Stage 52 feature scope.
