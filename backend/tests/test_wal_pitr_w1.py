@@ -125,6 +125,8 @@ def test_w1_plan_launch_roadmap_cite():
         or "W1 complete" in plan
         or "K1 next" in plan
         or "K1 complete" in plan
+        or "C1 next" in plan
+        or "C1 complete" in plan
         or "Closed" in plan
         or "exit met" in plan.lower()
     )
