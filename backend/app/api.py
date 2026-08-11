@@ -1664,6 +1664,38 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         for d in days_seq
     ]
 
+    # Recent sales (latest transactions) for the dashboard table
+    recent_rows = (
+        await db.execute(
+            select(m.Transaction)
+            .where(
+                m.Transaction.tenant_id == tid,
+                m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+            )
+            .order_by(m.Transaction.created_at.desc())
+            .limit(6)
+        )
+    ).scalars().all()
+    recent_party_ids = [t.party_id for t in recent_rows if t.party_id]
+    recent_party_names: dict = {}
+    if recent_party_ids:
+        recent_party_names = {
+            p.id: p.name
+            for p in (
+                await db.execute(select(m.Party).where(m.Party.id.in_(recent_party_ids)))
+            ).scalars().all()
+        }
+    recent_sales = [
+        {
+            "reference": t.reference,
+            "date": t.created_at,
+            "total": float(t.total or 0),
+            "customer": recent_party_names.get(t.party_id) or "Walk-in",
+            "type": t.tx_type,
+        }
+        for t in recent_rows
+    ]
+
     tenant = await db.get(m.Tenant, tid)
     if tenant and tenant.status == "trial":
         days_remaining = tenants_svc.calendar_days_until(tenant.trial_ends_at)
@@ -1691,6 +1723,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "suppliers": suppliers,
             "monthly_sales": monthly_sales,
             "daily_sales": daily_sales,
+            "recent_sales": recent_sales,
             "subscription": subscription,
         }
     )

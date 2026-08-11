@@ -23,8 +23,90 @@ type Dash = {
   suppliers?: number;
   monthly_sales?: { label: string; total: number }[];
   daily_sales?: { label: string; sales: number; profit: number }[];
+  recent_sales?: { reference: string; date: string; total: number; customer: string; type: string }[];
   subscription?: Subscription;
 };
+
+// Monochrome line icons for panel headings (same style as the sidebar).
+const PANEL_ICONS: Record<string, React.ReactNode> = {
+  cashflow: (
+    <>
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </>
+  ),
+  mix: (
+    <>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </>
+  ),
+  trend: (
+    <>
+      <line x1="12" y1="20" x2="12" y2="10" />
+      <line x1="18" y1="20" x2="18" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="16" />
+    </>
+  ),
+  pie: (
+    <>
+      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+      <path d="M22 12A10 10 0 0 0 12 2v10z" />
+    </>
+  ),
+  daily: (
+    <>
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </>
+  ),
+  profit: (
+    <>
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </>
+  ),
+  health: (
+    <>
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <path d="M3.27 6.96 12 12.01l8.73-5.05" />
+      <path d="M12 22.08V12" />
+    </>
+  ),
+  recent: (
+    <>
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </>
+  ),
+};
+
+function PanelIcon({ name }: { name: string }) {
+  return (
+    <svg
+      className="panel-ico"
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {PANEL_ICONS[name]}
+    </svg>
+  );
+}
 
 function DailyBars({
   data,
@@ -183,6 +265,8 @@ export default function Page() {
   const daily = d.daily_sales || [];
   const dailyEmpty = daily.every((x) => !x.sales && !x.profit);
 
+  const recent = d.recent_sales || [];
+
   const finItems = [
     { label: 'Sales', value: sales, color: '#22c55e' },
     { label: 'Purchases', value: purchases, color: '#38bdf8' },
@@ -238,9 +322,7 @@ export default function Page() {
         <section className="info-grid">
           <div className="panel">
             <h3>
-              <span className="pico pi-flow" aria-hidden>
-                {'\ud83d\udcb5'}
-              </span>
+              <PanelIcon name="cashflow" />
               Cash flow
             </h3>
             <p className="hint">Sales, purchases &amp; approved expenses to date</p>
@@ -270,9 +352,7 @@ export default function Page() {
 
           <div className="panel">
             <h3>
-              <span className="pico pi-mix" aria-hidden>
-                {'\ud83e\udd1d'}
-              </span>
+              <PanelIcon name="mix" />
               Business mix
             </h3>
             <p className="hint">Customers vs suppliers</p>
@@ -324,14 +404,10 @@ export default function Page() {
               </div>
             </div>
           </div>
-        </section>
 
-        <section className="info-grid">
           <div className="panel">
             <h3>
-              <span className="pico pi-trend" aria-hidden>
-                {'\ud83d\udcc8'}
-              </span>
+              <PanelIcon name="trend" />
               Revenue trend
             </h3>
             <p className="hint">Sales over the last 6 months</p>
@@ -362,9 +438,7 @@ export default function Page() {
 
           <div className="panel">
             <h3>
-              <span className="pico pi-pie" aria-hidden>
-                {'\ud83e\udd67'}
-              </span>
+              <PanelIcon name="pie" />
               Revenue vs costs
             </h3>
             <p className="hint">Share of sales, purchases &amp; expenses</p>
@@ -396,14 +470,10 @@ export default function Page() {
               </div>
             </div>
           </div>
-        </section>
 
-        <section className="info-grid">
           <div className="panel">
             <h3>
-              <span className="pico pi-daily" aria-hidden>
-                {'\ud83d\udcc5'}
-              </span>
+              <PanelIcon name="daily" />
               Daily sales
             </h3>
             <p className="hint">Sales for the last 7 days</p>
@@ -416,9 +486,7 @@ export default function Page() {
 
           <div className="panel">
             <h3>
-              <span className="pico pi-profit" aria-hidden>
-                {'\ud83d\udcb9'}
-              </span>
+              <PanelIcon name="profit" />
               Daily profit
             </h3>
             <p className="hint">Gross profit (revenue \u2212 cost) per day</p>
@@ -432,9 +500,7 @@ export default function Page() {
 
         <section className="panel">
           <h3>
-            <span className="pico pi-health" aria-hidden>
-              {'\ud83d\udce6'}
-            </span>
+            <PanelIcon name="health" />
             Inventory health
           </h3>
           <p className="hint">In-stock vs items at or below reorder level</p>
@@ -474,6 +540,40 @@ export default function Page() {
               </span>
             </div>
           </div>
+        </section>
+
+        <section className="panel">
+          <h3>
+            <PanelIcon name="recent" />
+            Recent sales
+          </h3>
+          <p className="hint">Your latest sales transactions</p>
+          {recent.length === 0 ? (
+            <div className="empty">No sales yet — new sales will show up here.</div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>Customer</th>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th style={{ textAlign: 'right' }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.map((s) => (
+                  <tr key={s.reference}>
+                    <td>{s.reference}</td>
+                    <td>{s.customer}</td>
+                    <td>{s.type === 'pos_sale' ? 'POS' : 'Sale'}</td>
+                    <td>{fmtDate(s.date)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{num(s.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
       </div>
     </Shell>
