@@ -1,6 +1,6 @@
 # Stage 32 Plan — Commercial MVP Handoff Fidelity
 
-**Status:** Open — A1 complete; H1 next (ADR-069)  
+**Status:** Open — A1–H1 complete; N1 next (ADR-069)  
 **Base:** MVP Acceptance Archive Pack + Operator Handoff Pack + Commercial Release Notes Pack + Post-MVP Backlog Pack → Commercial MVP Handoff Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-069](ADR_069_STAGE32_OPEN.md)
@@ -36,7 +36,7 @@ Commercial MVP Handoff Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **A1** | MVP acceptance archive (Stage 1–31 exit/freeze index) | P0 | COMPLETE |
-| **H1** | Operator handoff packaging | P0 | PENDING |
+| **H1** | Operator handoff packaging | P0 | COMPLETE |
 | **N1** | Commercial release notes packaging | P1 | PENDING |
 | **B1** | Post-MVP backlog packaging (deferred ADR + Remaining index) | P1 | PENDING |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
@@ -68,10 +68,10 @@ Commercial MVP Handoff Fidelity
 
 ## H1 acceptance criteria
 
-- [ ] Operator handoff packaging consolidating ops take-over checklist from Stage 26–31 packs (extends Remaining / declaration honesty; not forging live runs or §7).
-- [ ] Automated proof: `backend/tests/test_operator_handoff_h1.py`.
-- [ ] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 32 H1.
+- [x] Operator handoff packaging consolidating ops take-over checklist from Stage 26–31 packs (extends Remaining / declaration honesty; not forging live runs or §7).
+- [x] Automated proof: `backend/tests/test_operator_handoff_h1.py`.
+- [x] LAUNCH_CHECKLIST / PRODUCTION_READINESS honesty updated.
+- [x] Plan / launch / roadmap cite Stage 32 H1.
 
 ## N1 acceptance criteria
 
@@ -103,4 +103,4 @@ Commercial MVP Handoff Fidelity
 
 ## Sign-off
 
-Stage 32 open under ADR-069. A1 complete; H1 next. Stages 1–31 remain frozen for their scopes.
+Stage 32 open under ADR-069. A1–H1 complete; N1 next. Stages 1–31 remain frozen for their scopes.
