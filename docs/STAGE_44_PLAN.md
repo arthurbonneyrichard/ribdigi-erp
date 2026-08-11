@@ -1,10 +1,11 @@
 # Stage 44 Plan — Commercial Data Trust Fidelity
 
-**Status:** Open — D1 complete; H44x next  
+**Status:** Closed — exit met (H44x / ADR-094)  
 **Base:** Data Residency / Localization Honesty Pack + Encryption / Key-Management Honesty Pack → Commercial Data Trust Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-093](ADR_093_STAGE44_OPEN.md)  
-**Prior freeze:** [ADR-092](ADR_092_STAGE43_FREEZE.md) · [STAGE_43_EXIT_CRITERIA.md](STAGE_43_EXIT_CRITERIA.md)
+**Open ADR (historical):** [ADR-093](ADR_093_STAGE44_OPEN.md)  
+**Prior freeze:** [ADR-092](ADR_092_STAGE43_FREEZE.md) · [STAGE_43_EXIT_CRITERIA.md](STAGE_43_EXIT_CRITERIA.md)  
+**Exit:** [STAGE_44_EXIT_CRITERIA.md](STAGE_44_EXIT_CRITERIA.md) · [ADR-094](ADR_094_STAGE44_FREEZE.md)
 
 Stage 44 opens after Stage 43 freeze: **Data Residency / Localization Honesty Packaging + Encryption / Key-Management Honesty Packaging → Commercial Data Trust Fidelity**. BR local-data-laws / RTO–RPO themes and SECURITY_GUIDE encryption / key-management / backup-encryption surfaces lack dedicated customer-facing data-trust honesty packs for residency/localization boundaries and encryption / KMS Remaining. This track packages those Remaining surfaces on proven Stage 26 WAL/PITR / Stage 33–39 compliance / privacy / contract and Stage 43 legal-notice adjacency assets — **not** claiming multi-region data residency Complete, customer-managed keys / HSM / live Vault SaaS Complete, GDPR residency certification Complete, live go-live / §7, SOC 2 / ISO Complete, re-packaging Stage 26–43 packs as new Complete, or reopening Stages 1–43 frozen feature scopes.
 
@@ -35,7 +36,7 @@ Commercial Data Trust Fidelity
 | **R1** | Data residency / localization honesty packaging (not multi-region residency Complete) | P0 | COMPLETE |
 | **E1** | Encryption / key-management honesty packaging (not HSM / live Vault Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | COMPLETE |
-| **H44x** | Stage 44 exit criteria + freeze ADR | Exit | PENDING |
+| **H44x** | Stage 44 exit criteria + freeze ADR | Exit | COMPLETE |
 
 ## Explicitly out of this pass
 
@@ -83,6 +84,6 @@ Commercial Data Trust Fidelity
 
 ## H44x acceptance criteria
 
-- [ ] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H44x — `docs/STAGE_44_EXIT_CRITERIA.md`.
-- [ ] Freeze ADR accepted — `docs/ADR_094_STAGE44_FREEZE.md` (planned id).
-- [ ] Automated proof: `backend/tests/test_stage44_exit_h44x.py`.
+- [x] Exit criteria document with no CRITICAL/MISSING rows for R1–D1 / H44x — `docs/STAGE_44_EXIT_CRITERIA.md`.
+- [x] Freeze ADR accepted — `docs/ADR_094_STAGE44_FREEZE.md`.
+- [x] Automated proof: `backend/tests/test_stage44_exit_h44x.py`.
