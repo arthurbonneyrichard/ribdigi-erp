@@ -74,6 +74,7 @@
 | `supply-chain-integration.json` | Stage 61 S1 Supply chain integration honesty — `supplier_supply_chain_live_claimed: false` / `supplier_portal_live_claimed: false` / `edi_asn_program_live: false` / `supply_chain_integration_program_live: false` |
 | `iot-integration.json` | Stage 62 I1 IoT integration honesty — `iot_integration_live_claimed: false` / `smart_shelves_live_claimed: false` / `temperature_sensors_live_claimed: false` / `iot_program_live: false` |
 | `ai-model-marketplace.json` | Stage 62 A1 AI model marketplace honesty — `ai_model_marketplace_live_claimed: false` / `industry_prediction_marketplace_claimed: false` / `model_vendor_catalog_live: false` / `ai_marketplace_program_live: false` |
+| `franchise-chain.json` | Stage 64 F1 Franchise & chain enterprise honesty — `franchise_chain_live_claimed: false` / `chain_enterprise_deals_claimed: false` / `franchise_deal_program_live: false` / `franchise_network_live_claimed: false` |
 | `advanced-bi.json` | Stage 64 B1 Advanced BI honesty — `advanced_bi_live_claimed: false` / `custom_analytics_live_claimed: false` / `custom_report_builder_live: false` / `advanced_bi_program_live: false` |
 | `ipo-readiness.json` | Stage 63 P1 IPO readiness honesty — `ipo_readiness_live_claimed: false` / `series_b_c_funding_claimed: false` / `capital_raise_program_live: false` / `ipo_filing_claimed: false` |
 | `global-scale.json` | Stage 63 G1 Global scale honesty — `global_scale_50k_customers_claimed: false` / `twenty_plus_countries_claimed: false` / `international_scale_program_live: false` / `paying_customers_50k_measured: false` |
@@ -219,6 +220,7 @@ Authoritative MVP docs:
 - `docs/STAGE_60_EXIT_CRITERIA.md` / `docs/ADR_126_STAGE60_FREEZE.md` (`backend/tests/test_stage60_exit_h60x.py`) — Stage 60 H60x
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
+- `docs/FRANCHISE_CHAIN_MVP.md` (`backend/tests/test_franchise_chain_f1.py`) — Stage 64 F1
 - `docs/ADVANCED_BI_MVP.md` (`backend/tests/test_advanced_bi_b1.py`) — Stage 64 B1
 - `docs/IPO_READINESS_MVP.md` (`backend/tests/test_ipo_readiness_p1.py`) — Stage 63 P1
 - `docs/GLOBAL_SCALE_MVP.md` (`backend/tests/test_global_scale_g1.py`) — Stage 63 G1
@@ -919,6 +921,10 @@ Commercial Capital & Scale Fidelity — `docs/STAGE_63_PLAN.md`, ADR-131; Closed
 ## Stage 63 exit
 
 H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for Stage 63 feature scope.
+
+## Stage 64 F1 — Franchise & chain enterprise honesty
+
+`docs/FRANCHISE_CHAIN_MVP.md` + `ops/mvp/franchise-chain.json` — packaging Complete; `franchise_chain_live_claimed` / `chain_enterprise_deals_claimed` / `franchise_deal_program_live` / `franchise_network_live_claimed` remain false.
 
 ## Stage 64 B1 — Advanced BI honesty
 

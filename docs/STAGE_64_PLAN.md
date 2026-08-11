@@ -1,6 +1,6 @@
 # Stage 64 Plan — Commercial Analytics & Franchise Fidelity
 
-**Status:** Open — B1 complete; F1 next  
+**Status:** Open — F1 complete; D1 next  
 **Base:** Advanced BI Honesty Pack + Franchise & Chain Enterprise Honesty Pack → Commercial Analytics & Franchise Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Open ADR:** [ADR-133](ADR_133_STAGE64_OPEN.md)  
@@ -33,7 +33,7 @@ Commercial Analytics & Franchise Fidelity
 | ID | Workstream | Priority | Verdict |
 |----|------------|----------|---------|
 | **B1** | Advanced BI honesty packaging (not live custom analytics / BI Complete) | P0 | COMPLETE |
-| **F1** | Franchise & chain enterprise honesty packaging (not live franchise / chain deals Complete) | P0 | PENDING |
+| **F1** | Franchise & chain enterprise honesty packaging (not live franchise / chain deals Complete) | P0 | COMPLETE |
 | **D1** | Spec / readiness / launch / deploy / security fidelity sync | P1 | PENDING |
 | **H64x** | Stage 64 exit criteria + freeze ADR | Exit | PENDING |
 
@@ -108,10 +108,12 @@ Commercial Analytics & Franchise Fidelity
 
 ## F1 acceptance criteria
 
-- [ ] Franchise & chain enterprise honesty packaging indexing PRODUCT_OVERVIEW Phase 3 franchise / chain enterprise themes with white-label / partner adjacency (not claiming live franchise / chain deals Complete).
-- [ ] Automated proof: `backend/tests/test_franchise_chain_f1.py`.
-- [ ] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
-- [ ] Plan / launch / roadmap cite Stage 64 F1.
+- [x] Franchise & chain enterprise honesty packaging indexing PRODUCT_OVERVIEW Phase 3 franchise / chain enterprise themes with white-label / partner adjacency (not claiming live franchise / chain deals Complete).
+- [x] Automated proof: `backend/tests/test_franchise_chain_f1.py`.
+- [x] LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP honesty updated.
+- [x] Plan / launch / roadmap cite Stage 64 F1.
+
+**Deliverables:** `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`, evidence `stage64_f1_franchise_chain.json`.
 
 ## D1 acceptance criteria
 

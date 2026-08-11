@@ -1415,3 +1415,5 @@ Every feature in every phase must meet:
 **Stage 64 open (2026-08-11):** Commercial Analytics & Franchise Fidelity track approved — `docs/ADR_133_STAGE64_OPEN.md` + `docs/STAGE_64_PLAN.md` (Advanced BI → franchise & chain → fidelity).
 
 **Stage 64 B1 (2026-08-11):** Advanced BI honesty — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`, evidence `stage64_b1_advanced_bi.json` (`test_advanced_bi_b1.py`); live Advanced BI / custom analytics Remaining.
+
+**Stage 64 F1 (2026-08-11):** Franchise & chain enterprise honesty — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`, evidence `stage64_f1_franchise_chain.json` (`test_franchise_chain_f1.py`); live franchise / chain deals Remaining.
