@@ -327,11 +327,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 27 S1** | OWASP security scan baseline evidence — `docs/SECURITY_SCAN_MVP.md`, `ops/security/zap-baseline.example.yml` (`test_security_scan_s1.py`); vendor pen test / live ZAP staging Remaining; main CI deploy-free |
 | **Stage 27 L1** | Launch certification pack — `docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json` (`test_launch_cert_l1.py`); operator env / §7 sign-off remain unsigned (no fake production certificate) |
 | **Stage 27 fidelity** | D1 maps B1–L1 release evidence — `docs/STAGE_27_FIDELITY.md` (`test_stage27_fidelity_d1.py`); exit/freeze ADR-060 (`test_stage27_exit_h27x.py`); historical open ADR-059; vendor pen test / live ZAP / forged §7 sign-off remain Remaining |
-| **Stage 28 open** | Staging Certification Fidelity — `docs/STAGE_28_PLAN.md`, ADR-061 (`test_stage28_open.py`); Stages 1–27 remain frozen; R1 PITR drill / G1 staging GHA / A1 Grafana / C1 1000-VU cert pending |
+| **Stage 28 open** | Staging Certification Fidelity — `docs/STAGE_28_PLAN.md`, ADR-061 (`test_stage28_open.py`); Stages 1–27 remain frozen |
 | **Stage 28 R1** | Operator PITR drill pack — `docs/PITR_DRILL_PACK_MVP.md`, `ops/postgres/pitr-drill-checklist.json` (`test_pitr_drill_pack_r1.py`); live base+WAL replay / managed-cloud Remaining; no CI PITR success claimed |
 | **Stage 28 G1** | Staging GHA deploy pack — `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml` (`test_staging_gha_g1.py`); not in main `ci.yml`; live staging apply Remaining |
 | **Stage 28 A1** | Grafana / Alertmanager pack — `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/` (`test_grafana_pack_a1.py`); hosted Grafana/PagerDuty/SIEM Remaining |
 | **Stage 28 C1** | Operator ~1000-VU cert pack — `docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/` (`test_load_cert_pack_c1.py`); live 1000-VU execution Remaining; no forged certificate |
+| **Stage 28 fidelity** | D1 maps R1–C1 staging-cert evidence — `docs/STAGE_28_FIDELITY.md` (`test_stage28_fidelity_d1.py`); H28x / ADR-062 next; historical open ADR-061; live drills / hosted SaaS / forged certs remain Remaining |
 
 ### 7.3 Tenant Lifecycle Security
 

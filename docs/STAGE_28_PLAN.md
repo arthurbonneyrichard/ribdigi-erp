@@ -1,9 +1,10 @@
 # Stage 28 Plan — Staging Certification Fidelity
 
-**Status:** Open — R1–C1 complete; D1 next (ADR-061)  
+**Status:** Open — R1–D1 complete; H28x next (ADR-061)  
 **Base:** Operator PITR Drill Pack + Staging GHA Workflow + Grafana/Alertmanager Packaging + 1000-VU Cert Pack → Staging Certification Fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Open ADR:** [ADR-061](ADR_061_STAGE28_OPEN.md)
+**Open ADR:** [ADR-061](ADR_061_STAGE28_OPEN.md)  
+**Fidelity:** [STAGE_28_FIDELITY.md](STAGE_28_FIDELITY.md)
 
 Stage 28 closes the owner product outline after Stage 27 freeze: **Operator PITR Drill Packaging + Staging GHA Deploy Workflow + Grafana/Alertmanager Packaging + Operator 1000-VU Certificate Pack → Staging Certification Fidelity**. Stages 26–27 delivered Complete (MVP) ops platform and release packaging with honest Remaining for live staging drills, hosted observability, staging-only deploy workflows, and ~1000-VU certificates. This track extends proven Stage 26/27 assets (`DR_WAL_PITR_RUNBOOK.md`, `ops/k8s/`, `OPS_MONITORING_MVP.md`, `LOAD_CAPACITY_MVP.md`, `ops/security/zap-baseline.example.yml`) with operator certification packaging — **not** inventing live PITR success, green GHA→prod, hosted Grafana-as-a-service Complete, or forged 1000-VU certificates without artifacts — and **not** paid billing, schema-per-tenant, i18n packs, ADR-003/005, Open Banking, tax e-file, external LLM/Prophet, or reopening Stages 1–27.
 
@@ -38,7 +39,7 @@ Staging Certification Fidelity
 | **G1** | Staging GHA deploy workflow (not main `ci.yml`) | P0 | COMPLETE |
 | **A1** | Grafana / Alertmanager operator packaging | P0 | COMPLETE |
 | **C1** | Operator ~1000-VU certificate pack | P1 | COMPLETE |
-| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | PENDING |
+| **D1** | Spec / readiness / launch / deploy / security fidelity sync | P2 | COMPLETE |
 | **H28x** | Stage 28 exit criteria + freeze ADR | Exit | PENDING |
 
 ## Explicitly out of this pass
@@ -87,9 +88,9 @@ Staging Certification Fidelity
 
 ## D1 acceptance criteria
 
-- [ ] `docs/STAGE_28_FIDELITY.md` maps R1–C1 evidence → readiness / launch / deploy / security docs.
-- [ ] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 28 D1.
-- [ ] Automated proof: `backend/tests/test_stage28_fidelity_d1.py`.
+- [x] `docs/STAGE_28_FIDELITY.md` maps R1–C1 evidence → readiness / launch / deploy / security docs.
+- [x] PRODUCTION_READINESS / LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / DEPLOYMENT_GUIDE / SECURITY_GUIDE cite Stage 28 D1.
+- [x] Automated proof: `backend/tests/test_stage28_fidelity_d1.py`.
 
 ## H28x acceptance criteria
 
@@ -101,4 +102,4 @@ Staging Certification Fidelity
 
 ## Sign-off
 
-Stage 28 open under ADR-061. R1–C1 complete; D1 next. Stages 1–27 remain frozen for their scopes.
+Stage 28 open under ADR-061. R1–D1 complete; H28x next. Stages 1–27 remain frozen for their scopes.

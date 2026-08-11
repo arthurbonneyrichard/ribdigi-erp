@@ -168,8 +168,9 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 27 track opened (ADR-059: `test_stage27_open.py`, `docs/STAGE_27_PLAN.md`)
 - [x] Stage 27 fidelity sync (D1: `test_stage27_fidelity_d1.py`, `docs/STAGE_27_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Stage 27 exit + freeze (H27x: `test_stage27_exit_h27x.py`, `docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060)
-- [ ] Stage 28 Staging Certification Fidelity (open: `docs/STAGE_28_PLAN.md`, ADR-061) — D1 next
+- [ ] Stage 28 Staging Certification Fidelity (open: `docs/STAGE_28_PLAN.md`, ADR-061) — H28x next
 - [x] Stage 28 track opened (ADR-061: `test_stage28_open.py`, `docs/STAGE_28_PLAN.md`)
+- [x] Stage 28 fidelity sync (D1: `test_stage28_fidelity_d1.py`, `docs/STAGE_28_FIDELITY.md` — BR-16 + readiness + deploy / launch / security)
 - [x] Operator 1000-VU cert pack (Stage 28 C1: `test_load_cert_pack_c1.py` — `docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/`; evidence `stage28_c1_load_cert_pack.json`; live 1000-VU execution Remaining)
 - [x] Grafana / Alertmanager pack (Stage 28 A1: `test_grafana_pack_a1.py` — `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/`; evidence `stage28_a1_grafana_pack.json`; hosted SaaS Remaining)
 - [x] Staging GHA deploy pack (Stage 28 G1: `test_staging_gha_g1.py` — `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml`; evidence `stage28_g1_staging_gha.json`; live apply Remaining; main CI deploy-free)

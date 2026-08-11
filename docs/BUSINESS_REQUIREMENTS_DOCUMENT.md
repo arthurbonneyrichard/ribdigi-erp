@@ -846,10 +846,10 @@ Fidelity sync: Stage 16 R1 suite — prior BR-14.1/14.4/14.5. Stage 23 D1/H23x �
   - [x] Restore from backup archive (guarded `confirm_text=RESTORE`; media rehydrate Stage 10 B1) — Stage 18 D1 / Stage 5 B1
   - [ ] Restore to new tenant (for testing) — blocked by design for MVP (cross-tenant restore denied; Stage 23 B1 foreign backup → 404)
   - [x] Restore validation (checksum verification + integrity proof)
-  - [x] Point-in-time recovery (if WAL archiving enabled) — Stage 26 W1 strategy Complete (MVP): `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/` (`test_wal_pitr_w1.py`); operator staging PITR drill execution Remaining
+  - [x] Point-in-time recovery (if WAL archiving enabled) — Stage 26 W1 strategy Complete (MVP): `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/` (`test_wal_pitr_w1.py`); Stage 28 R1 operator drill pack Complete (MVP): `docs/PITR_DRILL_PACK_MVP.md` (`test_pitr_drill_pack_r1.py`); operator staging PITR drill **execution** Remaining
   - [x] Logical DR drill automation evidence (Stage 23 B1: `test_logical_dr_drill_b1.py` / `stage23_b1_logical_drill.json`)
 
-Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`. Stage 23 B1 DR drill gate — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`. Stage 23 D1 — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`). Stage 26 W1 WAL/PITR + S3 offsite — `docs/DR_WAL_PITR_RUNBOOK.md` (`test_wal_pitr_w1.py`). Stage 26 D1 ops platform fidelity — `docs/STAGE_26_FIDELITY.md` (`test_stage26_fidelity_d1.py`; M1–C1). Stage 27 B1 auto `.ribbak` offsite — `test_backup_offsite_b1.py`. Stage 27 D1 release fidelity — `docs/STAGE_27_FIDELITY.md` (`test_stage27_fidelity_d1.py`; B1–L1).
+Fidelity sync: Stage 18 D1 — `docs/STAGE_18_FIDELITY.md`. Stage 23 B1 DR drill gate — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`. Stage 23 D1 — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`). Stage 26 W1 WAL/PITR + S3 offsite — `docs/DR_WAL_PITR_RUNBOOK.md` (`test_wal_pitr_w1.py`). Stage 26 D1 ops platform fidelity — `docs/STAGE_26_FIDELITY.md` (`test_stage26_fidelity_d1.py`; M1–C1). Stage 27 B1 auto `.ribbak` offsite — `test_backup_offsite_b1.py`. Stage 27 D1 release fidelity — `docs/STAGE_27_FIDELITY.md` (`test_stage27_fidelity_d1.py`; B1–L1). Stage 28 R1 PITR drill pack — `docs/PITR_DRILL_PACK_MVP.md` (`test_pitr_drill_pack_r1.py`). Stage 28 D1 staging certification fidelity — `docs/STAGE_28_FIDELITY.md` (`test_stage28_fidelity_d1.py`; R1–C1).
 
 ---
 
