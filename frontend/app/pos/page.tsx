@@ -388,22 +388,10 @@ export default function Page() {
           <div>
             <h1>Point of Sale</h1>
             <p className="muted">
-              {cashierName ? (
-                <>
-                  Cashier: <strong>{cashierName}</strong>
-                  {' · '}
-                </>
-              ) : null}
-              Tap tiles or scan a barcode
+              {cashierName ? `Cashier: ${cashierName}` : 'Tap tiles or scan a barcode'}
             </p>
           </div>
           <div className="tpos-shift">
-            {cashierName && (
-              <div className="tpos-shift-meta tpos-cashier">
-                <strong>{cashierName}</strong>
-                <span>Cashier</span>
-              </div>
-            )}
             {!session ? (
               <>
                 <input

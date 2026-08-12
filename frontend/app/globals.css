@@ -359,6 +359,9 @@
 .tpos{display:flex;flex-direction:column;gap:14px}
 .tpos-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap}
 .tpos-top h1{margin:0}
+.tpos-top .muted strong,.tpos-top .muted{font-weight:600}
+.tpos-top .muted{color:#475569}
+[data-theme="dark"] .tpos-top .muted{color:#94a3b8}
 .tpos-shift{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tpos-shift-meta{display:flex;flex-direction:column;line-height:1.25;min-width:120px}
 .tpos-shift-meta strong{font-size:15px}
