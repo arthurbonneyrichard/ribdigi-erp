@@ -74,6 +74,7 @@ from app import ops_settings_export as ops_settings_export_svc
 from app import pos_ops_export as pos_ops_export_svc
 from app import tenant_bootstrap_export as tenant_bootstrap_export_svc
 from app import ops_compliance_export as ops_compliance_export_svc
+from app import ai_ops_export as ai_ops_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -13351,6 +13352,24 @@ async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSe
     )
 
 
+@api.get("/ai/insights/export")
+async def insights_export(
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 145 I1 — business insight cards CSV."""
+    text = await ai_ops_export_svc.export_business_insights_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_business_insights_export.csv"'
+        },
+    )
+
+
 @api.get("/ai/inventory/low-stock-prediction")
 async def ai_low_stock_prediction(
     lookback_days: int = 30,
@@ -13557,6 +13576,25 @@ async def ai_security_alerts(
     return env(data)
 
 
+@api.get("/ai/security/alerts/export")
+async def ai_security_alerts_export(
+    lookback_hours: int = 72,
+    claims=Depends(require_permission("security", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 145 S1 — AI security alerts CSV."""
+    text = await ai_ops_export_svc.export_security_alerts_csv(
+        db, tenant_id=claims["tenant_id"], lookback_hours=lookback_hours
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_security_alerts_export.csv"'
+        },
+    )
+
+
 @api.post("/ai/reports/generate")
 async def ai_reports_generate(
     payload: dict,
@@ -13646,6 +13684,24 @@ async def ai_report_templates_list(
         db, claims["tenant_id"], user_id=claims.get("sub")
     )
     return env([ai_reports_svc.serialize_template(r) for r in rows])
+
+
+@api.get("/ai/reports/templates/export")
+async def ai_report_templates_export(
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 145 T1 — AI report templates CSV."""
+    text = await ai_ops_export_svc.export_report_templates_csv(
+        db, tenant_id=claims["tenant_id"], user_id=claims.get("sub")
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_report_templates_export.csv"'
+        },
+    )
 
 
 @api.post("/ai/reports/templates")

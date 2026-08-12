@@ -1502,3 +1502,5 @@ Stage 142 D1 POS sales register, session Z-report & store cash drawer settings e
 Stage 143 D1 company profile, jobs catalog & onboarding checklist export fidelity — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 144 D1 webhook deliveries, inventory FEFO settings & audit archives export fidelity — `docs/STAGE_144_FIDELITY.md` (`test_stage144_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 145 D1 AI security alerts, report templates & business insights export fidelity — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

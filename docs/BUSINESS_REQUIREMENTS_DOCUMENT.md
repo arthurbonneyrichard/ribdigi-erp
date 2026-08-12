@@ -871,6 +871,7 @@ Stage 141 D1 — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`); 
 Stage 142 D1 — `docs/STAGE_142_FIDELITY.md` (`test_stage142_fidelity_d1.py`); Stage 142 S1 / Z1 / C1.
 Stage 143 D1 — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`); Stage 143 P1 / J1 / O1.
 Stage 144 D1 — `docs/STAGE_144_FIDELITY.md` (`test_stage144_fidelity_d1.py`); Stage 144 W1 / F1 / A1.
+Stage 145 D1 — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`); Stage 145 S1 / T1 / I1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1572,3 +1573,5 @@ Stage 142 D1 POS sales register, session Z-report & store cash drawer settings e
 Stage 143 D1 company profile, jobs catalog & onboarding checklist export fidelity — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`); Stage 143 P1 company profile CSV; Stage 143 J1 jobs catalog CSV; Stage 143 O1 onboarding checklist CSV.
 
 Stage 144 D1 webhook deliveries, inventory FEFO settings & audit archives export fidelity — `docs/STAGE_144_FIDELITY.md` (`test_stage144_fidelity_d1.py`); Stage 144 W1 webhook deliveries CSV; Stage 144 F1 FEFO settings CSV; Stage 144 A1 audit archives CSV.
+
+Stage 145 D1 AI security alerts, report templates & business insights export fidelity — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`); Stage 145 S1 security alerts CSV; Stage 145 T1 report templates CSV; Stage 145 I1 business insights CSV.

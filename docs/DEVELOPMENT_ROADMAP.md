@@ -2342,6 +2342,18 @@ Every feature in every phase must meet:
 
 **Stage 144 exit (2026-08-12):** W1, F1, A1, D1, H144x met — `docs/STAGE_144_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_295_STAGE144_FREEZE.md`. Fidelity: `docs/STAGE_144_FIDELITY.md`.
 
+**Stage 145 open (2026-08-12):** Tenant MVP AI Security Alerts CSV, Report Templates CSV & Business Insights CSV Export Fidelity — `docs/ADR_296_STAGE145_OPEN.md` + `docs/STAGE_145_PLAN.md` (Security alerts → Templates → Insights → Fidelity; S1 next).
+
+**Stage 145 S1 (2026-08-12):** AI security alerts CSV (`test_stage145_security_alerts_s1.py`).
+
+**Stage 145 T1 (2026-08-12):** Report templates CSV (`test_stage145_report_templates_t1.py`).
+
+**Stage 145 I1 (2026-08-12):** Business insights CSV (`test_stage145_business_insights_i1.py`).
+
+**Stage 145 D1 (2026-08-12):** AI security / templates / insights export fidelity sync — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`).
+
+**Stage 145 exit (2026-08-12):** S1, T1, I1, D1, H145x met — `docs/STAGE_145_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_297_STAGE145_FREEZE.md`. Fidelity: `docs/STAGE_145_FIDELITY.md`.
+
 
 
 

@@ -23,4 +23,4 @@ Stage 144 Tenant MVP Webhook Deliveries CSV, Inventory FEFO Settings CSV & Audit
 
 ## Next stage
 
-Stage 145 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 144 feature scope remains frozen.
+Stage 145 opened via CONTINUE/NEXT as **Tenant MVP AI Security Alerts CSV, Report Templates CSV & Business Insights CSV Export Fidelity** ([ADR-296](ADR_296_STAGE145_OPEN.md)) and closed under [ADR-297](ADR_297_STAGE145_FREEZE.md). Stage 144 feature scope remains frozen.

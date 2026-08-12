@@ -351,6 +351,34 @@ export default function Page() {
     }
   }
 
+  async function downloadAiCsv(path: string, filename: string) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}${path}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || `${filename} export failed`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage(`${filename} exported`);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   async function loadInsightCards() {
     try {
       const r = await api('/ai/insights');
@@ -827,7 +855,18 @@ export default function Page() {
           <button type="button" onClick={loadReportTemplates}>
             Refresh templates
           </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv('/ai/reports/templates/export', 'ai_report_templates_export.csv')
+            }
+          >
+            Export templates CSV
+          </button>
         </div>
+        <p className="muted" style={{ marginTop: 8 }}>
+          Templates CSV via <code>GET /ai/reports/templates/export</code> (Stage 145 T1).
+        </p>
         {reportResult && (
           <div style={{ marginTop: 12 }}>
             <p>
@@ -861,11 +900,25 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }} id="security">
         <h3>Security monitor</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Unusual logins and suspicious transaction bursts from audit history.
+          Unusual logins and suspicious transaction bursts from audit history. Export via{' '}
+          <code>GET /ai/security/alerts/export</code> (Stage 145 S1).
         </p>
-        <button type="button" onClick={loadSecurityAlerts} style={{ marginBottom: 12 }}>
-          Refresh security alerts
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={loadSecurityAlerts}>
+            Refresh security alerts
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv(
+                '/ai/security/alerts/export?lookback_hours=72',
+                'ai_security_alerts_export.csv'
+              )
+            }
+          >
+            Export security alerts CSV
+          </button>
+        </div>
         {securityAlerts.length === 0 && <p className="muted">No security alerts in the lookback window</p>}
         {securityAlerts.slice(0, 12).map((a) => (
           <div key={a.id} style={{ borderTop: '1px solid #e5e7eb', paddingTop: 8, marginBottom: 8 }}>
@@ -885,11 +938,22 @@ export default function Page() {
         <p className="muted" style={{ marginBottom: 8 }}>
           Sales spikes/drops, purchase spend and overdue bills, expense anomalies, and restock
           suggestions — cited to Inventory, Sales, Purchases, and Expenses actuals.
-          {insightActuals.length > 0 ? ` Covered: ${insightActuals.join(', ')}.` : null}
+          {insightActuals.length > 0 ? ` Covered: ${insightActuals.join(', ')}.` : null} Export via{' '}
+          <code>GET /ai/insights/export</code> (Stage 145 I1).
         </p>
-        <button type="button" onClick={loadInsights} style={{ marginBottom: 12 }}>
-          Refresh insights
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={loadInsights}>
+            Refresh insights
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv('/ai/insights/export', 'ai_business_insights_export.csv')
+            }
+          >
+            Export insights CSV
+          </button>
+        </div>
         {insightCards.length === 0 && <p className="muted">No insight cards yet</p>}
         {insightCards.map((c) => (
           <div key={c.id} style={{ marginBottom: 12, borderTop: '1px solid #e5e7eb', paddingTop: 8 }}>

@@ -1670,3 +1670,5 @@ Stage 142 D1 — `docs/STAGE_142_FIDELITY.md` (`test_stage142_fidelity_d1.py`): 
 Stage 143 D1 — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`): Stage 143 P1 `GET /tenants/me/export`; Stage 143 J1 `GET /jobs/export` (broker/result URLs never included); Stage 143 O1 `GET /onboarding/checklist/export`.
 
 Stage 144 D1 — `docs/STAGE_144_FIDELITY.md` (`test_stage144_fidelity_d1.py`): Stage 144 W1 `GET /webhooks/deliveries` + `/export` (payload excluded); Stage 144 F1 `GET /inventory/settings/export`; Stage 144 A1 `GET /audit-logs/archives/export`.
+
+Stage 145 D1 — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`): Stage 145 S1 `GET /ai/security/alerts/export`; Stage 145 T1 `GET /ai/reports/templates/export`; Stage 145 I1 `GET /ai/insights/export`.
