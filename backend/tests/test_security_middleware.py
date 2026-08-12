@@ -1,7 +1,7 @@
 import pytest
 
 from app.middleware import RateLimitMiddleware, AUTH_PATH_PREFIXES
-from app.rate_limit import RateLimiter
+from app.rate_limit import RateLimiter, rate_limiter
 from app.config import Settings
 
 
@@ -57,6 +57,39 @@ def test_production_rejects_require_redis_with_memory():
 
 def test_auth_path_prefixes_cover_login():
     assert any(p.endswith("/auth/login") for p in AUTH_PATH_PREFIXES)
+    assert any(p.endswith("/auth/refresh") for p in AUTH_PATH_PREFIXES)
+
+
+def test_rate_limit_headers_and_tenant_buckets(monkeypatch):
+    """X-RateLimit-* headers; buckets isolate by X-Tenant-ID."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_ENABLED", True)
+    monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_PER_MINUTE", 2)
+    monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_AUTH_PER_MINUTE", 2)
+    monkeypatch.setattr("app.rate_limit.settings.RATE_LIMIT_BACKEND", "memory")
+    monkeypatch.setattr("app.rate_limit.settings.RATE_LIMIT_REQUIRE_REDIS", False)
+    rate_limiter.reset_for_tests()
+
+    client = TestClient(app)
+    first = client.get("/api/v1/health", headers={"X-Tenant-ID": "tenant-alpha"})
+    assert first.status_code == 200
+    assert "X-RateLimit-Limit" in first.headers
+    assert "X-RateLimit-Remaining" in first.headers
+    assert "X-RateLimit-Backend" in first.headers
+    assert first.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+
+    assert client.get("/api/v1/health", headers={"X-Tenant-ID": "tenant-alpha"}).status_code == 200
+    blocked = client.get("/api/v1/health", headers={"X-Tenant-ID": "tenant-alpha"})
+    assert blocked.status_code == 429
+    assert blocked.json()["detail"] == "RATE_LIMIT_EXCEEDED"
+    assert "Retry-After" in blocked.headers
+    assert blocked.headers.get("X-RateLimit-Remaining") == "0"
+
+    other = client.get("/api/v1/health", headers={"X-Tenant-ID": "tenant-beta"})
+    assert other.status_code == 200
+    assert int(other.headers.get("X-RateLimit-Remaining", "0")) >= 0
 
 
 def test_rate_limit_allows_under_cap(monkeypatch):
@@ -87,7 +120,9 @@ def test_security_headers_on_root():
 
 
 @pytest.mark.asyncio
-async def test_memory_backend_remaining():
+async def test_memory_backend_remaining(monkeypatch):
+    monkeypatch.setattr("app.rate_limit.settings.RATE_LIMIT_BACKEND", "memory")
+    monkeypatch.setattr("app.rate_limit.settings.RATE_LIMIT_REQUIRE_REDIS", False)
     limiter = RateLimiter()
     limiter.reset_for_tests()
     allowed, retry, remaining = await limiter.allow("t:api", 2)
