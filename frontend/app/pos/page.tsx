@@ -41,6 +41,8 @@ type Customer = {
   name: string;
   email?: string | null;
   phone?: string | null;
+  customer_group_id?: string | null;
+  customer_group?: { id: string; name: string; discount_percent: number } | null;
 };
 
 type Store = {
@@ -252,13 +254,23 @@ export default function Page() {
   const [shiftReport, setShiftReport] = useState<any>(null);
   const [reportBusy, setReportBusy] = useState(false);
 
+  const groupDiscountPct = useMemo(() => {
+    const match = customers.find((c) => c.id === customerId);
+    return Math.max(0, Math.min(100, Number(match?.customer_group?.discount_percent || 0)));
+  }, [customers, customerId]);
+
+  function groupUnitPrice(listPrice: number) {
+    return Math.round(Number(listPrice) * (1 - groupDiscountPct / 100) * 100) / 100;
+  }
+
   const cartTotals = useMemo(() => {
     let subtotal = 0;
     let tax = 0;
     for (const c of cart) {
+      const unit = groupUnitPrice(Number(c.selling_price));
       const taxable = Math.max(
         0,
-        Math.round((Number(c.selling_price) * c.quantity - (Number(c.discount) || 0)) * 100) / 100
+        Math.round((unit * c.quantity - (Number(c.discount) || 0)) * 100) / 100
       );
       const amounts = computeLineTaxAmounts(
         taxable,
@@ -276,7 +288,7 @@ export default function Page() {
     const discount = Math.max(0, Number(cartDiscount) || 0);
     const due = Math.max(0, Math.round((subtotal + tax - discount) * 100) / 100);
     return { subtotal, tax, maxDiscount, due };
-  }, [cart, cartDiscount]);
+  }, [cart, cartDiscount, groupDiscountPct]);
   const cartDiscountAmount = Math.max(0, Number(cartDiscount) || 0);
   const cartTotal = cartTotals.due;
   const cartCount = useMemo(() => cart.reduce((sum, c) => sum + c.quantity, 0), [cart]);
@@ -961,7 +973,8 @@ export default function Page() {
             <div className="tpos-cart-list">
               {cart.length === 0 && <p className="muted">Tap a product image to add it.</p>}
               {cart.map((c) => {
-                const lineMerch = Number(c.selling_price) * c.quantity;
+                const unit = groupUnitPrice(Number(c.selling_price));
+                const lineMerch = unit * c.quantity;
                 const taxable = Math.max(0, Math.round((lineMerch - (Number(c.discount) || 0)) * 100) / 100);
                 const lineAmounts = computeLineTaxAmounts(
                   taxable,
@@ -981,7 +994,10 @@ export default function Page() {
                     </div>
                     <div className="tpos-cart-info">
                       <strong>{c.name}</strong>
-                      <span>{money(Number(c.selling_price))} each</span>
+                      <span>
+                        {money(unit)} each
+                        {groupDiscountPct > 0 ? ` (−${groupDiscountPct}% group)` : ''}
+                      </span>
                       <label className="tpos-line-disc">
                         <span>Disc</span>
                         <input
@@ -1047,6 +1063,13 @@ export default function Page() {
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
+                      {c.customer_group
+                        ? ` [${c.customer_group.name}${
+                            c.customer_group.discount_percent
+                              ? ` −${c.customer_group.discount_percent}%`
+                              : ''
+                          }]`
+                        : ''}
                     </option>
                   ))}
                 </select>

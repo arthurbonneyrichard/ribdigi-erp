@@ -370,6 +370,21 @@ class StockMovement(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class CustomerGroup(Base):
+    """Tenant customer segment with default list-price discount (BR-7.1)."""
+
+    __tablename__ = "customer_groups"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(120))
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Party(Base):
     __tablename__ = "parties"
 
@@ -381,6 +396,9 @@ class Party(Base):
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     credit_limit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    customer_group_id: Mapped[str | None] = mapped_column(
+        ForeignKey("customer_groups.id"), nullable=True, index=True
+    )
 
 
 class Transaction(Base):

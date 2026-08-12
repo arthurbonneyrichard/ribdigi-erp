@@ -230,7 +230,9 @@ async def create_sales_invoice(
     reverse_charge_tax = 0.0
     prepared: list[tuple[dict, float]] = []
     for item in items:
-        product, variant, unit_price = await resolve_sale_line(db, tenant_id, item)
+        product, variant, unit_price = await resolve_sale_line(
+            db, tenant_id, item, customer_id=customer_id
+        )
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(

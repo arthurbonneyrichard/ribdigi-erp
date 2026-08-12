@@ -49,6 +49,7 @@ export default function Page() {
   const [orders, setOrders] = useState<any[]>([]);
   const [returns, setReturns] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
@@ -59,7 +60,11 @@ export default function Page() {
   const [exchangeRate, setExchangeRate] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerGroupId, setCustomerGroupId] = useState('');
   const [creditLimit, setCreditLimit] = useState('0');
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDiscount, setNewGroupDiscount] = useState('0');
+  const [useGroupPrice, setUseGroupPrice] = useState(true);
   const [productId, setProductId] = useState('');
   const [variantId, setVariantId] = useState('');
   const [qty, setQty] = useState('1');
@@ -81,16 +86,18 @@ export default function Page() {
   const [qtPreview, setQtPreview] = useState('');
 
   async function refresh() {
-    const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, settingsRes] = await Promise.all([
-      api('/sales/invoices'),
-      api('/customers'),
-      api('/products'),
-      api('/sales/quotations'),
-      api('/sales/orders'),
-      api('/sales/returns'),
-      api('/stores'),
-      api('/sales/settings').catch(() => ({ data: null })),
-    ]);
+    const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes] =
+      await Promise.all([
+        api('/sales/invoices'),
+        api('/customers'),
+        api('/products'),
+        api('/sales/quotations'),
+        api('/sales/orders'),
+        api('/sales/returns'),
+        api('/stores'),
+        api('/sales/settings').catch(() => ({ data: null })),
+        api('/customers/groups').catch(() => ({ data: [] })),
+      ]);
     setInvoices(invRes.data || []);
     setCustomers(custRes.data || []);
     setProducts(prodRes.data || []);
@@ -98,6 +105,7 @@ export default function Page() {
     setOrders(oRes.data || []);
     setReturns(rRes.data || []);
     setStores(storeRes.data || []);
+    setGroups(groupRes.data || []);
     const numbering = settingsRes.data?.invoice_numbering;
     if (numbering) {
       setInvPrefix(numbering.prefix || 'INV');
@@ -130,29 +138,49 @@ export default function Page() {
   useEffect(() => {
     if (!variantId) return;
     const variant = variants.find((v) => v.id === variantId);
-    if (variant) setUnitPrice(String(variant.selling_price ?? 0));
-  }, [variantId, variants]);
+    if (variant && !useGroupPrice) setUnitPrice(String(variant.selling_price ?? 0));
+  }, [variantId, variants, useGroupPrice]);
+
+  useEffect(() => {
+    if (!productId || !useGroupPrice) return;
+    let cancelled = false;
+    const qs = new URLSearchParams();
+    if (customerId) qs.set('customer_id', customerId);
+    if (variantId) qs.set('variant_id', variantId);
+    api(`/products/${productId}/price?${qs.toString()}`)
+      .then((r) => {
+        if (!cancelled && r.data?.unit_price != null) {
+          setUnitPrice(String(r.data.unit_price));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [productId, variantId, customerId, useGroupPrice]);
+
+  const lineItems = [
+    {
+      product_id: productId,
+      variant_id: variantId || null,
+      quantity: Number(qty),
+      ...(useGroupPrice ? {} : { unit_price: Number(unitPrice) }),
+      tax_rate: taxRate === '' ? null : Number(taxRate),
+    },
+  ];
 
   const linePayload = {
     customer_id: customerId,
     store_id: storeId || null,
     delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : null,
     delivery_address: deliveryAddress.trim() || null,
-    items: [
-      {
-        product_id: productId,
-        variant_id: variantId || null,
-        quantity: Number(qty),
-        unit_price: Number(unitPrice),
-        tax_rate: taxRate === '' ? null : Number(taxRate),
-      },
-    ],
+    items: lineItems,
   };
 
   const invoicePayload = {
     customer_id: customerId,
     store_id: storeId || null,
-    items: linePayload.items,
+    items: lineItems,
     currency: currency.trim() || null,
     exchange_rate: exchangeRate === '' ? null : Number(exchangeRate),
   };
@@ -166,13 +194,52 @@ export default function Page() {
           name: customerName,
           email: customerEmail || null,
           credit_limit: Number(creditLimit) || 0,
+          customer_group_id: customerGroupId || null,
         }),
       });
       setCustomerId(r.data.id);
       setCustomerName('');
       setCustomerEmail('');
+      setCustomerGroupId('');
       await refresh();
       setMessage('Customer created');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createGroup() {
+    setError('');
+    try {
+      await api('/customers/groups', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newGroupName,
+          discount_percent: Number(newGroupDiscount) || 0,
+        }),
+      });
+      setNewGroupName('');
+      setNewGroupDiscount('0');
+      await refresh();
+      setMessage('Customer group created');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function assignCustomerGroup() {
+    if (!customerId || !customerGroupId) {
+      setError('Select a customer and group to assign');
+      return;
+    }
+    setError('');
+    try {
+      await api(`/customers/${customerId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ customer_group_id: customerGroupId }),
+      });
+      await refresh();
+      setMessage('Customer group assigned');
     } catch (err: any) {
       setError(err.message);
     }
@@ -372,12 +439,35 @@ export default function Page() {
       </div>
 
       <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <strong>Customer groups</strong>
+          {groups.map((g) => (
+            <span key={g.id} className="muted">
+              {g.name} (−{g.discount_percent}%)
+            </span>
+          ))}
+          <input
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            placeholder="New group name"
+          />
+          <input
+            value={newGroupDiscount}
+            onChange={(e) => setNewGroupDiscount(e.target.value)}
+            placeholder="Discount %"
+            style={{ width: 100 }}
+          />
+          <button type="button" onClick={createGroup}>
+            Add group
+          </button>
+        </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
             <option value="">Customer</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
+                {c.customer_group ? ` [${c.customer_group.name}]` : ''}
                 {c.email ? ` (${c.email})` : ''}
               </option>
             ))}
@@ -420,10 +510,23 @@ export default function Page() {
             onChange={(e) => setCustomerEmail(e.target.value)}
             placeholder="Customer email"
           />
+          <select value={customerGroupId} onChange={(e) => setCustomerGroupId(e.target.value)}>
+            <option value="">Group (optional)</option>
+            {groups
+              .filter((g) => g.is_active !== false)
+              .map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} (−{g.discount_percent}%)
+                </option>
+              ))}
+          </select>
           <input value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="Credit limit" />
           <button onClick={createCustomer}>Add customer</button>
+          <button type="button" onClick={assignCustomerGroup}>
+            Assign group
+          </button>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={productId} onChange={(e) => setProductId(e.target.value)}>
             <option value="">Product</option>
             {products.map((p) => (
@@ -443,7 +546,23 @@ export default function Page() {
             </select>
           )}
           <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Qty" style={{ width: 80 }} />
-          <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Price" style={{ width: 100 }} />
+          <input
+            value={unitPrice}
+            onChange={(e) => {
+              setUseGroupPrice(false);
+              setUnitPrice(e.target.value);
+            }}
+            placeholder="Price"
+            style={{ width: 100 }}
+          />
+          <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              checked={useGroupPrice}
+              onChange={(e) => setUseGroupPrice(e.target.checked)}
+            />
+            Group price
+          </label>
           <input value={taxRate} onChange={(e) => setTaxRate(e.target.value)} placeholder="Tax %" style={{ width: 80 }} />
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

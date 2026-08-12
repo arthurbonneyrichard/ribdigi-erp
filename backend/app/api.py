@@ -87,6 +87,9 @@ from app.schemas import (
     Login,
     NotificationPreferencesUpdate,
     PartyCreate,
+    PartyUpdate,
+    CustomerGroupCreate,
+    CustomerGroupUpdate,
     PasswordResetConfirm,
     PasswordResetRequest,
     PosSaleCreate,
@@ -201,6 +204,9 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
     await ensure_default_accounts(db, tenant_id)
     await expenses_svc.ensure_default_categories(db, tenant_id)
     await catalog_meta_svc.ensure_default_catalog(db, tenant_id)
+    from app import customer_groups as customer_groups_svc
+
+    await customer_groups_svc.ensure_default_groups(db, tenant_id)
     from app.notifications import create_notification
 
     await create_notification(
@@ -3358,9 +3364,109 @@ async def party_list(kind: str, claims: dict, db: AsyncSession):
     return env(rows)
 
 
+def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict:
+    data = {
+        "id": row.id,
+        "tenant_id": row.tenant_id,
+        "kind": row.kind,
+        "name": row.name,
+        "email": row.email,
+        "phone": row.phone,
+        "credit_limit": float(row.credit_limit or 0),
+        "balance": float(row.balance or 0),
+        "customer_group_id": getattr(row, "customer_group_id", None),
+    }
+    if group is not None:
+        from app.customer_groups import serialize_group
+
+        data["customer_group"] = serialize_group(group)
+    else:
+        data["customer_group"] = None
+    return data
+
+
+@api.get("/customers/groups")
+async def list_customer_groups(
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import customer_groups as customer_groups_svc
+
+    rows = await customer_groups_svc.list_groups(db, claims["tenant_id"])
+    await db.commit()
+    return env([customer_groups_svc.serialize_group(r) for r in rows])
+
+
+@api.post("/customers/groups")
+async def create_customer_group(
+    payload: CustomerGroupCreate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import customer_groups as customer_groups_svc
+
+    row = await customer_groups_svc.create_group(
+        db,
+        tenant_id=claims["tenant_id"],
+        name=payload.name,
+        code=payload.code,
+        discount_percent=payload.discount_percent,
+    )
+    await db.commit()
+    await db.refresh(row)
+    return env(customer_groups_svc.serialize_group(row))
+
+
+@api.patch("/customers/groups/{group_id}")
+async def patch_customer_group(
+    group_id: str,
+    payload: CustomerGroupUpdate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import customer_groups as customer_groups_svc
+
+    row = await customer_groups_svc.update_group(
+        db,
+        tenant_id=claims["tenant_id"],
+        group_id=group_id,
+        name=payload.name,
+        discount_percent=payload.discount_percent,
+        is_active=payload.is_active,
+    )
+    await db.commit()
+    await db.refresh(row)
+    return env(customer_groups_svc.serialize_group(row))
+
+
 @api.get("/customers")
 async def customers(claims=Depends(require_permission("sales", "read")), db: AsyncSession = Depends(get_db)):
-    return await party_list("customer", claims, db)
+    from app import customer_groups as customer_groups_svc
+
+    await customer_groups_svc.ensure_default_groups(db, claims["tenant_id"])
+    rows = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "customer"
+            )
+        )
+    ).scalars().all()
+    group_ids = {r.customer_group_id for r in rows if r.customer_group_id}
+    groups: dict[str, m.CustomerGroup] = {}
+    if group_ids:
+        groups = {
+            g.id: g
+            for g in (
+                await db.execute(
+                    select(m.CustomerGroup).where(
+                        m.CustomerGroup.tenant_id == claims["tenant_id"],
+                        m.CustomerGroup.id.in_(group_ids),
+                    )
+                )
+            ).scalars().all()
+        }
+    await db.commit()
+    return env([_serialize_party(r, groups.get(r.customer_group_id)) for r in rows])
 
 
 @api.post("/customers")
@@ -3369,10 +3475,106 @@ async def add_customer(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    party = m.Party(tenant_id=claims["tenant_id"], kind="customer", **payload.model_dump())
+    from app import customer_groups as customer_groups_svc
+
+    data = payload.model_dump()
+    group_id = data.pop("customer_group_id", None)
+    if group_id:
+        await customer_groups_svc.get_group(db, claims["tenant_id"], group_id)
+    party = m.Party(
+        tenant_id=claims["tenant_id"],
+        kind="customer",
+        customer_group_id=group_id,
+        **data,
+    )
     db.add(party)
     await db.commit()
-    return env({"id": party.id})
+    await db.refresh(party)
+    group = None
+    if party.customer_group_id:
+        group = await customer_groups_svc.get_group(
+            db, claims["tenant_id"], party.customer_group_id
+        )
+    return env(_serialize_party(party, group))
+
+
+@api.patch("/customers/{customer_id}")
+async def patch_customer(
+    customer_id: str,
+    payload: PartyUpdate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import customer_groups as customer_groups_svc
+
+    party = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == customer_id,
+                m.Party.tenant_id == claims["tenant_id"],
+                m.Party.kind == "customer",
+            )
+        )
+    ).scalar_one_or_none()
+    if not party:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    data = payload.model_dump(exclude_unset=True)
+    if "customer_group_id" in data:
+        group_id = data["customer_group_id"]
+        if group_id:
+            await customer_groups_svc.get_group(db, claims["tenant_id"], group_id)
+        party.customer_group_id = group_id
+        data.pop("customer_group_id")
+    for key, value in data.items():
+        setattr(party, key, value)
+    await db.commit()
+    await db.refresh(party)
+    group = None
+    if party.customer_group_id:
+        group = await customer_groups_svc.get_group(
+            db, claims["tenant_id"], party.customer_group_id
+        )
+    return env(_serialize_party(party, group))
+
+
+@api.get("/products/{product_id}/price")
+async def product_price_for_customer(
+    product_id: str,
+    customer_id: str | None = None,
+    variant_id: str | None = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.catalog import get_product, get_variant, resolve_sale_line
+    from app import customer_groups as customer_groups_svc
+
+    product = await get_product(db, claims["tenant_id"], product_id)
+    variant = None
+    if variant_id:
+        variant = await get_variant(db, claims["tenant_id"], variant_id)
+    list_price = float(
+        (variant.selling_price if variant is not None else product.selling_price) or 0
+    )
+    _product, _variant, unit_price = await resolve_sale_line(
+        db,
+        claims["tenant_id"],
+        {"product_id": product_id, "variant_id": variant_id},
+        customer_id=customer_id,
+    )
+    pct, group = await customer_groups_svc.customer_group_discount(
+        db, claims["tenant_id"], customer_id
+    )
+    return env(
+        {
+            "product_id": product_id,
+            "variant_id": variant_id,
+            "customer_id": customer_id,
+            "list_price": list_price,
+            "unit_price": unit_price,
+            "discount_percent": pct,
+            "customer_group": customer_groups_svc.serialize_group(group) if group else None,
+        }
+    )
 
 
 @api.get("/suppliers")
@@ -3386,7 +3588,9 @@ async def add_supplier(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    party = m.Party(tenant_id=claims["tenant_id"], kind="supplier", **payload.model_dump())
+    data = payload.model_dump()
+    data.pop("customer_group_id", None)
+    party = m.Party(tenant_id=claims["tenant_id"], kind="supplier", **data)
     db.add(party)
     await db.commit()
     return env({"id": party.id})
@@ -5010,7 +5214,12 @@ async def pos_sale(
     line_discounts = 0.0
     priced_items = []
     for item in items:
-        product, variant, unit_price = await resolve_sale_line(db, claims["tenant_id"], item)
+        product, variant, unit_price = await resolve_sale_line(
+            db,
+            claims["tenant_id"],
+            item,
+            customer_id=payload.party_id,
+        )
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
         line_discount = round(float(item.get("discount") or 0), 2)
         if line_discount < 0:
