@@ -865,6 +865,33 @@ export default function Page() {
     }
   }
 
+  async function downloadPoAmendmentsExport(poId: string) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const res = await fetch(`${apiBase}/purchasing/orders/${poId}/amendments/export`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('PO amendments CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `po_${poId}_amendments_export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('PO amendments CSV downloaded (Stage 154 A1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   async function amendSelectedPo() {
     if (!selected) return;
     setError('');
@@ -2019,6 +2046,15 @@ export default function Page() {
               {amendments.length > 0 && (
                 <div style={{ marginTop: 16 }}>
                   <h4>Amendment history</h4>
+                  <p className="muted">
+                    Export via <code>{'GET /purchasing/orders/{id}/amendments/export'}</code> (Stage
+                    154 A1).
+                  </p>
+                  <p style={{ marginTop: 8 }}>
+                    <button type="button" onClick={() => downloadPoAmendmentsExport(selected.id)}>
+                      Export amendments CSV
+                    </button>
+                  </p>
                   <ul>
                     {amendments.map((a) => (
                       <li key={a.id}>
@@ -2031,6 +2067,13 @@ export default function Page() {
                     ))}
                   </ul>
                 </div>
+              )}
+              {selected?.id && amendments.length === 0 && (
+                <p style={{ marginTop: 12 }}>
+                  <button type="button" onClick={() => downloadPoAmendmentsExport(selected.id)}>
+                    Export amendments CSV
+                  </button>
+                </p>
               )}
             </div>
           )}

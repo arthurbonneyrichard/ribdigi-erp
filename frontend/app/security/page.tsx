@@ -321,6 +321,32 @@ export default function Page() {
     }
   }
 
+  async function downloadApiKeyUsageExport(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/api-keys/${id}/usage/export?days=30`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('API key usage CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `api_key_${id}_usage_export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('API key usage CSV downloaded (Stage 154 U1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   async function createWebhook() {
     setError('');
     setMessage('');
@@ -1033,6 +1059,15 @@ export default function Page() {
                   (last {apiKeyUsage.days} days · Σ {apiKeyUsage.period_requests})
                 </span>
               </h3>
+              <p className="muted">
+                Export via <code>{'GET /api-keys/{id}/usage/export'}</code> (Stage 154 U1; no raw
+                secrets).
+              </p>
+              <p style={{ margin: '8px 0' }}>
+                <button type="button" onClick={() => downloadApiKeyUsageExport(apiKeyUsageId)}>
+                  Export usage CSV
+                </button>
+              </p>
               <ApiKeyUsageChart series={apiKeyUsage.series || []} />
             </div>
           )}

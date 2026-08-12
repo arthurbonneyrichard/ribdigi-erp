@@ -23,6 +23,19 @@ API_KEY_EXPORT_COLUMNS = [
     "created_at",
 ]
 
+API_KEY_USAGE_EXPORT_COLUMNS = [
+    "row_type",
+    "api_key_id",
+    "name",
+    "key_prefix",
+    "days",
+    "total_requests",
+    "period_requests",
+    "last_used_at",
+    "usage_date",
+    "requests",
+]
+
 FX_RATE_EXPORT_COLUMNS = [
     "base_currency",
     "currency_code",
@@ -85,6 +98,52 @@ async def export_api_keys_csv(
                 "expires_at": _cell(data.get("expires_at")),
                 "revoked_at": _cell(data.get("revoked_at")),
                 "created_at": _cell(data.get("created_at")),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_api_key_usage_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    key_id: str,
+    days: int = 30,
+) -> str:
+    """Stage 154 U1 — API key usage series CSV (no raw secrets)."""
+    stats = await api_keys_svc.usage_stats(db, tenant_id, key_id, days=days)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=API_KEY_USAGE_EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerow(
+        {
+            "row_type": "summary",
+            "api_key_id": _cell(stats.get("api_key_id")),
+            "name": _cell(stats.get("name")),
+            "key_prefix": _cell(stats.get("key_prefix")),
+            "days": _cell(stats.get("days")),
+            "total_requests": _cell(stats.get("total_requests")),
+            "period_requests": _cell(stats.get("period_requests")),
+            "last_used_at": _cell(stats.get("last_used_at")),
+            "usage_date": "",
+            "requests": "",
+        }
+    )
+    for point in stats.get("series") or []:
+        if not isinstance(point, dict):
+            continue
+        writer.writerow(
+            {
+                "row_type": "day",
+                "api_key_id": _cell(stats.get("api_key_id")),
+                "name": _cell(stats.get("name")),
+                "key_prefix": _cell(stats.get("key_prefix")),
+                "days": _cell(stats.get("days")),
+                "total_requests": _cell(stats.get("total_requests")),
+                "period_requests": _cell(stats.get("period_requests")),
+                "last_used_at": _cell(stats.get("last_used_at")),
+                "usage_date": _cell(point.get("date")),
+                "requests": _cell(point.get("requests")),
             }
         )
     return buf.getvalue()

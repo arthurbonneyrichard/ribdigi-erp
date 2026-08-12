@@ -5078,6 +5078,25 @@ async def list_product_batches(
     return env([catalog_svc.serialize_batch(b) for b in rows])
 
 
+@api.get("/products/{product_id}/batches/export")
+async def export_product_batches(
+    product_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 154 K1 — per-product batches CSV (distinct from Stage 137 expiring export)."""
+    text = await inventory_ops_export_svc.export_product_batches_csv(
+        db, tenant_id=claims["tenant_id"], product_id=product_id
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="product_{product_id}_batches_export.csv"'
+        },
+    )
+
+
 @api.get("/inventory/batches/expiring")
 async def inventory_batches_expiring(
     days: int = 30,
@@ -7040,6 +7059,25 @@ async def list_purchase_order_amendments(
     assert_record_access(claims, po.created_by)
     rows = await purchasing_svc.list_po_amendments(db, claims["tenant_id"], po_id)
     return env([purchasing_svc.serialize_po_amendment(r) for r in rows])
+
+
+@api.get("/purchasing/orders/{po_id}/amendments/export")
+async def export_purchase_order_amendments(
+    po_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 154 A1 — purchase order amendment history CSV."""
+    text = await purchasing_pipeline_export_svc.export_po_amendments_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, po_id=po_id
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="po_{po_id}_amendments_export.csv"'
+        },
+    )
 
 
 @api.post("/purchasing/orders/{po_id}/send")
@@ -12790,6 +12828,26 @@ async def api_keys_usage(
 ):
     """Stage 7 K2 — request totals and per-day series for the usage chart."""
     return env(await api_keys_svc.usage_stats(db, claims["tenant_id"], key_id, days=days))
+
+
+@api.get("/api-keys/{key_id}/usage/export")
+async def api_keys_usage_export(
+    key_id: str,
+    days: int = 30,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 154 U1 — API key usage series CSV (no raw secrets)."""
+    text = await api_fx_schedule_export_svc.export_api_key_usage_csv(
+        db, tenant_id=claims["tenant_id"], key_id=key_id, days=days
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="api_key_{key_id}_usage_export.csv"'
+        },
+    )
 
 
 @api.delete("/api-keys/{key_id}")

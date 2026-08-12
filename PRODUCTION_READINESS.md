@@ -197,3 +197,5 @@ Stage 151 D1 Tenant MVP Platform Health Checks CSV, Platform Operator Evidence C
 Stage 152 D1 Tenant MVP Platform Dashboard Aggregates CSV, Platform Industries Catalog CSV & Admin Permissions Matrix CSV Export Fidelity — `docs/STAGE_152_FIDELITY.md` (`test_stage152_fidelity_d1.py`); Stage 152 G1 Complete; Stage 152 I1 Complete; Stage 152 M1 Complete (MVP honesty); exit `docs/STAGE_152_EXIT_CRITERIA.md`, ADR-311.
 
 Stage 153 D1 Tenant MVP Tenant Dashboard Aggregates CSV, Customer History CSV & Supplier History CSV Export Fidelity — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`); Stage 153 B1 Complete; Stage 153 C1 Complete; Stage 153 S1 Complete (MVP honesty); exit `docs/STAGE_153_EXIT_CRITERIA.md`, ADR-313.
+
+Stage 154 D1 Tenant MVP PO Amendments CSV, Product Batches CSV & API-Key Usage CSV Export Fidelity — `docs/STAGE_154_FIDELITY.md` (`test_stage154_fidelity_d1.py`); Stage 154 A1 Complete; Stage 154 K1 Complete; Stage 154 U1 Complete (MVP honesty); exit `docs/STAGE_154_EXIT_CRITERIA.md`, ADR-315.

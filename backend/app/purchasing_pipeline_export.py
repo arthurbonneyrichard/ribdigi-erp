@@ -78,6 +78,18 @@ RETURN_EXPORT_COLUMNS = [
     "created_at",
 ]
 
+PO_AMENDMENT_EXPORT_COLUMNS = [
+    "id",
+    "purchase_order_id",
+    "po_number",
+    "revision",
+    "reason",
+    "changed_by",
+    "before_total",
+    "after_total",
+    "created_at",
+]
+
 PR_STATUSES = {"draft", "pending", "approved", "rejected", "cancelled", "converted"}
 PO_STATUSES = {"draft", "sent", "partially_received", "received", "cancelled", "open"}
 GRN_STATUSES = {"draft", "posted"}
@@ -206,4 +218,45 @@ async def export_purchase_returns_csv(
     for row in rows:
         data = await purchasing_svc.serialize_purchase_return(db, row)
         writer.writerow({k: _cell(data.get(k)) for k in RETURN_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+async def export_po_amendments_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    claims: dict,
+    po_id: str,
+) -> str:
+    """Stage 154 A1 — purchase order amendment history CSV."""
+    po = await purchasing_svc.get_po(db, tenant_id, po_id)
+    from app.rbac import assert_record_access
+
+    assert_record_access(claims, po.created_by)
+    rows = await purchasing_svc.list_po_amendments(db, tenant_id, po_id)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=PO_AMENDMENT_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        data = purchasing_svc.serialize_po_amendment(row)
+        changes = data.get("changes") if isinstance(data.get("changes"), dict) else {}
+        before = (changes.get("before") or {}).get("header") if isinstance(changes.get("before"), dict) else {}
+        after = (changes.get("after") or {}).get("header") if isinstance(changes.get("after"), dict) else {}
+        if not isinstance(before, dict):
+            before = {}
+        if not isinstance(after, dict):
+            after = {}
+        writer.writerow(
+            {
+                "id": _cell(data.get("id")),
+                "purchase_order_id": _cell(data.get("purchase_order_id")),
+                "po_number": _cell(getattr(po, "po_number", None)),
+                "revision": _cell(data.get("revision")),
+                "reason": _cell(data.get("reason")),
+                "changed_by": _cell(data.get("changed_by")),
+                "before_total": _cell(before.get("total_amount")),
+                "after_total": _cell(after.get("total_amount")),
+                "created_at": _cell(data.get("created_at")),
+            }
+        )
     return buf.getvalue()

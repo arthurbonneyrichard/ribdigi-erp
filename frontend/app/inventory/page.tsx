@@ -2165,11 +2165,27 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 480 }}>
             <h3>Stock in with batch</h3>
+            <p className="muted">
+              Per-product batches via <code>{'GET /products/{id}/batches/export'}</code> (Stage 154
+              K1; distinct from Stage 137 expiring export).
+            </p>
             <input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Batch number" />
             <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
             <input value={stockQty} onChange={(e) => setStockQty(e.target.value)} placeholder="Quantity" />
             <button onClick={stockInBatch} disabled={!selectedId || !batchNumber}>
               Receive batch
+            </button>
+            <button
+              type="button"
+              disabled={!selectedId}
+              onClick={() =>
+                downloadCatalogCsv(
+                  `/products/${selectedId}/batches/export`,
+                  `product_${selectedId}_batches_export.csv`,
+                ).then(() => setMessage('Product batches CSV downloaded (Stage 154 K1)'))
+              }
+            >
+              Export product batches CSV
             </button>
           </div>
           <table className="table">

@@ -27,7 +27,7 @@ None for planned Stage 153 workstreams.
 - Admin remote-revoke-others; API-key un-revoke; FX soft-`is_active`
 - Main `ci.yml` deploy; reopen Stages 1–152
 - External LLM Complete; LAUNCH §§1–3 / §7 / go-live Completes
-- PO amendments CSV; product batches CSV; API-key usage CSV
+- PO amendments CSV; product batches CSV; API-key usage CSV (completed Stage 154)
 
 ## Freeze
 

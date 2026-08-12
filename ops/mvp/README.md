@@ -383,6 +383,9 @@ Authoritative MVP docs:
 - `docs/STAGE_153_EXIT_CRITERIA.md` / `docs/ADR_313_STAGE153_FREEZE.md` (`backend/tests/test_stage153_exit_h153x.py`) — Stage 153 H153x
 - `docs/STAGE_153_FIDELITY.md` (`backend/tests/test_stage153_fidelity_d1.py`) — Stage 153 D1
 - `docs/STAGE_153_PLAN.md` (`backend/tests/test_stage153_open.py`) — Stage 153 open (ADR-312)
+- `docs/STAGE_154_EXIT_CRITERIA.md` / `docs/ADR_315_STAGE154_FREEZE.md` (`backend/tests/test_stage154_exit_h154x.py`) — Stage 154 H154x
+- `docs/STAGE_154_FIDELITY.md` (`backend/tests/test_stage154_fidelity_d1.py`) — Stage 154 D1
+- `docs/STAGE_154_PLAN.md` (`backend/tests/test_stage154_open.py`) — Stage 154 open (ADR-314)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1756,6 +1759,18 @@ H153x met — `docs/STAGE_153_EXIT_CRITERIA.md`, ADR-313. Stages 1–153 frozen 
 ## Stage 153 open
 
 ADR-312 + `docs/STAGE_153_PLAN.md` — Tenant MVP Tenant Dashboard Aggregates CSV, Customer History CSV & Supplier History CSV Export Fidelity.
+
+## Stage 154 exit
+
+H154x met — `docs/STAGE_154_EXIT_CRITERIA.md`, ADR-315. Stages 1–154 frozen for Stage 154 feature scope.
+
+## Stage 154 D1 — Tenant MVP PO Amendments CSV, Product Batches CSV & API-Key Usage CSV Export Fidelity
+
+`docs/STAGE_154_FIDELITY.md` — maps A1–U1 → readiness / launch / deploy / security.
+
+## Stage 154 open
+
+ADR-314 + `docs/STAGE_154_PLAN.md` — Tenant MVP PO Amendments CSV, Product Batches CSV & API-Key Usage CSV Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

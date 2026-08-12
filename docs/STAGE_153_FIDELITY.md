@@ -37,7 +37,7 @@ Stage 153 proves Tenant MVP Tenant Dashboard Aggregates CSV, Customer History CS
 
 - ADR-002 billing Complete; fabricated MRR; live subscriptions; checkout
 - External LLM Complete; Stage 119 roster reopen; Stage 152 platform reopen
-- PO amendments CSV; product batches CSV; API-key usage CSV
+- PO amendments CSV; product batches CSV; API-key usage CSV (completed Stage 154)
 - POS Hold/Resume; admin remote-revoke-others; API-key un-revoke; FX soft-`is_active`
 - ADR-005 / ADR-003 / impersonation / LAUNCH §§1–3 / §7 / go-live
 - Reopening Stages 1–152; main `ci.yml` deploy jobs

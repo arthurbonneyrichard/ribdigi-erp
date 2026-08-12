@@ -38,7 +38,7 @@ Tenant MVP Tenant Dashboard Aggregates CSV, Customer History CSV & Supplier Hist
 - Admin remote-revoke-others; API-key un-revoke; FX soft-`is_active`
 - Main `ci.yml` deploy; reopen Stages 1–152
 - External LLM Complete; Stage 119 party roster reopen; Stage 152 platform reopen
-- PO amendments CSV; product batches CSV; API-key usage CSV
+- PO amendments CSV; product batches CSV; API-key usage CSV (completed Stage 154)
 
 ## B1 acceptance criteria
 

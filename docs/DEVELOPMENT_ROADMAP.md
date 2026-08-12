@@ -2450,6 +2450,18 @@ Every feature in every phase must meet:
 
 **Stage 153 exit (2026-08-12):** B1, C1, S1, D1, H153x met — `docs/STAGE_153_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_313_STAGE153_FREEZE.md`. Fidelity: `docs/STAGE_153_FIDELITY.md`.
 
+**Stage 154 open (2026-08-12):** Tenant MVP PO Amendments CSV, Product Batches CSV & API-Key Usage CSV Export Fidelity — `docs/ADR_314_STAGE154_OPEN.md` + `docs/STAGE_154_PLAN.md` (Amendments → Batches → Usage → Fidelity; A1 next).
+
+**Stage 154 A1 (2026-08-12):** PO amendments CSV (`test_stage154_po_amendments_a1.py`).
+
+**Stage 154 K1 (2026-08-12):** Product batches CSV (`test_stage154_product_batches_k1.py`).
+
+**Stage 154 U1 (2026-08-12):** API-key usage CSV (`test_stage154_api_key_usage_u1.py`).
+
+**Stage 154 D1 (2026-08-12):** PO amendments / product batches / API-key usage export fidelity sync — `docs/STAGE_154_FIDELITY.md` (`test_stage154_fidelity_d1.py`).
+
+**Stage 154 exit (2026-08-12):** A1, K1, U1, D1, H154x met — `docs/STAGE_154_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_315_STAGE154_FREEZE.md`. Fidelity: `docs/STAGE_154_FIDELITY.md`.
+
 
 
 

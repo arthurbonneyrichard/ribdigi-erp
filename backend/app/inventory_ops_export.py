@@ -69,6 +69,19 @@ EXPIRING_BATCH_EXPORT_COLUMNS = [
     "updated_at",
 ]
 
+PRODUCT_BATCH_EXPORT_COLUMNS = [
+    "id",
+    "product_id",
+    "variant_id",
+    "warehouse_id",
+    "batch_number",
+    "manufacturing_date",
+    "expiry_date",
+    "quantity",
+    "created_at",
+    "updated_at",
+]
+
 STOCK_STATUSES = {"red", "yellow"}
 MOVEMENT_TYPES = {
     "stock_in",
@@ -255,4 +268,22 @@ async def export_expiring_batches_csv(
     for row in rows:
         data = catalog_svc.serialize_batch(row)
         writer.writerow({k: _cell(data.get(k)) for k in EXPIRING_BATCH_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+async def export_product_batches_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+) -> str:
+    """Stage 154 K1 — per-product batches CSV (distinct from Stage 137 expiring window)."""
+    await catalog_svc.get_product(db, tenant_id, product_id)
+    rows = await catalog_svc.list_batches(db, tenant_id, product_id=product_id)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=PRODUCT_BATCH_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        data = catalog_svc.serialize_batch(row)
+        writer.writerow({k: _cell(data.get(k)) for k in PRODUCT_BATCH_EXPORT_COLUMNS})
     return buf.getvalue()

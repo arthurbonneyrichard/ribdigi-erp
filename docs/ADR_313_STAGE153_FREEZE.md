@@ -23,4 +23,4 @@ Stage 153 Tenant MVP Tenant Dashboard Aggregates CSV, Customer History CSV & Sup
 
 ## Next stage
 
-Stage 154 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 153 feature scope remains frozen.
+Stage 154 opened via CONTINUE/NEXT as **Tenant MVP PO Amendments CSV, Product Batches CSV & API-Key Usage CSV Export Fidelity** ([ADR-314](ADR_314_STAGE154_OPEN.md)) and closed under [ADR-315](ADR_315_STAGE154_FREEZE.md). Stage 153 feature scope remains frozen.
