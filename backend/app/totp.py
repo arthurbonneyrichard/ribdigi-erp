@@ -249,6 +249,7 @@ ENROLLMENT_ALLOWED_SUFFIXES = (
     "/auth/webauthn/register/verify",
     "/auth/webauthn/credentials",
     "/settings/email",
+    "/settings/sms",
     "/health",
     "/health/ready",
     "/metrics",

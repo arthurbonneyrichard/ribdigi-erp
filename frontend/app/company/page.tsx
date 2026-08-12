@@ -1014,6 +1014,10 @@ export default function Page() {
             {String(smsStatus.enabled)}
           </p>
           <p className="muted">From: {smsStatus.from_number || 'console fallback'}</p>
+          <p className="muted">
+            Secret-free export via <code>/settings/sms/export</code> (Stage 135 S1) — auth token and
+            raw account SID never included.
+          </p>
           <input
             value={profilePhone}
             onChange={(e) => setProfilePhone(e.target.value)}
@@ -1050,6 +1054,33 @@ export default function Page() {
               }}
             >
               Send test SMS to me
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                setError('');
+                try {
+                  const token = localStorage.getItem('token') || '';
+                  const res = await fetch(`${apiBase}/settings/sms/export`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!res.ok) {
+                    setError(await res.text());
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'sms_settings_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('SMS settings CSV downloaded (Stage 135 S1; secrets excluded)');
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Export SMS settings CSV
             </button>
           </div>
         </div>

@@ -384,10 +384,11 @@ export default function Page() {
   }
 
   async function downloadPurchasingPipelineExport(
-    kind: 'requests' | 'orders' | 'grn',
+    kind: 'requests' | 'orders' | 'grn' | 'returns',
     status: string,
   ) {
     // Stage 134 R1 / O1 / G1 — purchasing pipeline header CSVs
+    // Stage 135 R1 — purchase returns CSV
     setError('');
     try {
       const token = localStorage.getItem('token');
@@ -410,7 +411,9 @@ export default function Page() {
           ? 'purchase_requests_export.csv'
           : kind === 'orders'
             ? 'purchase_orders_export.csv'
-            : 'grns_export.csv';
+            : kind === 'returns'
+              ? 'purchase_returns_export.csv'
+              : 'grns_export.csv';
       a.click();
       URL.revokeObjectURL(url);
       const label =
@@ -418,7 +421,9 @@ export default function Page() {
           ? 'requests (Stage 134 R1)'
           : kind === 'orders'
             ? 'orders (Stage 134 O1)'
-            : 'GRNs (Stage 134 G1)';
+            : kind === 'returns'
+              ? 'returns (Stage 135 R1)'
+              : 'GRNs (Stage 134 G1)';
       setMessage(`Purchase ${label} CSV downloaded`);
     } catch (err: any) {
       setError(err.message || `${kind} export failed`);
@@ -2155,6 +2160,12 @@ export default function Page() {
               <option value="draft">draft</option>
               <option value="posted">posted</option>
             </select>
+            <button
+              type="button"
+              onClick={() => downloadPurchasingPipelineExport('returns', returnStatusFilter)}
+            >
+              Export returns CSV
+            </button>
           </div>
           <table className="table">
             <thead>

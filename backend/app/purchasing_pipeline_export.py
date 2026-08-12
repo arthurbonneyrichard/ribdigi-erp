@@ -1,4 +1,4 @@
-"""CSV export for purchase requests, orders, and GRNs (Stage 134). Header-only."""
+"""CSV export for purchase requests, orders, GRNs (Stage 134), and returns (Stage 135). Header-only."""
 
 from __future__ import annotations
 
@@ -61,9 +61,27 @@ GRN_EXPORT_COLUMNS = [
     "created_at",
 ]
 
+RETURN_EXPORT_COLUMNS = [
+    "return_number",
+    "debit_note_number",
+    "supplier_id",
+    "purchase_order_id",
+    "goods_receipt_id",
+    "warehouse_id",
+    "status",
+    "reason",
+    "subtotal",
+    "tax_amount",
+    "total_amount",
+    "notes",
+    "posted_at",
+    "created_at",
+]
+
 PR_STATUSES = {"draft", "pending", "approved", "rejected", "cancelled", "converted"}
 PO_STATUSES = {"draft", "sent", "partially_received", "received", "cancelled", "open"}
 GRN_STATUSES = {"draft", "posted"}
+RETURN_STATUSES = {"draft", "posted"}
 
 
 async def export_purchase_requests_csv(
@@ -159,4 +177,33 @@ async def export_grns_csv(
     for row in rows:
         data = await purchasing_svc.serialize_grn(db, row)
         writer.writerow({k: _cell(data.get(k)) for k in GRN_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+async def export_purchase_returns_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    claims: dict,
+    status: str | None = None,
+) -> str:
+    stmt = (
+        select(m.PurchaseReturn)
+        .where(m.PurchaseReturn.tenant_id == tenant_id)
+        .order_by(m.PurchaseReturn.created_at.desc())
+        .limit(500)
+    )
+    if status:
+        key = status.strip().lower()
+        if key not in RETURN_STATUSES:
+            raise HTTPException(status_code=400, detail="status must be draft or posted")
+        stmt = stmt.where(m.PurchaseReturn.status == key)
+    stmt = apply_created_by_scope(stmt, m.PurchaseReturn, claims)
+    rows = (await db.execute(stmt)).scalars().all()
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=RETURN_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        data = await purchasing_svc.serialize_purchase_return(db, row)
+        writer.writerow({k: _cell(data.get(k)) for k in RETURN_EXPORT_COLUMNS})
     return buf.getvalue()

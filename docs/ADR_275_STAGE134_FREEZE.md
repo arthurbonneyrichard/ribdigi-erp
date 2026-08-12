@@ -24,3 +24,5 @@ Stage 134 Tenant MVP Purchase Request CSV, Purchase Order CSV & GRN CSV Export F
 ## Next stage
 
 Stage 135 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 134 feature scope remains frozen.
+
+**Stage 135 opened and closed under ADR-276 / ADR-277** — Tenant MVP Purchase Return CSV, SMS Settings Export & Stores Transfer CSV Fidelity (CONTINUE/NEXT approved).

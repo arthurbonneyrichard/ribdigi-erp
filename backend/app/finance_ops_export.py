@@ -1,4 +1,4 @@
-"""CSV export for journals, bank statements, and email settings (Stage 131). Secrets excluded."""
+"""CSV export for journals, bank statements, email (Stage 131), and SMS settings (Stage 135). Secrets excluded."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from app import models as m
 from app import accounting as accounting_svc
 from app import bank_recon as bank_recon_svc
 from app import emailer
+from app import sms as sms_svc
 from app import tenants as tenants_svc
 from app.session_passkey_doc_export import _cell
 
@@ -64,6 +65,14 @@ EMAIL_SETTINGS_EXPORT_COLUMNS = [
     "has_password",
     "tenant_override_enabled",
     "frontend_url",
+]
+
+SMS_SETTINGS_EXPORT_COLUMNS = [
+    "enabled",
+    "configured",
+    "mode",
+    "from_number",
+    "account_sid_set",
 ]
 
 
@@ -150,4 +159,14 @@ async def export_email_settings_csv(
     writer = csv.DictWriter(buf, fieldnames=EMAIL_SETTINGS_EXPORT_COLUMNS)
     writer.writeheader()
     writer.writerow({k: _cell(data.get(k)) for k in EMAIL_SETTINGS_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+def export_sms_settings_csv() -> str:
+    """Stage 135 S1 — SMS status CSV; never include Twilio auth token or raw SID."""
+    data = sms_svc.sms_status()
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=SMS_SETTINGS_EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerow({k: _cell(data.get(k)) for k in SMS_SETTINGS_EXPORT_COLUMNS})
     return buf.getvalue()

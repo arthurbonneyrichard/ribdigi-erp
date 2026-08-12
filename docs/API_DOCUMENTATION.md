@@ -1650,3 +1650,5 @@ Stage 132 D1 — `docs/STAGE_132_FIDELITY.md` (`test_stage132_fidelity_d1.py`): 
 Stage 133 D1 — `docs/STAGE_133_FIDELITY.md` (`test_stage133_fidelity_d1.py`): Stage 133 Q1 `GET /sales/quotations/export`; Stage 133 O1 `GET /sales/orders/export`; Stage 133 R1 `GET /sales/returns/export`.
 
 Stage 134 D1 — `docs/STAGE_134_FIDELITY.md` (`test_stage134_fidelity_d1.py`): Stage 134 R1 `GET /purchasing/requests/export`; Stage 134 O1 `GET /purchasing/orders/export`; Stage 134 G1 `GET /purchasing/grn/export`.
+
+Stage 135 D1 — `docs/STAGE_135_FIDELITY.md` (`test_stage135_fidelity_d1.py`): Stage 135 R1 `GET /purchasing/returns/export`; Stage 135 S1 `GET /settings/sms/export` (auth token / raw SID never included); Stage 135 T1 `GET /stores/transfers?status=` + `/stores/transfers/export`.

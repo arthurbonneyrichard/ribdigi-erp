@@ -991,6 +991,36 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Draft Inter-store Transfers',
+    href: '/stores?transfer_status=draft#transfers',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
+    label: 'Requested Inter-store Transfers',
+    href: '/stores?transfer_status=requested#transfers',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
+    label: 'In-transit Inter-store Transfers',
+    href: '/stores?transfer_status=in_transit#transfers',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
+    label: 'Received Inter-store Transfers',
+    href: '/stores?transfer_status=received#transfers',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
+    label: 'Cancelled Inter-store Transfers',
+    href: '/stores?transfer_status=cancelled#transfers',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
     label: 'Delivery status',
     href: '/sales?tab=orders',
     modules: ['sales'],

@@ -816,6 +816,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 134 G1** | GRN register CSV (`test_stage134_grn_export_g1.py`) |
 | **Stage 134 D1** | Purchase request/order/GRN export — `docs/STAGE_134_FIDELITY.md` (`test_stage134_fidelity_d1.py`) |
 | **Stage 134 H134x** | Exit + freeze — `docs/STAGE_134_EXIT_CRITERIA.md`, ADR-275 (`test_stage134_exit_h134x.py`); Stages 1–134 frozen; Stage 135+ requires CONTINUE/NEXT |
+| **Stage 135 open** | Tenant MVP Purchase Return CSV, SMS Settings Export & Stores Transfer CSV Fidelity — `docs/STAGE_135_PLAN.md`, ADR-276 (`test_stage135_open.py`); Stages 1–134 remain frozen; R1 next historically |
+| **Stage 135 R1** | Purchase return register CSV (`test_stage135_returns_export_r1.py`) |
+| **Stage 135 S1** | SMS settings CSV secret-free (`test_stage135_sms_settings_export_s1.py`) |
+| **Stage 135 T1** | Stores transfer list filter + CSV (`test_stage135_stores_transfers_t1.py`) |
+| **Stage 135 D1** | Purchase return / SMS / stores transfer export — `docs/STAGE_135_FIDELITY.md` (`test_stage135_fidelity_d1.py`) |
+| **Stage 135 H135x** | Exit + freeze — `docs/STAGE_135_EXIT_CRITERIA.md`, ADR-277 (`test_stage135_exit_h135x.py`); Stages 1–135 frozen; Stage 136+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

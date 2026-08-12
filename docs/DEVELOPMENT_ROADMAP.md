@@ -2222,6 +2222,18 @@ Every feature in every phase must meet:
 
 **Stage 134 exit (2026-08-12):** R1, O1, G1, D1, H134x met — `docs/STAGE_134_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_275_STAGE134_FREEZE.md`. Fidelity: `docs/STAGE_134_FIDELITY.md`.
 
+**Stage 135 open (2026-08-12):** Tenant MVP Purchase Return CSV, SMS Settings Export & Stores Transfer CSV Fidelity — `docs/ADR_276_STAGE135_OPEN.md` + `docs/STAGE_135_PLAN.md` (Returns → SMS → Stores transfers → Fidelity; R1 next).
+
+**Stage 135 R1 (2026-08-12):** Purchase return register CSV (`test_stage135_returns_export_r1.py`).
+
+**Stage 135 S1 (2026-08-12):** SMS settings CSV secret-free (`test_stage135_sms_settings_export_s1.py`).
+
+**Stage 135 T1 (2026-08-12):** Stores transfer list filter + CSV (`test_stage135_stores_transfers_t1.py`).
+
+**Stage 135 D1 (2026-08-12):** Purchase return, SMS settings & stores transfer export fidelity sync — `docs/STAGE_135_FIDELITY.md` (`test_stage135_fidelity_d1.py`).
+
+**Stage 135 exit (2026-08-12):** R1, S1, T1, D1, H135x met — `docs/STAGE_135_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_277_STAGE135_FREEZE.md`. Fidelity: `docs/STAGE_135_FIDELITY.md`.
+
 
 
 

@@ -153,12 +153,26 @@ export default function Page() {
       .toLowerCase();
     return v === 'true' || v === 'false' ? v : '';
   });
+  // Stage 135 T1 — transfer_status → GET /stores/transfers?status=
+  const [transferStatusFilter, setTransferStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('transfer_status') || '')
+      .trim()
+      .toLowerCase();
+    return ['draft', 'requested', 'in_transit', 'received', 'cancelled'].includes(v) ? v : '';
+  });
 
-  async function refresh(opts?: { storeActive?: string; warehouseActive?: string }) {
+  async function refresh(opts?: {
+    storeActive?: string;
+    warehouseActive?: string;
+    transferStatus?: string;
+  }) {
     const storeActive =
       opts?.storeActive !== undefined ? opts.storeActive : storeActiveFilter;
     const warehouseActive =
       opts?.warehouseActive !== undefined ? opts.warehouseActive : warehouseActiveFilter;
+    const transferStatus =
+      opts?.transferStatus !== undefined ? opts.transferStatus : transferStatusFilter;
     const storeQs =
       storeActive === 'true'
         ? '?is_active=true'
@@ -171,10 +185,13 @@ export default function Page() {
         : warehouseActive === 'false'
           ? '?is_active=false'
           : '';
+    const transferQs = transferStatus
+      ? `?status=${encodeURIComponent(transferStatus)}`
+      : '';
     const [s, p, t, settings, b, u, w, meRes] = await Promise.all([
       api(`/stores${storeQs}`),
       api('/products'),
-      api('/stores/transfers'),
+      api(`/stores/transfers${transferQs}`),
       api('/inventory/settings').catch(() => ({ data: { fefo_strict_warehouse: false } })),
       api('/branches').catch(() => ({ data: [] })),
       api('/users').catch(() => ({ data: [] })),
@@ -621,6 +638,66 @@ export default function Page() {
         </div>
         <div className="card" id="transfers">
           <h3>New transfer</h3>
+          <p className="muted">
+            Filter via <code>transfer_status</code> → <code>GET /stores/transfers?status=</code>; list
+            export via <code>/stores/transfers/export</code> (Stage 135 T1).
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+            <select
+              value={transferStatusFilter || 'default'}
+              onChange={(e) => {
+                const v = e.target.value === 'default' ? '' : e.target.value;
+                setTransferStatusFilter(v);
+                writeStoresQuery({ transfer_status: v || null });
+                refresh({ transferStatus: v }).catch((err) => setError(err.message));
+              }}
+              aria-label="Transfer status filter"
+            >
+              <option value="default">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="requested">Requested</option>
+              <option value="in_transit">In transit</option>
+              <option value="received">Received</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const qs =
+                  transferStatusFilter === 'draft' ||
+                  transferStatusFilter === 'requested' ||
+                  transferStatusFilter === 'in_transit' ||
+                  transferStatusFilter === 'received' ||
+                  transferStatusFilter === 'cancelled'
+                    ? `?status=${transferStatusFilter}`
+                    : '';
+                setError('');
+                try {
+                  const token = localStorage.getItem('token');
+                  const tenant = localStorage.getItem('tenant');
+                  const res = await fetch(`${apiBase}/stores/transfers/export${qs}`, {
+                    headers: {
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                    },
+                  });
+                  if (!res.ok) throw new Error('Stores transfers export failed');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'stores_transfers_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  setMessage('Stores transfers CSV downloaded (Stage 135 T1)');
+                } catch (err: any) {
+                  setError(err.message || 'Export failed');
+                }
+              }}
+            >
+              Export transfers CSV
+            </button>
+          </div>
           <div style={{ display: 'grid', gap: 8 }}>
             <select value={fromStore} onChange={(e) => setFromStore(e.target.value)}>
               {stores.map((s) => (

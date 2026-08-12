@@ -849,6 +849,21 @@ async def settings_sms_get(
     return env(sms_svc.sms_status())
 
 
+@api.get("/settings/sms/export")
+async def settings_sms_export(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+):
+    """Stage 135 S1 — SMS/Twilio settings CSV (auth token / raw SID never included)."""
+    text = finance_ops_export_svc.export_sms_settings_csv()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="sms_settings_export.csv"'
+        },
+    )
+
+
 @api.get("/settings/storage")
 async def settings_storage_get(
     claims=Depends(require_roles("company_admin", "super_admin")),
@@ -7050,6 +7065,25 @@ async def list_purchase_returns(
     return env([await purchasing_svc.serialize_purchase_return(db, r) for r in rows])
 
 
+@api.get("/purchasing/returns/export")
+async def export_purchase_returns_csv(
+    status: str | None = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 135 R1 — purchase return header CSV (no line dump)."""
+    text = await purchasing_pipeline_export_svc.export_purchase_returns_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="purchase_returns_export.csv"'
+        },
+    )
+
+
 @api.post("/purchasing/returns")
 async def create_purchase_return(
     payload: PurchaseReturnCreate,
@@ -11314,6 +11348,31 @@ async def list_transfers(
         limit=limit,
     )
     return env([await stores_svc.serialize_transfer(db, t) for t in rows])
+
+
+@api.get("/stores/transfers/export")
+async def export_stores_transfers_csv(
+    status: str | None = None,
+    store_id: str | None = None,
+    scope: str = "all",
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 135 T1 — stores-permission inter-store transfer header CSV (no line dump)."""
+    text = await commerce_docs_export_svc.export_stock_transfers_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status,
+        store_id=store_id,
+        scope=scope,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="stores_transfers_export.csv"'
+        },
+    )
 
 
 @api.post("/stores/transfers")

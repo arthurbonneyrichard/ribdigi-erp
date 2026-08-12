@@ -216,6 +216,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Purchase Request CSV:** Purchasing Export requests CSV (Stage 134 R1)
 - **Purchase Order CSV:** Purchasing Export orders CSV (Stage 134 O1)
 - **GRN CSV:** Purchasing Export GRNs CSV (Stage 134 G1)
+- **Purchase Return CSV:** Purchasing Export returns CSV (Stage 135 R1)
+- **SMS Settings CSV:** Company Export SMS settings CSV — secrets excluded (Stage 135 S1)
+- **Inter-store Transfer Status Filters:** Stores draft/requested/in-transit/received/cancelled filter + Shell leaves + list CSV (Stage 135 T1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
