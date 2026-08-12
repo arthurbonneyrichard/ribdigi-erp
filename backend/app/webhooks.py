@@ -162,13 +162,21 @@ def serialize_delivery(row: m.WebhookDelivery) -> dict[str, Any]:
     }
 
 
-async def list_endpoints(db: AsyncSession, tenant_id: str) -> list[m.WebhookEndpoint]:
+async def list_endpoints(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.WebhookEndpoint]:
+    """Stage 126 W1 — is_active / active_only for honest paused-only webhook lists."""
+    stmt = select(m.WebhookEndpoint).where(m.WebhookEndpoint.tenant_id == tenant_id)
+    if is_active is not None:
+        stmt = stmt.where(m.WebhookEndpoint.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.WebhookEndpoint.is_active.is_(True))
     rows = (
-        await db.execute(
-            select(m.WebhookEndpoint)
-            .where(m.WebhookEndpoint.tenant_id == tenant_id)
-            .order_by(m.WebhookEndpoint.created_at.desc())
-        )
+        await db.execute(stmt.order_by(m.WebhookEndpoint.created_at.desc()))
     ).scalars().all()
     return list(rows)
 

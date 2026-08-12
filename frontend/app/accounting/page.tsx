@@ -29,6 +29,14 @@ export default function Page() {
       .toLowerCase();
     return v === 'true' || v === 'false' ? v : '';
   });
+  // Stage 126 C1 — bank_conn_active → GET /accounting/bank-connections?is_active=
+  const [bankConnActiveFilter, setBankConnActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('bank_conn_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
   const [journalStatusFilter, setJournalStatusFilter] = useState('all');
@@ -115,6 +123,7 @@ export default function Page() {
     chequeStatus?: string;
     accountActive?: string;
     liquidActive?: string;
+    bankConnActive?: string;
   }) {
     const jStatus = opts?.journalStatus !== undefined ? opts.journalStatus : journalStatusFilter;
     const jStore = opts?.journalStoreId !== undefined ? opts.journalStoreId : journalStoreId;
@@ -138,6 +147,16 @@ export default function Page() {
         : liquidActive === 'false'
           ? '?is_active=false'
           : liquidActive === 'all'
+            ? '?active_only=false'
+            : '';
+    const bankConnActive =
+      opts?.bankConnActive !== undefined ? opts.bankConnActive : bankConnActiveFilter;
+    const bankConnQs =
+      bankConnActive === 'true'
+        ? '?is_active=true'
+        : bankConnActive === 'false'
+          ? '?is_active=false'
+          : bankConnActive === 'all'
             ? '?active_only=false'
             : '';
     const pnlQs = new URLSearchParams();
@@ -174,7 +193,7 @@ export default function Page() {
       api(`/accounting/liquid-accounts${liquidQs}`),
       api('/accounting/bank-statements'),
       api(chequeQs),
-      api('/accounting/bank-connections').catch(() => ({ data: [] })),
+      api(`/accounting/bank-connections${bankConnQs}`).catch(() => ({ data: [] })),
       api('/stores').catch(() => ({ data: [] })),
     ]);
     setAccounts(a.data || []);
@@ -225,12 +244,19 @@ export default function Page() {
       liqActive = la;
       setLiquidActiveFilter(la);
     }
+    let bankActive = bankConnActiveFilter;
+    const ba = params.get('bank_conn_active')?.trim().toLowerCase() || '';
+    if (ba === 'true' || ba === 'false') {
+      bankActive = ba;
+      setBankConnActiveFilter(ba);
+    }
     refresh({
       journalStatus: jStatus,
       journalStoreId: store,
       chequeDirection: cDir,
       chequeStatus: cStatus,
       liquidActive: liqActive,
+      bankConnActive: bankActive,
     }).catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -602,6 +628,21 @@ export default function Page() {
     try {
       await api(`/accounting/bank-connections/${id}`, { method: 'DELETE' });
       setMessage('Bank connection removed');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setBankConnActive(id: string, next: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/bank-connections/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: next }),
+      });
+      setMessage(next ? 'Bank connection reactivated' : 'Bank connection deactivated');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1382,8 +1423,58 @@ export default function Page() {
             <p className="muted">
               Link a liquid GL account to a live feed (`mock` for demos/tests, `http_json` for any
               aggregator that returns JSON transactions). Sync creates a reconcilable statement;
-              duplicates are skipped by external ref.
+              duplicates are skipped by external ref. Filter via <code>bank_conn_active</code> →{' '}
+              <code>GET /accounting/bank-connections?is_active=</code> (Stage 126 C1).
             </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <select
+                value={bankConnActiveFilter || 'default'}
+                onChange={(e) => {
+                  const v = e.target.value === 'default' ? '' : e.target.value;
+                  setBankConnActiveFilter(v);
+                  const url = new URL(window.location.href);
+                  if (v === 'true' || v === 'false') url.searchParams.set('bank_conn_active', v);
+                  else url.searchParams.delete('bank_conn_active');
+                  window.history.replaceState({}, '', url.toString());
+                  refresh({ bankConnActive: v }).catch((err) => setError(err.message));
+                }}
+              >
+                <option value="default">Active filter (default / all)</option>
+                <option value="true">Active only</option>
+                <option value="false">Inactive only</option>
+                <option value="all">All (active_only=false)</option>
+              </select>
+              <button
+                type="button"
+                onClick={async () => {
+                  const token = localStorage.getItem('token') || '';
+                  const qs = new URLSearchParams();
+                  if (bankConnActiveFilter === 'true' || bankConnActiveFilter === 'false') {
+                    qs.set('is_active', bankConnActiveFilter);
+                  } else if (bankConnActiveFilter === 'all') {
+                    qs.set('active_only', 'false');
+                  }
+                  const q = qs.toString();
+                  const res = await fetch(
+                    `${apiBase}/accounting/bank-connections/export${q ? `?${q}` : ''}`,
+                    { headers: { Authorization: `Bearer ${token}` } },
+                  );
+                  if (!res.ok) {
+                    setError(await res.text());
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'bank_connections_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('Bank connections CSV downloaded');
+                }}
+              >
+                Export bank connections CSV
+              </button>
+            </div>
             <input value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
             <select value={connProvider} onChange={(e) => setConnProvider(e.target.value)}>
               <option value="mock">mock (built-in sample feed)</option>
@@ -1408,10 +1499,20 @@ export default function Page() {
               {connections.map((c) => (
                 <li key={c.id} style={{ marginBottom: 8 }}>
                   {c.display_name} · {c.provider}
+                  {c.is_active === false ? ' · inactive' : ''}
                   {c.last_sync_status ? ` · last ${c.last_sync_status}` : ''}{' '}
                   <button type="button" onClick={() => syncConnection(c.id)}>
                     Sync now
                   </button>{' '}
+                  {c.is_active === false ? (
+                    <button type="button" onClick={() => setBankConnActive(c.id, true)}>
+                      Reactivate
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => setBankConnActive(c.id, false)}>
+                      Deactivate
+                    </button>
+                  )}{' '}
                   <button type="button" onClick={() => removeConnection(c.id)}>
                     Remove
                   </button>

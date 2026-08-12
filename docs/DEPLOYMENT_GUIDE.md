@@ -1464,3 +1464,5 @@ Stage 123 D1 inactive finance masters, customer groups & export fidelity — `do
 Stage 124 D1 inactive product variants, custom roles & export fidelity — `docs/STAGE_124_FIDELITY.md` (`test_stage124_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 125 D1 inactive liquid accounts, recurring expenses & export fidelity — `docs/STAGE_125_FIDELITY.md` (`test_stage125_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 126 D1 inactive bank connections, paused webhooks & export fidelity — `docs/STAGE_126_FIDELITY.md` (`test_stage126_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

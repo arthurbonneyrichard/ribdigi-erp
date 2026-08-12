@@ -23,4 +23,4 @@ Stage 125 Tenant MVP Inactive Liquid Accounts, Recurring Expenses & Liquid/Recur
 
 ## Next stage
 
-Stage 126 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 125 feature scope remains frozen.
+**Stage 126 opened** via CONTINUE/NEXT after this freeze — see [ADR-258](ADR_258_STAGE126_OPEN.md) / [STAGE_126_PLAN.md](STAGE_126_PLAN.md); frozen as [ADR-259](ADR_259_STAGE126_FREEZE.md). Stage 125 feature scope remains frozen.

@@ -2114,6 +2114,19 @@ Every feature in every phase must meet:
 
 **Stage 125 exit (2026-08-12):** L1, R1, X1, D1, H125x met — `docs/STAGE_125_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_257_STAGE125_FREEZE.md`. Fidelity: `docs/STAGE_125_FIDELITY.md`.
 
+**Stage 126 open (2026-08-12):** Tenant MVP Inactive Bank Connections, Paused Webhooks & Bank/Webhook CSV Export Fidelity — `docs/ADR_258_STAGE126_OPEN.md` + `docs/STAGE_126_PLAN.md` (Inactive bank connections → Paused webhooks → Bank/webhook CSV export → Fidelity; C1 next).
+
+**Stage 126 C1 (2026-08-12):** Inactive bank connections honesty (`test_stage126_inactive_bank_connections_c1.py`).
+
+**Stage 126 W1 (2026-08-12):** Paused webhooks honesty (`test_stage126_paused_webhooks_w1.py`).
+
+**Stage 126 X1 (2026-08-12):** Bank & webhook CSV export (`test_stage126_bank_webhook_export_x1.py`).
+
+**Stage 126 D1 (2026-08-12):** Inactive bank connections, paused webhooks & export fidelity sync — `docs/STAGE_126_FIDELITY.md` (`test_stage126_fidelity_d1.py`).
+
+**Stage 126 exit (2026-08-12):** C1, W1, X1, D1, H126x met — `docs/STAGE_126_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_259_STAGE126_FREEZE.md`. Fidelity: `docs/STAGE_126_FIDELITY.md`.
+
+
 
 
 

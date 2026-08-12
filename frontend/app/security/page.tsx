@@ -6,6 +6,8 @@ import PlatformShell from '../../components/PlatformShell';
 import { api } from '../../lib/api';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, t } from '../../lib/i18n';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
   let str = '';
@@ -150,10 +152,18 @@ export default function Page() {
   const [webhookUrl, setWebhookUrl] = useState('https://');
   const [webhookEvents, setWebhookEvents] = useState('sale.created,webhook.test');
   const [newWebhookSecret, setNewWebhookSecret] = useState('');
+  // Stage 126 W1 — webhook_active → GET /webhooks?is_active=
+  const [webhookActiveFilter, setWebhookActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('webhook_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
   const [role, setRole] = useState('');
   const [principal, setPrincipal] = useState('');
 
-  async function refresh() {
+  async function refresh(opts?: { webhookActive?: string }) {
     const [r, keys, sess, me] = await Promise.all([
       api('/auth/2fa/status'),
       api('/auth/webauthn/credentials').catch(() => ({ data: [] })),
@@ -177,7 +187,17 @@ export default function Page() {
         setApiKeys([]);
       }
       try {
-        const hooks = await api('/webhooks');
+        const webhookActive =
+          opts?.webhookActive !== undefined ? opts.webhookActive : webhookActiveFilter;
+        const whQs =
+          webhookActive === 'true'
+            ? '?is_active=true'
+            : webhookActive === 'false'
+              ? '?is_active=false'
+              : webhookActive === 'all'
+                ? '?active_only=false'
+                : '';
+        const hooks = await api(`/webhooks${whQs}`);
         setWebhooks(hooks.data || []);
       } catch {
         setWebhooks([]);
@@ -274,6 +294,21 @@ export default function Page() {
     }
   }
 
+  async function setWebhookActive(id: string, next: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/webhooks/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: next }),
+      });
+      setMessage(next ? 'Webhook resumed' : 'Webhook paused');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function revokeSession(id: string) {
     setError('');
     try {
@@ -311,7 +346,15 @@ export default function Page() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    const params = new URLSearchParams(window.location.search);
+    let whActive = webhookActiveFilter;
+    const wa = params.get('webhook_active')?.trim().toLowerCase() || '';
+    if (wa === 'true' || wa === 'false') {
+      whActive = wa;
+      setWebhookActiveFilter(wa);
+    }
+    refresh({ webhookActive: whActive }).catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Stage 103 S1 — honor Shell #passkeys / #totp / #webhooks / #api-keys / #sessions
@@ -571,8 +614,59 @@ export default function Page() {
         <div className="card" style={{ marginBottom: 16 }} id="webhooks">
           <h2>Webhooks</h2>
           <p className="muted">
-            Outbound signed events use header <code>X-Ribdigi-Signature</code> (<code>t=…,v1=…</code> HMAC-SHA256).
+            Outbound signed events use header <code>X-Ribdigi-Signature</code> (<code>t=…,v1=…</code>{' '}
+            HMAC-SHA256). Filter via <code>webhook_active</code> →{' '}
+            <code>GET /webhooks?is_active=</code> (Stage 126 W1).
           </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <select
+              value={webhookActiveFilter || 'default'}
+              onChange={(e) => {
+                const v = e.target.value === 'default' ? '' : e.target.value;
+                setWebhookActiveFilter(v);
+                const url = new URL(window.location.href);
+                if (v === 'true' || v === 'false') url.searchParams.set('webhook_active', v);
+                else url.searchParams.delete('webhook_active');
+                window.history.replaceState({}, '', url.toString());
+                refresh({ webhookActive: v }).catch((err) => setError(err.message));
+              }}
+            >
+              <option value="default">Active filter (default / all)</option>
+              <option value="true">Active only</option>
+              <option value="false">Paused only</option>
+              <option value="all">All (active_only=false)</option>
+            </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const qs =
+                  webhookActiveFilter === 'true'
+                    ? '?is_active=true'
+                    : webhookActiveFilter === 'false'
+                      ? '?is_active=false'
+                      : webhookActiveFilter === 'all'
+                        ? '?active_only=false'
+                        : '';
+                const res = await fetch(`${apiBase}/webhooks/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'webhooks_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Webhooks CSV downloaded');
+              }}
+            >
+              Export webhooks CSV
+            </button>
+          </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
             <input
               value={webhookUrl}
@@ -612,10 +706,19 @@ export default function Page() {
                   </td>
                   <td>{(w.events || []).join(', ')}</td>
                   <td>{w.is_active ? 'active' : 'paused'}</td>
-                  <td style={{ display: 'flex', gap: 6 }}>
+                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button type="button" onClick={() => testWebhook(w.id)}>
                       Test
                     </button>
+                    {w.is_active === false ? (
+                      <button type="button" onClick={() => setWebhookActive(w.id, true)}>
+                        Resume
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => setWebhookActive(w.id, false)}>
+                        Pause
+                      </button>
+                    )}
                     <button type="button" onClick={() => deleteWebhook(w.id)}>
                       Delete
                     </button>

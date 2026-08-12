@@ -69,15 +69,23 @@ async def get_connection(
     return row
 
 
-async def list_connections(db: AsyncSession, tenant_id: str) -> list[m.BankAccountConnection]:
+async def list_connections(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.BankAccountConnection]:
+    """Stage 126 C1 — is_active / active_only for honest inactive-only bank connection lists."""
+    stmt = select(m.BankAccountConnection).where(
+        m.BankAccountConnection.tenant_id == tenant_id
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.BankAccountConnection.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.BankAccountConnection.is_active.is_(True))
     return list(
-        (
-            await db.execute(
-                select(m.BankAccountConnection)
-                .where(m.BankAccountConnection.tenant_id == tenant_id)
-                .order_by(m.BankAccountConnection.created_at.desc())
-            )
-        )
+        (await db.execute(stmt.order_by(m.BankAccountConnection.created_at.desc())))
         .scalars()
         .all()
     )

@@ -716,6 +716,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Active Bank Connections',
+    href: '/accounting?tab=reconcile&bank_conn_active=true#bank-reconciliation',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Bank Connections',
+    href: '/accounting?tab=reconcile&bank_conn_active=false#bank-reconciliation',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
     label: 'Cheques',
     href: '/accounting?tab=cheques#cheques',
     modules: ['accounting'],
@@ -1595,6 +1607,18 @@ const userMgmtLinks: NavLink[] = [
     kind: 'link',
     label: 'Webhooks',
     href: '/security#webhooks',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'Active Webhooks',
+    href: '/security?webhook_active=true#webhooks',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'Paused Webhooks',
+    href: '/security?webhook_active=false#webhooks',
     modules: ['security'],
   },
   {

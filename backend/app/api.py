@@ -58,6 +58,7 @@ from app import org_catalog_export as org_catalog_export_svc
 from app import finance_meta_export as finance_meta_export_svc
 from app import variant_role_export as variant_role_export_svc
 from app import liquid_recurring_export as liquid_recurring_export_svc
+from app import bank_webhook_export as bank_webhook_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -8623,13 +8624,42 @@ async def bank_feed_settings(claims=Depends(require_permission("accounting", "re
 
 @api.get("/accounting/bank-connections")
 async def list_bank_connections(
+    active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 126 C1 — active_only / is_active for honest inactive-only bank connection lists."""
     from app import bank_connectors as bank_connectors_svc
 
-    rows = await bank_connectors_svc.list_connections(db, claims["tenant_id"])
+    rows = await bank_connectors_svc.list_connections(
+        db,
+        claims["tenant_id"],
+        active_only=active_only,
+        is_active=is_active,
+    )
     return env([bank_connectors_svc.serialize_connection(r) for r in rows])
+
+
+@api.get("/accounting/bank-connections/export")
+async def bank_connections_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 126 X1 — bank connections CSV export (no credentials)."""
+    text = await bank_webhook_export_svc.export_bank_connections_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="bank_connections_export.csv"'},
+    )
 
 
 @api.post("/accounting/bank-connections")
@@ -11596,12 +11626,40 @@ async def api_keys_revoke(
 
 @api.get("/webhooks")
 async def webhooks_list(
+    active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 6 W1 — list webhook subscriptions."""
-    rows = await webhooks_svc.list_endpoints(db, claims["tenant_id"])
+    """Stage 126 W1 — active_only / is_active for honest paused-only webhook lists."""
+    rows = await webhooks_svc.list_endpoints(
+        db,
+        claims["tenant_id"],
+        active_only=active_only,
+        is_active=is_active,
+    )
     return env([webhooks_svc.serialize_endpoint(r) for r in rows])
+
+
+@api.get("/webhooks/export")
+async def webhooks_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 126 X1 — webhooks CSV export (signing secrets excluded)."""
+    text = await bank_webhook_export_svc.export_webhooks_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="webhooks_export.csv"'},
+    )
 
 
 @api.post("/webhooks")

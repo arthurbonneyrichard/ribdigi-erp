@@ -191,6 +191,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Inactive Liquid Accounts:** Accounting Cash & Bank active/inactive filter + Shell leaves (Stage 125 L1)
 - **Paused Recurring Expenses:** Expenses Recurring active/paused filter + Shell leaves (Stage 125 R1)
 - **Export liquid accounts / recurring CSV:** Accounting & Expenses export buttons (Stage 125 X1)
+- **Inactive Bank Connections:** Accounting Bank API connections filter + Shell leaves (Stage 126 C1)
+- **Paused Webhooks:** Security Webhooks active/paused filter + Shell leaves (Stage 126 W1)
+- **Export bank connections / webhooks CSV:** Accounting & Security export buttons (Stage 126 X1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out
