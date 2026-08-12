@@ -225,6 +225,33 @@ function PageInner() {
         </select>
         <button onClick={markAll}>Mark all read</button>
         <button onClick={scanDue}>Scan payment due</button>
+        <button
+          type="button"
+          onClick={async () => {
+            const token = localStorage.getItem('token') || '';
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+            const params = new URLSearchParams();
+            if (status && status !== 'all') params.set('status', status);
+            if (group) params.set('group', group);
+            const qs = params.toString() ? `?${params}` : '';
+            const res = await fetch(`${apiBase}/notifications/export${qs}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) {
+              setError(await res.text());
+              return;
+            }
+            const blob = await res.blob();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'notifications_export.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            setMessage('Notifications CSV downloaded (Stage 129 N1)');
+          }}
+        >
+          Export notifications CSV
+        </button>
       </div>
 
       <table className="table">

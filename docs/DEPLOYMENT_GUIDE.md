@@ -1470,3 +1470,5 @@ Stage 126 D1 inactive bank connections, paused webhooks & export fidelity — `d
 Stage 127 D1 API-key status, FX rates & report-schedule export fidelity — `docs/STAGE_127_FIDELITY.md` (`test_stage127_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 128 D1 session status, passkey inventory & document-settings export fidelity — `docs/STAGE_128_FIDELITY.md` (`test_stage128_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 129 D1 admin session inventory, notifications & backup-job export fidelity — `docs/STAGE_129_FIDELITY.md` (`test_stage129_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

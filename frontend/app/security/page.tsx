@@ -176,6 +176,15 @@ export default function Page() {
       .toLowerCase();
     return ['active', 'revoked', 'all'].includes(v) ? v : '';
   });
+  // Stage 129 A1 — tenant_session_status → GET /auth/tenant-sessions?status=
+  const [tenantSessionStatusFilter, setTenantSessionStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('tenant_session_status') || '')
+      .trim()
+      .toLowerCase();
+    return ['active', 'revoked', 'all'].includes(v) ? v : '';
+  });
+  const [tenantSessions, setTenantSessions] = useState<any[]>([]);
   const [role, setRole] = useState('');
   const [principal, setPrincipal] = useState('');
 
@@ -183,6 +192,7 @@ export default function Page() {
     webhookActive?: string;
     apiKeyStatus?: string;
     sessionStatus?: string;
+    tenantSessionStatus?: string;
   }) {
     const sessionStatus =
       opts?.sessionStatus !== undefined ? opts.sessionStatus : sessionStatusFilter;
@@ -236,9 +246,26 @@ export default function Page() {
       } catch {
         setWebhooks([]);
       }
+      try {
+        const tenantSessionStatus =
+          opts?.tenantSessionStatus !== undefined
+            ? opts.tenantSessionStatus
+            : tenantSessionStatusFilter;
+        const tsQs =
+          tenantSessionStatus === 'active' ||
+          tenantSessionStatus === 'revoked' ||
+          tenantSessionStatus === 'all'
+            ? `?status=${tenantSessionStatus}`
+            : '';
+        const tenantSess = await api(`/auth/tenant-sessions${tsQs}`);
+        setTenantSessions(tenantSess.data || []);
+      } catch {
+        setTenantSessions([]);
+      }
     } else {
       setApiKeys([]);
       setWebhooks([]);
+      setTenantSessions([]);
     }
   }
 
@@ -399,10 +426,17 @@ export default function Page() {
       sessStatus = ss;
       setSessionStatusFilter(ss);
     }
+    let tenantSessStatus = tenantSessionStatusFilter;
+    const tss = params.get('tenant_session_status')?.trim().toLowerCase() || '';
+    if (['active', 'revoked', 'all'].includes(tss)) {
+      tenantSessStatus = tss;
+      setTenantSessionStatusFilter(tss);
+    }
     refresh({
       webhookActive: whActive,
       apiKeyStatus: keyStatus,
       sessionStatus: sessStatus,
+      tenantSessionStatus: tenantSessStatus,
     }).catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1034,6 +1068,104 @@ export default function Page() {
           </tbody>
         </table>
       </div>
+
+      {(role === 'company_admin' || role === 'super_admin') && (
+        <div className="card" style={{ marginTop: 16 }} id="tenant-sessions">
+          <h2>Tenant sessions</h2>
+          <p className="muted">
+            Inventory of all user sessions in this tenant. Filter via{' '}
+            <code>tenant_session_status</code> → <code>GET /auth/tenant-sessions?status=</code>{' '}
+            (Stage 129 A1). Export excludes refresh-token secrets.
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <select
+              value={tenantSessionStatusFilter || 'default'}
+              onChange={(e) => {
+                const v = e.target.value === 'default' ? '' : e.target.value;
+                setTenantSessionStatusFilter(v);
+                const url = new URL(window.location.href);
+                if (['active', 'revoked', 'all'].includes(v)) {
+                  url.searchParams.set('tenant_session_status', v);
+                } else url.searchParams.delete('tenant_session_status');
+                window.history.replaceState({}, '', url.toString());
+                refresh({ tenantSessionStatus: v }).catch((err) => setError(err.message));
+              }}
+            >
+              <option value="default">Status filter (default / active)</option>
+              <option value="active">Active only</option>
+              <option value="revoked">Revoked only</option>
+              <option value="all">All sessions</option>
+            </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const qs =
+                  tenantSessionStatusFilter === 'active' ||
+                  tenantSessionStatusFilter === 'revoked' ||
+                  tenantSessionStatusFilter === 'all'
+                    ? `?status=${tenantSessionStatusFilter}`
+                    : '';
+                const res = await fetch(`${apiBase}/auth/tenant-sessions/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'tenant_sessions_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Tenant sessions CSV downloaded');
+              }}
+            >
+              Export tenant sessions CSV
+            </button>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th>IP</th>
+                <th>Agent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tenantSessions.map((s) => (
+                <tr key={s.id}>
+                  <td>
+                    {s.user_email || s.user_id || '—'}
+                    {s.user_name ? (
+                      <span className="muted"> · {s.user_name}</span>
+                    ) : null}
+                  </td>
+                  <td>{s.created_at ? String(s.created_at) : '—'}</td>
+                  <td>{s.status || (s.revoked_at ? 'revoked' : 'active')}</td>
+                  <td>{s.ip_address || '—'}</td>
+                  <td
+                    className="muted"
+                    style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {s.user_agent || '—'}
+                  </td>
+                </tr>
+              ))}
+              {!tenantSessions.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No tenant sessions
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </ConsoleShell>
   );
 }

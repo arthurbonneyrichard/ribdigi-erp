@@ -23,4 +23,4 @@ Stage 128 Tenant MVP Session Status, Passkey Inventory CSV & Document-Numbering 
 
 ## Next stage
 
-Stage 129 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 128 feature scope remains frozen.
+**Stage 129 opened** via CONTINUE/NEXT — [ADR-264](ADR_264_STAGE129_OPEN.md) · [STAGE_129_PLAN.md](STAGE_129_PLAN.md) — Tenant MVP Admin Session Inventory, Notifications CSV & Backup-Job History Export Fidelity. Stage 128 feature scope remains frozen.

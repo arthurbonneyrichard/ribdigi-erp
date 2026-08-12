@@ -2150,6 +2150,18 @@ Every feature in every phase must meet:
 
 **Stage 128 exit (2026-08-12):** S1, P1, N1, D1, H128x met — `docs/STAGE_128_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_263_STAGE128_FREEZE.md`. Fidelity: `docs/STAGE_128_FIDELITY.md`.
 
+**Stage 129 open (2026-08-12):** Tenant MVP Admin Session Inventory, Notifications CSV & Backup-Job History Export Fidelity — `docs/ADR_264_STAGE129_OPEN.md` + `docs/STAGE_129_PLAN.md` (Admin sessions → Notifications CSV → Backup jobs → Fidelity; A1 next).
+
+**Stage 129 A1 (2026-08-12):** Tenant-wide admin session inventory + CSV (`test_stage129_admin_sessions_a1.py`).
+
+**Stage 129 N1 (2026-08-12):** Notifications CSV export (`test_stage129_notifications_export_n1.py`).
+
+**Stage 129 B1 (2026-08-12):** Backup job status filter + CSV (`test_stage129_backup_jobs_b1.py`).
+
+**Stage 129 D1 (2026-08-12):** Admin sessions, notifications & backup-job export fidelity sync — `docs/STAGE_129_FIDELITY.md` (`test_stage129_fidelity_d1.py`).
+
+**Stage 129 exit (2026-08-12):** A1, N1, B1, D1, H129x met — `docs/STAGE_129_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_265_STAGE129_FREEZE.md`. Fidelity: `docs/STAGE_129_FIDELITY.md`.
+
 
 
 

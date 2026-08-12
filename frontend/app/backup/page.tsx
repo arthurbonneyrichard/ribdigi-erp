@@ -13,15 +13,30 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [dryReport, setDryReport] = useState<any>(null);
+  // Stage 129 B1 — backup_status → GET /backup?status=
+  const [backupStatusFilter, setBackupStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('backup_status') || '')
+      .trim()
+      .toLowerCase();
+    return v || '';
+  });
 
-  async function refresh() {
-    const [list, cfg] = await Promise.all([api('/backup'), api('/backup/settings')]);
+  async function refresh(opts?: { backupStatus?: string }) {
+    const backupStatus =
+      opts?.backupStatus !== undefined ? opts.backupStatus : backupStatusFilter;
+    const qs = backupStatus ? `?status=${encodeURIComponent(backupStatus)}` : '';
+    const [list, cfg] = await Promise.all([api(`/backup${qs}`), api('/backup/settings')]);
     setRows(list.data || []);
     setSettings(cfg.data);
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    const params = new URLSearchParams(window.location.search);
+    const bs = (params.get('backup_status') || '').trim().toLowerCase();
+    if (bs) setBackupStatusFilter(bs);
+    refresh({ backupStatus: bs || backupStatusFilter }).catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Stage 103 B1 / Stage 107 O1 — honor Shell #schedule / #restore / #history
@@ -192,6 +207,57 @@ export default function Page() {
 
       <div id="history">
       <h2 style={{ fontSize: 18, marginTop: 8 }}>Backup history</h2>
+      <p className="muted">
+        Filter via <code>backup_status</code> → <code>GET /backup?status=</code>; export metadata via{' '}
+        <code>GET /backup/export</code> (Stage 129 B1 — archive bytes not included).
+      </p>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <select
+          value={backupStatusFilter || 'default'}
+          onChange={(e) => {
+            const v = e.target.value === 'default' ? '' : e.target.value;
+            setBackupStatusFilter(v);
+            const url = new URL(window.location.href);
+            if (v) url.searchParams.set('backup_status', v);
+            else url.searchParams.delete('backup_status');
+            window.history.replaceState({}, '', url.toString());
+            refresh({ backupStatus: v }).catch((err) => setError(err.message));
+          }}
+        >
+          <option value="default">Status filter (all)</option>
+          <option value="completed">Completed</option>
+          <option value="failed">Failed</option>
+          <option value="pending">Pending</option>
+          <option value="restoring">Restoring</option>
+        </select>
+        <button
+          type="button"
+          onClick={async () => {
+            const token = localStorage.getItem('token') || '';
+            const tenant = localStorage.getItem('tenant') || '';
+            const qs = backupStatusFilter ? `?status=${encodeURIComponent(backupStatusFilter)}` : '';
+            const res = await fetch(`${base}/backup/export${qs}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'X-Tenant-ID': tenant,
+              },
+            });
+            if (!res.ok) {
+              setError(await res.text());
+              return;
+            }
+            const blob = await res.blob();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'backup_jobs_export.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            setMessage('Backup jobs CSV downloaded');
+          }}
+        >
+          Export backup jobs CSV
+        </button>
+      </div>
       <table className="table">
         <thead>
           <tr>

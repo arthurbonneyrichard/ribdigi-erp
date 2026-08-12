@@ -147,3 +147,5 @@ Stage 126 D1 Tenant MVP Inactive Bank Connections, Paused Webhooks & Bank/Webhoo
 Stage 127 D1 Tenant MVP API-Key Status, FX Rates CSV & Report-Schedule CSV Export Fidelity — `docs/STAGE_127_FIDELITY.md` (`test_stage127_fidelity_d1.py`); Stage 127 K1 Complete; Stage 127 F1 Complete; Stage 127 S1 Complete (MVP honesty); exit `docs/STAGE_127_EXIT_CRITERIA.md`, ADR-261.
 
 Stage 128 D1 Tenant MVP Session Status, Passkey Inventory CSV & Document-Numbering CSV Export Fidelity — `docs/STAGE_128_FIDELITY.md` (`test_stage128_fidelity_d1.py`); Stage 128 S1 Complete; Stage 128 P1 Complete; Stage 128 N1 Complete (MVP honesty); exit `docs/STAGE_128_EXIT_CRITERIA.md`, ADR-263.
+
+Stage 129 D1 Tenant MVP Admin Session Inventory, Notifications CSV & Backup-Job History Export Fidelity — `docs/STAGE_129_FIDELITY.md` (`test_stage129_fidelity_d1.py`); Stage 129 A1 Complete; Stage 129 N1 Complete; Stage 129 B1 Complete (MVP honesty); exit `docs/STAGE_129_EXIT_CRITERIA.md`, ADR-265.

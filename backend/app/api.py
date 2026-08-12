@@ -61,6 +61,7 @@ from app import liquid_recurring_export as liquid_recurring_export_svc
 from app import bank_webhook_export as bank_webhook_export_svc
 from app import api_fx_schedule_export as api_fx_schedule_export_svc
 from app import session_passkey_doc_export as session_passkey_doc_export_svc
+from app import admin_ops_export as admin_ops_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -1503,6 +1504,64 @@ async def sessions_export(
         content=text,
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="sessions_export.csv"'},
+    )
+
+
+@api.get("/auth/tenant-sessions")
+async def list_tenant_sessions(
+    status: str | None = None,
+    active_only: bool = False,
+    user_id: str | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 129 A1 — tenant-wide session inventory (no refresh-token secrets)."""
+    status_n = (status or "").strip().lower() or None
+    if status_n and status_n not in {"active", "revoked", "all"}:
+        raise HTTPException(status_code=400, detail="status must be active, revoked, or all")
+    rows = await admin_ops_export_svc.list_tenant_sessions(
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status_n,
+        active_only=active_only,
+        user_id=user_id,
+    )
+    users = await admin_ops_export_svc.user_map(
+        db, claims["tenant_id"], {r.user_id for r in rows}
+    )
+    return env(
+        [
+            admin_ops_export_svc.serialize_tenant_session(s, users.get(s.user_id))
+            for s in rows
+        ]
+    )
+
+
+@api.get("/auth/tenant-sessions/export")
+async def tenant_sessions_export(
+    status: str | None = None,
+    active_only: bool = False,
+    user_id: str | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 129 A1 — tenant session inventory CSV (refresh-token secrets never included)."""
+    status_n = (status or "").strip().lower() or None
+    if status_n and status_n not in {"active", "revoked", "all"}:
+        raise HTTPException(status_code=400, detail="status must be active, revoked, or all")
+    text = await admin_ops_export_svc.export_tenant_sessions_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status_n,
+        active_only=active_only,
+        user_id=user_id,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="tenant_sessions_export.csv"'
+        },
     )
 
 
@@ -11337,6 +11396,32 @@ async def notifications(
     return env([notifications_svc.serialize_notification(n) for n in rows])
 
 
+@api.get("/notifications/export")
+async def notifications_export(
+    status: str | None = None,
+    category: str | None = None,
+    group: str | None = None,
+    claims=Depends(require_permission("notifications", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 129 N1 — notifications CSV honoring status/group/category filters."""
+    text = await admin_ops_export_svc.export_notifications_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        status=status,
+        category=category,
+        group=group,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="notifications_export.csv"'
+        },
+    )
+
+
 @api.get("/notifications/unread-count")
 async def notifications_unread_count(
     claims=Depends(require_permission("notifications", "read")),
@@ -12016,11 +12101,34 @@ async def backup_settings_patch(
 
 @api.get("/backup")
 async def backup_list(
+    status: str | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await backup_svc.list_backups(db, claims["tenant_id"])
+    """Stage 129 B1 — optional status filter for backup job history."""
+    status_n = (status or "").strip().lower() or None
+    rows = await admin_ops_export_svc.list_backup_jobs(
+        db, tenant_id=claims["tenant_id"], status=status_n
+    )
     return env([backup_svc.serialize_job(r) for r in rows])
+
+
+@api.get("/backup/export")
+async def backup_export(
+    status: str | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 129 B1 — backup job metadata CSV (archive bytes not included)."""
+    status_n = (status or "").strip().lower() or None
+    text = await admin_ops_export_svc.export_backup_jobs_csv(
+        db, tenant_id=claims["tenant_id"], status=status_n
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="backup_jobs_export.csv"'},
+    )
 
 
 @api.post("/backup")

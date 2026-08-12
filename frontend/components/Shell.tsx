@@ -1590,6 +1590,18 @@ const userMgmtLinks: NavLink[] = [
     href: '/backup#history',
     modules: ['backup'],
   },
+  {
+    kind: 'link',
+    label: 'Completed Backups',
+    href: '/backup?backup_status=completed#history',
+    modules: ['backup'],
+  },
+  {
+    kind: 'link',
+    label: 'Failed Backups',
+    href: '/backup?backup_status=failed#history',
+    modules: ['backup'],
+  },
   { kind: 'link', label: 'Security', href: '/security', modules: ['security'] },
   {
     kind: 'link',
@@ -1655,6 +1667,18 @@ const userMgmtLinks: NavLink[] = [
     kind: 'link',
     label: 'Revoked Sessions',
     href: '/security?session_status=revoked#sessions',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'Tenant Active Sessions',
+    href: '/security?tenant_session_status=active#tenant-sessions',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'Tenant Revoked Sessions',
+    href: '/security?tenant_session_status=revoked#tenant-sessions',
     modules: ['security'],
   },
 ];
