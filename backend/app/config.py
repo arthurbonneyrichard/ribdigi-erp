@@ -108,6 +108,10 @@ class Settings(BaseSettings):
     AI_SECURITY_MONITOR_ENABLED: bool = True
     AI_SECURITY_ALERT_THRESHOLD: int = 60
     CELERY_AI_SECURITY_INTERVAL_MINUTES: int = 15
+    # AI inventory predictions (rule-based velocity; no LLM)
+    AI_INVENTORY_LOOKBACK_DAYS: int = 28
+    AI_INVENTORY_DEFAULT_LEAD_DAYS: int = 7
+    AI_INVENTORY_COVER_DAYS: int = 14
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 

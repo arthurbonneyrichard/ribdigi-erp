@@ -277,3 +277,42 @@ async def create_requests_from_low_stock(
         "skipped": skipped,
         "created_count": len(created_rows),
     }
+
+
+async def create_requests_from_predictions(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    at_risk_lines: list[dict],
+    notes: str | None = None,
+    min_confidence: float = 0.0,
+    include_open: bool = False,
+) -> dict:
+    """Turn AI low-stock prediction rows into draft PRs (BR-21.4 auto-suggestions)."""
+    lines: list[dict] = []
+    for raw in at_risk_lines or []:
+        conf = float(raw.get("confidence") or 0)
+        if conf < float(min_confidence or 0):
+            continue
+        qty = float(raw.get("suggested_order_qty") or raw.get("recommended_order_qty") or 0)
+        if qty <= 0:
+            continue
+        lines.append(
+            {
+                "product_id": raw.get("product_id"),
+                "quantity": qty,
+                "warehouse_id": raw.get("warehouse_id"),
+                "preferred_supplier_id": raw.get("preferred_supplier_id"),
+                "notes": raw.get("notes")
+                or f"AI prediction ({raw.get('risk_reason') or 'at_risk'}); conf={conf}",
+            }
+        )
+    return await create_requests_from_low_stock(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        lines=lines,
+        notes=notes or "Created from AI low-stock predictions",
+        include_open=include_open,
+    )
