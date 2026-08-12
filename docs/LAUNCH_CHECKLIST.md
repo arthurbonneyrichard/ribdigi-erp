@@ -540,6 +540,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Report-schedule enabled filter + CSV (Stage 127 S1: `test_stage127_report_schedules_s1.py`)
 - [x] Stage 127 fidelity sync (D1: `test_stage127_fidelity_d1.py`, `docs/STAGE_127_FIDELITY.md` — K1–S1 + readiness + deploy / launch / security)
 - [x] Stage 127 exit + freeze (H127x: `test_stage127_exit_h127x.py`, `docs/STAGE_127_EXIT_CRITERIA.md`, ADR-261)
+- [x] Stage 128 track opened (ADR-262: `test_stage128_open.py`, `docs/STAGE_128_PLAN.md`) — Tenant MVP Session Status, Passkey Inventory CSV & Document-Numbering CSV Export Fidelity; closed under ADR-263
+- [x] Session status honesty + CSV (Stage 128 S1: `test_stage128_session_status_s1.py`)
+- [x] Passkey inventory CSV (Stage 128 P1: `test_stage128_passkey_export_p1.py`)
+- [x] Document numbering & print template settings CSV (Stage 128 N1: `test_stage128_document_settings_export_n1.py`)
+- [x] Stage 128 fidelity sync (D1: `test_stage128_fidelity_d1.py`, `docs/STAGE_128_FIDELITY.md` — S1–N1 + readiness + deploy / launch / security)
+- [x] Stage 128 exit + freeze (H128x: `test_stage128_exit_h128x.py`, `docs/STAGE_128_EXIT_CRITERIA.md`, ADR-263)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

@@ -714,7 +714,10 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="document-numbering">
         <h2>Document numbering</h2>
-        <p className="muted">Configure invoice/PO/GRN/quotation prefixes and next series numbers.</p>
+        <p className="muted">
+          Configure invoice/PO/GRN/quotation prefixes and next series numbers. Export via{' '}
+          <code>GET /tenants/me/document-settings/export</code> (Stage 128 N1).
+        </p>
         <table className="table">
           <thead>
             <tr>
@@ -812,9 +815,33 @@ export default function Page() {
             })}
           </tbody>
         </table>
-        <button onClick={save} disabled={!!tenant.read_only} style={{ marginTop: 8 }}>
-          Save numbering
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+          <button onClick={save} disabled={!!tenant.read_only}>
+            Save numbering
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const token = localStorage.getItem('token') || '';
+              const res = await fetch(`${apiBase}/tenants/me/document-settings/export`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'document_settings_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('Document settings CSV downloaded');
+            }}
+          >
+            Export document settings CSV
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="media">

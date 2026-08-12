@@ -60,6 +60,7 @@ from app import variant_role_export as variant_role_export_svc
 from app import liquid_recurring_export as liquid_recurring_export_svc
 from app import bank_webhook_export as bank_webhook_export_svc
 from app import api_fx_schedule_export as api_fx_schedule_export_svc
+from app import session_passkey_doc_export as session_passkey_doc_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -413,6 +414,24 @@ async def tenant_me(
         raise HTTPException(status_code=403, detail="Tenant is suspended")
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant))
+
+
+@api.get("/tenants/me/document-settings/export")
+async def tenant_document_settings_export(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 128 N1 — document numbering + print template settings CSV (no secrets)."""
+    text = await session_passkey_doc_export_svc.export_document_settings_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="document_settings_export.csv"'
+        },
+    )
 
 
 @api.get("/tenants/me/print-templates/preview")
@@ -1139,6 +1158,21 @@ async def webauthn_list_credentials(
     return env([webauthn.serialize_credential(r) for r in rows])
 
 
+@api.get("/auth/webauthn/credentials/export")
+async def webauthn_credentials_export(
+    claims=Depends(current_claims), db: AsyncSession = Depends(get_db)
+):
+    """Stage 128 P1 — passkey inventory CSV (public_key / credential_id excluded)."""
+    text = await session_passkey_doc_export_svc.export_passkeys_csv(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="passkeys_export.csv"'},
+    )
+
+
 @api.delete("/auth/webauthn/credentials/{credential_id}")
 async def webauthn_delete_credential(
     credential_id: str,
@@ -1421,31 +1455,54 @@ async def idle_logout(
 
 
 @api.get("/auth/sessions")
-async def list_sessions(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
-    rows = (
-        await db.execute(
-            select(m.AuthSession)
-            .where(
-                m.AuthSession.tenant_id == claims["tenant_id"],
-                m.AuthSession.user_id == claims["sub"],
-                m.AuthSession.revoked_at.is_(None),
-            )
-            .order_by(m.AuthSession.created_at.desc())
-        )
-    ).scalars().all()
+async def list_sessions(
+    status: str | None = None,
+    active_only: bool = False,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 128 S1 — status / active_only for honest session lists (caller only)."""
+    status_n = (status or "").strip().lower() or None
+    if status_n and status_n not in {"active", "revoked", "all"}:
+        raise HTTPException(status_code=400, detail="status must be active, revoked, or all")
+    rows = await session_passkey_doc_export_svc.list_user_sessions(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        status=status_n,
+        active_only=active_only,
+    )
     return env(
         [
-            {
-                "id": s.id,
-                "jti": s.jti,
-                "ip_address": s.ip_address,
-                "user_agent": s.user_agent,
-                "expires_at": s.expires_at,
-                "created_at": s.created_at,
-                "current": s.jti == claims.get("jti"),
-            }
+            session_passkey_doc_export_svc.serialize_session(s, current_jti=claims.get("jti"))
             for s in rows
         ]
+    )
+
+
+@api.get("/auth/sessions/export")
+async def sessions_export(
+    status: str | None = None,
+    active_only: bool = False,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 128 S1 — sessions CSV export (refresh-token secrets never included)."""
+    status_n = (status or "").strip().lower() or None
+    if status_n and status_n not in {"active", "revoked", "all"}:
+        raise HTTPException(status_code=400, detail="status must be active, revoked, or all")
+    text = await session_passkey_doc_export_svc.export_sessions_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        current_jti=claims.get("jti"),
+        status=status_n,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="sessions_export.csv"'},
     )
 
 

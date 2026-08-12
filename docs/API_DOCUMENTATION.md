@@ -165,9 +165,15 @@ Rotates the session: validates the refresh token hash against `auth_sessions`, r
 ```
 
 ### 2.6 Session Management
-**Endpoint:** `GET /auth/sessions`
+**Endpoint:** `GET /auth/sessions` — list caller sessions; Stage 128 S1 supports `status=active|revoked|all` and `active_only`.
+
+**Endpoint:** `GET /auth/sessions/export` — Stage 128 S1 CSV (no refresh-token secrets).
 
 **Endpoint:** `DELETE /auth/sessions/{session_id}`
+
+**Passkey inventory export (Stage 128 P1):** `GET /auth/webauthn/credentials/export` (no `public_key` / `credential_id`).
+
+**Document settings export (Stage 128 N1):** `GET /tenants/me/document-settings/export` — numbering series + print template choices (company_admin / super_admin).
 
 ### 2.7 API Keys (Stage 6 K1 / Stage 7 K2 / BR-18.1)
 Tenant admins manage integration keys. The raw secret is returned **once** on create.
@@ -1630,3 +1636,5 @@ Stage 125 D1 — `docs/STAGE_125_FIDELITY.md` (`test_stage125_fidelity_d1.py`): 
 Stage 126 D1 — `docs/STAGE_126_FIDELITY.md` (`test_stage126_fidelity_d1.py`): Stage 126 C1 bank-connections `is_active`/`active_only`; Stage 126 W1 webhooks `is_active`/`active_only`; Stage 126 X1 `GET /accounting/bank-connections/export`, `/webhooks/export`.
 
 Stage 127 D1 — `docs/STAGE_127_FIDELITY.md` (`test_stage127_fidelity_d1.py`): Stage 127 K1 `GET /api-keys?status=` + `/api-keys/export`; Stage 127 F1 `GET /credit/exchange-rates/export`; Stage 127 S1 `GET /reports/schedules?enabled=` + `/reports/schedules/export`.
+
+Stage 128 D1 — `docs/STAGE_128_FIDELITY.md` (`test_stage128_fidelity_d1.py`): Stage 128 S1 `GET /auth/sessions?status=` + `/auth/sessions/export`; Stage 128 P1 `GET /auth/webauthn/credentials/export`; Stage 128 N1 `GET /tenants/me/document-settings/export`.

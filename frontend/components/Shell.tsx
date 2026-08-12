@@ -1648,7 +1648,13 @@ const userMgmtLinks: NavLink[] = [
   {
     kind: 'link',
     label: 'Active sessions',
-    href: '/security#sessions',
+    href: '/security?session_status=active#sessions',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'Revoked Sessions',
+    href: '/security?session_status=revoked#sessions',
     modules: ['security'],
   },
 ];

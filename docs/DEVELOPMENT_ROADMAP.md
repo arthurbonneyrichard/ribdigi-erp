@@ -2138,6 +2138,18 @@ Every feature in every phase must meet:
 
 **Stage 127 exit (2026-08-12):** K1, F1, S1, D1, H127x met — `docs/STAGE_127_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_261_STAGE127_FREEZE.md`. Fidelity: `docs/STAGE_127_FIDELITY.md`.
 
+**Stage 128 open (2026-08-12):** Tenant MVP Session Status, Passkey Inventory CSV & Document-Numbering CSV Export Fidelity — `docs/ADR_262_STAGE128_OPEN.md` + `docs/STAGE_128_PLAN.md` (Session status → Passkey CSV → Document settings CSV → Fidelity; S1 next).
+
+**Stage 128 S1 (2026-08-12):** Session status honesty + CSV (`test_stage128_session_status_s1.py`).
+
+**Stage 128 P1 (2026-08-12):** Passkey inventory CSV (`test_stage128_passkey_export_p1.py`).
+
+**Stage 128 N1 (2026-08-12):** Document numbering & print template settings CSV (`test_stage128_document_settings_export_n1.py`).
+
+**Stage 128 D1 (2026-08-12):** Session status, passkey & document-settings export fidelity sync — `docs/STAGE_128_FIDELITY.md` (`test_stage128_fidelity_d1.py`).
+
+**Stage 128 exit (2026-08-12):** S1, P1, N1, D1, H128x met — `docs/STAGE_128_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_263_STAGE128_FREEZE.md`. Fidelity: `docs/STAGE_128_FIDELITY.md`.
+
 
 
 

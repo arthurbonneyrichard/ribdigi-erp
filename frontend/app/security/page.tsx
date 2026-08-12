@@ -168,14 +168,32 @@ export default function Page() {
       .toLowerCase();
     return ['active', 'revoked', 'expired'].includes(v) ? v : '';
   });
+  // Stage 128 S1 — session_status → GET /auth/sessions?status=
+  const [sessionStatusFilter, setSessionStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('session_status') || '')
+      .trim()
+      .toLowerCase();
+    return ['active', 'revoked', 'all'].includes(v) ? v : '';
+  });
   const [role, setRole] = useState('');
   const [principal, setPrincipal] = useState('');
 
-  async function refresh(opts?: { webhookActive?: string; apiKeyStatus?: string }) {
+  async function refresh(opts?: {
+    webhookActive?: string;
+    apiKeyStatus?: string;
+    sessionStatus?: string;
+  }) {
+    const sessionStatus =
+      opts?.sessionStatus !== undefined ? opts.sessionStatus : sessionStatusFilter;
+    const sessQs =
+      sessionStatus === 'active' || sessionStatus === 'revoked' || sessionStatus === 'all'
+        ? `?status=${sessionStatus}`
+        : '';
     const [r, keys, sess, me] = await Promise.all([
       api('/auth/2fa/status'),
       api('/auth/webauthn/credentials').catch(() => ({ data: [] })),
-      api('/auth/sessions').catch(() => ({ data: [] })),
+      api(`/auth/sessions${sessQs}`).catch(() => ({ data: [] })),
       api('/me').catch(() => ({ data: null })),
     ]);
     setStatus(r.data);
@@ -375,9 +393,17 @@ export default function Page() {
       keyStatus = ks;
       setApiKeyStatusFilter(ks);
     }
-    refresh({ webhookActive: whActive, apiKeyStatus: keyStatus }).catch((err) =>
-      setError(err.message),
-    );
+    let sessStatus = sessionStatusFilter;
+    const ss = params.get('session_status')?.trim().toLowerCase() || '';
+    if (['active', 'revoked', 'all'].includes(ss)) {
+      sessStatus = ss;
+      setSessionStatusFilter(ss);
+    }
+    refresh({
+      webhookActive: whActive,
+      apiKeyStatus: keyStatus,
+      sessionStatus: sessStatus,
+    }).catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -552,7 +578,10 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }} id="passkeys">
         <h2>Passkeys (WebAuthn)</h2>
-        <p className="muted">Register a platform or security-key passkey for passwordless second factor.</p>
+        <p className="muted">
+          Register a platform or security-key passkey for passwordless second factor. Export via{' '}
+          <code>GET /auth/webauthn/credentials/export</code> (Stage 128 P1 — no public keys).
+        </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <input
             value={passkeyName}
@@ -562,6 +591,28 @@ export default function Page() {
           />
           <button type="button" onClick={registerPasskey}>
             Add passkey
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const token = localStorage.getItem('token') || '';
+              const res = await fetch(`${apiBase}/auth/webauthn/credentials/export`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'passkeys_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('Passkeys CSV downloaded');
+            }}
+          >
+            Export passkeys CSV
           </button>
         </div>
         <ul>
@@ -891,12 +942,64 @@ export default function Page() {
       )}
 
       <div className="card" id="sessions">
-        <h2>Active sessions</h2>
-        <p className="muted">Revoke devices you no longer recognize.</p>
+        <h2>Sessions</h2>
+        <p className="muted">
+          Revoke devices you no longer recognize. Filter via <code>session_status</code> →{' '}
+          <code>GET /auth/sessions?status=</code> (Stage 128 S1).
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <select
+            value={sessionStatusFilter || 'default'}
+            onChange={(e) => {
+              const v = e.target.value === 'default' ? '' : e.target.value;
+              setSessionStatusFilter(v);
+              const url = new URL(window.location.href);
+              if (['active', 'revoked', 'all'].includes(v)) {
+                url.searchParams.set('session_status', v);
+              } else url.searchParams.delete('session_status');
+              window.history.replaceState({}, '', url.toString());
+              refresh({ sessionStatus: v }).catch((err) => setError(err.message));
+            }}
+          >
+            <option value="default">Status filter (default / active)</option>
+            <option value="active">Active only</option>
+            <option value="revoked">Revoked only</option>
+            <option value="all">All sessions</option>
+          </select>
+          <button
+            type="button"
+            onClick={async () => {
+              const token = localStorage.getItem('token') || '';
+              const qs =
+                sessionStatusFilter === 'active' ||
+                sessionStatusFilter === 'revoked' ||
+                sessionStatusFilter === 'all'
+                  ? `?status=${sessionStatusFilter}`
+                  : '';
+              const res = await fetch(`${apiBase}/auth/sessions/export${qs}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'sessions_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('Sessions CSV downloaded');
+            }}
+          >
+            Export sessions CSV
+          </button>
+        </div>
         <table className="table">
           <thead>
             <tr>
               <th>Created</th>
+              <th>Status</th>
               <th>IP</th>
               <th>Agent</th>
               <th></th>
@@ -906,13 +1009,14 @@ export default function Page() {
             {sessions.map((s) => (
               <tr key={s.id}>
                 <td>{s.created_at ? String(s.created_at) : '—'}</td>
+                <td>{s.status || (s.revoked_at ? 'revoked' : 'active')}</td>
                 <td>{s.ip_address || '—'}</td>
                 <td className="muted" style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {s.user_agent || '—'}
                   {s.current ? ' (this device)' : ''}
                 </td>
                 <td>
-                  {!s.current && (
+                  {!s.current && !s.revoked_at && s.status !== 'revoked' && (
                     <button type="button" onClick={() => revokeSession(s.id)}>
                       Revoke
                     </button>
@@ -922,8 +1026,8 @@ export default function Page() {
             ))}
             {!sessions.length && (
               <tr>
-                <td colSpan={4} className="muted">
-                  No active sessions
+                <td colSpan={5} className="muted">
+                  No sessions
                 </td>
               </tr>
             )}

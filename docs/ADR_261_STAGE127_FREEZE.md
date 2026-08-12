@@ -23,4 +23,4 @@ Stage 127 Tenant MVP API-Key Status, FX Rates CSV & Report-Schedule CSV Export F
 
 ## Next stage
 
-Stage 128 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 127 feature scope remains frozen.
+**Stage 128 opened** via CONTINUE/NEXT — [ADR-262](ADR_262_STAGE128_OPEN.md) · [STAGE_128_PLAN.md](STAGE_128_PLAN.md) — Tenant MVP Session Status, Passkey Inventory CSV & Document-Numbering CSV Export Fidelity. Stage 127 feature scope remains frozen.
