@@ -27,4 +27,4 @@ Stage 93 House Navigation & Runtime Ops delivered roster navigation & export (M1
 
 ## Next stage
 
-Stage 94 requires CONTINUE/NEXT with a distinct product outline and open ADR after this freeze. Stage 93 feature scope remains frozen.
+Stage 94 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-194](ADR_194_STAGE94_OPEN.md) + [STAGE_94_PLAN.md](STAGE_94_PLAN.md) (Platform Staff Discovery → Configuration Integrity & Release Identity → Console State & Queue Awareness → House Discovery & Runtime Assurance Ops). Stage 93 feature scope remains frozen.

@@ -5,11 +5,13 @@ from __future__ import annotations
 import secrets
 from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from email_validator import EmailNotValidError, validate_email
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse, Response
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit, health as health_svc, platform as platform_svc
@@ -849,6 +851,17 @@ def _house_runtime(tenant: m.Tenant | None) -> dict[str, Any]:
     }
 
 
+def _runtime_identity() -> dict[str, Any]:
+    """Stage 94 H1 — protected release identity (honest null build when unset)."""
+    build = (settings.APP_BUILD_ID or "").strip() or None
+    return {
+        "version": (settings.APP_VERSION or "").strip() or "1.0.0",
+        "build_id": build,
+        "app_env": settings.APP_ENV,
+        "debug": bool(settings.DEBUG),
+    }
+
+
 def _platform_security_detail() -> dict[str, Any]:
     """Stage 92 K1 — protected health/evidence security detail (not public /health)."""
     posture = security_posture()
@@ -891,6 +904,14 @@ async def platform_patch_settings(
         changes["company_name"] = tenant.company_name
     if payload.support_email is not None:
         email = payload.support_email.strip() or None
+        if email is not None:
+            try:
+                email = validate_email(email, check_deliverability=False).normalized
+            except EmailNotValidError as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"support_email is invalid: {exc}",
+                ) from exc
         tenant.email = email
         changes["support_email"] = email
     if payload.support_phone is not None:
@@ -901,6 +922,13 @@ async def platform_patch_settings(
         tz = payload.timezone.strip()
         if not tz:
             raise HTTPException(status_code=400, detail="timezone cannot be empty")
+        try:
+            ZoneInfo(tz)
+        except ZoneInfoNotFoundError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="timezone must be a valid IANA timezone (e.g. Africa/Accra)",
+            ) from exc
         tenant.timezone = tz
         changes["timezone"] = tenant.timezone
     if payload.date_format is not None:
@@ -951,15 +979,32 @@ async def platform_patch_settings(
 async def platform_list_users(
     claims: dict = Depends(require_platform_permission("platform_users", "read")),
     db: AsyncSession = Depends(get_db),
+    q: str | None = Query(None),
+    role: str | None = Query(None),
+    is_active: bool | None = Query(None),
 ):
-    """Stage 91 P1 — includes last_session_at + active_session_count rollups."""
+    """Stage 91 P1 — includes last_session_at + active_session_count rollups.
+
+    Stage 94 W1 — optional q / role / is_active discovery filters.
+    """
     await platform_svc.ensure_platform_tenant(db)
-    rows = (
-        await db.execute(
-            select(m.User)
-            .where(m.User.tenant_id == PLATFORM_TENANT_ID)
-            .order_by(m.User.full_name.asc())
+    q_filter = (q or "").strip() or None
+    role_filter = (role or "").strip() or None
+    if role_filter and role_filter not in PLATFORM_ROLES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"role must be one of: {sorted(PLATFORM_ROLES)}",
         )
+    filters = [m.User.tenant_id == PLATFORM_TENANT_ID]
+    if q_filter:
+        like = f"%{q_filter}%"
+        filters.append(or_(m.User.email.ilike(like), m.User.full_name.ilike(like)))
+    if role_filter:
+        filters.append(m.User.role == role_filter)
+    if is_active is not None:
+        filters.append(m.User.is_active.is_(bool(is_active)))
+    rows = (
+        await db.execute(select(m.User).where(*filters).order_by(m.User.full_name.asc()))
     ).scalars().all()
     now = datetime.utcnow()
     last_by_user = {
@@ -1358,6 +1403,7 @@ async def platform_health(
     }
     report["security"] = _platform_security_detail()
     report["house_runtime"] = _house_runtime(platform_tenant)
+    report["runtime_identity"] = _runtime_identity()
     return env(report)
 
 
@@ -1546,6 +1592,8 @@ async def platform_operator_evidence(
     await platform_svc.ensure_platform_tenant(db)
     platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
     report["security"] = _platform_security_detail()
+    report["runtime_identity"] = _runtime_identity()
+    identity = _runtime_identity()
     return env(
         {
             "generated_at": datetime.utcnow().isoformat() + "Z",
@@ -1565,6 +1613,7 @@ async def platform_operator_evidence(
                 **_house_runtime(platform_tenant),
             },
             "house_runtime": _house_runtime(platform_tenant),
+            "runtime_identity": identity,
             "health": report,
             "security": _platform_security_detail(),
             "honesty_flags": {

@@ -251,6 +251,9 @@ Authoritative MVP docs:
 - `docs/STAGE_64_PLAN.md` (`backend/tests/test_stage64_open.py`) — Stage 64 open (ADR-133)
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
 - `docs/STAGE_93_EXIT_CRITERIA.md` / `docs/ADR_193_STAGE93_FREEZE.md` (`backend/tests/test_stage93_exit_h93x.py`) — Stage 93 H93x
+- `docs/STAGE_94_EXIT_CRITERIA.md` / `docs/ADR_195_STAGE94_FREEZE.md` (`backend/tests/test_stage94_exit_h94x.py`) — Stage 94 H94x
+- `docs/STAGE_94_FIDELITY.md` (`backend/tests/test_stage94_fidelity_d1.py`) — Stage 94 D1
+- `docs/STAGE_94_PLAN.md` (`backend/tests/test_stage94_open.py`) — Stage 94 open (ADR-194)
 - `docs/STAGE_93_FIDELITY.md` (`backend/tests/test_stage93_fidelity_d1.py`) — Stage 93 D1
 - `docs/STAGE_93_PLAN.md` (`backend/tests/test_stage93_open.py`) — Stage 93 open (ADR-192)
 - `docs/STAGE_92_EXIT_CRITERIA.md` / `docs/ADR_191_STAGE92_FREEZE.md` (`backend/tests/test_stage92_exit_h92x.py`) — Stage 92 H92x
@@ -1072,6 +1075,30 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 
 
+
+## Stage 94 exit
+
+H94x met — `docs/STAGE_94_EXIT_CRITERIA.md`, ADR-195. Stages 1–94 frozen for Stage 94 feature scope.
+
+## Stage 94 D1 — House Discovery & Runtime Assurance Ops fidelity
+
+`docs/STAGE_94_FIDELITY.md` — maps W1–T2 → readiness / launch / deploy / security.
+
+## Stage 94 T2 — Console state & queue awareness
+
+`test_stage94_console_state_t2.py` — shell at-risk badge, Activity/Audit empty states, plans chart link.
+
+## Stage 94 H1 — Configuration integrity & release identity
+
+`test_stage94_configuration_integrity_h1.py` — support email + IANA timezone validation, protected `runtime_identity`.
+
+## Stage 94 W1 — Platform staff discovery
+
+`test_stage94_staff_discovery_w1.py` — users `q`/`role`/`is_active`, URL sync, dashboard deep-link.
+
+## Stage 94 open
+
+ADR-194 + `docs/STAGE_94_PLAN.md` — House Discovery & Runtime Assurance Ops.
 
 ## Stage 93 exit
 

@@ -119,7 +119,7 @@ export default function PlatformSettingsPage() {
           onChange={(e) => setSupportPhone(e.target.value)}
           style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
         />
-        <label className="muted">House timezone</label>
+        <label className="muted">House timezone (IANA)</label>
         <input
           value={timezone}
           onChange={(e) => setTimezone(e.target.value)}
@@ -127,6 +127,9 @@ export default function PlatformSettingsPage() {
           required
           style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
         />
+        <p className="muted" style={{ marginTop: -8, marginBottom: 12, fontSize: 13 }}>
+          Must be a valid IANA timezone (e.g. Africa/Accra). Invalid values are rejected by the API.
+        </p>
         <label className="muted">House date format</label>
         <select
           value={dateFormat}

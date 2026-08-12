@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
@@ -37,6 +38,9 @@ type StaffSession = {
 };
 
 export default function PlatformUsersPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [items, setItems] = useState<PlatformUser[]>([]);
   const [sessions, setSessions] = useState<StaffSession[]>([]);
   const [error, setError] = useState('');
@@ -47,12 +51,35 @@ export default function PlatformUsersPage() {
   const [role, setRole] = useState('platform_admin');
   const [busy, setBusy] = useState(false);
   const [formats, setFormats] = useState(HOUSE_FORMAT_DEFAULTS);
+  const [q, setQ] = useState(() => searchParams.get('q') || '');
+  const [roleFilter, setRoleFilter] = useState(() => searchParams.get('role') || '');
+  const [activeFilter, setActiveFilter] = useState(() => searchParams.get('is_active') || '');
 
-  async function load() {
+  function syncUrl(next: { q?: string; role?: string; isActive?: string }) {
+    const params = new URLSearchParams();
+    const nq = next.q !== undefined ? next.q : q;
+    const nr = next.role !== undefined ? next.role : roleFilter;
+    const na = next.isActive !== undefined ? next.isActive : activeFilter;
+    if (nq.trim()) params.set('q', nq.trim());
+    if (nr) params.set('role', nr);
+    if (na) params.set('is_active', na);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  async function load(overrides?: { q?: string; role?: string; isActive?: string }) {
     setError('');
+    const qf = overrides?.q !== undefined ? overrides.q : q;
+    const rf = overrides?.role !== undefined ? overrides.role : roleFilter;
+    const af = overrides?.isActive !== undefined ? overrides.isActive : activeFilter;
     try {
-      const r = await api('/platform/users');
-      setItems(r.data || []);
+      const params = new URLSearchParams();
+      if (qf.trim()) params.set('q', qf.trim());
+      if (rf) params.set('role', rf);
+      if (af === 'true' || af === 'false') params.set('is_active', af);
+      const qs = params.toString();
+      const r = await api(`/platform/users${qs ? `?${qs}` : ''}`);
+      setItems(Array.isArray(r.data) ? r.data : r.data?.items || []);
       const s = await api('/platform/users/sessions');
       setSessions(s.data || []);
     } catch (err: any) {
@@ -62,8 +89,18 @@ export default function PlatformUsersPage() {
 
   useEffect(() => {
     fetchHouseFormats().then(setFormats);
-    load();
   }, []);
+
+  useEffect(() => {
+    const fromQ = searchParams.get('q') || '';
+    const fromRole = searchParams.get('role') || '';
+    const fromActive = searchParams.get('is_active') || '';
+    setQ(fromQ);
+    setRoleFilter(fromRole);
+    setActiveFilter(fromActive);
+    load({ q: fromQ, role: fromRole, isActive: fromActive });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
@@ -126,25 +163,25 @@ export default function PlatformUsersPage() {
         method: 'POST',
         body: '{}',
       });
-      const sent = r.data?.email_delivery?.sent;
       setMsg(
-        sent
-          ? `Reset email sent to ${u.email}`
-          : `Reset token issued for ${u.email} (email mode: ${r.data?.email_delivery?.mode || 'n/a'})`,
+        r.message ||
+          (r.data?.email_delivery?.sent
+            ? `Password reset email sent to ${u.email}`
+            : `Password reset email not sent (mode: ${r.data?.email_delivery?.mode || 'n/a'})`),
       );
+      await load();
     } catch (err: any) {
-      setError(err.message || 'Email reset failed');
+      setError(err.message || 'Reset email failed');
     } finally {
       setBusy(false);
     }
   }
 
   async function revokeSession(s: StaffSession) {
-    if (s.current) {
-      if (!window.confirm('Revoke your current session? You may be signed out.')) return;
-    }
+    if (!window.confirm(`Revoke session for ${s.email}?`)) return;
     setBusy(true);
     setError('');
+    setMsg('');
     try {
       await api(`/platform/users/sessions/${s.id}`, { method: 'DELETE' });
       setMsg('Session revoked');
@@ -156,6 +193,8 @@ export default function PlatformUsersPage() {
     }
   }
 
+  const filtersActive = Boolean(q.trim() || roleFilter || activeFilter);
+
   return (
     <PlatformShell>
       <h1>Platform users</h1>
@@ -166,6 +205,53 @@ export default function PlatformUsersPage() {
       </p>
       {error && <p>{error}</p>}
       {msg && <p style={{ color: '#047857' }}>{msg}</p>}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          syncUrl({ q, role: roleFilter, isActive: activeFilter });
+          load();
+        }}
+        style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16, alignItems: 'center' }}
+      >
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search name or email"
+          style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 200 }}
+        />
+        <select
+          value={roleFilter}
+          onChange={(e) => {
+            const v = e.target.value;
+            setRoleFilter(v);
+            syncUrl({ role: v });
+            load({ role: v });
+          }}
+          style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="">All roles</option>
+          <option value="platform_admin">platform_admin</option>
+          <option value="platform_super_admin">platform_super_admin</option>
+        </select>
+        <select
+          value={activeFilter}
+          onChange={(e) => {
+            const v = e.target.value;
+            setActiveFilter(v);
+            syncUrl({ isActive: v });
+            load({ isActive: v });
+          }}
+          style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="">All statuses</option>
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+        <button type="submit" style={{ padding: '10px 14px', borderRadius: 8 }}>
+          Apply
+        </button>
+      </form>
 
       <form onSubmit={createUser} className="card" style={{ marginTop: 16, maxWidth: 480 }}>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>Invite platform user</h2>
@@ -267,7 +353,9 @@ export default function PlatformUsersPage() {
           {items.length === 0 && (
             <tr>
               <td colSpan={9} className="muted">
-                No platform users yet. Use the bootstrap script or create one above.
+                {filtersActive
+                  ? 'No platform users match these filters.'
+                  : 'No platform users yet. Use the bootstrap script or create one above.'}
               </td>
             </tr>
           )}
@@ -292,7 +380,9 @@ export default function PlatformUsersPage() {
                 {s.full_name} ({s.email}){s.current ? ' · current' : ''}
               </td>
               <td>{s.ip_address || '—'}</td>
-              <td>{s.created_at || '—'}</td>
+              <td className="muted">
+                {formatDateTime(s.created_at, formats.date_format, formats.time_format)}
+              </td>
               <td>
                 <button type="button" disabled={busy} onClick={() => revokeSession(s)}>
                   Revoke

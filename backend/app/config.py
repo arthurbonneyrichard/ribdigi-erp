@@ -5,6 +5,9 @@ from pydantic import model_validator
 class Settings(BaseSettings):
     APP_ENV: str = "development"
     DEBUG: bool = False
+    # Stage 94 H1 — release identity for protected health/evidence (honest null when unset).
+    APP_VERSION: str = "1.0.0"
+    APP_BUILD_ID: str = ""
     DATABASE_URL: str = "postgresql+asyncpg://ribdigi:ribdigi@postgres:5432/ribdigi_erp"
     JWT_SECRET_KEY: str = "change-me"
     JWT_ALGORITHM: str = "HS256"

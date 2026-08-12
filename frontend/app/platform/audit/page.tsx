@@ -248,7 +248,9 @@ export default function PlatformAuditPage() {
           {items.length === 0 && (
             <tr>
               <td colSpan={6} className="muted">
-                No platform audit events yet.
+                {isActivity
+                  ? 'No platform activity in this window. Activity defaults to the last 7 days when from_date is omitted.'
+                  : 'No platform audit events yet.'}
               </td>
             </tr>
           )}

@@ -23,6 +23,7 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [ready, setReady] = useState(false);
+  const [atRiskTotal, setAtRiskTotal] = useState<number | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -51,6 +52,23 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
       active = false;
     };
   }, [router, pathname]);
+
+  useEffect(() => {
+    if (!ready || !canReadModule(permissions, 'platform_tenants')) return;
+    let active = true;
+    api('/platform/tenants/at-risk?within_days=14')
+      .then((r) => {
+        if (!active) return;
+        const total = r.data?.total;
+        if (typeof total === 'number') setAtRiskTotal(total);
+      })
+      .catch(() => {
+        // omit badge on failure — never fabricate 0
+      });
+    return () => {
+      active = false;
+    };
+  }, [ready, permissions]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !ready) return;
@@ -111,6 +129,11 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
           {visible.map(([n, h]) => (
             <Link key={h} href={h}>
               {n}
+              {h === '/platform/tenants' && atRiskTotal != null ? (
+                <span className="badge" style={{ marginLeft: 8 }} title="At-risk tenants (14d)">
+                  {atRiskTotal} at-risk
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>

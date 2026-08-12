@@ -98,6 +98,9 @@ export default function PlatformDashboardPage() {
         <div className="card">
           <div className="muted">Platform users</div>
           <div className="kpi">{d.platform_users ?? '—'}</div>
+          <p style={{ marginTop: 8 }}>
+            <Link href="/platform/users">View platform users →</Link>
+          </p>
         </div>
         <div className="card">
           <div className="muted">Customer users</div>
@@ -126,6 +129,9 @@ export default function PlatformDashboardPage() {
             slices={(d.plan_distribution?.slices || []).map((s) => ({ label: s.plan_code, value: s.count }))}
             emptyLabel="No plan codes yet"
           />
+          <p style={{ marginTop: 8 }}>
+            <Link href="/platform/plans">View plans →</Link>
+          </p>
         </div>
         <div className="card">
           <DonutChart

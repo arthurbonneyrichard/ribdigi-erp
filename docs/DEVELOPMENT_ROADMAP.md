@@ -1729,3 +1729,15 @@ Every feature in every phase must meet:
 **Stage 93 D1 (2026-08-11):** House Navigation & Runtime Ops fidelity sync — `docs/STAGE_93_FIDELITY.md` (`test_stage93_fidelity_d1.py`); maps M1–V1 → readiness / launch / deploy / security.
 
 **Stage 93 exit (2026-08-11):** M1, J1, V1, D1, H93x met — `docs/STAGE_93_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_193_STAGE93_FREEZE.md`. Fidelity: `docs/STAGE_93_FIDELITY.md`.
+
+**Stage 94 open (2026-08-11):** House Discovery & Runtime Assurance Ops track approved — `docs/ADR_194_STAGE94_OPEN.md` + `docs/STAGE_94_PLAN.md` (Platform Staff Discovery → Configuration Integrity & Release Identity → Console State & Queue Awareness → House Discovery & Runtime Assurance Ops; W1 next).
+
+**Stage 94 W1 (2026-08-11):** Platform staff discovery — users `q`/`role`/`is_active`, URL sync, dashboard deep-link (`test_stage94_staff_discovery_w1.py`).
+
+**Stage 94 H1 (2026-08-11):** Configuration integrity & release identity — support email + IANA timezone validation, protected `runtime_identity` (`test_stage94_configuration_integrity_h1.py`).
+
+**Stage 94 T2 (2026-08-11):** Console state & queue awareness — shell at-risk badge, Activity/Audit empty states, plans chart link (`test_stage94_console_state_t2.py`).
+
+**Stage 94 D1 (2026-08-11):** House Discovery & Runtime Assurance Ops fidelity sync — `docs/STAGE_94_FIDELITY.md` (`test_stage94_fidelity_d1.py`); maps W1–T2 → readiness / launch / deploy / security.
+
+**Stage 94 exit (2026-08-11):** W1, H1, T2, D1, H94x met — `docs/STAGE_94_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_195_STAGE94_FREEZE.md`. Fidelity: `docs/STAGE_94_FIDELITY.md`.

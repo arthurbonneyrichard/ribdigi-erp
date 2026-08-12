@@ -23,7 +23,7 @@ if not logging.getLogger().handlers:
 
 app = FastAPI(
     title="RIBDIGI BUSINESS ERP API",
-    version="1.0.0",
+    version=settings.APP_VERSION or "1.0.0",
     docs_url="/docs" if _docs else None,
     redoc_url="/redoc" if _docs else None,
     openapi_url="/openapi.json" if _docs else None,
@@ -74,6 +74,7 @@ app.state.session_factory = SessionLocal
 async def root():
     return {
         "name": "RIBDIGI BUSINESS ERP",
-        "version": "1.0.0",
+        "version": settings.APP_VERSION or "1.0.0",
+        "build_id": (settings.APP_BUILD_ID or "").strip() or None,
         "docs": "/docs" if openapi_enabled() else None,
     }

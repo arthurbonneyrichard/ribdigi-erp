@@ -570,6 +570,13 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 93 V1** | Format, evidence & runtime posture — number_format, house_runtime, Celery badge, CORS alert (`test_stage93_runtime_posture_v1.py`); packaging honesty only — not go-live Complete |
 | **Stage 93 D1** | House Navigation & Runtime Ops fidelity — `docs/STAGE_93_FIDELITY.md` (`test_stage93_fidelity_d1.py`); maps M1–V1 → readiness / launch / deploy / security |
 | **Stage 93 H93x** | Exit + freeze — `docs/STAGE_93_EXIT_CRITERIA.md`, ADR-193 (`test_stage93_exit_h93x.py`); Stages 1–93 frozen for Stage 93 scope; Stage 94+ requires CONTINUE/NEXT |
+| **Stage 94 open** | House Discovery & Runtime Assurance Ops — `docs/STAGE_94_PLAN.md`, ADR-194 (`test_stage94_open.py`); Stages 1–93 remain frozen for prior scopes; W1 next historically |
+| **Stage 94 W1** | Platform staff discovery — users `q`/`role`/`is_active`, URL sync, dashboard deep-link (`test_stage94_staff_discovery_w1.py`) |
+| **Stage 94 H1** | Configuration integrity & release identity — support email + IANA timezone validation, protected `runtime_identity` (`test_stage94_configuration_integrity_h1.py`); packaging honesty only — not go-live Complete |
+| **Stage 94 T2** | Console state & queue awareness — shell at-risk badge, Activity/Audit empty states, plans chart link (`test_stage94_console_state_t2.py`) |
+| **Stage 94 D1** | House Discovery & Runtime Assurance Ops fidelity — `docs/STAGE_94_FIDELITY.md` (`test_stage94_fidelity_d1.py`); maps W1–T2 → readiness / launch / deploy / security |
+| **Stage 94 H94x** | Exit + freeze — `docs/STAGE_94_EXIT_CRITERIA.md`, ADR-195 (`test_stage94_exit_h94x.py`); Stages 1–94 frozen for Stage 94 scope; Stage 95+ requires CONTINUE/NEXT |
+
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
 | **Stage 68 T1** | Tenant Company console honesty — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`); module re-Complete / demo tenant Remaining |

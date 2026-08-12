@@ -375,7 +375,11 @@ export default function PlatformTenantsPage() {
         </select>
         <select
           value={planCode}
-          onChange={(e) => setPlanCode(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setPlanCode(v);
+            syncUrl({ planCode: v });
+          }}
           style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
         >
           <option value="">All plans</option>

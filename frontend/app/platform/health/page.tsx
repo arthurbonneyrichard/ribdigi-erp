@@ -32,6 +32,7 @@ export default function PlatformHealthPage() {
   const security = data?.security || {};
   const contacts = data?.operator_contacts || {};
   const runtime = data?.house_runtime || {};
+  const identity = data?.runtime_identity || {};
 
   return (
     <PlatformShell>
@@ -90,6 +91,19 @@ export default function PlatformHealthPage() {
               <p className="muted" style={{ marginTop: 8 }}>
                 TZ: {runtime.timezone || '—'} · date: {runtime.date_format || '—'} · time:{' '}
                 {runtime.time_format || '—'} · numbers: {runtime.number_format || '—'}
+              </p>
+            </div>
+            <div className="card">
+              <div className="muted">Runtime identity</div>
+              <div className="kpi" style={{ fontSize: 18 }}>
+                {identity.version || '—'}
+              </div>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Build: {identity.build_id || 'n/a'} · env: {identity.app_env || '—'} · debug:{' '}
+                {String(identity.debug ?? '—')}
+              </p>
+              <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                Packaging honesty only — not go-live Complete.
               </p>
             </div>
             <div className="card">
