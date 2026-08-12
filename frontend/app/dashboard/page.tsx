@@ -335,7 +335,9 @@ export default function Page() {
           Slice exports: stock-alerts / expenses / credit via{' '}
           <code>GET /dashboard/stock-alerts/export</code>,{' '}
           <code>/dashboard/expenses/export</code>, <code>/dashboard/credit/export</code> (Stage
-          158 A1 / E1 / C1).
+          158 A1 / E1 / C1); user-stats / summary via{' '}
+          <code>/dashboard/user-stats/export</code>, <code>/dashboard/summary/export</code> (Stage
+          159 U1 / M1).
         </p>
       )}
       {view !== 'cashier' && (
@@ -375,6 +377,30 @@ export default function Page() {
             }
           >
             Export credit CSV
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              exportDashboardSliceCsv(
+                '/dashboard/user-stats/export',
+                'dashboard_user_stats_export.csv',
+                'Dashboard user-stats CSV downloaded (Stage 159 U1)',
+              )
+            }
+          >
+            Export user-stats CSV
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              exportDashboardSliceCsv(
+                '/dashboard/summary/export',
+                'dashboard_summary_export.csv',
+                'Dashboard summary CSV downloaded (Stage 159 M1)',
+              )
+            }
+          >
+            Export summary CSV
           </button>
         </p>
       )}

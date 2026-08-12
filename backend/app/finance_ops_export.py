@@ -263,3 +263,73 @@ async def export_fiscal_period_csv(
     writer.writeheader()
     writer.writerow({k: _cell(row.get(k)) for k in FISCAL_PERIOD_EXPORT_COLUMNS})
     return buf.getvalue()
+
+
+TRIAL_BALANCE_EXPORT_COLUMNS = [
+    "as_of",
+    "account_id",
+    "code",
+    "name",
+    "account_type",
+    "debit",
+    "credit",
+    "balance",
+    "total_debit",
+    "total_credit",
+    "balanced",
+]
+
+
+async def export_trial_balance_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    as_of=None,
+) -> str:
+    """Stage 159 B1 — accounting trial-balance CSV (path-scoped; distinct from reports/export)."""
+    from app.accounting import ensure_default_accounts, trial_balance
+
+    await ensure_default_accounts(db, tenant_id)
+    data = await trial_balance(db, tenant_id, as_of=as_of)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=TRIAL_BALANCE_EXPORT_COLUMNS)
+    writer.writeheader()
+    as_of_v = data.get("as_of")
+    total_debit = data.get("total_debit")
+    total_credit = data.get("total_credit")
+    balanced = data.get("balanced")
+    rows = data.get("rows") or []
+    if not rows:
+        writer.writerow(
+            {
+                "as_of": _cell(as_of_v),
+                "account_id": "",
+                "code": "",
+                "name": "",
+                "account_type": "",
+                "debit": "",
+                "credit": "",
+                "balance": "",
+                "total_debit": _cell(total_debit),
+                "total_credit": _cell(total_credit),
+                "balanced": _cell(balanced),
+            }
+        )
+        return buf.getvalue()
+    for row in rows:
+        writer.writerow(
+            {
+                "as_of": _cell(as_of_v),
+                "account_id": _cell(row.get("account_id")),
+                "code": _cell(row.get("code")),
+                "name": _cell(row.get("name")),
+                "account_type": _cell(row.get("account_type")),
+                "debit": _cell(row.get("debit")),
+                "credit": _cell(row.get("credit")),
+                "balance": _cell(row.get("balance")),
+                "total_debit": _cell(total_debit),
+                "total_credit": _cell(total_credit),
+                "balanced": _cell(balanced),
+            }
+        )
+    return buf.getvalue()

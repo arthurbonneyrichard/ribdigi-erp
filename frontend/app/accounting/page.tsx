@@ -1295,10 +1295,38 @@ export default function Page() {
                 <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
                   Apply
                 </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const token = localStorage.getItem('token') || '';
+                    const qs = tbAsOf
+                      ? `?as_of_date=${encodeURIComponent(tbAsOf)}`
+                      : '';
+                    const res = await fetch(
+                      `${apiBase}/accounting/trial-balance/export${qs}`,
+                      { headers: { Authorization: `Bearer ${token}` } },
+                    );
+                    if (!res.ok) {
+                      setError(await res.text());
+                      return;
+                    }
+                    const blob = await res.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'accounting_trial_balance_export.csv';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    setMessage('Trial-balance CSV downloaded (Stage 159 B1)');
+                  }}
+                >
+                  Export trial-balance CSV
+                </button>
               </div>
               <p className="muted">
                 As of {trial?.as_of || '—'} · Balanced: {String(trial?.balanced)} | Dr{' '}
-                {trial?.total_debit} / Cr {trial?.total_credit}
+                {trial?.total_debit} / Cr {trial?.total_credit}. Export via{' '}
+                <code>GET /accounting/trial-balance/export</code> (Stage 159 B1; path-scoped —
+                distinct from generic <code>/reports/export</code>).
               </p>
             </div>
             <div className="card" id="profit-loss">

@@ -2510,6 +2510,18 @@ Every feature in every phase must meet:
 
 **Stage 158 exit (2026-08-12):** A1, E1, C1, D1, H158x met — `docs/STAGE_158_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_323_STAGE158_FREEZE.md`. Fidelity: `docs/STAGE_158_FIDELITY.md`.
 
+**Stage 159 open (2026-08-12):** Tenant MVP Dashboard User-Stats CSV, Dashboard Summary CSV & Accounting Trial-Balance CSV Export Fidelity — `docs/ADR_324_STAGE159_OPEN.md` + `docs/STAGE_159_PLAN.md` (User-stats → Summary → Trial-balance → Fidelity; U1 next).
+
+**Stage 159 U1 (2026-08-12):** Dashboard user-stats CSV (`test_stage159_user_stats_u1.py`).
+
+**Stage 159 M1 (2026-08-12):** Dashboard summary CSV (`test_stage159_summary_m1.py`).
+
+**Stage 159 B1 (2026-08-12):** Accounting trial-balance CSV (`test_stage159_trial_balance_b1.py`).
+
+**Stage 159 D1 (2026-08-12):** Dashboard user-stats / summary / accounting trial-balance export fidelity sync — `docs/STAGE_159_FIDELITY.md` (`test_stage159_fidelity_d1.py`).
+
+**Stage 159 exit (2026-08-12):** U1, M1, B1, D1, H159x met — `docs/STAGE_159_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_325_STAGE159_FREEZE.md`. Fidelity: `docs/STAGE_159_FIDELITY.md`.
+
 
 
 

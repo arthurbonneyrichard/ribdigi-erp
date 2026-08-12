@@ -23,6 +23,4 @@ Stage 158 Tenant MVP Dashboard Stock-Alerts CSV, Dashboard Expenses CSV & Dashbo
 
 ## Next stage
 
-Stage 159 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 158 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Dashboard User-Stats CSV + Dashboard Summary CSV + Accounting Trial-Balance path CSV (if still distinct from `/reports/export`).
+Stage 159 opened via CONTINUE/NEXT as ADR-324 / ADR-325 (dashboard user-stats / summary CSV + accounting trial-balance path CSV export fidelity). Stage 158 feature scope remains frozen.

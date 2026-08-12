@@ -440,3 +440,36 @@ def export_dashboard_credit_csv(*, payload: dict[str, Any]) -> bytes:
         if key in payload:
             writer.writerow([key, _cell(payload.get(key)), role])
     return buf.getvalue().encode("utf-8")
+
+
+def export_dashboard_user_stats_csv(*, payload: dict[str, Any]) -> bytes:
+    """Flatten GET /dashboard/user-stats into KPI CSV (Stage 159 U1)."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["metric", "value", "role_label"])
+    role = _cell(payload.get("role_label"))
+    stats = payload.get("user_stats") or {}
+    if isinstance(stats, dict):
+        for key in (
+            "total_users",
+            "active_users",
+            "inactive_users",
+            "custom_roles",
+            "system_roles",
+            "recent_logins_7d",
+        ):
+            if key in stats:
+                writer.writerow([key, _cell(stats.get(key)), role])
+    return buf.getvalue().encode("utf-8")
+
+
+def export_dashboard_summary_csv(*, payload: dict[str, Any]) -> bytes:
+    """Flatten GET /dashboard/summary into compact KPI CSV (Stage 159 M1)."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["metric", "value", "role_label"])
+    role = _cell(payload.get("role_label"))
+    for key in ("total_sales", "total_expenses", "products", "low_stock", "customers"):
+        if key in payload:
+            writer.writerow([key, _cell(payload.get(key)), role])
+    return buf.getvalue().encode("utf-8")

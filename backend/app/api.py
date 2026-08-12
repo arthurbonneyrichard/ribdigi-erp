@@ -3412,6 +3412,44 @@ async def dashboard_user_stats(
     return env(await slices_svc.user_stats_slice(db, claims))
 
 
+@api.get("/dashboard/user-stats/export")
+async def dashboard_user_stats_export(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 159 U1 — dashboard user-stats KPI CSV (distinct from Stage 153/158 slices)."""
+    from app import dashboard_slices as slices_svc
+
+    payload = await slices_svc.user_stats_slice(db, claims)
+    text = tenant_ops_export_svc.export_dashboard_user_stats_csv(payload=payload)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="dashboard_user_stats_export.csv"'
+        },
+    )
+
+
+@api.get("/dashboard/summary/export")
+async def dashboard_summary_export(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 159 M1 — dashboard compact summary KPI CSV (distinct from Stage 153 aggregates)."""
+    from app import dashboard_slices as slices_svc
+
+    payload = await slices_svc.summary_slice(db, claims)
+    text = tenant_ops_export_svc.export_dashboard_summary_csv(payload=payload)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="dashboard_summary_export.csv"'
+        },
+    )
+
+
 @api.get("/search")
 async def global_search(
     q: str = "",
@@ -10391,6 +10429,27 @@ async def get_trial_balance(
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
         )
+    )
+
+
+@api.get("/accounting/trial-balance/export")
+async def accounting_trial_balance_export(
+    as_of_date: str | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 159 B1 — accounting trial-balance CSV (path-scoped; distinct from /reports/export)."""
+    text = await finance_ops_export_svc.export_trial_balance_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="accounting_trial_balance_export.csv"'
+        },
     )
 
 
