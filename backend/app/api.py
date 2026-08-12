@@ -7482,6 +7482,49 @@ async def audit_logs(
     return env([audit_svc.serialize_audit(r) for r in rows])
 
 
+@api.get("/audit-logs/retention")
+async def audit_logs_retention(
+    claims=Depends(require_permission("audit", "read")),
+):
+    return env(audit_svc.retention_policy())
+
+
+@api.get("/audit-logs/archives")
+async def audit_logs_archives(
+    limit: int = 50,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await audit_svc.list_cold_archives(
+        db, tenant_id=claims["tenant_id"], limit=limit
+    )
+    return env([audit_svc.serialize_cold_archive(r) for r in rows])
+
+
+@api.post("/audit-logs/archive-cold")
+async def audit_logs_archive_cold(
+    older_than_days: int | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    result = await audit_svc.archive_cold_logs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        older_than_days=older_than_days,
+    )
+    await db.commit()
+    msg = (
+        f"Cold-archived {result['archived']} audit event(s)"
+        if result.get("archived")
+        else "No aged audit events to archive"
+    )
+    return env(result, msg)
+
+
 @api.get("/audit-logs/export")
 async def audit_logs_export(
     user_id: str | None = None,
