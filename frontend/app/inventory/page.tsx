@@ -4,7 +4,25 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'products' | 'catalog' | 'variants' | 'batches' | 'expiry' | 'counts';
+type Tab = 'products' | 'import' | 'catalog' | 'variants' | 'batches' | 'expiry' | 'counts';
+
+type ImportReportRow = {
+  line: number;
+  sku: string;
+  name: string;
+  ok: boolean;
+  errors: string[];
+};
+
+type ImportReport = {
+  total_rows: number;
+  valid_rows: number;
+  error_rows: number;
+  can_commit: boolean;
+  imported?: number;
+  rows: ImportReportRow[];
+  created?: any[];
+};
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -38,6 +56,9 @@ export default function Page() {
   const [editBarcode, setEditBarcode] = useState('');
   const [productBarcode, setProductBarcode] = useState('');
   const [labelCopies, setLabelCopies] = useState('1');
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importReport, setImportReport] = useState<ImportReport | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
 
   const [catCode, setCatCode] = useState('');
   const [catName, setCatName] = useState('');
@@ -269,6 +290,91 @@ export default function Page() {
     }
   }
 
+  async function downloadImportTemplate() {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/products/import/template`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Template download failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'products-import-template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('CSV template downloaded');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function runProductImport(dryRun: boolean) {
+    if (!importFile) {
+      setError('Choose a CSV file first');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setImportBusy(true);
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const form = new FormData();
+      form.append('file', importFile);
+      const res = await fetch(
+        `${apiBase}/products/import?dry_run=${dryRun ? 'true' : 'false'}`,
+        {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+          },
+          body: form,
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = body.detail;
+        if (detail && typeof detail === 'object' && detail.report) {
+          setImportReport(detail.report);
+          throw new Error(detail.message || 'Import validation failed');
+        }
+        throw new Error(
+          typeof detail === 'string'
+            ? detail
+            : detail?.message || body.message || 'Import failed'
+        );
+      }
+      setImportReport(body.data as ImportReport);
+      if (dryRun) {
+        setMessage(
+          body.data?.can_commit
+            ? `Validation OK — ${body.data.valid_rows} row(s) ready to import`
+            : `Validation found ${body.data?.error_rows || 0} error row(s)`
+        );
+      } else {
+        setMessage(`Imported ${body.data?.imported || 0} product(s)`);
+        setImportFile(null);
+        await refresh();
+        setTab('products');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
   async function uploadImage(file: File, opts?: { asPrimary?: boolean }) {
     const asPrimary = Boolean(opts?.asPrimary);
     if (!selectedId) return;
@@ -412,6 +518,7 @@ export default function Page() {
         {(
           [
             ['products', 'Products'],
+            ['import', 'Import'],
             ['catalog', 'Catalog'],
             ['variants', 'Variants'],
             ['batches', 'Batches'],
@@ -500,6 +607,78 @@ export default function Page() {
           </div>
         )}
       </div>
+
+      {tab === 'import' && (
+        <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12, maxWidth: 720 }}>
+          <h3>Bulk import products</h3>
+          <p className="muted" style={{ margin: 0 }}>
+            Download the CSV template, fill product rows (category / brand / unit must already exist),
+            validate, then import. Import is all-or-nothing — fix every error row first.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={downloadImportTemplate}>
+              Download CSV template
+            </button>
+          </div>
+          <label className="muted">CSV file</label>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => {
+              setImportFile(e.target.files?.[0] || null);
+              setImportReport(null);
+            }}
+          />
+          {importFile && <p className="muted">Selected: {importFile.name}</p>}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => runProductImport(true)}
+              disabled={!importFile || importBusy}
+            >
+              {importBusy ? 'Working…' : 'Validate'}
+            </button>
+            <button
+              type="button"
+              onClick={() => runProductImport(false)}
+              disabled={!importFile || importBusy || !importReport?.can_commit}
+            >
+              Import valid rows
+            </button>
+          </div>
+          {importReport && (
+            <div>
+              <p className="muted">
+                {importReport.total_rows} rows · {importReport.valid_rows} valid ·{' '}
+                {importReport.error_rows} errors
+                {importReport.imported != null ? ` · imported ${importReport.imported}` : ''}
+              </p>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Line</th>
+                    <th>SKU</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Errors</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importReport.rows.map((r) => (
+                    <tr key={`${r.line}-${r.sku}`}>
+                      <td>{r.line}</td>
+                      <td>{r.sku || '—'}</td>
+                      <td>{r.name || '—'}</td>
+                      <td style={{ color: r.ok ? '#047857' : '#b91c1c' }}>{r.ok ? 'OK' : 'Error'}</td>
+                      <td>{r.errors?.length ? r.errors.join('; ') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {tab === 'products' && (
         <>
