@@ -1098,8 +1098,17 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 ### 16.3 Smart Inventory Intelligence
 **Endpoint:** `GET /ai/inventory/predictions`
 
+Rule-based velocity forecasts (7/30/90), reorder qty, dead stock, seasonality hint. See `docs/AI_INVENTORY_MVP.md`.
+
 ### 16.4 AI Low Stock Prediction
-**Endpoint:** `GET /ai/inventory/low-stock-prediction?days_ahead=30`
+**List:** `GET /ai/inventory/low-stock-prediction?days_ahead=14`  
+**Create draft PRs:** `POST /ai/inventory/low-stock-prediction/requests`
+
+```json
+{ "days_ahead": 14, "min_confidence": 0.3, "lines": null }
+```
+
+Omitting `lines` runs prediction then creates draft purchase requests (`purchasing:write`).
 
 ### 16.5 AI Sales Analysis
 **Endpoint:** `GET /ai/sales/analysis?from_date=&to_date=`

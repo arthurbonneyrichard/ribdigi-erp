@@ -1017,19 +1017,26 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** AI-powered inventory optimization.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Demand forecasting per product (7-day, 30-day, 90-day)
-  - [ ] Optimal reorder quantity recommendations
-  - [ ] Seasonality detection
-  - [ ] Dead stock identification
+  - [x] Demand forecasting per product (7-day, 30-day, 90-day)
+    - Complete (MVP rule-based): `velocity × horizon` from invoices+POS (`docs/AI_INVENTORY_MVP.md`)
+  - [x] Optimal reorder quantity recommendations
+    - Complete (MVP): cover+lead target vs on-hand
+  - [x] Seasonality detection
+    - Partial: rising/falling/stable vs prior window (not full seasonal model)
+  - [x] Dead stock identification
+    - Complete (MVP): on-hand with no sales in 90 days
 
 #### BR-21.4 AI Low Stock Prediction
 - **Description:** Predictive stockout prevention.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Predict stockouts 7–14 days in advance
-  - [ ] Consider sales velocity, seasonality, lead time
-  - [ ] Confidence score on predictions
-  - [ ] Auto-generate purchase suggestions
+  - [x] Predict stockouts 7–14 days in advance
+    - Complete (MVP): `days_to_stockout` vs `days_ahead`
+  - [x] Consider sales velocity, seasonality, lead time
+    - Complete (MVP heuristic); supplier-specific lead time post-MVP
+  - [x] Confidence score on predictions
+  - [x] Auto-generate purchase suggestions
+    - Complete (MVP): `POST /ai/inventory/low-stock-prediction/requests` → draft PRs
 
 #### BR-21.5 AI Sales Analysis
 - **Description:** Deep sales pattern recognition.

@@ -46,17 +46,39 @@ export default function Page() {
     }
   }
 
+  async function loadInventoryPredictions() {
+    setError('');
+    try {
+      const r = await api('/ai/inventory/low-stock-prediction?days_ahead=14');
+      const lines = r.data?.at_risk || [];
+      setA(
+        lines.length
+          ? lines
+              .slice(0, 20)
+              .map(
+                (x: any) =>
+                  `${x.sku || x.product_id}: days=${x.days_to_stockout} conf=${x.confidence} qty=${x.suggested_order_qty} (${x.risk_reason})`
+              )
+              .join('\n')
+          : 'No at-risk products in the prediction window'
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to load inventory predictions');
+    }
+  }
+
   return (
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Chat requires a configured AI provider. Rule-based insights and the AI Security Monitor are available now.
+        Chat requires a configured AI provider. Rule-based insights, inventory predictions, and the Security Monitor are available now.
       </p>
       <div className="card">
         <textarea value={q} onChange={(e) => setQ(e.target.value)} style={{ width: '100%', minHeight: 100 }} placeholder="Ask a business question" />
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           <button onClick={go}>Ask</button>
           <button onClick={loadInsights}>Load insights</button>
+          <button onClick={loadInventoryPredictions}>Inventory predictions</button>
           <button onClick={loadSecurityAlerts}>Security alerts</button>
         </div>
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}

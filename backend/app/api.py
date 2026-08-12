@@ -28,6 +28,7 @@ from app import webhooks as webhooks_svc
 from app import onboarding as onboarding_svc
 from app import ai as ai_svc
 from app import ai_security as ai_security_svc
+from app import ai_inventory as ai_inventory_svc
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
 from app import purchase_suggestions as purchase_suggestions_svc
@@ -8270,3 +8271,64 @@ async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSe
     dash = await build_dashboard(db, claims["tenant_id"])
     data = await ai_svc.handle_insights(db, claims=claims, dash=dash)
     return env(data)
+
+
+@api.get("/ai/inventory/predictions")
+async def ai_inventory_predictions(
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.3 rule-based demand / reorder / dead-stock intelligence."""
+    data = await ai_inventory_svc.inventory_predictions(
+        db, tenant_id=claims["tenant_id"], actor_user_id=claims.get("sub")
+    )
+    return env(data)
+
+
+@api.get("/ai/inventory/low-stock-prediction")
+async def ai_low_stock_prediction(
+    days_ahead: int = 14,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.4 predictive stockout list with confidence scores."""
+    data = await ai_inventory_svc.low_stock_prediction(
+        db,
+        tenant_id=claims["tenant_id"],
+        days_ahead=days_ahead,
+        actor_user_id=claims.get("sub"),
+    )
+    return env(data)
+
+
+@api.post("/ai/inventory/low-stock-prediction/requests")
+async def ai_low_stock_prediction_requests(
+    payload: dict | None = None,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Auto-generate draft purchase requests from prediction rows (BR-21.4)."""
+    body = payload or {}
+    lines = body.get("lines")
+    days_ahead = int(body.get("days_ahead") or 14)
+    min_confidence = float(body.get("min_confidence") or 0)
+    if not lines:
+        pred = await ai_inventory_svc.low_stock_prediction(
+            db,
+            tenant_id=claims["tenant_id"],
+            days_ahead=days_ahead,
+            actor_user_id=claims.get("sub"),
+        )
+        lines = pred.get("at_risk") or []
+    from app import purchase_suggestions as purchase_suggestions_svc
+
+    result = await purchase_suggestions_svc.create_requests_from_predictions(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        at_risk_lines=lines,
+        notes=body.get("notes"),
+        min_confidence=min_confidence,
+    )
+    await db.commit()
+    return env(result, f"Created {result.get('created_count', 0)} draft purchase request(s)")
