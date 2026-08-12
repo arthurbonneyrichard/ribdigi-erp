@@ -67,11 +67,46 @@ export default function Page() {
     }
   }
 
+  async function loadSalesAnalysis() {
+    setError('');
+    try {
+      const r = await api('/ai/sales/analysis');
+      const d = r.data || {};
+      setA(
+        [
+          `Trend next-month forecast: ${d.trend?.forecast_next_month}`,
+          `RFM customers: ${d.rfm?.customer_count} segments=${JSON.stringify(d.rfm?.segment_counts || {})}`,
+          `Affinity pairs: ${(d.affinity || []).length}`,
+          `Peak hours: ${(d.peaks?.hours || []).map((h: any) => h.hour).join(',')}`,
+        ].join('\n')
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to load sales analysis');
+    }
+  }
+
+  async function loadExpenseAnalysis() {
+    setError('');
+    try {
+      const r = await api('/ai/expenses/analysis');
+      const d = r.data || {};
+      setA(
+        [
+          `Budget alerts: ${(d.budget_variance_alerts || []).length}`,
+          `Unusual: ${(d.unusual_expenses || []).length}`,
+          ...(d.cost_optimization_suggestions || []).slice(0, 5),
+        ].join('\n')
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to load expense analysis');
+    }
+  }
+
   return (
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Chat requires a configured AI provider. Rule-based insights, inventory predictions, and the Security Monitor are available now.
+        Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, and the Security Monitor are available now.
       </p>
       <div className="card">
         <textarea value={q} onChange={(e) => setQ(e.target.value)} style={{ width: '100%', minHeight: 100 }} placeholder="Ask a business question" />
@@ -79,6 +114,8 @@ export default function Page() {
           <button onClick={go}>Ask</button>
           <button onClick={loadInsights}>Load insights</button>
           <button onClick={loadInventoryPredictions}>Inventory predictions</button>
+          <button onClick={loadSalesAnalysis}>Sales analysis</button>
+          <button onClick={loadExpenseAnalysis}>Expense analysis</button>
           <button onClick={loadSecurityAlerts}>Security alerts</button>
         </div>
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}

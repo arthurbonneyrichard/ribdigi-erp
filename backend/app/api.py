@@ -29,6 +29,8 @@ from app import onboarding as onboarding_svc
 from app import ai as ai_svc
 from app import ai_security as ai_security_svc
 from app import ai_inventory as ai_inventory_svc
+from app import ai_sales as ai_sales_svc
+from app import ai_expenses as ai_expenses_svc
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
 from app import purchase_suggestions as purchase_suggestions_svc
@@ -8333,3 +8335,39 @@ async def ai_low_stock_prediction_requests(
     )
     await db.commit()
     return env(result, f"Created {result.get('created_count', 0)} draft purchase request(s)")
+
+
+@api.get("/ai/sales/analysis")
+async def ai_sales_analysis(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.5 rule-based sales analysis (trend, RFM, affinity, peaks)."""
+    data = await ai_sales_svc.sales_analysis(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+        actor_user_id=claims.get("sub"),
+    )
+    return env(data)
+
+
+@api.get("/ai/expenses/analysis")
+async def ai_expenses_analysis(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.6 rule-based expense analysis (budget, unusual, optimization)."""
+    data = await ai_expenses_svc.expense_analysis(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+        actor_user_id=claims.get("sub"),
+    )
+    return env(data)

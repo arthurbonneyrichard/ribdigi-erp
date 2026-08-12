@@ -1042,19 +1042,25 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Deep sales pattern recognition.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Sales trend forecasting
-  - [ ] Customer segmentation (RFM analysis)
-  - [ ] Product affinity analysis (frequently bought together)
-  - [ ] Peak hour/day predictions
+  - [x] Sales trend forecasting
+    - Complete (MVP heuristic): monthly series + next-month ratio forecast (`docs/AI_SALES_EXPENSE_MVP.md`)
+  - [x] Customer segmentation (RFM analysis)
+    - Complete (MVP quintile RFM segments)
+  - [x] Product affinity analysis (frequently bought together)
+    - Complete (MVP pair counts)
+  - [x] Peak hour/day predictions
+    - Complete (MVP histograms)
 
 #### BR-21.6 AI Expense Analysis
 - **Description:** Intelligent cost management.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Expense categorization from receipt OCR
-  - [ ] Budget variance alerts
-  - [ ] Unusual expense pattern detection
-  - [ ] Cost optimization suggestions
+  - [x] Expense categorization from receipt OCR
+    - Complete (MVP): keyword category suggest on OCR; human apply via PATCH
+  - [x] Budget variance alerts
+  - [x] Unusual expense pattern detection
+  - [x] Cost optimization suggestions
+    - Complete (MVP rule strings)
 
 #### BR-21.7 AI Report Generator
 - **Description:** Natural language to report.

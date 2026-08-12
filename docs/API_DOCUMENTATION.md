@@ -1113,8 +1113,12 @@ Omitting `lines` runs prediction then creates draft purchase requests (`purchasi
 ### 16.5 AI Sales Analysis
 **Endpoint:** `GET /ai/sales/analysis?from_date=&to_date=`
 
+Rule-based trend forecast, RFM segments, product affinity, peak hours/days. See `docs/AI_SALES_EXPENSE_MVP.md`.
+
 ### 16.6 AI Expense Analysis
 **Endpoint:** `GET /ai/expenses/analysis?from_date=&to_date=`
+
+Budget variance, unusual/duplicate detection, cost-optimization suggestions; OCR may suggest category keywords.
 
 ### 16.7 AI Report Generator
 **Endpoint:** `POST /ai/reports/generate`
