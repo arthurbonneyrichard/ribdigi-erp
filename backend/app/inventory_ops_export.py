@@ -1,0 +1,258 @@
+"""CSV export for stock movements, low-stock alerts, and expiring batches (Stage 137)."""
+
+from __future__ import annotations
+
+import csv
+import io
+
+from fastapi import HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import catalog as catalog_svc
+from app import models as m
+from app import reports as reports_svc
+from app.inventory import (
+    compute_stock_status,
+    effective_warehouse_thresholds,
+    list_movements_serialized,
+)
+from app.session_passkey_doc_export import _cell
+
+MOVEMENT_EXPORT_COLUMNS = [
+    "id",
+    "product_id",
+    "product_sku",
+    "product_name",
+    "variant_id",
+    "batch_id",
+    "warehouse_id",
+    "warehouse_code",
+    "movement_type",
+    "quantity",
+    "quantity_before",
+    "quantity_after",
+    "reference_type",
+    "reference_id",
+    "reason",
+    "notes",
+    "created_by",
+    "created_by_email",
+    "created_at",
+]
+
+LOW_STOCK_EXPORT_COLUMNS = [
+    "id",
+    "sku",
+    "name",
+    "scope",
+    "warehouse_id",
+    "warehouse_code",
+    "stock_qty",
+    "minimum_stock",
+    "reorder_level",
+    "stock_status",
+    "cost_price",
+    "suggested_order_qty",
+]
+
+EXPIRING_BATCH_EXPORT_COLUMNS = [
+    "id",
+    "product_id",
+    "variant_id",
+    "warehouse_id",
+    "batch_number",
+    "manufacturing_date",
+    "expiry_date",
+    "quantity",
+    "created_at",
+    "updated_at",
+]
+
+STOCK_STATUSES = {"red", "yellow"}
+MOVEMENT_TYPES = {
+    "stock_in",
+    "stock_out",
+    "opening_stock",
+    "adjustment",
+    "transfer_out",
+    "transfer_in",
+}
+
+
+def _normalize_stock_status(stock_status: str | None) -> str | None:
+    if not stock_status:
+        return None
+    key = stock_status.strip().lower()
+    if key not in STOCK_STATUSES:
+        raise HTTPException(status_code=400, detail="stock_status must be red or yellow")
+    return key
+
+
+async def list_low_stock_alerts(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    stock_status: str | None = None,
+) -> list[dict]:
+    status_filter = _normalize_stock_status(stock_status)
+    products = (
+        await db.execute(
+            select(m.Product)
+            .where(
+                m.Product.tenant_id == tenant_id,
+                m.Product.is_active == True,  # noqa: E712
+            )
+            .order_by(m.Product.stock_qty.asc())
+        )
+    ).scalars().all()
+    out: list[dict] = []
+    for p in products:
+        qty = float(p.stock_qty or 0)
+        minimum = float(getattr(p, "minimum_stock", 0) or 0)
+        reorder = float(p.reorder_level or 0)
+        status = compute_stock_status(qty, minimum, reorder)
+        if status == "green":
+            continue
+        if status_filter and status != status_filter:
+            continue
+        out.append(
+            {
+                "id": p.id,
+                "sku": p.sku,
+                "name": p.name,
+                "stock_qty": qty,
+                "minimum_stock": minimum,
+                "reorder_level": reorder,
+                "stock_status": status,
+                "cost_price": float(p.cost_price or 0),
+                "scope": "product",
+                "warehouse_id": None,
+                "warehouse_code": None,
+                "suggested_order_qty": max(
+                    1.0,
+                    round(reorder - qty, 3) if reorder > qty else max(reorder, 1.0),
+                ),
+            }
+        )
+
+    wh_rows = (
+        await db.execute(
+            select(m.WarehouseStock, m.Product, m.Warehouse)
+            .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+            .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
+            .where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.Product.is_active == True,  # noqa: E712
+            )
+            .order_by(m.WarehouseStock.quantity.asc())
+        )
+    ).all()
+    for stock, product, wh in wh_rows:
+        qty = float(stock.quantity or 0)
+        minimum, reorder = effective_warehouse_thresholds(stock, product)
+        status = compute_stock_status(qty, minimum, reorder)
+        if status == "green":
+            continue
+        w_min = float(getattr(stock, "minimum_stock", 0) or 0)
+        w_ro = float(stock.reorder_level or 0)
+        if w_min <= 0 and w_ro <= 0:
+            continue
+        if status_filter and status != status_filter:
+            continue
+        out.append(
+            {
+                "id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "stock_qty": qty,
+                "minimum_stock": minimum,
+                "reorder_level": reorder,
+                "stock_status": status,
+                "cost_price": float(product.cost_price or 0),
+                "scope": "warehouse",
+                "warehouse_id": wh.id,
+                "warehouse_code": wh.code,
+                "suggested_order_qty": max(
+                    1.0,
+                    float(stock.reorder_qty or 0)
+                    or (round(reorder - qty, 3) if reorder > qty else max(reorder, 1.0)),
+                ),
+            }
+        )
+    return out
+
+
+async def export_movements_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str | None = None,
+    warehouse_id: str | None = None,
+    movement_type: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+) -> str:
+    if movement_type:
+        key = movement_type.strip().lower()
+        if key not in MOVEMENT_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "movement_type must be stock_in, stock_out, opening_stock, "
+                    "adjustment, transfer_out, or transfer_in"
+                ),
+            )
+        movement_type = key
+    rows = await list_movements_serialized(
+        db,
+        tenant_id=tenant_id,
+        product_id=product_id,
+        warehouse_id=warehouse_id,
+        movement_type=movement_type,
+        from_dt=reports_svc.parse_date(from_date),
+        to_dt=reports_svc.parse_date(to_date, end_of_day=True),
+        limit=500,
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=MOVEMENT_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({k: _cell(row.get(k)) for k in MOVEMENT_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+async def export_low_stock_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    stock_status: str | None = None,
+) -> str:
+    rows = await list_low_stock_alerts(
+        db, tenant_id=tenant_id, stock_status=stock_status
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=LOW_STOCK_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({k: _cell(row.get(k)) for k in LOW_STOCK_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+async def export_expiring_batches_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    days: int = 30,
+) -> str:
+    days_n = max(0, min(int(days), 3650))
+    rows = await catalog_svc.list_expiring_batches(
+        db, tenant_id, within_days=days_n
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=EXPIRING_BATCH_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        data = catalog_svc.serialize_batch(row)
+        writer.writerow({k: _cell(data.get(k)) for k in EXPIRING_BATCH_EXPORT_COLUMNS})
+    return buf.getvalue()

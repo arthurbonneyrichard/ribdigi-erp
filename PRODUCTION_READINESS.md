@@ -163,3 +163,5 @@ Stage 134 D1 Tenant MVP Purchase Request CSV, Purchase Order CSV & GRN CSV Expor
 Stage 135 D1 Tenant MVP Purchase Return CSV, SMS Settings Export & Stores Transfer CSV Fidelity — `docs/STAGE_135_FIDELITY.md` (`test_stage135_fidelity_d1.py`); Stage 135 R1 Complete; Stage 135 S1 Complete; Stage 135 T1 Complete (MVP honesty); exit `docs/STAGE_135_EXIT_CRITERIA.md`, ADR-277.
 
 Stage 136 D1 Tenant MVP Customer Payment Register CSV, Supplier Payment Register CSV & Credit Aging CSV Export Fidelity — `docs/STAGE_136_FIDELITY.md` (`test_stage136_fidelity_d1.py`); Stage 136 C1 Complete; Stage 136 S1 Complete; Stage 136 A1 Complete (MVP honesty); exit `docs/STAGE_136_EXIT_CRITERIA.md`, ADR-279.
+
+Stage 137 D1 Tenant MVP Stock Movements CSV, Low-Stock Alert CSV & Expiring Batches CSV Export Fidelity — `docs/STAGE_137_FIDELITY.md` (`test_stage137_fidelity_d1.py`); Stage 137 M1 Complete; Stage 137 L1 Complete; Stage 137 E1 Complete (MVP honesty); exit `docs/STAGE_137_EXIT_CRITERIA.md`, ADR-281.

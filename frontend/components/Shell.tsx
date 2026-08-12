@@ -54,6 +54,18 @@ const primaryNavSpec: NavEntry[] = [
   { kind: 'link', label: 'Low stock', href: '/inventory?tab=lowstock', modules: ['inventory'] },
   {
     kind: 'link',
+    label: 'Red Low Stock',
+    href: '/inventory?tab=lowstock&stock_status=red',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Yellow Low Stock',
+    href: '/inventory?tab=lowstock&stock_status=yellow',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
     label: 'Stock Counts',
     href: '/inventory?tab=counts',
     modules: ['inventory'],
@@ -140,6 +152,24 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Expiry',
     href: '/inventory?tab=expiry',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Expiring in 30 Days',
+    href: '/inventory?tab=expiry&expiry_days=30',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Expiring in 60 Days',
+    href: '/inventory?tab=expiry&expiry_days=60',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Expiring in 90 Days',
+    href: '/inventory?tab=expiry&expiry_days=90',
     modules: ['inventory'],
   },
   {

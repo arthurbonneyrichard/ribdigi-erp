@@ -212,6 +212,20 @@ export default function Page() {
       .toLowerCase();
     return ['draft', 'requested', 'in_transit', 'received', 'cancelled'].includes(v) ? v : '';
   });
+  // Stage 137 L1 — stock_status → GET /inventory/low-stock?stock_status=
+  const [stockStatusFilter, setStockStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('stock_status') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'red' || v === 'yellow' ? v : '';
+  });
+  // Stage 137 E1 — expiry_days → GET /inventory/batches/expiring?days=
+  const [expiryDays, setExpiryDays] = useState(() => {
+    if (typeof window === 'undefined') return '60';
+    const v = (new URLSearchParams(window.location.search).get('expiry_days') || '').trim();
+    return ['30', '60', '90'].includes(v) ? v : '60';
+  });
 
   function writeProductListFilters(next: {
     q?: string;
@@ -258,6 +272,8 @@ export default function Page() {
     unitActive?: string;
     countStatus?: string;
     transferStatus?: string;
+    stockStatus?: string;
+    expiryDaysArg?: string;
   }) {
     const productActive =
       opts?.productActive !== undefined ? opts.productActive : productActiveFilter;
@@ -269,6 +285,10 @@ export default function Page() {
       opts?.countStatus !== undefined ? opts.countStatus : countStatusFilter;
     const transferStatus =
       opts?.transferStatus !== undefined ? opts.transferStatus : transferStatusFilter;
+    const stockStatus =
+      opts?.stockStatus !== undefined ? opts.stockStatus : stockStatusFilter;
+    const expiryDaysVal =
+      opts?.expiryDaysArg !== undefined ? opts.expiryDaysArg : expiryDays;
     const productQs =
       productActive === 'true'
         ? '?is_active=true'
@@ -305,11 +325,16 @@ export default function Page() {
       transferStatus === 'cancelled'
         ? `?status=${transferStatus}`
         : '';
+    const lowStockQs =
+      stockStatus === 'red' || stockStatus === 'yellow'
+        ? `?stock_status=${stockStatus}`
+        : '';
+    const expiryQs = `?days=${encodeURIComponent(expiryDaysVal || '60')}`;
     const catFlat = catQs ? `?${catQs}` : '';
     const catTree = catQs ? `?tree=true&${catQs}` : '?tree=true';
     const [p, e, c, tree, b, u, w, sc, tr, ls, sup, tax] = await Promise.all([
       api(`/products${productQs}`),
-      api('/inventory/batches/expiring?days=60'),
+      api(`/inventory/batches/expiring${expiryQs}`),
       api(`/catalog/categories${catFlat}`),
       api(`/catalog/categories${catTree}`),
       api(`/catalog/brands${brandQs}`),
@@ -317,7 +342,7 @@ export default function Page() {
       api('/warehouses'),
       api(`/inventory/stock-counts${countQs}`),
       api(`/inventory/stock-transfers${transferQs}`).catch(() => ({ data: [] })),
-      api('/inventory/low-stock').catch(() => ({ data: [] })),
+      api(`/inventory/low-stock${lowStockQs}`).catch(() => ({ data: [] })),
       api('/suppliers').catch(() => ({ data: [] })),
       api('/tax/rates').catch(() => ({ data: [] })),
     ]);
@@ -2171,26 +2196,66 @@ export default function Page() {
       )}
 
       {tab === 'expiry' && (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Batch</th>
-              <th>Product</th>
-              <th>Qty</th>
-              <th>Expiry</th>
-            </tr>
-          </thead>
-          <tbody>
-            {expiring.map((b) => (
-              <tr key={b.id}>
-                <td>{b.batch_number}</td>
-                <td>{b.product_id}</td>
-                <td>{b.quantity}</td>
-                <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
+        <>
+          <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 480, marginBottom: 16 }}>
+            <h3>Expiring batches</h3>
+            <p className="muted">
+              Filter via <code>expiry_days</code> → <code>GET /inventory/batches/expiring?days=</code>;
+              export via <code>/inventory/batches/expiring/export</code> (Stage 137 E1).
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select
+                value={expiryDays}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setExpiryDays(v);
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'expiry');
+                  if (v === '30' || v === '60' || v === '90') url.searchParams.set('expiry_days', v);
+                  else url.searchParams.delete('expiry_days');
+                  window.history.replaceState({}, '', url.toString());
+                  refresh({ expiryDaysArg: v }).catch((err) => setError(err.message));
+                }}
+                aria-label="Expiry days filter"
+              >
+                <option value="30">Within 30 days</option>
+                <option value="60">Within 60 days</option>
+                <option value="90">Within 90 days</option>
+              </select>
+              <button
+                type="button"
+                onClick={() =>
+                  downloadCatalogCsv(
+                    `/inventory/batches/expiring/export?days=${encodeURIComponent(expiryDays)}`,
+                    'expiring_batches_export.csv',
+                  ).then(() => setMessage('Expiring batches CSV downloaded (Stage 137 E1)'))
+                }
+              >
+                Export expiring batches CSV
+              </button>
+            </div>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Batch</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Expiry</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {expiring.map((b) => (
+                <tr key={b.id}>
+                  <td>{b.batch_number}</td>
+                  <td>{b.product_id}</td>
+                  <td>{b.quantity}</td>
+                  <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
 
       {tab === 'counts' && (
@@ -2511,7 +2576,10 @@ export default function Page() {
         <>
           <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 560, marginBottom: 16 }}>
             <h3>Movement history</h3>
-            <p className="muted">Filter by selected product, warehouse, type, and date range.</p>
+            <p className="muted">
+              Filter by selected product, warehouse, type, and date range. Export via{' '}
+              <code>/inventory/movements/export</code> (Stage 137 M1).
+            </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
                 type="date"
@@ -2567,6 +2635,25 @@ export default function Page() {
                 }}
               >
                 Apply filters
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // Stage 137 M1 — movements CSV
+                  const params = new URLSearchParams();
+                  if (moveType) params.set('movement_type', moveType);
+                  if (moveFrom) params.set('from_date', moveFrom);
+                  if (moveTo) params.set('to_date', moveTo);
+                  if (moveWarehouseId) params.set('warehouse_id', moveWarehouseId);
+                  if (selectedId) params.set('product_id', selectedId);
+                  const qs = params.toString();
+                  downloadCatalogCsv(
+                    `/inventory/movements/export${qs ? `?${qs}` : ''}`,
+                    'stock_movements_export.csv',
+                  ).then(() => setMessage('Stock movements CSV downloaded (Stage 137 M1)'));
+                }}
+              >
+                Export movements CSV
               </button>
             </div>
           </div>
@@ -2671,6 +2758,45 @@ export default function Page() {
           <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 480, marginBottom: 16 }}>
             <h3>Low stock reorder</h3>
             <p className="muted">Create a draft purchase order for a low-stock product.</p>
+            <p className="muted">
+              Filter via <code>stock_status</code> → <code>GET /inventory/low-stock?stock_status=</code>;
+              export via <code>/inventory/low-stock/export</code> (Stage 137 L1).
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select
+                value={stockStatusFilter || 'default'}
+                onChange={(e) => {
+                  const v = e.target.value === 'default' ? '' : e.target.value;
+                  setStockStatusFilter(v);
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'lowstock');
+                  if (v) url.searchParams.set('stock_status', v);
+                  else url.searchParams.delete('stock_status');
+                  window.history.replaceState({}, '', url.toString());
+                  refresh({ stockStatus: v }).catch((err) => setError(err.message));
+                }}
+                aria-label="Low stock status filter"
+              >
+                <option value="default">All alerts</option>
+                <option value="red">Red</option>
+                <option value="yellow">Yellow</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  const qs =
+                    stockStatusFilter === 'red' || stockStatusFilter === 'yellow'
+                      ? `?stock_status=${stockStatusFilter}`
+                      : '';
+                  downloadCatalogCsv(
+                    `/inventory/low-stock/export${qs}`,
+                    'low_stock_export.csv',
+                  ).then(() => setMessage('Low-stock CSV downloaded (Stage 137 L1)'));
+                }}
+              >
+                Export low-stock CSV
+              </button>
+            </div>
             <select value={reorderSupplierId} onChange={(e) => setReorderSupplierId(e.target.value)}>
               <option value="">Select supplier</option>
               {suppliers.map((s) => (

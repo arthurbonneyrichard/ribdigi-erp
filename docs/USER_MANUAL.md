@@ -222,6 +222,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Customer Payment Register CSV:** Credit Export customer payments CSV (Stage 136 C1)
 - **Supplier Payment Register CSV:** Credit Export supplier payments CSV (Stage 136 S1)
 - **Credit Aging CSV:** Credit Export aging CSV (Stage 136 A1)
+- **Stock Movements CSV:** Inventory Export movements CSV (Stage 137 M1)
+- **Low-Stock Alert Filters:** Inventory red/yellow filter + Shell leaves + list CSV (Stage 137 L1)
+- **Expiring Batches CSV:** Inventory Export expiring batches CSV + 30/60/90 Shell leaves (Stage 137 E1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

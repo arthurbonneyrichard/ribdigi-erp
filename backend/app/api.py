@@ -68,6 +68,7 @@ from app import commerce_docs_export as commerce_docs_export_svc
 from app import sales_pipeline_export as sales_pipeline_export_svc
 from app import purchasing_pipeline_export as purchasing_pipeline_export_svc
 from app import credit_ops_export as credit_ops_export_svc
+from app import inventory_ops_export as inventory_ops_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -4180,90 +4181,33 @@ async def product_images_delete(
 
 
 @api.get("/inventory/low-stock")
-async def lowstock(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
-    from app.inventory import compute_stock_status, effective_warehouse_thresholds
-
-    products = (
-        await db.execute(
-            select(m.Product)
-            .where(
-                m.Product.tenant_id == claims["tenant_id"],
-                m.Product.is_active == True,  # noqa: E712,
-            )
-            .order_by(m.Product.stock_qty.asc())
-        )
-    ).scalars().all()
-    out: list[dict] = []
-    for p in products:
-        qty = float(p.stock_qty or 0)
-        minimum = float(getattr(p, "minimum_stock", 0) or 0)
-        reorder = float(p.reorder_level or 0)
-        status = compute_stock_status(qty, minimum, reorder)
-        if status == "green":
-            continue
-        out.append(
-            {
-                "id": p.id,
-                "sku": p.sku,
-                "name": p.name,
-                "stock_qty": qty,
-                "minimum_stock": minimum,
-                "reorder_level": reorder,
-                "stock_status": status,
-                "cost_price": float(p.cost_price or 0),
-                "scope": "product",
-                "warehouse_id": None,
-                "suggested_order_qty": max(
-                    1.0,
-                    round(reorder - qty, 3) if reorder > qty else max(reorder, 1.0),
-                ),
-            }
-        )
-
-    wh_rows = (
-        await db.execute(
-            select(m.WarehouseStock, m.Product, m.Warehouse)
-            .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
-            .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
-            .where(
-                m.WarehouseStock.tenant_id == claims["tenant_id"],
-                m.Product.is_active == True,  # noqa: E712
-            )
-            .order_by(m.WarehouseStock.quantity.asc())
-        )
-    ).all()
-    for stock, product, wh in wh_rows:
-        qty = float(stock.quantity or 0)
-        minimum, reorder = effective_warehouse_thresholds(stock, product)
-        status = compute_stock_status(qty, minimum, reorder)
-        if status == "green":
-            continue
-        # Skip duplicate when warehouse has no local policy and product already listed
-        w_min = float(getattr(stock, "minimum_stock", 0) or 0)
-        w_ro = float(stock.reorder_level or 0)
-        if w_min <= 0 and w_ro <= 0:
-            continue
-        out.append(
-            {
-                "id": product.id,
-                "sku": product.sku,
-                "name": product.name,
-                "stock_qty": qty,
-                "minimum_stock": minimum,
-                "reorder_level": reorder,
-                "stock_status": status,
-                "cost_price": float(product.cost_price or 0),
-                "scope": "warehouse",
-                "warehouse_id": wh.id,
-                "warehouse_code": wh.code,
-                "suggested_order_qty": max(
-                    1.0,
-                    float(stock.reorder_qty or 0)
-                    or (round(reorder - qty, 3) if reorder > qty else max(reorder, 1.0)),
-                ),
-            }
-        )
+async def lowstock(
+    stock_status: str | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 137 L1 — optional stock_status=red|yellow filter."""
+    out = await inventory_ops_export_svc.list_low_stock_alerts(
+        db, tenant_id=claims["tenant_id"], stock_status=stock_status
+    )
     return env(out)
+
+
+@api.get("/inventory/low-stock/export")
+async def export_low_stock_csv(
+    stock_status: str | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 137 L1 — low-stock alert CSV."""
+    text = await inventory_ops_export_svc.export_low_stock_csv(
+        db, tenant_id=claims["tenant_id"], stock_status=stock_status
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="low_stock_export.csv"'},
+    )
 
 
 @api.post("/inventory/low-stock/reorder-po")
@@ -4366,6 +4310,33 @@ async def movements(
         limit=200,
     )
     return env(rows)
+
+
+@api.get("/inventory/movements/export")
+async def export_movements_csv(
+    product_id: str | None = None,
+    warehouse_id: str | None = None,
+    movement_type: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 137 M1 — stock movement CSV honoring list filters."""
+    text = await inventory_ops_export_svc.export_movements_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        warehouse_id=warehouse_id,
+        movement_type=movement_type,
+        from_date=from_date,
+        to_date=to_date,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="stock_movements_export.csv"'},
+    )
 
 
 @api.get("/products/{product_id}/warehouse-stock")
@@ -5038,6 +5009,25 @@ async def inventory_batches_expiring(
             "count": len(rows),
             "batches": [catalog_svc.serialize_batch(b) for b in rows],
         }
+    )
+
+
+@api.get("/inventory/batches/expiring/export")
+async def export_expiring_batches_csv(
+    days: int = 30,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 137 E1 — expiring batches CSV."""
+    text = await inventory_ops_export_svc.export_expiring_batches_csv(
+        db, tenant_id=claims["tenant_id"], days=days
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="expiring_batches_export.csv"'
+        },
     )
 
 

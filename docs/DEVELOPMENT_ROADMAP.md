@@ -2246,6 +2246,18 @@ Every feature in every phase must meet:
 
 **Stage 136 exit (2026-08-12):** C1, S1, A1, D1, H136x met — `docs/STAGE_136_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_279_STAGE136_FREEZE.md`. Fidelity: `docs/STAGE_136_FIDELITY.md`.
 
+**Stage 137 open (2026-08-12):** Tenant MVP Stock Movements CSV, Low-Stock Alert CSV & Expiring Batches CSV Export Fidelity — `docs/ADR_280_STAGE137_OPEN.md` + `docs/STAGE_137_PLAN.md` (Movements → Low-stock → Expiring → Fidelity; M1 next).
+
+**Stage 137 M1 (2026-08-12):** Stock movements CSV (`test_stage137_movements_export_m1.py`).
+
+**Stage 137 L1 (2026-08-12):** Low-stock status filter + CSV (`test_stage137_low_stock_l1.py`).
+
+**Stage 137 E1 (2026-08-12):** Expiring batches CSV (`test_stage137_expiring_batches_e1.py`).
+
+**Stage 137 D1 (2026-08-12):** Stock movements, low-stock & expiring batches export fidelity sync — `docs/STAGE_137_FIDELITY.md` (`test_stage137_fidelity_d1.py`).
+
+**Stage 137 exit (2026-08-12):** M1, L1, E1, D1, H137x met — `docs/STAGE_137_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_281_STAGE137_FREEZE.md`. Fidelity: `docs/STAGE_137_FIDELITY.md`.
+
 
 
 

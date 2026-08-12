@@ -332,6 +332,9 @@ Authoritative MVP docs:
 - `docs/STAGE_136_EXIT_CRITERIA.md` / `docs/ADR_279_STAGE136_FREEZE.md` (`backend/tests/test_stage136_exit_h136x.py`) — Stage 136 H136x
 - `docs/STAGE_136_FIDELITY.md` (`backend/tests/test_stage136_fidelity_d1.py`) — Stage 136 D1
 - `docs/STAGE_136_PLAN.md` (`backend/tests/test_stage136_open.py`) — Stage 136 open (ADR-278)
+- `docs/STAGE_137_EXIT_CRITERIA.md` / `docs/ADR_281_STAGE137_FREEZE.md` (`backend/tests/test_stage137_exit_h137x.py`) — Stage 137 H137x
+- `docs/STAGE_137_FIDELITY.md` (`backend/tests/test_stage137_fidelity_d1.py`) — Stage 137 D1
+- `docs/STAGE_137_PLAN.md` (`backend/tests/test_stage137_open.py`) — Stage 137 open (ADR-280)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1501,6 +1504,18 @@ H136x met — `docs/STAGE_136_EXIT_CRITERIA.md`, ADR-279. Stages 1–136 frozen 
 ## Stage 136 open
 
 ADR-278 + `docs/STAGE_136_PLAN.md` — Tenant MVP Customer Payment Register CSV, Supplier Payment Register CSV & Credit Aging CSV Export Fidelity.
+
+## Stage 137 exit
+
+H137x met — `docs/STAGE_137_EXIT_CRITERIA.md`, ADR-281. Stages 1–137 frozen for Stage 137 feature scope.
+
+## Stage 137 D1 — Tenant MVP Stock Movements CSV, Low-Stock Alert CSV & Expiring Batches CSV Export Fidelity
+
+`docs/STAGE_137_FIDELITY.md` — maps M1–E1 → readiness / launch / deploy / security.
+
+## Stage 137 open
+
+ADR-280 + `docs/STAGE_137_PLAN.md` — Tenant MVP Stock Movements CSV, Low-Stock Alert CSV & Expiring Batches CSV Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

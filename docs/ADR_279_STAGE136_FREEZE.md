@@ -24,3 +24,5 @@ Stage 136 Tenant MVP Customer Payment Register CSV, Supplier Payment Register CS
 ## Next stage
 
 Stage 137 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 136 feature scope remains frozen.
+
+**Stage 137 opened and closed under ADR-280 / ADR-281** — Tenant MVP Stock Movements CSV, Low-Stock Alert CSV & Expiring Batches CSV Export Fidelity (CONTINUE/NEXT approved).
