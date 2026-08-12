@@ -1789,3 +1789,15 @@ Every feature in every phase must meet:
 **Stage 98 D1 (2026-08-12):** Ops queue fidelity sync — `docs/STAGE_98_FIDELITY.md` (`test_stage98_fidelity_d1.py`); maps Q1–O1 → readiness / launch / deploy / security.
 
 **Stage 98 exit (2026-08-12):** Q1, R1, O1, D1, H98x met — `docs/STAGE_98_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_203_STAGE98_FREEZE.md`. Fidelity: `docs/STAGE_98_FIDELITY.md`.
+
+**Stage 99 open (2026-08-12):** Tenant MVP Document Pipeline Honesty Ops — `docs/ADR_204_STAGE99_OPEN.md` + `docs/STAGE_99_PLAN.md` (Quote-to-Order → PR-to-GRN → Inventory Lifecycle → Document Pipeline Honesty Ops; T1 next).
+
+**Stage 99 T1 (2026-08-12):** Quote-to-Order pipeline honesty (`test_stage99_quote_order_t1.py`).
+
+**Stage 99 C1 (2026-08-12):** Purchase Request-to-GRN pipeline discoverability (`test_stage99_pr_grn_c1.py`).
+
+**Stage 99 L1 (2026-08-12):** Inventory lifecycle leaf discoverability (`test_stage99_inventory_lifecycle_l1.py`).
+
+**Stage 99 D1 (2026-08-12):** Document pipeline fidelity sync — `docs/STAGE_99_FIDELITY.md` (`test_stage99_fidelity_d1.py`).
+
+**Stage 99 exit (2026-08-12):** T1, C1, L1, D1, H99x met — `docs/STAGE_99_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_205_STAGE99_FREEZE.md`. Fidelity: `docs/STAGE_99_FIDELITY.md`.

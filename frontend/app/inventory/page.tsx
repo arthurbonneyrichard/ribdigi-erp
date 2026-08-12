@@ -1311,7 +1311,7 @@ export default function Page() {
             </button>
             <ul className="muted">{renderCategoryNodes(categoryTree)}</ul>
           </div>
-          <div className="card" style={{ display: 'grid', gap: 8 }}>
+          <div className="card" style={{ display: 'grid', gap: 8 }} id="brands">
             <h3>Brand</h3>
             <input value={brandCode} onChange={(e) => setBrandCode(e.target.value)} placeholder="Code" />
             <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Name" />
@@ -1417,7 +1417,7 @@ export default function Page() {
               ))}
             </ul>
           </div>
-          <div className="card" style={{ display: 'grid', gap: 8 }}>
+          <div className="card" style={{ display: 'grid', gap: 8 }} id="units">
             <h3>Unit of measure</h3>
             <p className="muted">Optional base unit + factor (e.g. 1 BOX = 12 PCS).</p>
             <input value={unitCode} onChange={(e) => setUnitCode(e.target.value)} placeholder="Code" />

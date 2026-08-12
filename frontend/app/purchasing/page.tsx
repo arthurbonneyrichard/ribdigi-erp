@@ -211,24 +211,45 @@ export default function Page() {
   const [ocrMeta, setOcrMeta] = useState<any>(null);
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('');
   const [returnStatusFilter, setReturnStatusFilter] = useState('');
+  const [prStatusFilter, setPrStatusFilter] = useState('');
+  const [poStatusFilter, setPoStatusFilter] = useState('');
+  const [grnStatusFilter, setGrnStatusFilter] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  async function refresh(invoiceStatus?: string, returnStatus?: string) {
-    const status = invoiceStatus !== undefined ? invoiceStatus : invoiceStatusFilter;
-    const retStatus = returnStatus !== undefined ? returnStatus : returnStatusFilter;
+  async function refresh(opts?: {
+    invoiceStatus?: string;
+    returnStatus?: string;
+    prStatus?: string;
+    poStatus?: string;
+    grnStatus?: string;
+  }) {
+    const status = opts?.invoiceStatus !== undefined ? opts.invoiceStatus : invoiceStatusFilter;
+    const retStatus = opts?.returnStatus !== undefined ? opts.returnStatus : returnStatusFilter;
+    const prStatus = opts?.prStatus !== undefined ? opts.prStatus : prStatusFilter;
+    const poStatus = opts?.poStatus !== undefined ? opts.poStatus : poStatusFilter;
+    const grnStatus = opts?.grnStatus !== undefined ? opts.grnStatus : grnStatusFilter;
     const invPath = status
       ? `/purchasing/invoices?status=${encodeURIComponent(status)}`
       : '/purchasing/invoices';
     const retPath = retStatus
       ? `/purchasing/returns?status=${encodeURIComponent(retStatus)}`
       : '/purchasing/returns';
+    const prPath = prStatus
+      ? `/purchasing/requests?status=${encodeURIComponent(prStatus)}`
+      : '/purchasing/requests';
+    const poPath = poStatus
+      ? `/purchasing/orders?status=${encodeURIComponent(poStatus)}`
+      : '/purchasing/orders';
+    const grnPath = grnStatus
+      ? `/purchasing/grn?status=${encodeURIComponent(grnStatus)}`
+      : '/purchasing/grn';
     const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes, settingsRes] = await Promise.all([
-      api('/purchasing/requests'),
-      api('/purchasing/orders'),
+      api(prPath),
+      api(poPath),
       api('/suppliers'),
       api('/products'),
-      api('/purchasing/grn'),
+      api(grnPath),
       api(invPath),
       api(retPath),
       api('/purchasing/settings'),
@@ -243,42 +264,69 @@ export default function Page() {
     setPrLevels(settingsRes.data?.levels || []);
   }
 
+  function writeQueryParam(key: string, next: string) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (!next) url.searchParams.delete(key);
+    else url.searchParams.set(key, next);
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
+  }
+
   function setInvoiceStatus(next: string) {
     setInvoiceStatusFilter(next);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (!next) url.searchParams.delete('status');
-      else url.searchParams.set('status', next);
-      const qs = url.searchParams.toString();
-      window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
-    }
-    refresh(next).catch((err) => setError(err.message));
+    writeQueryParam('status', next);
+    refresh({ invoiceStatus: next }).catch((err) => setError(err.message));
   }
 
   function setReturnStatus(next: string) {
     setReturnStatusFilter(next);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (!next) url.searchParams.delete('return_status');
-      else url.searchParams.set('return_status', next);
-      const qs = url.searchParams.toString();
-      window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
-    }
-    refresh(undefined, next).catch((err) => setError(err.message));
+    writeQueryParam('return_status', next);
+    refresh({ returnStatus: next }).catch((err) => setError(err.message));
+  }
+
+  function setPrStatus(next: string) {
+    setPrStatusFilter(next);
+    writeQueryParam('pr_status', next);
+    refresh({ prStatus: next }).catch((err) => setError(err.message));
+  }
+
+  function setPoStatus(next: string) {
+    setPoStatusFilter(next);
+    writeQueryParam('po_status', next);
+    refresh({ poStatus: next }).catch((err) => setError(err.message));
+  }
+
+  function setGrnStatus(next: string) {
+    setGrnStatusFilter(next);
+    writeQueryParam('grn_status', next);
+    refresh({ grnStatus: next }).catch((err) => setError(err.message));
   }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('status')?.trim() || '';
     const retRaw = params.get('return_status')?.trim() || '';
+    const prRaw = params.get('pr_status')?.trim() || '';
+    const poRaw = params.get('po_status')?.trim() || '';
+    const grnRaw = params.get('grn_status')?.trim() || '';
     const allowed = ['draft', 'unpaid', 'partial', 'overdue', 'paid', 'cancelled', 'outstanding'];
     const retAllowed = ['draft', 'posted'];
+    const prAllowed = ['draft', 'pending', 'approved', 'rejected', 'cancelled', 'converted'];
+    const poAllowed = ['draft', 'sent', 'partially_received', 'received', 'cancelled', 'open'];
+    const grnAllowed = ['draft', 'posted'];
     if (allowed.includes(raw)) setInvoiceStatusFilter(raw);
     if (retAllowed.includes(retRaw)) setReturnStatusFilter(retRaw);
-    refresh(
-      allowed.includes(raw) ? raw : '',
-      retAllowed.includes(retRaw) ? retRaw : '',
-    ).catch((err) => setError(err.message));
+    if (prAllowed.includes(prRaw)) setPrStatusFilter(prRaw);
+    if (poAllowed.includes(poRaw)) setPoStatusFilter(poRaw);
+    if (grnAllowed.includes(grnRaw)) setGrnStatusFilter(grnRaw);
+    refresh({
+      invoiceStatus: allowed.includes(raw) ? raw : '',
+      returnStatus: retAllowed.includes(retRaw) ? retRaw : '',
+      prStatus: prAllowed.includes(prRaw) ? prRaw : '',
+      poStatus: poAllowed.includes(poRaw) ? poRaw : '',
+      grnStatus: grnAllowed.includes(grnRaw) ? grnRaw : '',
+    }).catch((err) => setError(err.message));
   }, []);
 
   useEffect(() => {
@@ -1435,6 +1483,21 @@ export default function Page() {
 
       {tab === 'requests' && (
         <>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+            <strong>PR status</strong>
+            <select
+              value={prStatusFilter}
+              onChange={(e) => setPrStatus(e.target.value)}
+              aria-label="Filter purchase requests by status"
+            >
+              <option value="">All statuses</option>
+              {['draft', 'pending', 'approved', 'rejected', 'cancelled', 'converted'].map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
             <label className="muted">Rejection reason (optional)</label>
             <input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Reason" />
@@ -1489,6 +1552,21 @@ export default function Page() {
 
       {tab === 'orders' && (
         <>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+            <strong>PO status</strong>
+            <select
+              value={poStatusFilter}
+              onChange={(e) => setPoStatus(e.target.value)}
+              aria-label="Filter purchase orders by status"
+            >
+              <option value="">All statuses</option>
+              {['draft', 'open', 'sent', 'partially_received', 'received', 'cancelled'].map((s) => (
+                <option key={s} value={s}>
+                  {s === 'open' ? 'open (sent/partially_received)' : s}
+                </option>
+              ))}
+            </select>
+          </div>
           <table className="table">
             <thead>
               <tr>
@@ -1719,26 +1797,40 @@ export default function Page() {
       )}
 
       {tab === 'grn' && (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>GRN</th>
-              <th>PO</th>
-              <th>Status</th>
-              <th>Lines</th>
-            </tr>
-          </thead>
-          <tbody>
-            {grns.map((g) => (
-              <tr key={g.id}>
-                <td>{g.grn_number}</td>
-                <td>{g.purchase_order_id}</td>
-                <td>{g.status}</td>
-                <td>{g.items?.length || 0}</td>
+        <>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+            <strong>GRN status</strong>
+            <select
+              value={grnStatusFilter}
+              onChange={(e) => setGrnStatus(e.target.value)}
+              aria-label="Filter GRNs by status"
+            >
+              <option value="">All statuses</option>
+              <option value="draft">draft</option>
+              <option value="posted">posted</option>
+            </select>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>GRN</th>
+                <th>PO</th>
+                <th>Status</th>
+                <th>Lines</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {grns.map((g) => (
+                <tr key={g.id}>
+                  <td>{g.grn_number}</td>
+                  <td>{g.purchase_order_id}</td>
+                  <td>{g.status}</td>
+                  <td>{g.items?.length || 0}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
 
       {tab === 'invoices' && (

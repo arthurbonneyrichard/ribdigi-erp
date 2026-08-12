@@ -1590,3 +1590,5 @@ Authorization: Bearer <jwt_token>
 Stage 97 D1 — `docs/STAGE_97_FIDELITY.md` (`test_stage97_fidelity_d1.py`): Stage 97 S1 `GET /sales/invoices?status=`; Stage 97 P1 `GET /purchasing/invoices?status=outstanding`; Stage 97 I1 product labels `code_type=qr`.
 
 Stage 98 D1 — `docs/STAGE_98_FIDELITY.md` (`test_stage98_fidelity_d1.py`): Stage 98 Q1 `GET /expenses?status=`; Stage 98 R1 `GET /sales/returns?status=` / `GET /purchasing/returns?status=`; Stage 98 O1 credit kpi `?kind=`.
+
+Stage 99 D1 — `docs/STAGE_99_FIDELITY.md` (`test_stage99_fidelity_d1.py`): Stage 99 T1 quotations/orders `status=`; Stage 99 C1 PR/PO/GRN `status=` / `open`.

@@ -600,6 +600,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 98 O1** | Stock ops & bank surface — Counts / Transfers / Bank Reconciliation / Cheques / Credit kind (`test_stage98_stock_bank_o1.py`) |
 | **Stage 98 D1** | Ops queue honesty — `docs/STAGE_98_FIDELITY.md` (`test_stage98_fidelity_d1.py`); maps Q1–O1 → readiness / launch / deploy / security |
 | **Stage 98 H98x** | Exit + freeze — `docs/STAGE_98_EXIT_CRITERIA.md`, ADR-203 (`test_stage98_exit_h98x.py`); Stages 1–98 frozen for Stage 98 scope; Stage 99+ requires CONTINUE/NEXT |
+| **Stage 99 open** | Tenant MVP Document Pipeline Honesty Ops — `docs/STAGE_99_PLAN.md`, ADR-204 (`test_stage99_open.py`); Stages 1–98 remain frozen; T1 next historically |
+| **Stage 99 T1** | Quote-to-Order pipeline honesty (`test_stage99_quote_order_t1.py`) |
+| **Stage 99 C1** | Purchase Request-to-GRN pipeline discoverability (`test_stage99_pr_grn_c1.py`) |
+| **Stage 99 L1** | Inventory lifecycle leaf discoverability (`test_stage99_inventory_lifecycle_l1.py`) |
+| **Stage 99 D1** | Document pipeline honesty — `docs/STAGE_99_FIDELITY.md` (`test_stage99_fidelity_d1.py`) |
+| **Stage 99 H99x** | Exit + freeze — `docs/STAGE_99_EXIT_CRITERIA.md`, ADR-205 (`test_stage99_exit_h99x.py`); Stages 1–99 frozen; Stage 100+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

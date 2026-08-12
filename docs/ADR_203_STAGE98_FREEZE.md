@@ -27,4 +27,4 @@ Stage 98 Tenant MVP Ops Queue & Returns Honesty Ops delivered Expense approval q
 
 ## Next stage
 
-Stage 99 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 98 feature scope remains frozen.
+Stage 99 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-204](ADR_204_STAGE99_OPEN.md) + [STAGE_99_PLAN.md](STAGE_99_PLAN.md) (Tenant MVP Document Pipeline Honesty Ops). Stage 98 feature scope remains frozen.

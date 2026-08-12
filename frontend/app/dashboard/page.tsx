@@ -83,7 +83,9 @@ function notificationHref(note: Note): string | null {
   if (t === 'product' || t === 'warehouse_stock') return '/inventory?tab=products';
   if (t === 'sales_invoice') return '/sales?tab=invoices';
   if (t === 'sales_quotation') return '/sales?tab=quotations';
-  if (t === 'purchase_invoice' || t === 'purchase_order') return '/purchasing?tab=invoices';
+  if (t === 'purchase_invoice') return '/purchasing?tab=invoices';
+  // Stage 99 C1 — purchase orders deep-link to Orders (not invoices)
+  if (t === 'purchase_order') return '/purchasing?tab=orders';
   if (t === 'recurring_expense' || t === 'expense') return '/expenses';
   if (t.includes('stock') || t.includes('batch')) return '/inventory?tab=lowstock';
   return null;

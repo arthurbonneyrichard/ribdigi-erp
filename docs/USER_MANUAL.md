@@ -110,6 +110,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Pending Expenses:** Filter expenses by approval status; Shell Pending Expenses + Approval Matrix anchor (Stage 98 Q1)
 - **Sales / Purchase Returns:** Shell deep-links; draft→post honesty for credit/debit notes; `return_status` filter (Stage 98 R1)
 - **Stock Counts / Bank Reconciliation / Cheques:** Shell discoverability; Credit Outstanding Receivables/Payables via `?kind=` (Stage 98 O1)
+- **Quotations / Customer Groups:** Shell deep-links; quotation status filter; → Order creates draft — Confirm reserves stock (Stage 99 T1)
+- **Purchase Requests / Open POs / GRN:** Shell + status filters; purchase order notifications open Orders tab (Stage 99 C1)
+- **Variants / Batches / Expiry / Stock Adjustments:** Shell leaves; Catalog Brands/Units anchors (Stage 99 L1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

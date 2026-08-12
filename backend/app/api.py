@@ -5274,14 +5274,25 @@ async def cancel_sales_invoice(
 
 @api.get("/sales/quotations")
 async def list_quotations(
+    status: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 99 T1 — optional status filter for quote pipeline honesty."""
     stmt = (
         select(m.SalesQuotation)
         .where(m.SalesQuotation.tenant_id == claims["tenant_id"])
         .order_by(m.SalesQuotation.created_at.desc())
     )
+    if status:
+        key = status.strip().lower()
+        allowed = {"draft", "sent", "accepted", "rejected", "expired"}
+        if key not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be draft, sent, accepted, rejected, or expired",
+            )
+        stmt = stmt.where(m.SalesQuotation.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesQuotation, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_quotation(db, q) for q in rows])
@@ -5477,7 +5488,11 @@ async def convert_quotation_order(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
     )
     await db.commit()
-    return env(await sales_docs_svc.serialize_order(db, order), "Converted to sales order")
+    # Stage 99 T1 — honesty: convert creates draft order; Confirm reserves stock
+    return env(
+        await sales_docs_svc.serialize_order(db, order),
+        "Converted to draft sales order — Confirm required to reserve stock",
+    )
 
 
 @api.post("/sales/quotations/{quotation_id}/convert-invoice")
@@ -5501,14 +5516,25 @@ async def convert_quotation_invoice(
 
 @api.get("/sales/orders")
 async def list_sales_orders(
+    status: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 99 T1 — optional status filter (server-side delivery status)."""
     stmt = (
         select(m.SalesOrder)
         .where(m.SalesOrder.tenant_id == claims["tenant_id"])
         .order_by(m.SalesOrder.created_at.desc())
     )
+    if status:
+        key = status.strip().lower()
+        allowed = {"draft", "confirmed", "processing", "shipped", "delivered", "cancelled"}
+        if key not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be draft, confirmed, processing, shipped, delivered, or cancelled",
+            )
+        stmt = stmt.where(m.SalesOrder.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesOrder, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_order(db, o) for o in rows])
@@ -5914,14 +5940,25 @@ async def purchase(
 
 @api.get("/purchasing/requests")
 async def list_purchase_requests(
+    status: str | None = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 99 C1 — optional status filter for PR pipeline."""
     stmt = (
         select(m.PurchaseRequest)
         .where(m.PurchaseRequest.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseRequest.created_at.desc())
     )
+    if status:
+        key = status.strip().lower()
+        allowed = {"draft", "pending", "approved", "rejected", "cancelled", "converted"}
+        if key not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be draft, pending, approved, rejected, cancelled, or converted",
+            )
+        stmt = stmt.where(m.PurchaseRequest.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseRequest, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_pr(db, pr) for pr in rows])
@@ -6091,14 +6128,35 @@ async def convert_purchase_request(
 
 @api.get("/purchasing/orders")
 async def list_purchase_orders(
+    status: str | None = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 99 C1 — optional status filter (`open` → sent∪partially_received)."""
     stmt = (
         select(m.PurchaseOrder)
         .where(m.PurchaseOrder.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseOrder.created_at.desc())
     )
+    if status:
+        key = status.strip().lower()
+        allowed = {
+            "draft",
+            "sent",
+            "partially_received",
+            "received",
+            "cancelled",
+            "open",
+        }
+        if key not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be draft, sent, partially_received, received, cancelled, or open",
+            )
+        if key == "open":
+            stmt = stmt.where(m.PurchaseOrder.status.in_(["sent", "partially_received"]))
+        else:
+            stmt = stmt.where(m.PurchaseOrder.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseOrder, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_po(db, po) for po in rows])
@@ -6272,14 +6330,21 @@ async def cancel_purchase_order(
 
 @api.get("/purchasing/grn")
 async def list_grns(
+    status: str | None = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 99 C1 — optional status filter for GRN discoverability."""
     stmt = (
         select(m.GoodsReceipt)
         .where(m.GoodsReceipt.tenant_id == claims["tenant_id"])
         .order_by(m.GoodsReceipt.created_at.desc())
     )
+    if status:
+        key = status.strip().lower()
+        if key not in {"draft", "posted"}:
+            raise HTTPException(status_code=400, detail="status must be draft or posted")
+        stmt = stmt.where(m.GoodsReceipt.status == key)
     stmt = apply_created_by_scope(stmt, m.GoodsReceipt, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_grn(db, g) for g in rows])

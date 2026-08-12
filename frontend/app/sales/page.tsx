@@ -16,6 +16,7 @@ export default function Page() {
   const [quotations, setQuotations] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
+  const [quoteStatusFilter, setQuoteStatusFilter] = useState('');
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('');
   const [returnStatusFilter, setReturnStatusFilter] = useState('');
   const [returns, setReturns] = useState<any[]>([]);
@@ -71,21 +72,34 @@ export default function Page() {
     return Math.round(Number(base || 0) * (1 - pct / 100) * 10000) / 10000;
   }
 
-  async function refresh(invoiceStatus?: string, returnStatus?: string) {
-    const status = invoiceStatus !== undefined ? invoiceStatus : invoiceStatusFilter;
-    const retStatus = returnStatus !== undefined ? returnStatus : returnStatusFilter;
+  async function refresh(opts?: {
+    invoiceStatus?: string;
+    returnStatus?: string;
+    quoteStatus?: string;
+    orderStatus?: string;
+  }) {
+    const status = opts?.invoiceStatus !== undefined ? opts.invoiceStatus : invoiceStatusFilter;
+    const retStatus = opts?.returnStatus !== undefined ? opts.returnStatus : returnStatusFilter;
+    const quoteStatus = opts?.quoteStatus !== undefined ? opts.quoteStatus : quoteStatusFilter;
+    const orderStatus = opts?.orderStatus !== undefined ? opts.orderStatus : orderStatusFilter;
     const invPath = status
       ? `/sales/invoices?status=${encodeURIComponent(status)}`
       : '/sales/invoices';
     const retPath = retStatus
       ? `/sales/returns?status=${encodeURIComponent(retStatus)}`
       : '/sales/returns';
+    const quotePath = quoteStatus
+      ? `/sales/quotations?status=${encodeURIComponent(quoteStatus)}`
+      : '/sales/quotations';
+    const orderPath = orderStatus
+      ? `/sales/orders?status=${encodeURIComponent(orderStatus)}`
+      : '/sales/orders';
     const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, groupRes] = await Promise.all([
       api(invPath),
       api('/customers'),
       api('/products'),
-      api('/sales/quotations'),
-      api('/sales/orders'),
+      api(quotePath),
+      api(orderPath),
       api(retPath),
       api('/stores'),
       api('/customers/groups'),
@@ -100,28 +114,37 @@ export default function Page() {
     setCustomerGroups(groupRes.data || []);
   }
 
+  function writeQueryParam(key: string, next: string) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (!next) url.searchParams.delete(key);
+    else url.searchParams.set(key, next);
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
+  }
+
   function setInvoiceStatus(next: string) {
     setInvoiceStatusFilter(next);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (!next) url.searchParams.delete('status');
-      else url.searchParams.set('status', next);
-      const qs = url.searchParams.toString();
-      window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
-    }
-    refresh(next).catch((err) => setError(err.message));
+    writeQueryParam('status', next);
+    refresh({ invoiceStatus: next }).catch((err) => setError(err.message));
   }
 
   function setReturnStatus(next: string) {
     setReturnStatusFilter(next);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (!next) url.searchParams.delete('return_status');
-      else url.searchParams.set('return_status', next);
-      const qs = url.searchParams.toString();
-      window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
-    }
-    refresh(undefined, next).catch((err) => setError(err.message));
+    writeQueryParam('return_status', next);
+    refresh({ returnStatus: next }).catch((err) => setError(err.message));
+  }
+
+  function setQuoteStatus(next: string) {
+    setQuoteStatusFilter(next);
+    writeQueryParam('quote_status', next);
+    refresh({ quoteStatus: next }).catch((err) => setError(err.message));
+  }
+
+  function setOrderStatus(next: string) {
+    setOrderStatusFilter(next);
+    writeQueryParam('order_status', next);
+    refresh({ orderStatus: next }).catch((err) => setError(err.message));
   }
 
   function resetCustomerForm() {
@@ -179,14 +202,22 @@ export default function Page() {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('status')?.trim() || '';
     const retRaw = params.get('return_status')?.trim() || '';
+    const quoteRaw = params.get('quote_status')?.trim() || '';
+    const orderRaw = params.get('order_status')?.trim() || '';
     const allowed = ['draft', 'posted', 'sent', 'paid', 'partial', 'unpaid', 'overdue', 'cancelled'];
     const retAllowed = ['draft', 'posted'];
+    const quoteAllowed = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
+    const orderAllowed = ['draft', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
     if (allowed.includes(raw)) setInvoiceStatusFilter(raw);
     if (retAllowed.includes(retRaw)) setReturnStatusFilter(retRaw);
-    refresh(
-      allowed.includes(raw) ? raw : '',
-      retAllowed.includes(retRaw) ? retRaw : '',
-    ).catch((err) => setError(err.message));
+    if (quoteAllowed.includes(quoteRaw)) setQuoteStatusFilter(quoteRaw);
+    if (orderAllowed.includes(orderRaw)) setOrderStatusFilter(orderRaw);
+    refresh({
+      invoiceStatus: allowed.includes(raw) ? raw : '',
+      returnStatus: retAllowed.includes(retRaw) ? retRaw : '',
+      quoteStatus: quoteAllowed.includes(quoteRaw) ? quoteRaw : '',
+      orderStatus: orderAllowed.includes(orderRaw) ? orderRaw : '',
+    }).catch((err) => setError(err.message));
   }, []);
 
   useEffect(() => {
@@ -874,8 +905,24 @@ export default function Page() {
       {tab === 'quotations' && (
         <>
           <p className="muted" style={{ marginBottom: 12 }}>
-            → Invoice creates a draft sales invoice; Post is required before AR recognition.
+            → Order creates a draft sales order; Confirm is required to reserve stock. → Invoice creates a
+            draft sales invoice; Post is required before AR recognition.
           </p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+            <strong>Quotation status</strong>
+            <select
+              value={quoteStatusFilter}
+              onChange={(e) => setQuoteStatus(e.target.value)}
+              aria-label="Filter quotations by status"
+            >
+              <option value="">All statuses</option>
+              {['draft', 'sent', 'accepted', 'rejected', 'expired'].map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
           <table className="table">
             <thead>
               <tr>
@@ -914,7 +961,17 @@ export default function Page() {
                     {['draft', 'sent'].includes(q.status) && (
                       <>
                         <button onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
-                        <button onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}>→ Order</button>
+                        <button
+                          title="Creates a draft order — Confirm required to reserve stock"
+                          onClick={() =>
+                            act(
+                              `/sales/quotations/${q.id}/convert-order`,
+                              'Converted to draft sales order — Confirm required to reserve stock'
+                            )
+                          }
+                        >
+                          → Order
+                        </button>
                         <button
                           title="Creates a draft invoice — Post required before AR"
                           onClick={() =>
@@ -942,7 +999,7 @@ export default function Page() {
           <strong>Delivery status</strong>
           <select
             value={orderStatusFilter}
-            onChange={(e) => setOrderStatusFilter(e.target.value)}
+            onChange={(e) => setOrderStatus(e.target.value)}
             aria-label="Filter orders by delivery status"
           >
             <option value="">All statuses</option>
@@ -952,7 +1009,7 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <span className="muted">Filter sales orders by logistics status</span>
+          <span className="muted">Server-side filter via order_status (Stage 99 T1)</span>
         </div>
         <table className="table">
           <thead>
@@ -967,9 +1024,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {orders
-              .filter((o) => !orderStatusFilter || o.status === orderStatusFilter)
-              .map((o) => (
+            {orders.map((o) => (
               <tr key={o.id}>
                 <td>{o.order_number}</td>
                 <td>{o.status}</td>
