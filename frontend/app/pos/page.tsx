@@ -174,6 +174,8 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [cashierName, setCashierName] = useState('');
   const [receiptBusy, setReceiptBusy] = useState('');
+  const [shiftReport, setShiftReport] = useState<any>(null);
+  const [reportBusy, setReportBusy] = useState(false);
 
   const cartSubtotal = useMemo(
     () =>
@@ -275,6 +277,7 @@ export default function Page() {
         }),
       });
       setSession(null);
+      setShiftReport(null);
       setMessage(
         `Shift closed. Variance: ${r.data.variance ?? 0} (expected ${r.data.expected_cash})`
       );
@@ -282,6 +285,24 @@ export default function Page() {
       setCart([]);
     } catch (err: any) {
       setError(err.message);
+    }
+  }
+
+  async function loadShiftReport() {
+    if (!session) return;
+    if (shiftReport) {
+      setShiftReport(null);
+      return;
+    }
+    setError('');
+    setReportBusy(true);
+    try {
+      const r = await api(`/pos/sessions/${session.session_id}/report`);
+      setShiftReport(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setReportBusy(false);
     }
   }
 
@@ -603,6 +624,14 @@ export default function Page() {
                 <button
                   type="button"
                   className="tpos-btn"
+                  onClick={loadShiftReport}
+                  disabled={reportBusy}
+                >
+                  {reportBusy ? 'Loading…' : shiftReport ? 'Hide report' : 'Shift report'}
+                </button>
+                <button
+                  type="button"
+                  className="tpos-btn"
                   onClick={async () => {
                     setError('');
                     try {
@@ -622,6 +651,91 @@ export default function Page() {
             )}
           </div>
         </header>
+
+        {shiftReport && session && (
+          <section className="tpos-report" aria-label="Shift report">
+            <div className="tpos-report-head">
+              <h2>Shift report</h2>
+              <button type="button" className="tpos-btn" onClick={() => setShiftReport(null)}>
+                Close
+              </button>
+            </div>
+            <div className="tpos-report-kpis">
+              <div>
+                <span>Opening</span>
+                <strong>{money(Number(shiftReport.session?.opening_cash || 0))}</strong>
+              </div>
+              <div>
+                <span>Cash sales</span>
+                <strong>{money(Number(shiftReport.payment_breakdown?.cash || 0))}</strong>
+              </div>
+              <div>
+                <span>Card sales</span>
+                <strong>{money(Number(shiftReport.payment_breakdown?.card || 0))}</strong>
+              </div>
+              <div>
+                <span>Other</span>
+                <strong>{money(Number(shiftReport.payment_breakdown?.other || 0))}</strong>
+              </div>
+              <div>
+                <span>Expected drawer</span>
+                <strong>{money(Number(shiftReport.session?.expected_cash || 0))}</strong>
+              </div>
+              <div>
+                <span>Total sales</span>
+                <strong>{money(Number(shiftReport.payment_breakdown?.total || 0))}</strong>
+              </div>
+            </div>
+            <div className="tpos-report-table-wrap">
+              <table className="tpos-report-table">
+                <thead>
+                  <tr>
+                    <th>Sale</th>
+                    <th>Time</th>
+                    <th>Customer</th>
+                    <th>Pay</th>
+                    <th>Tax</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(shiftReport.sales || []).length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="muted">
+                        No sales in this shift yet.
+                      </td>
+                    </tr>
+                  )}
+                  {(shiftReport.sales || []).map((sale: any) => (
+                    <tr key={sale.id}>
+                      <td>{sale.reference}</td>
+                      <td>
+                        {sale.created_at
+                          ? String(sale.created_at).replace('T', ' ').slice(0, 16)
+                          : '—'}
+                      </td>
+                      <td>{sale.customer_name || 'Walk-in'}</td>
+                      <td>
+                        {sale.payment_method === 'split' && sale.payments?.length
+                          ? sale.payments
+                              .map(
+                                (p: any) =>
+                                  `${String(p.payment_method || '').toUpperCase()} ${money(
+                                    Number(p.amount || 0)
+                                  )}`
+                              )
+                              .join(' + ')
+                          : String(sale.payment_method || 'cash').toUpperCase()}
+                      </td>
+                      <td>{money(Number(sale.tax || 0))}</td>
+                      <td>{money(Number(sale.total || 0))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
         {error && (
           <p className="tpos-banner tpos-banner-err" role="alert">

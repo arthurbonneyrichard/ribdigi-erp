@@ -373,9 +373,12 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
                 "reference": s.reference,
                 "total": float(s.total or 0),
                 "tax": float(s.tax or 0),
+                "subtotal": float(s.subtotal or 0),
                 "status": s.status,
                 "payment_method": (s.payload or {}).get("payment_method", "cash"),
                 "payments": (s.payload or {}).get("payments") or [],
+                "customer_name": (s.payload or {}).get("customer_name"),
+                "discount_amount": float((s.payload or {}).get("discount_amount") or 0),
                 "created_at": s.created_at,
             }
             for s in sales
@@ -384,5 +387,6 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
             "cash": float(session.cash_sales or 0),
             "card": float(session.card_sales or 0),
             "other": float(session.other_sales or 0),
+            "total": float(session.total_sales or 0),
         },
     }
