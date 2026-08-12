@@ -143,3 +143,5 @@ Stage 124 D1 Tenant MVP Inactive Product Variants, Custom Roles & Variant/Role C
 Stage 125 D1 Tenant MVP Inactive Liquid Accounts, Recurring Expenses & Liquid/Recurring CSV Export Fidelity — `docs/STAGE_125_FIDELITY.md` (`test_stage125_fidelity_d1.py`); Stage 125 L1 Complete; Stage 125 R1 Complete; Stage 125 X1 Complete (MVP honesty); exit `docs/STAGE_125_EXIT_CRITERIA.md`, ADR-257.
 
 Stage 126 D1 Tenant MVP Inactive Bank Connections, Paused Webhooks & Bank/Webhook CSV Export Fidelity — `docs/STAGE_126_FIDELITY.md` (`test_stage126_fidelity_d1.py`); Stage 126 C1 Complete; Stage 126 W1 Complete; Stage 126 X1 Complete (MVP honesty); exit `docs/STAGE_126_EXIT_CRITERIA.md`, ADR-259.
+
+Stage 127 D1 Tenant MVP API-Key Status, FX Rates CSV & Report-Schedule CSV Export Fidelity — `docs/STAGE_127_FIDELITY.md` (`test_stage127_fidelity_d1.py`); Stage 127 K1 Complete; Stage 127 F1 Complete; Stage 127 S1 Complete (MVP honesty); exit `docs/STAGE_127_EXIT_CRITERIA.md`, ADR-261.

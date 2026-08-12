@@ -194,6 +194,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Inactive Bank Connections:** Accounting Bank API connections filter + Shell leaves (Stage 126 C1)
 - **Paused Webhooks:** Security Webhooks active/paused filter + Shell leaves (Stage 126 W1)
 - **Export bank connections / webhooks CSV:** Accounting & Security export buttons (Stage 126 X1)
+- **API Key Status Filters:** Security API keys active/revoked/expired filter + Shell leaves (Stage 127 K1)
+- **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

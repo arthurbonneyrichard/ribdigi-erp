@@ -160,10 +160,18 @@ export default function Page() {
       .toLowerCase();
     return v === 'true' || v === 'false' ? v : '';
   });
+  // Stage 127 K1 — api_key_status → GET /api-keys?status=
+  const [apiKeyStatusFilter, setApiKeyStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('api_key_status') || '')
+      .trim()
+      .toLowerCase();
+    return ['active', 'revoked', 'expired'].includes(v) ? v : '';
+  });
   const [role, setRole] = useState('');
   const [principal, setPrincipal] = useState('');
 
-  async function refresh(opts?: { webhookActive?: string }) {
+  async function refresh(opts?: { webhookActive?: string; apiKeyStatus?: string }) {
     const [r, keys, sess, me] = await Promise.all([
       api('/auth/2fa/status'),
       api('/auth/webauthn/credentials').catch(() => ({ data: [] })),
@@ -181,7 +189,15 @@ export default function Page() {
     }
     if (userRole === 'company_admin' || userRole === 'super_admin') {
       try {
-        const listed = await api('/api-keys');
+        const apiKeyStatus =
+          opts?.apiKeyStatus !== undefined ? opts.apiKeyStatus : apiKeyStatusFilter;
+        const keyQs =
+          apiKeyStatus === 'active' || apiKeyStatus === 'revoked' || apiKeyStatus === 'expired'
+            ? `?status=${apiKeyStatus}`
+            : apiKeyStatus === 'all'
+              ? ''
+              : '';
+        const listed = await api(`/api-keys${keyQs}`);
         setApiKeys(listed.data || []);
       } catch {
         setApiKeys([]);
@@ -353,7 +369,15 @@ export default function Page() {
       whActive = wa;
       setWebhookActiveFilter(wa);
     }
-    refresh({ webhookActive: whActive }).catch((err) => setError(err.message));
+    let keyStatus = apiKeyStatusFilter;
+    const ks = params.get('api_key_status')?.trim().toLowerCase() || '';
+    if (['active', 'revoked', 'expired'].includes(ks)) {
+      keyStatus = ks;
+      setApiKeyStatusFilter(ks);
+    }
+    refresh({ webhookActive: whActive, apiKeyStatus: keyStatus }).catch((err) =>
+      setError(err.message),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -741,8 +765,58 @@ export default function Page() {
         <div className="card" style={{ marginBottom: 16 }} id="api-keys">
           <h2>API keys</h2>
           <p className="muted">
-            Integration keys authenticate with the <code>X-API-Key</code> header. The secret is shown once.
+            Integration keys authenticate with the <code>X-API-Key</code> header. The secret is shown
+            once. Filter via <code>api_key_status</code> → <code>GET /api-keys?status=</code> (Stage
+            127 K1).
           </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <select
+              value={apiKeyStatusFilter || 'default'}
+              onChange={(e) => {
+                const v = e.target.value === 'default' ? '' : e.target.value;
+                setApiKeyStatusFilter(v);
+                const url = new URL(window.location.href);
+                if (['active', 'revoked', 'expired'].includes(v)) {
+                  url.searchParams.set('api_key_status', v);
+                } else url.searchParams.delete('api_key_status');
+                window.history.replaceState({}, '', url.toString());
+                refresh({ apiKeyStatus: v }).catch((err) => setError(err.message));
+              }}
+            >
+              <option value="default">Status filter (default / all)</option>
+              <option value="active">Active only</option>
+              <option value="revoked">Revoked only</option>
+              <option value="expired">Expired only</option>
+            </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const qs =
+                  apiKeyStatusFilter === 'active' ||
+                  apiKeyStatusFilter === 'revoked' ||
+                  apiKeyStatusFilter === 'expired'
+                    ? `?status=${apiKeyStatusFilter}`
+                    : '';
+                const res = await fetch(`${apiBase}/api-keys/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'api_keys_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('API keys CSV downloaded');
+              }}
+            >
+              Export API keys CSV
+            </button>
+          </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
             <input
               value={apiKeyName}

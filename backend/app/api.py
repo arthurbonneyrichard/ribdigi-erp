@@ -59,6 +59,7 @@ from app import finance_meta_export as finance_meta_export_svc
 from app import variant_role_export as variant_role_export_svc
 from app import liquid_recurring_export as liquid_recurring_export_svc
 from app import bank_webhook_export as bank_webhook_export_svc
+from app import api_fx_schedule_export as api_fx_schedule_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -9589,11 +9590,34 @@ async def reports_exportable(claims=Depends(require_permission("reports", "read"
 
 @api.get("/reports/schedules")
 async def report_schedules_list(
+    enabled: bool | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await report_schedules_svc.list_schedules(db, claims["tenant_id"])
+    """Stage 127 S1 — optional enabled filter for honest schedule lists."""
+    rows = await report_schedules_svc.list_schedules(
+        db, claims["tenant_id"], enabled=enabled
+    )
     return env([report_schedules_svc.serialize_schedule(r) for r in rows])
+
+
+@api.get("/reports/schedules/export")
+async def report_schedules_export(
+    enabled: bool | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 127 S1 — report schedules CSV export."""
+    text = await api_fx_schedule_export_svc.export_report_schedules_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        enabled=enabled,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="report_schedules_export.csv"'},
+    )
 
 
 @api.post("/reports/schedules")
@@ -10021,6 +10045,23 @@ async def list_exchange_rates(
             "fx_provider": settings.FX_PROVIDER,
             "rates": [fx_svc.serialize_rate(r) for r in rows],
         }
+    )
+
+
+@api.get("/credit/exchange-rates/export")
+async def exchange_rates_export(
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 127 F1 — exchange rates CSV export."""
+    text = await api_fx_schedule_export_svc.export_exchange_rates_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="exchange_rates_export.csv"'},
     )
 
 
@@ -11527,12 +11568,37 @@ async def audit_logs_patch_blocked(
 
 @api.get("/api-keys")
 async def api_keys_list(
+    status: str | None = None,
+    active_only: bool = False,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 6 K1 / BR-18.1 — list tenant integration API keys (secret never returned)."""
-    rows = await api_keys_svc.list_keys(db, claims["tenant_id"])
+    """Stage 127 K1 — status / active_only for honest API-key status lists."""
+    rows = await api_keys_svc.list_keys(
+        db, claims["tenant_id"], status=status, active_only=active_only
+    )
     return env([api_keys_svc.serialize_key(r) for r in rows])
+
+
+@api.get("/api-keys/export")
+async def api_keys_export(
+    status: str | None = None,
+    active_only: bool = False,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 127 K1 — API keys CSV export (raw secrets never included)."""
+    text = await api_fx_schedule_export_svc.export_api_keys_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="api_keys_export.csv"'},
+    )
 
 
 @api.post("/api-keys")

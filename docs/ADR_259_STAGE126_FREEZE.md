@@ -23,4 +23,4 @@ Stage 126 Tenant MVP Inactive Bank Connections, Paused Webhooks & Bank/Webhook C
 
 ## Next stage
 
-Stage 127 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 126 feature scope remains frozen.
+**Stage 127 opened** via CONTINUE/NEXT after this freeze — see [ADR-260](ADR_260_STAGE127_OPEN.md) / [STAGE_127_PLAN.md](STAGE_127_PLAN.md); frozen as [ADR-261](ADR_261_STAGE127_FREEZE.md). Stage 126 feature scope remains frozen.

@@ -165,15 +165,36 @@ def generate_raw_key() -> tuple[str, str, str]:
     return raw, prefix, hash_token(raw)
 
 
-async def list_keys(db: AsyncSession, tenant_id: str) -> list[m.ApiKey]:
-    rows = (
-        await db.execute(
-            select(m.ApiKey)
-            .where(m.ApiKey.tenant_id == tenant_id)
-            .order_by(m.ApiKey.created_at.desc())
+async def list_keys(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    active_only: bool = False,
+) -> list[m.ApiKey]:
+    """Stage 127 K1 — status / active_only for honest API-key status lists."""
+    rows = list(
+        (
+            await db.execute(
+                select(m.ApiKey)
+                .where(m.ApiKey.tenant_id == tenant_id)
+                .order_by(m.ApiKey.created_at.desc())
+            )
         )
-    ).scalars().all()
-    return list(rows)
+        .scalars()
+        .all()
+    )
+    if status is not None:
+        wanted = str(status).strip().lower()
+        if wanted not in {"active", "revoked", "expired"}:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be active, revoked, or expired",
+            )
+        rows = [r for r in rows if serialize_key(r)["status"] == wanted]
+    elif active_only:
+        rows = [r for r in rows if serialize_key(r)["status"] == "active"]
+    return rows
 
 
 async def create_key(

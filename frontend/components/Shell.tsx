@@ -1629,6 +1629,24 @@ const userMgmtLinks: NavLink[] = [
   },
   {
     kind: 'link',
+    label: 'Active API Keys',
+    href: '/security?api_key_status=active#api-keys',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'Revoked API Keys',
+    href: '/security?api_key_status=revoked#api-keys',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'Expired API Keys',
+    href: '/security?api_key_status=expired#api-keys',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
     label: 'Active sessions',
     href: '/security#sessions',
     modules: ['security'],

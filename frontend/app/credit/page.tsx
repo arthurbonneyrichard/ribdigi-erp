@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 export default function Page() {
   const [kind, setKind] = useState<'receivable' | 'payable'>('receivable');
   const [report, setReport] = useState<any>(null);
@@ -392,7 +394,8 @@ export default function Page() {
         <div className="card" id="exchange-rates">
           <h3>Exchange rates</h3>
           <p className="muted">
-            Base: {baseCurrency} — 1 foreign unit = rate × {baseCurrency}
+            Base: {baseCurrency} — 1 foreign unit = rate × {baseCurrency}. Export via{' '}
+            <code>GET /credit/exchange-rates/export</code> (Stage 127 F1).
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
@@ -410,6 +413,28 @@ export default function Page() {
             <button onClick={saveFxRate}>Save rate</button>
             <button type="button" onClick={refreshFxFromFeed}>
               Refresh from feed
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const res = await fetch(`${apiBase}/credit/exchange-rates/export`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'exchange_rates_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Exchange rates CSV downloaded');
+              }}
+            >
+              Export FX rates CSV
             </button>
           </div>
           <label className="muted" style={{ display: 'block', marginTop: 8 }}>

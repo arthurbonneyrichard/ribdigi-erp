@@ -1628,3 +1628,5 @@ Stage 124 D1 — `docs/STAGE_124_FIDELITY.md` (`test_stage124_fidelity_d1.py`): 
 Stage 125 D1 — `docs/STAGE_125_FIDELITY.md` (`test_stage125_fidelity_d1.py`): Stage 125 L1 liquid-accounts `is_active`/`active_only`; Stage 125 R1 recurring `is_active`/`active_only`; Stage 125 X1 `GET /accounting/liquid-accounts/export`, `/expenses/recurring/export`.
 
 Stage 126 D1 — `docs/STAGE_126_FIDELITY.md` (`test_stage126_fidelity_d1.py`): Stage 126 C1 bank-connections `is_active`/`active_only`; Stage 126 W1 webhooks `is_active`/`active_only`; Stage 126 X1 `GET /accounting/bank-connections/export`, `/webhooks/export`.
+
+Stage 127 D1 — `docs/STAGE_127_FIDELITY.md` (`test_stage127_fidelity_d1.py`): Stage 127 K1 `GET /api-keys?status=` + `/api-keys/export`; Stage 127 F1 `GET /credit/exchange-rates/export`; Stage 127 S1 `GET /reports/schedules?enabled=` + `/reports/schedules/export`.

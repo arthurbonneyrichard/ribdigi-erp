@@ -2126,6 +2126,19 @@ Every feature in every phase must meet:
 
 **Stage 126 exit (2026-08-12):** C1, W1, X1, D1, H126x met — `docs/STAGE_126_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_259_STAGE126_FREEZE.md`. Fidelity: `docs/STAGE_126_FIDELITY.md`.
 
+**Stage 127 open (2026-08-12):** Tenant MVP API-Key Status, FX Rates CSV & Report-Schedule CSV Export Fidelity — `docs/ADR_260_STAGE127_OPEN.md` + `docs/STAGE_127_PLAN.md` (API-key status → FX rates CSV → Report-schedule filter/CSV → Fidelity; K1 next).
+
+**Stage 127 K1 (2026-08-12):** API-key status honesty + CSV (`test_stage127_api_key_status_k1.py`).
+
+**Stage 127 F1 (2026-08-12):** FX rates CSV export (`test_stage127_fx_rates_export_f1.py`).
+
+**Stage 127 S1 (2026-08-12):** Report-schedule enabled filter + CSV (`test_stage127_report_schedules_s1.py`).
+
+**Stage 127 D1 (2026-08-12):** API-key status, FX rates & report-schedule export fidelity sync — `docs/STAGE_127_FIDELITY.md` (`test_stage127_fidelity_d1.py`).
+
+**Stage 127 exit (2026-08-12):** K1, F1, S1, D1, H127x met — `docs/STAGE_127_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_261_STAGE127_FREEZE.md`. Fidelity: `docs/STAGE_127_FIDELITY.md`.
+
+
 
 
 

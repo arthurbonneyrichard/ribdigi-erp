@@ -234,7 +234,14 @@ export default function Page() {
     setError('');
     try {
       if (nextTab === 'schedules') {
-        const r = await api('/reports/schedules');
+        // Stage 127 S1 — server-side enabled filter (frequency remains client-side)
+        const schedQs =
+          scheduleEnabledFilter === 'true'
+            ? '?enabled=true'
+            : scheduleEnabledFilter === 'false'
+              ? '?enabled=false'
+              : '';
+        const r = await api(`/reports/schedules${schedQs}`);
         setSchedules(r.data || []);
         setData(null);
         return;
@@ -1427,7 +1434,9 @@ export default function Page() {
       {tab === 'schedules' && (
         <div id="schedules">
           <p className="muted">
-            Company admins can schedule CSV, Excel, or PDF reports emailed on a daily or weekly cadence (UTC hour).
+            Company admins can schedule CSV, Excel, or PDF reports emailed on a daily or weekly cadence
+            (UTC hour). Enabled filter uses <code>GET /reports/schedules?enabled=</code> (Stage 127
+            S1).
           </p>
           <div
             className="card"
@@ -1453,6 +1462,12 @@ export default function Page() {
                 const next = e.target.value;
                 setScheduleEnabledFilter(next);
                 writeScheduleFilters({ enabled: next });
+                // Stage 127 S1 — re-fetch with server enabled filter
+                const schedQs =
+                  next === 'true' ? '?enabled=true' : next === 'false' ? '?enabled=false' : '';
+                api(`/reports/schedules${schedQs}`)
+                  .then((r) => setSchedules(r.data || []))
+                  .catch((err) => setError(err.message));
               }}
               aria-label="Filter schedules by enabled"
             >
@@ -1460,6 +1475,34 @@ export default function Page() {
               <option value="true">Enabled only</option>
               <option value="false">Disabled only</option>
             </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const qs =
+                  scheduleEnabledFilter === 'true'
+                    ? '?enabled=true'
+                    : scheduleEnabledFilter === 'false'
+                      ? '?enabled=false'
+                      : '';
+                const res = await fetch(`${base}/reports/schedules/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'report_schedules_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Report schedules CSV downloaded');
+              }}
+            >
+              Export schedules CSV
+            </button>
           </div>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
             <input

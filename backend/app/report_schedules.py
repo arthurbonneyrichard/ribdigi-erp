@@ -53,15 +53,18 @@ def _normalize_recipients(raw: list[str] | str | None) -> list[str]:
     return unique
 
 
-async def list_schedules(db: AsyncSession, tenant_id: str) -> list[m.ReportSchedule]:
+async def list_schedules(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    enabled: bool | None = None,
+) -> list[m.ReportSchedule]:
+    """Stage 127 S1 — optional enabled filter for honest schedule lists."""
+    stmt = select(m.ReportSchedule).where(m.ReportSchedule.tenant_id == tenant_id)
+    if enabled is not None:
+        stmt = stmt.where(m.ReportSchedule.enabled.is_(bool(enabled)))
     return list(
-        (
-            await db.execute(
-                select(m.ReportSchedule)
-                .where(m.ReportSchedule.tenant_id == tenant_id)
-                .order_by(m.ReportSchedule.created_at.desc())
-            )
-        )
+        (await db.execute(stmt.order_by(m.ReportSchedule.created_at.desc())))
         .scalars()
         .all()
     )
