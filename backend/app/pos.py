@@ -325,11 +325,27 @@ async def drawer_summary(session: m.PosSession) -> dict:
     }
 
 
-async def serialize_session(session: m.PosSession) -> dict:
+async def serialize_session(db: AsyncSession, session: m.PosSession) -> dict:
     drawer = await drawer_summary(session)
+    store_name = None
+    store_address = None
+    if session.store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.id == session.store_id,
+                    m.Store.tenant_id == session.tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if store:
+            store_name = store.name
+            store_address = store.address
     return {
         **drawer,
         "store_id": session.store_id,
+        "store_name": store_name,
+        "store_address": store_address,
         "user_id": session.user_id,
         "notes": session.notes,
         "opened_at": session.opened_at,
@@ -350,7 +366,7 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
         )
     ).scalars().all()
     return {
-        "session": await serialize_session(session),
+        "session": await serialize_session(db, session),
         "sales": [
             {
                 "id": s.id,

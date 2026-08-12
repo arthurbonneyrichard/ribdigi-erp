@@ -32,6 +32,14 @@ type Customer = {
   phone?: string | null;
 };
 
+type Store = {
+  id: string;
+  name: string;
+  code: string;
+  address?: string | null;
+  phone?: string | null;
+};
+
 type Session = {
   session_id: string;
   session_number: string;
@@ -45,6 +53,9 @@ type Session = {
   sale_count: number;
   actual_cash?: number | null;
   variance?: number | null;
+  store_id?: string | null;
+  store_name?: string | null;
+  store_address?: string | null;
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -146,6 +157,8 @@ export default function Page() {
   const [session, setSession] = useState<Session | null>(null);
   const [openingCash, setOpeningCash] = useState('100');
   const [actualCash, setActualCash] = useState('');
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeId, setStoreId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [splitTender, setSplitTender] = useState(false);
   const [cashTender, setCashTender] = useState('');
@@ -196,6 +209,13 @@ export default function Page() {
     api('/me')
       .then((r) => setCashierName(r.data?.full_name || r.data?.email || ''))
       .catch(() => setCashierName(''));
+    api('/pos/stores')
+      .then((r) => {
+        const list: Store[] = r.data || [];
+        setStores(list);
+        if (list.length === 1) setStoreId(list[0].id);
+      })
+      .catch(() => setStores([]));
   }, [browse]);
 
   function selectCustomer(id: string) {
@@ -223,13 +243,20 @@ export default function Page() {
   async function openShift() {
     setError('');
     setMessage('');
+    if (stores.length > 0 && !storeId) {
+      setError('Select a store before opening the shift');
+      return;
+    }
     try {
       const r = await api('/pos/sessions/open', {
         method: 'POST',
-        body: JSON.stringify({ opening_cash: Number(openingCash) || 0 }),
+        body: JSON.stringify({
+          opening_cash: Number(openingCash) || 0,
+          store_id: storeId || null,
+        }),
       });
       setSession(r.data);
-      setMessage(`Shift opened: ${r.data.session_number}`);
+      setMessage('Shift opened');
       await browse(q);
     } catch (err: any) {
       setError(err.message);
@@ -525,6 +552,22 @@ export default function Page() {
           <div className="tpos-shift">
             {!session ? (
               <>
+                {stores.length > 0 && (
+                  <select
+                    className="tpos-input"
+                    value={storeId}
+                    onChange={(e) => setStoreId(e.target.value)}
+                    aria-label="Store"
+                  >
+                    <option value="">Select store</option>
+                    {stores.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                        {s.code ? ` (${s.code})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <input
                   className="tpos-input"
                   value={openingCash}
@@ -542,6 +585,7 @@ export default function Page() {
                 <div className="tpos-shift-meta">
                   <strong>{session.session_number}</strong>
                   <span>
+                    {session.store_name ? `${session.store_name} · ` : ''}
                     {session.sale_count} sales · {money(Number(session.total_sales || 0))}
                   </span>
                 </div>

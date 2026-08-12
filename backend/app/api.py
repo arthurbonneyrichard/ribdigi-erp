@@ -3569,6 +3569,36 @@ async def delete_purchase_invoice_attachment(
     return env(await purchasing_svc.serialize_purchase_invoice(db, inv), "Attachment removed")
 
 
+@api.get("/pos/stores")
+async def pos_stores(
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Active stores available for POS shift open (cashiers may lack stores:read)."""
+    rows = (
+        await db.execute(
+            select(m.Store)
+            .where(
+                m.Store.tenant_id == claims["tenant_id"],
+                m.Store.is_active == True,  # noqa: E712
+            )
+            .order_by(m.Store.name.asc())
+        )
+    ).scalars().all()
+    return env(
+        [
+            {
+                "id": s.id,
+                "name": s.name,
+                "code": s.code,
+                "address": s.address,
+                "phone": s.phone,
+            }
+            for s in rows
+        ]
+    )
+
+
 @api.post("/pos/sessions/open")
 async def pos_open_session(
     payload: PosSessionOpen,
@@ -3583,7 +3613,7 @@ async def pos_open_session(
         opening_cash=payload.opening_cash,
     )
     await db.commit()
-    return env(await pos_svc.serialize_session(session), "POS shift opened")
+    return env(await pos_svc.serialize_session(db, session), "POS shift opened")
 
 
 @api.get("/pos/sessions/current")
@@ -3594,7 +3624,7 @@ async def pos_current_session(
     session = await pos_svc.get_open_session_for_user(db, claims["tenant_id"], claims["sub"])
     if not session:
         return env(None, "No open POS shift")
-    return env(await pos_svc.serialize_session(session))
+    return env(await pos_svc.serialize_session(db, session))
 
 
 @api.get("/pos/sessions")
@@ -3610,7 +3640,7 @@ async def pos_list_sessions(
             .limit(50)
         )
     ).scalars().all()
-    return env([await pos_svc.serialize_session(s) for s in rows])
+    return env([await pos_svc.serialize_session(db, s) for s in rows])
 
 
 @api.post("/pos/sessions/{session_id}/close")
@@ -3629,7 +3659,7 @@ async def pos_close_session(
         notes=payload.notes,
     )
     await db.commit()
-    return env(await pos_svc.serialize_session(session), "POS shift closed")
+    return env(await pos_svc.serialize_session(db, session), "POS shift closed")
 
 
 @api.get("/pos/sessions/{session_id}/drawer")
