@@ -483,7 +483,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Create order from quotation or directly
   - [x] Reserve inventory (soft allocation) on confirm against store warehouse (`stock_reservations`); cancel releases; invoice post consumes then hard stock-out
-  - [ ] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled (today: draft/confirmed/cancelled/invoiced)
+  - [x] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled (plus `invoiced` after convert-to-invoice; cancel allowed through processing)
   - [x] Delivery date and address
   - [x] Convert to invoice with one click
 

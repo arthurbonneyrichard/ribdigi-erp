@@ -3366,6 +3366,45 @@ async def confirm_sales_order(
     return env(await sales_docs_svc.serialize_order(db, order), "Order confirmed")
 
 
+@api.post("/sales/orders/{order_id}/process")
+async def process_sales_order(
+    order_id: str,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, existing.created_by)
+    order = await sales_docs_svc.start_processing_order(db, claims["tenant_id"], order_id)
+    await db.commit()
+    return env(await sales_docs_svc.serialize_order(db, order), "Order processing")
+
+
+@api.post("/sales/orders/{order_id}/ship")
+async def ship_sales_order(
+    order_id: str,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, existing.created_by)
+    order = await sales_docs_svc.ship_order(db, claims["tenant_id"], order_id)
+    await db.commit()
+    return env(await sales_docs_svc.serialize_order(db, order), "Order shipped")
+
+
+@api.post("/sales/orders/{order_id}/deliver")
+async def deliver_sales_order(
+    order_id: str,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, existing.created_by)
+    order = await sales_docs_svc.deliver_order(db, claims["tenant_id"], order_id)
+    await db.commit()
+    return env(await sales_docs_svc.serialize_order(db, order), "Order delivered")
+
+
 @api.post("/sales/orders/{order_id}/cancel")
 async def cancel_sales_order(
     order_id: str,

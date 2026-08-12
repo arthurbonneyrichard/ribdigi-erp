@@ -296,6 +296,9 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "notes": order.notes,
         "converted_invoice_id": order.converted_invoice_id,
         "confirmed_at": order.confirmed_at,
+        "processing_at": getattr(order, "processing_at", None),
+        "shipped_at": getattr(order, "shipped_at", None),
+        "delivered_at": getattr(order, "delivered_at", None),
         "created_at": order.created_at,
         "reserved_qty": round(sum(float(r.quantity) for r in active), 3),
         "reservation_status": (
@@ -303,6 +306,11 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
             if active
             else ("consumed" if any(r.status == "consumed" for r in reservations) else None)
         ),
+        "can_process": order.status == "confirmed",
+        "can_ship": order.status == "processing",
+        "can_deliver": order.status == "shipped",
+        "can_cancel": order.status in {"draft", "confirmed", "processing"},
+        "can_invoice": order.status in {"draft", "confirmed", "processing", "shipped", "delivered"},
         "items": [
             {
                 "id": i.id,
@@ -466,11 +474,91 @@ async def confirm_order(
     return order
 
 
+ORDER_CANCELABLE = frozenset({"draft", "confirmed", "processing"})
+ORDER_INVOICEABLE = frozenset({"draft", "confirmed", "processing", "shipped", "delivered"})
+# Soft holds remain active through fulfillment until cancel or invoice post.
+ORDER_RESERVED_STATUSES = frozenset({"confirmed", "processing", "shipped", "delivered"})
+
+
+async def _advance_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    order_id: str,
+    from_status: str,
+    to_status: str,
+    stamp_field: str,
+    notify_title: str,
+    notify_message: str,
+) -> m.SalesOrder:
+    order = await get_order(db, tenant_id, order_id)
+    if order.status != from_status:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot move order to {to_status} from status {order.status}",
+        )
+    order.status = to_status
+    setattr(order, stamp_field, datetime.utcnow())
+    order.updated_at = datetime.utcnow()
+    from app.notifications import create_notification
+
+    await create_notification(
+        db,
+        tenant_id=tenant_id,
+        category="system",
+        title=notify_title,
+        message=notify_message.format(number=order.order_number),
+        entity_type="sales_order",
+        entity_id=order.id,
+    )
+    await db.flush()
+    return order
+
+
+async def start_processing_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
+    return await _advance_order(
+        db,
+        tenant_id=tenant_id,
+        order_id=order_id,
+        from_status="confirmed",
+        to_status="processing",
+        stamp_field="processing_at",
+        notify_title="Sales order processing",
+        notify_message="Order {number} is now processing.",
+    )
+
+
+async def ship_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
+    return await _advance_order(
+        db,
+        tenant_id=tenant_id,
+        order_id=order_id,
+        from_status="processing",
+        to_status="shipped",
+        stamp_field="shipped_at",
+        notify_title="Sales order shipped",
+        notify_message="Order {number} has been shipped.",
+    )
+
+
+async def deliver_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
+    return await _advance_order(
+        db,
+        tenant_id=tenant_id,
+        order_id=order_id,
+        from_status="shipped",
+        to_status="delivered",
+        stamp_field="delivered_at",
+        notify_title="Sales order delivered",
+        notify_message="Order {number} has been delivered.",
+    )
+
+
 async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
     order = await get_order(db, tenant_id, order_id)
-    if order.status not in {"draft", "confirmed"}:
+    if order.status not in ORDER_CANCELABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel order in status {order.status}")
-    if order.status == "confirmed":
+    if order.status in ORDER_RESERVED_STATUSES:
         from app.reservations import release_order_reservations
 
         await release_order_reservations(db, tenant_id=tenant_id, order_id=order.id)
@@ -488,7 +576,7 @@ async def convert_order_to_invoice(
     order_id: str,
 ) -> m.SalesInvoice:
     order = await get_order(db, tenant_id, order_id)
-    if order.status not in {"draft", "confirmed"}:
+    if order.status not in ORDER_INVOICEABLE:
         raise HTTPException(status_code=409, detail=f"Cannot invoice order in status {order.status}")
     items = await list_order_items(db, tenant_id, order.id)
     invoice = await create_sales_invoice(

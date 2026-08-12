@@ -443,15 +443,28 @@ export default function Page() {
                       Confirm
                     </button>
                   )}
-                  {['draft', 'confirmed'].includes(o.status) && (
-                    <>
-                      <button onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}>
-                        → Invoice
-                      </button>
-                      <button onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>
-                        Cancel
-                      </button>
-                    </>
+                  {o.can_process && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/process`, 'Processing')}>
+                      Process
+                    </button>
+                  )}
+                  {o.can_ship && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/ship`, 'Shipped')}>Ship</button>
+                  )}
+                  {o.can_deliver && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/deliver`, 'Delivered')}>
+                      Deliver
+                    </button>
+                  )}
+                  {o.can_invoice && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}>
+                      → Invoice
+                    </button>
+                  )}
+                  {o.can_cancel && (
+                    <button onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>
+                      Cancel
+                    </button>
                   )}
                 </td>
               </tr>
