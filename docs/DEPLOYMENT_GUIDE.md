@@ -1432,3 +1432,5 @@ Stage 98 D1 ops queue honesty fidelity — `docs/STAGE_98_FIDELITY.md` (`test_st
 Stage 99 D1 document pipeline honesty fidelity — `docs/STAGE_99_FIDELITY.md` (`test_stage99_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 100 D1 reports & ledger discovery fidelity — `docs/STAGE_100_FIDELITY.md` (`test_stage100_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 101 D1 inventory ops & shift history fidelity — `docs/STAGE_101_FIDELITY.md` (`test_stage101_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

@@ -165,6 +165,18 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Stage 101 E1 — honor Shell #recurring / #budgets / #approval-matrix
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, [filterStoreId, filterDepartmentId]);
@@ -517,7 +529,7 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="budgets">
         <h3>Categories &amp; budgets</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Allocate monthly budgets and optional GL accounts per category; variance uses approved spend
@@ -647,7 +659,7 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="recurring">
         <h3>Recurring expenses</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Notify before auto-generate; skip or modify the next occurrence.

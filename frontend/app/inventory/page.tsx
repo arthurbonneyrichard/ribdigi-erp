@@ -76,7 +76,10 @@ export default function Page() {
   const [movements, setMovements] = useState<any[]>([]);
   const [moveFrom, setMoveFrom] = useState('');
   const [moveTo, setMoveTo] = useState('');
-  const [moveType, setMoveType] = useState('');
+  const [moveType, setMoveType] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('movement_type')?.trim() || '';
+  });
   const [moveWarehouseId, setMoveWarehouseId] = useState('');
   const [warehouseStock, setWarehouseStock] = useState<any | null>(null);
   const [lowStock, setLowStock] = useState<any[]>([]);
@@ -167,6 +170,15 @@ export default function Page() {
     if (!reorderSupplierId && sup.data?.length) setReorderSupplierId(sup.data[0].id);
   }
 
+  function syncMovementTypeUrl(nextType: string) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'movements');
+    if (nextType) url.searchParams.set('movement_type', nextType);
+    else url.searchParams.delete('movement_type');
+    window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}`);
+  }
+
   async function loadMovements() {
     const params = new URLSearchParams();
     if (selectedId) params.set('product_id', selectedId);
@@ -203,6 +215,24 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  // Stage 101 O1 — honor Shell #categories / #brands / #units on Catalog
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const catalogAnchors = ['categories', 'brands', 'units'];
+    if (catalogAnchors.includes(hash) && tab !== 'catalog') {
+      setTab('catalog');
+      return;
+    }
+    if (tab !== 'catalog') return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [tab, setTab]);
 
   useEffect(() => {
     if (tab === 'movements') {
@@ -1248,7 +1278,7 @@ export default function Page() {
 
       {tab === 'catalog' && (
         <div style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
-          <div className="card" style={{ display: 'grid', gap: 8 }}>
+          <div className="card" style={{ display: 'grid', gap: 8 }} id="categories">
             <h3>Categories &amp; Sub Categories</h3>
             <p className="muted">
               Leave parent empty for a top-level Category. Choose a parent to create a Sub Category.
@@ -1891,7 +1921,11 @@ export default function Page() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input type="date" value={moveFrom} onChange={(e) => setMoveFrom(e.target.value)} />
               <input type="date" value={moveTo} onChange={(e) => setMoveTo(e.target.value)} />
-              <select value={moveType} onChange={(e) => setMoveType(e.target.value)}>
+              <select
+                value={moveType}
+                onChange={(e) => setMoveType(e.target.value)}
+                aria-label="Movement type filter"
+              >
                 <option value="">All types</option>
                 <option value="stock_in">stock_in</option>
                 <option value="stock_out">stock_out</option>
@@ -1908,7 +1942,13 @@ export default function Page() {
                   </option>
                 ))}
               </select>
-              <button type="button" onClick={() => loadMovements().catch((err) => setError(err.message))}>
+              <button
+                type="button"
+                onClick={() => {
+                  syncMovementTypeUrl(moveType);
+                  loadMovements().catch((err) => setError(err.message));
+                }}
+              >
                 Apply filters
               </button>
             </div>

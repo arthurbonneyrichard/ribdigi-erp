@@ -1594,3 +1594,5 @@ Stage 98 D1 — `docs/STAGE_98_FIDELITY.md` (`test_stage98_fidelity_d1.py`): Sta
 Stage 99 D1 — `docs/STAGE_99_FIDELITY.md` (`test_stage99_fidelity_d1.py`): Stage 99 T1 quotations/orders `status=`; Stage 99 C1 PR/PO/GRN `status=` / `open`.
 
 Stage 100 D1 — `docs/STAGE_100_FIDELITY.md` (`test_stage100_fidelity_d1.py`): Stage 100 G1 `GET /accounting/journal-entries?status=`; Stage 100 U1 `GET /users?q=&role=&is_active=`.
+
+Stage 101 D1 — `docs/STAGE_101_FIDELITY.md` (`test_stage101_fidelity_d1.py`): Stage 101 O1 inventory movements `movement_type` URL; Stage 101 P1 `GET /pos/sessions` history UI; Stage 101 E1 notifications `status`/`group` URL sync.

@@ -66,6 +66,24 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Opening Stock',
+    href: '/inventory?tab=opening',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Movements',
+    href: '/inventory?tab=movements',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Catalog Categories',
+    href: '/inventory?tab=catalog#categories',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
     label: 'Catalog Brands',
     href: '/inventory?tab=catalog#brands',
     modules: ['inventory'],
@@ -96,6 +114,12 @@ const primaryNavSpec: NavEntry[] = [
     modules: ['sales'],
   },
   { kind: 'link', label: 'POS', href: '/pos', modules: ['pos'] },
+  {
+    kind: 'link',
+    label: 'POS Sessions',
+    href: '/pos#sessions',
+    modules: ['pos'],
+  },
   { kind: 'link', label: 'Purchasing', href: '/purchasing', modules: ['purchasing'] },
   {
     kind: 'link',
@@ -177,6 +201,18 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Expense Approval Matrix',
     href: '/expenses#approval-matrix',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
+    label: 'Recurring Expenses',
+    href: '/expenses#recurring',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
+    label: 'Expense Categories & Budgets',
+    href: '/expenses#budgets',
     modules: ['expenses'],
   },
   {

@@ -116,6 +116,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Profit & Loss / Cash Flow / Balance Sheet:** Shell deep-links to Reports statement tabs (Stage 100 R1)
 - **Chart of Accounts / Journals / Trial Balance:** Accounting ledger anchors; journal status filter (Stage 100 G1)
 - **Users & Audit discovery:** Filter users by search/role/active; Audit module/action URL sync (Stage 100 U1)
+- **Opening Stock / Movements:** Shell deep-links; Catalog Categories anchor; movement type URL filter (Stage 101 O1)
+- **Recurring Expenses / Budgets:** Shell anchors; expense notifications open pending queue or recurring section (Stage 101 E1)
+- **POS Sessions:** Session history and shift reports on POS; Shell POS Sessions leaf (Stage 101 P1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

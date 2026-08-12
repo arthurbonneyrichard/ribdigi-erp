@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { formatDateTime, type RegionalFormats } from '../../lib/format';
@@ -24,19 +25,39 @@ const GROUPS: { id: string; label: string }[] = [
 ];
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [rows, setRows] = useState<Note[]>([]);
-  const [status, setStatus] = useState('unread');
-  const [group, setGroup] = useState('');
+  const [status, setStatus] = useState(() => {
+    const raw = searchParams.get('status');
+    if (raw === null) return 'unread';
+    return raw;
+  });
+  const [group, setGroup] = useState(() => searchParams.get('group') || '');
   const [prefs, setPrefs] = useState<any>(null);
   const [formats, setFormats] = useState<RegionalFormats>({});
   const [unread, setUnread] = useState(0);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  async function refresh() {
+  function syncUrl(next: { status?: string; group?: string }) {
     const params = new URLSearchParams();
-    if (status) params.set('status', status);
-    if (group) params.set('group', group);
+    const ns = next.status !== undefined ? next.status : status;
+    const ng = next.group !== undefined ? next.group : group;
+    if (ns) params.set('status', ns);
+    if (ng) params.set('group', ng);
+    const qs = params.toString();
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    router.replace(qs ? `${pathname}?${qs}${hash}` : `${pathname}${hash}`);
+  }
+
+  async function refresh(overrides?: { status?: string; group?: string }) {
+    const st = overrides?.status !== undefined ? overrides.status : status;
+    const gr = overrides?.group !== undefined ? overrides.group : group;
+    const params = new URLSearchParams();
+    if (st) params.set('status', st);
+    if (gr) params.set('group', gr);
     const q = params.toString() ? `?${params}` : '';
     const [notes, settings, countRes, me] = await Promise.all([
       api(`/notifications${q}`),
@@ -57,8 +78,25 @@ export default function Page() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
-  }, [status, group]);
+    const fromStatus = searchParams.get('status');
+    const fromGroup = searchParams.get('group') || '';
+    const nextStatus = fromStatus === null ? 'unread' : fromStatus;
+    setStatus(nextStatus);
+    setGroup(fromGroup);
+    refresh({ status: nextStatus, group: fromGroup }).catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (hash !== 'preferences') return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById('preferences');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [prefs]);
 
   async function markRead(id: string) {
     setError('');
@@ -102,7 +140,8 @@ export default function Page() {
             : ''),
       );
       setStatus('unread');
-      await refresh();
+      syncUrl({ status: 'unread' });
+      await refresh({ status: 'unread' });
     } catch (err: any) {
       setError(err.message);
     }
@@ -140,16 +179,42 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        <button onClick={() => setStatus('unread')} disabled={status === 'unread'}>
+        <button
+          onClick={() => {
+            setStatus('unread');
+            syncUrl({ status: 'unread' });
+          }}
+          disabled={status === 'unread'}
+        >
           Unread
         </button>
-        <button onClick={() => setStatus('read')} disabled={status === 'read'}>
+        <button
+          onClick={() => {
+            setStatus('read');
+            syncUrl({ status: 'read' });
+          }}
+          disabled={status === 'read'}
+        >
           Read
         </button>
-        <button onClick={() => setStatus('')} disabled={status === ''}>
+        <button
+          onClick={() => {
+            setStatus('');
+            syncUrl({ status: '' });
+          }}
+          disabled={status === ''}
+        >
           History
         </button>
-        <select value={group} onChange={(e) => setGroup(e.target.value)} aria-label="Category group">
+        <select
+          value={group}
+          onChange={(e) => {
+            const v = e.target.value;
+            setGroup(v);
+            syncUrl({ group: v });
+          }}
+          aria-label="Category group"
+        >
           {GROUPS.map((g) => (
             <option key={g.id || 'all'} value={g.id}>
               {g.label}

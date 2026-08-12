@@ -89,14 +89,33 @@ export default function Page() {
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<any>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState<any[]>([]);
+  const [shiftReport, setShiftReport] = useState<any | null>(null);
 
   async function refreshSession() {
     const r = await api('/pos/sessions/current');
     setSession(r.data || null);
   }
 
+  async function loadSessionHistory() {
+    const r = await api('/pos/sessions');
+    setSessionHistory(r.data || []);
+  }
+
+  async function viewShiftReport(sessionId: string) {
+    setError('');
+    try {
+      const r = await api(`/pos/sessions/${sessionId}/report`);
+      setShiftReport(r.data || null);
+      setMessage(`Shift report loaded for ${r.data?.session?.session_number || sessionId.slice(0, 8)}`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   useEffect(() => {
     refreshSession().catch((err) => setError(err.message));
+    loadSessionHistory().catch((err) => setError(err.message));
     api('/customers?active_only=true')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
@@ -109,6 +128,18 @@ export default function Page() {
       .catch(() => undefined);
   }, []);
 
+  // Stage 101 P1 — honor Shell /pos#sessions
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (hash !== 'sessions') return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById('sessions');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [sessionHistory]);
+
   async function openShift() {
     setError('');
     setMessage('');
@@ -119,6 +150,7 @@ export default function Page() {
       });
       setSession(r.data);
       setMessage(`Shift opened: ${r.data.session_number}`);
+      await loadSessionHistory().catch(() => undefined);
     } catch (err: any) {
       setError(err.message);
     }
@@ -140,6 +172,7 @@ export default function Page() {
         `Shift closed. Variance: ${r.data.variance ?? 0} (expected ${r.data.expected_cash})`,
       );
       setActualCash('');
+      await loadSessionHistory().catch(() => undefined);
     } catch (err: any) {
       setError(err.message);
     }
@@ -395,6 +428,63 @@ export default function Page() {
                 Open cash drawer
               </button>
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }} id="sessions">
+        <h3>POS session history</h3>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          Recent shifts (tenant-scoped). View the shift report for closed or open sessions.
+        </p>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Session</th>
+              <th>Status</th>
+              <th>Opened</th>
+              <th>Closed</th>
+              <th>Sales</th>
+              <th>Total</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sessionHistory.length === 0 && (
+              <tr>
+                <td colSpan={7} className="muted">
+                  No POS sessions yet
+                </td>
+              </tr>
+            )}
+            {sessionHistory.map((s) => (
+              <tr key={s.session_id || s.id}>
+                <td>{s.session_number}</td>
+                <td>{s.status}</td>
+                <td>{s.opened_at ? String(s.opened_at).slice(0, 19) : '—'}</td>
+                <td>{s.closed_at ? String(s.closed_at).slice(0, 19) : '—'}</td>
+                <td>{s.sale_count ?? 0}</td>
+                <td>{s.total_sales ?? 0}</td>
+                <td>
+                  <button type="button" onClick={() => viewShiftReport(s.session_id || s.id)}>
+                    Report
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {shiftReport && (
+          <div style={{ marginTop: 12 }}>
+            <h4 style={{ margin: '0 0 8px' }}>
+              Shift report — {shiftReport.session?.session_number || '—'}
+            </h4>
+            <p className="muted">
+              Cash {shiftReport.payment_breakdown?.cash ?? 0} · Card{' '}
+              {shiftReport.payment_breakdown?.card ?? 0} · Other{' '}
+              {shiftReport.payment_breakdown?.other ?? 0} · Lines{' '}
+              {(shiftReport.sales || []).length}
+            </p>
           </div>
         )}
       </div>

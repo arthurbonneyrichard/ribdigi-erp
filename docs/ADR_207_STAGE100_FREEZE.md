@@ -23,4 +23,4 @@ Stage 100 Tenant MVP Reports & Ledger Discovery Ops delivered Reports statement 
 
 ## Next stage
 
-Stage 101 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 100 feature scope remains frozen.
+Stage 101 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-208](ADR_208_STAGE101_OPEN.md) + [STAGE_101_PLAN.md](STAGE_101_PLAN.md) (Tenant MVP Inventory Ops & Shift History Ops). Stage 100 feature scope remains frozen.

@@ -86,7 +86,9 @@ function notificationHref(note: Note): string | null {
   if (t === 'purchase_invoice') return '/purchasing?tab=invoices';
   // Stage 99 C1 — purchase orders deep-link to Orders (not invoices)
   if (t === 'purchase_order') return '/purchasing?tab=orders';
-  if (t === 'recurring_expense' || t === 'expense') return '/expenses';
+  // Stage 101 E1 — expense / approval → pending queue; recurring → #recurring
+  if (t === 'expense' || t === 'expense_approval') return '/expenses?status=pending';
+  if (t === 'recurring_expense') return '/expenses#recurring';
   if (t.includes('stock') || t.includes('batch')) return '/inventory?tab=lowstock';
   return null;
 }
@@ -327,6 +329,15 @@ export default function Page() {
           <Link href="/pos" className="btn" style={{ display: 'inline-block', marginTop: 8 }}>
             {posShift ? 'Continue POS' : 'Open POS'}
           </Link>
+          {!posShift && posShiftLoaded ? (
+            <Link
+              href="/pos#sessions"
+              className="btn"
+              style={{ display: 'inline-block', marginTop: 8, marginLeft: 8 }}
+            >
+              Session history
+            </Link>
+          ) : null}
         </div>
       )}
 

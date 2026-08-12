@@ -1813,3 +1813,15 @@ Every feature in every phase must meet:
 **Stage 100 D1 (2026-08-12):** Reports & ledger discovery fidelity sync — `docs/STAGE_100_FIDELITY.md` (`test_stage100_fidelity_d1.py`).
 
 **Stage 100 exit (2026-08-12):** R1, G1, U1, D1, H100x met — `docs/STAGE_100_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_207_STAGE100_FREEZE.md`. Fidelity: `docs/STAGE_100_FIDELITY.md`.
+
+**Stage 101 open (2026-08-12):** Tenant MVP Inventory Ops & Shift History Ops — `docs/ADR_208_STAGE101_OPEN.md` + `docs/STAGE_101_PLAN.md` (Opening Stock/Movements → Recurring Expenses & notify → POS sessions → Inventory Ops & Shift History Ops; O1 next).
+
+**Stage 101 O1 (2026-08-12):** Opening Stock & Movements Shell discoverability (`test_stage101_opening_movements_o1.py`).
+
+**Stage 101 E1 (2026-08-12):** Recurring Expenses leaf & notification deep-link honesty (`test_stage101_recurring_notify_e1.py`).
+
+**Stage 101 P1 (2026-08-12):** POS session history discoverability (`test_stage101_pos_sessions_p1.py`).
+
+**Stage 101 D1 (2026-08-12):** Inventory ops & shift history fidelity sync — `docs/STAGE_101_FIDELITY.md` (`test_stage101_fidelity_d1.py`).
+
+**Stage 101 exit (2026-08-12):** O1, E1, P1, D1, H101x met — `docs/STAGE_101_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_209_STAGE101_FREEZE.md`. Fidelity: `docs/STAGE_101_FIDELITY.md`.
