@@ -16,6 +16,9 @@ from app.rbac import (
 )
 from app.security import hash_password, validate_password_strength
 
+# Safe fallback when revoking software-owner dashboard access.
+DEFAULT_APP_ROLE = "company_admin"
+
 
 async def list_platform_staff(db: AsyncSession, *, tenant_id: str) -> list[m.User]:
     rows = (
@@ -26,6 +29,99 @@ async def list_platform_staff(db: AsyncSession, *, tenant_id: str) -> list[m.Use
         )
     ).scalars().all()
     return [u for u in rows if is_platform_role(u.role)]
+
+
+async def list_app_users(db: AsyncSession, *, tenant_id: str) -> list[m.User]:
+    """Non-platform users on the platform workspace (candidates for dashboard access)."""
+    rows = (
+        await db.execute(
+            select(m.User)
+            .where(m.User.tenant_id == tenant_id)
+            .order_by(m.User.full_name.asc())
+        )
+    ).scalars().all()
+    return [u for u in rows if not is_platform_role(u.role)]
+
+
+async def _get_workspace_user(db: AsyncSession, tenant_id: str, user_id: str) -> m.User:
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found on this workspace")
+    return user
+
+
+async def grant_dashboard_access(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_id: str,
+    actor_role: str,
+    user_id: str,
+    role: str = "platform_support",
+) -> m.User:
+    """Promote an existing app user so they can open the software-owner dashboard."""
+    role_key = (role or "platform_support").strip().lower()
+    if not is_platform_role(role_key):
+        raise HTTPException(
+            status_code=422,
+            detail=f"role must be one of: {', '.join(sorted(PLATFORM_ROLES))}",
+        )
+    if role_key == "super_admin" and actor_role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super_admin can assign super_admin")
+    if not can_assign_platform_role(actor_role, role_key):
+        raise HTTPException(
+            status_code=403,
+            detail=f"You cannot assign platform role '{role_key}'",
+        )
+    user = await _get_workspace_user(db, tenant_id, user_id)
+    if user.id == actor_id and user.role != role_key:
+        raise HTTPException(status_code=400, detail="Cannot change your own role via grant")
+    if not user.is_active:
+        raise HTTPException(status_code=409, detail="Activate the user before granting access")
+    user.role = role_key
+    user.permissions = permissions_for_role(role_key)
+    await db.flush()
+    return user
+
+
+async def revoke_dashboard_access(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_id: str,
+    actor_role: str,
+    user_id: str,
+    fallback_role: str = DEFAULT_APP_ROLE,
+) -> m.User:
+    """Remove software-owner dashboard access; user remains an app user on the workspace."""
+    user = await _get_workspace_user(db, tenant_id, user_id)
+    if not is_platform_role(user.role):
+        raise HTTPException(status_code=400, detail="User does not have platform dashboard access")
+    if user.id == actor_id:
+        raise HTTPException(status_code=400, detail="Cannot revoke your own dashboard access")
+    if not can_assign_platform_role(actor_role, user.role):
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot revoke access for this staff role",
+        )
+    fallback = (fallback_role or DEFAULT_APP_ROLE).strip().lower()
+    if is_platform_role(fallback) or fallback == "super_admin":
+        raise HTTPException(status_code=422, detail="fallback_role must be a non-platform app role")
+    from app import custom_roles as custom_roles_svc
+
+    role_key, role_perms = await custom_roles_svc.resolve_role_assignment(
+        db, tenant_id, fallback
+    )
+    if is_platform_role(role_key):
+        raise HTTPException(status_code=422, detail="fallback_role must be a non-platform app role")
+    user.role = role_key
+    user.permissions = role_perms
+    await db.flush()
+    return user
 
 
 async def create_platform_staff(

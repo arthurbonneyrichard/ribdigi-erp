@@ -90,6 +90,8 @@ from app.schemas import (
     PartyUpdate,
     CustomerGroupCreate,
     CustomerGroupUpdate,
+    PlatformGrantAccess,
+    PlatformRevokeAccess,
     PasswordResetConfirm,
     PasswordResetRequest,
     PosSaleCreate,
@@ -726,6 +728,16 @@ async def platform_staff_list(
     return env([platform_staff_svc.serialize_staff(u) for u in rows])
 
 
+@api.get("/platform/app-users")
+async def platform_app_users_list(
+    claims=Depends(require_platform_permission("platform_staff", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """App users on the platform workspace who do not yet have software-owner dashboard access."""
+    rows = await platform_staff_svc.list_app_users(db, tenant_id=claims["tenant_id"])
+    return env([platform_staff_svc.serialize_staff(u) for u in rows])
+
+
 @api.get("/platform/roles")
 async def platform_roles_catalog(
     claims=Depends(require_platform_permission("platform_staff", "read")),
@@ -772,6 +784,91 @@ async def platform_staff_create(
     )
     await db.commit()
     return env(platform_staff_svc.serialize_staff(user), "Platform staff created")
+
+
+@api.post("/platform/staff/grant")
+async def platform_staff_grant(
+    payload: PlatformGrantAccess,
+    claims=Depends(require_platform_permission("platform_staff", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Grant an existing app user permission to open the software-owner dashboard."""
+    prev = (
+        await db.execute(
+            select(m.User).where(
+                m.User.id == payload.user_id,
+                m.User.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    prev_role = prev.role if prev else None
+    user = await platform_staff_svc.grant_dashboard_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_id=claims["sub"],
+        actor_role=claims.get("role") or "",
+        user_id=payload.user_id,
+        role=payload.role,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="platform_staff",
+        action="grant_dashboard",
+        entity="user",
+        entity_id=user.id,
+        details={"from_role": prev_role, "to_role": user.role, "email": user.email},
+    )
+    await db.commit()
+    return env(
+        platform_staff_svc.serialize_staff(user),
+        "Software owner dashboard access granted",
+    )
+
+
+@api.post("/platform/staff/{user_id}/revoke")
+async def platform_staff_revoke(
+    user_id: str,
+    payload: PlatformRevokeAccess,
+    claims=Depends(require_platform_permission("platform_staff", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke software-owner dashboard access; account stays as an app user."""
+    user = await platform_staff_svc.revoke_dashboard_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_id=claims["sub"],
+        actor_role=claims.get("role") or "",
+        user_id=user_id,
+        fallback_role=payload.fallback_role,
+    )
+    rows = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.user_id == user.id,
+                m.AuthSession.revoked_at.is_(None),
+            )
+        )
+    ).scalars().all()
+    now = datetime.utcnow()
+    for s in rows:
+        s.revoked_at = now
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="platform_staff",
+        action="revoke_dashboard",
+        entity="user",
+        entity_id=user.id,
+        details={"role": user.role, "email": user.email},
+    )
+    await db.commit()
+    return env(
+        platform_staff_svc.serialize_staff(user),
+        "Software owner dashboard access revoked",
+    )
 
 
 @api.patch("/platform/staff/{user_id}")
