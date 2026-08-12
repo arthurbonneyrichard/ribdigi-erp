@@ -22,6 +22,9 @@ type Transfer = {
   from_store_id: string;
   to_store_id: string;
   status: string;
+  awaiting_approval?: string | null;
+  fully_approved?: boolean;
+  can_ship?: boolean;
   items: { product_id: string; quantity: number }[];
 };
 
@@ -389,6 +392,9 @@ export default function Page() {
       )}
 
       <h3 style={{ marginTop: 16 }}>Transfers</h3>
+      <p className="muted">
+        Dual approval: source store manager → destination store manager, then ship / receive.
+      </p>
       <table className="table">
         <thead>
           <tr>
@@ -396,6 +402,7 @@ export default function Page() {
             <th>From</th>
             <th>To</th>
             <th>Status</th>
+            <th>Approval</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -407,18 +414,44 @@ export default function Page() {
               <td>{storeName(t.to_store_id)}</td>
               <td>{t.status}</td>
               <td>
-                {(t.status === 'draft' || t.status === 'requested') && (
-                  <button onClick={() => act(t.id, 'ship')} style={{ marginRight: 6 }}>
+                {t.status === 'requested'
+                  ? t.fully_approved
+                    ? 'Ready to ship'
+                    : t.awaiting_approval === 'dest'
+                      ? 'Awaiting dest'
+                      : 'Awaiting source'
+                  : '—'}
+              </td>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {t.status === 'draft' && (
+                  <button type="button" onClick={() => act(t.id, 'submit')}>
+                    Submit
+                  </button>
+                )}
+                {t.status === 'requested' && !t.fully_approved && (
+                  <>
+                    <button type="button" onClick={() => act(t.id, 'approve')}>
+                      Approve {t.awaiting_approval === 'dest' ? 'dest' : 'source'}
+                    </button>
+                    <button type="button" onClick={() => act(t.id, 'reject')}>
+                      Reject
+                    </button>
+                  </>
+                )}
+                {t.can_ship && (
+                  <button type="button" onClick={() => act(t.id, 'ship')}>
                     Ship
                   </button>
                 )}
                 {t.status === 'in_transit' && (
-                  <button onClick={() => act(t.id, 'receive')} style={{ marginRight: 6 }}>
+                  <button type="button" onClick={() => act(t.id, 'receive')}>
                     Receive
                   </button>
                 )}
                 {['draft', 'requested', 'in_transit'].includes(t.status) && (
-                  <button onClick={() => act(t.id, 'cancel')}>Cancel</button>
+                  <button type="button" onClick={() => act(t.id, 'cancel')}>
+                    Cancel
+                  </button>
                 )}
               </td>
             </tr>

@@ -13,9 +13,12 @@ from app.inventory import allocate_unlocated_stock, apply_warehouse_stock_change
 
 TRANSFER_EDITABLE = {"draft"}
 TRANSFER_SUBMITTABLE = {"draft"}
-TRANSFER_SHIPPABLE = {"requested", "draft"}
+TRANSFER_APPROVABLE = frozenset({"requested"})
+TRANSFER_SHIPPABLE = frozenset({"requested"})
 TRANSFER_RECEIVABLE = {"in_transit"}
 TRANSFER_CANCELLABLE = {"draft", "requested", "in_transit"}
+TRANSFER_ADMIN_ROLES = frozenset({"company_admin", "super_admin"})
+TRANSFER_MANAGER_ROLES = frozenset({"store_manager"}) | TRANSFER_ADMIN_ROLES
 
 
 async def next_transfer_number(db: AsyncSession, tenant_id: str) -> str:
@@ -210,6 +213,16 @@ async def list_transfer_items(
 
 async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dict:
     items = await list_transfer_items(db, transfer.tenant_id, transfer.id)
+    step = int(getattr(transfer, "approval_step", 0) or 0)
+    required = int(getattr(transfer, "approval_steps_required", 2) or 2)
+    fully_approved = bool(
+        getattr(transfer, "source_approved_by", None)
+        and getattr(transfer, "dest_approved_by", None)
+    )
+    can_ship = transfer.status == "requested" and fully_approved
+    awaiting = None
+    if transfer.status == "requested" and not fully_approved:
+        awaiting = "source" if step <= 1 else "dest"
     return {
         "id": transfer.id,
         "transfer_number": transfer.transfer_number,
@@ -220,6 +233,17 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
         "status": transfer.status,
         "notes": transfer.notes,
         "created_by": transfer.created_by,
+        "approval_step": step,
+        "approval_steps_required": required,
+        "awaiting_approval": awaiting,
+        "source_approved_by": getattr(transfer, "source_approved_by", None),
+        "source_approved_at": getattr(transfer, "source_approved_at", None),
+        "dest_approved_by": getattr(transfer, "dest_approved_by", None),
+        "dest_approved_at": getattr(transfer, "dest_approved_at", None),
+        "rejected_by": getattr(transfer, "rejected_by", None),
+        "rejection_reason": getattr(transfer, "rejection_reason", None),
+        "fully_approved": fully_approved,
+        "can_ship": can_ship,
         "shipped_at": transfer.shipped_at,
         "received_at": transfer.received_at,
         "created_at": transfer.created_at,
@@ -267,6 +291,8 @@ async def create_transfer(
         status="requested" if submit else "draft",
         notes=notes,
         created_by=user_id,
+        approval_step=1 if submit else 0,
+        approval_steps_required=2,
     )
     db.add(transfer)
     await db.flush()
@@ -300,6 +326,147 @@ async def submit_transfer(db: AsyncSession, *, tenant_id: str, transfer_id: str)
     if transfer.status not in TRANSFER_SUBMITTABLE:
         raise HTTPException(status_code=409, detail=f"Cannot submit transfer in status {transfer.status}")
     transfer.status = "requested"
+    transfer.approval_step = 1
+    transfer.approval_steps_required = 2
+    transfer.source_approved_by = None
+    transfer.source_approved_at = None
+    transfer.dest_approved_by = None
+    transfer.dest_approved_at = None
+    transfer.rejected_by = None
+    transfer.rejection_reason = None
+    await db.flush()
+    return transfer
+
+
+def _transfer_fully_approved(transfer: m.StockTransfer) -> bool:
+    return bool(transfer.source_approved_by and transfer.dest_approved_by)
+
+
+async def _assert_may_approve_store(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str,
+    user_id: str,
+    actor_role: str | None,
+    step_label: str,
+) -> None:
+    role = (actor_role or "").strip()
+    if role in TRANSFER_ADMIN_ROLES:
+        return
+    if role not in TRANSFER_MANAGER_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail=f"{step_label} approval requires store_manager or company_admin",
+        )
+    store = await get_store(db, tenant_id, store_id)
+    if store.manager_id and store.manager_id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Only the assigned {step_label} store manager can approve this step",
+        )
+
+
+async def approve_transfer(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    transfer_id: str,
+    actor_role: str | None = None,
+) -> m.StockTransfer:
+    transfer = await get_transfer(db, tenant_id, transfer_id)
+    if transfer.status not in TRANSFER_APPROVABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot approve transfer in status {transfer.status}")
+    if _transfer_fully_approved(transfer):
+        raise HTTPException(status_code=409, detail="Transfer already fully approved")
+
+    step = int(transfer.approval_step or 1)
+    now = datetime.utcnow()
+    if step <= 1 and not transfer.source_approved_by:
+        await _assert_may_approve_store(
+            db,
+            tenant_id=tenant_id,
+            store_id=transfer.from_store_id,
+            user_id=user_id,
+            actor_role=actor_role,
+            step_label="source",
+        )
+        transfer.source_approved_by = user_id
+        transfer.source_approved_at = now
+        transfer.approval_step = 2
+        from app.notifications import create_notification
+
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="transfer",
+            title="Transfer needs destination approval",
+            message=f"Transfer {transfer.transfer_number} passed source approval.",
+            entity_type="stock_transfer",
+            entity_id=transfer.id,
+        )
+    elif not transfer.dest_approved_by:
+        await _assert_may_approve_store(
+            db,
+            tenant_id=tenant_id,
+            store_id=transfer.to_store_id,
+            user_id=user_id,
+            actor_role=actor_role,
+            step_label="destination",
+        )
+        if transfer.source_approved_by == user_id and (actor_role or "") not in TRANSFER_ADMIN_ROLES:
+            raise HTTPException(
+                status_code=403,
+                detail="Same manager cannot approve both source and destination steps",
+            )
+        transfer.dest_approved_by = user_id
+        transfer.dest_approved_at = now
+        transfer.approval_step = int(transfer.approval_steps_required or 2)
+        from app.notifications import create_notification
+
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="transfer",
+            title="Transfer approved for shipping",
+            message=f"Transfer {transfer.transfer_number} is fully approved and ready to ship.",
+            entity_type="stock_transfer",
+            entity_id=transfer.id,
+        )
+    else:
+        raise HTTPException(status_code=409, detail="No pending approval step")
+    await db.flush()
+    return transfer
+
+
+async def reject_transfer(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    transfer_id: str,
+    reason: str | None = None,
+    actor_role: str | None = None,
+) -> m.StockTransfer:
+    transfer = await get_transfer(db, tenant_id, transfer_id)
+    if transfer.status not in TRANSFER_APPROVABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot reject transfer in status {transfer.status}")
+    role = (actor_role or "").strip()
+    if role not in TRANSFER_MANAGER_ROLES:
+        raise HTTPException(status_code=403, detail="Role cannot reject transfers")
+    # Either store's manager (or admin) may reject while pending
+    if role not in TRANSFER_ADMIN_ROLES:
+        from_store = await get_store(db, tenant_id, transfer.from_store_id)
+        to_store = await get_store(db, tenant_id, transfer.to_store_id)
+        allowed = {from_store.manager_id, to_store.manager_id} - {None}
+        if allowed and user_id not in allowed:
+            # If neither store has a manager assigned, any store_manager may reject
+            if from_store.manager_id or to_store.manager_id:
+                raise HTTPException(status_code=403, detail="Not an assigned store manager for this transfer")
+    transfer.status = "cancelled"
+    transfer.rejected_by = user_id
+    transfer.rejection_reason = (reason or "").strip() or None
     await db.flush()
     return transfer
 
@@ -310,6 +477,11 @@ async def ship_transfer(
     transfer = await get_transfer(db, tenant_id, transfer_id)
     if transfer.status not in TRANSFER_SHIPPABLE:
         raise HTTPException(status_code=409, detail=f"Cannot ship transfer in status {transfer.status}")
+    if not _transfer_fully_approved(transfer):
+        raise HTTPException(
+            status_code=409,
+            detail="Transfer requires source and destination manager approval before shipping",
+        )
     items = await list_transfer_items(db, tenant_id, transfer_id)
     for item in items:
         await allocate_unlocated_stock(

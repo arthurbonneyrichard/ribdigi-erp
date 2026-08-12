@@ -104,6 +104,7 @@ from app.schemas import (
     StockAdjust,
     StockMove,
     StockTransferCreate,
+    StockTransferReject,
     StoreCreate,
     StoreDrawerSettingsUpdate,
     StoreReorderPolicyUpdate,
@@ -6865,6 +6866,49 @@ async def submit_transfer(
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer requested")
+
+
+@api.post("/stores/transfers/{transfer_id}/approve")
+async def approve_transfer(
+    transfer_id: str,
+    claims=Depends(require_permission("stores", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    transfer = await stores_svc.approve_transfer(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        transfer_id=transfer_id,
+        actor_role=claims.get("role"),
+    )
+    await db.commit()
+    data = await stores_svc.serialize_transfer(db, transfer)
+    if data.get("fully_approved"):
+        msg = "Transfer fully approved; ready to ship"
+    elif data.get("awaiting_approval") == "dest":
+        msg = "Source approved; awaiting destination manager"
+    else:
+        msg = "Transfer approved"
+    return env(data, msg)
+
+
+@api.post("/stores/transfers/{transfer_id}/reject")
+async def reject_transfer(
+    transfer_id: str,
+    payload: StockTransferReject | None = None,
+    claims=Depends(require_permission("stores", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    transfer = await stores_svc.reject_transfer(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        transfer_id=transfer_id,
+        reason=(payload.reason if payload else None),
+        actor_role=claims.get("role"),
+    )
+    await db.commit()
+    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer rejected")
 
 
 @api.post("/stores/transfers/{transfer_id}/ship")

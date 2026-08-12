@@ -385,6 +385,10 @@ class StockTransferCreate(BaseModel):
     items: list[StockTransferItemCreate] = Field(min_length=1)
 
 
+class StockTransferReject(BaseModel):
+    reason: str | None = None
+
+
 class TaxCreate(BaseModel):
     name: str
     rate: float = Field(ge=0)

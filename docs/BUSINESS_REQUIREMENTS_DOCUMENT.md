@@ -724,10 +724,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Move stock between stores.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create transfer request with source store, destination store, products, quantities
-  - [ ] Approval workflow (source store manager → destination store manager)
-  - [ ] Track transfer status: Draft, Requested, In Transit, Received, Cancelled
-  - [ ] Auto-update inventory at both stores on receipt confirmation
+  - [x] Create transfer request with source store, destination store, products, quantities
+  - [x] Approval workflow (source store manager → destination store manager)
+  - [x] Track transfer status: Draft, Requested, In Transit, Received, Cancelled
+  - [x] Auto-update inventory at both stores on receipt confirmation
   - [ ] Transfer history and reporting
 
 ---
