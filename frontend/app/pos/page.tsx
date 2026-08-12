@@ -155,6 +155,7 @@ export default function Page() {
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [cashierName, setCashierName] = useState('');
 
   const cartTotal = useMemo(
     () => cart.reduce((sum, c) => sum + Number(c.selling_price) * c.quantity, 0),
@@ -180,6 +181,9 @@ export default function Page() {
     api('/customers')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
+    api('/me')
+      .then((r) => setCashierName(r.data?.full_name || r.data?.email || ''))
+      .catch(() => setCashierName(''));
   }, [browse]);
 
   function selectCustomer(id: string) {
@@ -363,19 +367,12 @@ export default function Page() {
       if (!r?.data?.id || !r?.data?.reference) {
         throw new Error(r?.message || 'Sale failed');
       }
-      const saleRef = r.data.reference as string;
       setCart([]);
       clearCustomer();
-      try {
-        const receiptRes = await api(`/pos/sales/${r.data.id}/receipt?paper=${paper}`);
-        setReceipt(receiptRes.data);
-      } catch (receiptErr: any) {
-        setError(receiptErr.message || 'Sale saved, but receipt could not be loaded');
-      }
+      setReceipt(null);
       await refreshSession();
       await browse(q);
-      // Success only after the sale itself completed.
-      setMessage(`Sale successful · ${saleRef}`);
+      setMessage('Sale successful');
     } catch (err: any) {
       setMessage('');
       setError(err.message);
@@ -390,9 +387,23 @@ export default function Page() {
         <header className="tpos-top">
           <div>
             <h1>Point of Sale</h1>
-            <p className="muted">Tap tiles or scan a barcode · image catalog · large cart controls</p>
+            <p className="muted">
+              {cashierName ? (
+                <>
+                  Cashier: <strong>{cashierName}</strong>
+                  {' · '}
+                </>
+              ) : null}
+              Tap tiles or scan a barcode
+            </p>
           </div>
           <div className="tpos-shift">
+            {cashierName && (
+              <div className="tpos-shift-meta tpos-cashier">
+                <strong>{cashierName}</strong>
+                <span>Cashier</span>
+              </div>
+            )}
             {!session ? (
               <>
                 <input
