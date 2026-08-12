@@ -1444,3 +1444,4 @@ Stage 107 D1 POS sections, commerce filters & ops leaves fidelity — `docs/STAG
 Stage 108 D1 AI analysis leaves, credit statement & users directory fidelity — `docs/STAGE_108_FIDELITY.md` (`test_stage108_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 109 D1 report filters, document status leaves & platform status fidelity — `docs/STAGE_109_FIDELITY.md` (`test_stage109_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 110 D1 purchasing status leaves, expense decision queue & admin audit fidelity — `docs/STAGE_110_FIDELITY.md` (`test_stage110_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+Stage 111 D1 inventory movement types, posted sales returns & cheque hash fidelity — `docs/STAGE_111_FIDELITY.md` (`test_stage111_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

@@ -1933,3 +1933,15 @@ Every feature in every phase must meet:
 **Stage 110 D1 (2026-08-12):** Purchasing status leaves, expense decision queue & admin audit fidelity sync — `docs/STAGE_110_FIDELITY.md` (`test_stage110_fidelity_d1.py`).
 
 **Stage 110 exit (2026-08-12):** P1, E1, A1, D1, H110x met — `docs/STAGE_110_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_227_STAGE110_FREEZE.md`. Fidelity: `docs/STAGE_110_FIDELITY.md`.
+
+**Stage 111 open (2026-08-12):** Tenant MVP Inventory Movement Type Leaves, Posted Sales Returns & Cheque Hash Ops — `docs/ADR_228_STAGE111_OPEN.md` + `docs/STAGE_111_PLAN.md` (Inventory movement types → Posted sales returns → Cheque hash → Inventory Movement Type Leaves, Posted Sales Returns & Cheque Hash Ops; I1 next).
+
+**Stage 111 I1 (2026-08-12):** Inventory movement_type Shell leaves (`test_stage111_inventory_movement_types_i1.py`).
+
+**Stage 111 S1 (2026-08-12):** Posted Sales Returns Shell leaf (`test_stage111_posted_sales_returns_s1.py`).
+
+**Stage 111 C1 (2026-08-12):** Accounting `#cheques` hash + deposited/cleared leaves (`test_stage111_cheque_hash_c1.py`).
+
+**Stage 111 D1 (2026-08-12):** Inventory movement types, posted sales returns & cheque hash fidelity sync — `docs/STAGE_111_FIDELITY.md` (`test_stage111_fidelity_d1.py`).
+
+**Stage 111 exit (2026-08-12):** I1, S1, C1, D1, H111x met — `docs/STAGE_111_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_229_STAGE111_FREEZE.md`. Fidelity: `docs/STAGE_111_FIDELITY.md`.

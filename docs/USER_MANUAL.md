@@ -146,6 +146,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Draft/Posted GRN & Purchase Returns; Draft/Overdue Purchases:** Purchasing status Shell leaves (Stage 110 P1)
 - **Approved / Rejected Expenses:** Expense decision queue Shell leaves (Stage 110 E1)
 - **Create Role; Auth Audit / Sales Audit:** Admin Roles hash + tenant Audit module leaves (Stage 110 A1)
+- **Stock In / Out / Opening / Adjustment / Transfer Movements:** Inventory movement type Shell leaves (Stage 111 I1)
+- **Posted Sales Returns:** Sales returns status Shell leaf (Stage 111 S1)
+- **Deposited / Cleared Cheques; Cheques hash:** Accounting cheque deep-links (Stage 111 C1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

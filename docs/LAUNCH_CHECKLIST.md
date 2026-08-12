@@ -438,6 +438,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Admin Create Role hash & tenant Audit module leaves (Stage 110 A1: `test_stage110_admin_audit_a1.py`)
 - [x] Stage 110 fidelity sync (D1: `test_stage110_fidelity_d1.py`, `docs/STAGE_110_FIDELITY.md` — P1–A1 + readiness + deploy / launch / security)
 - [x] Stage 110 exit + freeze (H110x: `test_stage110_exit_h110x.py`, `docs/STAGE_110_EXIT_CRITERIA.md`, ADR-227)
+- [x] Stage 111 track opened (ADR-228: `test_stage111_open.py`, `docs/STAGE_111_PLAN.md`) — Tenant MVP Inventory Movement Type Leaves, Posted Sales Returns & Cheque Hash Ops; closed under ADR-229
+- [x] Inventory movement_type Shell leaves (Stage 111 I1: `test_stage111_inventory_movement_types_i1.py`)
+- [x] Posted Sales Returns Shell leaf (Stage 111 S1: `test_stage111_posted_sales_returns_s1.py`)
+- [x] Accounting `#cheques` hash + deposited/cleared leaves (Stage 111 C1: `test_stage111_cheque_hash_c1.py`)
+- [x] Stage 111 fidelity sync (D1: `test_stage111_fidelity_d1.py`, `docs/STAGE_111_FIDELITY.md` — I1–C1 + readiness + deploy / launch / security)
+- [x] Stage 111 exit + freeze (H111x: `test_stage111_exit_h111x.py`, `docs/STAGE_111_EXIT_CRITERIA.md`, ADR-229)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

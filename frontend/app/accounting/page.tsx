@@ -189,7 +189,7 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Stage 100 G1 / Stage 109 O1 — honor Shell ledger hashes + #bank-reconciliation
+  // Stage 100 G1 / Stage 109 O1 / Stage 111 C1 — ledger hashes + #bank-reconciliation + #cheques
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
@@ -204,6 +204,10 @@ export default function Page() {
     ];
     if (hash === 'bank-reconciliation' && tab !== 'reconcile') {
       setTab('reconcile');
+      return;
+    }
+    if (hash === 'cheques' && tab !== 'cheques') {
+      setTab('cheques');
       return;
     }
     if (ledgerAnchors.includes(hash) && tab !== 'ledger') {

@@ -87,7 +87,10 @@ export default function Page() {
     if (typeof window === 'undefined') return '';
     return new URLSearchParams(window.location.search).get('movement_type')?.trim() || '';
   });
-  const [moveWarehouseId, setMoveWarehouseId] = useState('');
+  const [moveWarehouseId, setMoveWarehouseId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('warehouse_id')?.trim() || '';
+  });
   const [warehouseStock, setWarehouseStock] = useState<any | null>(null);
   const [lowStock, setLowStock] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -222,10 +225,12 @@ export default function Page() {
     if (!reorderSupplierId && sup.data?.length) setReorderSupplierId(sup.data[0].id);
   }
 
+  // Stage 109 R1 / Stage 111 I1 — shareable movements filters (type / dates / warehouse)
   function syncMovementFiltersUrl(next?: {
     movement_type?: string;
     from_date?: string;
     to_date?: string;
+    warehouse_id?: string;
   }) {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
@@ -233,12 +238,15 @@ export default function Page() {
     const mt = next?.movement_type !== undefined ? next.movement_type : moveType;
     const fd = next?.from_date !== undefined ? next.from_date : moveFrom;
     const td = next?.to_date !== undefined ? next.to_date : moveTo;
+    const wh = next?.warehouse_id !== undefined ? next.warehouse_id : moveWarehouseId;
     if (mt) url.searchParams.set('movement_type', mt);
     else url.searchParams.delete('movement_type');
     if (fd) url.searchParams.set('from_date', fd);
     else url.searchParams.delete('from_date');
     if (td) url.searchParams.set('to_date', td);
     else url.searchParams.delete('to_date');
+    if (wh) url.searchParams.set('warehouse_id', wh);
+    else url.searchParams.delete('warehouse_id');
     window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}`);
   }
 
@@ -2063,7 +2071,14 @@ export default function Page() {
                 <option value="transfer_out">transfer_out</option>
                 <option value="transfer_in">transfer_in</option>
               </select>
-              <select value={moveWarehouseId} onChange={(e) => setMoveWarehouseId(e.target.value)}>
+              <select
+                value={moveWarehouseId}
+                onChange={(e) => {
+                  setMoveWarehouseId(e.target.value);
+                  syncMovementFiltersUrl({ warehouse_id: e.target.value });
+                }}
+                aria-label="Movements warehouse filter"
+              >
                 <option value="">All warehouses</option>
                 {warehouses.map((w) => (
                   <option key={w.id} value={w.id}>

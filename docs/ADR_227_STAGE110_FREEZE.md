@@ -23,4 +23,4 @@ Stage 110 Tenant MVP Purchasing Status Leaves, Expense Decision Queue & Admin Au
 
 ## Next stage
 
-Stage 111 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 110 feature scope remains frozen.
+Stage 111 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-228](ADR_228_STAGE111_OPEN.md) + [STAGE_111_PLAN.md](STAGE_111_PLAN.md) (Tenant MVP Inventory Movement Type Leaves, Posted Sales Returns & Cheque Hash Ops). Stage 110 feature scope remains frozen.
