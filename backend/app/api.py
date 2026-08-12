@@ -13569,6 +13569,31 @@ async def ai_sales_analysis(
     return env(data)
 
 
+@api.get("/ai/sales/analysis/export")
+async def ai_sales_analysis_export(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    lookback_days: int = 90,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 147 S1 — sales analysis CSV."""
+    text = await ai_ops_export_svc.export_sales_analysis_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+        lookback_days=lookback_days,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_sales_analysis_export.csv"'
+        },
+    )
+
+
 @api.get("/ai/expenses/analysis")
 async def ai_expenses_analysis(
     from_date: str | None = None,
@@ -13586,6 +13611,29 @@ async def ai_expenses_analysis(
         to_date=to_date,
     )
     return env(data)
+
+
+@api.get("/ai/expenses/analysis/export")
+async def ai_expenses_analysis_export(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 147 E1 — expense analysis CSV."""
+    text = await ai_ops_export_svc.export_expense_analysis_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_expense_analysis_export.csv"'
+        },
+    )
 
 
 @api.get("/ai/purchases/analysis")
@@ -13607,6 +13655,31 @@ async def ai_purchases_analysis(
         lookback_days=lookback_days,
     )
     return env(data)
+
+
+@api.get("/ai/purchases/analysis/export")
+async def ai_purchases_analysis_export(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    lookback_days: int = 90,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 147 P1 — purchases analysis CSV."""
+    text = await ai_ops_export_svc.export_purchases_analysis_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+        lookback_days=lookback_days,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_purchases_analysis_export.csv"'
+        },
+    )
 
 
 @api.get("/ai/cross-domain/analysis")

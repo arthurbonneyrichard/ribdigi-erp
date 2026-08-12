@@ -1674,3 +1674,5 @@ Stage 144 D1 — `docs/STAGE_144_FIDELITY.md` (`test_stage144_fidelity_d1.py`): 
 Stage 145 D1 — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`): Stage 145 S1 `GET /ai/security/alerts/export`; Stage 145 T1 `GET /ai/reports/templates/export`; Stage 145 I1 `GET /ai/insights/export`.
 
 Stage 146 D1 — `docs/STAGE_146_FIDELITY.md` (`test_stage146_fidelity_d1.py`): Stage 146 L1 `GET /ai/inventory/low-stock-prediction/export`; Stage 146 F1 `GET /ai/inventory/demand-forecast/export`; Stage 146 K1 `GET /ai/inventory/dead-stock/export`.
+
+Stage 147 D1 — `docs/STAGE_147_FIDELITY.md` (`test_stage147_fidelity_d1.py`): Stage 147 S1 `GET /ai/sales/analysis/export`; Stage 147 E1 `GET /ai/expenses/analysis/export`; Stage 147 P1 `GET /ai/purchases/analysis/export`.

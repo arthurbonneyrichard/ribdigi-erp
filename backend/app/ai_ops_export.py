@@ -1,5 +1,6 @@
 """CSV export for AI security alerts, report templates, business insights (Stage 145),
-and inventory low-stock / forecast / dead-stock predictions (Stage 146)."""
+inventory low-stock / forecast / dead-stock predictions (Stage 146),
+and sales / expense / purchases analysis (Stage 147)."""
 
 from __future__ import annotations
 
@@ -9,9 +10,12 @@ import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import ai_expenses as ai_expenses_svc
 from app import ai_insights as ai_insights_svc
 from app import ai_inventory as ai_inventory_svc
+from app import ai_purchases as ai_purchases_svc
 from app import ai_reports as ai_reports_svc
+from app import ai_sales as ai_sales_svc
 from app import ai_security as ai_security_svc
 from app.session_passkey_doc_export import _cell
 
@@ -103,6 +107,100 @@ DEAD_STOCK_EXPORT_COLUMNS = [
     "last_sale_at",
     "days_without_sale",
     "lookback_days",
+]
+
+SALES_ANALYSIS_EXPORT_COLUMNS = [
+    "row_type",
+    "generated_at",
+    "from_date",
+    "to_date",
+    "method",
+    "invoice_count",
+    "total_sales",
+    "avg_daily_sales",
+    "customer_count",
+    "trend_direction",
+    "daily_slope",
+    "forecast_7d",
+    "forecast_14d",
+    "forecast_30d",
+    "rfm_segment",
+    "rfm_count",
+    "rfm_customer_count",
+    "product_a_id",
+    "product_a_name",
+    "product_b_id",
+    "product_b_name",
+    "co_occurrence_count",
+    "support",
+    "baskets_with_2plus_lines",
+    "peak_hour",
+    "peak_weekday",
+    "peak_weekday_label",
+]
+
+EXPENSE_ANALYSIS_EXPORT_COLUMNS = [
+    "row_type",
+    "generated_at",
+    "from_date",
+    "to_date",
+    "method",
+    "expense_count",
+    "approved_count",
+    "pending_count",
+    "total_approved",
+    "total_pending",
+    "avg_approved_amount",
+    "with_attachment",
+    "wow_change_pct",
+    "over_budget_count",
+    "expense_id",
+    "category",
+    "description",
+    "amount",
+    "expense_date",
+    "severity",
+    "reasons",
+    "suggestion_kind",
+    "suggestion_category",
+    "suggestion_summary",
+    "suggestion_action",
+]
+
+PURCHASES_ANALYSIS_EXPORT_COLUMNS = [
+    "row_type",
+    "generated_at",
+    "from_date",
+    "to_date",
+    "method",
+    "purchase_order_count",
+    "open_po_count",
+    "open_po_value",
+    "grn_count",
+    "purchase_invoice_count",
+    "total_spend",
+    "avg_daily_spend",
+    "supplier_count",
+    "overdue_invoice_count",
+    "trend_direction",
+    "daily_slope",
+    "wow_change_pct",
+    "top_supplier_spend_share",
+    "supplier_id",
+    "supplier_name",
+    "supplier_invoice_count",
+    "supplier_spend",
+    "supplier_spend_share",
+    "purchase_invoice_id",
+    "invoice_number",
+    "invoice_status",
+    "due_date",
+    "balance",
+    "total_amount",
+    "suggestion_kind",
+    "suggestion_severity",
+    "suggestion_summary",
+    "suggestion_action",
 ]
 
 
@@ -270,4 +368,290 @@ async def export_dead_stock_csv(
     writer.writeheader()
     for row in data.get("items") or []:
         writer.writerow({k: _cell(row.get(k)) for k in DEAD_STOCK_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+def _blank_row(columns: list[str]) -> dict[str, str]:
+    return {k: "" for k in columns}
+
+
+async def export_sales_analysis_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    lookback_days: int = 90,
+) -> str:
+    """Stage 147 S1 — sales analysis multi-section CSV (summary / RFM / affinity / peaks)."""
+    data = await ai_sales_svc.analyze_sales(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        lookback_days=lookback_days,
+    )
+    summary = data.get("summary") or {}
+    trend = data.get("trend") or {}
+    forecast = trend.get("forecast_totals") or {}
+    rfm = data.get("rfm") or {}
+    affinity = data.get("product_affinity") or {}
+    peaks = data.get("peaks") or {}
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=SALES_ANALYSIS_EXPORT_COLUMNS)
+    writer.writeheader()
+
+    meta = {
+        "generated_at": _cell(data.get("generated_at")),
+        "from_date": _cell(data.get("from_date")),
+        "to_date": _cell(data.get("to_date")),
+        "method": _cell(data.get("method")),
+    }
+
+    summary_row = _blank_row(SALES_ANALYSIS_EXPORT_COLUMNS)
+    summary_row.update(
+        {
+            **meta,
+            "row_type": "summary",
+            "invoice_count": _cell(summary.get("invoice_count")),
+            "total_sales": _cell(summary.get("total_sales")),
+            "avg_daily_sales": _cell(summary.get("avg_daily_sales")),
+            "customer_count": _cell(summary.get("customer_count")),
+            "trend_direction": _cell(summary.get("trend_direction")),
+            "daily_slope": _cell(summary.get("daily_slope")),
+            "forecast_7d": _cell(forecast.get("7")),
+            "forecast_14d": _cell(forecast.get("14")),
+            "forecast_30d": _cell(forecast.get("30")),
+            "rfm_customer_count": _cell(rfm.get("count")),
+            "baskets_with_2plus_lines": _cell(affinity.get("baskets_with_2plus_lines")),
+            "peak_hour": _cell(peaks.get("peak_hour")),
+            "peak_weekday": _cell(peaks.get("peak_weekday")),
+            "peak_weekday_label": _cell(peaks.get("peak_weekday_label")),
+        }
+    )
+    writer.writerow(summary_row)
+
+    for segment, count in (rfm.get("segment_counts") or {}).items():
+        row = _blank_row(SALES_ANALYSIS_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "rfm_segment",
+                "rfm_segment": _cell(segment),
+                "rfm_count": _cell(count),
+                "rfm_customer_count": _cell(rfm.get("count")),
+            }
+        )
+        writer.writerow(row)
+
+    for pair in affinity.get("pairs") or []:
+        row = _blank_row(SALES_ANALYSIS_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "affinity",
+                "product_a_id": _cell(pair.get("product_a_id")),
+                "product_a_name": _cell(pair.get("product_a_name")),
+                "product_b_id": _cell(pair.get("product_b_id")),
+                "product_b_name": _cell(pair.get("product_b_name")),
+                "co_occurrence_count": _cell(pair.get("co_occurrence_count")),
+                "support": _cell(pair.get("support")),
+                "baskets_with_2plus_lines": _cell(affinity.get("baskets_with_2plus_lines")),
+            }
+        )
+        writer.writerow(row)
+
+    peak_row = _blank_row(SALES_ANALYSIS_EXPORT_COLUMNS)
+    peak_row.update(
+        {
+            **meta,
+            "row_type": "peak",
+            "peak_hour": _cell(peaks.get("peak_hour")),
+            "peak_weekday": _cell(peaks.get("peak_weekday")),
+            "peak_weekday_label": _cell(peaks.get("peak_weekday_label")),
+        }
+    )
+    writer.writerow(peak_row)
+    return buf.getvalue()
+
+
+async def export_expense_analysis_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+) -> str:
+    """Stage 147 E1 — expense analysis multi-section CSV (summary / anomalies / suggestions)."""
+    data = await ai_expenses_svc.analyze_expenses(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+    )
+    summary = data.get("summary") or {}
+    budget = data.get("budget_variance") or {}
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=EXPENSE_ANALYSIS_EXPORT_COLUMNS)
+    writer.writeheader()
+
+    meta = {
+        "generated_at": _cell(data.get("generated_at")),
+        "from_date": _cell(data.get("from_date")),
+        "to_date": _cell(data.get("to_date")),
+        "method": _cell(data.get("method")),
+    }
+
+    summary_row = _blank_row(EXPENSE_ANALYSIS_EXPORT_COLUMNS)
+    summary_row.update(
+        {
+            **meta,
+            "row_type": "summary",
+            "expense_count": _cell(summary.get("expense_count")),
+            "approved_count": _cell(summary.get("approved_count")),
+            "pending_count": _cell(summary.get("pending_count")),
+            "total_approved": _cell(summary.get("total_approved")),
+            "total_pending": _cell(summary.get("total_pending")),
+            "avg_approved_amount": _cell(summary.get("avg_approved_amount")),
+            "with_attachment": _cell(summary.get("with_attachment")),
+            "wow_change_pct": _cell(summary.get("wow_change_pct")),
+            "over_budget_count": _cell(budget.get("over_budget_count")),
+        }
+    )
+    writer.writerow(summary_row)
+
+    for anomaly in data.get("anomalies") or []:
+        row = _blank_row(EXPENSE_ANALYSIS_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "anomaly",
+                "expense_id": _cell(anomaly.get("expense_id")),
+                "category": _cell(anomaly.get("category")),
+                "description": _cell(anomaly.get("description")),
+                "amount": _cell(anomaly.get("amount")),
+                "expense_date": _cell(anomaly.get("expense_date")),
+                "severity": _cell(anomaly.get("severity")),
+                "reasons": _json_cell(anomaly.get("reasons")),
+            }
+        )
+        writer.writerow(row)
+
+    for suggestion in data.get("optimization_suggestions") or []:
+        row = _blank_row(EXPENSE_ANALYSIS_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "suggestion",
+                "suggestion_kind": _cell(suggestion.get("kind")),
+                "suggestion_category": _cell(suggestion.get("category")),
+                "suggestion_summary": _cell(suggestion.get("summary")),
+                "suggestion_action": _cell(suggestion.get("action")),
+            }
+        )
+        writer.writerow(row)
+    return buf.getvalue()
+
+
+async def export_purchases_analysis_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    lookback_days: int = 90,
+) -> str:
+    """Stage 147 P1 — purchases analysis multi-section CSV (summary / suppliers / overdue / suggestions)."""
+    data = await ai_purchases_svc.analyze_purchases(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        lookback_days=lookback_days,
+    )
+    summary = data.get("summary") or {}
+    suppliers = data.get("suppliers") or {}
+    invoices = data.get("purchase_invoices") or {}
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=PURCHASES_ANALYSIS_EXPORT_COLUMNS)
+    writer.writeheader()
+
+    meta = {
+        "generated_at": _cell(data.get("generated_at")),
+        "from_date": _cell(data.get("from_date")),
+        "to_date": _cell(data.get("to_date")),
+        "method": _cell(data.get("method")),
+    }
+
+    summary_row = _blank_row(PURCHASES_ANALYSIS_EXPORT_COLUMNS)
+    summary_row.update(
+        {
+            **meta,
+            "row_type": "summary",
+            "purchase_order_count": _cell(summary.get("purchase_order_count")),
+            "open_po_count": _cell(summary.get("open_po_count")),
+            "open_po_value": _cell(summary.get("open_po_value")),
+            "grn_count": _cell(summary.get("grn_count")),
+            "purchase_invoice_count": _cell(summary.get("purchase_invoice_count")),
+            "total_spend": _cell(summary.get("total_spend")),
+            "avg_daily_spend": _cell(summary.get("avg_daily_spend")),
+            "supplier_count": _cell(summary.get("supplier_count")),
+            "overdue_invoice_count": _cell(summary.get("overdue_invoice_count")),
+            "trend_direction": _cell(summary.get("trend_direction")),
+            "daily_slope": _cell(summary.get("daily_slope")),
+            "wow_change_pct": _cell(summary.get("wow_change_pct")),
+            "top_supplier_spend_share": _cell(summary.get("top_supplier_spend_share")),
+        }
+    )
+    writer.writerow(summary_row)
+
+    for supplier in suppliers.get("rows") or []:
+        row = _blank_row(PURCHASES_ANALYSIS_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "supplier",
+                "supplier_id": _cell(supplier.get("supplier_id")),
+                "supplier_name": _cell(supplier.get("supplier_name")),
+                "supplier_invoice_count": _cell(supplier.get("invoice_count")),
+                "supplier_spend": _cell(supplier.get("spend")),
+                "supplier_spend_share": _cell(supplier.get("spend_share")),
+            }
+        )
+        writer.writerow(row)
+
+    for inv in invoices.get("overdue") or []:
+        row = _blank_row(PURCHASES_ANALYSIS_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "overdue",
+                "purchase_invoice_id": _cell(inv.get("purchase_invoice_id")),
+                "invoice_number": _cell(inv.get("invoice_number")),
+                "invoice_status": _cell(inv.get("status")),
+                "due_date": _cell(inv.get("due_date")),
+                "balance": _cell(inv.get("balance")),
+                "total_amount": _cell(inv.get("total_amount")),
+                "supplier_id": _cell(inv.get("supplier_id")),
+                "supplier_name": _cell(inv.get("supplier_name")),
+            }
+        )
+        writer.writerow(row)
+
+    for suggestion in data.get("suggestions") or []:
+        row = _blank_row(PURCHASES_ANALYSIS_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "suggestion",
+                "suggestion_kind": _cell(suggestion.get("kind")),
+                "suggestion_severity": _cell(suggestion.get("severity")),
+                "suggestion_summary": _cell(suggestion.get("summary")),
+                "suggestion_action": _cell(suggestion.get("action")),
+            }
+        )
+        writer.writerow(row)
     return buf.getvalue()

@@ -23,4 +23,4 @@ Stage 146 Tenant MVP AI Low-Stock Prediction CSV, Demand Forecast CSV & Dead-Sto
 
 ## Next stage
 
-Stage 147 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 146 feature scope remains frozen.
+Stage 147 opened via CONTINUE/NEXT as **Tenant MVP AI Sales Analysis CSV, Expense Analysis CSV & Purchases Analysis CSV Export Fidelity** ([ADR-300](ADR_300_STAGE147_OPEN.md)) and closed under [ADR-301](ADR_301_STAGE147_FREEZE.md). Stage 146 feature scope remains frozen.

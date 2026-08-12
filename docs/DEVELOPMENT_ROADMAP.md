@@ -2366,6 +2366,18 @@ Every feature in every phase must meet:
 
 **Stage 146 exit (2026-08-12):** L1, F1, K1, D1, H146x met — `docs/STAGE_146_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_299_STAGE146_FREEZE.md`. Fidelity: `docs/STAGE_146_FIDELITY.md`.
 
+**Stage 147 open (2026-08-12):** Tenant MVP AI Sales Analysis CSV, Expense Analysis CSV & Purchases Analysis CSV Export Fidelity — `docs/ADR_300_STAGE147_OPEN.md` + `docs/STAGE_147_PLAN.md` (Sales → Expense → Purchases → Fidelity; S1 next).
+
+**Stage 147 S1 (2026-08-12):** Sales analysis CSV (`test_stage147_sales_analysis_s1.py`).
+
+**Stage 147 E1 (2026-08-12):** Expense analysis CSV (`test_stage147_expense_analysis_e1.py`).
+
+**Stage 147 P1 (2026-08-12):** Purchases analysis CSV (`test_stage147_purchases_analysis_p1.py`).
+
+**Stage 147 D1 (2026-08-12):** Sales / expense / purchases analysis export fidelity sync — `docs/STAGE_147_FIDELITY.md` (`test_stage147_fidelity_d1.py`).
+
+**Stage 147 exit (2026-08-12):** S1, E1, P1, D1, H147x met — `docs/STAGE_147_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_301_STAGE147_FREEZE.md`. Fidelity: `docs/STAGE_147_FIDELITY.md`.
+
 
 
 

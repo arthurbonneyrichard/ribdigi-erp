@@ -252,6 +252,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Low-Stock Prediction CSV:** AI Export low-stock CSV (Stage 146 L1)
 - **Demand Forecast CSV:** AI Export forecast CSV (Stage 146 F1)
 - **Dead-Stock CSV:** AI Export dead stock CSV (Stage 146 K1)
+- **Sales Analysis CSV:** AI Export sales analysis CSV (Stage 147 S1)
+- **Expense Analysis CSV:** AI Export expense analysis CSV (Stage 147 E1)
+- **Purchases Analysis CSV:** AI Export purchases analysis CSV (Stage 147 P1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

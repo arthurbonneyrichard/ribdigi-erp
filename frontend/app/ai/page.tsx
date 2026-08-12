@@ -621,11 +621,22 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }} id="sales-analysis">
         <h3>Sales analysis</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Trends, RFM segments, product affinity, and peak hour/day from posted invoices.
+          Trends, RFM segments, product affinity, and peak hour/day from posted invoices. Export via{' '}
+          <code>GET /ai/sales/analysis/export</code> (Stage 147 S1).
         </p>
-        <button type="button" onClick={loadSalesAnalysis} style={{ marginBottom: 12 }}>
-          Refresh sales analysis
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={loadSalesAnalysis}>
+            Refresh sales analysis
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv('/ai/sales/analysis/export', 'ai_sales_analysis_export.csv')
+            }
+          >
+            Export sales analysis CSV
+          </button>
+        </div>
         {salesSummary && (
           <p>
             Invoices: {salesSummary.invoice_count} · Sales: {salesSummary.total_sales} · Trend:{' '}
@@ -667,11 +678,22 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }} id="expense-analysis">
         <h3>Expense analysis</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Budget variance, unusual spends, and cost optimization suggestions.
+          Budget variance, unusual spends, and cost optimization suggestions. Export via{' '}
+          <code>GET /ai/expenses/analysis/export</code> (Stage 147 E1).
         </p>
-        <button type="button" onClick={loadExpenseAnalysis} style={{ marginBottom: 12 }}>
-          Refresh expense analysis
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={loadExpenseAnalysis}>
+            Refresh expense analysis
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv('/ai/expenses/analysis/export', 'ai_expense_analysis_export.csv')
+            }
+          >
+            Export expense analysis CSV
+          </button>
+        </div>
         {expenseSummary && (
           <p>
             Approved: {expenseSummary.total_approved} · Pending: {expenseSummary.total_pending} ·
@@ -698,11 +720,22 @@ export default function Page() {
         <h3>Purchases analysis</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Spend trend, supplier concentration, PO fill/open backlog, and overdue bills from live PO /
-          GRN / purchase invoices.
+          GRN / purchase invoices. Export via <code>GET /ai/purchases/analysis/export</code> (Stage
+          147 P1).
         </p>
-        <button type="button" onClick={loadPurchasesAnalysis} style={{ marginBottom: 12 }}>
-          Refresh purchases analysis
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={loadPurchasesAnalysis}>
+            Refresh purchases analysis
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv('/ai/purchases/analysis/export', 'ai_purchases_analysis_export.csv')
+            }
+          >
+            Export purchases analysis CSV
+          </button>
+        </div>
         {purchaseSummary && (
           <p>
             Spend: {purchaseSummary.total_spend} · POs: {purchaseSummary.purchase_order_count} · Open

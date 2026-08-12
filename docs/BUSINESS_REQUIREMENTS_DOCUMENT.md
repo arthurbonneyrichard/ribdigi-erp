@@ -873,6 +873,7 @@ Stage 143 D1 — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`); 
 Stage 144 D1 — `docs/STAGE_144_FIDELITY.md` (`test_stage144_fidelity_d1.py`); Stage 144 W1 / F1 / A1.
 Stage 145 D1 — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`); Stage 145 S1 / T1 / I1.
 Stage 146 D1 — `docs/STAGE_146_FIDELITY.md` (`test_stage146_fidelity_d1.py`); Stage 146 L1 / F1 / K1.
+Stage 147 D1 — `docs/STAGE_147_FIDELITY.md` (`test_stage147_fidelity_d1.py`); Stage 147 S1 / E1 / P1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1578,3 +1579,5 @@ Stage 144 D1 webhook deliveries, inventory FEFO settings & audit archives export
 Stage 145 D1 AI security alerts, report templates & business insights export fidelity — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`); Stage 145 S1 security alerts CSV; Stage 145 T1 report templates CSV; Stage 145 I1 business insights CSV.
 
 Stage 146 D1 AI low-stock prediction, demand forecast & dead-stock export fidelity — `docs/STAGE_146_FIDELITY.md` (`test_stage146_fidelity_d1.py`); Stage 146 L1 low-stock prediction CSV; Stage 146 F1 demand forecast CSV; Stage 146 K1 dead-stock CSV.
+
+Stage 147 D1 AI sales analysis, expense analysis & purchases analysis export fidelity — `docs/STAGE_147_FIDELITY.md` (`test_stage147_fidelity_d1.py`); Stage 147 S1 sales analysis CSV; Stage 147 E1 expense analysis CSV; Stage 147 P1 purchases analysis CSV.
