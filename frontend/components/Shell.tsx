@@ -385,6 +385,18 @@ const primaryNavSpec: NavEntry[] = [
   { kind: 'link', label: 'Warehouse', href: '/stores#warehouses', modules: ['stores'] },
   {
     kind: 'link',
+    label: 'FEFO Policy',
+    href: '/stores#fefo',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
+    label: 'Reorder Policies',
+    href: '/stores#reorder',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
     label: 'Inter-store Transfers',
     href: '/stores#transfers',
     modules: ['stores'],
@@ -585,6 +597,18 @@ const userMgmtLinks: NavLink[] = [
     modules: ['users'],
   },
   { kind: 'link', label: 'Permissions', href: '/admin/permissions', modules: ['users'] },
+  {
+    kind: 'link',
+    label: 'Custom Permissions',
+    href: '/admin/permissions#custom',
+    modules: ['users'],
+  },
+  {
+    kind: 'link',
+    label: 'System Permissions',
+    href: '/admin/permissions#system',
+    modules: ['users'],
+  },
   { kind: 'link', label: 'Audit', href: '/audit', modules: ['audit'] },
   { kind: 'link', label: 'Activity', href: '/activity', modules: ['audit'] },
   { kind: 'link', label: 'Backup', href: '/backup#schedule', modules: ['backup'] },

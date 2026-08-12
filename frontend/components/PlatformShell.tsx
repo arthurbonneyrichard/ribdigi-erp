@@ -16,6 +16,7 @@ const items: [string, string, string][] = [
   ['Health', '/platform/health', 'platform_health'],
   ['Audit', '/platform/audit', 'platform_audit'],
   ['Activity', '/platform/activity', 'platform_audit'],
+  ['Delivery Audit', '/platform/audit?delivery_only=true', 'platform_audit'],
   ['Security', '/security', 'security'],
 ];
 

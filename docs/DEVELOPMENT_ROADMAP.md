@@ -1861,3 +1861,15 @@ Every feature in every phase must meet:
 **Stage 104 D1 (2026-08-12):** Ledger filters, commerce leaves & admin fidelity sync — `docs/STAGE_104_FIDELITY.md` (`test_stage104_fidelity_d1.py`).
 
 **Stage 104 exit (2026-08-12):** A1, I1, R1, D1, H104x met — `docs/STAGE_104_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_215_STAGE104_FREEZE.md`. Fidelity: `docs/STAGE_104_FIDELITY.md`.
+
+**Stage 105 open (2026-08-12):** Tenant MVP Permissions Matrix, Store Policies & Platform Audit Ops — `docs/ADR_216_STAGE105_OPEN.md` + `docs/STAGE_105_PLAN.md` (Permissions matrix → Store policies → Platform audit → Permissions Matrix, Store Policies & Platform Audit Ops; P1 next).
+
+**Stage 105 P1 (2026-08-12):** Permissions matrix honesty (`test_stage105_permissions_matrix_p1.py`).
+
+**Stage 105 S1 (2026-08-12):** Store policy leaves FEFO / reorder (`test_stage105_store_policies_s1.py`).
+
+**Stage 105 A1 (2026-08-12):** Platform audit filter URL sync (`test_stage105_platform_audit_a1.py`).
+
+**Stage 105 D1 (2026-08-12):** Permissions, store policies & platform audit fidelity sync — `docs/STAGE_105_FIDELITY.md` (`test_stage105_fidelity_d1.py`).
+
+**Stage 105 exit (2026-08-12):** P1, S1, A1, D1, H105x met — `docs/STAGE_105_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_217_STAGE105_FREEZE.md`. Fidelity: `docs/STAGE_105_FIDELITY.md`.

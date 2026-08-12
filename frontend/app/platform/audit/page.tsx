@@ -41,15 +41,51 @@ export default function PlatformAuditPage() {
   const [verify, setVerify] = useState<any>(null);
   const [formats, setFormats] = useState(HOUSE_FORMAT_DEFAULTS);
 
-  async function load() {
+  // Stage 105 A1 — shareable platform audit filter URL (parity with tenant Audit)
+  function syncUrl(next?: {
+    module?: string;
+    action?: string;
+    fromDate?: string;
+    toDate?: string;
+    deliveryOnly?: boolean;
+  }) {
+    if (typeof window === 'undefined') return;
+    const nm = next?.module !== undefined ? next.module : module;
+    const na = next?.action !== undefined ? next.action : action;
+    const nf = next?.fromDate !== undefined ? next.fromDate : fromDate;
+    const nt = next?.toDate !== undefined ? next.toDate : toDate;
+    const nd = next?.deliveryOnly !== undefined ? next.deliveryOnly : deliveryOnly;
+    const params = new URLSearchParams();
+    if (nm.trim()) params.set('module', nm.trim());
+    if (na.trim()) params.set('action', na.trim());
+    if (nf.trim()) params.set('from_date', nf.trim());
+    if (nt.trim()) params.set('to_date', nt.trim());
+    if (nd) params.set('delivery_only', 'true');
+    const qs = params.toString();
+    window.history.replaceState({}, '', qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  async function load(overrides?: {
+    module?: string;
+    action?: string;
+    fromDate?: string;
+    toDate?: string;
+    deliveryOnly?: boolean;
+  }) {
     setError('');
+    const mod = overrides?.module !== undefined ? overrides.module : module;
+    const act = overrides?.action !== undefined ? overrides.action : action;
+    const fd = overrides?.fromDate !== undefined ? overrides.fromDate : fromDate;
+    const td = overrides?.toDate !== undefined ? overrides.toDate : toDate;
+    const del =
+      overrides?.deliveryOnly !== undefined ? overrides.deliveryOnly : deliveryOnly;
     try {
       const params = new URLSearchParams();
-      if (module.trim()) params.set('module', module.trim());
-      if (action.trim()) params.set('action', action.trim());
-      if (fromDate) params.set('from_date', fromDate);
-      if (toDate) params.set('to_date', toDate);
-      if (deliveryOnly) params.set('delivery_only', 'true');
+      if (mod.trim()) params.set('module', mod.trim());
+      if (act.trim()) params.set('action', act.trim());
+      if (fd) params.set('from_date', fd);
+      if (td) params.set('to_date', td);
+      if (del) params.set('delivery_only', 'true');
       const r = await api(`${listPath}?${params.toString()}`);
       setItems(r.data?.items || []);
     } catch (err: any) {
@@ -59,7 +95,24 @@ export default function PlatformAuditPage() {
 
   useEffect(() => {
     fetchHouseFormats().then(setFormats);
-    load();
+    const params = new URLSearchParams(window.location.search);
+    const fromModule = params.get('module') || '';
+    const fromAction = params.get('action') || '';
+    const fromFrom = params.get('from_date') || '';
+    const fromTo = params.get('to_date') || '';
+    const fromDelivery = params.get('delivery_only') === 'true';
+    setModule(fromModule);
+    setAction(fromAction);
+    setFromDate(fromFrom);
+    setToDate(fromTo);
+    setDeliveryOnly(fromDelivery);
+    load({
+      module: fromModule,
+      action: fromAction,
+      fromDate: fromFrom,
+      toDate: fromTo,
+      deliveryOnly: fromDelivery,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listPath]);
 
@@ -138,6 +191,7 @@ export default function PlatformAuditPage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          syncUrl();
           load();
         }}
         style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '16px 0', alignItems: 'center' }}

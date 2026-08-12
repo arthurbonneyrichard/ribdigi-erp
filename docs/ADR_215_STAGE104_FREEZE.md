@@ -23,4 +23,4 @@ Stage 104 Tenant MVP Ledger Filters, Commerce Leaves & Admin Ops delivered ledge
 
 ## Next stage
 
-Stage 105 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 104 feature scope remains frozen.
+Stage 105 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-216](ADR_216_STAGE105_OPEN.md) + [STAGE_105_PLAN.md](STAGE_105_PLAN.md) (Tenant MVP Permissions Matrix, Store Policies & Platform Audit Ops). Stage 104 feature scope remains frozen.

@@ -128,6 +128,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Unposted / Posted Journals; Pending / Received / Issued Cheques:** Accounting filter deep-links (Stage 104 A1)
 - **Products / Purchase Invoices / Draft & Overdue Sales Invoices:** Commerce Shell leaves (Stage 104 I1)
 - **Credit Aging / Early Pay / FX / Payment Schedule; Custom & System Roles:** Credit and Admin Roles deep-links (Stage 104 R1)
+- **Custom / System Permissions matrix:** Admin Permissions deep-links and shareable `?role=` (Stage 105 P1)
+- **FEFO Policy / Reorder Policies:** Stores Shell deep-links; reorder panel honors `store_id` (Stage 105 S1)
+- **Platform Audit filters / Delivery Audit:** Shareable house audit URL filters (Stage 105 A1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

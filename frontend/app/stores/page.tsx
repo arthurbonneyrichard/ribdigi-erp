@@ -169,11 +169,28 @@ export default function Page() {
     }
   }
 
+  function writeStoresQuery(patch: Record<string, string | null>) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    for (const [key, value] of Object.entries(patch)) {
+      if (!value) url.searchParams.delete(key);
+      else url.searchParams.set(key, value);
+    }
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`);
+  }
+
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    refresh()
+      .then(() => {
+        const storeId = new URLSearchParams(window.location.search).get('store_id')?.trim() || '';
+        if (storeId) return loadInventory(storeId, { skipUrl: true });
+      })
+      .catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Stage 102 T1 — honor Shell #transfers / #warehouses
+  // Stage 102 T1 / Stage 105 S1 — honor Shell #transfers / #warehouses / #fefo / #reorder
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
@@ -297,10 +314,11 @@ export default function Page() {
     };
   }, [salesStore]);
 
-  async function loadInventory(storeId: string) {
+  async function loadInventory(storeId: string, opts?: { skipUrl?: boolean }) {
     setViewStore(storeId);
     setSelectedStoreId(storeId);
     setError('');
+    if (!opts?.skipUrl) writeStoresQuery({ store_id: storeId || null });
     try {
       const r = await api(`/stores/${storeId}/inventory?include_zero=true`);
       setInventory(r.data || []);
@@ -407,7 +425,7 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="fefo">
         <label className="muted">
           <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} /> FEFO
           strict warehouse (stock-out only from batches tagged to that warehouse)
@@ -926,60 +944,64 @@ export default function Page() {
         </div>
       )}
 
-      {viewStore && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h3>Inventory · {storeName(viewStore)}</h3>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            <select value={reorderProductId} onChange={(e) => setReorderProductId(e.target.value)}>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <input
-              value={reorderLevel}
-              onChange={(e) => setReorderLevel(e.target.value)}
-              placeholder="Reorder level"
-              style={{ width: 110 }}
-            />
-            <input
-              value={reorderQty}
-              onChange={(e) => setReorderQty(e.target.value)}
-              placeholder="Reorder qty"
-              style={{ width: 110 }}
-            />
-            <button onClick={saveReorder}>Save policy</button>
-          </div>
-          {inventory.length === 0 && <p className="muted">No warehouse stock / policy rows yet</p>}
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Reorder</th>
-                <th>Suggest</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventory.map((i) => (
-                <tr key={i.product_id}>
-                  <td>
-                    {i.name} ({i.sku})
-                  </td>
-                  <td>{i.quantity}</td>
-                  <td>
-                    {i.reorder_level} / {i.reorder_qty}
-                  </td>
-                  <td>{i.suggested_order_qty ?? '—'}</td>
-                  <td>{i.below_reorder ? 'LOW' : 'ok'}</td>
+      <div className="card" style={{ marginTop: 16 }} id="reorder">
+        <h3>{viewStore ? `Inventory · ${storeName(viewStore)}` : 'Reorder policies'}</h3>
+        {!viewStore ? (
+          <p className="muted">Open Inventory / reorder on a store to edit policies.</p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              <select value={reorderProductId} onChange={(e) => setReorderProductId(e.target.value)}>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={reorderLevel}
+                onChange={(e) => setReorderLevel(e.target.value)}
+                placeholder="Reorder level"
+                style={{ width: 110 }}
+              />
+              <input
+                value={reorderQty}
+                onChange={(e) => setReorderQty(e.target.value)}
+                placeholder="Reorder qty"
+                style={{ width: 110 }}
+              />
+              <button onClick={saveReorder}>Save policy</button>
+            </div>
+            {inventory.length === 0 && <p className="muted">No warehouse stock / policy rows yet</p>}
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Reorder</th>
+                  <th>Suggest</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {inventory.map((i) => (
+                  <tr key={i.product_id}>
+                    <td>
+                      {i.name} ({i.sku})
+                    </td>
+                    <td>{i.quantity}</td>
+                    <td>
+                      {i.reorder_level} / {i.reorder_qty}
+                    </td>
+                    <td>{i.suggested_order_qty ?? '—'}</td>
+                    <td>{i.below_reorder ? 'LOW' : 'ok'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+      </div>
 
       <h3 style={{ marginTop: 16 }}>Transfers</h3>
       <table className="table">
