@@ -12,10 +12,6 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _admin(ac, seed):
-    return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
-
-
 async def _super(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     return await auth_headers(
@@ -26,7 +22,7 @@ async def _super(ac, seed):
 @pytest.mark.asyncio
 async def test_storage_settings_export_csv_secret_free(client):
     ac, seed = client
-    headers = await _admin(ac, seed)
+    headers = await _super(ac, seed)
 
     exported = await ac.get("/api/v1/settings/storage/export", headers=headers)
     assert exported.status_code == 200, exported.text

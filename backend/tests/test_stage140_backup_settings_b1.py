@@ -12,14 +12,17 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _admin(ac, seed):
-    return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+async def _super(ac, seed):
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_backup_settings_export_csv(client):
     ac, seed = client
-    headers = await _admin(ac, seed)
+    headers = await _super(ac, seed)
 
     patched = await ac.patch(
         "/api/v1/backup/settings",
