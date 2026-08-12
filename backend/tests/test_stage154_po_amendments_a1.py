@@ -35,7 +35,7 @@ async def test_po_amendments_export_csv(client):
         headers=headers,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_cost": 5}],
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5, "tax_rate": 0}],
         },
     )
     assert po.status_code == 200, po.text

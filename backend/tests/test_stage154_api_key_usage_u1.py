@@ -31,7 +31,7 @@ async def test_api_key_usage_export_csv(client):
     assert created.status_code == 200, created.text
     key_id = created.json()["data"]["id"]
     # Ensure raw secret is not leaked into usage export
-    raw = created.json()["data"].get("raw_key") or created.json()["data"].get("secret")
+    raw = created.json()["data"].get("api_key") or created.json()["data"].get("raw_key")
     exported = await ac.get(
         f"/api/v1/api-keys/{key_id}/usage/export?days=30",
         headers=headers,
