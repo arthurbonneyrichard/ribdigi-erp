@@ -702,6 +702,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 115 O1** | Draft Orders + Platform Users role leaves (`test_stage115_draft_orders_platform_roles_o1.py`) |
 | **Stage 115 D1** | Notification history honesty & residual filter discoverability — `docs/STAGE_115_FIDELITY.md` (`test_stage115_fidelity_d1.py`) |
 | **Stage 115 H115x** | Exit + freeze — `docs/STAGE_115_EXIT_CRITERIA.md`, ADR-237 (`test_stage115_exit_h115x.py`); Stages 1–115 frozen; Stage 116+ requires CONTINUE/NEXT |
+| **Stage 116 open** | Tenant MVP Officer Role Leaves, Exact Invoice Statuses & Residual Audit Module Discoverability — `docs/STAGE_116_PLAN.md`, ADR-238 (`test_stage116_open.py`); Stages 1–115 remain frozen; U1 next historically |
+| **Stage 116 U1** | Inventory/Sales Officer Users Shell leaves (`test_stage116_officer_roles_u1.py`) |
+| **Stage 116 S1** | Posted/Sent sales invoice Shell leaves (`test_stage116_invoice_posted_sent_s1.py`) |
+| **Stage 116 A1** | Residual Audit module Shell leaves (`test_stage116_residual_audit_a1.py`) |
+| **Stage 116 D1** | Officer roles, exact invoices & residual audit — `docs/STAGE_116_FIDELITY.md` (`test_stage116_fidelity_d1.py`) |
+| **Stage 116 H116x** | Exit + freeze — `docs/STAGE_116_EXIT_CRITERIA.md`, ADR-239 (`test_stage116_exit_h116x.py`); Stages 1–116 frozen; Stage 117+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

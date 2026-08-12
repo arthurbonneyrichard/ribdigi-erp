@@ -23,4 +23,4 @@ Stage 115 Tenant MVP Notification History Honesty & Residual Filter Discoverabil
 
 ## Next stage
 
-Stage 116 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 115 feature scope remains frozen.
+Stage 116 opened via CONTINUE/NEXT with a distinct product outline — Tenant MVP Officer Role Leaves, Exact Invoice Statuses & Residual Audit Module Discoverability — see `docs/ADR_238_STAGE116_OPEN.md` + `docs/STAGE_116_PLAN.md`. Stage 115 feature scope remains frozen.

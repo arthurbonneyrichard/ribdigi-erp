@@ -1993,3 +1993,15 @@ Every feature in every phase must meet:
 **Stage 115 D1 (2026-08-12):** Notification history honesty & residual filter discoverability fidelity sync — `docs/STAGE_115_FIDELITY.md` (`test_stage115_fidelity_d1.py`).
 
 **Stage 115 exit (2026-08-12):** N1, P1, O1, D1, H115x met — `docs/STAGE_115_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_237_STAGE115_FREEZE.md`. Fidelity: `docs/STAGE_115_FIDELITY.md`.
+
+**Stage 116 open (2026-08-12):** Tenant MVP Officer Role Leaves, Exact Invoice Statuses & Residual Audit Module Discoverability — `docs/ADR_238_STAGE116_OPEN.md` + `docs/STAGE_116_PLAN.md` (Officer roles → Exact invoices → Residual audit → Officer Role Leaves, Exact Invoice Statuses & Residual Audit Module Discoverability; U1 next).
+
+**Stage 116 U1 (2026-08-12):** Inventory/Sales Officer Users Shell leaves (`test_stage116_officer_roles_u1.py`).
+
+**Stage 116 S1 (2026-08-12):** Posted/Sent sales invoice Shell leaves (`test_stage116_invoice_posted_sent_s1.py`).
+
+**Stage 116 A1 (2026-08-12):** Residual Audit module Shell leaves (`test_stage116_residual_audit_a1.py`).
+
+**Stage 116 D1 (2026-08-12):** Officer roles, exact invoices & residual audit fidelity sync — `docs/STAGE_116_FIDELITY.md` (`test_stage116_fidelity_d1.py`).
+
+**Stage 116 exit (2026-08-12):** U1, S1, A1, D1, H116x met — `docs/STAGE_116_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_239_STAGE116_FREEZE.md`. Fidelity: `docs/STAGE_116_FIDELITY.md`.

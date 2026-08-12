@@ -1449,3 +1449,4 @@ Stage 112 D1 report schedule leaves, stores cash drawer & platform plan fidelity
 Stage 113 D1 notification read, cheque exceptions & fulfillment status fidelity — `docs/STAGE_113_FIDELITY.md` (`test_stage113_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 114 D1 residual status & ops filter discoverability fidelity — `docs/STAGE_114_FIDELITY.md` (`test_stage114_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 115 D1 notification history honesty & residual filter discoverability fidelity — `docs/STAGE_115_FIDELITY.md` (`test_stage115_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+Stage 116 D1 officer roles, exact invoices & residual audit fidelity — `docs/STAGE_116_FIDELITY.md` (`test_stage116_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
