@@ -145,7 +145,8 @@ export default function Page() {
   const [expiryDate, setExpiryDate] = useState('');
   const [stockQty, setStockQty] = useState('10');
 
-  // Stage 107 S1 — shareable product list filters (client-side; GET /products has no server filters)
+  // Stage 107 S1 — shareable product list filters (q/category/brand client-side)
+  // Stage 120 P1 — product_active → GET /products?is_active=
   const [listFilterQ, setListFilterQ] = useState(() => {
     if (typeof window === 'undefined') return '';
     return new URLSearchParams(window.location.search).get('q')?.trim() || '';
@@ -158,11 +159,19 @@ export default function Page() {
     if (typeof window === 'undefined') return '';
     return new URLSearchParams(window.location.search).get('brand_id')?.trim() || '';
   });
+  const [productActiveFilter, setProductActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('product_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
 
   function writeProductListFilters(next: {
     q?: string;
     category_id?: string;
     brand_id?: string;
+    product_active?: string;
   }) {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
@@ -170,12 +179,16 @@ export default function Page() {
     const q = next.q !== undefined ? next.q : listFilterQ;
     const cat = next.category_id !== undefined ? next.category_id : listFilterCategoryId;
     const brand = next.brand_id !== undefined ? next.brand_id : listFilterBrandId;
+    const active =
+      next.product_active !== undefined ? next.product_active : productActiveFilter;
     if (q.trim()) url.searchParams.set('q', q.trim());
     else url.searchParams.delete('q');
     if (cat) url.searchParams.set('category_id', cat);
     else url.searchParams.delete('category_id');
     if (brand) url.searchParams.set('brand_id', brand);
     else url.searchParams.delete('brand_id');
+    if (active === 'true' || active === 'false') url.searchParams.set('product_active', active);
+    else url.searchParams.delete('product_active');
     window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}`);
   }
 
@@ -187,12 +200,22 @@ export default function Page() {
     }
     if (listFilterCategoryId && p.category_id !== listFilterCategoryId) return false;
     if (listFilterBrandId && p.brand_id !== listFilterBrandId) return false;
+    if (productActiveFilter === 'true' && p.is_active === false) return false;
+    if (productActiveFilter === 'false' && p.is_active !== false) return false;
     return true;
   });
 
-  async function refresh() {
+  async function refresh(opts?: { productActive?: string }) {
+    const productActive =
+      opts?.productActive !== undefined ? opts.productActive : productActiveFilter;
+    const productQs =
+      productActive === 'true'
+        ? '?is_active=true'
+        : productActive === 'false'
+          ? '?is_active=false'
+          : '';
     const [p, e, c, tree, b, u, w, sc, tr, ls, sup, tax] = await Promise.all([
-      api('/products'),
+      api(`/products${productQs}`),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
       api('/catalog/categories?tree=true'),
@@ -1342,7 +1365,27 @@ export default function Page() {
           </div>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 520 }}>
             <h3>Filter products</h3>
-            <p className="muted">Shareable URL filters (q / category_id / brand_id). Applied client-side.</p>
+            <p className="muted">
+              Shareable URL filters (q / category_id / brand_id / product_active). Status uses{' '}
+              <code>GET /products?is_active=</code> (Stage 120 P1).
+            </p>
+            <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              Status
+              <select
+                value={productActiveFilter}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setProductActiveFilter(next);
+                  writeProductListFilters({ product_active: next });
+                  refresh({ productActive: next }).catch((err) => setError(err.message));
+                }}
+                aria-label="Filter products by active status"
+              >
+                <option value="">All products</option>
+                <option value="true">Active only</option>
+                <option value="false">Inactive only</option>
+              </select>
+            </label>
             <input
               value={listFilterQ}
               onChange={(e) => {

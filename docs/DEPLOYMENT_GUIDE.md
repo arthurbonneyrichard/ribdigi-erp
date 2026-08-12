@@ -1453,3 +1453,4 @@ Stage 116 D1 officer roles, exact invoices & residual audit fidelity — `docs/S
 Stage 117 D1 permissions role, platform audit & stretch audit fidelity — `docs/STAGE_117_FIDELITY.md` (`test_stage117_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 118 D1 fiscal close, inactive customers & catalog export fidelity — `docs/STAGE_118_FIDELITY.md` (`test_stage118_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1). Alembic `20260812_0090` adds `fiscal_closed_period_starts`.
 Stage 119 D1 inactive suppliers, party export & print preview fidelity — `docs/STAGE_119_FIDELITY.md` (`test_stage119_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+Stage 120 D1 inactive products, users & expenses export fidelity — `docs/STAGE_120_FIDELITY.md` (`test_stage120_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

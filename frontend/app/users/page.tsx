@@ -166,6 +166,33 @@ function PageInner() {
     }
   }
 
+  async function downloadUsersExport() {
+    // Stage 120 U1 — users CSV export
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/users/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Users export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'users_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Users CSV exported');
+    } catch (err: any) {
+      setError(err.message || 'Users export failed');
+    }
+  }
+
   async function importUsersCsv(file: File, dryRun: boolean) {
     setError('');
     setMessage('');
@@ -353,6 +380,9 @@ function PageInner() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
             <button type="button" onClick={downloadUserImportTemplate}>
               Download template
+            </button>
+            <button type="button" onClick={downloadUsersExport}>
+              Export users CSV
             </button>
             <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
               Dry-run

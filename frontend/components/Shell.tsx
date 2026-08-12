@@ -34,6 +34,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Active Products',
+    href: '/inventory?tab=products&product_active=true',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Products',
+    href: '/inventory?tab=products&product_active=false',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
     label: 'Product Search',
     href: '/inventory?tab=products&q=',
     modules: ['inventory'],

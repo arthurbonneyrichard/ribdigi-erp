@@ -23,4 +23,4 @@ Stage 119 Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Previ
 
 ## Next stage
 
-Stage 120 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 119 feature scope remains frozen.
+Stage 120 opened via CONTINUE/NEXT after this freeze — see [ADR-246](ADR_246_STAGE120_OPEN.md) / [STAGE_120_PLAN.md](STAGE_120_PLAN.md). Stage 119 feature scope remains frozen.

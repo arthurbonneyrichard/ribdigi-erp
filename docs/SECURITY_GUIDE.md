@@ -726,6 +726,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 119 T1** | Print template sample preview (`test_stage119_print_preview_t1.py`) |
 | **Stage 119 D1** | Inactive suppliers, party export & print preview — `docs/STAGE_119_FIDELITY.md` (`test_stage119_fidelity_d1.py`) |
 | **Stage 119 H119x** | Exit + freeze — `docs/STAGE_119_EXIT_CRITERIA.md`, ADR-245 (`test_stage119_exit_h119x.py`); Stages 1–119 frozen; Stage 120+ requires CONTINUE/NEXT |
+| **Stage 120 open** | Tenant MVP Inactive Products, Users CSV Export & Expenses CSV Export Fidelity — `docs/STAGE_120_PLAN.md`, ADR-246 (`test_stage120_open.py`); Stages 1–119 remain frozen; P1 next historically |
+| **Stage 120 P1** | Inactive products honesty (`test_stage120_inactive_products_p1.py`) |
+| **Stage 120 U1** | Users CSV export (`test_stage120_users_export_u1.py`) |
+| **Stage 120 X1** | Expenses CSV export (`test_stage120_expenses_export_x1.py`) |
+| **Stage 120 D1** | Inactive products, users & expenses export — `docs/STAGE_120_FIDELITY.md` (`test_stage120_fidelity_d1.py`) |
+| **Stage 120 H120x** | Exit + freeze — `docs/STAGE_120_EXIT_CRITERIA.md`, ADR-247 (`test_stage120_exit_h120x.py`); Stages 1–120 frozen; Stage 121+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

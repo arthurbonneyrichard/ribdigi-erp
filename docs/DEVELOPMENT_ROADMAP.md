@@ -2041,3 +2041,15 @@ Every feature in every phase must meet:
 **Stage 119 D1 (2026-08-12):** Inactive suppliers, party export & print preview fidelity sync — `docs/STAGE_119_FIDELITY.md` (`test_stage119_fidelity_d1.py`).
 
 **Stage 119 exit (2026-08-12):** S1, E1, T1, D1, H119x met — `docs/STAGE_119_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_245_STAGE119_FREEZE.md`. Fidelity: `docs/STAGE_119_FIDELITY.md`.
+
+**Stage 120 open (2026-08-12):** Tenant MVP Inactive Products, Users CSV Export & Expenses CSV Export Fidelity — `docs/ADR_246_STAGE120_OPEN.md` + `docs/STAGE_120_PLAN.md` (Inactive products → Users CSV export → Expenses CSV export → Inactive Products, Users CSV Export & Expenses CSV Export Fidelity; P1 next).
+
+**Stage 120 P1 (2026-08-12):** Inactive products honesty (`test_stage120_inactive_products_p1.py`).
+
+**Stage 120 U1 (2026-08-12):** Users CSV export (`test_stage120_users_export_u1.py`).
+
+**Stage 120 X1 (2026-08-12):** Expenses CSV export (`test_stage120_expenses_export_x1.py`).
+
+**Stage 120 D1 (2026-08-12):** Inactive products, users & expenses export fidelity sync — `docs/STAGE_120_FIDELITY.md` (`test_stage120_fidelity_d1.py`).
+
+**Stage 120 exit (2026-08-12):** P1, U1, X1, D1, H120x met — `docs/STAGE_120_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_247_STAGE120_FREEZE.md`. Fidelity: `docs/STAGE_120_FIDELITY.md`.

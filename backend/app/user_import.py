@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import org_units as org_units_svc
 from app import roles as roles_svc
-from app.rbac import RECORD_SCOPE_KEY, normalize_record_scope
+from app.rbac import RECORD_SCOPE_KEY, normalize_record_scope, record_scope_from_permissions
 from app.security import hash_password, issue_one_time_token, validate_password_strength
 
 TEMPLATE_COLUMNS = [
@@ -29,6 +29,18 @@ TEMPLATE_COLUMNS = [
     "department_code",
     "password",
     "record_scope",
+]
+
+EXPORT_COLUMNS = [
+    "full_name",
+    "email",
+    "phone",
+    "role",
+    "branch_code",
+    "department_code",
+    "record_scope",
+    "is_active",
+    "email_verified",
 ]
 
 _EMAIL = TypeAdapter(EmailStr)
@@ -310,3 +322,50 @@ async def import_users_csv(
         "preview": valid_rows[:50],
         "created": created,
     }
+
+
+async def export_users_csv(db: AsyncSession, *, tenant_id: str) -> str:
+    """Stage 120 U1 — export tenant users (import-aligned columns; never include passwords)."""
+    users = (
+        await db.execute(
+            select(m.User).where(m.User.tenant_id == tenant_id).order_by(m.User.email)
+        )
+    ).scalars().all()
+    branches = {
+        b.id: b.code
+        for b in (
+            await db.execute(select(m.Branch).where(m.Branch.tenant_id == tenant_id))
+        ).scalars().all()
+    }
+    departments = {
+        d.id: d.code
+        for d in (
+            await db.execute(select(m.Department).where(m.Department.tenant_id == tenant_id))
+        ).scalars().all()
+    }
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=EXPORT_COLUMNS)
+    writer.writeheader()
+    for user in users:
+        perms = (
+            user.permissions
+            if isinstance(user.permissions, dict) and user.permissions
+            else None
+        )
+        scope = record_scope_from_permissions(user.role, perms)
+        writer.writerow(
+            {
+                "full_name": user.full_name or "",
+                "email": user.email or "",
+                "phone": user.phone or "",
+                "role": user.role or "",
+                "branch_code": branches.get(getattr(user, "branch_id", None) or "", "") or "",
+                "department_code": departments.get(getattr(user, "department_id", None) or "", "")
+                or "",
+                "record_scope": scope or "own",
+                "is_active": "true" if bool(user.is_active) else "false",
+                "email_verified": "true" if bool(user.email_verified) else "false",
+            }
+        )
+    return buf.getvalue()
+

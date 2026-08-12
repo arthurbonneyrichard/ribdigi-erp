@@ -52,6 +52,7 @@ from app import product_import as product_import_svc
 from app import party_export as party_export_svc
 from app import print_preview as print_preview_svc
 from app import user_import as user_import_svc
+from app import expense_export as expense_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -2196,6 +2197,20 @@ async def users(
     return env([serialize_user(u) for u in rows])
 
 
+@api.get("/users/export")
+async def users_export(
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 120 U1 — users CSV export (import-aligned; never includes passwords)."""
+    text = await user_import_svc.export_users_csv(db, tenant_id=claims["tenant_id"])
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="users_export.csv"'},
+    )
+
+
 @api.get("/users/{user_id}")
 async def get_user(
     user_id: str,
@@ -3040,25 +3055,33 @@ async def global_search(
 
 
 @api.get("/products")
-async def products(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
+async def products(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 120 P1 — active_only / is_active for honest inactive-only product lists."""
     tid = claims["tenant_id"]
-    products_key = cache_svc.app_cache.products_key(tid)
-    cached = await cache_svc.app_cache.get_json(products_key)
-    if cached is not None:
-        return env(cached)
+    use_cache = not active_only and is_active is None
+    if use_cache:
+        products_key = cache_svc.app_cache.products_key(tid)
+        cached = await cache_svc.app_cache.get_json(products_key)
+        if cached is not None:
+            return env(cached)
 
     await catalog_meta_svc.ensure_default_catalog(db, tid)
-    rows = (
-        await db.execute(
-            select(m.Product)
-            .where(m.Product.tenant_id == tid)
-            .order_by(m.Product.name)
-        )
-    ).scalars().all()
+    stmt = select(m.Product).where(m.Product.tenant_id == tid).order_by(m.Product.name)
+    if is_active is not None:
+        stmt = stmt.where(m.Product.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.Product.is_active.is_(True))
+    rows = (await db.execute(stmt)).scalars().all()
     payload = [catalog_meta_svc.serialize_product(p) for p in rows]
-    await cache_svc.app_cache.set_json(
-        products_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
-    )
+    if use_cache:
+        await cache_svc.app_cache.set_json(
+            products_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
+        )
     return env(payload)
 
 
@@ -7693,6 +7716,30 @@ async def expenses(
     stmt = apply_created_by_scope(stmt, m.Expense, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await expenses_svc.serialize_expense_full(db, e) for e in rows])
+
+
+@api.get("/expenses/export")
+async def expenses_export(
+    store_id: str | None = None,
+    department_id: str | None = None,
+    status: str | None = None,
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 120 X1 — expenses CSV export (record-scope aware)."""
+    text = await expense_export_svc.export_expenses_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        claims=claims,
+        status=status,
+        store_id=store_id,
+        department_id=department_id,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="expenses_export.csv"'},
+    )
 
 
 @api.post("/expenses")

@@ -556,6 +556,44 @@ export default function Page() {
         Auto-approve ≤ {threshold}
         {levels.length > 1 ? `; ${levels.length} approval levels above that` : ''}. Receipts supported.
       </p>
+      <div style={{ marginBottom: 12 }}>
+        <button
+          type="button"
+          onClick={async () => {
+            // Stage 120 X1 — expenses CSV export (honors current status/store/department filters)
+            setError('');
+            setMessage('');
+            try {
+              const token = localStorage.getItem('token');
+              const tenant = localStorage.getItem('tenant');
+              const qs = new URLSearchParams();
+              if (filterStatus) qs.set('status', filterStatus);
+              if (filterStoreId) qs.set('store_id', filterStoreId);
+              if (filterDepartmentId) qs.set('department_id', filterDepartmentId);
+              const q = qs.toString();
+              const res = await fetch(`${apiBase}/expenses/export${q ? `?${q}` : ''}`, {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                },
+              });
+              if (!res.ok) throw new Error('Expenses export failed');
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'expenses_export.csv';
+              a.click();
+              URL.revokeObjectURL(url);
+              setMessage('Expenses CSV exported');
+            } catch (err: any) {
+              setError(err.message || 'Expenses export failed');
+            }
+          }}
+        >
+          Export expenses CSV
+        </button>
+      </div>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
