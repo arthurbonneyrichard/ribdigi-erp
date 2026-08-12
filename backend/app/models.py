@@ -642,7 +642,25 @@ class AuditLog(Base):
     user_agent: Mapped[str | None] = mapped_column(String(255), nullable=True)
     prev_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     integrity_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class AuditColdArchive(Base):
+    """Checksummed JSONL cold-archive manifest for aged audit rows (BR-17.2)."""
+
+    __tablename__ = "audit_cold_archives"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    storage_key: Mapped[str] = mapped_column(String(500))
+    sha256: Mapped[str] = mapped_column(String(64))
+    event_count: Mapped[int] = mapped_column(Integer, default=0)
+    from_created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    to_created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    byte_size: Mapped[int] = mapped_column(Integer, default=0)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PurchaseRequest(Base):

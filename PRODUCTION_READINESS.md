@@ -67,7 +67,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
   - Partial: encrypted tenant logical backups (`.ribbak`), SHA-256 integrity, download, dry-run + guarded restore, retention prune, schedule settings + `/backup/run-due` + Celery beat due runner, admin UI; full pg_dump/WAL/S3 offsite and DR drill still pending.
 - [ ] Point-in-time recovery/WAL strategy complete.
 - [ ] Immutable audit logging for sensitive operations complete.
-  - Partial: append-only APIs, hash-chained integrity verify, filtered query + CSV export, login/logout/user-create audited; HTTP mutation middleware auto-logs successful POST/PUT/PATCH/DELETE under `/api/v1` as `http_write` (`AUDIT_HTTP_MIDDLEWARE_ENABLED`, skip `/audit-logs`). Remaining: 7-year cold archive.
+  - Partial: append-only APIs, hash-chained integrity verify, filtered query + CSV export, login/logout/user-create audited; HTTP mutation middleware auto-logs successful POST/PUT/PATCH/DELETE under `/api/v1` as `http_write` (`AUDIT_HTTP_MIDDLEWARE_ENABLED`, skip `/audit-logs`); 7-year retention policy with checksummed JSONL cold archive (`POST /audit-logs/archive-cold`, `GET /audit-logs/archives`, Celery `archive_cold_audit_logs`; rows marked `archived_at`, never purged). Remaining: none for Stage-1 audit retention/cold archive.
 - [ ] Redis/Celery/RabbitMQ used for intended production workloads.
   - Partial: Redis for distributed API/auth rate limiting; Celery worker + beat on RabbitMQ broker (Redis results) for low-stock scan, payment-due scan, recurring expenses, due backups, report emails, FX rate refresh, and bank feed sync (`sync_bank_feeds`); admin `GET /jobs` + `POST /jobs/{name}/run`; AI nightly jobs still pending.
 - [ ] Monitoring, metrics, logging and alerting complete.

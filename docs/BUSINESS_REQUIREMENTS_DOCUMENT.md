@@ -856,10 +856,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Search and retention of audit data.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Filter by user, module, action type, date range
-  - [ ] Export audit logs (CSV, PDF)
-  - [ ] Tamper-proof storage (append-only, hashed)
-  - [ ] Retention policy: minimum 7 years for financial records
+  - [x] Filter by user, module, action type, date range
+  - [x] Export audit logs (CSV, PDF)
+  - [x] Tamper-proof storage (append-only, hashed)
+  - [x] Retention policy: minimum 7 years for financial records
 
 ---
 

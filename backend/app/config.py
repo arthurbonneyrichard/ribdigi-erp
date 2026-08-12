@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     RATE_LIMIT_REDIS_PREFIX: str = "ribdigi:ratelimit"
     # Auto-log successful POST/PUT/PATCH/DELETE under /api/v1 (BR-17.1 catch-all).
     AUDIT_HTTP_MIDDLEWARE_ENABLED: bool = True
+    # BR-17.2 — minimum retention (years); cold archive after N hot days (rows kept, not purged).
+    AUDIT_RETENTION_YEARS: int = 7
+    AUDIT_COLD_ARCHIVE_AFTER_DAYS: int = 365
+    CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES: int = 1440
     ALLOW_DEVELOPMENT_SEED: bool = False
     BACKUP_DIR: str = "/data/backups"
     MEDIA_DIR: str = "/data/media"
