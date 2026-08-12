@@ -109,10 +109,18 @@ export default function Page() {
   const [editBudgetId, setEditBudgetId] = useState<string | null>(null);
   const [editBudgetAmount, setEditBudgetAmount] = useState('');
   const [editAccountId, setEditAccountId] = useState('');
+  // Stage 123 F1 — expense_category_active → GET /expenses/categories?is_active=
+  const [expenseCategoryActiveFilter, setExpenseCategoryActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('expense_category_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
 
   async function refresh(
     statusOverride?: string,
-    opts?: { storeId?: string; departmentId?: string },
+    opts?: { storeId?: string; departmentId?: string; categoryActive?: string },
   ) {
     const params = new URLSearchParams();
     const store = opts?.storeId !== undefined ? opts.storeId : filterStoreId;
@@ -122,10 +130,18 @@ export default function Page() {
     const status = statusOverride !== undefined ? statusOverride : filterStatus;
     if (status) params.set('status', status);
     const expQs = params.toString() ? `?${params.toString()}` : '';
+    const categoryActive =
+      opts?.categoryActive !== undefined ? opts.categoryActive : expenseCategoryActiveFilter;
+    const catQs =
+      categoryActive === 'true'
+        ? '?is_active=true'
+        : categoryActive === 'false'
+          ? '?is_active=false'
+          : '';
     const [exp, cats, settings, liquid, rec, bud, accounts, storeRows, deptRows] =
       await Promise.all([
         api(`/expenses${expQs}`),
-        api('/expenses/categories'),
+        api(`/expenses/categories${catQs}`),
         api('/expenses/settings'),
         api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
         api('/expenses/recurring').catch(() => ({ data: [] })),
@@ -607,8 +623,74 @@ export default function Page() {
                 budgets.to_date
               ).toLocaleDateString()})`
             : ''}
-          . Unmapped categories post to Operating Expenses (6000).
+          . Unmapped categories post to Operating Expenses (6000). Filter via{' '}
+          <code>expense_category_active</code> → <code>GET /expenses/categories?is_active=</code>{' '}
+          (Stage 123 F1).
         </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
+          <label className="muted">
+            Active status{' '}
+            <select
+              value={expenseCategoryActiveFilter}
+              onChange={(e) => {
+                const v = e.target.value;
+                setExpenseCategoryActiveFilter(v);
+                const url = new URL(window.location.href);
+                if (v === 'true' || v === 'false') url.searchParams.set('expense_category_active', v);
+                else url.searchParams.delete('expense_category_active');
+                const qs = url.searchParams.toString();
+                window.history.replaceState(
+                  {},
+                  '',
+                  `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`
+                );
+                refresh(undefined, { categoryActive: v }).catch((err) => setError(err.message));
+              }}
+              aria-label="Expense category active filter"
+            >
+              <option value="">All</option>
+              <option value="true">Active only</option>
+              <option value="false">Inactive only</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={async () => {
+              // Stage 123 X1 — expense categories CSV export
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const qs =
+                  expenseCategoryActiveFilter === 'true'
+                    ? '?is_active=true'
+                    : expenseCategoryActiveFilter === 'false'
+                      ? '?is_active=false'
+                      : '';
+                const res = await fetch(`${apiBase}/expenses/categories/export${qs}`, {
+                  headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                  },
+                });
+                if (!res.ok) throw new Error('Expense categories export failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'expense_categories_export.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                setMessage('Expense categories CSV exported');
+              } catch (err: any) {
+                setError(err.message || 'Expense categories export failed');
+              }
+            }}
+          >
+            Export expense categories CSV
+          </button>
+        </div>
         <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>
           <input
             value={newCatCode}

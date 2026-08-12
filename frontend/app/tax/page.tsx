@@ -35,6 +35,14 @@ export default function Page() {
     if (typeof window === 'undefined') return '';
     return new URLSearchParams(window.location.search).get('to_date')?.trim() || '';
   });
+  // Stage 123 F1 — tax_active → GET /tax/rates?is_active=
+  const [taxActiveFilter, setTaxActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('tax_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
   const [periodPreset, setPeriodPreset] = useState('');
   const [name, setName] = useState('Standard VAT');
   const [rate, setRate] = useState('15');
@@ -80,10 +88,17 @@ export default function Page() {
     return s ? `?${s}` : '';
   }
 
-  async function refresh(presetOverride?: string) {
+  async function refresh(presetOverride?: string, opts?: { taxActive?: string }) {
     const q = qs(presetOverride);
+    const taxActive = opts?.taxActive !== undefined ? opts.taxActive : taxActiveFilter;
+    const taxQs =
+      taxActive === 'true'
+        ? '?is_active=true'
+        : taxActive === 'false'
+          ? '?is_active=false'
+          : '';
     const [rates, taxReport, filingPack] = await Promise.all([
-      api('/tax/rates'),
+      api(`/tax/rates${taxQs}`),
       api(`/reports/tax${q}`),
       api(`/reports/tax/filing${q}`),
     ]);
@@ -493,7 +508,35 @@ export default function Page() {
       </div>
 
       <h3 style={{ marginTop: 16 }}>Tax rates</h3>
-      <div style={{ marginBottom: 8 }}>
+      <p className="muted" style={{ marginBottom: 8 }}>
+        Filter via <code>tax_active</code> → <code>GET /tax/rates?is_active=</code> (Stage 123 F1).
+      </p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+        <label className="muted">
+          Active status{' '}
+          <select
+            value={taxActiveFilter}
+            onChange={(e) => {
+              const v = e.target.value;
+              setTaxActiveFilter(v);
+              const url = new URL(window.location.href);
+              if (v === 'true' || v === 'false') url.searchParams.set('tax_active', v);
+              else url.searchParams.delete('tax_active');
+              const qs = url.searchParams.toString();
+              window.history.replaceState(
+                {},
+                '',
+                qs ? `${url.pathname}?${qs}${url.hash}` : `${url.pathname}${url.hash}`
+              );
+              refresh(undefined, { taxActive: v }).catch((err) => setError(err.message));
+            }}
+            aria-label="Tax rate active filter"
+          >
+            <option value="">All</option>
+            <option value="true">Active only</option>
+            <option value="false">Inactive only</option>
+          </select>
+        </label>
         <button
           type="button"
           onClick={async () => {

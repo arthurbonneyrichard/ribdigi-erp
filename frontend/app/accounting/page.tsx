@@ -13,6 +13,14 @@ const ACCOUNTING_TABS: Tab[] = ['ledger', 'reconcile', 'cheques'];
 export default function Page() {
   const [tab, setTab] = useTabQuery(ACCOUNTING_TABS, 'ledger');
   const [accounts, setAccounts] = useState<any[]>([]);
+  // Stage 123 F1 — account_active → GET /accounting/accounts?is_active=
+  const [accountActiveFilter, setAccountActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('account_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
   const [journalStatusFilter, setJournalStatusFilter] = useState('all');
@@ -97,11 +105,22 @@ export default function Page() {
     journalStoreId?: string;
     chequeDirection?: string;
     chequeStatus?: string;
+    accountActive?: string;
   }) {
     const jStatus = opts?.journalStatus !== undefined ? opts.journalStatus : journalStatusFilter;
     const jStore = opts?.journalStoreId !== undefined ? opts.journalStoreId : journalStoreId;
     const cDir = opts?.chequeDirection !== undefined ? opts.chequeDirection : chequeDirectionFilter;
     const cStatus = opts?.chequeStatus !== undefined ? opts.chequeStatus : chequeStatusFilter;
+    const accountActive =
+      opts?.accountActive !== undefined ? opts.accountActive : accountActiveFilter;
+    const accountQs =
+      accountActive === 'true'
+        ? '?is_active=true&active_only=false'
+        : accountActive === 'false'
+          ? '?is_active=false&active_only=false'
+          : accountActive === 'all'
+            ? '?active_only=false'
+            : '';
     const pnlQs = new URLSearchParams();
     if (pnlFrom) pnlQs.set('from_date', pnlFrom);
     if (pnlTo) pnlQs.set('to_date', pnlTo);
@@ -129,7 +148,7 @@ export default function Page() {
       ? `/accounting/trial-balance?as_of_date=${encodeURIComponent(tbAsOf)}`
       : '/accounting/trial-balance';
     const [a, j, t, p, liq, stmts, chq, conns, storeRows] = await Promise.all([
-      api('/accounting/accounts'),
+      api(`/accounting/accounts${accountQs}`),
       api(journalQs),
       api(tbPath),
       api(pnlPath),
@@ -835,8 +854,75 @@ export default function Page() {
             <h3>Chart of accounts</h3>
             <p className="muted" style={{ marginBottom: 8 }}>
               Add non-system accounts with optional parent (same type). Opening balances post a
-              balanced journal against Opening Balances Equity (3900).
+              balanced journal against Opening Balances Equity (3900). Filter via{' '}
+              <code>account_active</code> → <code>GET /accounting/accounts?is_active=</code> (Stage
+              123 F1).
             </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
+              <label className="muted">
+                Active status{' '}
+                <select
+                  value={accountActiveFilter}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setAccountActiveFilter(v);
+                    const url = new URL(window.location.href);
+                    if (v === 'true' || v === 'false') url.searchParams.set('account_active', v);
+                    else url.searchParams.delete('account_active');
+                    const qs = url.searchParams.toString();
+                    window.history.replaceState(
+                      {},
+                      '',
+                      `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`
+                    );
+                    refresh({ accountActive: v }).catch((err) => setError(err.message));
+                  }}
+                  aria-label="Account active filter"
+                >
+                  <option value="">Active only (default)</option>
+                  <option value="true">Active only</option>
+                  <option value="false">Inactive only</option>
+                  <option value="all">All</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={async () => {
+                  // Stage 123 X1 — accounts CSV export
+                  setError('');
+                  try {
+                    const token = localStorage.getItem('token');
+                    const tenant = localStorage.getItem('tenant');
+                    const qs =
+                      accountActiveFilter === 'true'
+                        ? '?is_active=true'
+                        : accountActiveFilter === 'false'
+                          ? '?is_active=false'
+                          : accountActiveFilter === 'all'
+                            ? '?active_only=false'
+                            : '';
+                    const res = await fetch(`${apiBase}/accounting/accounts/export${qs}`, {
+                      headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                      },
+                    });
+                    if (!res.ok) throw new Error('Accounts export failed');
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'accounts_export.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (err: any) {
+                    setError(err.message || 'Accounts export failed');
+                  }
+                }}
+              >
+                Export accounts CSV
+              </button>
+            </div>
             <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
               <input value={coaCode} onChange={(e) => setCoaCode(e.target.value)} placeholder="Code" />
               <input value={coaName} onChange={(e) => setCoaName(e.target.value)} placeholder="Name" />

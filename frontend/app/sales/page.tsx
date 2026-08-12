@@ -61,11 +61,24 @@ export default function Page() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  // Stage 107 S1 / Stage 118 C1 — shareable ?active_only= for groups; ?status= for customers
+  // Stage 107 S1 / Stage 118 C1 / Stage 123 G1 — shareable ?active_only= / ?group_active= for groups
   const [activeOnlyFilter, setActiveOnlyFilter] = useState(() => {
     if (typeof window === 'undefined') return false;
-    const v = new URLSearchParams(window.location.search).get('active_only');
+    const params = new URLSearchParams(window.location.search);
+    const ga = (params.get('group_active') || '').trim().toLowerCase();
+    if (ga === 'true') return true;
+    if (ga === 'false') return false;
+    const v = params.get('active_only');
     return v === 'true' || v === '1';
+  });
+  const [groupActiveFilter, setGroupActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const params = new URLSearchParams(window.location.search);
+    const ga = (params.get('group_active') || '').trim().toLowerCase();
+    if (ga === 'true' || ga === 'false') return ga;
+    const v = params.get('active_only');
+    if (v === 'true' || v === '1') return 'true';
+    return '';
   });
   const [customerStatusFilter, setCustomerStatusFilter] = useState(() => {
     if (typeof window === 'undefined') return '';
@@ -94,6 +107,7 @@ export default function Page() {
     orderStatus?: string;
     activeOnly?: boolean;
     customerStatus?: string;
+    groupActive?: string;
   }) {
     const status = opts?.invoiceStatus !== undefined ? opts.invoiceStatus : invoiceStatusFilter;
     const retStatus = opts?.returnStatus !== undefined ? opts.returnStatus : returnStatusFilter;
@@ -102,6 +116,7 @@ export default function Page() {
     const activeOnly = opts?.activeOnly !== undefined ? opts.activeOnly : activeOnlyFilter;
     const customerStatus =
       opts?.customerStatus !== undefined ? opts.customerStatus : customerStatusFilter;
+    const groupActive = opts?.groupActive !== undefined ? opts.groupActive : groupActiveFilter;
     const invPath = status
       ? `/sales/invoices?status=${encodeURIComponent(status)}`
       : '/sales/invoices';
@@ -121,7 +136,14 @@ export default function Page() {
         : customerStatus === 'active'
           ? '?status=active'
           : '';
-    const groupQs = activeOnly ? '?active_only=true' : '';
+    const groupQs =
+      groupActive === 'true'
+        ? '?is_active=true'
+        : groupActive === 'false'
+          ? '?is_active=false'
+          : activeOnly
+            ? '?active_only=true'
+            : '';
     const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, groupRes] = await Promise.all([
       api(invPath),
       api(`/customers${custQs}`),
@@ -179,8 +201,18 @@ export default function Page() {
 
   function setActiveOnly(next: boolean) {
     setActiveOnlyFilter(next);
+    setGroupActiveFilter(next ? 'true' : '');
     writeQueryParam('active_only', next ? 'true' : '');
-    refresh({ activeOnly: next }).catch((err) => setError(err.message));
+    writeQueryParam('group_active', next ? 'true' : '');
+    refresh({ activeOnly: next, groupActive: next ? 'true' : '' }).catch((err) => setError(err.message));
+  }
+
+  function setGroupActive(next: string) {
+    setGroupActiveFilter(next);
+    setActiveOnlyFilter(next === 'true');
+    writeQueryParam('group_active', next);
+    writeQueryParam('active_only', next === 'true' ? 'true' : '');
+    refresh({ groupActive: next, activeOnly: next === 'true' }).catch((err) => setError(err.message));
   }
 
   function setCustomerListStatus(next: string) {
@@ -684,15 +716,70 @@ export default function Page() {
       {tab === 'groups' && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h3>{selectedGroupId ? 'Edit customer group' : 'New customer group'}</h3>
-          <p className="muted">Group discount applies when catalog price is used (no manual unit price override).</p>
-          <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-            <input
-              type="checkbox"
-              checked={activeOnlyFilter}
-              onChange={(e) => setActiveOnly(e.target.checked)}
-            />
-            Active groups only (shareable URL)
-          </label>
+          <p className="muted">
+            Group discount applies when catalog price is used (no manual unit price override). Filter
+            via <code>group_active</code> → <code>GET /customers/groups?is_active=</code> (Stage 123
+            G1).
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+            <label className="muted">
+              Active status{' '}
+              <select
+                value={groupActiveFilter}
+                onChange={(e) => setGroupActive(e.target.value)}
+                aria-label="Customer group active filter"
+              >
+                <option value="">All</option>
+                <option value="true">Active only</option>
+                <option value="false">Inactive only</option>
+              </select>
+            </label>
+            <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={activeOnlyFilter}
+                onChange={(e) => setActiveOnly(e.target.checked)}
+              />
+              Active groups only (shareable URL)
+            </label>
+            <button
+              type="button"
+              onClick={async () => {
+                // Stage 123 X1 — customer groups CSV export
+                setError('');
+                setMessage('');
+                try {
+                  const token = localStorage.getItem('token');
+                  const tenant = localStorage.getItem('tenant');
+                  const qs =
+                    groupActiveFilter === 'true'
+                      ? '?is_active=true'
+                      : groupActiveFilter === 'false'
+                        ? '?is_active=false'
+                        : '';
+                  const res = await fetch(`${apiBase}/customers/groups/export${qs}`, {
+                    headers: {
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                    },
+                  });
+                  if (!res.ok) throw new Error('Customer groups export failed');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'customer_groups_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  setMessage('Customer groups CSV exported');
+                } catch (err: any) {
+                  setError(err.message || 'Customer groups export failed');
+                }
+              }}
+            >
+              Export customer groups CSV
+            </button>
+          </div>
           <div style={{ display: 'grid', gap: 8, maxWidth: 420 }}>
             <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Name *" />
             <input

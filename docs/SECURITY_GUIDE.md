@@ -744,6 +744,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 122 X1** | Org & catalog-meta CSV export (`test_stage122_org_catalog_export_x1.py`) |
 | **Stage 122 D1** | Inactive org units, catalog meta & export — `docs/STAGE_122_FIDELITY.md` (`test_stage122_fidelity_d1.py`) |
 | **Stage 122 H122x** | Exit + freeze — `docs/STAGE_122_EXIT_CRITERIA.md`, ADR-251 (`test_stage122_exit_h122x.py`); Stages 1–122 frozen; Stage 123+ requires CONTINUE/NEXT |
+| **Stage 123 open** | Tenant MVP Inactive Finance Masters, Customer Groups & Finance/Party-Meta CSV Export Fidelity — `docs/STAGE_123_PLAN.md`, ADR-252 (`test_stage123_open.py`); Stages 1–122 remain frozen; F1 next historically |
+| **Stage 123 F1** | Inactive finance masters honesty (`test_stage123_inactive_finance_masters_f1.py`) |
+| **Stage 123 G1** | Inactive customer groups honesty (`test_stage123_inactive_customer_groups_g1.py`) |
+| **Stage 123 X1** | Finance & party-meta CSV export (`test_stage123_finance_party_meta_export_x1.py`) |
+| **Stage 123 D1** | Inactive finance masters, groups & export — `docs/STAGE_123_FIDELITY.md` (`test_stage123_fidelity_d1.py`) |
+| **Stage 123 H123x** | Exit + freeze — `docs/STAGE_123_EXIT_CRITERIA.md`, ADR-253 (`test_stage123_exit_h123x.py`); Stages 1–123 frozen; Stage 124+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

@@ -255,11 +255,18 @@ async def customer_group_discount_percent(
 
 
 async def list_groups(
-    db: AsyncSession, tenant_id: str, *, active_only: bool = False
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
 ) -> list[m.CustomerGroup]:
+    """Stage 123 G1 — is_active for honest inactive-only customer group lists."""
     await ensure_default_customer_groups(db, tenant_id)
     stmt = select(m.CustomerGroup).where(m.CustomerGroup.tenant_id == tenant_id)
-    if active_only:
+    if is_active is not None:
+        stmt = stmt.where(m.CustomerGroup.is_active.is_(bool(is_active)))
+    elif active_only:
         stmt = stmt.where(m.CustomerGroup.is_active.is_(True))
     stmt = stmt.order_by(m.CustomerGroup.name)
     return list((await db.execute(stmt)).scalars().all())

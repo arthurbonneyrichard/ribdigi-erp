@@ -2078,3 +2078,16 @@ Every feature in every phase must meet:
 
 **Stage 122 exit (2026-08-12):** O1, M1, X1, D1, H122x met — `docs/STAGE_122_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_251_STAGE122_FREEZE.md`. Fidelity: `docs/STAGE_122_FIDELITY.md`.
 
+**Stage 123 open (2026-08-12):** Tenant MVP Inactive Finance Masters, Customer Groups & Finance/Party-Meta CSV Export Fidelity — `docs/ADR_252_STAGE123_OPEN.md` + `docs/STAGE_123_PLAN.md` (Inactive finance masters → Inactive customer groups → Finance/party-meta CSV export → Fidelity; F1 next).
+
+**Stage 123 F1 (2026-08-12):** Inactive finance masters honesty (`test_stage123_inactive_finance_masters_f1.py`).
+
+**Stage 123 G1 (2026-08-12):** Inactive customer groups honesty (`test_stage123_inactive_customer_groups_g1.py`).
+
+**Stage 123 X1 (2026-08-12):** Finance & party-meta CSV export (`test_stage123_finance_party_meta_export_x1.py`).
+
+**Stage 123 D1 (2026-08-12):** Inactive finance masters, customer groups & export fidelity sync — `docs/STAGE_123_FIDELITY.md` (`test_stage123_fidelity_d1.py`).
+
+**Stage 123 exit (2026-08-12):** F1, G1, X1, D1, H123x met — `docs/STAGE_123_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_253_STAGE123_FREEZE.md`. Fidelity: `docs/STAGE_123_FIDELITY.md`.
+
+

@@ -23,4 +23,4 @@ Stage 122 Tenant MVP Inactive Org Units, Catalog Meta & Org/Catalog-Meta CSV Exp
 
 ## Next stage
 
-Stage 123 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 122 feature scope remains frozen.
+Stage 123 opened via CONTINUE/NEXT after this freeze — see [ADR-252](ADR_252_STAGE123_OPEN.md) / [STAGE_123_PLAN.md](STAGE_123_PLAN.md). Stage 122 feature scope remains frozen.

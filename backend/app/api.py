@@ -55,6 +55,7 @@ from app import user_import as user_import_svc
 from app import expense_export as expense_export_svc
 from app import location_export as location_export_svc
 from app import org_catalog_export as org_catalog_export_svc
+from app import finance_meta_export as finance_meta_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -4821,14 +4822,37 @@ async def _serialize_customer_response(
 @api.get("/customers/groups")
 async def list_customer_groups(
     active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 123 G1 — active_only / is_active for honest inactive-only customer group lists."""
     rows = await customers_svc.list_groups(
-        db, claims["tenant_id"], active_only=active_only
+        db, claims["tenant_id"], active_only=active_only, is_active=is_active
     )
     await db.commit()
     return env([customers_svc.serialize_group(r) for r in rows])
+
+
+@api.get("/customers/groups/export")
+async def customer_groups_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 123 X1 — customer groups CSV export."""
+    text = await finance_meta_export_svc.export_customer_groups_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="customer_groups_export.csv"'},
+    )
 
 
 @api.post("/customers/groups")
@@ -7617,23 +7641,50 @@ def _money_safe(value) -> str:
 
 @api.get("/expenses/categories")
 async def list_expense_categories(
+    active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 123 F1 — active_only / is_active for honest inactive-only expense category lists."""
     await expenses_svc.ensure_default_categories(db, claims["tenant_id"])
     await db.commit()
-    rows = (
-        await db.execute(
-            select(m.ExpenseCategory)
-            .where(m.ExpenseCategory.tenant_id == claims["tenant_id"])
-            .order_by(m.ExpenseCategory.name)
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.ExpenseCategory)
+        .where(m.ExpenseCategory.tenant_id == claims["tenant_id"])
+        .order_by(m.ExpenseCategory.name)
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.ExpenseCategory.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.ExpenseCategory.is_active.is_(True))
+    rows = (await db.execute(stmt)).scalars().all()
     return env(
         [
             await expenses_svc.serialize_category_rich(db, claims["tenant_id"], c)
             for c in rows
         ]
+    )
+
+
+@api.get("/expenses/categories/export")
+async def expense_categories_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 123 X1 — expense categories CSV export."""
+    text = await finance_meta_export_svc.export_expense_categories_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="expense_categories_export.csv"'},
     )
 
 
@@ -8187,20 +8238,45 @@ async def delete_expense(
 async def accounts(
     tree: bool = False,
     active_only: bool = True,
+    is_active: bool | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 123 F1 — is_active / active_only for honest inactive-only COA lists."""
     from app import accounting as accounting_svc
 
     await accounting_svc.ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
     q = select(m.Account).where(m.Account.tenant_id == claims["tenant_id"])
-    if active_only:
+    if is_active is not None:
+        q = q.where(m.Account.is_active.is_(bool(is_active)))
+    elif active_only:
         q = q.where(m.Account.is_active.is_(True))
     rows = list((await db.execute(q.order_by(m.Account.code))).scalars().all())
     if tree:
         return env(accounting_svc.build_account_tree(rows))
     return env([accounting_svc.serialize_coa_account(r) for r in rows])
+
+
+@api.get("/accounting/accounts/export")
+async def accounts_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 123 X1 — COA accounts CSV export."""
+    text = await finance_meta_export_svc.export_accounts_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="accounts_export.csv"'},
+    )
 
 
 @api.get("/accounting/accounts/{account_id}")
@@ -10088,15 +10164,19 @@ async def supplier_payment(
 @api.get("/tax/rates")
 async def taxes(
     active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 123 F1 — is_active / active_only for honest inactive-only tax rate lists."""
     stmt = (
         select(m.TaxRate)
         .where(m.TaxRate.tenant_id == claims["tenant_id"])
         .order_by(m.TaxRate.name)
     )
-    if active_only:
+    if is_active is not None:
+        stmt = stmt.where(m.TaxRate.is_active.is_(bool(is_active)))
+    elif active_only:
         stmt = stmt.where(m.TaxRate.is_active == True)  # noqa: E712
     rows = (await db.execute(stmt)).scalars().all()
     return env([tax_svc.serialize_tax_rate(r) for r in rows])
@@ -10341,10 +10421,11 @@ async def reports_tax_filing(
 @api.get("/taxes/rates")
 async def taxes_alias(
     active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await taxes(active_only=active_only, claims=claims, db=db)
+    return await taxes(active_only=active_only, is_active=is_active, claims=claims, db=db)
 
 
 @api.get("/stores")

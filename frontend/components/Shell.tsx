@@ -241,6 +241,12 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Inactive Customer Groups',
+    href: '/sales?tab=groups&group_active=false',
+    modules: ['sales', 'customers'],
+  },
+  {
+    kind: 'link',
     label: 'Sales Returns',
     href: '/sales?tab=returns',
     modules: ['sales'],
@@ -595,6 +601,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Active Expense Categories',
+    href: '/expenses?expense_category_active=true#budgets',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Expense Categories',
+    href: '/expenses?expense_category_active=false#budgets',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
     label: 'Income',
     href: '/accounting?tab=ledger#profit-loss',
     modules: ['accounting'],
@@ -610,6 +628,18 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Chart of Accounts',
     href: '/accounting?tab=ledger#coa',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Active Accounts',
+    href: '/accounting?tab=ledger&account_active=true#coa',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Accounts',
+    href: '/accounting?tab=ledger&account_active=false#coa',
     modules: ['accounting'],
   },
   {
@@ -756,6 +786,18 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Tax Rates',
     href: '/tax#rates',
+    modules: ['tax'],
+  },
+  {
+    kind: 'link',
+    label: 'Active Tax Rates',
+    href: '/tax?tax_active=true#rates',
+    modules: ['tax'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Tax Rates',
+    href: '/tax?tax_active=false#rates',
     modules: ['tax'],
   },
   {
