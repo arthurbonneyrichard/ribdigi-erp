@@ -1085,9 +1085,12 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Customer intelligence.
 - **Priority:** Low
 - **Acceptance Criteria:**
-  - [ ] Customer churn risk scoring
-  - [ ] Best customer identification
-  - [ ] Personalized promotion suggestions
+  - [x] Customer churn risk scoring
+    - Complete (MVP rule-based): RFM segment + recency → `churn_risk` / `risk_level`; see `docs/AI_CUSTOMER_MVP.md`
+  - [x] Best customer identification
+    - Complete (MVP): champions/loyal or high RFM composite
+  - [x] Personalized promotion suggestions
+    - Complete (MVP): segment promo copy + affinity partner SKUs
 
 #### BR-21.10 AI Security Monitor (Basic)
 - **Description:** Behavioral security analysis.

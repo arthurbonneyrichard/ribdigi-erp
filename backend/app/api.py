@@ -32,6 +32,7 @@ from app import ai_inventory as ai_inventory_svc
 from app import ai_sales as ai_sales_svc
 from app import ai_expenses as ai_expenses_svc
 from app import ai_reports as ai_reports_svc
+from app import ai_customer as ai_customer_svc
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
 from app import purchase_suggestions as purchase_suggestions_svc
@@ -8370,6 +8371,24 @@ async def ai_expenses_analysis(
         from_date=from_date,
         to_date=to_date,
         actor_user_id=claims.get("sub"),
+    )
+    return env(data)
+
+
+@api.post("/ai/customer/assist")
+async def ai_customer_assist(
+    payload: dict | None = None,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.9 rule-based customer assistant (churn, best, promos, balance)."""
+    body = payload or {}
+    data = await ai_customer_svc.customer_assist(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_user_id=claims.get("sub"),
+        customer_id=body.get("customer_id"),
+        query=body.get("query") or body.get("message"),
     )
     return env(data)
 

@@ -123,17 +123,40 @@ export default function Page() {
     }
   }
 
+  async function customerAssist() {
+    setError('');
+    try {
+      const prompt = q.trim() || 'overview of best customers and churn';
+      const r = await api('/ai/customer/assist', {
+        method: 'POST',
+        body: JSON.stringify({ query: prompt }),
+      });
+      const d = r.data || {};
+      setA(
+        [
+          d.answer || '',
+          `intent=${d.intent} method=${d.method}`,
+          `best=${(d.best_customers || []).length} high_churn=${(d.churn_risks || []).filter((c: any) => c.risk_level === 'high').length}`,
+          `promos=${(d.promotions || []).length}`,
+        ].join('\n')
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to run customer assistant');
+    }
+  }
+
   return (
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, report generator, and the Security Monitor are available now.
+        Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, report generator, customer assistant, and the Security Monitor are available now.
       </p>
       <div className="card">
-        <textarea value={q} onChange={(e) => setQ(e.target.value)} style={{ width: '100%', minHeight: 100 }} placeholder="Ask a business question or report prompt e.g. monthly sales for Q2" />
+        <textarea value={q} onChange={(e) => setQ(e.target.value)} style={{ width: '100%', minHeight: 100 }} placeholder="Ask a business question, report prompt, or customer query e.g. best customers / outstanding balance" />
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           <button onClick={go}>Ask</button>
           <button onClick={generateReport}>Generate report</button>
+          <button onClick={customerAssist}>Customer assist</button>
           <button onClick={loadInsights}>Load insights</button>
           <button onClick={loadInventoryPredictions}>Inventory predictions</button>
           <button onClick={loadSalesAnalysis}>Sales analysis</button>

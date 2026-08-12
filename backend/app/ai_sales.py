@@ -128,47 +128,15 @@ async def _pos_events(
     return out
 
 
-async def sales_analysis(
+async def build_rfm(
     db: AsyncSession,
-    *,
     tenant_id: str,
-    from_date: str | datetime | None = None,
-    to_date: str | datetime | None = None,
-    actor_user_id: str | None = None,
-) -> dict[str, Any]:
-    start, end = _parse_range(from_date, to_date)
-    baskets = await _invoice_baskets(db, tenant_id, start=start, end=end)
-    pos = await _pos_events(db, tenant_id, start=start, end=end)
-
-    # --- Trend: monthly totals + heuristic next month ---
-    months: dict[str, float] = defaultdict(float)
-    for b in baskets:
-        if b["posted_at"]:
-            key = b["posted_at"].strftime("%Y-%m")
-            months[key] += float(b["total"])
-    for p in pos:
-        if p["created_at"]:
-            key = p["created_at"].strftime("%Y-%m")
-            months[key] += float(p["total"])
-    series = [{"month": k, "total": round(v, 2)} for k, v in sorted(months.items())]
-    if len(series) >= 2:
-        recent = series[-1]["total"]
-        prior = series[-2]["total"]
-        season = seasonality_hint(
-            recent_velocity=recent / 30.0, prior_velocity=prior / 30.0
-        )
-        ratio = season.get("ratio") or (1.0 if prior <= 0 else recent / max(prior, 1e-9))
-        if season.get("label") == "emerging_demand":
-            ratio = 1.15
-        forecast_next = round(recent * float(ratio), 2)
-    elif len(series) == 1:
-        season = {"detected": False, "ratio": 1.0, "label": "stable"}
-        forecast_next = series[0]["total"]
-    else:
-        season = {"detected": False, "ratio": None, "label": "insufficient_history"}
-        forecast_next = 0.0
-
-    # --- RFM ---
+    *,
+    baskets: list[dict[str, Any]],
+    start: datetime,
+    end: datetime,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """Return (rfm_rows sorted best-first, segment_counts)."""
     now = end
     cust: dict[str, dict[str, Any]] = {}
     for b in baskets:
@@ -218,6 +186,52 @@ async def sales_analysis(
         )
     rfm_rows.sort(key=lambda x: (-(x["r"] + x["f"] + x["m"]), -x["monetary"]))
     segment_counts = Counter(r["segment"] for r in rfm_rows)
+    return rfm_rows, dict(segment_counts)
+
+
+async def sales_analysis(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_date: str | datetime | None = None,
+    to_date: str | datetime | None = None,
+    actor_user_id: str | None = None,
+) -> dict[str, Any]:
+    start, end = _parse_range(from_date, to_date)
+    baskets = await _invoice_baskets(db, tenant_id, start=start, end=end)
+    pos = await _pos_events(db, tenant_id, start=start, end=end)
+
+    # --- Trend: monthly totals + heuristic next month ---
+    months: dict[str, float] = defaultdict(float)
+    for b in baskets:
+        if b["posted_at"]:
+            key = b["posted_at"].strftime("%Y-%m")
+            months[key] += float(b["total"])
+    for p in pos:
+        if p["created_at"]:
+            key = p["created_at"].strftime("%Y-%m")
+            months[key] += float(p["total"])
+    series = [{"month": k, "total": round(v, 2)} for k, v in sorted(months.items())]
+    if len(series) >= 2:
+        recent = series[-1]["total"]
+        prior = series[-2]["total"]
+        season = seasonality_hint(
+            recent_velocity=recent / 30.0, prior_velocity=prior / 30.0
+        )
+        ratio = season.get("ratio") or (1.0 if prior <= 0 else recent / max(prior, 1e-9))
+        if season.get("label") == "emerging_demand":
+            ratio = 1.15
+        forecast_next = round(recent * float(ratio), 2)
+    elif len(series) == 1:
+        season = {"detected": False, "ratio": 1.0, "label": "stable"}
+        forecast_next = series[0]["total"]
+    else:
+        season = {"detected": False, "ratio": None, "label": "insufficient_history"}
+        forecast_next = 0.0
+
+    rfm_rows, segment_counts = await build_rfm(
+        db, tenant_id, baskets=baskets, start=start, end=end
+    )
 
     # --- Affinity ---
     pair_counts: Counter[tuple[str, str]] = Counter()
@@ -294,7 +308,7 @@ async def sales_analysis(
         },
         "rfm": {
             "customers": rfm_rows[:100],
-            "segment_counts": dict(segment_counts),
+            "segment_counts": segment_counts,
             "customer_count": len(rfm_rows),
         },
         "affinity": affinity,
