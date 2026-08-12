@@ -1117,7 +1117,9 @@ export default function Page() {
         <p className="muted" style={{ marginBottom: 8 }}>
           Sales velocity over ~30 days with a short seasonality factor. Horizon 7–14 days.
           {method ? ` Method: ${method}.` : ''} At risk: {atRiskCount}. Export via{' '}
-          <code>GET /ai/inventory/low-stock-prediction/export</code> (Stage 146 L1).
+          <code>GET /ai/inventory/low-stock-prediction/export</code> (Stage 146 L1). Combined
+          forecast + prediction via <code>GET /ai/inventory/predictions/export</code> (Stage 157
+          P1).
         </p>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
           <button type="button" onClick={loadPredictions}>
@@ -1133,6 +1135,17 @@ export default function Page() {
             }
           >
             Export low-stock CSV
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv(
+                '/ai/inventory/predictions/export?horizon_days=14',
+                'ai_inventory_predictions_export.csv'
+              ).then(() => setMessage('AI inventory predictions CSV downloaded (Stage 157 P1)'))
+            }
+          >
+            Export predictions CSV
           </button>
         </div>
         <table className="table">

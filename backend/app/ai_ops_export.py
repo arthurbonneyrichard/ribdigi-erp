@@ -2,7 +2,8 @@
 inventory low-stock / forecast / dead-stock predictions (Stage 146),
 sales / expense / purchases analysis (Stage 147),
 chat history / customer insights / cross-domain analysis (Stage 148),
-and document analyze results (Stage 149)."""
+document analyze results (Stage 149),
+and combined inventory predictions (Stage 157)."""
 
 from __future__ import annotations
 
@@ -455,6 +456,160 @@ async def export_dead_stock_csv(
     writer.writeheader()
     for row in data.get("items") or []:
         writer.writerow({k: _cell(row.get(k)) for k in DEAD_STOCK_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+INVENTORY_PREDICTIONS_EXPORT_COLUMNS = [
+    "row_type",
+    "product_id",
+    "sku",
+    "name",
+    "available_qty",
+    "stock_qty",
+    "reorder_level",
+    "velocity_per_day",
+    "adjusted_velocity_per_day",
+    "seasonality_factor",
+    "forecast_7d",
+    "forecast_30d",
+    "forecast_90d",
+    "optimal_reorder_qty",
+    "days_to_stockout",
+    "suggested_order_qty",
+    "confidence",
+    "status",
+    "at_risk",
+    "method",
+    "lookback_days",
+    "horizon_days",
+    "lead_time_days",
+    "at_risk_count",
+    "forecast_count",
+    "generated_at",
+]
+
+
+async def export_inventory_predictions_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    lookback_days: int = 30,
+    horizon_days: int = 14,
+    lead_time_days: int = 7,
+) -> str:
+    """Stage 157 P1 — combined demand forecast + low-stock predictions CSV.
+
+    Distinct from Stage 146 F1 / L1 dedicated single-series exports.
+    """
+    forecast = await ai_inventory_svc.forecast_demand(
+        db,
+        tenant_id,
+        lookback_days=lookback_days,
+        lead_time_days=lead_time_days,
+    )
+    low = await ai_inventory_svc.predict_low_stock(
+        db,
+        tenant_id,
+        lookback_days=lookback_days,
+        horizon_days=horizon_days,
+        lead_time_days=lead_time_days,
+        at_risk_only=False,
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=INVENTORY_PREDICTIONS_EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerow(
+        {
+            "row_type": "summary",
+            "product_id": "",
+            "sku": "",
+            "name": "",
+            "available_qty": "",
+            "stock_qty": "",
+            "reorder_level": "",
+            "velocity_per_day": "",
+            "adjusted_velocity_per_day": "",
+            "seasonality_factor": "",
+            "forecast_7d": "",
+            "forecast_30d": "",
+            "forecast_90d": "",
+            "optimal_reorder_qty": "",
+            "days_to_stockout": "",
+            "suggested_order_qty": "",
+            "confidence": "",
+            "status": "",
+            "at_risk": "",
+            "method": _cell(forecast.get("method")),
+            "lookback_days": _cell(lookback_days),
+            "horizon_days": _cell(horizon_days),
+            "lead_time_days": _cell(lead_time_days),
+            "at_risk_count": _cell(low.get("at_risk_count")),
+            "forecast_count": _cell(forecast.get("count")),
+            "generated_at": _cell(forecast.get("generated_at")),
+        }
+    )
+    for row in forecast.get("forecasts") or []:
+        writer.writerow(
+            {
+                "row_type": "forecast",
+                "product_id": _cell(row.get("product_id")),
+                "sku": _cell(row.get("sku")),
+                "name": _cell(row.get("name")),
+                "available_qty": _cell(row.get("available_qty")),
+                "stock_qty": _cell(row.get("stock_qty")),
+                "reorder_level": _cell(row.get("reorder_level")),
+                "velocity_per_day": _cell(row.get("velocity_per_day")),
+                "adjusted_velocity_per_day": _cell(row.get("adjusted_velocity_per_day")),
+                "seasonality_factor": _cell(row.get("seasonality_factor") or row.get("seasonality")),
+                "forecast_7d": _cell(row.get("forecast_7d")),
+                "forecast_30d": _cell(row.get("forecast_30d")),
+                "forecast_90d": _cell(row.get("forecast_90d")),
+                "optimal_reorder_qty": _cell(row.get("optimal_reorder_qty")),
+                "days_to_stockout": "",
+                "suggested_order_qty": "",
+                "confidence": _cell(row.get("confidence")),
+                "status": _cell(row.get("status")),
+                "at_risk": "",
+                "method": _cell(forecast.get("method")),
+                "lookback_days": _cell(lookback_days),
+                "horizon_days": _cell(horizon_days),
+                "lead_time_days": _cell(lead_time_days),
+                "at_risk_count": "",
+                "forecast_count": "",
+                "generated_at": _cell(forecast.get("generated_at")),
+            }
+        )
+    for row in low.get("predictions") or []:
+        writer.writerow(
+            {
+                "row_type": "prediction",
+                "product_id": _cell(row.get("product_id")),
+                "sku": _cell(row.get("sku")),
+                "name": _cell(row.get("name")),
+                "available_qty": _cell(row.get("available_qty")),
+                "stock_qty": _cell(row.get("stock_qty")),
+                "reorder_level": _cell(row.get("reorder_level")),
+                "velocity_per_day": _cell(row.get("velocity_per_day")),
+                "adjusted_velocity_per_day": _cell(row.get("adjusted_velocity_per_day")),
+                "seasonality_factor": _cell(row.get("seasonality_factor")),
+                "forecast_7d": "",
+                "forecast_30d": "",
+                "forecast_90d": "",
+                "optimal_reorder_qty": "",
+                "days_to_stockout": _cell(row.get("days_to_stockout")),
+                "suggested_order_qty": _cell(row.get("suggested_order_qty")),
+                "confidence": _cell(row.get("confidence")),
+                "status": _cell(row.get("status")),
+                "at_risk": _cell(bool(row.get("at_risk"))),
+                "method": _cell(forecast.get("method")),
+                "lookback_days": _cell(lookback_days),
+                "horizon_days": _cell(horizon_days),
+                "lead_time_days": _cell(lead_time_days),
+                "at_risk_count": "",
+                "forecast_count": "",
+                "generated_at": _cell(forecast.get("generated_at")),
+            }
+        )
     return buf.getvalue()
 
 

@@ -306,3 +306,83 @@ def export_supplier_history_csv(*, history: dict[str, Any]) -> bytes:
                     number_keys=number_keys,
                 )
     return buf.getvalue().encode("utf-8")
+
+
+def export_dashboard_sales_trend_csv(*, payload: dict[str, Any]) -> bytes:
+    """Flatten GET /dashboard/sales-trend into series CSV (Stage 157 S1)."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        [
+            "row_type",
+            "period",
+            "revenue",
+            "store_scope_mode",
+            "role_label",
+        ]
+    )
+    scope = payload.get("store_scope") or {}
+    scope_mode = _cell(scope.get("mode") if isinstance(scope, dict) else "")
+    role = _cell(payload.get("role_label"))
+    for row in payload.get("daily_revenue_series") or []:
+        if not isinstance(row, dict):
+            continue
+        writer.writerow(
+            [
+                "daily",
+                _cell(row.get("date")),
+                _cell(row.get("revenue")),
+                scope_mode,
+                role,
+            ]
+        )
+    for row in payload.get("monthly_revenue_series") or []:
+        if not isinstance(row, dict):
+            continue
+        writer.writerow(
+            [
+                "monthly",
+                _cell(row.get("month")),
+                _cell(row.get("revenue")),
+                scope_mode,
+                role,
+            ]
+        )
+    return buf.getvalue().encode("utf-8")
+
+
+def export_dashboard_top_products_csv(*, payload: dict[str, Any]) -> bytes:
+    """Flatten GET /dashboard/top-products into ranking CSV (Stage 157 T1)."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        [
+            "rank",
+            "product_id",
+            "sku",
+            "name",
+            "quantity",
+            "revenue",
+            "store_scope_mode",
+            "role_label",
+        ]
+    )
+    scope = payload.get("store_scope") or {}
+    scope_mode = _cell(scope.get("mode") if isinstance(scope, dict) else "")
+    role = _cell(payload.get("role_label"))
+    for idx, row in enumerate(payload.get("top_products") or [], start=1):
+        if not isinstance(row, dict):
+            continue
+        writer.writerow(
+            [
+                _cell(idx),
+                _cell(row.get("id")),
+                _cell(row.get("sku")),
+                _cell(row.get("name")),
+                _cell(row.get("quantity")),
+                _cell(row.get("revenue")),
+                scope_mode,
+                role,
+            ]
+        )
+    return buf.getvalue().encode("utf-8")

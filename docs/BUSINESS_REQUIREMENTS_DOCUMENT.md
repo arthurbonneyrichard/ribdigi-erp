@@ -883,6 +883,7 @@ Stage 153 D1 — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`); 
 Stage 154 D1 — `docs/STAGE_154_FIDELITY.md` (`test_stage154_fidelity_d1.py`); Stage 154 A1 / K1 / U1.
 Stage 155 D1 — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`); Stage 155 I1 / S1 / W1.
 Stage 156 D1 — `docs/STAGE_156_FIDELITY.md` (`test_stage156_fidelity_d1.py`); Stage 156 G1 / V1 / F1.
+Stage 157 D1 — `docs/STAGE_157_FIDELITY.md` (`test_stage157_fidelity_d1.py`); Stage 157 P1 / S1 / T1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1608,3 +1609,5 @@ Stage 154 D1 PO amendments, product batches & API-key usage export fidelity — 
 Stage 155 D1 store inventory, store sales & product warehouse-stock export fidelity — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`); Stage 155 I1 store inventory CSV; Stage 155 S1 store sales CSV; Stage 155 W1 product warehouse-stock CSV.
 
 Stage 156 D1 product images, per-product variants & bank-feed settings export fidelity — `docs/STAGE_156_FIDELITY.md` (`test_stage156_fidelity_d1.py`); Stage 156 G1 product images CSV; Stage 156 V1 per-product variants CSV; Stage 156 F1 bank-feed settings CSV.
+
+Stage 157 D1 AI inventory predictions, dashboard sales-trend & dashboard top-products export fidelity — `docs/STAGE_157_FIDELITY.md` (`test_stage157_fidelity_d1.py`); Stage 157 P1 AI inventory predictions CSV; Stage 157 S1 dashboard sales-trend CSV; Stage 157 T1 dashboard top-products CSV.

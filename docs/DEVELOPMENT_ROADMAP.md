@@ -2486,6 +2486,19 @@ Every feature in every phase must meet:
 
 **Stage 156 exit (2026-08-12):** G1, V1, F1, D1, H156x met — `docs/STAGE_156_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_319_STAGE156_FREEZE.md`. Fidelity: `docs/STAGE_156_FIDELITY.md`.
 
+**Stage 157 open (2026-08-12):** Tenant MVP AI Inventory Predictions CSV, Dashboard Sales-Trend CSV & Dashboard Top-Products CSV Export Fidelity — `docs/ADR_320_STAGE157_OPEN.md` + `docs/STAGE_157_PLAN.md` (Predictions → Sales-trend → Top-products → Fidelity; P1 next).
+
+**Stage 157 P1 (2026-08-12):** AI inventory predictions CSV (`test_stage157_inventory_predictions_p1.py`).
+
+**Stage 157 S1 (2026-08-12):** Dashboard sales-trend CSV (`test_stage157_sales_trend_s1.py`).
+
+**Stage 157 T1 (2026-08-12):** Dashboard top-products CSV (`test_stage157_top_products_t1.py`).
+
+**Stage 157 D1 (2026-08-12):** AI inventory predictions / dashboard sales-trend / top-products export fidelity sync — `docs/STAGE_157_FIDELITY.md` (`test_stage157_fidelity_d1.py`).
+
+**Stage 157 exit (2026-08-12):** P1, S1, T1, D1, H157x met — `docs/STAGE_157_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_321_STAGE157_FREEZE.md`. Fidelity: `docs/STAGE_157_FIDELITY.md`.
+
+
 
 
 

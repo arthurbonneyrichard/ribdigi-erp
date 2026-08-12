@@ -3268,6 +3268,25 @@ async def dashboard_sales_trend(
     return env(await slices_svc.sales_trend(db, claims))
 
 
+@api.get("/dashboard/sales-trend/export")
+async def dashboard_sales_trend_export(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 157 S1 — dashboard sales-trend series CSV (distinct from Stage 153 aggregates)."""
+    from app import dashboard_slices as slices_svc
+
+    payload = await slices_svc.sales_trend(db, claims)
+    text = tenant_ops_export_svc.export_dashboard_sales_trend_csv(payload=payload)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="dashboard_sales_trend_export.csv"'
+        },
+    )
+
+
 @api.get("/dashboard/top-products")
 async def dashboard_top_products(
     claims=Depends(require_permission("dashboard", "read")),
@@ -3277,6 +3296,24 @@ async def dashboard_top_products(
 
     return env(await slices_svc.top_products(db, claims))
 
+
+@api.get("/dashboard/top-products/export")
+async def dashboard_top_products_export(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 157 T1 — dashboard top-products ranking CSV (distinct from Stage 153 aggregates)."""
+    from app import dashboard_slices as slices_svc
+
+    payload = await slices_svc.top_products(db, claims)
+    text = tenant_ops_export_svc.export_dashboard_top_products_csv(payload=payload)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="dashboard_top_products_export.csv"'
+        },
+    )
 
 @api.get("/dashboard/expenses")
 async def dashboard_expenses(
@@ -13844,6 +13881,31 @@ async def ai_inventory_predictions(
             "at_risk_count": low["at_risk_count"],
             "forecast_count": forecast["count"],
         }
+    )
+
+
+@api.get("/ai/inventory/predictions/export")
+async def ai_inventory_predictions_export(
+    lookback_days: int = 30,
+    horizon_days: int = 14,
+    lead_time_days: int = 7,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 157 P1 — combined inventory predictions CSV (distinct from Stage 146 F1/L1)."""
+    text = await ai_ops_export_svc.export_inventory_predictions_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        lookback_days=lookback_days,
+        horizon_days=horizon_days,
+        lead_time_days=lead_time_days,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_inventory_predictions_export.csv"'
+        },
     )
 
 

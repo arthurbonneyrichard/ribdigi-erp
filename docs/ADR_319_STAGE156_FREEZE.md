@@ -23,4 +23,4 @@ Stage 156 Tenant MVP Product Images CSV, Per-Product Variants CSV & Bank-Feed Se
 
 ## Next stage
 
-Stage 157 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 156 feature scope remains frozen.
+Stage 157 opened via CONTINUE/NEXT as ADR-320 / ADR-321 (AI inventory predictions / dashboard sales-trend / dashboard top-products CSV export fidelity). Stage 156 feature scope remains frozen.

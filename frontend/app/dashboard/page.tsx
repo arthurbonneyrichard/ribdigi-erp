@@ -139,6 +139,32 @@ export default function Page() {
     }
   }
 
+  async function exportDashboardSliceCsv(path: string, filename: string, okMessage: string) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}${path}`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error(`${filename} export failed`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage(okMessage);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   useEffect(() => {
     api('/me')
       .then((r) =>
@@ -333,17 +359,37 @@ export default function Page() {
       </div>
 
       {(has('daily_revenue_series') || has('monthly_revenue_series')) && (
-        <div className="grid" style={{ marginTop: 20 }}>
-          {has('daily_revenue_series') && (
-            <div className="card">
-              <DailyRevenueLineChart series={d.daily_revenue_series || []} formatValue={n} />
-            </div>
-          )}
-          {has('monthly_revenue_series') && (
-            <div className="card">
-              <MonthlyRevenueBarChart series={d.monthly_revenue_series || []} formatValue={n} />
-            </div>
-          )}
+        <div style={{ marginTop: 20 }}>
+          <p className="muted">
+            Sales-trend series export via <code>GET /dashboard/sales-trend/export</code> (Stage 157
+            S1).
+          </p>
+          <p style={{ marginBottom: 8 }}>
+            <button
+              type="button"
+              onClick={() =>
+                exportDashboardSliceCsv(
+                  '/dashboard/sales-trend/export',
+                  'dashboard_sales_trend_export.csv',
+                  'Dashboard sales-trend CSV downloaded (Stage 157 S1)',
+                )
+              }
+            >
+              Export sales-trend CSV
+            </button>
+          </p>
+          <div className="grid">
+            {has('daily_revenue_series') && (
+              <div className="card">
+                <DailyRevenueLineChart series={d.daily_revenue_series || []} formatValue={n} />
+              </div>
+            )}
+            {has('monthly_revenue_series') && (
+              <div className="card">
+                <MonthlyRevenueBarChart series={d.monthly_revenue_series || []} formatValue={n} />
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -481,6 +527,22 @@ export default function Page() {
           {has('top_products') && (
             <div className="card">
               <h3>Top products</h3>
+              <p className="muted">
+                Export via <code>GET /dashboard/top-products/export</code> (Stage 157 T1).
+              </p>
+              <button
+                type="button"
+                style={{ marginBottom: 8 }}
+                onClick={() =>
+                  exportDashboardSliceCsv(
+                    '/dashboard/top-products/export',
+                    'dashboard_top_products_export.csv',
+                    'Dashboard top-products CSV downloaded (Stage 157 T1)',
+                  )
+                }
+              >
+                Export top-products CSV
+              </button>
               {(d.top_products || []).length === 0 && <p className="muted">No posted invoice lines yet</p>}
               {(d.top_products || []).map((p) => (
                 <div key={p.sku} style={{ marginBottom: 10 }}>

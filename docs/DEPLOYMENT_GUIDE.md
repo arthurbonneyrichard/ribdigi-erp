@@ -1526,3 +1526,5 @@ Stage 154 D1 PO amendments, product batches & API-key usage export fidelity — 
 Stage 155 D1 store inventory, store sales & product warehouse-stock export fidelity — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 156 D1 product images, per-product variants & bank-feed settings export fidelity — `docs/STAGE_156_FIDELITY.md` (`test_stage156_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 157 D1 AI inventory predictions, dashboard sales-trend & top-products export fidelity — `docs/STAGE_157_FIDELITY.md` (`test_stage157_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
