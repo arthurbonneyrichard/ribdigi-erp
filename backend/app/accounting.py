@@ -20,6 +20,7 @@ DEFAULT_ACCOUNTS = [
     ("2000", "Accounts Payable", "liability", False, False),
     ("2015", "Cheques Payable", "liability", False, False),
     ("2100", "Tax Payable", "liability", False, False),
+    ("3000", "Owner's Equity", "equity", False, False),
     ("4000", "Sales Revenue", "income", False, False),
     ("4100", "Sales Discounts", "expense", False, False),
     ("4200", "Purchase Discounts Taken", "income", False, False),

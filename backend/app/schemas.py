@@ -139,6 +139,25 @@ class PlatformRevokeAccess(BaseModel):
     fallback_role: str = "company_admin"
 
 
+class AccountCreate(BaseModel):
+    code: str
+    name: str
+    account_type: str = "asset"
+    liquid_kind: str | None = None  # cash | bank
+    bank_name: str | None = None
+    account_number: str | None = None
+    bank_branch: str | None = None
+
+
+class CashTransferCreate(BaseModel):
+    kind: str = "transfer"  # transfer | deposit | withdrawal
+    from_account_id: str | None = None
+    to_account_id: str | None = None
+    amount: float = Field(gt=0)
+    reference: str | None = None
+    notes: str | None = None
+
+
 class BranchCreate(BaseModel):
     code: str
     name: str

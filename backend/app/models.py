@@ -505,6 +505,7 @@ class Account(Base):
     is_bank_account: Mapped[bool] = mapped_column(Boolean, default=False)
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     account_number: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    bank_branch: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
 
 class BankAccountConnection(Base):
@@ -1034,6 +1035,24 @@ class JournalEntryLine(Base):
     debit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     credit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class CashTransfer(Base):
+    """Cash/bank movement: transfer between liquid accounts, or deposit/withdrawal (BR-10.3)."""
+
+    __tablename__ = "cash_transfers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20), default="transfer")  # transfer|deposit|withdrawal
+    from_account_id: Mapped[str | None] = mapped_column(ForeignKey("accounts.id"), nullable=True, index=True)
+    to_account_id: Mapped[str | None] = mapped_column(ForeignKey("accounts.id"), nullable=True, index=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    reference: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(ForeignKey("journal_entries.id"), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class StockTransfer(Base):

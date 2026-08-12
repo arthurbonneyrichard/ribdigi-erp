@@ -92,6 +92,8 @@ from app.schemas import (
     CustomerGroupUpdate,
     PlatformGrantAccess,
     PlatformRevokeAccess,
+    AccountCreate,
+    CashTransferCreate,
     PasswordResetConfirm,
     PasswordResetRequest,
     PosSaleCreate,
@@ -6152,6 +6154,53 @@ async def accounts(claims=Depends(require_permission("accounting", "read")), db:
     return env([bank_recon_svc.serialize_account(r) for r in rows])
 
 
+@api.post("/accounting/accounts")
+async def create_account(
+    payload: AccountCreate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_transfers as cash_xfer_svc
+    from app import audit as audit_svc
+
+    row = await cash_xfer_svc.create_account(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        account_type=payload.account_type,
+        liquid_kind=payload.liquid_kind,
+        bank_name=payload.bank_name,
+        account_number=payload.account_number,
+        bank_branch=payload.bank_branch,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="accounting",
+        action="account_create",
+        entity="account",
+        entity_id=row.id,
+        details={"code": row.code, "liquid_kind": payload.liquid_kind},
+    )
+    await db.commit()
+    await db.refresh(row)
+    return env(cash_xfer_svc.serialize_account(row), "Account created")
+
+
+@api.get("/accounting/accounts/{account_id}")
+async def get_account(
+    account_id: str,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_transfers as cash_xfer_svc
+
+    row = await cash_xfer_svc.get_account(db, claims["tenant_id"], account_id)
+    return env(cash_xfer_svc.serialize_account(row))
+
+
 @api.get("/accounting/liquid-accounts")
 async def liquid_accounts(
     claims=Depends(require_permission("accounting", "read")),
@@ -6164,6 +6213,75 @@ async def liquid_accounts(
     await db.commit()
     rows = await bank_recon_svc.list_liquid_accounts(db, claims["tenant_id"])
     return env([bank_recon_svc.serialize_account(r) for r in rows])
+
+
+@api.get("/accounting/transfers")
+async def list_cash_transfers(
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_transfers as cash_xfer_svc
+
+    rows = await cash_xfer_svc.list_transfers(db, claims["tenant_id"])
+    amap = await cash_xfer_svc.accounts_map_for_transfers(db, claims["tenant_id"], rows)
+    return env([cash_xfer_svc.serialize_transfer(r, accounts=amap) for r in rows])
+
+
+@api.post("/accounting/transfers")
+async def create_cash_transfer(
+    payload: CashTransferCreate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_transfers as cash_xfer_svc
+    from app import audit as audit_svc
+
+    row = await cash_xfer_svc.create_transfer(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        kind=payload.kind,
+        from_account_id=payload.from_account_id,
+        to_account_id=payload.to_account_id,
+        amount=payload.amount,
+        reference=payload.reference,
+        notes=payload.notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="accounting",
+        action="cash_transfer",
+        entity="cash_transfer",
+        entity_id=row.id,
+        details={
+            "kind": row.kind,
+            "amount": float(row.amount),
+            "from_account_id": row.from_account_id,
+            "to_account_id": row.to_account_id,
+        },
+    )
+    await db.commit()
+    await db.refresh(row)
+    amap = await cash_xfer_svc.accounts_map_for_transfers(db, claims["tenant_id"], [row])
+    return env(
+        cash_xfer_svc.serialize_transfer(row, accounts=amap),
+        "Cash/bank movement posted",
+    )
+
+
+@api.get("/accounting/transfers/{transfer_id}")
+async def get_cash_transfer(
+    transfer_id: str,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_transfers as cash_xfer_svc
+
+    row = await cash_xfer_svc.get_transfer(db, claims["tenant_id"], transfer_id)
+    amap = await cash_xfer_svc.accounts_map_for_transfers(db, claims["tenant_id"], [row])
+    return env(cash_xfer_svc.serialize_transfer(row, accounts=amap))
 
 
 @api.get("/settings/bank-feed")
