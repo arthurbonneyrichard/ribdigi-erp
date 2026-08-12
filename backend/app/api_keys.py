@@ -169,6 +169,20 @@ async def touch_usage(db: AsyncSession, row: m.ApiKey) -> None:
     await db.commit()
 
 
+async def usage_stats(db: AsyncSession, tenant_id: str, key_id: str) -> dict[str, Any]:
+    """Lightweight usage summary (request_count + last_used_at) for admin UI."""
+    row = await get_key(db, tenant_id, key_id)
+    return {
+        "id": row.id,
+        "name": row.name,
+        "key_prefix": row.key_prefix,
+        "request_count": int(row.request_count or 0),
+        "last_used_at": row.last_used_at.isoformat() if row.last_used_at else None,
+        "revoked_at": row.revoked_at.isoformat() if row.revoked_at else None,
+        "expires_at": row.expires_at.isoformat() if row.expires_at else None,
+    }
+
+
 async def authenticate_api_key(db: AsyncSession, raw_key: str) -> m.ApiKey:
     raw = (raw_key or "").strip()
     if not raw.startswith(KEY_PREFIX_TOKEN) or len(raw) < 20:
