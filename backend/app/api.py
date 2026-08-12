@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,6 +33,7 @@ from app import ai_sales as ai_sales_svc
 from app import ai_expenses as ai_expenses_svc
 from app import ai_reports as ai_reports_svc
 from app import ai_customer as ai_customer_svc
+from app import ai_documents as ai_documents_svc
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
 from app import purchase_suggestions as purchase_suggestions_svc
@@ -8391,6 +8392,26 @@ async def ai_customer_assist(
         query=body.get("query") or body.get("message"),
     )
     return env(data)
+
+
+@api.post("/ai/documents/analyze")
+async def ai_documents_analyze(
+    file: UploadFile = File(...),
+    document_type: str = Form("auto"),
+    expected_amount: float | None = Form(None),
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.8 rule-based document OCR + party/PO match + discrepancy flags."""
+    data = await ai_documents_svc.analyze_upload(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_user_id=claims.get("sub"),
+        upload=file,
+        document_type=document_type,
+        expected_amount=expected_amount,
+    )
+    return env(data, "Document analyzed — review before applying")
 
 
 @api.post("/ai/reports/generate")

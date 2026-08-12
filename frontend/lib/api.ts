@@ -47,12 +47,15 @@ async function refreshSession(): Promise<boolean> {
 export async function api(path: string, opts: RequestInit = {}, retryOn401 = true) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
+  const isFormData = typeof FormData !== 'undefined' && opts.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(opts.headers as Record<string, string> | undefined),
   };
   if (token) headers.Authorization = `Bearer ${token}`;
   if (tenant) headers['X-Tenant-ID'] = tenant;
+  // Let the browser set multipart boundary for FormData
+  if (isFormData) delete headers['Content-Type'];
 
   const response = await fetch(base + path, { ...opts, headers, cache: 'no-store' });
 

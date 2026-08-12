@@ -1077,9 +1077,12 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Intelligent document processing.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] OCR extraction from invoices, receipts, purchase orders
-  - [ ] Auto-match extracted data to system records
-  - [ ] Data validation and discrepancy flagging
+  - [x] OCR extraction from invoices, receipts, purchase orders
+    - Complete (MVP): unified `POST /ai/documents/analyze` reuses pypdf/Tesseract parser; see `docs/AI_DOCUMENT_MVP.md`
+  - [x] Auto-match extracted data to system records
+    - Complete (MVP): party name similarity + purchase-order number match; receipt category keyword suggest
+  - [x] Data validation and discrepancy flagging
+    - Complete (MVP): missing fields, low confidence, amount/PO mismatches, duplicate supplier/expense references
 
 #### BR-21.9 AI Customer Assistant (Basic)
 - **Description:** Customer intelligence.

@@ -1143,6 +1143,8 @@ Also accepts structured `{ "report_type": "sales", "period": "last_month", "form
 }
 ```
 
+Form fields: `file` (required), `document_type` (`receipt`|`invoice`|`purchase_order`|`auto`), optional `expected_amount`. Returns extracted fields, party/PO matches, and discrepancy flags. Suggest-only — see `docs/AI_DOCUMENT_MVP.md`.
+
 ### 16.9 AI Customer Assistant
 **Endpoint:** `POST /ai/customer/assist`
 
