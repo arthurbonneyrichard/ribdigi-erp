@@ -54,6 +54,9 @@ from app.schemas import (
     CustomerPaymentCreate,
     EarlyPaySettingsUpdate,
     SalesInvoiceNumberingUpdate,
+    SalesSettingsUpdate,
+    PurchasingNumberingUpdate,
+    DocumentNumberingFields,
     EmailVerifyConfirm,
     ExchangeRateRefresh,
     ExchangeRateUpsert,
@@ -3078,29 +3081,102 @@ async def sales_settings(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.doc_numbers import invoice_numbering_settings
+    from app.doc_numbers import numbering_settings
 
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    return env({"invoice_numbering": invoice_numbering_settings(tenant)})
+    return env(
+        {
+            "invoice_numbering": numbering_settings(tenant, "sales_invoice"),
+            "quotation_numbering": numbering_settings(tenant, "quotation"),
+        }
+    )
 
 
 @api.patch("/sales/settings")
 async def update_sales_settings(
-    payload: SalesInvoiceNumberingUpdate,
+    payload: SalesSettingsUpdate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.doc_numbers import invoice_numbering_settings, normalize_invoice_prefix
-    from datetime import datetime
+    from app.doc_numbers import apply_numbering_update, numbering_settings
 
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    tenant.sales_invoice_number_prefix = normalize_invoice_prefix(payload.prefix)
-    tenant.sales_invoice_number_next = int(payload.next_number)
-    tenant.sales_invoice_number_year = datetime.utcnow().year
+    inv = payload.invoice_numbering
+    if inv is None and payload.prefix is not None:
+        inv = DocumentNumberingFields(
+            prefix=payload.prefix, next_number=payload.next_number or 1
+        )
+    if inv is not None:
+        apply_numbering_update(
+            tenant, "sales_invoice", prefix=inv.prefix, next_number=inv.next_number
+        )
+    if payload.quotation_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "quotation",
+            prefix=payload.quotation_numbering.prefix,
+            next_number=payload.quotation_numbering.next_number,
+        )
+    if inv is None and payload.quotation_numbering is None:
+        raise HTTPException(status_code=400, detail="No numbering fields to update")
     await db.commit()
     return env(
-        {"invoice_numbering": invoice_numbering_settings(tenant)},
-        "Sales invoice numbering updated",
+        {
+            "invoice_numbering": numbering_settings(tenant, "sales_invoice"),
+            "quotation_numbering": numbering_settings(tenant, "quotation"),
+        },
+        "Sales document numbering updated",
+    )
+
+
+@api.get("/purchasing/settings")
+async def purchasing_settings(
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.doc_numbers import numbering_settings
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env(
+        {
+            "purchase_order_numbering": numbering_settings(tenant, "purchase_order"),
+            "grn_numbering": numbering_settings(tenant, "grn"),
+        }
+    )
+
+
+@api.patch("/purchasing/settings")
+async def update_purchasing_settings(
+    payload: PurchasingNumberingUpdate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.doc_numbers import apply_numbering_update, numbering_settings
+
+    if payload.purchase_order_numbering is None and payload.grn_numbering is None:
+        raise HTTPException(status_code=400, detail="No numbering fields to update")
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    if payload.purchase_order_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "purchase_order",
+            prefix=payload.purchase_order_numbering.prefix,
+            next_number=payload.purchase_order_numbering.next_number,
+        )
+    if payload.grn_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "grn",
+            prefix=payload.grn_numbering.prefix,
+            next_number=payload.grn_numbering.next_number,
+        )
+    await db.commit()
+    return env(
+        {
+            "purchase_order_numbering": numbering_settings(tenant, "purchase_order"),
+            "grn_numbering": numbering_settings(tenant, "grn"),
+        },
+        "Purchasing document numbering updated",
     )
 
 

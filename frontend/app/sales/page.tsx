@@ -76,6 +76,9 @@ export default function Page() {
   const [invPrefix, setInvPrefix] = useState('INV');
   const [invNext, setInvNext] = useState('1');
   const [invPreview, setInvPreview] = useState('');
+  const [qtPrefix, setQtPrefix] = useState('QT');
+  const [qtNext, setQtNext] = useState('1');
+  const [qtPreview, setQtPreview] = useState('');
 
   async function refresh() {
     const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, settingsRes] = await Promise.all([
@@ -100,6 +103,12 @@ export default function Page() {
       setInvPrefix(numbering.prefix || 'INV');
       setInvNext(String(numbering.next_number ?? 1));
       setInvPreview(numbering.preview || '');
+    }
+    const qt = settingsRes.data?.quotation_numbering;
+    if (qt) {
+      setQtPrefix(qt.prefix || 'QT');
+      setQtNext(String(qt.next_number ?? 1));
+      setQtPreview(qt.preview || '');
     }
   }
 
@@ -189,8 +198,14 @@ export default function Page() {
       const r = await api('/sales/settings', {
         method: 'PATCH',
         body: JSON.stringify({
-          prefix: invPrefix.trim(),
-          next_number: Math.max(1, Number(invNext) || 1),
+          invoice_numbering: {
+            prefix: invPrefix.trim(),
+            next_number: Math.max(1, Number(invNext) || 1),
+          },
+          quotation_numbering: {
+            prefix: qtPrefix.trim(),
+            next_number: Math.max(1, Number(qtNext) || 1),
+          },
         }),
       });
       const numbering = r.data?.invoice_numbering;
@@ -199,7 +214,15 @@ export default function Page() {
         setInvNext(String(numbering.next_number));
         setInvPreview(numbering.preview);
       }
-      setMessage(`Invoice numbering saved — next ${numbering?.preview || ''}`.trim());
+      const qt = r.data?.quotation_numbering;
+      if (qt) {
+        setQtPrefix(qt.prefix);
+        setQtNext(String(qt.next_number));
+        setQtPreview(qt.preview);
+      }
+      setMessage(
+        `Numbering saved — invoice ${numbering?.preview || ''} / quotation ${qt?.preview || ''}`.trim(),
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -307,12 +330,12 @@ export default function Page() {
       </div>
 
       <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
-        <h3 style={{ margin: 0 }}>Invoice numbering</h3>
+        <h3 style={{ margin: 0 }}>Document numbering</h3>
         <p className="muted" style={{ margin: 0 }}>
           Pattern <code>{'{PREFIX}-{YYYY}-{NNNN}'}</code>
-          {invPreview ? ` — next preview: ${invPreview}` : ''}
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Invoice</span>
           <input
             value={invPrefix}
             onChange={(e) => setInvPrefix(e.target.value.toUpperCase())}
@@ -325,6 +348,23 @@ export default function Page() {
             placeholder="Next #"
             style={{ width: 90 }}
           />
+          <span className="muted">{invPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Quotation</span>
+          <input
+            value={qtPrefix}
+            onChange={(e) => setQtPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={qtNext}
+            onChange={(e) => setQtNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <span className="muted">{qtPreview || '—'}</span>
           <button type="button" onClick={saveInvoiceNumbering}>
             Save numbering
           </button>

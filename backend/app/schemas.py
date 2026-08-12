@@ -640,8 +640,28 @@ class EarlyPaySettingsUpdate(BaseModel):
 
 
 class SalesInvoiceNumberingUpdate(BaseModel):
+    """Legacy flat body for invoice-only PATCH /sales/settings."""
+
     prefix: str = Field(min_length=1, max_length=20)
     next_number: int = Field(default=1, ge=1, le=999999)
+
+
+class DocumentNumberingFields(BaseModel):
+    prefix: str = Field(min_length=1, max_length=20)
+    next_number: int = Field(default=1, ge=1, le=999999)
+
+
+class SalesSettingsUpdate(BaseModel):
+    invoice_numbering: DocumentNumberingFields | None = None
+    quotation_numbering: DocumentNumberingFields | None = None
+    # Legacy flat fields (invoice only)
+    prefix: str | None = Field(default=None, min_length=1, max_length=20)
+    next_number: int | None = Field(default=None, ge=1, le=999999)
+
+
+class PurchasingNumberingUpdate(BaseModel):
+    purchase_order_numbering: DocumentNumberingFields | None = None
+    grn_numbering: DocumentNumberingFields | None = None
 
 
 class ExchangeRateUpsert(BaseModel):

@@ -12,6 +12,7 @@ from app import models as m
 from app.inventory import apply_stock_change
 from app.tax import compute_line_total
 from app.credit import default_due_date
+from app.doc_numbers import next_grn_number, next_purchase_order_number
 
 PO_EDITABLE = {"draft"}
 PO_AMENDABLE = frozenset({"draft", "sent"})
@@ -216,7 +217,7 @@ async def create_purchase_order(
 
     po = m.PurchaseOrder(
         tenant_id=tenant_id,
-        po_number=f"PO-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        po_number=await next_purchase_order_number(db, tenant_id),
         supplier_id=supplier_id,
         warehouse_id=warehouse_id,
         status="draft",
@@ -556,7 +557,7 @@ async def create_grn(
 
     grn = m.GoodsReceipt(
         tenant_id=tenant_id,
-        grn_number=f"GRN-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        grn_number=await next_grn_number(db, tenant_id),
         purchase_order_id=po.id,
         supplier_id=po.supplier_id,
         warehouse_id=warehouse_id or po.warehouse_id,

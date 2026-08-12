@@ -145,12 +145,19 @@ export default function Page() {
   const [ocrMeta, setOcrMeta] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [poPrefix, setPoPrefix] = useState('PO');
+  const [poNext, setPoNext] = useState('1');
+  const [poPreview, setPoPreview] = useState('');
+  const [grnPrefix, setGrnPrefix] = useState('GRN');
+  const [grnNext, setGrnNext] = useState('1');
+  const [grnPreview, setGrnPreview] = useState('');
 
   async function refresh() {
-    const [poRes, prRes, settingsRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
+    const [poRes, prRes, settingsRes, numRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
       api('/purchasing/orders'),
       api('/purchasing/requests'),
       api('/purchasing/requests/settings'),
+      api('/purchasing/settings').catch(() => ({ data: null })),
       api('/suppliers'),
       api('/products'),
       api('/purchasing/grn'),
@@ -165,6 +172,18 @@ export default function Page() {
     setGrns(grnRes.data || []);
     setInvoices(invRes.data || []);
     setReturns(retRes.data || []);
+    const poNum = numRes.data?.purchase_order_numbering;
+    if (poNum) {
+      setPoPrefix(poNum.prefix || 'PO');
+      setPoNext(String(poNum.next_number ?? 1));
+      setPoPreview(poNum.preview || '');
+    }
+    const grnNum = numRes.data?.grn_numbering;
+    if (grnNum) {
+      setGrnPrefix(grnNum.prefix || 'GRN');
+      setGrnNext(String(grnNum.next_number ?? 1));
+      setGrnPreview(grnNum.preview || '');
+    }
   }
 
   useEffect(() => {
@@ -556,6 +575,41 @@ export default function Page() {
     }
   }
 
+  async function savePurchasingNumbering() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/purchasing/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          purchase_order_numbering: {
+            prefix: poPrefix.trim(),
+            next_number: Math.max(1, Number(poNext) || 1),
+          },
+          grn_numbering: {
+            prefix: grnPrefix.trim(),
+            next_number: Math.max(1, Number(grnNext) || 1),
+          },
+        }),
+      });
+      const poNum = r.data?.purchase_order_numbering;
+      if (poNum) {
+        setPoPrefix(poNum.prefix);
+        setPoNext(String(poNum.next_number));
+        setPoPreview(poNum.preview);
+      }
+      const grnNum = r.data?.grn_numbering;
+      if (grnNum) {
+        setGrnPrefix(grnNum.prefix);
+        setGrnNext(String(grnNum.next_number));
+        setGrnPreview(grnNum.preview);
+      }
+      setMessage(`Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''}`.trim());
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   function updatePrLevel(idx: number, patch: Partial<(typeof prLevels)[0]>) {
     setPrLevels((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   }
@@ -619,6 +673,47 @@ export default function Page() {
 
       {tab === 'requests' && (
         <>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3>Document numbering</h3>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Pattern <code>{'{PREFIX}-{YYYY}-{NNNN}'}</code>
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+              <span className="muted">PO</span>
+              <input
+                value={poPrefix}
+                onChange={(e) => setPoPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+              />
+              <input
+                value={poNext}
+                onChange={(e) => setPoNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+              />
+              <span className="muted">{poPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="muted">GRN</span>
+              <input
+                value={grnPrefix}
+                onChange={(e) => setGrnPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+              />
+              <input
+                value={grnNext}
+                onChange={(e) => setGrnNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+              />
+              <span className="muted">{grnPreview || '—'}</span>
+              <button type="button" onClick={savePurchasingNumbering}>
+                Save numbering
+              </button>
+            </div>
+          </div>
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>PR approval matrix</h3>
             <p className="muted" style={{ marginBottom: 8 }}>

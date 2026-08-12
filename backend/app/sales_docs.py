@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.inventory import apply_stock_change
+from app.doc_numbers import next_quotation_number
 from app.sales import create_sales_invoice, get_customer, get_invoice, list_invoice_items
 from app.tax import resolve_product_tax
 from app.catalog import get_variant, resolve_sale_line
@@ -147,7 +148,7 @@ async def create_quotation(
         raise HTTPException(status_code=400, detail="Total cannot be negative")
     quote = m.SalesQuotation(
         tenant_id=tenant_id,
-        quotation_number=_stamp("QT"),
+        quotation_number=await next_quotation_number(db, tenant_id),
         customer_id=customer_id,
         status="draft",
         subtotal=subtotal,

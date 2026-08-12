@@ -413,7 +413,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [ ] Create PO from PR or directly
-  - [ ] PO number auto-generation with configurable prefix
+  - [x] PO number auto-generation with configurable prefix (`GET|PATCH /purchasing/settings`)
   - [ ] Product lines with quantity, unit price, tax, discount, total
   - [ ] Supplier selection and delivery address
   - [ ] PO status: Draft, Sent, Partially Received, Fully Received, Cancelled
@@ -472,7 +472,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [ ] Create quotation with product, quantity, price, validity period
-  - [ ] Quotation number auto-generation
+  - [x] Quotation number auto-generation (configurable series via `/sales/settings`)
   - [ ] Print/email quotation to customer
   - [ ] Convert quotation to sales order
   - [ ] Expiry notification before validity ends
@@ -986,7 +986,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [ ] Configure PO, GRN, quotation numbering
+  - [x] Configure PO, GRN, quotation numbering (`GET|PATCH /purchasing/settings`, quotation via `/sales/settings`)
   - [ ] Receipt template selection and customization
   - [ ] Invoice template selection and customization
   - [ ] Header/footer customization with company branding
