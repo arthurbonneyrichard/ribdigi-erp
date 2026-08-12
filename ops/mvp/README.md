@@ -359,6 +359,9 @@ Authoritative MVP docs:
 - `docs/STAGE_145_EXIT_CRITERIA.md` / `docs/ADR_297_STAGE145_FREEZE.md` (`backend/tests/test_stage145_exit_h145x.py`) — Stage 145 H145x
 - `docs/STAGE_145_FIDELITY.md` (`backend/tests/test_stage145_fidelity_d1.py`) — Stage 145 D1
 - `docs/STAGE_145_PLAN.md` (`backend/tests/test_stage145_open.py`) — Stage 145 open (ADR-296)
+- `docs/STAGE_146_EXIT_CRITERIA.md` / `docs/ADR_299_STAGE146_FREEZE.md` (`backend/tests/test_stage146_exit_h146x.py`) — Stage 146 H146x
+- `docs/STAGE_146_FIDELITY.md` (`backend/tests/test_stage146_fidelity_d1.py`) — Stage 146 D1
+- `docs/STAGE_146_PLAN.md` (`backend/tests/test_stage146_open.py`) — Stage 146 open (ADR-298)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1636,6 +1639,18 @@ H145x met — `docs/STAGE_145_EXIT_CRITERIA.md`, ADR-297. Stages 1–145 frozen 
 ## Stage 145 open
 
 ADR-296 + `docs/STAGE_145_PLAN.md` — Tenant MVP AI Security Alerts CSV, Report Templates CSV & Business Insights CSV Export Fidelity.
+
+## Stage 146 exit
+
+H146x met — `docs/STAGE_146_EXIT_CRITERIA.md`, ADR-299. Stages 1–146 frozen for Stage 146 feature scope.
+
+## Stage 146 D1 — Tenant MVP AI Low-Stock Prediction CSV, Demand Forecast CSV & Dead-Stock CSV Export Fidelity
+
+`docs/STAGE_146_FIDELITY.md` — maps L1–K1 → readiness / launch / deploy / security.
+
+## Stage 146 open
+
+ADR-298 + `docs/STAGE_146_PLAN.md` — Tenant MVP AI Low-Stock Prediction CSV, Demand Forecast CSV & Dead-Stock CSV Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

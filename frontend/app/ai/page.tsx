@@ -504,11 +504,25 @@ export default function Page() {
         <h3>Demand forecast</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           7 / 30 / 90-day unit demand from sales velocity with short-window seasonality and optimal
-          reorder quantity.
+          reorder quantity. Export via <code>GET /ai/inventory/demand-forecast/export</code> (Stage
+          146 F1).
         </p>
-        <button type="button" onClick={loadForecasts} style={{ marginBottom: 12 }}>
-          Refresh forecast
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={loadForecasts}>
+            Refresh forecast
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv(
+                '/ai/inventory/demand-forecast/export',
+                'ai_demand_forecast_export.csv'
+              )
+            }
+          >
+            Export forecast CSV
+          </button>
+        </div>
         <table className="table">
           <thead>
             <tr>
@@ -554,11 +568,25 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }} id="dead-stock">
         <h3>Dead stock</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          On-hand inventory with no posted sales in the last 90 days.
+          On-hand inventory with no posted sales in the last 90 days. Export via{' '}
+          <code>GET /ai/inventory/dead-stock/export</code> (Stage 146 K1).
         </p>
-        <button type="button" onClick={loadDeadStock} style={{ marginBottom: 12 }}>
-          Refresh dead stock
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={loadDeadStock}>
+            Refresh dead stock
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv(
+                '/ai/inventory/dead-stock/export?lookback_days=90',
+                'ai_dead_stock_export.csv'
+              )
+            }
+          >
+            Export dead stock CSV
+          </button>
+        </div>
         <table className="table">
           <thead>
             <tr>
@@ -976,11 +1004,25 @@ export default function Page() {
         <h3>Low stock prediction</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Sales velocity over ~30 days with a short seasonality factor. Horizon 7–14 days.
-          {method ? ` Method: ${method}.` : ''} At risk: {atRiskCount}.
+          {method ? ` Method: ${method}.` : ''} At risk: {atRiskCount}. Export via{' '}
+          <code>GET /ai/inventory/low-stock-prediction/export</code> (Stage 146 L1).
         </p>
-        <button type="button" onClick={loadPredictions} style={{ marginBottom: 12 }}>
-          Refresh predictions
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={loadPredictions}>
+            Refresh predictions
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv(
+                '/ai/inventory/low-stock-prediction/export?horizon_days=14',
+                'ai_low_stock_prediction_export.csv'
+              )
+            }
+          >
+            Export low-stock CSV
+          </button>
+        </div>
         <table className="table">
           <thead>
             <tr>

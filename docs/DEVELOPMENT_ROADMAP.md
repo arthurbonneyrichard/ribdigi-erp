@@ -2354,6 +2354,18 @@ Every feature in every phase must meet:
 
 **Stage 145 exit (2026-08-12):** S1, T1, I1, D1, H145x met — `docs/STAGE_145_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_297_STAGE145_FREEZE.md`. Fidelity: `docs/STAGE_145_FIDELITY.md`.
 
+**Stage 146 open (2026-08-12):** Tenant MVP AI Low-Stock Prediction CSV, Demand Forecast CSV & Dead-Stock CSV Export Fidelity — `docs/ADR_298_STAGE146_OPEN.md` + `docs/STAGE_146_PLAN.md` (Low-stock → Forecast → Dead-stock → Fidelity; L1 next).
+
+**Stage 146 L1 (2026-08-12):** Low-stock prediction CSV (`test_stage146_low_stock_l1.py`).
+
+**Stage 146 F1 (2026-08-12):** Demand forecast CSV (`test_stage146_demand_forecast_f1.py`).
+
+**Stage 146 K1 (2026-08-12):** Dead-stock CSV (`test_stage146_dead_stock_k1.py`).
+
+**Stage 146 D1 (2026-08-12):** Low-stock / forecast / dead-stock export fidelity sync — `docs/STAGE_146_FIDELITY.md` (`test_stage146_fidelity_d1.py`).
+
+**Stage 146 exit (2026-08-12):** L1, F1, K1, D1, H146x met — `docs/STAGE_146_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_299_STAGE146_FREEZE.md`. Fidelity: `docs/STAGE_146_FIDELITY.md`.
+
 
 
 

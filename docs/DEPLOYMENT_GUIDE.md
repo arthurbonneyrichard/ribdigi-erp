@@ -1504,3 +1504,5 @@ Stage 143 D1 company profile, jobs catalog & onboarding checklist export fidelit
 Stage 144 D1 webhook deliveries, inventory FEFO settings & audit archives export fidelity — `docs/STAGE_144_FIDELITY.md` (`test_stage144_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 145 D1 AI security alerts, report templates & business insights export fidelity — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 146 D1 AI low-stock prediction, demand forecast & dead-stock export fidelity — `docs/STAGE_146_FIDELITY.md` (`test_stage146_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

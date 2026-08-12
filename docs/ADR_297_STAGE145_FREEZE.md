@@ -23,4 +23,4 @@ Stage 145 Tenant MVP AI Security Alerts CSV, Report Templates CSV & Business Ins
 
 ## Next stage
 
-Stage 146 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 145 feature scope remains frozen.
+Stage 146 opened via CONTINUE/NEXT as **Tenant MVP AI Low-Stock Prediction CSV, Demand Forecast CSV & Dead-Stock CSV Export Fidelity** ([ADR-298](ADR_298_STAGE146_OPEN.md)) and closed under [ADR-299](ADR_299_STAGE146_FREEZE.md). Stage 145 feature scope remains frozen.

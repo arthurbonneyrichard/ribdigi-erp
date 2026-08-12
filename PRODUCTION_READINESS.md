@@ -181,3 +181,5 @@ Stage 143 D1 Tenant MVP Company Profile CSV, Jobs Catalog CSV & Onboarding Check
 Stage 144 D1 Tenant MVP Webhook Deliveries CSV, Inventory FEFO Settings CSV & Audit Archives CSV Export Fidelity — `docs/STAGE_144_FIDELITY.md` (`test_stage144_fidelity_d1.py`); Stage 144 W1 Complete; Stage 144 F1 Complete; Stage 144 A1 Complete (MVP honesty); exit `docs/STAGE_144_EXIT_CRITERIA.md`, ADR-295.
 
 Stage 145 D1 Tenant MVP AI Security Alerts CSV, Report Templates CSV & Business Insights CSV Export Fidelity — `docs/STAGE_145_FIDELITY.md` (`test_stage145_fidelity_d1.py`); Stage 145 S1 Complete; Stage 145 T1 Complete; Stage 145 I1 Complete (MVP honesty); exit `docs/STAGE_145_EXIT_CRITERIA.md`, ADR-297.
+
+Stage 146 D1 Tenant MVP AI Low-Stock Prediction CSV, Demand Forecast CSV & Dead-Stock CSV Export Fidelity — `docs/STAGE_146_FIDELITY.md` (`test_stage146_fidelity_d1.py`); Stage 146 L1 Complete; Stage 146 F1 Complete; Stage 146 K1 Complete (MVP honesty); exit `docs/STAGE_146_EXIT_CRITERIA.md`, ADR-299.

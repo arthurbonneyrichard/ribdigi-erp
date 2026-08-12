@@ -13392,6 +13392,33 @@ async def ai_low_stock_prediction(
     return env(data)
 
 
+@api.get("/ai/inventory/low-stock-prediction/export")
+async def ai_low_stock_prediction_export(
+    lookback_days: int = 30,
+    horizon_days: int = 14,
+    lead_time_days: int = 7,
+    at_risk_only: bool = False,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 146 L1 — low-stock prediction CSV."""
+    text = await ai_ops_export_svc.export_low_stock_predictions_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        lookback_days=lookback_days,
+        horizon_days=horizon_days,
+        lead_time_days=lead_time_days,
+        at_risk_only=at_risk_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_low_stock_prediction_export.csv"'
+        },
+    )
+
+
 @api.get("/ai/inventory/demand-forecast")
 async def ai_demand_forecast(
     lookback_days: int = 30,
@@ -13413,6 +13440,31 @@ async def ai_demand_forecast(
     return env(data)
 
 
+@api.get("/ai/inventory/demand-forecast/export")
+async def ai_demand_forecast_export(
+    lookback_days: int = 30,
+    lead_time_days: int = 7,
+    product_id: str | None = None,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 146 F1 — demand forecast CSV."""
+    text = await ai_ops_export_svc.export_demand_forecast_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        lookback_days=lookback_days,
+        lead_time_days=lead_time_days,
+        product_id=product_id,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_demand_forecast_export.csv"'
+        },
+    )
+
+
 @api.get("/ai/inventory/dead-stock")
 async def ai_dead_stock(
     lookback_days: int = 90,
@@ -13430,6 +13482,29 @@ async def ai_dead_stock(
         min_stock=min_stock,
     )
     return env(data)
+
+
+@api.get("/ai/inventory/dead-stock/export")
+async def ai_dead_stock_export(
+    lookback_days: int = 90,
+    min_stock: float = 0,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 146 K1 — dead-stock items CSV."""
+    text = await ai_ops_export_svc.export_dead_stock_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        lookback_days=lookback_days,
+        min_stock=min_stock,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_dead_stock_export.csv"'
+        },
+    )
 
 
 @api.get("/ai/inventory/predictions")
