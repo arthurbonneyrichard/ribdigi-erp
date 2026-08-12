@@ -1489,3 +1489,23 @@ class AiQuery(Base):
     insight_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     details: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class AiSecurityAlert(Base):
+    """Rule-based AI Security Monitor alerts (BR-21.10)."""
+
+    __tablename__ = "ai_security_alerts"
+    __table_args__ = (UniqueConstraint("tenant_id", "fingerprint"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(60), index=True)
+    risk_score: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    title: Mapped[str] = mapped_column(String(255))
+    user_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    session_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    evidence: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)

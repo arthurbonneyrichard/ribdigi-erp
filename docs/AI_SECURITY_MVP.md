@@ -40,3 +40,23 @@ Approved production provider: `openai` only. `mock` is for non-production tests.
 ## Honesty
 
 Do **not** mark BR-21 chat or AI functions complete until an approved provider client is wired and acceptance criteria in the BRD are verified end-to-end with real tenant data.
+
+## AI Security Monitor (BR-21.10)
+
+Rule-based detectors (no LLM):
+
+| Kind | Signal |
+|------|--------|
+| `rapid_failed_logins` | ≥3 `login_failed` audits in 15 minutes |
+| `account_locked` | User `locked_until` in the future |
+| `unusual_hour_login` | Successful login 00:00–04:59 UTC with prior baseline |
+| `new_ip_login` | Login IP not seen on prior `auth_sessions` |
+| `http_write_burst` | ≥40 `http_write` audits in 10 minutes |
+| `suspicious_mutation_burst` | ≥5 cancel/restore/delete actions in 10 minutes |
+| `ai_query_burst` | ≥20 AI queries in 10 minutes |
+
+**APIs:** `GET /ai/security/alerts` (`?scan=true`), `POST /ai/security/scan`  
+**Job:** Celery `scan_ai_security_alerts` (interval `CELERY_AI_SECURITY_INTERVAL_MINUTES`)  
+**Notify:** in-app `category=security` when `risk_score >= AI_SECURITY_ALERT_THRESHOLD` (default 60)
+
+Alerts are tenant-scoped (`ai_security_alerts`); fingerprints dedupe repeats.

@@ -14,6 +14,7 @@ EXPECTED_HANDLERS = {
     "sync_bank_feeds",
     "archive_cold_audit_logs",
     "retry_due_webhooks",
+    "scan_ai_security_alerts",
 }
 
 EXPECTED_BEAT = {
@@ -27,6 +28,7 @@ EXPECTED_BEAT = {
     "sync-bank-feeds",
     "archive-cold-audit-logs",
     "retry-due-webhooks",
+    "scan-ai-security-alerts",
 }
 
 

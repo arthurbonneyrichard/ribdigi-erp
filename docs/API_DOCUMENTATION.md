@@ -1145,7 +1145,12 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 ```
 
 ### 16.10 AI Security Monitor
-**Endpoint:** `GET /ai/security/alerts`
+**List:** `GET /ai/security/alerts`  
+Query: `limit`, `min_score`, `scan=true` (optional inline rescan)
+
+**Scan now:** `POST /ai/security/scan`
+
+Returns tenant-scoped alerts with `kind`, `risk_score`, `user_id`, `evidence`, `created_at`. Rule-based MVP (no LLM). See `docs/AI_SECURITY_MVP.md`.
 
 ---
 

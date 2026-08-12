@@ -27,6 +27,7 @@ from app import api_keys as api_keys_svc
 from app import webhooks as webhooks_svc
 from app import onboarding as onboarding_svc
 from app import ai as ai_svc
+from app import ai_security as ai_security_svc
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
 from app import purchase_suggestions as purchase_suggestions_svc
@@ -7491,6 +7492,7 @@ async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin")
                 "sync_bank_feeds_minutes": app_settings.CELERY_BANK_FEED_INTERVAL_MINUTES,
                 "archive_cold_audit_logs_minutes": app_settings.CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES,
                 "retry_due_webhooks_seconds": app_settings.CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS,
+                "scan_ai_security_alerts_minutes": app_settings.CELERY_AI_SECURITY_INTERVAL_MINUTES,
             },
         }
     )
@@ -8192,7 +8194,10 @@ async def onboarding_checklist_restore(
 @api.get("/ai/status")
 async def ai_status(claims=Depends(require_permission("ai", "read"))):
     """Operator-visible AI packaging status (never returns API keys)."""
-    return env(ai_svc.status_payload())
+    payload = ai_svc.status_payload()
+    payload["security_monitor_enabled"] = ai_security_svc.monitor_enabled()
+    payload["security_alert_threshold"] = ai_security_svc.alert_threshold()
+    return env(payload)
 
 
 @api.get("/ai/queries")
@@ -8203,6 +8208,53 @@ async def ai_queries(
 ):
     rows = await ai_svc.list_queries(db, tenant_id=claims["tenant_id"], limit=limit)
     return env([ai_svc.serialize_query(r) for r in rows])
+
+
+@api.get("/ai/security/alerts")
+async def ai_security_alerts(
+    limit: int = 50,
+    min_score: int | None = None,
+    scan: bool = False,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List tenant-scoped AI Security Monitor alerts (BR-21.10)."""
+    summary = None
+    if scan:
+        summary = await ai_security_svc.scan_tenant(
+            db,
+            tenant_id=claims["tenant_id"],
+            actor_user_id=claims.get("sub"),
+            notify=True,
+        )
+        await db.commit()
+    rows = await ai_security_svc.list_alerts(
+        db, tenant_id=claims["tenant_id"], limit=limit, min_score=min_score
+    )
+    return env(
+        {
+            "alerts": [ai_security_svc.serialize_alert(r) for r in rows],
+            "scan": summary,
+            "threshold": ai_security_svc.alert_threshold(),
+            "enabled": ai_security_svc.monitor_enabled(),
+        }
+    )
+
+
+@api.post("/ai/security/scan")
+async def ai_security_scan(
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Run rule-based security detectors for the current tenant."""
+    summary = await ai_security_svc.scan_tenant(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_user_id=claims.get("sub"),
+        notify=True,
+    )
+    await db.commit()
+    return env(summary, "AI security scan completed")
 
 
 @api.post("/ai/chat")

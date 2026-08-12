@@ -566,15 +566,16 @@ The MVP includes AI capabilities across 10 modules. Security controls include:
 **Audit:**
 - Tenant-scoped `ai_queries` + `audit_logs` (`module=ai`) store prompt SHA-256 and redacted preview only — never raw API keys
 
-**Output Filtering:**
+**Output Filtering (aspirational / post-MVP for LLM replies):**
 - AI responses scanned for PII leakage
 - Financial figures validated against actual database records before display
 - Disallowed content patterns blocked
 
-**AI Security Monitor (Basic):**
-- Monitors AI query patterns for anomalies
-- Flags unusual data access volumes or suspicious prompt patterns
-- Alerts security team on potential abuse
+**AI Security Monitor (Basic) — implemented (rule-based MVP):**
+- Detectors on login failures, lockouts, unusual hour, new IP, write/AI bursts
+- Risk score per alert; admins notified when score ≥ threshold
+- Endpoints: `GET /ai/security/alerts`, `POST /ai/security/scan` (see `docs/AI_SECURITY_MVP.md`)
+- Remaining post-MVP: ML Isolation Forest / advanced fraud graphs
 
 ### 13.2 Model Security
 
