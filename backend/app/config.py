@@ -92,6 +92,10 @@ class Settings(BaseSettings):
     POS_DRAWER_TIMEOUT_SECONDS: float = 3.0
     TRIAL_DAYS: int = 14
     TRIAL_GRACE_DAYS: int = 7
+    # Ops monitoring (Prometheus text + structured request logs)
+    METRICS_ENABLED: bool = True
+    REQUEST_LOG_ENABLED: bool = True
+    LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 

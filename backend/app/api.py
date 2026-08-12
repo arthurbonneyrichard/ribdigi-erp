@@ -275,6 +275,21 @@ async def health_ready(request: Request):
     return env(body, "Ready")
 
 
+@api.get("/metrics")
+async def metrics_endpoint():
+    """Prometheus text exposition (optional; disable with METRICS_ENABLED=false)."""
+    from fastapi.responses import PlainTextResponse
+
+    from app import metrics as metrics_svc
+
+    if not metrics_svc.metrics_enabled():
+        raise HTTPException(status_code=404, detail="Metrics disabled")
+    return PlainTextResponse(
+        metrics_svc.render_prometheus(),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
+
+
 @api.post("/tenants")
 async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db)):
     validate_password_strength(payload.admin_password)

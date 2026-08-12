@@ -1,6 +1,8 @@
-"""Security middleware: headers and rate limiting (Redis or memory)."""
+"""Security middleware: headers, rate limiting, and HTTP metrics."""
 
 from __future__ import annotations
+
+import time
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -110,4 +112,23 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("X-RateLimit-Limit", str(limit))
         response.headers.setdefault("X-RateLimit-Remaining", str(remaining))
         response.headers.setdefault("X-RateLimit-Backend", rate_limiter.backend)
+        return response
+
+
+class MetricsMiddleware(BaseHTTPMiddleware):
+    """Record coarse HTTP counters for /api/v1/metrics."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        from app import metrics as metrics_svc
+
+        if not metrics_svc.metrics_enabled():
+            return await call_next(request)
+        start = time.perf_counter()
+        response = await call_next(request)
+        metrics_svc.observe_request(
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+            duration_seconds=time.perf_counter() - start,
+        )
         return response
