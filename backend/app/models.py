@@ -1161,6 +1161,9 @@ class SalesOrder(Base):
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     quotation_id: Mapped[str | None] = mapped_column(ForeignKey("sales_quotations.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    delivery_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
@@ -1171,6 +1174,28 @@ class SalesOrder(Base):
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class StockReservation(Base):
+    """Soft allocation against warehouse stock for confirmed sales orders."""
+
+    __tablename__ = "stock_reservations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    sales_order_id: Mapped[str] = mapped_column(ForeignKey("sales_orders.id"), index=True)
+    sales_order_item_id: Mapped[str | None] = mapped_column(
+        ForeignKey("sales_order_items.id"), nullable=True, index=True
+    )
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True)
+    warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    # active | released | consumed
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class SalesOrderItem(Base):

@@ -98,6 +98,7 @@ from app.schemas import (
     RefreshRequest,
     SalesInvoiceCreate,
     SalesOrderCreate,
+    SalesOrderConfirm,
     SalesQuotationCreate,
     SalesReturnCreate,
     SmsTestRequest,
@@ -3322,6 +3323,9 @@ async def create_sales_order(
         user_id=claims["sub"],
         customer_id=payload.customer_id,
         quotation_id=payload.quotation_id,
+        store_id=payload.store_id,
+        delivery_date=payload.delivery_date,
+        delivery_address=payload.delivery_address,
         discount_amount=payload.discount_amount,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
@@ -3344,12 +3348,20 @@ async def get_sales_order(
 @api.post("/sales/orders/{order_id}/confirm")
 async def confirm_sales_order(
     order_id: str,
+    payload: SalesOrderConfirm = SalesOrderConfirm(),
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
-    order = await sales_docs_svc.confirm_order(db, claims["tenant_id"], order_id)
+    order = await sales_docs_svc.confirm_order(
+        db,
+        claims["tenant_id"],
+        order_id,
+        store_id=payload.store_id,
+        delivery_date=payload.delivery_date,
+        delivery_address=payload.delivery_address,
+    )
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Order confirmed")
 

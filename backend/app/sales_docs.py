@@ -275,11 +275,19 @@ async def list_order_items(db: AsyncSession, tenant_id: str, order_id: str) -> l
 
 async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
     items = await list_order_items(db, order.tenant_id, order.id)
+    from app.reservations import list_order_reservations
+
+    reservations = await list_order_reservations(db, order.tenant_id, order.id, status=None)
+    active = [r for r in reservations if r.status == "active"]
+    reserved_by_item = {r.sales_order_item_id: float(r.quantity) for r in active if r.sales_order_item_id}
     return {
         "id": order.id,
         "order_number": order.order_number,
         "customer_id": order.customer_id,
         "quotation_id": order.quotation_id,
+        "store_id": getattr(order, "store_id", None),
+        "delivery_date": getattr(order, "delivery_date", None),
+        "delivery_address": getattr(order, "delivery_address", None),
         "status": order.status,
         "subtotal": float(order.subtotal),
         "tax_amount": float(order.tax_amount),
@@ -289,6 +297,12 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "converted_invoice_id": order.converted_invoice_id,
         "confirmed_at": order.confirmed_at,
         "created_at": order.created_at,
+        "reserved_qty": round(sum(float(r.quantity) for r in active), 3),
+        "reservation_status": (
+            "active"
+            if active
+            else ("consumed" if any(r.status == "consumed" for r in reservations) else None)
+        ),
         "items": [
             {
                 "id": i.id,
@@ -299,6 +313,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
                 "tax_rate": float(i.tax_rate),
                 "discount": float(i.discount),
                 "line_total": float(i.line_total),
+                "reserved_qty": reserved_by_item.get(i.id, 0.0),
             }
             for i in items
         ],
@@ -315,12 +330,21 @@ async def create_order(
     discount_amount: float = 0,
     notes: str | None = None,
     quotation_id: str | None = None,
+    store_id: str | None = None,
+    delivery_date: datetime | None = None,
+    delivery_address: str | None = None,
 ) -> m.SalesOrder:
     await get_customer(db, tenant_id, customer_id)
     if quotation_id:
         quote = await get_quotation(db, tenant_id, quotation_id)
         if quote.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Quotation customer mismatch")
+    resolved_store_id = None
+    if store_id:
+        from app.stores import get_store
+
+        store = await get_store(db, tenant_id, store_id)
+        resolved_store_id = store.id
     subtotal, tax_total, prepared = await _prepare_lines(db, tenant_id, items)
     discount_amount = float(discount_amount or 0)
     total = round(subtotal + tax_total - discount_amount, 2)
@@ -329,6 +353,9 @@ async def create_order(
         order_number=_stamp("SO"),
         customer_id=customer_id,
         quotation_id=quotation_id,
+        store_id=resolved_store_id,
+        delivery_date=delivery_date,
+        delivery_address=(delivery_address or "").strip() or None,
         status="draft",
         subtotal=subtotal,
         tax_amount=tax_total,
@@ -387,10 +414,40 @@ async def convert_quotation_to_order(
     return order
 
 
-async def confirm_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
+async def confirm_order(
+    db: AsyncSession,
+    tenant_id: str,
+    order_id: str,
+    *,
+    store_id: str | None = None,
+    delivery_date: datetime | None = None,
+    delivery_address: str | None = None,
+) -> m.SalesOrder:
     order = await get_order(db, tenant_id, order_id)
     if order.status != "draft":
         raise HTTPException(status_code=409, detail=f"Cannot confirm order in status {order.status}")
+    if store_id:
+        from app.stores import get_store
+
+        store = await get_store(db, tenant_id, store_id)
+        order.store_id = store.id
+    if delivery_date is not None:
+        order.delivery_date = delivery_date
+    if delivery_address is not None:
+        order.delivery_address = delivery_address.strip() or None
+    if not order.store_id:
+        raise HTTPException(
+            status_code=400,
+            detail="store_id is required to confirm a sales order (soft inventory reservation)",
+        )
+
+    from app.stores import warehouse_for_store
+    from app.reservations import reserve_order
+
+    wh = await warehouse_for_store(db, tenant_id, order.store_id)
+    items = await list_order_items(db, tenant_id, order.id)
+    await reserve_order(db, tenant_id=tenant_id, order=order, items=items, warehouse_id=wh.id)
+
     order.status = "confirmed"
     order.confirmed_at = datetime.utcnow()
     order.updated_at = datetime.utcnow()
@@ -401,7 +458,7 @@ async def confirm_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.Sa
         tenant_id=tenant_id,
         category="system",
         title="Sales order confirmed",
-        message=f"Order {order.order_number} confirmed.",
+        message=f"Order {order.order_number} confirmed; inventory reserved.",
         entity_type="sales_order",
         entity_id=order.id,
     )
@@ -413,6 +470,10 @@ async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.Sal
     order = await get_order(db, tenant_id, order_id)
     if order.status not in {"draft", "confirmed"}:
         raise HTTPException(status_code=409, detail=f"Cannot cancel order in status {order.status}")
+    if order.status == "confirmed":
+        from app.reservations import release_order_reservations
+
+        await release_order_reservations(db, tenant_id=tenant_id, order_id=order.id)
     order.status = "cancelled"
     order.updated_at = datetime.utcnow()
     await db.flush()
@@ -435,6 +496,7 @@ async def convert_order_to_invoice(
         tenant_id=tenant_id,
         user_id=user_id,
         customer_id=order.customer_id,
+        store_id=order.store_id,
         items=[
             {
                 "product_id": i.product_id,

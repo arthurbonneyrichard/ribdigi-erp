@@ -272,6 +272,13 @@ async def post_sales_invoice(
         wh = await warehouse_for_store(db, tenant_id, invoice.store_id)
         warehouse_id = wh.id
 
+    if invoice.sales_order_id:
+        from app.reservations import consume_order_reservations
+
+        await consume_order_reservations(
+            db, tenant_id=tenant_id, order_id=invoice.sales_order_id
+        )
+
     for item in items:
         if warehouse_id:
             await allocate_unlocated_stock(

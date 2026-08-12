@@ -583,9 +583,18 @@ class SalesQuotationCreate(BaseModel):
 class SalesOrderCreate(BaseModel):
     customer_id: str
     quotation_id: str | None = None
+    store_id: str | None = None
+    delivery_date: datetime | None = None
+    delivery_address: str | None = None
     discount_amount: float = Field(default=0, ge=0)
     notes: str | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+
+
+class SalesOrderConfirm(BaseModel):
+    store_id: str | None = None
+    delivery_date: datetime | None = None
+    delivery_address: str | None = None
 
 
 class SalesReturnItemCreate(BaseModel):

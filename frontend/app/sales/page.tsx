@@ -33,6 +33,8 @@ export default function Page() {
   const [returnReason, setReturnReason] = useState('other');
   const [restock, setRestock] = useState(true);
   const [payAmount, setPayAmount] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -79,6 +81,8 @@ export default function Page() {
   const linePayload = {
     customer_id: customerId,
     store_id: storeId || null,
+    delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : null,
+    delivery_address: deliveryAddress.trim() || null,
     items: [
       {
         product_id: productId,
@@ -91,7 +95,9 @@ export default function Page() {
   };
 
   const invoicePayload = {
-    ...linePayload,
+    customer_id: customerId,
+    store_id: storeId || null,
+    items: linePayload.items,
     currency: currency.trim() || null,
     exchange_rate: exchangeRate === '' ? null : Number(exchangeRate),
   };
@@ -177,10 +183,10 @@ export default function Page() {
     }
   }
 
-  async function act(path: string, label: string) {
+  async function act(path: string, label: string, body: Record<string, unknown> = {}) {
     setError('');
     try {
-      const r = await api(path, { method: 'POST', body: '{}' });
+      const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
       setMessage(r.message || label);
       setSelected(r.data);
       await refresh();
@@ -243,13 +249,25 @@ export default function Page() {
             ))}
           </select>
           <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-            <option value="">Store (optional)</option>
+            <option value="">Store (required to confirm orders)</option>
             {stores.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.code} — {s.name}
               </option>
             ))}
           </select>
+          <input
+            type="date"
+            value={deliveryDate}
+            onChange={(e) => setDeliveryDate(e.target.value)}
+            title="Delivery date"
+          />
+          <input
+            value={deliveryAddress}
+            onChange={(e) => setDeliveryAddress(e.target.value)}
+            placeholder="Delivery address"
+            style={{ minWidth: 180 }}
+          />
           <input
             value={currency}
             onChange={(e) => setCurrency(e.target.value.toUpperCase())}
@@ -374,6 +392,9 @@ export default function Page() {
             <tr>
               <th>Number</th>
               <th>Status</th>
+              <th>Store</th>
+              <th>Reserved</th>
+              <th>Delivery</th>
               <th>Total</th>
               <th>Actions</th>
             </tr>
@@ -383,16 +404,53 @@ export default function Page() {
               <tr key={o.id}>
                 <td>{o.order_number}</td>
                 <td>{o.status}</td>
+                <td>
+                  {stores.find((s) => s.id === o.store_id)?.name ||
+                    (o.store_id ? o.store_id.slice(0, 8) : '—')}
+                </td>
+                <td>
+                  {o.reservation_status
+                    ? `${o.reserved_qty ?? 0} (${o.reservation_status})`
+                    : '—'}
+                </td>
+                <td>
+                  {o.delivery_date
+                    ? new Date(o.delivery_date).toLocaleDateString()
+                    : '—'}
+                  {o.delivery_address ? ` · ${o.delivery_address}` : ''}
+                </td>
                 <td>{o.total_amount}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(o)}>View</button>
                   {o.status === 'draft' && (
-                    <button onClick={() => act(`/sales/orders/${o.id}/confirm`, 'Confirmed')}>Confirm</button>
+                    <button
+                      onClick={() =>
+                        act(
+                          `/sales/orders/${o.id}/confirm`,
+                          'Confirmed',
+                          storeId || o.store_id
+                            ? {
+                                store_id: storeId || o.store_id,
+                                delivery_date: deliveryDate
+                                  ? new Date(deliveryDate).toISOString()
+                                  : null,
+                                delivery_address: deliveryAddress.trim() || null,
+                              }
+                            : {}
+                        )
+                      }
+                    >
+                      Confirm
+                    </button>
                   )}
                   {['draft', 'confirmed'].includes(o.status) && (
                     <>
-                      <button onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}>→ Invoice</button>
-                      <button onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>Cancel</button>
+                      <button onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}>
+                        → Invoice
+                      </button>
+                      <button onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>
+                        Cancel
+                      </button>
                     </>
                   )}
                 </td>
