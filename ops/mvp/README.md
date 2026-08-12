@@ -350,6 +350,9 @@ Authoritative MVP docs:
 - `docs/STAGE_142_EXIT_CRITERIA.md` / `docs/ADR_291_STAGE142_FREEZE.md` (`backend/tests/test_stage142_exit_h142x.py`) — Stage 142 H142x
 - `docs/STAGE_142_FIDELITY.md` (`backend/tests/test_stage142_fidelity_d1.py`) — Stage 142 D1
 - `docs/STAGE_142_PLAN.md` (`backend/tests/test_stage142_open.py`) — Stage 142 open (ADR-290)
+- `docs/STAGE_143_EXIT_CRITERIA.md` / `docs/ADR_293_STAGE143_FREEZE.md` (`backend/tests/test_stage143_exit_h143x.py`) — Stage 143 H143x
+- `docs/STAGE_143_FIDELITY.md` (`backend/tests/test_stage143_fidelity_d1.py`) — Stage 143 D1
+- `docs/STAGE_143_PLAN.md` (`backend/tests/test_stage143_open.py`) — Stage 143 open (ADR-292)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1591,6 +1594,18 @@ H142x met — `docs/STAGE_142_EXIT_CRITERIA.md`, ADR-291. Stages 1–142 frozen 
 ## Stage 142 open
 
 ADR-290 + `docs/STAGE_142_PLAN.md` — Tenant MVP POS Sales Register CSV, Session Z-Report CSV & Store Cash Drawer Settings CSV Export Fidelity.
+
+## Stage 143 exit
+
+H143x met — `docs/STAGE_143_EXIT_CRITERIA.md`, ADR-293. Stages 1–143 frozen for Stage 143 feature scope.
+
+## Stage 143 D1 — Tenant MVP Company Profile CSV, Jobs Catalog CSV & Onboarding Checklist CSV Export Fidelity
+
+`docs/STAGE_143_FIDELITY.md` — maps P1–O1 → readiness / launch / deploy / security.
+
+## Stage 143 open
+
+ADR-292 + `docs/STAGE_143_PLAN.md` — Tenant MVP Company Profile CSV, Jobs Catalog CSV & Onboarding Checklist CSV Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

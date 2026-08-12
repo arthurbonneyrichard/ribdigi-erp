@@ -23,4 +23,4 @@ Stage 142 Tenant MVP POS Sales Register CSV, Session Z-Report CSV & Store Cash D
 
 ## Next stage
 
-Stage 143 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 142 feature scope remains frozen.
+Stage 143 opened via CONTINUE/NEXT as **Tenant MVP Company Profile CSV, Jobs Catalog CSV & Onboarding Checklist CSV Export Fidelity** ([ADR-292](ADR_292_STAGE143_OPEN.md)) and closed under [ADR-293](ADR_293_STAGE143_FREEZE.md). Stage 142 feature scope remains frozen.

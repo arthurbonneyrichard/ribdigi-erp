@@ -1498,3 +1498,5 @@ Stage 140 D1 storage settings, notification preferences & backup settings export
 Stage 141 D1 outstanding bills, supplier payment schedule & party statement export fidelity — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 142 D1 POS sales register, session Z-report & store cash drawer settings export fidelity — `docs/STAGE_142_FIDELITY.md` (`test_stage142_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 143 D1 company profile, jobs catalog & onboarding checklist export fidelity — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

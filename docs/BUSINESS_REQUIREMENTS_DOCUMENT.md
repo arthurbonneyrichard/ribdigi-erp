@@ -869,6 +869,7 @@ Stage 139 D1 — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); 
 Stage 140 D1 — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`); Stage 140 S1 / N1 / B1.
 Stage 141 D1 — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`); Stage 141 O1 / P1 / T1.
 Stage 142 D1 — `docs/STAGE_142_FIDELITY.md` (`test_stage142_fidelity_d1.py`); Stage 142 S1 / Z1 / C1.
+Stage 143 D1 — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`); Stage 143 P1 / J1 / O1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1566,3 +1567,5 @@ Stage 140 D1 storage settings, notification preferences & backup settings export
 Stage 141 D1 outstanding bills, supplier payment schedule & party statement export fidelity — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`); Stage 141 O1 outstanding bills CSV; Stage 141 P1 payment schedule CSV; Stage 141 T1 party statement CSV.
 
 Stage 142 D1 POS sales register, session Z-report & store cash drawer settings export fidelity — `docs/STAGE_142_FIDELITY.md` (`test_stage142_fidelity_d1.py`); Stage 142 S1 POS sales register CSV; Stage 142 Z1 session Z-report CSV; Stage 142 C1 drawer settings CSV.
+
+Stage 143 D1 company profile, jobs catalog & onboarding checklist export fidelity — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`); Stage 143 P1 company profile CSV; Stage 143 J1 jobs catalog CSV; Stage 143 O1 onboarding checklist CSV.

@@ -175,3 +175,5 @@ Stage 140 D1 Tenant MVP Storage Settings CSV, Notification Preferences CSV & Bac
 Stage 141 D1 Tenant MVP Outstanding Bills CSV, Supplier Payment Schedule CSV & Party Statement CSV Export Fidelity — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`); Stage 141 O1 Complete; Stage 141 P1 Complete; Stage 141 T1 Complete (MVP honesty); exit `docs/STAGE_141_EXIT_CRITERIA.md`, ADR-289.
 
 Stage 142 D1 Tenant MVP POS Sales Register CSV, Session Z-Report CSV & Store Cash Drawer Settings CSV Export Fidelity — `docs/STAGE_142_FIDELITY.md` (`test_stage142_fidelity_d1.py`); Stage 142 S1 Complete; Stage 142 Z1 Complete; Stage 142 C1 Complete (MVP honesty); exit `docs/STAGE_142_EXIT_CRITERIA.md`, ADR-291.
+
+Stage 143 D1 Tenant MVP Company Profile CSV, Jobs Catalog CSV & Onboarding Checklist CSV Export Fidelity — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`); Stage 143 P1 Complete; Stage 143 J1 Complete; Stage 143 O1 Complete (MVP honesty); exit `docs/STAGE_143_EXIT_CRITERIA.md`, ADR-293.

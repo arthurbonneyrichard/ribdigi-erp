@@ -2268,6 +2268,33 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </div>
               {canManageOnboarding ? (
                 <div className="onboarding-actions">
+                  <button
+                    type="button"
+                    className="onboarding-btn"
+                    disabled={onboardingBusy}
+                    onClick={async () => {
+                      // Stage 143 O1 — onboarding checklist CSV
+                      try {
+                        const token = localStorage.getItem('token') || '';
+                        const apiBase =
+                          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+                        const res = await fetch(`${apiBase}/onboarding/checklist/export`, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (!res.ok) return;
+                        const blob = await res.blob();
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = 'onboarding_checklist_export.csv';
+                        a.click();
+                        URL.revokeObjectURL(a.href);
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                  >
+                    Export checklist CSV
+                  </button>
                   {onboarding.dismissible ? (
                     <button
                       type="button"

@@ -2318,6 +2318,18 @@ Every feature in every phase must meet:
 
 **Stage 142 exit (2026-08-12):** S1, Z1, C1, D1, H142x met — `docs/STAGE_142_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_291_STAGE142_FREEZE.md`. Fidelity: `docs/STAGE_142_FIDELITY.md`.
 
+**Stage 143 open (2026-08-12):** Tenant MVP Company Profile CSV, Jobs Catalog CSV & Onboarding Checklist CSV Export Fidelity — `docs/ADR_292_STAGE143_OPEN.md` + `docs/STAGE_143_PLAN.md` (Profile → Jobs → Onboarding → Fidelity; P1 next).
+
+**Stage 143 P1 (2026-08-12):** Company profile CSV (`test_stage143_company_profile_p1.py`).
+
+**Stage 143 J1 (2026-08-12):** Jobs catalog CSV (`test_stage143_jobs_catalog_j1.py`).
+
+**Stage 143 O1 (2026-08-12):** Onboarding checklist CSV (`test_stage143_onboarding_checklist_o1.py`).
+
+**Stage 143 D1 (2026-08-12):** Company profile / jobs catalog / onboarding checklist export fidelity sync — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`).
+
+**Stage 143 exit (2026-08-12):** P1, J1, O1, D1, H143x met — `docs/STAGE_143_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_293_STAGE143_FREEZE.md`. Fidelity: `docs/STAGE_143_FIDELITY.md`.
+
 
 
 

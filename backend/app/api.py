@@ -72,6 +72,7 @@ from app import inventory_ops_export as inventory_ops_export_svc
 from app import approval_settings_export as approval_settings_export_svc
 from app import ops_settings_export as ops_settings_export_svc
 from app import pos_ops_export as pos_ops_export_svc
+from app import tenant_bootstrap_export as tenant_bootstrap_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -425,6 +426,25 @@ async def tenant_me(
         raise HTTPException(status_code=403, detail="Tenant is suspended")
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant))
+
+
+@api.get("/tenants/me/export")
+async def tenant_me_export(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 143 P1 — company profile CSV (secret-free; billing remains deferred)."""
+    text = await tenant_bootstrap_export_svc.export_company_profile_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    await db.commit()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="company_profile_export.csv"'
+        },
+    )
 
 
 @api.get("/tenants/me/document-settings/export")
@@ -12375,6 +12395,19 @@ async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin")
     )
 
 
+@api.get("/jobs/export")
+async def jobs_catalog_export(
+    claims=Depends(require_roles("super_admin", "company_admin")),
+):
+    """Stage 143 J1 — jobs catalog CSV (broker/result URLs never included)."""
+    text = tenant_bootstrap_export_svc.export_jobs_catalog_csv()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="jobs_catalog_export.csv"'},
+    )
+
+
 @api.post("/jobs/{job_name}/run")
 async def run_job_now(
     job_name: str,
@@ -12852,6 +12885,24 @@ async def onboarding_checklist_get(
     """Stage 6 N2 — tenant onboarding checklist with auto-detected progress."""
     data = await onboarding_svc.build_checklist(db, claims["tenant_id"])
     return env(data)
+
+
+@api.get("/onboarding/checklist/export")
+async def onboarding_checklist_export(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 143 O1 — onboarding checklist CSV."""
+    text = await tenant_bootstrap_export_svc.export_onboarding_checklist_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="onboarding_checklist_export.csv"'
+        },
+    )
 
 
 @api.post("/onboarding/checklist/steps/{step_id}/skip")

@@ -1666,3 +1666,5 @@ Stage 140 D1 — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`): 
 Stage 141 D1 — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`): Stage 141 O1 `GET /customers|suppliers/{id}/outstanding/export`; Stage 141 P1 `GET /suppliers/{id}/payment-schedule/export`; Stage 141 T1 `GET /credit/customers|suppliers/{id}/statement/export`.
 
 Stage 142 D1 — `docs/STAGE_142_FIDELITY.md` (`test_stage142_fidelity_d1.py`): Stage 142 S1 `GET /pos/sales` + `GET /pos/sales/export`; Stage 142 Z1 `GET /pos/sessions/{id}/report/export`; Stage 142 C1 `GET /stores/drawer-settings/export` (kick bytes never included).
+
+Stage 143 D1 — `docs/STAGE_143_FIDELITY.md` (`test_stage143_fidelity_d1.py`): Stage 143 P1 `GET /tenants/me/export`; Stage 143 J1 `GET /jobs/export` (broker/result URLs never included); Stage 143 O1 `GET /onboarding/checklist/export`.

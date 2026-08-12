@@ -375,6 +375,9 @@ export default function Page() {
       </div>
 
       <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }} id="profile">
+        <p className="muted" style={{ margin: 0 }}>
+          Profile CSV via <code>GET /tenants/me/export</code> (Stage 143 P1).
+        </p>
         <input
           value={tenant.company_name || ''}
           onChange={(e) => setTenant({ ...tenant, company_name: e.target.value })}
@@ -605,6 +608,34 @@ export default function Page() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={save} disabled={!!tenant.read_only}>
             Save profile
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              // Stage 143 P1 — company profile CSV
+              setError('');
+              try {
+                const token = localStorage.getItem('token') || '';
+                const res = await fetch(`${apiBase}/tenants/me/export`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'company_profile_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Company profile CSV downloaded (Stage 143 P1)');
+              } catch (err: any) {
+                setError(err.message || 'Company profile export failed');
+              }
+            }}
+          >
+            Export profile CSV
           </button>
           {(tenant.status === 'trial' || tenant.status === 'grace') && (
             <button onClick={activate}>Activate</button>
@@ -920,6 +951,42 @@ export default function Page() {
         ) : (
           <p className="muted">Loading storage status…</p>
         )}
+      </div>
+
+      <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="jobs-catalog">
+        <h3>Jobs catalog</h3>
+        <p className="muted">
+          Celery job names and beat intervals. Export via <code>GET /jobs/export</code> (Stage 143
+          J1; broker/result URLs never included).
+        </p>
+        <button
+          type="button"
+          onClick={async () => {
+            // Stage 143 J1 — jobs catalog CSV
+            setError('');
+            try {
+              const token = localStorage.getItem('token') || '';
+              const res = await fetch(`${apiBase}/jobs/export`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'jobs_catalog_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('Jobs catalog CSV downloaded (Stage 143 J1; secrets excluded)');
+            } catch (err: any) {
+              setError(err.message || 'Jobs catalog export failed');
+            }
+          }}
+        >
+          Export jobs catalog CSV
+        </button>
       </div>
 
       {emailStatus && (
