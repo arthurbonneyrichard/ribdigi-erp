@@ -1436,3 +1436,4 @@ Stage 100 D1 reports & ledger discovery fidelity — `docs/STAGE_100_FIDELITY.md
 Stage 101 D1 inventory ops & shift history fidelity — `docs/STAGE_101_FIDELITY.md` (`test_stage101_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 102 D1 residual reports & surface honesty fidelity — `docs/STAGE_102_FIDELITY.md` (`test_stage102_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+Stage 103 D1 security, backup & company org fidelity — `docs/STAGE_103_FIDELITY.md` (`test_stage103_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

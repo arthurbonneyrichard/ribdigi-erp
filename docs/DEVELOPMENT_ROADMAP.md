@@ -1837,3 +1837,15 @@ Every feature in every phase must meet:
 **Stage 102 D1 (2026-08-12):** Residual reports & surface honesty fidelity sync — `docs/STAGE_102_FIDELITY.md` (`test_stage102_fidelity_d1.py`).
 
 **Stage 102 exit (2026-08-12):** R1, T1, A1, D1, H102x met — `docs/STAGE_102_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_211_STAGE102_FREEZE.md`. Fidelity: `docs/STAGE_102_FIDELITY.md`.
+
+**Stage 103 open (2026-08-12):** Tenant MVP Security, Backup & Company Org Ops — `docs/ADR_212_STAGE103_OPEN.md` + `docs/STAGE_103_PLAN.md` (Security surface → Backup leaves → Company org → Security, Backup & Company Org Ops; S1 next).
+
+**Stage 103 S1 (2026-08-12):** Security surface discoverability (`test_stage103_security_surface_s1.py`).
+
+**Stage 103 B1 (2026-08-12):** Backup schedule & restore leaf honesty (`test_stage103_backup_leaves_b1.py`).
+
+**Stage 103 C1 (2026-08-12):** Company org & numbering discoverability (`test_stage103_company_org_c1.py`).
+
+**Stage 103 D1 (2026-08-12):** Security, backup & company org fidelity sync — `docs/STAGE_103_FIDELITY.md` (`test_stage103_fidelity_d1.py`).
+
+**Stage 103 exit (2026-08-12):** S1, B1, C1, D1, H103x met — `docs/STAGE_103_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_213_STAGE103_FREEZE.md`. Fidelity: `docs/STAGE_103_FIDELITY.md`.

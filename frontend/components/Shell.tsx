@@ -467,6 +467,24 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Branches',
+    href: '/company#branches',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Document numbering',
+    href: '/company#document-numbering',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Media storage',
+    href: '/company#media',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
     label: 'Notification settings',
     href: '/notifications#preferences',
     modules: ['notifications'],
@@ -479,14 +497,44 @@ const userMgmtLinks: NavLink[] = [
   { kind: 'link', label: 'Permissions', href: '/admin/permissions', modules: ['users'] },
   { kind: 'link', label: 'Audit', href: '/audit', modules: ['audit'] },
   { kind: 'link', label: 'Activity', href: '/activity', modules: ['audit'] },
-  { kind: 'link', label: 'Backup', href: '/backup', modules: ['backup'] },
+  { kind: 'link', label: 'Backup', href: '/backup#schedule', modules: ['backup'] },
   {
     kind: 'link',
     label: 'Backup & Restore',
-    href: '/backup',
+    href: '/backup#restore',
     modules: ['backup'],
   },
   { kind: 'link', label: 'Security', href: '/security', modules: ['security'] },
+  {
+    kind: 'link',
+    label: 'Passkeys',
+    href: '/security#passkeys',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'TOTP',
+    href: '/security#totp',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'Webhooks',
+    href: '/security#webhooks',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'API keys',
+    href: '/security#api-keys',
+    modules: ['security'],
+  },
+  {
+    kind: 'link',
+    label: 'Active sessions',
+    href: '/security#sessions',
+    modules: ['security'],
+  },
 ];
 
 type StoreOption = { id: string; code: string; name: string; is_active?: boolean };

@@ -314,6 +314,18 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
+  // Stage 103 S1 — honor Shell #passkeys / #totp / #webhooks / #api-keys / #sessions
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
   async function startSetup() {
     setError('');
     setMessage('');
@@ -471,7 +483,7 @@ export default function Page() {
         </select>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="passkeys">
         <h2>Passkeys (WebAuthn)</h2>
         <p className="muted">Register a platform or security-key passkey for passwordless second factor.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -499,7 +511,7 @@ export default function Page() {
       </div>
 
       {!status?.enabled && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 16 }} id="totp">
           <h2>Enable TOTP</h2>
           {!setup ? (
             <button onClick={startSetup}>Start setup</button>
@@ -523,7 +535,7 @@ export default function Page() {
       )}
 
       {status?.enabled && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 16 }} id="totp">
           <h2>Backup codes</h2>
           <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Current 2FA code" />
           <button onClick={regenCodes}>Regenerate backup codes</button>
@@ -556,7 +568,7 @@ export default function Page() {
       )}
 
       {(role === 'company_admin' || role === 'super_admin') && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 16 }} id="webhooks">
           <h2>Webhooks</h2>
           <p className="muted">
             Outbound signed events use header <code>X-Ribdigi-Signature</code> (<code>t=…,v1=…</code> HMAC-SHA256).
@@ -623,7 +635,7 @@ export default function Page() {
       )}
 
       {(role === 'company_admin' || role === 'super_admin') && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 16 }} id="api-keys">
           <h2>API keys</h2>
           <p className="muted">
             Integration keys authenticate with the <code>X-API-Key</code> header. The secret is shown once.
@@ -701,7 +713,7 @@ export default function Page() {
         </div>
       )}
 
-      <div className="card">
+      <div className="card" id="sessions">
         <h2>Active sessions</h2>
         <p className="muted">Revoke devices you no longer recognize.</p>
         <table className="table">

@@ -51,7 +51,7 @@ If you're setting up RIBDIGI for the first time:
    - Define your **Fiscal Year Start Date**
 
 2. **Set Up Branches & Stores**
-   - Navigate to **Admin → Branches** and add each business location
+   - Navigate to **Settings → Branches** (`/company#branches`) and add each business location
    - Go to **Admin → Stores** to create retail/service points
    - Go to **Admin → Warehouses** to set up storage locations
 
@@ -122,6 +122,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Reports Summary / Sales / Customers / Stores / Transfers / Schedules:** Shell deep-links to remaining report tabs (Stage 102 R1)
 - **Tax Calculator / Filing Pack / Company Tax / Inter-store Transfers:** Shell anchors on Tax, Company, and Stores (Stage 102 T1)
 - **AI Chat / Forecast / Dead Stock / Insights / Security:** Shell deep-links; Audit date-range filters; Sales Invoices leaf (Stage 102 A1)
+- **Passkeys / TOTP / Webhooks / API keys / Active sessions:** Security Shell deep-links (Stage 103 S1)
+- **Backup Schedule / Backup & Restore:** Distinct Admin backup leaves (Stage 103 B1)
+- **Branches / Document numbering / Media storage:** Company Settings Shell deep-links (Stage 103 C1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

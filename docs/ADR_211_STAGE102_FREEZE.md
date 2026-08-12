@@ -23,4 +23,4 @@ Stage 102 Tenant MVP Residual Reports & Surface Honesty Ops delivered residual r
 
 ## Next stage
 
-Stage 103 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 102 feature scope remains frozen.
+Stage 103 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-212](ADR_212_STAGE103_OPEN.md) + [STAGE_103_PLAN.md](STAGE_103_PLAN.md) (Tenant MVP Security, Backup & Company Org Ops). Stage 102 feature scope remains frozen.

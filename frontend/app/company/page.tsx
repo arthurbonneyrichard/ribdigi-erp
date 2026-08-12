@@ -118,7 +118,7 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
-  // Stage 102 T1 — honor Shell #tax (and prior settings anchors)
+  // Stage 102 T1 / Stage 103 C1 — honor Shell #tax / #branches / #document-numbering / #media
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
@@ -552,7 +552,7 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 16, maxWidth: 720 }}>
+      <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="document-numbering">
         <h2>Document numbering</h2>
         <p className="muted">Configure invoice/PO/GRN/quotation prefixes and next series numbers.</p>
         <table className="table">
@@ -657,20 +657,24 @@ export default function Page() {
         </button>
       </div>
 
-      {storageStatus && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
-          <h2>Media storage</h2>
-          <p className="muted">
-            Backend: {storageStatus.backend}
-            {storageStatus.backend === 's3'
-              ? ` · Bucket ${storageStatus.bucket || '—'} · ${storageStatus.endpoint || 'AWS'}`
-              : ` · Dir ${storageStatus.media_dir || '—'}`}
-          </p>
-          <p className="muted">
-            Set STORAGE_BACKEND=s3 with S3_* / MinIO env vars for object storage. Keys stay tenant-scoped.
-          </p>
-        </div>
-      )}
+      <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="media">
+        <h2>Media storage</h2>
+        {storageStatus ? (
+          <>
+            <p className="muted">
+              Backend: {storageStatus.backend}
+              {storageStatus.backend === 's3'
+                ? ` · Bucket ${storageStatus.bucket || '—'} · ${storageStatus.endpoint || 'AWS'}`
+                : ` · Dir ${storageStatus.media_dir || '—'}`}
+            </p>
+            <p className="muted">
+              Set STORAGE_BACKEND=s3 with S3_* / MinIO env vars for object storage. Keys stay tenant-scoped.
+            </p>
+          </>
+        ) : (
+          <p className="muted">Loading storage status…</p>
+        )}
+      </div>
 
       {emailStatus && (
         <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="email">
@@ -837,7 +841,7 @@ export default function Page() {
         </div>
       )}
 
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card" style={{ marginTop: 16 }} id="branches">
         <h3>Branches &amp; departments</h3>
         <p className="muted">Org units for user assignment and department/branch record scopes. Soft-deactivate keeps history; reactivate anytime.</p>
         <form

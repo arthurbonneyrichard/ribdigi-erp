@@ -24,6 +24,18 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
+  // Stage 103 B1 — honor Shell #schedule / #restore
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
   async function createBackup() {
     setError('');
     setBusy(true);
@@ -121,7 +133,7 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="schedule">
         <h2>Schedule</h2>
         {settings && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -167,6 +179,7 @@ export default function Page() {
         {settings?.last_run_at && <p className="muted">Last run: {String(settings.last_run_at)}</p>}
       </div>
 
+      <div id="restore">
       {dryReport && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Restore report</h2>
@@ -207,6 +220,7 @@ export default function Page() {
           ))}
         </tbody>
       </table>
+      </div>
     </Shell>
   );
 }
