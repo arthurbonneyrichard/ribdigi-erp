@@ -91,6 +91,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "emailed_at": invoice.emailed_at,
         "emailed_to": invoice.emailed_to,
         "created_at": invoice.created_at,
+        "can_print": invoice.status in {"posted", "partial", "paid"},
         "items": [
             {
                 "id": i.id,

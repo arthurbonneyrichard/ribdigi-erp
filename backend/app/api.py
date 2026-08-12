@@ -3104,6 +3104,66 @@ async def get_sales_invoice(
     return env(await sales_svc.serialize_invoice(db, invoice))
 
 
+@api.get("/sales/invoices/{invoice_id}/print")
+async def print_sales_invoice(
+    invoice_id: str,
+    template: str = "a4",
+    format: str = "pdf",
+    paper: str = "80mm",
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable sales invoice: template=a4|thermal, format=pdf|text|json, paper=58mm|80mm (thermal)."""
+    from app import invoice_print as invoice_print_svc
+
+    existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
+    payload = await invoice_print_svc.build_invoice_print_payload(
+        db, tenant_id=claims["tenant_id"], invoice_id=invoice_id
+    )
+    tmpl = (template or "a4").lower()
+    fmt = (format or "pdf").lower()
+    paper = paper if paper in {"58mm", "80mm"} else "80mm"
+    if tmpl not in {"a4", "thermal"}:
+        raise HTTPException(status_code=400, detail="template must be a4 or thermal")
+    if fmt not in {"pdf", "text", "json"}:
+        raise HTTPException(status_code=400, detail="format must be pdf, text, or json")
+
+    if tmpl == "thermal":
+        text = invoice_print_svc.render_invoice_thermal_text(payload, paper=paper)
+        if fmt == "json":
+            payload["template"] = "thermal"
+            payload["paper"] = paper
+            payload["text"] = text
+            return env(payload)
+        if fmt == "text":
+            return PlainTextResponse(text, media_type="text/plain; charset=utf-8")
+        pdf = invoice_print_svc.to_invoice_thermal_pdf(payload, paper=paper)
+        filename = f"invoice_{payload['invoice_number']}_{paper}.pdf".replace("/", "-")
+        return Response(
+            content=pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    # A4
+    if fmt == "json":
+        payload["template"] = "a4"
+        payload["text"] = invoice_print_svc.render_invoice_thermal_text(payload, paper="80mm")
+        return env(payload)
+    if fmt == "text":
+        # Readable plain-text A4-ish dump
+        text = invoice_print_svc.render_invoice_thermal_text(payload, paper="80mm")
+        return PlainTextResponse(text, media_type="text/plain; charset=utf-8")
+    pdf = invoice_print_svc.to_invoice_a4_pdf(payload)
+    filename = f"invoice_{payload['invoice_number']}_a4.pdf".replace("/", "-")
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @api.post("/sales/invoices/{invoice_id}/post")
 async def post_sales_invoice(
     invoice_id: str,

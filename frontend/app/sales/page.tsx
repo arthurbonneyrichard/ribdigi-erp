@@ -6,6 +6,42 @@ import { api } from '../../lib/api';
 
 type Tab = 'invoices' | 'quotations' | 'orders' | 'returns';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+async function downloadInvoicePdf(
+  invoiceId: string,
+  invoiceNumber: string,
+  template: 'a4' | 'thermal',
+  paper = '80mm'
+) {
+  const token = localStorage.getItem('token');
+  const tenant = localStorage.getItem('tenant');
+  const qs =
+    template === 'thermal'
+      ? `template=thermal&format=pdf&paper=${encodeURIComponent(paper)}`
+      : 'template=a4&format=pdf';
+  const res = await fetch(`${apiBase}/sales/invoices/${invoiceId}/print?${qs}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const detail = body.detail;
+    throw new Error(
+      typeof detail === 'string' ? detail : detail?.message || body.message || 'PDF download failed'
+    );
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `invoice-${invoiceNumber || invoiceId.slice(0, 8)}-${template}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function Page() {
   const [tab, setTab] = useState<Tab>('invoices');
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -502,6 +538,28 @@ export default function Page() {
                     <>
                       <button onClick={() => act(`/sales/invoices/${inv.id}/post`, 'Posted')}>Post</button>
                       <button onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
+                    </>
+                  )}
+                  {inv.can_print && (
+                    <>
+                      <button
+                        onClick={() =>
+                          downloadInvoicePdf(inv.id, inv.invoice_number, 'a4')
+                            .then(() => setMessage(`Downloaded A4 ${inv.invoice_number}`))
+                            .catch((err) => setError(err.message))
+                        }
+                      >
+                        Print A4
+                      </button>
+                      <button
+                        onClick={() =>
+                          downloadInvoicePdf(inv.id, inv.invoice_number, 'thermal', '80mm')
+                            .then(() => setMessage(`Downloaded thermal ${inv.invoice_number}`))
+                            .catch((err) => setError(err.message))
+                        }
+                      >
+                        Print thermal
+                      </button>
                     </>
                   )}
                   {['posted', 'partial', 'paid'].includes(inv.status) && !inv.emailed_at && (
