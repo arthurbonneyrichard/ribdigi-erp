@@ -32,6 +32,9 @@ type PurchaseOrder = {
   supplier_id: string;
   status: string;
   total_amount: number;
+  emailed_at?: string | null;
+  emailed_to?: string | null;
+  delivery?: { to?: string; mode?: string };
   items: PoItem[];
 };
 type GrnItem = {
@@ -203,11 +206,17 @@ export default function Page() {
     }
   }
 
-  async function sendPo(poId: string) {
+  async function sendPo(poId: string, resend = false) {
     setError('');
     try {
       const r = await api(`/purchasing/orders/${poId}/send`, { method: 'POST' });
-      setMessage(`Sent ${r.data.po_number}`);
+      const to = r.data?.delivery?.to || r.data?.emailed_to || 'supplier';
+      const mode = r.data?.delivery?.mode ? ` (${r.data.delivery.mode})` : '';
+      setMessage(
+        resend
+          ? `Re-emailed ${r.data.po_number} to ${to}${mode}`
+          : `Emailed ${r.data.po_number} to ${to}${mode}`,
+      );
       await refresh();
       setSelected(r.data);
     } catch (err: any) {
@@ -785,8 +794,11 @@ export default function Page() {
                   </td>
                   <td>{o.status}</td>
                   <td>{o.total_amount}</td>
-                  <td style={{ display: 'flex', gap: 8 }}>
-                    {o.status === 'draft' && <button onClick={() => sendPo(o.id)}>Send</button>}
+                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {o.status === 'draft' && <button onClick={() => sendPo(o.id)}>Email</button>}
+                    {o.status === 'sent' && (
+                      <button onClick={() => sendPo(o.id, true)}>Resend</button>
+                    )}
                     {(o.status === 'sent' || o.status === 'partially_received') && (
                       <button onClick={() => receiveAll(o)}>Receive all</button>
                     )}
@@ -800,6 +812,12 @@ export default function Page() {
               <h3>
                 {selected.po_number} — {selected.status}
               </h3>
+              {selected.emailed_to && (
+                <p style={{ marginTop: 0, color: '#475569', fontSize: 14 }}>
+                  Last emailed to {selected.emailed_to}
+                  {selected.emailed_at ? ` · ${String(selected.emailed_at).slice(0, 19)}` : ''}
+                </p>
+              )}
               <table className="table">
                 <thead>
                   <tr>

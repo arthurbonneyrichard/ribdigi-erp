@@ -417,7 +417,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Product lines with quantity, unit price, tax, discount, total
   - [ ] Supplier selection and delivery address
   - [ ] PO status: Draft, Sent, Partially Received, Fully Received, Cancelled
-  - [ ] Print/email PO to supplier
+  - [x] Print/email PO to supplier
   - [ ] PO amendment tracking
 
 #### BR-6.4 Goods Received Note (GRN)

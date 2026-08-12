@@ -336,6 +336,84 @@ async def send_quotation_email(
     return await send_email(to=to, subject=subject, text_body=text, html_body=html)
 
 
+def render_purchase_order_bodies(
+    *,
+    company_name: str,
+    currency: str,
+    supplier_name: str,
+    purchase_order: dict[str, Any],
+) -> tuple[str, str]:
+    number = purchase_order.get("po_number") or ""
+    due = purchase_order.get("due_date")
+    due_s = str(due)[:10] if due else "—"
+    lines = [
+        f"Purchase Order {number}",
+        f"From: {company_name}",
+        f"To: {supplier_name}",
+        f"Due date: {due_s}",
+        "",
+        "Items:",
+    ]
+    html_rows = []
+    for item in purchase_order.get("items") or []:
+        desc = item.get("product_id") or "Item"
+        qty = item.get("quantity")
+        price = _fmt_money(item.get("unit_price"))
+        total = _fmt_money(item.get("line_total"))
+        tax = _fmt_money(item.get("tax_rate"))
+        lines.append(
+            f"  - {desc}: qty {qty} × {currency} {price} (tax {tax}%) = {currency} {total}"
+        )
+        html_rows.append(
+            f"<tr><td>{desc}</td><td>{qty}</td><td>{currency} {price}</td>"
+            f"<td>{tax}%</td><td>{currency} {total}</td></tr>"
+        )
+    lines.extend(
+        [
+            "",
+            f"Subtotal: {currency} {_fmt_money(purchase_order.get('subtotal'))}",
+            f"Tax: {currency} {_fmt_money(purchase_order.get('tax_amount'))}",
+            f"Total: {currency} {_fmt_money(purchase_order.get('total_amount'))}",
+        ]
+    )
+    if purchase_order.get("notes"):
+        lines.extend(["", f"Notes: {purchase_order['notes']}"])
+    lines.append("\nPlease confirm this purchase order.")
+    text = "\n".join(lines)
+    html = (
+        f"<h2>Purchase Order {number}</h2>"
+        f"<p>From <strong>{company_name}</strong><br/>To {supplier_name}<br/>Due {due_s}</p>"
+        "<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\">"
+        "<thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Tax</th><th>Line</th></tr></thead>"
+        f"<tbody>{''.join(html_rows)}</tbody></table>"
+        f"<p>Subtotal: {currency} {_fmt_money(purchase_order.get('subtotal'))}<br/>"
+        f"Tax: {currency} {_fmt_money(purchase_order.get('tax_amount'))}<br/>"
+        f"<strong>Total: {currency} {_fmt_money(purchase_order.get('total_amount'))}</strong></p>"
+    )
+    if purchase_order.get("notes"):
+        html += f"<p>Notes: {purchase_order['notes']}</p>"
+    return text, html
+
+
+async def send_purchase_order_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    supplier_name: str,
+    purchase_order: dict[str, Any],
+) -> EmailResult:
+    number = purchase_order.get("po_number") or ""
+    subject = f"Purchase Order {number} from {company_name}"
+    text, html = render_purchase_order_bodies(
+        company_name=company_name,
+        currency=currency,
+        supplier_name=supplier_name,
+        purchase_order=purchase_order,
+    )
+    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+
+
 async def send_test_email(*, to: str) -> EmailResult:
     if not settings.EMAIL_ENABLED:
         raise HTTPException(status_code=400, detail="EMAIL_ENABLED is false")

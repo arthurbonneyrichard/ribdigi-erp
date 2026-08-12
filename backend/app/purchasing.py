@@ -95,6 +95,8 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "balance_due": max(float(po.total_amount) - float(po.paid_amount or 0), 0),
         "due_date": po.due_date,
         "notes": po.notes,
+        "emailed_at": po.emailed_at,
+        "emailed_to": po.emailed_to,
         "created_at": po.created_at,
         "items": [
             {
@@ -189,27 +191,64 @@ async def create_purchase_order(
     return po
 
 
-async def send_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: str, po_id: str) -> m.PurchaseOrder:
+async def send_purchase_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    po_id: str,
+    to: str | None = None,
+) -> tuple[m.PurchaseOrder, dict]:
+    """Email PO to supplier, then mark status=sent. Delivery must succeed first."""
+    from app import emailer
+
     po = await get_po(db, tenant_id, po_id)
-    if po.status not in PO_EDITABLE:
+    if po.status not in {"draft", "sent"}:
         raise HTTPException(status_code=409, detail=f"Cannot send PO in status {po.status}")
     items = await list_po_items(db, tenant_id, po.id)
     if not items:
         raise HTTPException(status_code=400, detail="Cannot send empty purchase order")
+
+    supplier = await get_supplier(db, tenant_id, po.supplier_id)
+    recipient = (to or supplier.email or "").strip()
+    if not recipient:
+        raise HTTPException(
+            status_code=400,
+            detail="Supplier has no email; set supplier email or pass to= override",
+        )
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    company_name = tenant.company_name if tenant else "RIBDIGI ERP"
+    currency = (tenant.currency if tenant else None) or "GHS"
+    payload = await serialize_po(db, po)
+
+    result = await emailer.send_purchase_order_email(
+        to=recipient,
+        company_name=company_name,
+        currency=currency,
+        supplier_name=supplier.name,
+        purchase_order=payload,
+    )
+    if not result.sent:
+        if result.mode == "disabled":
+            raise HTTPException(status_code=503, detail="Email delivery is disabled")
+        raise HTTPException(status_code=502, detail=result.error or "Email send failed")
+
+    now = datetime.utcnow()
     po.status = "sent"
     po.due_date = po.due_date or default_due_date()
-    po.updated_at = datetime.utcnow()
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="po_sent",
-            entity="purchase_order",
-            entity_id=po.id,
-            details={"po_number": po.po_number},
-        )
-    )
-    return po
+    po.emailed_at = now
+    po.emailed_to = recipient
+    po.updated_at = now
+    await db.flush()
+    delivery = {
+        "sent": result.sent,
+        "mode": result.mode,
+        "to": recipient,
+        "emailed_at": now.isoformat(),
+        "po_number": po.po_number,
+    }
+    return po, delivery
 
 
 async def cancel_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: str, po_id: str) -> m.PurchaseOrder:

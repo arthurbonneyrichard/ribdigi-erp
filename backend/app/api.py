@@ -3524,16 +3524,29 @@ async def get_purchase_order(
 @api.post("/purchasing/orders/{po_id}/send")
 async def send_purchase_order(
     po_id: str,
+    to: str | None = None,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
-    po = await purchasing_svc.send_purchase_order(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id
+    po, delivery = await purchasing_svc.send_purchase_order(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id, to=to
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="po_email",
+        entity="purchase_order",
+        entity_id=po.id,
+        details=delivery,
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_po(db, po), "Purchase order sent")
+    data = await purchasing_svc.serialize_po(db, po)
+    data["delivery"] = delivery
+    return env(data, f"Purchase order emailed to {delivery['to']} ({delivery['mode']})")
 
 
 @api.post("/purchasing/orders/{po_id}/cancel")
