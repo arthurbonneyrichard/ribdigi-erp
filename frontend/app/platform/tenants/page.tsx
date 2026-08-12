@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
 import { formatDateTime } from '../../../lib/format';
@@ -49,7 +49,7 @@ const emptyForm = {
   plan_code: 'trial',
 };
 
-export default function PlatformTenantsPage() {
+function PlatformTenantsInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -556,5 +556,13 @@ export default function PlatformTenantsPage() {
         </tbody>
       </table>
     </PlatformShell>
+  );
+}
+
+export default function PlatformTenantsPage() {
+  return (
+    <Suspense fallback={<main className="main"><p className="muted">Loading…</p></main>}>
+      <PlatformTenantsInner />
+    </Suspense>
   );
 }

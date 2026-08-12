@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
@@ -38,7 +38,7 @@ const emptyForm = {
 };
 
 
-export default function Page() {
+function PageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -575,5 +575,13 @@ export default function Page() {
         </tbody>
       </table>
     </Shell>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<main className="main"><p className="muted">Loading…</p></main>}>
+      <PageInner />
+    </Suspense>
   );
 }

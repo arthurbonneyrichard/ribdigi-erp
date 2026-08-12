@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
 import { formatDateTime } from '../../../lib/format';
@@ -37,7 +37,7 @@ type StaffSession = {
   current?: boolean;
 };
 
-export default function PlatformUsersPage() {
+function PlatformUsersInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -400,5 +400,13 @@ export default function PlatformUsersPage() {
         </tbody>
       </table>
     </PlatformShell>
+  );
+}
+
+export default function PlatformUsersPage() {
+  return (
+    <Suspense fallback={<main className="main"><p className="muted">Loading…</p></main>}>
+      <PlatformUsersInner />
+    </Suspense>
   );
 }

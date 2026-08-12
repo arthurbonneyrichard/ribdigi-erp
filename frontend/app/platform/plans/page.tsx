@@ -36,7 +36,7 @@ export default function PlatformPlansPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const catalog = data.catalog?.length
+  const catalog: PlanItem[] = data.catalog?.length
     ? data.catalog
     : (data.plan_codes || []).map((code) => ({ code }));
 
