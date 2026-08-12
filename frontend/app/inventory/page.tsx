@@ -2728,9 +2728,29 @@ export default function Page() {
         <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 640 }}>
           <h3>Warehouse stock</h3>
           <p className="muted">On-hand by warehouse for the selected product.</p>
+          <p className="muted">
+            Export via <code>{'GET /products/{id}/warehouse-stock/export'}</code> (Stage 155 W1).
+          </p>
           {!selectedId && <p className="muted">Select a product above.</p>}
           {warehouseStock && (
             <>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  disabled={!selectedId}
+                  onClick={() =>
+                    selectedId &&
+                    downloadCatalogCsv(
+                      `/products/${selectedId}/warehouse-stock/export`,
+                      `product_${selectedId}_warehouse_stock_export.csv`,
+                    ).then(() =>
+                      setMessage('Product warehouse-stock CSV downloaded (Stage 155 W1)'),
+                    )
+                  }
+                >
+                  Export warehouse-stock CSV
+                </button>
+              </div>
               <p>
                 Consolidated qty: <strong>{warehouseStock.stock_qty}</strong> · Reorder level:{' '}
                 {warehouseStock.reorder_level}

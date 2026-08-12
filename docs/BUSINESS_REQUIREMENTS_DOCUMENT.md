@@ -881,6 +881,7 @@ Stage 151 D1 — `docs/STAGE_151_FIDELITY.md` (`test_stage151_fidelity_d1.py`); 
 Stage 152 D1 — `docs/STAGE_152_FIDELITY.md` (`test_stage152_fidelity_d1.py`); Stage 152 G1 / I1 / M1.
 Stage 153 D1 — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`); Stage 153 B1 / C1 / S1.
 Stage 154 D1 — `docs/STAGE_154_FIDELITY.md` (`test_stage154_fidelity_d1.py`); Stage 154 A1 / K1 / U1.
+Stage 155 D1 — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`); Stage 155 I1 / S1 / W1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1602,3 +1603,5 @@ Stage 152 D1 platform dashboard aggregates, industries catalog & admin permissio
 Stage 153 D1 tenant dashboard aggregates, customer history & supplier history export fidelity — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`); Stage 153 B1 tenant dashboard aggregates CSV; Stage 153 C1 customer history CSV; Stage 153 S1 supplier history CSV.
 
 Stage 154 D1 PO amendments, product batches & API-key usage export fidelity — `docs/STAGE_154_FIDELITY.md` (`test_stage154_fidelity_d1.py`); Stage 154 A1 PO amendments CSV; Stage 154 K1 product batches CSV; Stage 154 U1 API-key usage CSV.
+
+Stage 155 D1 store inventory, store sales & product warehouse-stock export fidelity — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`); Stage 155 I1 store inventory CSV; Stage 155 S1 store sales CSV; Stage 155 W1 product warehouse-stock CSV.

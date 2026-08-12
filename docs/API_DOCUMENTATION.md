@@ -1690,3 +1690,5 @@ Stage 152 D1 — `docs/STAGE_152_FIDELITY.md` (`test_stage152_fidelity_d1.py`): 
 Stage 153 D1 — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`): Stage 153 B1 `GET /dashboard/export`; Stage 153 C1 `GET /customers/{id}/history/export`; Stage 153 S1 `GET /suppliers/{id}/history/export`.
 
 Stage 154 D1 — `docs/STAGE_154_FIDELITY.md` (`test_stage154_fidelity_d1.py`): Stage 154 A1 `GET /purchasing/orders/{id}/amendments/export`; Stage 154 K1 `GET /products/{id}/batches/export`; Stage 154 U1 `GET /api-keys/{id}/usage/export`.
+
+Stage 155 D1 — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`): Stage 155 I1 `GET /stores/{id}/inventory/export`; Stage 155 S1 `GET /stores/{id}/sales/export`; Stage 155 W1 `GET /products/{id}/warehouse-stock/export`.

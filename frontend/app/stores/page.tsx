@@ -1128,6 +1128,22 @@ export default function Page() {
         <div className="card" style={{ marginTop: 16 }}>
           <h3>Sales · {storeName(salesStore)}</h3>
           <p className="muted">Store-specific invoice + POS totals (BR-13.1)</p>
+          <p className="muted">
+            Export via <code>{`GET /stores/{id}/sales/export`}</code> (Stage 155 S1).
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(
+                  `/stores/${salesStore}/sales/export`,
+                  `store_${salesStore}_sales_export.csv`,
+                ).then(() => setMessage('Store sales CSV downloaded (Stage 155 S1)'))
+              }
+            >
+              Export sales CSV
+            </button>
+          </div>
           <div className="grid" style={{ marginBottom: 12 }}>
             <div>
               <div className="muted">Revenue</div>
@@ -1184,6 +1200,9 @@ export default function Page() {
           <p className="muted">Open Inventory / reorder on a store to edit policies.</p>
         ) : (
           <>
+            <p className="muted">
+              Export via <code>{`GET /stores/{id}/inventory/export`}</code> (Stage 155 I1).
+            </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
               <select value={reorderProductId} onChange={(e) => setReorderProductId(e.target.value)}>
                 {products.map((p) => (
@@ -1205,6 +1224,17 @@ export default function Page() {
                 style={{ width: 110 }}
               />
               <button onClick={saveReorder}>Save policy</button>
+              <button
+                type="button"
+                onClick={() =>
+                  downloadCsv(
+                    `/stores/${viewStore}/inventory/export`,
+                    `store_${viewStore}_inventory_export.csv`,
+                  ).then(() => setMessage('Store inventory CSV downloaded (Stage 155 I1)'))
+                }
+              >
+                Export inventory CSV
+              </button>
             </div>
             {inventory.length === 0 && <p className="muted">No warehouse stock / policy rows yet</p>}
             <table className="table">

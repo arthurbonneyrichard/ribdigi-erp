@@ -4487,6 +4487,27 @@ async def product_warehouse_stock(
     )
 
 
+@api.get("/products/{product_id}/warehouse-stock/export")
+async def export_product_warehouse_stock(
+    product_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 155 W1 — per-product warehouse-stock CSV (distinct from Stage 137 movements)."""
+    text = await inventory_ops_export_svc.export_product_warehouse_stock_csv(
+        db, tenant_id=claims["tenant_id"], product_id=product_id
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="product_{product_id}_warehouse_stock_export.csv"'
+            )
+        },
+    )
+
+
 @api.get("/inventory/stock-counts")
 async def list_stock_counts(
     status: str | None = None,
@@ -11822,6 +11843,31 @@ async def store_inventory(
     )
 
 
+@api.get("/stores/{store_id}/inventory/export")
+async def store_inventory_export(
+    store_id: str,
+    include_zero: bool = False,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 155 I1 — store inventory / reorder CSV."""
+    text = await location_export_svc.export_store_inventory_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=store_id,
+        include_zero=include_zero,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="store_{store_id}_inventory_export.csv"'
+            )
+        },
+    )
+
+
 @api.get("/stores/{store_id}/sales")
 async def store_sales(
     store_id: str,
@@ -11840,6 +11886,33 @@ async def store_sales(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             recent_limit=recent_limit,
         )
+    )
+
+
+@api.get("/stores/{store_id}/sales/export")
+async def store_sales_export(
+    store_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    recent_limit: int = 50,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 155 S1 — store sales summary + recent lines CSV."""
+    text = await location_export_svc.export_store_sales_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=store_id,
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        recent_limit=recent_limit,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="store_{store_id}_sales_export.csv"'
+        },
     )
 
 

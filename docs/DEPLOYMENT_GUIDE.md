@@ -1522,3 +1522,5 @@ Stage 152 D1 platform dashboard aggregates, industries catalog & admin permissio
 Stage 153 D1 tenant dashboard aggregates, customer history & supplier history export fidelity — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 154 D1 PO amendments, product batches & API-key usage export fidelity — `docs/STAGE_154_FIDELITY.md` (`test_stage154_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 155 D1 store inventory, store sales & product warehouse-stock export fidelity — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

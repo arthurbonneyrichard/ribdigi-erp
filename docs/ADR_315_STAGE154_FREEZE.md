@@ -23,4 +23,4 @@ Stage 154 Tenant MVP PO Amendments CSV, Product Batches CSV & API-Key Usage CSV 
 
 ## Next stage
 
-Stage 155 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 154 feature scope remains frozen.
+Stage 155 opened via CONTINUE/NEXT as ADR-316 / ADR-317 (store inventory / store sales / product warehouse-stock CSV export fidelity). Stage 154 feature scope remains frozen.

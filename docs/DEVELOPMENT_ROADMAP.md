@@ -2462,6 +2462,18 @@ Every feature in every phase must meet:
 
 **Stage 154 exit (2026-08-12):** A1, K1, U1, D1, H154x met — `docs/STAGE_154_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_315_STAGE154_FREEZE.md`. Fidelity: `docs/STAGE_154_FIDELITY.md`.
 
+**Stage 155 open (2026-08-12):** Tenant MVP Store Inventory CSV, Store Sales CSV & Product Warehouse-Stock CSV Export Fidelity — `docs/ADR_316_STAGE155_OPEN.md` + `docs/STAGE_155_PLAN.md` (Inventory → Sales → Warehouse-stock → Fidelity; I1 next).
+
+**Stage 155 I1 (2026-08-12):** Store inventory CSV (`test_stage155_store_inventory_i1.py`).
+
+**Stage 155 S1 (2026-08-12):** Store sales CSV (`test_stage155_store_sales_s1.py`).
+
+**Stage 155 W1 (2026-08-12):** Product warehouse-stock CSV (`test_stage155_warehouse_stock_w1.py`).
+
+**Stage 155 D1 (2026-08-12):** Store inventory / store sales / product warehouse-stock export fidelity sync — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`).
+
+**Stage 155 exit (2026-08-12):** I1, S1, W1, D1, H155x met — `docs/STAGE_155_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_317_STAGE155_FREEZE.md`. Fidelity: `docs/STAGE_155_FIDELITY.md`.
+
 
 
 

@@ -1,4 +1,5 @@
-"""CSV export for stores, warehouses, tax rates (Stage 121 X1), and drawer settings (Stage 142 C1)."""
+"""CSV export for stores, warehouses, tax rates (Stage 121 X1), drawer settings (Stage 142 C1),
+and store inventory / sales (Stage 155 I1 / S1)."""
 
 from __future__ import annotations
 
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import cash_drawer as cash_drawer_svc
 from app import models as m
+from app import stores as stores_svc
 
 STORE_EXPORT_COLUMNS = [
     "code",
@@ -53,6 +55,41 @@ DRAWER_SETTINGS_EXPORT_COLUMNS = [
     "drawer_port",
     "drawer_open_on_cash",
     "is_active",
+]
+
+STORE_INVENTORY_EXPORT_COLUMNS = [
+    "store_id",
+    "warehouse_id",
+    "product_id",
+    "sku",
+    "name",
+    "quantity",
+    "reorder_level",
+    "reorder_qty",
+    "below_reorder",
+    "suggested_order_qty",
+    "consolidated_stock",
+]
+
+STORE_SALES_EXPORT_COLUMNS = [
+    "store_id",
+    "store_code",
+    "store_name",
+    "row_type",
+    "source",
+    "record_id",
+    "number",
+    "total",
+    "tax",
+    "status",
+    "occurred_at",
+    "invoice_count",
+    "pos_count",
+    "sale_count",
+    "revenue",
+    "avg_ticket",
+    "from_date",
+    "to_date",
 ]
 
 
@@ -196,6 +233,110 @@ async def export_drawer_settings_csv(
                 "drawer_port": _cell(cfg.get("drawer_port")),
                 "drawer_open_on_cash": _cell(bool(cfg.get("drawer_open_on_cash"))),
                 "is_active": _cell(bool(getattr(row, "is_active", True))),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_store_inventory_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str,
+    include_zero: bool = False,
+) -> str:
+    """Stage 155 I1 — store warehouse inventory / reorder CSV."""
+    rows = await stores_svc.store_inventory(
+        db, tenant_id, store_id, include_zero=include_zero
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=STORE_INVENTORY_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(
+            {
+                "store_id": _cell(store_id),
+                "warehouse_id": _cell(row.get("warehouse_id")),
+                "product_id": _cell(row.get("product_id")),
+                "sku": _cell(row.get("sku")),
+                "name": _cell(row.get("name")),
+                "quantity": _cell(row.get("quantity")),
+                "reorder_level": _cell(row.get("reorder_level")),
+                "reorder_qty": _cell(row.get("reorder_qty")),
+                "below_reorder": _cell(bool(row.get("below_reorder"))),
+                "suggested_order_qty": _cell(row.get("suggested_order_qty")),
+                "consolidated_stock": _cell(row.get("consolidated_stock")),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_store_sales_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    recent_limit: int = 50,
+) -> str:
+    """Stage 155 S1 — store sales summary + recent invoice/POS lines CSV."""
+    payload = await stores_svc.store_sales(
+        db,
+        tenant_id,
+        store_id,
+        from_date=from_date,
+        to_date=to_date,
+        recent_limit=recent_limit,
+    )
+    store = payload.get("store") or {}
+    summary = payload.get("summary") or {}
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=STORE_SALES_EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerow(
+        {
+            "store_id": _cell(store.get("id") or store_id),
+            "store_code": _cell(store.get("code")),
+            "store_name": _cell(store.get("name")),
+            "row_type": "summary",
+            "source": "",
+            "record_id": "",
+            "number": "",
+            "total": _cell(summary.get("revenue")),
+            "tax": _cell(summary.get("tax")),
+            "status": "",
+            "occurred_at": "",
+            "invoice_count": _cell(summary.get("invoice_count")),
+            "pos_count": _cell(summary.get("pos_count")),
+            "sale_count": _cell(summary.get("sale_count")),
+            "revenue": _cell(summary.get("revenue")),
+            "avg_ticket": _cell(summary.get("avg_ticket")),
+            "from_date": _cell(payload.get("from_date")),
+            "to_date": _cell(payload.get("to_date")),
+        }
+    )
+    for row in payload.get("recent") or []:
+        writer.writerow(
+            {
+                "store_id": _cell(store.get("id") or store_id),
+                "store_code": _cell(store.get("code")),
+                "store_name": _cell(store.get("name")),
+                "row_type": "sale",
+                "source": _cell(row.get("source")),
+                "record_id": _cell(row.get("id")),
+                "number": _cell(row.get("number")),
+                "total": _cell(row.get("total")),
+                "tax": _cell(row.get("tax")),
+                "status": _cell(row.get("status")),
+                "occurred_at": _cell(row.get("occurred_at")),
+                "invoice_count": "",
+                "pos_count": "",
+                "sale_count": "",
+                "revenue": "",
+                "avg_ticket": "",
+                "from_date": "",
+                "to_date": "",
             }
         )
     return buf.getvalue()

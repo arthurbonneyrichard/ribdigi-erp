@@ -1,4 +1,5 @@
-"""CSV export for stock movements, low-stock alerts, and expiring batches (Stage 137)."""
+"""CSV export for stock movements, low-stock alerts, expiring batches (Stage 137),
+product batches (Stage 154), and product warehouse-stock (Stage 155 W1)."""
 
 from __future__ import annotations
 
@@ -80,6 +81,28 @@ PRODUCT_BATCH_EXPORT_COLUMNS = [
     "quantity",
     "created_at",
     "updated_at",
+]
+
+PRODUCT_WAREHOUSE_STOCK_EXPORT_COLUMNS = [
+    "product_id",
+    "product_sku",
+    "product_name",
+    "consolidated_qty",
+    "consolidated_minimum_stock",
+    "consolidated_reorder_level",
+    "consolidated_stock_status",
+    "consolidated_reserved_qty",
+    "consolidated_available_qty",
+    "warehouse_id",
+    "warehouse_code",
+    "warehouse_name",
+    "quantity",
+    "reserved_qty",
+    "available_qty",
+    "minimum_stock",
+    "reorder_level",
+    "reorder_qty",
+    "stock_status",
 ]
 
 STOCK_STATUSES = {"red", "yellow"}
@@ -286,4 +309,86 @@ async def export_product_batches_csv(
     for row in rows:
         data = catalog_svc.serialize_batch(row)
         writer.writerow({k: _cell(data.get(k)) for k in PRODUCT_BATCH_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+async def export_product_warehouse_stock_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+) -> str:
+    """Stage 155 W1 — per-product warehouse placement CSV (distinct from Stage 137 movements)."""
+    product = await catalog_svc.get_product(db, tenant_id, product_id)
+    rows = (
+        await db.execute(
+            select(m.WarehouseStock, m.Warehouse)
+            .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
+            .where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.product_id == product_id,
+            )
+            .order_by(m.Warehouse.code)
+        )
+    ).all()
+    p_min = float(getattr(product, "minimum_stock", 0) or 0)
+    p_ro = float(product.reorder_level or 0)
+    p_qty = float(product.stock_qty or 0)
+    p_reserved = float(getattr(product, "reserved_qty", 0) or 0)
+    consolidated_status = compute_stock_status(p_qty, p_min, p_ro)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=PRODUCT_WAREHOUSE_STOCK_EXPORT_COLUMNS)
+    writer.writeheader()
+    if not rows:
+        writer.writerow(
+            {
+                "product_id": _cell(product.id),
+                "product_sku": _cell(product.sku),
+                "product_name": _cell(product.name),
+                "consolidated_qty": _cell(p_qty),
+                "consolidated_minimum_stock": _cell(p_min),
+                "consolidated_reorder_level": _cell(p_ro),
+                "consolidated_stock_status": _cell(consolidated_status),
+                "consolidated_reserved_qty": _cell(p_reserved),
+                "consolidated_available_qty": _cell(max(p_qty - p_reserved, 0.0)),
+                "warehouse_id": "",
+                "warehouse_code": "",
+                "warehouse_name": "",
+                "quantity": "",
+                "reserved_qty": "",
+                "available_qty": "",
+                "minimum_stock": "",
+                "reorder_level": "",
+                "reorder_qty": "",
+                "stock_status": "",
+            }
+        )
+        return buf.getvalue()
+    for stock, wh in rows:
+        qty = float(stock.quantity or 0)
+        reserved = float(getattr(stock, "reserved_qty", 0) or 0)
+        minimum, reorder = effective_warehouse_thresholds(stock, product)
+        writer.writerow(
+            {
+                "product_id": _cell(product.id),
+                "product_sku": _cell(product.sku),
+                "product_name": _cell(product.name),
+                "consolidated_qty": _cell(p_qty),
+                "consolidated_minimum_stock": _cell(p_min),
+                "consolidated_reorder_level": _cell(p_ro),
+                "consolidated_stock_status": _cell(consolidated_status),
+                "consolidated_reserved_qty": _cell(p_reserved),
+                "consolidated_available_qty": _cell(max(p_qty - p_reserved, 0.0)),
+                "warehouse_id": _cell(wh.id),
+                "warehouse_code": _cell(wh.code),
+                "warehouse_name": _cell(wh.name),
+                "quantity": _cell(qty),
+                "reserved_qty": _cell(reserved),
+                "available_qty": _cell(max(qty - reserved, 0.0)),
+                "minimum_stock": _cell(minimum),
+                "reorder_level": _cell(reorder),
+                "reorder_qty": _cell(float(stock.reorder_qty or 0)),
+                "stock_status": _cell(compute_stock_status(qty, minimum, reorder)),
+            }
+        )
     return buf.getvalue()
