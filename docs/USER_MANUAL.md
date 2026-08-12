@@ -131,6 +131,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Custom / System Permissions matrix:** Admin Permissions deep-links and shareable `?role=` (Stage 105 P1)
 - **FEFO Policy / Reorder Policies:** Stores Shell deep-links; reorder panel honors `store_id` (Stage 105 S1)
 - **Platform Audit filters / Delivery Audit:** Shareable house audit URL filters (Stage 105 A1)
+- **Expense store/department filters; Purchase Settings hash:** Shareable expense scope + PR approval settings scroll (Stage 106 E1)
+- **Company Profile / Logo / Locale / Departments:** Settings Shell deep-links (Stage 106 C1)
+- **Unread / Stock / Order / Payment / System notification inbox:** Notifications Shell leaves (Stage 106 N1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

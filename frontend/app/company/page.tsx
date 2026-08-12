@@ -118,7 +118,7 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
-  // Stage 102 T1 / Stage 103 C1 — honor Shell #tax / #branches / #document-numbering / #media
+  // Stage 102 T1 / Stage 103 C1 / Stage 106 C1 — honor Shell #tax / #branches / #logo / #profile / #locale / #departments
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
@@ -253,7 +253,7 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
+      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }} id="logo">
         <h3>Company logo</h3>
         <p className="muted" style={{ margin: 0 }}>
           Shown on invoices, receipts, quotations, and credit notes when printing.
@@ -314,7 +314,7 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }} id="profile">
         <input
           value={tenant.company_name || ''}
           onChange={(e) => setTenant({ ...tenant, company_name: e.target.value })}
@@ -420,6 +420,7 @@ export default function Page() {
           }
           placeholder="Inactivity timeout (minutes)"
         />
+        <div id="locale" style={{ display: 'grid', gap: 8 }}>
         <select
           value={tenant.date_format || 'DD/MM/YYYY'}
           onChange={(e) => setTenant({ ...tenant, date_format: e.target.value })}
@@ -452,6 +453,7 @@ export default function Page() {
           onChange={(e) => setTenant({ ...tenant, timezone: e.target.value })}
           placeholder="Timezone"
         />
+        </div>
         <div id="fiscal-period" style={{ display: 'grid', gap: 8 }}>
           <input
             value={tenant.fiscal_year_start || ''}
@@ -1027,6 +1029,7 @@ export default function Page() {
             }
           }}
           style={{ display: 'grid', gap: 8, maxWidth: 480, marginTop: 16 }}
+          id="departments"
         >
           <strong>New department</strong>
           <input

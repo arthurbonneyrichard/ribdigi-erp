@@ -329,6 +329,19 @@ export default function Page() {
     }).catch((err) => setError(err.message));
   }, []);
 
+  // Stage 106 E1 — honor Shell #purchase-settings
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    if (hash === 'purchase-settings' && tab !== 'settings') setTab('settings');
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [tab]);
+
   useEffect(() => {
     const product = products.find((p) => p.id === productId);
     if (product) setUnitPrice(String(product.cost_price ?? 0));

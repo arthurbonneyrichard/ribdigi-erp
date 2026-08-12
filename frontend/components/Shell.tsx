@@ -196,7 +196,7 @@ const primaryNavSpec: NavEntry[] = [
   {
     kind: 'link',
     label: 'Purchase Settings',
-    href: '/purchasing?tab=settings',
+    href: '/purchasing?tab=settings#purchase-settings',
     modules: ['purchasing'],
   },
   { kind: 'section', label: 'People' },
@@ -493,6 +493,36 @@ const primaryNavSpec: NavEntry[] = [
     modules: ['reports'],
   },
   { kind: 'link', label: 'Notifications', href: '/notifications', modules: ['notifications'] },
+  {
+    kind: 'link',
+    label: 'Unread Notifications',
+    href: '/notifications?status=unread',
+    modules: ['notifications'],
+  },
+  {
+    kind: 'link',
+    label: 'Stock Alerts',
+    href: '/notifications?group=stock',
+    modules: ['notifications'],
+  },
+  {
+    kind: 'link',
+    label: 'Order Alerts',
+    href: '/notifications?group=orders',
+    modules: ['notifications'],
+  },
+  {
+    kind: 'link',
+    label: 'Payment Alerts',
+    href: '/notifications?group=payments',
+    modules: ['notifications'],
+  },
+  {
+    kind: 'link',
+    label: 'System Alerts',
+    href: '/notifications?group=system',
+    modules: ['notifications'],
+  },
   { kind: 'link', label: 'AI Assistant', href: '/ai', modules: ['ai'] },
   {
     kind: 'link',
@@ -527,6 +557,24 @@ const primaryNavSpec: NavEntry[] = [
   { kind: 'link', label: 'Settings', href: '/company', modules: ['company'] },
   {
     kind: 'link',
+    label: 'Company Profile',
+    href: '/company#profile',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Company Logo',
+    href: '/company#logo',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Locale Formats',
+    href: '/company#locale',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
     label: 'Company Tax',
     href: '/company#tax',
     modules: ['company', 'tax'],
@@ -559,6 +607,12 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Branches',
     href: '/company#branches',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Departments',
+    href: '/company#departments',
     modules: ['company'],
   },
   {

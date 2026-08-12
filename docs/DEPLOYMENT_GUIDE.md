@@ -1439,3 +1439,4 @@ Stage 102 D1 residual reports & surface honesty fidelity — `docs/STAGE_102_FID
 Stage 103 D1 security, backup & company org fidelity — `docs/STAGE_103_FIDELITY.md` (`test_stage103_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 104 D1 ledger filters, commerce leaves & admin fidelity — `docs/STAGE_104_FIDELITY.md` (`test_stage104_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 105 D1 permissions, store policies & platform audit fidelity — `docs/STAGE_105_FIDELITY.md` (`test_stage105_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+Stage 106 D1 approval filters, company profile & notification inbox fidelity — `docs/STAGE_106_FIDELITY.md` (`test_stage106_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

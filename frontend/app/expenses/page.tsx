@@ -110,10 +110,15 @@ export default function Page() {
   const [editBudgetAmount, setEditBudgetAmount] = useState('');
   const [editAccountId, setEditAccountId] = useState('');
 
-  async function refresh(statusOverride?: string) {
+  async function refresh(
+    statusOverride?: string,
+    opts?: { storeId?: string; departmentId?: string },
+  ) {
     const params = new URLSearchParams();
-    if (filterStoreId) params.set('store_id', filterStoreId);
-    if (filterDepartmentId) params.set('department_id', filterDepartmentId);
+    const store = opts?.storeId !== undefined ? opts.storeId : filterStoreId;
+    const dept = opts?.departmentId !== undefined ? opts.departmentId : filterDepartmentId;
+    if (store) params.set('store_id', store);
+    if (dept) params.set('department_id', dept);
     const status = statusOverride !== undefined ? statusOverride : filterStatus;
     if (status) params.set('status', status);
     const expQs = params.toString() ? `?${params.toString()}` : '';
@@ -145,23 +150,47 @@ export default function Page() {
     if (!recCategoryId && cats.data?.length) setRecCategoryId(cats.data[0].id);
   }
 
-  function setStatusFilter(next: string) {
-    setFilterStatus(next);
+  // Stage 106 E1 — shareable status + store_id + department_id filters
+  function writeExpenseFilters(patch: {
+    status?: string;
+    storeId?: string;
+    departmentId?: string;
+  }) {
+    const nextStatus = patch.status !== undefined ? patch.status : filterStatus;
+    const nextStore = patch.storeId !== undefined ? patch.storeId : filterStoreId;
+    const nextDept = patch.departmentId !== undefined ? patch.departmentId : filterDepartmentId;
+    if (patch.status !== undefined) setFilterStatus(patch.status);
+    if (patch.storeId !== undefined) setFilterStoreId(patch.storeId);
+    if (patch.departmentId !== undefined) setFilterDepartmentId(patch.departmentId);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
-      if (!next) url.searchParams.delete('status');
-      else url.searchParams.set('status', next);
+      if (!nextStatus) url.searchParams.delete('status');
+      else url.searchParams.set('status', nextStatus);
+      if (!nextStore) url.searchParams.delete('store_id');
+      else url.searchParams.set('store_id', nextStore);
+      if (!nextDept) url.searchParams.delete('department_id');
+      else url.searchParams.set('department_id', nextDept);
       const qs = url.searchParams.toString();
       window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
     }
+  }
+
+  function setStatusFilter(next: string) {
+    writeExpenseFilters({ status: next });
     refresh(next).catch((err) => setError(err.message));
   }
 
   useEffect(() => {
-    const raw = new URLSearchParams(window.location.search).get('status')?.trim() || '';
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('status')?.trim() || '';
+    const store = params.get('store_id')?.trim() || '';
+    const dept = params.get('department_id')?.trim() || '';
     const allowed = ['pending', 'approved', 'rejected'];
-    if (allowed.includes(raw)) setFilterStatus(raw);
-    refresh(allowed.includes(raw) ? raw : '').catch((err) => setError(err.message));
+    const status = allowed.includes(raw) ? raw : '';
+    if (status) setFilterStatus(status);
+    if (store) setFilterStoreId(store);
+    if (dept) setFilterDepartmentId(dept);
+    refresh(status, { storeId: store, departmentId: dept }).catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -940,7 +969,11 @@ export default function Page() {
             <option value="approved">approved</option>
             <option value="rejected">rejected</option>
           </select>
-          <select value={filterStoreId} onChange={(e) => setFilterStoreId(e.target.value)}>
+          <select
+            value={filterStoreId}
+            onChange={(e) => writeExpenseFilters({ storeId: e.target.value })}
+            aria-label="Filter expenses by store"
+          >
             <option value="">All stores</option>
             {stores.map((s) => (
               <option key={s.id} value={s.id}>
@@ -950,7 +983,8 @@ export default function Page() {
           </select>
           <select
             value={filterDepartmentId}
-            onChange={(e) => setFilterDepartmentId(e.target.value)}
+            onChange={(e) => writeExpenseFilters({ departmentId: e.target.value })}
+            aria-label="Filter expenses by department"
           >
             <option value="">All departments</option>
             {departments.map((d) => (

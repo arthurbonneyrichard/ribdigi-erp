@@ -23,4 +23,4 @@ Stage 105 Tenant MVP Permissions Matrix, Store Policies & Platform Audit Ops del
 
 ## Next stage
 
-Stage 106 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 105 feature scope remains frozen.
+Stage 106 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-218](ADR_218_STAGE106_OPEN.md) + [STAGE_106_PLAN.md](STAGE_106_PLAN.md) (Tenant MVP Approval Filters, Company Profile & Notification Inbox Ops). Stage 105 feature scope remains frozen.
