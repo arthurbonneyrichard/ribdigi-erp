@@ -463,7 +463,8 @@ export default function Page() {
         <h3>Chat</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Try: &quot;What is my top selling product this month?&quot; or &quot;Create a purchase order for 50
-          units of Alpha Widget&quot;.
+          units of Alpha Widget&quot;. Export via <code>GET /ai/chat/history/export</code> (Stage 148
+          C1).
         </p>
         <textarea
           value={q}
@@ -471,12 +472,20 @@ export default function Page() {
           style={{ width: '100%', minHeight: 100 }}
           placeholder="Ask a business question"
         />
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           <button type="button" onClick={go} disabled={!q.trim()}>
             Ask
           </button>
           <button type="button" onClick={loadHistory}>
             Refresh history
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv('/ai/chat/history/export?limit=50', 'ai_chat_history_export.csv')
+            }
+          >
+            Export chat history CSV
           </button>
         </div>
         {a && (
@@ -767,10 +776,24 @@ export default function Page() {
         <h3>Cross-domain analysis</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Orchestrates Inventory, Sales, Purchases, and Expenses analyzers into synthesis signals.
+          Export via <code>GET /ai/cross-domain/analysis/export</code> (Stage 148 X1).
         </p>
-        <button type="button" onClick={loadCrossDomainAnalysis} style={{ marginBottom: 12 }}>
-          Refresh cross-domain analysis
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={loadCrossDomainAnalysis}>
+            Refresh cross-domain analysis
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv(
+                '/ai/cross-domain/analysis/export',
+                'ai_cross_domain_analysis_export.csv'
+              )
+            }
+          >
+            Export cross-domain CSV
+          </button>
+        </div>
         {crossSummary && (
           <p>
             Sales: {crossSummary.total_sales} · Purchases: {crossSummary.total_purchase_spend} ·
@@ -852,7 +875,8 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }} id="customer">
         <h3>Customer assistant</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Churn risk, best customers, and promotion suggestions from sales history.
+          Churn risk, best customers, and promotion suggestions from sales history. Export via{' '}
+          <code>GET /ai/customers/insights/export</code> (Stage 148 I1).
         </p>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
           <input
@@ -866,6 +890,17 @@ export default function Page() {
           </button>
           <button type="button" onClick={loadCustomerInsights}>
             Refresh insights
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadAiCsv(
+                '/ai/customers/insights/export?lookback_days=180',
+                'ai_customer_insights_export.csv'
+              )
+            }
+          >
+            Export customer insights CSV
           </button>
         </div>
         {customerAnswer && <p>{customerAnswer}</p>}

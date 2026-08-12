@@ -13332,6 +13332,27 @@ async def ai_chat_history(
     return env({"items": items})
 
 
+@api.get("/ai/chat/history/export")
+async def ai_chat_history_export(
+    limit: int = 50,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 148 C1 — current-user AI chat history CSV."""
+    text = await ai_ops_export_svc.export_chat_history_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        limit=limit,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_chat_history_export.csv"'
+        },
+    )
+
 @api.get("/ai/insights")
 async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSession = Depends(get_db)):
     from app import ai_insights as ai_insights_svc
@@ -13703,6 +13724,30 @@ async def ai_cross_domain_analysis(
     return env(data)
 
 
+@api.get("/ai/cross-domain/analysis/export")
+async def ai_cross_domain_analysis_export(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    lookback_days: int = 90,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 148 X1 — cross-domain analysis CSV."""
+    text = await ai_ops_export_svc.export_cross_domain_analysis_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+        lookback_days=lookback_days,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_cross_domain_analysis_export.csv"'
+        },
+    )
+
 @api.get("/ai/security/alerts")
 async def ai_security_alerts(
     lookback_hours: int = 72,
@@ -13958,6 +14003,24 @@ async def ai_customers_insights(
     )
     return env(data)
 
+
+@api.get("/ai/customers/insights/export")
+async def ai_customers_insights_export(
+    lookback_days: int = 180,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 148 I1 — customer insights CSV."""
+    text = await ai_ops_export_svc.export_customer_insights_csv(
+        db, tenant_id=claims["tenant_id"], lookback_days=lookback_days
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_customer_insights_export.csv"'
+        },
+    )
 
 @api.post("/ai/documents/analyze")
 async def ai_documents_analyze(

@@ -185,3 +185,5 @@ Stage 145 D1 Tenant MVP AI Security Alerts CSV, Report Templates CSV & Business 
 Stage 146 D1 Tenant MVP AI Low-Stock Prediction CSV, Demand Forecast CSV & Dead-Stock CSV Export Fidelity — `docs/STAGE_146_FIDELITY.md` (`test_stage146_fidelity_d1.py`); Stage 146 L1 Complete; Stage 146 F1 Complete; Stage 146 K1 Complete (MVP honesty); exit `docs/STAGE_146_EXIT_CRITERIA.md`, ADR-299.
 
 Stage 147 D1 Tenant MVP AI Sales Analysis CSV, Expense Analysis CSV & Purchases Analysis CSV Export Fidelity — `docs/STAGE_147_FIDELITY.md` (`test_stage147_fidelity_d1.py`); Stage 147 S1 Complete; Stage 147 E1 Complete; Stage 147 P1 Complete (MVP honesty); exit `docs/STAGE_147_EXIT_CRITERIA.md`, ADR-301.
+
+Stage 148 D1 Tenant MVP AI Chat History CSV, Customer Insights CSV & Cross-Domain Analysis CSV Export Fidelity — `docs/STAGE_148_FIDELITY.md` (`test_stage148_fidelity_d1.py`); Stage 148 C1 Complete; Stage 148 I1 Complete; Stage 148 X1 Complete (MVP honesty); exit `docs/STAGE_148_EXIT_CRITERIA.md`, ADR-303.

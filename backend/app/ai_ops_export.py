@@ -1,6 +1,7 @@
 """CSV export for AI security alerts, report templates, business insights (Stage 145),
 inventory low-stock / forecast / dead-stock predictions (Stage 146),
-and sales / expense / purchases analysis (Stage 147)."""
+sales / expense / purchases analysis (Stage 147),
+and chat history / customer insights / cross-domain analysis (Stage 148)."""
 
 from __future__ import annotations
 
@@ -10,6 +11,9 @@ import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import ai_chat as ai_chat_svc
+from app import ai_cross_domain as ai_cross_domain_svc
+from app import ai_customers as ai_customers_svc
 from app import ai_expenses as ai_expenses_svc
 from app import ai_insights as ai_insights_svc
 from app import ai_inventory as ai_inventory_svc
@@ -201,6 +205,63 @@ PURCHASES_ANALYSIS_EXPORT_COLUMNS = [
     "suggestion_severity",
     "suggestion_summary",
     "suggestion_action",
+]
+
+CHAT_HISTORY_EXPORT_COLUMNS = [
+    "id",
+    "message",
+    "answer",
+    "intent",
+    "created_at",
+]
+
+CUSTOMER_INSIGHTS_EXPORT_COLUMNS = [
+    "row_type",
+    "generated_at",
+    "lookback_days",
+    "method",
+    "customer_count",
+    "customer_id",
+    "name",
+    "code",
+    "credit_limit",
+    "balance",
+    "recency_days",
+    "frequency",
+    "monetary",
+    "open_invoice_balance",
+    "churn_score",
+    "churn_band",
+    "churn_reasons",
+    "last_purchase_at",
+    "promotion_type",
+    "promotion_label",
+    "promotion_suggestion",
+    "discount_pct",
+]
+
+CROSS_DOMAIN_EXPORT_COLUMNS = [
+    "row_type",
+    "generated_at",
+    "from_date",
+    "to_date",
+    "method",
+    "lookback_days",
+    "domains_analyzed",
+    "domains_with_activity",
+    "cross_signal_count",
+    "total_sales",
+    "total_purchase_spend",
+    "total_approved_expenses",
+    "at_risk_sku_count",
+    "overdue_purchase_invoice_count",
+    "signal_kind",
+    "signal_severity",
+    "signal_title",
+    "signal_summary",
+    "signal_action",
+    "signal_domains",
+    "signal_metrics",
 ]
 
 
@@ -651,6 +712,183 @@ async def export_purchases_analysis_csv(
                 "suggestion_severity": _cell(suggestion.get("severity")),
                 "suggestion_summary": _cell(suggestion.get("summary")),
                 "suggestion_action": _cell(suggestion.get("action")),
+            }
+        )
+        writer.writerow(row)
+    return buf.getvalue()
+
+
+async def export_chat_history_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    limit: int = 50,
+) -> str:
+    """Stage 148 C1 — current-user AI chat history CSV (no structured payload dump)."""
+    items = await ai_chat_svc.list_history(
+        db, tenant_id=tenant_id, user_id=user_id, limit=limit
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=CHAT_HISTORY_EXPORT_COLUMNS)
+    writer.writeheader()
+    for item in items:
+        writer.writerow(
+            {
+                "id": _cell(item.get("id")),
+                "message": _cell(item.get("message")),
+                "answer": _cell(item.get("answer")),
+                "intent": _cell(item.get("intent")),
+                "created_at": _cell(item.get("created_at")),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_customer_insights_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    lookback_days: int = 180,
+) -> str:
+    """Stage 148 I1 — customer intelligence multi-section CSV."""
+    data = await ai_customers_svc.customer_intelligence(
+        db, tenant_id, lookback_days=lookback_days
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=CUSTOMER_INSIGHTS_EXPORT_COLUMNS)
+    writer.writeheader()
+
+    meta = {
+        "generated_at": _cell(data.get("generated_at")),
+        "lookback_days": _cell(data.get("lookback_days")),
+        "method": _cell(data.get("method")),
+    }
+
+    summary_row = _blank_row(CUSTOMER_INSIGHTS_EXPORT_COLUMNS)
+    summary_row.update(
+        {
+            **meta,
+            "row_type": "summary",
+            "customer_count": _cell(data.get("customer_count")),
+        }
+    )
+    writer.writerow(summary_row)
+
+    def _customer_row(row_type: str, cust: dict) -> dict[str, str]:
+        churn = cust.get("churn") or {}
+        promo = cust.get("promotion") or {}
+        row = _blank_row(CUSTOMER_INSIGHTS_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": row_type,
+                "customer_count": _cell(data.get("customer_count")),
+                "customer_id": _cell(cust.get("customer_id")),
+                "name": _cell(cust.get("name")),
+                "code": _cell(cust.get("code")),
+                "credit_limit": _cell(cust.get("credit_limit")),
+                "balance": _cell(cust.get("balance")),
+                "recency_days": _cell(cust.get("recency_days")),
+                "frequency": _cell(cust.get("frequency")),
+                "monetary": _cell(cust.get("monetary")),
+                "open_invoice_balance": _cell(cust.get("open_invoice_balance")),
+                "churn_score": _cell(churn.get("score")),
+                "churn_band": _cell(churn.get("band")),
+                "churn_reasons": _json_cell(churn.get("reasons")),
+                "last_purchase_at": _cell(cust.get("last_purchase_at")),
+                "promotion_type": _cell(promo.get("type")),
+                "promotion_label": _cell(promo.get("label")),
+                "promotion_suggestion": _cell(promo.get("suggestion")),
+                "discount_pct": _cell(promo.get("discount_pct")),
+            }
+        )
+        return row
+
+    for cust in data.get("best_customers") or []:
+        writer.writerow(_customer_row("best_customer", cust))
+    for cust in data.get("churn_risks") or []:
+        writer.writerow(_customer_row("churn_risk", cust))
+    for promo in data.get("promotion_suggestions") or []:
+        row = _blank_row(CUSTOMER_INSIGHTS_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "promotion",
+                "customer_id": _cell(promo.get("customer_id")),
+                "name": _cell(promo.get("name")),
+                "churn_band": _cell(promo.get("churn_band")),
+                "promotion_type": _cell(promo.get("type")),
+                "promotion_label": _cell(promo.get("label")),
+                "promotion_suggestion": _cell(promo.get("suggestion")),
+                "discount_pct": _cell(promo.get("discount_pct")),
+            }
+        )
+        writer.writerow(row)
+    return buf.getvalue()
+
+
+async def export_cross_domain_analysis_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    lookback_days: int = 90,
+) -> str:
+    """Stage 148 X1 — cross-domain analysis multi-section CSV (summary / signals)."""
+    data = await ai_cross_domain_svc.analyze_cross_domain(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        lookback_days=lookback_days,
+    )
+    summary = data.get("summary") or {}
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=CROSS_DOMAIN_EXPORT_COLUMNS)
+    writer.writeheader()
+
+    meta = {
+        "generated_at": _cell(data.get("generated_at")),
+        "from_date": _cell(data.get("from_date")),
+        "to_date": _cell(data.get("to_date")),
+        "method": _cell(data.get("method")),
+        "lookback_days": _cell(data.get("lookback_days")),
+    }
+
+    summary_row = _blank_row(CROSS_DOMAIN_EXPORT_COLUMNS)
+    summary_row.update(
+        {
+            **meta,
+            "row_type": "summary",
+            "domains_analyzed": _json_cell(summary.get("domains_analyzed")),
+            "domains_with_activity": _json_cell(summary.get("domains_with_activity")),
+            "cross_signal_count": _cell(summary.get("cross_signal_count")),
+            "total_sales": _cell(summary.get("total_sales")),
+            "total_purchase_spend": _cell(summary.get("total_purchase_spend")),
+            "total_approved_expenses": _cell(summary.get("total_approved_expenses")),
+            "at_risk_sku_count": _cell(summary.get("at_risk_sku_count")),
+            "overdue_purchase_invoice_count": _cell(
+                summary.get("overdue_purchase_invoice_count")
+            ),
+        }
+    )
+    writer.writerow(summary_row)
+
+    for signal in data.get("cross_signals") or []:
+        row = _blank_row(CROSS_DOMAIN_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "signal",
+                "signal_kind": _cell(signal.get("kind")),
+                "signal_severity": _cell(signal.get("severity")),
+                "signal_title": _cell(signal.get("title")),
+                "signal_summary": _cell(signal.get("summary")),
+                "signal_action": _cell(signal.get("action")),
+                "signal_domains": _json_cell(signal.get("domains")),
+                "signal_metrics": _json_cell(signal.get("metrics")),
             }
         )
         writer.writerow(row)

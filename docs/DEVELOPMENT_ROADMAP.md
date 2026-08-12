@@ -2378,6 +2378,18 @@ Every feature in every phase must meet:
 
 **Stage 147 exit (2026-08-12):** S1, E1, P1, D1, H147x met — `docs/STAGE_147_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_301_STAGE147_FREEZE.md`. Fidelity: `docs/STAGE_147_FIDELITY.md`.
 
+**Stage 148 open (2026-08-12):** Tenant MVP AI Chat History CSV, Customer Insights CSV & Cross-Domain Analysis CSV Export Fidelity — `docs/ADR_302_STAGE148_OPEN.md` + `docs/STAGE_148_PLAN.md` (Chat → Customer → Cross-domain → Fidelity; C1 next).
+
+**Stage 148 C1 (2026-08-12):** Chat history CSV (`test_stage148_chat_history_c1.py`).
+
+**Stage 148 I1 (2026-08-12):** Customer insights CSV (`test_stage148_customer_insights_i1.py`).
+
+**Stage 148 X1 (2026-08-12):** Cross-domain analysis CSV (`test_stage148_cross_domain_x1.py`).
+
+**Stage 148 D1 (2026-08-12):** Chat / customer / cross-domain export fidelity sync — `docs/STAGE_148_FIDELITY.md` (`test_stage148_fidelity_d1.py`).
+
+**Stage 148 exit (2026-08-12):** C1, I1, X1, D1, H148x met — `docs/STAGE_148_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_303_STAGE148_FREEZE.md`. Fidelity: `docs/STAGE_148_FIDELITY.md`.
+
 
 
 

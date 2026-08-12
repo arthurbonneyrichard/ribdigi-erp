@@ -894,6 +894,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 147 P1** | Purchases analysis CSV (`test_stage147_purchases_analysis_p1.py`) |
 | **Stage 147 D1** | Sales / expense / purchases analysis export — `docs/STAGE_147_FIDELITY.md` (`test_stage147_fidelity_d1.py`) |
 | **Stage 147 H147x** | Exit + freeze — `docs/STAGE_147_EXIT_CRITERIA.md`, ADR-301 (`test_stage147_exit_h147x.py`); Stages 1–147 frozen; Stage 148+ requires CONTINUE/NEXT |
+| **Stage 148 open** | Tenant MVP AI Chat History CSV, Customer Insights CSV & Cross-Domain Analysis CSV Export Fidelity — `docs/STAGE_148_PLAN.md`, ADR-302 (`test_stage148_open.py`); Stages 1–147 remain frozen; C1 next historically |
+| **Stage 148 C1** | Chat history CSV (`test_stage148_chat_history_c1.py`) |
+| **Stage 148 I1** | Customer insights CSV (`test_stage148_customer_insights_i1.py`) |
+| **Stage 148 X1** | Cross-domain analysis CSV (`test_stage148_cross_domain_x1.py`) |
+| **Stage 148 D1** | Chat / customer / cross-domain export — `docs/STAGE_148_FIDELITY.md` (`test_stage148_fidelity_d1.py`) |
+| **Stage 148 H148x** | Exit + freeze — `docs/STAGE_148_EXIT_CRITERIA.md`, ADR-303 (`test_stage148_exit_h148x.py`); Stages 1–148 frozen; Stage 149+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

@@ -1508,3 +1508,5 @@ Stage 145 D1 AI security alerts, report templates & business insights export fid
 Stage 146 D1 AI low-stock prediction, demand forecast & dead-stock export fidelity — `docs/STAGE_146_FIDELITY.md` (`test_stage146_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 147 D1 AI sales analysis, expense analysis & purchases analysis export fidelity — `docs/STAGE_147_FIDELITY.md` (`test_stage147_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 148 D1 AI chat history, customer insights & cross-domain analysis export fidelity — `docs/STAGE_148_FIDELITY.md` (`test_stage148_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
