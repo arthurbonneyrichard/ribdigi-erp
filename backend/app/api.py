@@ -234,8 +234,45 @@ async def create_session(
 
 
 @api.get("/health")
-async def health():
-    return env({"status": "ok", "service": "ribdigi-erp"})
+async def health(request: Request, deep: bool = False):
+    """Liveness by default; pass deep=true for dependency checks (DB/Redis/broker)."""
+    from fastapi.responses import JSONResponse
+
+    from app import health as health_svc
+
+    factory = getattr(request.app.state, "session_factory", None)
+    body, status_code = await health_svc.assemble_health(deep=deep, session_factory=factory)
+    if status_code != 200:
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "data": body,
+                "message": "Service unhealthy",
+            },
+        )
+    return env(body)
+
+
+@api.get("/health/ready")
+async def health_ready(request: Request):
+    """Readiness probe — always runs deep dependency checks."""
+    from fastapi.responses import JSONResponse
+
+    from app import health as health_svc
+
+    factory = getattr(request.app.state, "session_factory", None)
+    body, status_code = await health_svc.assemble_health(deep=True, session_factory=factory)
+    if status_code != 200:
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "data": body,
+                "message": "Service not ready",
+            },
+        )
+    return env(body, "Ready")
 
 
 @api.post("/tenants")
@@ -7432,7 +7469,12 @@ async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin")
                 "scan_payment_due_minutes": app_settings.CELERY_PAYMENT_DUE_INTERVAL_MINUTES,
                 "generate_recurring_expenses_minutes": app_settings.CELERY_RECURRING_INTERVAL_MINUTES,
                 "run_due_backups_minutes": app_settings.CELERY_BACKUP_INTERVAL_MINUTES,
+                "scan_trial_lifecycle_minutes": app_settings.CELERY_TRIAL_INTERVAL_MINUTES,
                 "run_due_report_emails_minutes": app_settings.CELERY_REPORT_EMAIL_INTERVAL_MINUTES,
+                "refresh_fx_rates_minutes": app_settings.CELERY_FX_INTERVAL_MINUTES,
+                "sync_bank_feeds_minutes": app_settings.CELERY_BANK_FEED_INTERVAL_MINUTES,
+                "archive_cold_audit_logs_minutes": app_settings.CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES,
+                "retry_due_webhooks_seconds": app_settings.CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS,
             },
         }
     )

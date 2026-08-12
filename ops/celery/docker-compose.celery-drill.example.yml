@@ -1,0 +1,35 @@
+# Example compose sketch for Celery/Redis/RabbitMQ operator drills (not CI).
+# Stage Celery reliability R1 — see docs/CELERY_RELIABILITY_RUNBOOK.md
+services:
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  celery_worker:
+    image: ribdigi-backend:local
+    working_dir: /app
+    environment:
+      CELERY_ENABLED: "true"
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672//
+    depends_on:
+      redis: {condition: service_started}
+      rabbitmq: {condition: service_healthy}
+    command: celery -A app.celery_app.celery worker --loglevel=info --concurrency=2
+  celery_beat:
+    image: ribdigi-backend:local
+    working_dir: /app
+    environment:
+      CELERY_ENABLED: "true"
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672//
+    depends_on:
+      celery_worker: {condition: service_started}
+    command: celery -A app.celery_app.celery beat --loglevel=info

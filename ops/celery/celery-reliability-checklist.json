@@ -1,0 +1,62 @@
+{
+  "workstream": "R1",
+  "doc": "docs/CELERY_RELIABILITY_RUNBOOK.md",
+  "compose_sketch": "ops/celery/docker-compose.celery-drill.example.yml",
+  "live_broker_soak_executed": false,
+  "ai_nightly_claimed": false,
+  "ci_queue_drained_claimed": false,
+  "steps": [
+    {
+      "id": "1",
+      "title": "Confirm Redis and RabbitMQ are reachable from the API host",
+      "class": "operator_required"
+    },
+    {
+      "id": "2",
+      "title": "Start celery_worker and celery_beat (compose or systemd)",
+      "class": "operator_required"
+    },
+    {
+      "id": "3",
+      "title": "GET /api/v1/health/ready shows database, redis, celery_broker ok",
+      "class": "operator_required"
+    },
+    {
+      "id": "4",
+      "title": "GET /api/v1/jobs lists all 10 handlers and full beat map",
+      "class": "operator_required"
+    },
+    {
+      "id": "5",
+      "title": "POST /api/v1/jobs/scan_low_stock/run as super_admin (sync)",
+      "class": "operator_required"
+    },
+    {
+      "id": "6",
+      "title": "Optional enqueue=true and confirm worker log consumes task",
+      "class": "operator_required"
+    },
+    {
+      "id": "7",
+      "title": "Record soak outcome in ops change log (date, operator, result)",
+      "class": "operator_required"
+    },
+    {
+      "id": "8",
+      "title": "Packaging fidelity tests green (handlers ↔ beat ↔ runbook)",
+      "class": "packaging"
+    }
+  ],
+  "pass_criteria": [
+    "Deep health ready returns 200 with broker ok when Celery enabled",
+    "Jobs API beat map covers all registered handlers",
+    "Sync job run succeeds for at least one handler",
+    "AI nightly and CI queue-drain are not falsely claimed"
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/ops/celery_reliability_r1.json",
+  "deferred": [
+    "AI nightly Celery jobs",
+    "Live multi-hour broker soak certificate",
+    "CI-executed queue drain proof"
+  ]
+}
