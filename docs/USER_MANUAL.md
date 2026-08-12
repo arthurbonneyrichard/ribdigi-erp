@@ -285,6 +285,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **AI Inventory Predictions CSV:** AI Export predictions CSV (Stage 157 P1)
 - **Dashboard Sales-Trend CSV:** Dashboard Export sales-trend CSV (Stage 157 S1)
 - **Dashboard Top-Products CSV:** Dashboard Export top-products CSV (Stage 157 T1)
+- **Dashboard Stock-Alerts CSV:** Dashboard Export stock-alerts CSV (Stage 158 A1)
+- **Dashboard Expenses CSV:** Dashboard Export expenses CSV (Stage 158 E1)
+- **Dashboard Credit CSV:** Dashboard Export credit CSV (Stage 158 C1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

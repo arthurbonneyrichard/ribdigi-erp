@@ -330,6 +330,54 @@ export default function Page() {
           Export aggregates CSV
         </button>
       </p>
+      {view !== 'cashier' && (
+        <p className="muted" style={{ marginTop: 8 }}>
+          Slice exports: stock-alerts / expenses / credit via{' '}
+          <code>GET /dashboard/stock-alerts/export</code>,{' '}
+          <code>/dashboard/expenses/export</code>, <code>/dashboard/credit/export</code> (Stage
+          158 A1 / E1 / C1).
+        </p>
+      )}
+      {view !== 'cashier' && (
+        <p style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() =>
+              exportDashboardSliceCsv(
+                '/dashboard/stock-alerts/export',
+                'dashboard_stock_alerts_export.csv',
+                'Dashboard stock-alerts CSV downloaded (Stage 158 A1)',
+              )
+            }
+          >
+            Export stock-alerts CSV
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              exportDashboardSliceCsv(
+                '/dashboard/expenses/export',
+                'dashboard_expenses_export.csv',
+                'Dashboard expenses CSV downloaded (Stage 158 E1)',
+              )
+            }
+          >
+            Export expenses CSV
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              exportDashboardSliceCsv(
+                '/dashboard/credit/export',
+                'dashboard_credit_export.csv',
+                'Dashboard credit CSV downloaded (Stage 158 C1)',
+              )
+            }
+          >
+            Export credit CSV
+          </button>
+        </p>
+      )}
       <div className="grid">
         {cards.map((card) => {
           const body = (
@@ -431,6 +479,9 @@ export default function Page() {
       {has('expenses_by_category') && view !== 'cashier' && (
         <div className="card" style={{ marginTop: 20 }}>
           <h3 style={{ marginTop: 0 }}>Expenses by category</h3>
+          <p className="muted">
+            Export via <code>GET /dashboard/expenses/export</code> (Stage 158 E1).
+          </p>
           {(d.expenses_by_category || []).length === 0 ? (
             <p className="muted">No approved expenses yet</p>
           ) : (

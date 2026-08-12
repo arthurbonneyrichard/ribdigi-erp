@@ -23,4 +23,4 @@ Stage 157 Tenant MVP AI Inventory Predictions CSV, Dashboard Sales-Trend CSV & D
 
 ## Next stage
 
-Stage 158 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 157 feature scope remains frozen.
+Stage 158 opened via CONTINUE/NEXT as ADR-322 / ADR-323 (dashboard stock-alerts / expenses / credit CSV export fidelity). Stage 157 feature scope remains frozen.

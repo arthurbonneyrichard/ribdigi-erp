@@ -386,3 +386,57 @@ def export_dashboard_top_products_csv(*, payload: dict[str, Any]) -> bytes:
             ]
         )
     return buf.getvalue().encode("utf-8")
+
+
+def export_dashboard_stock_alerts_csv(*, payload: dict[str, Any]) -> bytes:
+    """Flatten GET /dashboard/stock-alerts into KPI CSV (Stage 158 A1)."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["metric", "value", "role_label"])
+    role = _cell(payload.get("role_label"))
+    for key in ("products", "low_stock", "out_of_stock", "expiring_batches"):
+        if key in payload:
+            writer.writerow([key, _cell(payload.get(key)), role])
+    return buf.getvalue().encode("utf-8")
+
+
+def export_dashboard_expenses_csv(*, payload: dict[str, Any]) -> bytes:
+    """Flatten GET /dashboard/expenses into category CSV (Stage 158 E1)."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["row_type", "category", "total", "total_expenses", "role_label"])
+    role = _cell(payload.get("role_label"))
+    writer.writerow(
+        [
+            "summary",
+            "",
+            "",
+            _cell(payload.get("total_expenses")),
+            role,
+        ]
+    )
+    for row in payload.get("expenses_by_category") or []:
+        if not isinstance(row, dict):
+            continue
+        writer.writerow(
+            [
+                "category",
+                _cell(row.get("category")),
+                _cell(row.get("total")),
+                "",
+                role,
+            ]
+        )
+    return buf.getvalue().encode("utf-8")
+
+
+def export_dashboard_credit_csv(*, payload: dict[str, Any]) -> bytes:
+    """Flatten GET /dashboard/credit into AR outstanding CSV (Stage 158 C1)."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["metric", "value", "role_label"])
+    role = _cell(payload.get("role_label"))
+    for key in ("credit_outstanding", "ar_total_due"):
+        if key in payload:
+            writer.writerow([key, _cell(payload.get(key)), role])
+    return buf.getvalue().encode("utf-8")

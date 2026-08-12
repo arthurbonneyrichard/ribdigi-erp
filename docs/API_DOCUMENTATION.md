@@ -1696,3 +1696,5 @@ Stage 155 D1 — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`): 
 Stage 156 D1 — `docs/STAGE_156_FIDELITY.md` (`test_stage156_fidelity_d1.py`): Stage 156 G1 `GET /products/{id}/images/export`; Stage 156 V1 `GET /products/{id}/variants/export`; Stage 156 F1 `GET /settings/bank-feed/export`.
 
 Stage 157 D1 — `docs/STAGE_157_FIDELITY.md` (`test_stage157_fidelity_d1.py`): Stage 157 P1 `GET /ai/inventory/predictions/export`; Stage 157 S1 `GET /dashboard/sales-trend/export`; Stage 157 T1 `GET /dashboard/top-products/export`.
+
+Stage 158 D1 — `docs/STAGE_158_FIDELITY.md` (`test_stage158_fidelity_d1.py`): Stage 158 A1 `GET /dashboard/stock-alerts/export`; Stage 158 E1 `GET /dashboard/expenses/export`; Stage 158 C1 `GET /dashboard/credit/export`.

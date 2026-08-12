@@ -2498,6 +2498,19 @@ Every feature in every phase must meet:
 
 **Stage 157 exit (2026-08-12):** P1, S1, T1, D1, H157x met — `docs/STAGE_157_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_321_STAGE157_FREEZE.md`. Fidelity: `docs/STAGE_157_FIDELITY.md`.
 
+**Stage 158 open (2026-08-12):** Tenant MVP Dashboard Stock-Alerts CSV, Dashboard Expenses CSV & Dashboard Credit CSV Export Fidelity — `docs/ADR_322_STAGE158_OPEN.md` + `docs/STAGE_158_PLAN.md` (Stock-alerts → Expenses → Credit → Fidelity; A1 next).
+
+**Stage 158 A1 (2026-08-12):** Dashboard stock-alerts CSV (`test_stage158_stock_alerts_a1.py`).
+
+**Stage 158 E1 (2026-08-12):** Dashboard expenses CSV (`test_stage158_expenses_e1.py`).
+
+**Stage 158 C1 (2026-08-12):** Dashboard credit CSV (`test_stage158_credit_c1.py`).
+
+**Stage 158 D1 (2026-08-12):** Dashboard stock-alerts / expenses / credit export fidelity sync — `docs/STAGE_158_FIDELITY.md` (`test_stage158_fidelity_d1.py`).
+
+**Stage 158 exit (2026-08-12):** A1, E1, C1, D1, H158x met — `docs/STAGE_158_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_323_STAGE158_FREEZE.md`. Fidelity: `docs/STAGE_158_FIDELITY.md`.
+
+
 
 
 

@@ -3325,6 +3325,25 @@ async def dashboard_expenses(
     return env(await slices_svc.expenses_slice(db, claims))
 
 
+@api.get("/dashboard/expenses/export")
+async def dashboard_expenses_export(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 158 E1 — dashboard expenses-by-category CSV (distinct from Stage 153 aggregates)."""
+    from app import dashboard_slices as slices_svc
+
+    payload = await slices_svc.expenses_slice(db, claims)
+    text = tenant_ops_export_svc.export_dashboard_expenses_csv(payload=payload)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="dashboard_expenses_export.csv"'
+        },
+    )
+
+
 @api.get("/dashboard/credit")
 async def dashboard_credit(
     claims=Depends(require_permission("dashboard", "read")),
@@ -3335,6 +3354,25 @@ async def dashboard_credit(
     return env(await slices_svc.credit_slice(db, claims))
 
 
+@api.get("/dashboard/credit/export")
+async def dashboard_credit_export(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 158 C1 — dashboard AR outstanding CSV (distinct from Stage 153 aggregates)."""
+    from app import dashboard_slices as slices_svc
+
+    payload = await slices_svc.credit_slice(db, claims)
+    text = tenant_ops_export_svc.export_dashboard_credit_csv(payload=payload)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="dashboard_credit_export.csv"'
+        },
+    )
+
+
 @api.get("/dashboard/stock-alerts")
 async def dashboard_stock_alerts(
     claims=Depends(require_permission("dashboard", "read")),
@@ -3343,6 +3381,25 @@ async def dashboard_stock_alerts(
     from app import dashboard_slices as slices_svc
 
     return env(await slices_svc.stock_alerts(db, claims))
+
+
+@api.get("/dashboard/stock-alerts/export")
+async def dashboard_stock_alerts_export(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 158 A1 — dashboard stock-alerts KPI CSV (distinct from Stage 153 aggregates)."""
+    from app import dashboard_slices as slices_svc
+
+    payload = await slices_svc.stock_alerts(db, claims)
+    text = tenant_ops_export_svc.export_dashboard_stock_alerts_csv(payload=payload)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="dashboard_stock_alerts_export.csv"'
+        },
+    )
 
 
 @api.get("/dashboard/user-stats")
