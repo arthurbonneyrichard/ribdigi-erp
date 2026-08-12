@@ -56,6 +56,7 @@ _SEGMENT_MODULE = {
     "backup": "backup",
     "ai": "ai",
     "dashboard": "dashboard",
+    "api-keys": "security",
 }
 
 _UUID_RE = re.compile(

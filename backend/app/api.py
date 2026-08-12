@@ -23,6 +23,7 @@ from app.rbac import (
 )
 from app import custom_roles as custom_roles_svc
 from app import org_units as org_units_svc
+from app import api_keys as api_keys_svc
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
 from app import purchase_suggestions as purchase_suggestions_svc
@@ -7701,6 +7702,103 @@ async def backup_restore(
     await db.commit()
     msg = "Restore dry-run completed" if report.get("dry_run") else "Restore applied"
     return env(report, msg)
+
+
+@api.get("/api-keys")
+async def api_keys_list(
+    status: str | None = None,
+    active_only: bool = False,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await api_keys_svc.list_keys(
+        db, claims["tenant_id"], status=status, active_only=active_only
+    )
+    return env([api_keys_svc.serialize_key(r) for r in rows])
+
+
+@api.post("/api-keys")
+async def api_keys_create(
+    request: Request,
+    payload: dict | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    body = payload or {}
+    expires_at = None
+    raw_exp = body.get("expires_at")
+    if raw_exp:
+        try:
+            expires_at = datetime.fromisoformat(str(raw_exp).replace("Z", "+00:00")).replace(
+                tzinfo=None
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="expires_at must be ISO-8601") from exc
+    row, raw = await api_keys_svc.create_key(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        name=str(body.get("name") or ""),
+        permissions=body.get("permissions"),
+        expires_at=expires_at,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="security",
+        action="api_key_create",
+        entity="api_key",
+        entity_id=row.id,
+        details={"name": row.name, "key_prefix": row.key_prefix, "permissions": row.permissions},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(
+        api_keys_svc.serialize_key(row, include_secret=raw),
+        "API key created — store the secret now",
+    )
+
+
+@api.get("/api-keys/{key_id}")
+async def api_keys_get(
+    key_id: str,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await api_keys_svc.get_key(db, claims["tenant_id"], key_id)
+    return env(api_keys_svc.serialize_key(row))
+
+
+@api.delete("/api-keys/{key_id}")
+async def api_keys_revoke(
+    key_id: str,
+    request: Request,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    row = await api_keys_svc.revoke_key(db, claims["tenant_id"], key_id)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="security",
+        action="api_key_revoke",
+        entity="api_key",
+        entity_id=row.id,
+        details={"name": row.name, "key_prefix": row.key_prefix},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(api_keys_svc.serialize_key(row), "API key revoked")
 
 
 @api.post("/ai/chat")

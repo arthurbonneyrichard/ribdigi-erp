@@ -108,6 +108,34 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
 VALID_ROLES = set(ROLE_PERMISSIONS.keys())
 SYSTEM_ROLES = frozenset(VALID_ROLES)
 
+# Modules that may appear on API keys / custom role permission maps.
+SYSTEM_MODULES = frozenset(
+    {
+        "dashboard",
+        "inventory",
+        "sales",
+        "pos",
+        "purchasing",
+        "expenses",
+        "accounting",
+        "credit",
+        "tax",
+        "stores",
+        "reports",
+        "notifications",
+        "audit",
+        "backup",
+        "ai",
+        "users",
+        "security",
+        "company",
+        "customers",
+        "suppliers",
+        "platform",
+    }
+)
+ALLOWED_ACTIONS = frozenset({"read", "write", "approve", "*"})
+
 
 def is_system_role(role: str | None) -> bool:
     return (role or "") in SYSTEM_ROLES
