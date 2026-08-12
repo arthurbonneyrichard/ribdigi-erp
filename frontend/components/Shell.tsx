@@ -209,6 +209,12 @@ const primaryNavSpec: NavEntry[] = [
     href: '/sales?tab=invoices&status=overdue',
     modules: ['sales'],
   },
+  {
+    kind: 'link',
+    label: 'Paid Invoices',
+    href: '/sales?tab=invoices&status=paid',
+    modules: ['sales'],
+  },
   { kind: 'link', label: 'POS', href: '/pos', modules: ['pos'] },
   {
     kind: 'link',
@@ -470,6 +476,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Bounced Cheques',
+    href: '/accounting?tab=cheques&cheque_status=bounced#cheques',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Cancelled Cheques',
+    href: '/accounting?tab=cheques&cheque_status=cancelled#cheques',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
     label: 'Received Cheques',
     href: '/accounting?tab=cheques&cheque_direction=received#cheques',
     modules: ['accounting'],
@@ -599,6 +617,18 @@ const primaryNavSpec: NavEntry[] = [
     href: '/sales?tab=orders&order_status=processing',
     modules: ['sales'],
   },
+  {
+    kind: 'link',
+    label: 'Shipped Orders',
+    href: '/sales?tab=orders&order_status=shipped',
+    modules: ['sales'],
+  },
+  {
+    kind: 'link',
+    label: 'Delivered Orders',
+    href: '/sales?tab=orders&order_status=delivered',
+    modules: ['sales'],
+  },
   { kind: 'link', label: 'Reports', href: '/reports', modules: ['reports'] },
   {
     kind: 'link',
@@ -628,6 +658,36 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Transfers Report',
     href: '/reports?tab=transfers',
+    modules: ['reports'],
+  },
+  {
+    kind: 'link',
+    label: 'Draft Transfers',
+    href: '/reports?tab=transfers&status=draft',
+    modules: ['reports'],
+  },
+  {
+    kind: 'link',
+    label: 'Requested Transfers',
+    href: '/reports?tab=transfers&status=requested',
+    modules: ['reports'],
+  },
+  {
+    kind: 'link',
+    label: 'In-transit Transfers',
+    href: '/reports?tab=transfers&status=in_transit',
+    modules: ['reports'],
+  },
+  {
+    kind: 'link',
+    label: 'Received Transfers',
+    href: '/reports?tab=transfers&status=received',
+    modules: ['reports'],
+  },
+  {
+    kind: 'link',
+    label: 'Cancelled Transfers',
+    href: '/reports?tab=transfers&status=cancelled',
     modules: ['reports'],
   },
   {
@@ -713,6 +773,12 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Unread Notifications',
     href: '/notifications?status=unread',
+    modules: ['notifications'],
+  },
+  {
+    kind: 'link',
+    label: 'Read Notifications',
+    href: '/notifications?status=read',
     modules: ['notifications'],
   },
   {

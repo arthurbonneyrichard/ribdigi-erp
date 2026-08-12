@@ -157,7 +157,7 @@ export default function Page() {
     }
   }
 
-  // Stage 104 A1 — honor journal status/store_id + cheque_direction/cheque_status URL filters
+  // Stage 104 A1 / Stage 113 C1 — honor journal status/store_id + cheque_direction/cheque_status URL filters (incl. bounced/cancelled)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     let jStatus = 'all';

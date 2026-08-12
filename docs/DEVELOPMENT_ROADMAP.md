@@ -1957,3 +1957,15 @@ Every feature in every phase must meet:
 **Stage 112 D1 (2026-08-12):** Report schedule leaves, stores cash drawer & platform plan fidelity sync — `docs/STAGE_112_FIDELITY.md` (`test_stage112_fidelity_d1.py`).
 
 **Stage 112 exit (2026-08-12):** R1, S1, P1, D1, H112x met — `docs/STAGE_112_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_231_STAGE112_FREEZE.md`. Fidelity: `docs/STAGE_112_FIDELITY.md`.
+
+**Stage 113 open (2026-08-12):** Tenant MVP Notification Read, Cheque Exceptions & Fulfillment Status Ops — `docs/ADR_232_STAGE113_OPEN.md` + `docs/STAGE_113_PLAN.md` (Notification read → Cheque exceptions → Fulfillment & transfers → Notification Read, Cheque Exceptions & Fulfillment Status Ops; N1 next).
+
+**Stage 113 N1 (2026-08-12):** Read Notifications Shell leaf (`test_stage113_notification_read_n1.py`).
+
+**Stage 113 C1 (2026-08-12):** Bounced/Cancelled Cheques Shell leaves (`test_stage113_cheque_exceptions_c1.py`).
+
+**Stage 113 S1 (2026-08-12):** Shipped/Delivered Orders + Paid Invoices + Transfer status Shell leaves (`test_stage113_fulfillment_status_s1.py`).
+
+**Stage 113 D1 (2026-08-12):** Notification read, cheque exceptions & fulfillment status fidelity sync — `docs/STAGE_113_FIDELITY.md` (`test_stage113_fidelity_d1.py`).
+
+**Stage 113 exit (2026-08-12):** N1, C1, S1, D1, H113x met — `docs/STAGE_113_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_233_STAGE113_FREEZE.md`. Fidelity: `docs/STAGE_113_FIDELITY.md`.

@@ -29,6 +29,7 @@ function PageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const [rows, setRows] = useState<Note[]>([]);
+  // Stage 113 N1 — Shell Read Notifications leaf honors ?status=read (URL sync EXISTS)
   const [status, setStatus] = useState(() => {
     const raw = searchParams.get('status');
     if (raw === null) return 'unread';

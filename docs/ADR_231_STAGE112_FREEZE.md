@@ -23,4 +23,4 @@ Stage 112 Tenant MVP Report Schedule Leaves, Stores Cash Drawer & Platform Plan 
 
 ## Next stage
 
-Stage 113 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 112 feature scope remains frozen.
+Stage 113 opened via CONTINUE/NEXT with a distinct product outline — Tenant MVP Notification Read, Cheque Exceptions & Fulfillment Status Ops — see `docs/ADR_232_STAGE113_OPEN.md` + `docs/STAGE_113_PLAN.md`. Stage 112 feature scope remains frozen.

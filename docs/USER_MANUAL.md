@@ -152,6 +152,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Daily / Weekly / Enabled Report Schedules:** Report schedule Shell leaves (Stage 112 R1)
 - **Cash Drawer:** Stores Shell deep-link (Stage 112 S1)
 - **Trial / Starter / Growth / Enterprise Plan Tenants:** Platform plan_code Shell leaves (Stage 112 P1)
+- **Read Notifications:** Notifications status Shell leaf (Stage 113 N1)
+- **Bounced / Cancelled Cheques:** Accounting cheque exception Shell leaves (Stage 113 C1)
+- **Shipped / Delivered Orders; Paid Invoices; Transfer status reports:** Sales fulfillment & transfer-report Shell leaves (Stage 113 S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out
