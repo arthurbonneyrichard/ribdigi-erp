@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api import api
+from app.audit_middleware import AuditMutationMiddleware
 from app.config import settings
+from app.db import SessionLocal
 from app.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 
 is_prod = settings.APP_ENV.lower() == "production"
@@ -19,6 +21,7 @@ app = FastAPI(
 # Middleware order: last added runs first on request.
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
+app.add_middleware(AuditMutationMiddleware)
 
 if settings.trusted_hosts:
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts)
@@ -45,6 +48,8 @@ cors_kwargs = {
 app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 app.include_router(api)
+# Used by AuditMutationMiddleware (overridable in tests via app.state.session_factory).
+app.state.session_factory = SessionLocal
 
 
 @app.get("/")
