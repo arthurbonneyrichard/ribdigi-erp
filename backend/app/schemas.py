@@ -289,12 +289,23 @@ class BrandUpdate(BaseModel):
 class UnitOfMeasureCreate(BaseModel):
     code: str
     name: str
+    base_unit_id: str | None = None
+    conversion_ratio: float | None = 1
 
 
 class UnitOfMeasureUpdate(BaseModel):
     code: str | None = None
     name: str | None = None
     is_active: bool | None = None
+    base_unit_id: str | None = None
+    conversion_ratio: float | None = None
+    clear_base: bool = False
+
+
+class UnitConvertPreview(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    from_unit_id: str | None = None
 
 
 class ProductVariantCreate(BaseModel):
@@ -379,6 +390,7 @@ class StockAdjust(BaseModel):
 class StockMove(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
+    unit_id: str | None = None  # entered UoM; converted to product.unit_id for stock
     notes: str | None = None
     warehouse_id: str | None = None
     variant_id: str | None = None

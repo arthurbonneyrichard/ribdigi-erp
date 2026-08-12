@@ -340,6 +340,7 @@ async def stock_in_with_batch(
     user_id: str,
     product_id: str,
     quantity: float,
+    unit_id: str | None = None,
     notes: str | None = None,
     warehouse_id: str | None = None,
     variant_id: str | None = None,
@@ -347,10 +348,19 @@ async def stock_in_with_batch(
     manufacturing_date: datetime | None = None,
     expiry_date: datetime | None = None,
 ) -> dict:
-    quantity = float(quantity)
-    if quantity <= 0:
+    from app.uom import to_stock_qty
+
+    entered_qty = float(quantity)
+    if entered_qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
     product = await get_product(db, tenant_id, product_id)
+    quantity_base, entered_unit_id, entered_qty = await to_stock_qty(
+        db,
+        tenant_id=tenant_id,
+        quantity=entered_qty,
+        from_unit_id=unit_id,
+        product=product,
+    )
     variant = None
     if variant_id:
         variant = await get_variant(db, tenant_id, variant_id)
@@ -390,27 +400,36 @@ async def stock_in_with_batch(
                 batch.expiry_date = expiry_date
             if warehouse_id:
                 batch.warehouse_id = warehouse_id
-        batch.quantity = float(batch.quantity or 0) + quantity
+        batch.quantity = float(batch.quantity or 0) + quantity_base
         batch.updated_at = datetime.utcnow()
+
+    note_text = notes
+    if entered_unit_id and product.unit_id and entered_unit_id != product.unit_id:
+        suffix = f"entered {entered_qty:g} (unit {entered_unit_id[:8]}) → {quantity_base:g} stock"
+        note_text = f"{notes}; {suffix}" if notes else suffix
 
     product = await apply_stock_change(
         db,
         tenant_id=tenant_id,
         product_id=product.id,
-        quantity_delta=quantity,
+        quantity_delta=quantity_base,
         movement_type="stock_in",
         user_id=user_id,
-        notes=notes,
+        notes=note_text,
         warehouse_id=warehouse_id,
         variant_id=variant.id if variant else None,
         batch_id=batch.id if batch else None,
     )
     if variant:
-        variant.stock_qty = float(variant.stock_qty or 0) + quantity
+        variant.stock_qty = float(variant.stock_qty or 0) + quantity_base
 
     return {
         "product_id": product.id,
         "stock_qty": float(product.stock_qty),
+        "quantity_entered": entered_qty,
+        "quantity_base": quantity_base,
+        "unit_id": entered_unit_id,
+        "stock_unit_id": product.unit_id,
         "variant": serialize_variant(variant) if variant else None,
         "batch": serialize_batch(batch) if batch else None,
     }
@@ -423,6 +442,7 @@ async def stock_out_with_batch(
     user_id: str,
     product_id: str,
     quantity: float,
+    unit_id: str | None = None,
     notes: str | None = None,
     warehouse_id: str | None = None,
     variant_id: str | None = None,
@@ -430,10 +450,19 @@ async def stock_out_with_batch(
     reference_type: str | None = None,
     reference_id: str | None = None,
 ) -> dict:
-    quantity = float(quantity)
-    if quantity <= 0:
+    from app.uom import to_stock_qty
+
+    entered_qty = float(quantity)
+    if entered_qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
     product = await get_product(db, tenant_id, product_id)
+    quantity, entered_unit_id, entered_qty = await to_stock_qty(
+        db,
+        tenant_id=tenant_id,
+        quantity=entered_qty,
+        from_unit_id=unit_id,
+        product=product,
+    )
     variant = None
     if variant_id:
         variant = await get_variant(db, tenant_id, variant_id)
@@ -521,6 +550,11 @@ async def stock_out_with_batch(
                     },
                 )
 
+    note_text = notes
+    if entered_unit_id and product.unit_id and entered_unit_id != product.unit_id:
+        suffix = f"entered {entered_qty:g} (unit {entered_unit_id[:8]}) → {quantity:g} stock"
+        note_text = f"{notes}; {suffix}" if notes else suffix
+
     product = await apply_stock_change(
         db,
         tenant_id=tenant_id,
@@ -528,7 +562,7 @@ async def stock_out_with_batch(
         quantity_delta=-quantity,
         movement_type="stock_out",
         user_id=user_id,
-        notes=notes,
+        notes=note_text,
         warehouse_id=warehouse_id,
         variant_id=variant.id if variant else None,
         batch_id=primary_batch_id,
@@ -541,6 +575,10 @@ async def stock_out_with_batch(
     return {
         "product_id": product.id,
         "stock_qty": float(product.stock_qty),
+        "quantity_entered": entered_qty,
+        "quantity_base": quantity,
+        "unit_id": entered_unit_id,
+        "stock_unit_id": product.unit_id,
         "variant": serialize_variant(variant) if variant else None,
         "batches_consumed": consumed,
     }

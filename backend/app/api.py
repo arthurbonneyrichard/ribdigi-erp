@@ -116,6 +116,7 @@ from app.schemas import (
     LowStockSuggestionsCreate,
     UnitOfMeasureCreate,
     UnitOfMeasureUpdate,
+    UnitConvertPreview,
     PurchaseInvoiceCreate,
     PurchaseInvoiceUpdate,
     PurchaseReturnCreate,
@@ -2826,8 +2827,9 @@ async def catalog_units(
     db: AsyncSession = Depends(get_db),
 ):
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
+    await db.commit()
     rows = await catalog_meta_svc.list_units(db, claims["tenant_id"])
-    return env([catalog_meta_svc.serialize_unit(r) for r in rows])
+    return env(await catalog_meta_svc.serialize_units(db, claims["tenant_id"], rows))
 
 
 @api.post("/catalog/units")
@@ -2836,14 +2838,49 @@ async def catalog_create_unit(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
     row = await catalog_meta_svc.create_unit(
         db,
         tenant_id=claims["tenant_id"],
         code=payload.code,
         name=payload.name,
+        base_unit_id=payload.base_unit_id,
+        conversion_ratio=payload.conversion_ratio,
     )
     await db.commit()
-    return env(catalog_meta_svc.serialize_unit(row), "Unit created")
+    await db.refresh(row)
+    base = None
+    if row.base_unit_id:
+        base = await db.get(m.UnitOfMeasure, row.base_unit_id)
+    return env(catalog_meta_svc.serialize_unit(row, base=base), "Unit created")
+
+
+@api.post("/catalog/units/convert")
+async def catalog_convert_unit(
+    payload: UnitConvertPreview,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.catalog import get_product
+    from app.uom import to_stock_qty
+
+    product = await get_product(db, claims["tenant_id"], payload.product_id)
+    quantity_base, entered_unit_id, entered_qty = await to_stock_qty(
+        db,
+        tenant_id=claims["tenant_id"],
+        quantity=payload.quantity,
+        from_unit_id=payload.from_unit_id,
+        product=product,
+    )
+    return env(
+        {
+            "product_id": product.id,
+            "stock_unit_id": product.unit_id,
+            "from_unit_id": entered_unit_id,
+            "quantity_entered": entered_qty,
+            "quantity_base": quantity_base,
+        }
+    )
 
 
 @api.patch("/catalog/units/{unit_id}")
@@ -2861,10 +2898,16 @@ async def catalog_patch_unit(
         code=data.get("code"),
         name=data.get("name"),
         is_active=data.get("is_active"),
+        base_unit_id=data.get("base_unit_id"),
+        conversion_ratio=data.get("conversion_ratio"),
+        clear_base=bool(data.get("clear_base")),
     )
     await db.commit()
-    return env(catalog_meta_svc.serialize_unit(row), "Unit updated")
-
+    await db.refresh(row)
+    base = None
+    if row.base_unit_id:
+        base = await db.get(m.UnitOfMeasure, row.base_unit_id)
+    return env(catalog_meta_svc.serialize_unit(row, base=base), "Unit updated")
 
 @api.delete("/catalog/units/{unit_id}")
 async def catalog_delete_unit(
@@ -3317,6 +3360,7 @@ async def stock_in(
         user_id=claims["sub"],
         product_id=payload.product_id,
         quantity=float(payload.quantity),
+        unit_id=payload.unit_id,
         notes=payload.notes,
         warehouse_id=payload.warehouse_id,
         variant_id=payload.variant_id,
@@ -3340,6 +3384,7 @@ async def stock_out(
         user_id=claims["sub"],
         product_id=payload.product_id,
         quantity=float(payload.quantity),
+        unit_id=payload.unit_id,
         notes=payload.notes,
         warehouse_id=payload.warehouse_id,
         variant_id=payload.variant_id,

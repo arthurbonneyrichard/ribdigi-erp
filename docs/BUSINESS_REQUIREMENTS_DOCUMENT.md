@@ -342,7 +342,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] **Categories:** Hierarchical category tree (parent/child), category code
   - [ ] **Brands:** Brand name, logo, description
-  - [ ] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios
+  - [x] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios
   - [ ] **Product Variants:** Size, color, flavor, dosage (pharmacy) variants with unique SKUs
   - [ ] **SKU:** Auto-generated or manual SKU assignment
   - [ ] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes

@@ -45,11 +45,14 @@ def serialize_brand(row: m.Brand) -> dict:
     }
 
 
-def serialize_unit(row: m.UnitOfMeasure) -> dict:
+def serialize_unit(row: m.UnitOfMeasure, *, base: m.UnitOfMeasure | None = None) -> dict:
     return {
         "id": row.id,
         "code": row.code,
         "name": row.name,
+        "base_unit_id": getattr(row, "base_unit_id", None),
+        "conversion_ratio": float(getattr(row, "conversion_ratio", None) or 1),
+        "base_unit_code": base.code if base else None,
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
@@ -323,13 +326,35 @@ async def list_units(db: AsyncSession, tenant_id: str) -> list[m.UnitOfMeasure]:
     )
 
 
+async def serialize_units(db: AsyncSession, tenant_id: str, rows: list[m.UnitOfMeasure]) -> list[dict]:
+    base_ids = {r.base_unit_id for r in rows if r.base_unit_id}
+    bases: dict[str, m.UnitOfMeasure] = {}
+    if base_ids:
+        bases = {
+            u.id: u
+            for u in (
+                await db.execute(
+                    select(m.UnitOfMeasure).where(
+                        m.UnitOfMeasure.tenant_id == tenant_id,
+                        m.UnitOfMeasure.id.in_(base_ids),
+                    )
+                )
+            ).scalars().all()
+        }
+    return [serialize_unit(r, base=bases.get(r.base_unit_id)) for r in rows]
+
+
 async def create_unit(
     db: AsyncSession,
     *,
     tenant_id: str,
     code: str,
     name: str,
+    base_unit_id: str | None = None,
+    conversion_ratio: float | None = None,
 ) -> m.UnitOfMeasure:
+    from app.uom import validate_unit_base
+
     code = code.strip().upper()
     name = name.strip()
     if not code or not name:
@@ -344,7 +369,21 @@ async def create_unit(
     ).scalar_one_or_none()
     if dup:
         raise HTTPException(status_code=409, detail="Unit code exists")
-    row = m.UnitOfMeasure(tenant_id=tenant_id, code=code, name=name, is_active=True)
+    base_id, ratio = await validate_unit_base(
+        db,
+        tenant_id=tenant_id,
+        unit_id=None,
+        base_unit_id=base_unit_id,
+        conversion_ratio=conversion_ratio,
+    )
+    row = m.UnitOfMeasure(
+        tenant_id=tenant_id,
+        code=code,
+        name=name,
+        base_unit_id=base_id,
+        conversion_ratio=ratio,
+        is_active=True,
+    )
     db.add(row)
     await db.flush()
     return row
@@ -358,7 +397,12 @@ async def update_unit(
     code: str | None = None,
     name: str | None = None,
     is_active: bool | None = None,
+    base_unit_id: str | None = None,
+    conversion_ratio: float | None = None,
+    clear_base: bool = False,
 ) -> m.UnitOfMeasure:
+    from app.uom import validate_unit_base
+
     row = await db.get(m.UnitOfMeasure, unit_id)
     if row is None or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Unit not found")
@@ -385,6 +429,44 @@ async def update_unit(
         row.name = name
     if is_active is not None:
         row.is_active = bool(is_active)
+    if clear_base:
+        row.base_unit_id = None
+        row.conversion_ratio = 1
+    elif base_unit_id is not None or conversion_ratio is not None:
+        # Reject setting this unit as base of something that already uses it as base while becoming non-root? depth-1 only.
+        if base_unit_id is None and conversion_ratio is not None and not row.base_unit_id:
+            row.conversion_ratio = 1
+        else:
+            target_base = base_unit_id if base_unit_id is not None else row.base_unit_id
+            target_ratio = (
+                conversion_ratio
+                if conversion_ratio is not None
+                else float(row.conversion_ratio or 1)
+            )
+            base_id, ratio = await validate_unit_base(
+                db,
+                tenant_id=tenant_id,
+                unit_id=row.id,
+                base_unit_id=target_base,
+                conversion_ratio=target_ratio,
+            )
+            # Prevent cycles: no unit that already has children should become a non-root via pointing elsewhere
+            # while being someone's base — if this unit is used as a base by others, it must stay root.
+            child = (
+                await db.execute(
+                    select(m.UnitOfMeasure.id).where(
+                        m.UnitOfMeasure.tenant_id == tenant_id,
+                        m.UnitOfMeasure.base_unit_id == row.id,
+                    ).limit(1)
+                )
+            ).scalar_one_or_none()
+            if child and base_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Unit is already a base for other units; clear dependents first",
+                )
+            row.base_unit_id = base_id
+            row.conversion_ratio = ratio
     await db.flush()
     return row
 

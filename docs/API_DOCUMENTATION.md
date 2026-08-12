@@ -385,8 +385,14 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 **Update:** `PATCH /inventory/brands/{brand_id}`
 
 ### 5.3 Units
-**List:** `GET /inventory/units`  
-**Create:** `POST /inventory/units`
+**List:** `GET /catalog/units`  
+**Create:** `POST /catalog/units`  
+**Update:** `PATCH /catalog/units/{unit_id}`  
+**Convert preview:** `POST /catalog/units/convert` `{ "product_id", "quantity", "from_unit_id" }`
+
+Create with conversion (BR-5.1): `{ "code": "CASE12", "name": "Case of 12", "base_unit_id": "<PCS id>", "conversion_ratio": 12 }`  
+Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.  
+`POST /inventory/stock-in` / `stock-out` accept optional `unit_id` (entered UoM) and convert to stock units.
 
 ### 5.4 Products
 **List:** `GET /products?category_id=&brand_id=&low_stock=true`  
