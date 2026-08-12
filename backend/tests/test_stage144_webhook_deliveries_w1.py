@@ -8,6 +8,7 @@ import httpx
 import pyotp
 import pytest
 
+from app import webhooks as webhooks_svc
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,11 +26,21 @@ async def test_webhook_deliveries_list_and_export(client, monkeypatch):
     ac, seed = client
     headers = await _super(ac, seed)
 
-    async def fake_post(self, url, **kwargs):
-        req = httpx.Request("POST", url)
-        return httpx.Response(200, request=req, content=b"ok")
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"ok": True})
 
-    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+    original_deliver = webhooks_svc._deliver_http
+
+    async def _deliver_with_mock(*, url, body, signature_header, timeout=10.0, transport=None):
+        return await original_deliver(
+            url=url,
+            body=body,
+            signature_header=signature_header,
+            timeout=timeout,
+            transport=httpx.MockTransport(handler),
+        )
+
+    monkeypatch.setattr(webhooks_svc, "_deliver_http", _deliver_with_mock)
 
     created = await ac.post(
         "/api/v1/webhooks",
