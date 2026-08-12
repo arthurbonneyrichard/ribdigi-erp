@@ -348,7 +348,7 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>New expense</h3>
-        <div style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
@@ -404,7 +404,7 @@ export default function Page() {
             Engine: {ocrMeta?.engine || '—'} · Confidence: {ocrMeta?.confidence ?? '—'}
             {ocrMeta?.tesseract_available === false ? ' · Tesseract not on server (PDF text still works)' : ''}
           </p>
-          <div style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+          <div style={{ display: 'grid', gap: 8 }}>
             <input
               value={ocrDraft.amount}
               onChange={(e) => setOcrDraft({ ...ocrDraft, amount: e.target.value })}

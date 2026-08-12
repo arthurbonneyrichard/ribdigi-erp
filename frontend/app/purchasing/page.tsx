@@ -528,7 +528,7 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Create purchase request</h3>
-            <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+            <div style={{ display: 'grid', gap: 8 }}>
               <select value={prSupplierId} onChange={(e) => setPrSupplierId(e.target.value)}>
                 <option value="">Preferred supplier (optional)</option>
                 {suppliers.map((s) => (
@@ -639,7 +639,7 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Quick add supplier</h3>
-        <div style={{ display: 'flex', gap: 8, maxWidth: 480 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Supplier name" />
           <button onClick={createSupplier} disabled={!supplierName.trim()}>
             Add
@@ -649,7 +649,7 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase order</h3>
-        <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
           <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
             <option value="">Select supplier</option>
             {suppliers.map((s) => (
@@ -676,7 +676,7 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase invoice from GRN</h3>
-        <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
           <select value={invoiceGrnId} onChange={(e) => setInvoiceGrnId(e.target.value)}>
             <option value="">Select GRN</option>
             {grns.map((g) => (
@@ -698,7 +698,7 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create manual purchase invoice</h3>
-        <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
           <select value={manualInvSupplierId} onChange={(e) => setManualInvSupplierId(e.target.value)}>
             <option value="">Select supplier</option>
             {suppliers.map((s) => (
@@ -739,7 +739,7 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase return</h3>
-        <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
           <select value={grnId} onChange={(e) => setGrnId(e.target.value)}>
             <option value="">Select GRN</option>
             {grns.map((g) => (
@@ -879,7 +879,7 @@ export default function Page() {
                   ? ` · OCR amount ${ocrMeta.suggestions.ocr_amount}`
                   : ''}
               </p>
-              <div style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+              <div style={{ display: 'grid', gap: 8 }}>
                 <input
                   value={ocrDraft.supplier_invoice_number}
                   onChange={(e) =>

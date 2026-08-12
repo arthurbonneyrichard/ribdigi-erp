@@ -366,7 +366,7 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Manual journal</h3>
-            <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+            <div style={{ display: 'grid', gap: 8 }}>
               <input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -454,7 +454,7 @@ export default function Page() {
 
       {tab === 'reconcile' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>New statement</h3>
             <select value={reconAccountId} onChange={(e) => setReconAccountId(e.target.value)}>
               {liquid.map((a) => (
@@ -492,7 +492,7 @@ export default function Page() {
             </p>
           </div>
 
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Bank API connections</h3>
             <p className="muted">
               Link a liquid GL account to a live feed (`mock` for demos/tests, `http_json` for any

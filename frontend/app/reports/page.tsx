@@ -620,7 +620,7 @@ export default function Page() {
           <p className="muted">
             Company admins can schedule CSV, Excel, or PDF reports emailed on a daily or weekly cadence (UTC hour).
           </p>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <input
               placeholder="Schedule name"
               value={schedForm.name}

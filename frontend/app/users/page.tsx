@@ -227,7 +227,7 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       {canWrite && (
-        <div className="card" style={{ margin: '20px 0', maxWidth: 720, display: 'grid', gap: 12 }}>
+        <div className="card" style={{ margin: '20px 0', display: 'grid', gap: 12 }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>Bulk import users</h2>
           <p className="muted" style={{ margin: 0 }}>
             Download the CSV template, fill rows (role must be a system role; temporary password must
@@ -300,7 +300,7 @@ export default function Page() {
       )}
 
       {canWrite && (
-        <form onSubmit={createUser} style={{ margin: '20px 0', maxWidth: 520 }}>
+        <form onSubmit={createUser} style={{ margin: '20px 0' }}>
           <h2 style={{ fontSize: 18 }}>Create user</h2>
           <input
             value={form.full_name}

@@ -538,7 +538,7 @@ export default function Page() {
         ))}
       </div>
 
-      <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
+      <div className="card" style={{ marginBottom: 16 }}>
         <label className="muted">Selected product</label>
         <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} style={{ width: '100%' }}>
           <option value="">Select product</option>
@@ -621,7 +621,7 @@ export default function Page() {
       </div>
 
       {tab === 'import' && (
-        <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12, maxWidth: 720 }}>
+        <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12 }}>
           <h3>Bulk import products</h3>
           <p className="muted" style={{ margin: 0 }}>
             Download the CSV template, fill product rows (category / brand / unit must already exist),
@@ -694,7 +694,7 @@ export default function Page() {
 
       {tab === 'products' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 480 }}>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Add product</h3>
             <input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Name" />
             <input value={productSku} onChange={(e) => setProductSku(e.target.value)} placeholder="SKU" />
@@ -776,7 +776,7 @@ export default function Page() {
       )}
 
       {tab === 'catalog' && (
-        <div style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
+        <div style={{ display: 'grid', gap: 16 }}>
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Category</h3>
             <input value={catCode} onChange={(e) => setCatCode(e.target.value)} placeholder="Code" />
@@ -952,7 +952,7 @@ export default function Page() {
 
       {tab === 'variants' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 480 }}>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Add variant</h3>
             <input value={variantName} onChange={(e) => setVariantName(e.target.value)} placeholder="Name" />
             <input value={variantSku} onChange={(e) => setVariantSku(e.target.value)} placeholder="SKU" />
@@ -1008,7 +1008,7 @@ export default function Page() {
 
       {tab === 'batches' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 480 }}>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Stock in with batch</h3>
             <input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Batch number" />
             <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
@@ -1065,7 +1065,7 @@ export default function Page() {
 
       {tab === 'counts' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 520 }}>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Start stock count</h3>
             <select value={countWarehouseId} onChange={(e) => setCountWarehouseId(e.target.value)}>
               <option value="">Warehouse</option>
