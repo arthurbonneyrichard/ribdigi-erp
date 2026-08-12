@@ -17,14 +17,22 @@ logger = logging.getLogger(__name__)
 ACTIVE_TENANT_STATUSES = frozenset({"trial", "active"})
 SYSTEM_USER_ID = "system"
 
+# Prefer one event loop per Celery worker process so the shared async SQLAlchemy
+# engine is not rebound across asyncio.run() cycles (different-loop Futures).
+_worker_loop: asyncio.AbstractEventLoop | None = None
+
 
 def run_async(coro: Awaitable[Any]) -> Any:
     """Run an async coroutine from a sync Celery worker process."""
     try:
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(coro)
-    # Should not happen in standard Celery workers; fall back to a new loop in a thread.
+        global _worker_loop
+        if _worker_loop is None or _worker_loop.is_closed():
+            _worker_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(_worker_loop)
+        return _worker_loop.run_until_complete(coro)
+    # Nested running loop (unusual in Celery) — run on a fresh loop in a thread.
     import concurrent.futures
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
