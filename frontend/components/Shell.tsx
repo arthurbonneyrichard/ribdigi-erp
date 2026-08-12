@@ -34,6 +34,7 @@ const PLATFORM_ITEMS: NavItem[] = [
   ['Platform', '/platform', 'platform'],
   ['Staff', '/platform/staff', 'platform_staff'],
   ['Reports', '/platform/reports', 'platform_reports'],
+  ['Users', '/users', 'users'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Security', '/security', 'security'],

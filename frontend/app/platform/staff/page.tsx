@@ -27,6 +27,7 @@ const PLATFORM_ROLES = [
 export default function PlatformStaffPage() {
   const router = useRouter();
   const [staff, setStaff] = useState<Staff[]>([]);
+  const [appUsers, setAppUsers] = useState<Staff[]>([]);
   const [roles, setRoles] = useState<RoleOpt[]>([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -37,6 +38,7 @@ export default function PlatformStaffPage() {
     password: '',
     role: 'platform_support',
   });
+  const [grantRole, setGrantRole] = useState('platform_support');
   const [busy, setBusy] = useState(false);
 
   async function refresh() {
@@ -45,9 +47,14 @@ export default function PlatformStaffPage() {
       router.replace('/dashboard');
       return;
     }
-    const [s, r] = await Promise.all([api('/platform/staff'), api('/platform/roles')]);
+    const [s, r, a] = await Promise.all([
+      api('/platform/staff'),
+      api('/platform/roles'),
+      api('/platform/app-users'),
+    ]);
     setStaff(s.data || []);
     setRoles((r.data || []).map((x: any) => ({ key: x.key, label: x.label })));
+    setAppUsers(a.data || []);
     setReady(true);
   }
 
@@ -110,6 +117,42 @@ export default function PlatformStaffPage() {
     }
   }
 
+  async function grantAccess(row: Staff) {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await api('/platform/staff/grant', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: row.id, role: grantRole }),
+      });
+      setMessage(`Granted software owner dashboard to ${row.full_name}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Grant failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revokeAccess(row: Staff) {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await api(`/platform/staff/${row.id}/revoke`, {
+        method: 'POST',
+        body: JSON.stringify({ fallback_role: 'company_admin' }),
+      });
+      setMessage(`Revoked dashboard access for ${row.full_name}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Revoke failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!ready && !error) {
     return (
       <Shell>
@@ -126,8 +169,8 @@ export default function PlatformStaffPage() {
             <p className="plat-kicker">Software owner</p>
             <h1>Platform staff</h1>
             <p className="plat-sub">
-              Invite RIBDIGI staff with roles (owner, admin, support, finance) so they can help
-              manage tenants, packages, and reports.
+              Invite RIBDIGI staff, or grant an existing app user permission to open the software
+              owner dashboard (platform console).
             </p>
           </div>
         </header>
@@ -190,6 +233,56 @@ export default function PlatformStaffPage() {
         </div>
 
         <div className="plat-panel">
+          <h2>App users → software owner dashboard</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Workspace app users without platform roles. Grant a platform role so they land on the
+            software owner console after login.
+          </p>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+            <span>Grant as</span>
+            <select value={grantRole} onChange={(e) => setGrantRole(e.target.value)} disabled={busy}>
+              {roles
+                .filter((r) => r.key !== 'super_admin')
+                .map((r) => (
+                  <option key={r.key} value={r.key}>
+                    {r.label}
+                  </option>
+                ))}
+            </select>
+          </label>
+          {appUsers.length === 0 ? (
+            <p className="muted">No app users without dashboard access on this workspace.</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Current role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appUsers.map((u) => (
+                  <tr key={u.id}>
+                    <td className="plat-co">{u.full_name}</td>
+                    <td>{u.email}</td>
+                    <td>
+                      <code>{u.role}</code>
+                    </td>
+                    <td>
+                      <button type="button" disabled={busy || u.is_active === false} onClick={() => grantAccess(u)}>
+                        Grant dashboard
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="plat-panel">
           <h2>Staff directory</h2>
           <table className="table">
             <thead>
@@ -234,6 +327,11 @@ export default function PlatformStaffPage() {
                           onClick={() => setActive(u, false)}
                         >
                           Deactivate
+                        </button>
+                      )}
+                      {u.role !== 'super_admin' && (
+                        <button type="button" disabled={busy} onClick={() => revokeAccess(u)}>
+                          Revoke dashboard
                         </button>
                       )}
                     </div>

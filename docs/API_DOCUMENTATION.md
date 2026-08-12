@@ -266,6 +266,9 @@ Packages: `trial` | `starter` | `professional` | `enterprise`. Disabled modules 
 Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `platform_support`, `platform_finance`.
 
 **Staff:** `GET|POST /platform/staff`, `PATCH /platform/staff/{id}`, `GET /platform/roles`  
+**App users (no dashboard yet):** `GET /platform/app-users`  
+**Grant dashboard:** `POST /platform/staff/grant` `{ "user_id", "role": "platform_support" }` — promotes an existing workspace app user so they can open the software-owner console  
+**Revoke dashboard:** `POST /platform/staff/{id}/revoke` `{ "fallback_role": "company_admin" }` — removes platform role; account stays as an app user  
 **Reports:** `GET /platform/reports` (bundle) or `/platform/reports/summary|subscriptions|packages|trials`
 
 ### 3.5 Company Setup

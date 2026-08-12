@@ -126,6 +126,19 @@ class UserUpdate(BaseModel):
     clear_department: bool = False
 
 
+class PlatformGrantAccess(BaseModel):
+    """Grant an existing app user access to the software-owner dashboard."""
+
+    user_id: str
+    role: str = "platform_support"
+
+
+class PlatformRevokeAccess(BaseModel):
+    """Revoke software-owner dashboard access; keep the account as an app user."""
+
+    fallback_role: str = "company_admin"
+
+
 class BranchCreate(BaseModel):
     code: str
     name: str
