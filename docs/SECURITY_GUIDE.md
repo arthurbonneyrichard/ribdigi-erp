@@ -576,6 +576,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 94 T2** | Console state & queue awareness — shell at-risk badge, Activity/Audit empty states, plans chart link (`test_stage94_console_state_t2.py`) |
 | **Stage 94 D1** | House Discovery & Runtime Assurance Ops fidelity — `docs/STAGE_94_FIDELITY.md` (`test_stage94_fidelity_d1.py`); maps W1–T2 → readiness / launch / deploy / security |
 | **Stage 94 H94x** | Exit + freeze — `docs/STAGE_94_EXIT_CRITERIA.md`, ADR-195 (`test_stage94_exit_h94x.py`); Stages 1–94 frozen for Stage 94 scope; Stage 95+ requires CONTINUE/NEXT |
+| **Stage 95 open** | Tenant MVP Navigation Ops — `docs/STAGE_95_PLAN.md`, ADR-196 (`test_stage95_open.py`); Stages 1–94 remain frozen for prior scopes; N1 next historically |
+| **Stage 95 N1** | Tenant Shell IA regrouping — Commerce/People/Finance/Operations; Settings/Stores/User Management (`test_stage95_shell_ia_n1.py`) |
+| **Stage 95 P1** | Party & stock discoverability — Customers/Suppliers/Stock deep-links + `?tab=` write-back (`test_stage95_party_stock_p1.py`) |
+| **Stage 95 C1** | Chrome & settings alias — profile/logout, mobile nav collapse (`test_stage95_chrome_c1.py`); packaging honesty only — not go-live Complete |
+| **Stage 95 D1** | Tenant MVP Navigation Ops fidelity — `docs/STAGE_95_FIDELITY.md` (`test_stage95_fidelity_d1.py`); maps N1–C1 → readiness / launch / deploy / security |
+| **Stage 95 H95x** | Exit + freeze — `docs/STAGE_95_EXIT_CRITERIA.md`, ADR-197 (`test_stage95_exit_h95x.py`); Stages 1–95 frozen for Stage 95 scope; Stage 96+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

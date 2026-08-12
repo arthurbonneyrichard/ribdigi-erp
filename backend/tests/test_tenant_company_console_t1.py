@@ -34,7 +34,7 @@ REQUIRED_SHELL_LABELS = {
     "Credit",
     "Tax",
     "Reports",
-    "Company",
+    "Settings",  # Stage 95 N1 — MVP Navigation alias for /company
 }
 
 

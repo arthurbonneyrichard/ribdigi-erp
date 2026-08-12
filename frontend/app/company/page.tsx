@@ -6,6 +6,7 @@ import { api } from '../../lib/api';
 import { formatDate } from '../../lib/format';
 
 export default function Page() {
+  // Stage 95 C1 — Settings alias (MVP Navigation); route remains /company.
   const [tenant, setTenant] = useState<any>(null);
   const [emailStatus, setEmailStatus] = useState<any>(null);
   const [smtpForm, setSmtpForm] = useState({
@@ -193,7 +194,8 @@ export default function Page() {
   if (!tenant) {
     return (
       <Shell>
-        <h1>Company</h1>
+        <h1>Settings</h1>
+        <p className="muted">Company profile &amp; tenant settings (MVP Navigation: Settings).</p>
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
         <p className="muted">Loading…</p>
       </Shell>
@@ -202,9 +204,10 @@ export default function Page() {
 
   return (
     <Shell>
-      <h1>Company</h1>
+      <h1>Settings</h1>
       <p className="muted">
-        Status: {tenant.status} · Plan: {tenant.plan_code || 'trial'} · Slug: {tenant.slug}
+        Company profile &amp; tenant settings · Status: {tenant.status} · Plan:{' '}
+        {tenant.plan_code || 'trial'} · Slug: {tenant.slug}
         {tenant.days_remaining != null && tenant.status === 'trial'
           ? ` · Trial days left: ${tenant.days_remaining}`
           : ''}

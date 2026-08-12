@@ -27,4 +27,4 @@ Stage 94 House Discovery & Runtime Assurance Ops delivered platform staff discov
 
 ## Next stage
 
-Stage 95 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 94 feature scope remains frozen.
+Stage 95 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-196](ADR_196_STAGE95_OPEN.md) + [STAGE_95_PLAN.md](STAGE_95_PLAN.md) (Tenant Shell IA Regrouping → Party & Stock Discoverability → Chrome & Settings Alias Fidelity → Tenant MVP Navigation Ops). Stage 94 feature scope remains frozen.

@@ -3,35 +3,69 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { canReadModule } from '../lib/rbac';
+import { canReadAnyModule, canReadModule } from '../lib/rbac';
 import {
   getSelectedStoreId,
   setSelectedStoreId,
   subscribeStoreContext,
 } from '../lib/storeContext';
 
-const items: [string, string, string][] = [
-  ['Dashboard', '/dashboard', 'dashboard'],
-  ['Company', '/company', 'company'],
-  ['Inventory', '/inventory', 'inventory'],
-  ['Sales', '/sales', 'sales'],
-  ['POS', '/pos', 'pos'],
-  ['Purchasing', '/purchasing', 'purchasing'],
-  ['Expenses', '/expenses', 'expenses'],
-  ['Accounting', '/accounting', 'accounting'],
-  ['Credit', '/credit', 'credit'],
-  ['Tax', '/tax', 'tax'],
-  ['Multi-Store', '/stores', 'stores'],
-  ['Reports', '/reports', 'reports'],
-  ['Notifications', '/notifications', 'notifications'],
-  ['Audit', '/audit', 'audit'],
-  ['Activity', '/activity', 'audit'],
-  ['Backup', '/backup', 'backup'],
-  ['Security', '/security', 'security'],
-  ['AI Assistant', '/ai', 'ai'],
-  ['Users', '/users', 'users'],
-  ['Roles', '/admin/roles', 'users'],
-  ['Permissions', '/admin/permissions', 'users'],
+/** Stage 95 N1/P1 — MVP Navigation IA (discoverability; existing engines). */
+type NavLink = {
+  kind: 'link';
+  label: string;
+  href: string;
+  modules: string[];
+};
+
+type NavSection = { kind: 'section'; label: string };
+
+type NavEntry = NavLink | NavSection;
+
+const primaryNavSpec: NavEntry[] = [
+  { kind: 'link', label: 'Dashboard', href: '/dashboard', modules: ['dashboard'] },
+  { kind: 'section', label: 'Commerce' },
+  { kind: 'link', label: 'Inventory', href: '/inventory', modules: ['inventory'] },
+  { kind: 'link', label: 'Stock', href: '/inventory?tab=stock', modules: ['inventory'] },
+  { kind: 'link', label: 'Low stock', href: '/inventory?tab=lowstock', modules: ['inventory'] },
+  { kind: 'link', label: 'Sales', href: '/sales', modules: ['sales'] },
+  { kind: 'link', label: 'POS', href: '/pos', modules: ['pos'] },
+  { kind: 'link', label: 'Purchasing', href: '/purchasing', modules: ['purchasing'] },
+  { kind: 'section', label: 'People' },
+  {
+    kind: 'link',
+    label: 'Customers',
+    href: '/sales?tab=customers',
+    modules: ['sales', 'customers'],
+  },
+  {
+    kind: 'link',
+    label: 'Suppliers',
+    href: '/purchasing?tab=suppliers',
+    modules: ['purchasing', 'suppliers'],
+  },
+  { kind: 'section', label: 'Finance' },
+  { kind: 'link', label: 'Expenses', href: '/expenses', modules: ['expenses'] },
+  { kind: 'link', label: 'Accounting', href: '/accounting', modules: ['accounting'] },
+  { kind: 'link', label: 'Credit', href: '/credit', modules: ['credit'] },
+  { kind: 'link', label: 'Tax', href: '/tax', modules: ['tax'] },
+  { kind: 'section', label: 'Operations' },
+  { kind: 'link', label: 'Stores', href: '/stores', modules: ['stores'] },
+  { kind: 'link', label: 'Warehouse', href: '/stores#warehouses', modules: ['stores'] },
+  { kind: 'link', label: 'Reports', href: '/reports', modules: ['reports'] },
+  { kind: 'link', label: 'Notifications', href: '/notifications', modules: ['notifications'] },
+  { kind: 'link', label: 'AI Assistant', href: '/ai', modules: ['ai'] },
+  { kind: 'link', label: 'Settings', href: '/company', modules: ['company'] },
+];
+
+const userMgmtLinks: NavLink[] = [
+  { kind: 'link', label: 'Users', href: '/users', modules: ['users'] },
+  { kind: 'link', label: 'Roles', href: '/admin/roles', modules: ['users'] },
+  { kind: 'link', label: 'Permissions', href: '/admin/permissions', modules: ['users'] },
+  { kind: 'link', label: 'Audit', href: '/audit', modules: ['audit'] },
+  { kind: 'link', label: 'Activity', href: '/activity', modules: ['audit'] },
+  { kind: 'link', label: 'Backup', href: '/backup', modules: ['backup'] },
+  { kind: 'link', label: 'Security', href: '/security', modules: ['security'] },
 ];
 
 type StoreOption = { id: string; code: string; name: string; is_active?: boolean };
@@ -60,12 +94,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [role, setRole] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [principal, setPrincipal] = useState('');
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [stores, setStores] = useState<StoreOption[]>([]);
   const [storeId, setStoreId] = useState('');
   const [onboarding, setOnboarding] = useState<OnboardingChecklist | null>(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const canManageOnboarding = role === 'company_admin' || role === 'super_admin';
 
   useEffect(() => {
@@ -90,6 +128,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           }
           setPermissions(meRes.data?.permissions || {});
           setRole(meRes.data?.role || '');
+          setFullName(meRes.data?.full_name || '');
+          setEmail(meRes.data?.email || '');
           setIdleMinutes(Number(meRes.data?.inactivity_timeout_minutes) || 30);
           setUnread(0);
           return;
@@ -102,12 +142,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         setUnread(countRes.data?.count || 0);
         setPermissions(meRes.data?.permissions || {});
         setRole(meRes.data?.role || '');
+        setFullName(meRes.data?.full_name || '');
+        setEmail(meRes.data?.email || '');
         setIdleMinutes(Number(meRes.data?.inactivity_timeout_minutes) || 30);
       } catch {
         if (active) {
           setUnread(0);
           setPermissions({});
           setRole('');
+          setFullName('');
+          setEmail('');
           setPrincipal('');
         }
       }
@@ -212,46 +256,92 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, [idleMinutes]);
 
-  const visible =
+  async function logout() {
+    try {
+      await api('/auth/logout', { method: 'POST', body: '{}' });
+    } catch {
+      // clear local session anyway
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
+    window.location.href = '/';
+  }
+
+  const linkVisible = (link: NavLink) =>
     principal === 'platform'
-      ? items.filter(([, h]) => h === '/security')
-      : items.filter(([, , module]) => canReadModule(permissions, module));
+      ? link.href === '/security' || link.href.startsWith('/security')
+      : canReadAnyModule(permissions, link.modules);
+
+  const visiblePrimary: NavEntry[] = [];
+  if (principal !== 'platform') {
+    for (const entry of primaryNavSpec) {
+      if (entry.kind === 'section') {
+        visiblePrimary.push(entry);
+        continue;
+      }
+      if (linkVisible(entry)) visiblePrimary.push(entry);
+    }
+    // Drop empty section headers (no following visible link before next section/end).
+    const pruned: NavEntry[] = [];
+    for (let i = 0; i < visiblePrimary.length; i++) {
+      const entry = visiblePrimary[i];
+      if (entry.kind === 'section') {
+        const hasLink = visiblePrimary
+          .slice(i + 1)
+          .find((e) => e.kind === 'section' || e.kind === 'link');
+        if (hasLink && hasLink.kind === 'link') pruned.push(entry);
+      } else {
+        pruned.push(entry);
+      }
+    }
+    visiblePrimary.length = 0;
+    visiblePrimary.push(...pruned);
+  }
+
+  const visibleUserMgmt =
+    principal === 'platform'
+      ? userMgmtLinks.filter((l) => l.href === '/security')
+      : userMgmtLinks.filter(linkVisible);
+
   const showStoreSwitcher =
     principal !== 'platform' && canReadModule(permissions, 'stores') && stores.length > 0;
-  const adminHrefs = new Set([
-    '/users',
-    '/admin/roles',
-    '/admin/permissions',
-    '/audit',
-    '/activity',
-    '/backup',
-    '/security',
-  ]);
-  const primaryNav = visible.filter(([, h]) => !adminHrefs.has(h));
-  const adminNav = visible.filter(([, h]) => adminHrefs.has(h));
 
   return (
-    <div className="shell">
-      <aside className="side">
+    <div className={`shell${navOpen ? ' nav-open' : ''}`}>
+      <aside className="side" id="tenant-side-nav">
         <div className="brand">{principal === 'platform' ? 'Ribdigi House' : 'RIBDIGI ERP'}</div>
-        <nav className="nav">
+        <nav className="nav" aria-label="Main">
           {principal === 'platform' && (
-            <Link href="/platform/dashboard">Platform console</Link>
-          )}
-          {primaryNav.map(([n, h]) => (
-            <Link key={h} href={h}>
-              {n}
-              {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
+            <Link href="/platform/dashboard" onClick={() => setNavOpen(false)}>
+              Platform console
             </Link>
-          ))}
-          {adminNav.length > 0 && (
-            <>
-              <div className="muted" style={{ marginTop: 12, marginBottom: 4, fontSize: 12 }}>
-                Admin
+          )}
+          {visiblePrimary.map((entry, idx) =>
+            entry.kind === 'section' ? (
+              <div
+                key={`section-${entry.label}-${idx}`}
+                className="nav-section"
+                aria-hidden={false}
+              >
+                {entry.label}
               </div>
-              {adminNav.map(([n, h]) => (
-                <Link key={h} href={h}>
-                  {n}
+            ) : (
+              <Link
+                key={entry.href + entry.label}
+                href={entry.href}
+                onClick={() => setNavOpen(false)}
+              >
+                {entry.label}
+                {entry.href === '/notifications' && unread > 0 ? ` (${unread})` : ''}
+              </Link>
+            ),
+          )}
+          {visibleUserMgmt.length > 0 && (
+            <>
+              <div className="nav-section">User Management</div>
+              {visibleUserMgmt.map((l) => (
+                <Link key={l.href} href={l.href} onClick={() => setNavOpen(false)}>
+                  {l.label}
                 </Link>
               ))}
             </>
@@ -260,6 +350,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </aside>
       <main className="main">
         <div className="topbar">
+          <button
+            type="button"
+            className="nav-toggle"
+            aria-expanded={navOpen}
+            aria-controls="tenant-side-nav"
+            onClick={() => setNavOpen((v) => !v)}
+          >
+            Menu
+          </button>
           {showStoreSwitcher && (
             <label className="store-switcher">
               <span className="muted">Store</span>
@@ -277,12 +376,49 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </select>
             </label>
           )}
+          <div className="topbar-spacer" />
           {canReadModule(permissions, 'notifications') && (
             <Link href="/notifications" className="bell">
               Alerts{unread > 0 ? ` · ${unread}` : ''}
             </Link>
           )}
+          <div className="profile-menu">
+            <button
+              type="button"
+              className="profile-trigger"
+              aria-expanded={profileOpen}
+              onClick={() => setProfileOpen((v) => !v)}
+            >
+              {fullName || email || 'Account'}
+            </button>
+            {profileOpen && (
+              <div className="profile-dropdown" role="menu">
+                <p className="muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
+                  {email || '—'}
+                  {role ? ` · ${role}` : ''}
+                </p>
+                <Link
+                  href="/security"
+                  role="menuitem"
+                  onClick={() => setProfileOpen(false)}
+                >
+                  Security / 2FA
+                </Link>
+                <button type="button" role="menuitem" onClick={() => void logout()}>
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+        {navOpen && (
+          <button
+            type="button"
+            className="nav-backdrop"
+            aria-label="Close menu"
+            onClick={() => setNavOpen(false)}
+          />
+        )}
         {onboarding?.visible ? (
           <section className="onboarding-banner" aria-label="Getting started checklist">
             <div className="onboarding-banner-head">

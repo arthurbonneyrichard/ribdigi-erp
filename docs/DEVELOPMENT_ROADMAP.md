@@ -1741,3 +1741,15 @@ Every feature in every phase must meet:
 **Stage 94 D1 (2026-08-11):** House Discovery & Runtime Assurance Ops fidelity sync — `docs/STAGE_94_FIDELITY.md` (`test_stage94_fidelity_d1.py`); maps W1–T2 → readiness / launch / deploy / security.
 
 **Stage 94 exit (2026-08-11):** W1, H1, T2, D1, H94x met — `docs/STAGE_94_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_195_STAGE94_FREEZE.md`. Fidelity: `docs/STAGE_94_FIDELITY.md`.
+
+**Stage 95 open (2026-08-12):** Tenant MVP Navigation Ops track approved — `docs/ADR_196_STAGE95_OPEN.md` + `docs/STAGE_95_PLAN.md` (Tenant Shell IA Regrouping → Party & Stock Discoverability → Chrome & Settings Alias Fidelity → Tenant MVP Navigation Ops; N1 next).
+
+**Stage 95 N1 (2026-08-12):** Tenant Shell IA regrouping — Commerce/People/Finance/Operations sections; Settings/Stores/User Management aliases (`test_stage95_shell_ia_n1.py`).
+
+**Stage 95 P1 (2026-08-12):** Party & stock discoverability — Customers/Suppliers/Stock/Low stock/Warehouse deep-links + `?tab=` write-back (`test_stage95_party_stock_p1.py`).
+
+**Stage 95 C1 (2026-08-12):** Chrome & settings alias fidelity — profile/logout, mobile nav collapse, Settings/Stores titles (`test_stage95_chrome_c1.py`).
+
+**Stage 95 D1 (2026-08-12):** Tenant MVP Navigation Ops fidelity sync — `docs/STAGE_95_FIDELITY.md` (`test_stage95_fidelity_d1.py`); maps N1–C1 → readiness / launch / deploy / security.
+
+**Stage 95 exit (2026-08-12):** N1, P1, C1, D1, H95x met — `docs/STAGE_95_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_197_STAGE95_FREEZE.md`. Fidelity: `docs/STAGE_95_FIDELITY.md`.

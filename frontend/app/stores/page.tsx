@@ -387,8 +387,11 @@ export default function Page() {
 
   return (
     <Shell>
-      <h1>Multi-Store</h1>
-      <p className="muted">Stores, warehouse reorder policies, FEFO mode, and transfers</p>
+      <h1>Stores</h1>
+      <p className="muted">
+        Stores &amp; warehouses — reorder policies, FEFO mode, and transfers (MVP Navigation:
+        Stores / Warehouse).
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -655,7 +658,7 @@ export default function Page() {
         </tbody>
       </table>
 
-      <div className="grid" style={{ marginTop: 16 }}>
+      <div className="grid" style={{ marginTop: 16 }} id="warehouses">
         <div className="card">
           <h3>New warehouse</h3>
           <p className="muted">Standalone or store-linked warehouses (BR-2.4).</p>

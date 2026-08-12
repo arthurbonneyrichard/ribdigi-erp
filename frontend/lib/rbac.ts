@@ -9,3 +9,11 @@ export function canReadModule(
   const actions = permissions[module] || [];
   return actions.includes('*') || actions.includes('read') || actions.includes('write');
 }
+
+/** Stage 95 P1 — party discoverability may gate on sales|customers / purchasing|suppliers. */
+export function canReadAnyModule(
+  permissions: Record<string, string[]> | null | undefined,
+  modules: string[],
+): boolean {
+  return modules.some((module) => canReadModule(permissions, module));
+}

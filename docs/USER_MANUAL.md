@@ -75,31 +75,37 @@ Stage 21 (ADR-047) proves tenant lifecycle, org units, users/roles, and executiv
 ### 1.3 Understanding the Interface
 
 #### Main Navigation Sidebar
+Stage 95 aligns the tenant Shell with the MVP Navigation outline (discoverability IA — existing engines under tabs; not every leaf as a new route):
+
 ```
 ┌─────────────────────────────┐
-│  [Logo] RIBDIGI ERP         │
+│  RIBDIGI ERP                │
 ├─────────────────────────────┤
-│  📊 Dashboard               │
-│  📦 Inventory               │
-│  🛒 Sales                   │
-│  🖥️  POS                    │
-│  🛍️  Purchasing             │
-│  💰 Accounting              │
-│  💳 Expenses                │
-│  🏪 Multi-Store             │
-│  📈 Reports                 │
-│  🤖 AI Assistant            │
-│  🔔 Notifications           │
-│  ⚙️  Settings               │
-│  🛡️  Admin (if permitted)   │
+│  Dashboard                  │
+│  Commerce                   │
+│    Inventory / Stock / Low  │
+│    Sales / POS / Purchasing │
+│  People                     │
+│    Customers / Suppliers    │
+│  Finance                    │
+│    Expenses / Accounting    │
+│    Credit / Tax             │
+│  Operations                 │
+│    Stores / Warehouse       │
+│    Reports / Notifications  │
+│    AI Assistant / Settings  │
+│  User Management            │
+│    Users / Roles / …        │
 └─────────────────────────────┘
 ```
 
+Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/stores#warehouses`). Customers/Suppliers/Stock open existing Sales / Purchasing / Inventory tabs.
+
 #### Top Bar
-- **Search Bar:** Quickly find products, customers, invoices
+- **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
-- **Profile Menu:** Access your profile, change password, or log out
+- **Profile Menu:** Security / 2FA and log out (global product search remains a later roadmap item — not claimed Complete here)
 
 #### Common UI Patterns
 | Element | Action |

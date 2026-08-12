@@ -252,6 +252,9 @@ Authoritative MVP docs:
 - `docs/STAGE_63_PLAN.md` (`backend/tests/test_stage63_open.py`) — Stage 63 open (ADR-131)
 - `docs/STAGE_93_EXIT_CRITERIA.md` / `docs/ADR_193_STAGE93_FREEZE.md` (`backend/tests/test_stage93_exit_h93x.py`) — Stage 93 H93x
 - `docs/STAGE_94_EXIT_CRITERIA.md` / `docs/ADR_195_STAGE94_FREEZE.md` (`backend/tests/test_stage94_exit_h94x.py`) — Stage 94 H94x
+- `docs/STAGE_95_EXIT_CRITERIA.md` / `docs/ADR_197_STAGE95_FREEZE.md` (`backend/tests/test_stage95_exit_h95x.py`) — Stage 95 H95x
+- `docs/STAGE_95_FIDELITY.md` (`backend/tests/test_stage95_fidelity_d1.py`) — Stage 95 D1
+- `docs/STAGE_95_PLAN.md` (`backend/tests/test_stage95_open.py`) — Stage 95 open (ADR-196)
 - `docs/STAGE_94_FIDELITY.md` (`backend/tests/test_stage94_fidelity_d1.py`) — Stage 94 D1
 - `docs/STAGE_94_PLAN.md` (`backend/tests/test_stage94_open.py`) — Stage 94 open (ADR-194)
 - `docs/STAGE_93_FIDELITY.md` (`backend/tests/test_stage93_fidelity_d1.py`) — Stage 93 D1
@@ -1075,6 +1078,30 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 
 
+
+## Stage 95 exit
+
+H95x met — `docs/STAGE_95_EXIT_CRITERIA.md`, ADR-197. Stages 1–95 frozen for Stage 95 feature scope.
+
+## Stage 95 D1 — Tenant MVP Navigation Ops fidelity
+
+`docs/STAGE_95_FIDELITY.md` — maps N1–C1 → readiness / launch / deploy / security.
+
+## Stage 95 C1 — Chrome & settings alias fidelity
+
+`test_stage95_chrome_c1.py` — profile/logout, mobile nav collapse, Settings/Stores titles.
+
+## Stage 95 P1 — Party & stock discoverability
+
+`test_stage95_party_stock_p1.py` — Customers/Suppliers/Stock/Warehouse deep-links + tab query write-back.
+
+## Stage 95 N1 — Tenant Shell IA regrouping
+
+`test_stage95_shell_ia_n1.py` — Commerce/People/Finance/Operations; Settings/Stores/User Management.
+
+## Stage 95 open
+
+ADR-196 + `docs/STAGE_95_PLAN.md` — Tenant MVP Navigation Ops.
 
 ## Stage 94 exit
 

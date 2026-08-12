@@ -120,9 +120,11 @@ ROLE_ORG_CHART_LABELS: dict[str, str] = {
 }
 
 # Frontend nav href → required module (read). Used for menu filtering.
+# Stage 95 N1 — Settings alias (/company) + Stores (/stores); deep-link query/hash
+# paths resolve via pathname (Shell also allows sales|customers / purchasing|suppliers).
 MENU_MODULE_BY_PATH: dict[str, str] = {
     "/dashboard": "dashboard",
-    "/company": "company",
+    "/company": "company",  # Settings (MVP Navigation alias)
     "/inventory": "inventory",
     "/sales": "sales",
     "/pos": "pos",
@@ -131,7 +133,7 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/accounting": "accounting",
     "/credit": "credit",
     "/tax": "tax",
-    "/stores": "stores",
+    "/stores": "stores",  # Stores + Warehouse discoverability
     "/reports": "reports",
     "/notifications": "notifications",
     "/audit": "audit",

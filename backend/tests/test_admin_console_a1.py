@@ -15,10 +15,11 @@ def test_admin_console_routes_exist():
 
 def test_shell_admin_nav_lists_users_roles_permissions():
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
-    assert "['Users', '/users'" in shell or '"/users"' in shell
+    assert "['Users', '/users'" in shell or '"/users"' in shell or "label: 'Users'" in shell
     assert "/admin/roles" in shell
     assert "/admin/permissions" in shell
-    assert "Admin" in shell
+    # Stage 95 N1 — Admin section renamed User Management (MVP Navigation)
+    assert "User Management" in shell or "Admin" in shell
     # Stage 81 — split labels (not combined "Users & Roles" only)
     assert "Roles" in shell and "Permissions" in shell
 
