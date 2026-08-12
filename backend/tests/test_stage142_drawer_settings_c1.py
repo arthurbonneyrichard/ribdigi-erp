@@ -23,10 +23,17 @@ async def _super(ac, seed):
 async def test_drawer_settings_export_csv_secret_free(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
-    store = seed["store1"]
+
+    store = await ac.post(
+        "/api/v1/stores",
+        headers=headers,
+        json={"code": "DRW142", "name": "Stage142 Drawer Store"},
+    )
+    assert store.status_code == 200, store.text
+    store_id = store.json()["data"]["id"]
 
     patched = await ac.patch(
-        f"/api/v1/stores/{store.id}/drawer",
+        f"/api/v1/stores/{store_id}/drawer",
         headers=headers,
         json={
             "drawer_mode": "network",
@@ -43,7 +50,7 @@ async def test_drawer_settings_export_csv_secret_free(client, db_session):
     text = exported.text
     header = text.splitlines()[0]
     assert "drawer_mode" in header and "drawer_host" in header and "store_id" in header
-    assert store.id in text
+    assert store_id in text
     assert "network" in text
     assert "10.0.0.42" in text
     lower = text.lower()
