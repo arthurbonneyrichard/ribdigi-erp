@@ -185,6 +185,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Inactive Tax Rates / Accounts / Expense Categories:** Finance master active/inactive filters + Shell leaves (Stage 123 F1)
 - **Inactive Customer Groups:** Sales groups inactive filter + Shell leaf (Stage 123 G1)
 - **Export accounts / expense categories / customer groups CSV:** Finance & party-meta export buttons (Stage 123 X1)
+- **Inactive Product Variants:** Inventory Variants active/inactive filter + Shell leaves (Stage 124 V1)
+- **Inactive Custom Roles:** Admin Roles active/inactive filter + Shell leaves (Stage 124 R1)
+- **Export variants / custom roles CSV:** Inventory & Admin Roles export buttons (Stage 124 X1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

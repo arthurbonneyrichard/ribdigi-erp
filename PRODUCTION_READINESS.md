@@ -137,3 +137,5 @@ Stage 121 D1 Tenant MVP Inactive Stores & Warehouses & Location CSV Export Fidel
 Stage 122 D1 Tenant MVP Inactive Org Units, Catalog Meta & Org/Catalog-Meta CSV Export Fidelity — `docs/STAGE_122_FIDELITY.md` (`test_stage122_fidelity_d1.py`); Stage 122 O1 Complete; Stage 122 M1 Complete; Stage 122 X1 Complete (MVP honesty); exit `docs/STAGE_122_EXIT_CRITERIA.md`, ADR-251.
 
 Stage 123 D1 Tenant MVP Inactive Finance Masters, Customer Groups & Finance/Party-Meta CSV Export Fidelity — `docs/STAGE_123_FIDELITY.md` (`test_stage123_fidelity_d1.py`); Stage 123 F1 Complete; Stage 123 G1 Complete; Stage 123 X1 Complete (MVP honesty); exit `docs/STAGE_123_EXIT_CRITERIA.md`, ADR-253.
+
+Stage 124 D1 Tenant MVP Inactive Product Variants, Custom Roles & Variant/Role CSV Export Fidelity — `docs/STAGE_124_FIDELITY.md` (`test_stage124_fidelity_d1.py`); Stage 124 V1 Complete; Stage 124 R1 Complete; Stage 124 X1 Complete (MVP honesty); exit `docs/STAGE_124_EXIT_CRITERIA.md`, ADR-255.

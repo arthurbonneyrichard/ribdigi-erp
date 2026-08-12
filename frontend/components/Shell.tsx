@@ -72,6 +72,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Active Variants',
+    href: '/inventory?tab=variants&variant_active=true',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Variants',
+    href: '/inventory?tab=variants&variant_active=false',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
     label: 'Batches',
     href: '/inventory?tab=batches',
     modules: ['inventory'],
@@ -1344,6 +1356,18 @@ const userMgmtLinks: NavLink[] = [
     kind: 'link',
     label: 'Custom Roles',
     href: '/admin/roles#custom',
+    modules: ['users'],
+  },
+  {
+    kind: 'link',
+    label: 'Active Custom Roles',
+    href: '/admin/roles?role_active=true#custom',
+    modules: ['users'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Custom Roles',
+    href: '/admin/roles?role_active=false#custom',
     modules: ['users'],
   },
   {

@@ -59,9 +59,18 @@ def serialize_custom_role(row: m.CustomRole) -> dict:
     }
 
 
-async def list_custom_roles(db: AsyncSession, tenant_id: str, *, active_only: bool = False) -> list[m.CustomRole]:
+async def list_custom_roles(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.CustomRole]:
+    """Stage 124 R1 — is_active for honest inactive-only custom role lists."""
     stmt = select(m.CustomRole).where(m.CustomRole.tenant_id == tenant_id)
-    if active_only:
+    if is_active is not None:
+        stmt = stmt.where(m.CustomRole.is_active.is_(bool(is_active)))
+    elif active_only:
         stmt = stmt.where(m.CustomRole.is_active == True)  # noqa: E712
     stmt = stmt.order_by(m.CustomRole.label.asc())
     return list((await db.execute(stmt)).scalars().all())
@@ -81,11 +90,33 @@ async def get_custom_role(db: AsyncSession, tenant_id: str, slug: str) -> m.Cust
     return row
 
 
-async def list_role_catalog(db: AsyncSession, tenant_id: str) -> list[dict]:
+async def list_role_catalog(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = True,
+    is_active: bool | None = None,
+) -> list[dict]:
+    """Stage 124 R1 — catalog with optional inactive custom roles."""
+    if is_active is False:
+        # Inactive-only honesty: custom roles only (system roles have no inactive state).
+        rows = [
+            serialize_custom_role(c)
+            for c in await list_custom_roles(db, tenant_id, is_active=False)
+        ]
+        rows.sort(key=lambda r: (r.get("label") or r.get("role") or ""))
+        return rows
+
     rows = list_system_role_catalog()
     if not is_platform_tenant_id(tenant_id):
         rows = [r for r in rows if r.get("role") not in PLATFORM_ROLES]
-    for custom in await list_custom_roles(db, tenant_id, active_only=True):
+    customs = await list_custom_roles(
+        db,
+        tenant_id,
+        active_only=active_only if is_active is None else False,
+        is_active=is_active,
+    )
+    for custom in customs:
         rows.append(serialize_custom_role(custom))
     rows.sort(key=lambda r: (0 if r.get("system") else 1, r.get("label") or r.get("role") or ""))
     return rows

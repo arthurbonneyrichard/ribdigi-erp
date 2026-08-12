@@ -2090,4 +2090,17 @@ Every feature in every phase must meet:
 
 **Stage 123 exit (2026-08-12):** F1, G1, X1, D1, H123x met — `docs/STAGE_123_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_253_STAGE123_FREEZE.md`. Fidelity: `docs/STAGE_123_FIDELITY.md`.
 
+**Stage 124 open (2026-08-12):** Tenant MVP Inactive Product Variants, Custom Roles & Variant/Role CSV Export Fidelity — `docs/ADR_254_STAGE124_OPEN.md` + `docs/STAGE_124_PLAN.md` (Inactive product variants → Inactive custom roles → Variant/role CSV export → Fidelity; V1 next).
+
+**Stage 124 V1 (2026-08-12):** Inactive product variants honesty (`test_stage124_inactive_product_variants_v1.py`).
+
+**Stage 124 R1 (2026-08-12):** Inactive custom roles honesty (`test_stage124_inactive_custom_roles_r1.py`).
+
+**Stage 124 X1 (2026-08-12):** Variant & role CSV export (`test_stage124_variant_role_export_x1.py`).
+
+**Stage 124 D1 (2026-08-12):** Inactive product variants, custom roles & export fidelity sync — `docs/STAGE_124_FIDELITY.md` (`test_stage124_fidelity_d1.py`).
+
+**Stage 124 exit (2026-08-12):** V1, R1, X1, D1, H124x met — `docs/STAGE_124_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_255_STAGE124_FREEZE.md`. Fidelity: `docs/STAGE_124_FIDELITY.md`.
+
+
 

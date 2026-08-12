@@ -188,6 +188,14 @@ export default function Page() {
       .toLowerCase();
     return v === 'true' || v === 'false' ? v : '';
   });
+  // Stage 124 V1 — variant_active → GET /products/{id}/variants?is_active=
+  const [variantActiveFilter, setVariantActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('variant_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
 
   function writeProductListFilters(next: {
     q?: string;
@@ -396,10 +404,18 @@ export default function Page() {
     setWarehouseStock(r.data || null);
   }
 
-  async function refreshSelected(id: string) {
+  async function refreshSelected(id: string, opts?: { variantActive?: string }) {
     if (!id) return;
+    const variantActive =
+      opts?.variantActive !== undefined ? opts.variantActive : variantActiveFilter;
+    const variantQs =
+      variantActive === 'true'
+        ? '?is_active=true'
+        : variantActive === 'false'
+          ? '?is_active=false'
+          : '';
     const [v, b, g] = await Promise.all([
-      api(`/products/${id}/variants`),
+      api(`/products/${id}/variants${variantQs}`),
       api(`/products/${id}/batches`),
       api(`/products/${id}/images`),
     ]);
@@ -881,6 +897,21 @@ export default function Page() {
     try {
       await api(`/products/${selectedId}/variants/${variantId}`, { method: 'DELETE' });
       setMessage('Variant deactivated');
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function reactivateVariant(variantId: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}/variants/${variantId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: true }),
+      });
+      setMessage('Variant reactivated');
       await refreshSelected(selectedId);
     } catch (err: any) {
       setError(err.message);
@@ -1931,6 +1962,78 @@ export default function Page() {
 
       {tab === 'variants' && (
         <>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Filter via <code>variant_active</code> → <code>GET /products/&#123;id&#125;/variants?is_active=</code>{' '}
+            (Stage 124 V1).
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
+            <label className="muted">
+              Active status{' '}
+              <select
+                value={variantActiveFilter}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setVariantActiveFilter(v);
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'variants');
+                  if (v === 'true' || v === 'false') url.searchParams.set('variant_active', v);
+                  else url.searchParams.delete('variant_active');
+                  window.history.replaceState(
+                    {},
+                    '',
+                    `${url.pathname}?${url.searchParams.toString()}`
+                  );
+                  if (selectedId) {
+                    refreshSelected(selectedId, { variantActive: v }).catch((err) =>
+                      setError(err.message)
+                    );
+                  }
+                }}
+                aria-label="Variant active filter"
+              >
+                <option value="">All</option>
+                <option value="true">Active only</option>
+                <option value="false">Inactive only</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={async () => {
+                // Stage 124 X1 — variants CSV export
+                setError('');
+                setMessage('');
+                try {
+                  const token = localStorage.getItem('token');
+                  const tenant = localStorage.getItem('tenant');
+                  const qs = new URLSearchParams();
+                  if (selectedId) qs.set('product_id', selectedId);
+                  if (variantActiveFilter === 'true' || variantActiveFilter === 'false') {
+                    qs.set('is_active', variantActiveFilter);
+                  }
+                  const q = qs.toString();
+                  const res = await fetch(`${apiBase}/products/variants/export${q ? `?${q}` : ''}`, {
+                    headers: {
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                    },
+                  });
+                  if (!res.ok) throw new Error('Variants export failed');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'variants_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  setMessage('Variants CSV exported');
+                } catch (err: any) {
+                  setError(err.message || 'Variants export failed');
+                }
+              }}
+            >
+              Export variants CSV
+            </button>
+          </div>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 480 }}>
             <h3>Add variant</h3>
             <input value={variantName} onChange={(e) => setVariantName(e.target.value)} placeholder="Name" />
@@ -1982,9 +2085,13 @@ export default function Page() {
                   </td>
                   <td>{v.is_active ? 'yes' : 'no'}</td>
                   <td>
-                    {v.is_active && (
+                    {v.is_active ? (
                       <button type="button" onClick={() => deactivateVariant(v.id)}>
                         Deactivate
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => reactivateVariant(v.id)}>
+                        Reactivate
                       </button>
                     )}
                   </td>

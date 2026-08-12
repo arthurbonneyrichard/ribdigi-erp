@@ -23,4 +23,4 @@ Stage 123 Tenant MVP Inactive Finance Masters, Customer Groups & Finance/Party-M
 
 ## Next stage
 
-Stage 124 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 123 feature scope remains frozen.
+**Stage 124 opened** via CONTINUE/NEXT after this freeze — see [ADR-254](ADR_254_STAGE124_OPEN.md) / [STAGE_124_PLAN.md](STAGE_124_PLAN.md); frozen as [ADR-255](ADR_255_STAGE124_FREEZE.md). Stage 123 feature scope remains frozen.

@@ -104,18 +104,25 @@ async def resolve_sale_line(
     return product, variant, unit_price
 
 
-async def list_variants(db: AsyncSession, tenant_id: str, product_id: str) -> list[m.ProductVariant]:
+async def list_variants(
+    db: AsyncSession,
+    tenant_id: str,
+    product_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.ProductVariant]:
+    """Stage 124 V1 — is_active / active_only for honest inactive-only variant lists."""
     await get_product(db, tenant_id, product_id)
-    return (
-        await db.execute(
-            select(m.ProductVariant)
-            .where(
-                m.ProductVariant.tenant_id == tenant_id,
-                m.ProductVariant.product_id == product_id,
-            )
-            .order_by(m.ProductVariant.name)
-        )
-    ).scalars().all()
+    stmt = select(m.ProductVariant).where(
+        m.ProductVariant.tenant_id == tenant_id,
+        m.ProductVariant.product_id == product_id,
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.ProductVariant.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.ProductVariant.is_active.is_(True))
+    return list((await db.execute(stmt.order_by(m.ProductVariant.name))).scalars().all())
 
 
 async def create_variant(

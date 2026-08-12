@@ -1460,3 +1460,5 @@ Stage 121 D1 inactive stores, warehouses & location export fidelity — `docs/ST
 Stage 122 D1 inactive org units, catalog meta & export fidelity — `docs/STAGE_122_FIDELITY.md` (`test_stage122_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 123 D1 inactive finance masters, customer groups & export fidelity — `docs/STAGE_123_FIDELITY.md` (`test_stage123_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 124 D1 inactive product variants, custom roles & export fidelity — `docs/STAGE_124_FIDELITY.md` (`test_stage124_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

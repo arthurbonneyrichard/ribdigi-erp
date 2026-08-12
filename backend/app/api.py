@@ -56,6 +56,7 @@ from app import expense_export as expense_export_svc
 from app import location_export as location_export_svc
 from app import org_catalog_export as org_catalog_export_svc
 from app import finance_meta_export as finance_meta_export_svc
+from app import variant_role_export as variant_role_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -1874,10 +1875,38 @@ async def _revoke_user_sessions(db: AsyncSession, *, tenant_id: str, user_id: st
 
 @api.get("/roles")
 async def roles_catalog(
+    active_only: bool = True,
+    is_active: bool | None = None,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await roles_svc.list_role_catalog(db, claims["tenant_id"]))
+    """Stage 124 R1 — active_only / is_active for honest inactive-only custom role lists."""
+    return env(
+        await roles_svc.list_role_catalog(
+            db, claims["tenant_id"], active_only=active_only, is_active=is_active
+        )
+    )
+
+
+@api.get("/roles/export")
+async def roles_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 124 X1 — custom roles CSV export (system roles excluded)."""
+    text = await variant_role_export_svc.export_custom_roles_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="custom_roles_export.csv"'},
+    )
 
 
 @api.get("/roles/{role}")
@@ -4516,13 +4545,45 @@ async def stock_out(
     return env(result, "Stock out recorded")
 
 
-@api.get("/products/{product_id}/variants")
-async def list_product_variants(
-    product_id: str,
+@api.get("/products/variants/export")
+async def products_variants_export(
+    product_id: str | None = None,
+    active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await catalog_svc.list_variants(db, claims["tenant_id"], product_id)
+    """Stage 124 X1 — product variants CSV export."""
+    text = await variant_role_export_svc.export_variants_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="variants_export.csv"'},
+    )
+
+
+@api.get("/products/{product_id}/variants")
+async def list_product_variants(
+    product_id: str,
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 124 V1 — active_only / is_active for honest inactive-only variant lists."""
+    rows = await catalog_svc.list_variants(
+        db,
+        claims["tenant_id"],
+        product_id,
+        active_only=active_only,
+        is_active=is_active,
+    )
     return env([catalog_svc.serialize_variant(v) for v in rows])
 
 
