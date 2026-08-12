@@ -692,7 +692,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] Auto-calculate tax on sales invoices, purchase invoices, POS transactions
   - [ ] Display tax breakdown per line item and total
-  - [ ] Handle tax exemptions (zero-rated, exempt products)
+  - [x] Handle tax exemptions (zero-rated, exempt products)
   - [ ] Reverse charge mechanism support
 
 #### BR-12.3 Tax Reports
