@@ -151,3 +151,5 @@ Stage 128 D1 Tenant MVP Session Status, Passkey Inventory CSV & Document-Numberi
 Stage 129 D1 Tenant MVP Admin Session Inventory, Notifications CSV & Backup-Job History Export Fidelity — `docs/STAGE_129_FIDELITY.md` (`test_stage129_fidelity_d1.py`); Stage 129 A1 Complete; Stage 129 N1 Complete; Stage 129 B1 Complete (MVP honesty); exit `docs/STAGE_129_EXIT_CRITERIA.md`, ADR-265.
 
 Stage 130 D1 Tenant MVP Cheque Lifecycle CSV, POS Session Status & Stock-Count List Export Fidelity — `docs/STAGE_130_FIDELITY.md` (`test_stage130_fidelity_d1.py`); Stage 130 C1 Complete; Stage 130 P1 Complete; Stage 130 S1 Complete (MVP honesty); exit `docs/STAGE_130_EXIT_CRITERIA.md`, ADR-267.
+
+Stage 131 D1 Tenant MVP Journal Entry CSV, Bank Statement Status & Email-Settings Export Fidelity — `docs/STAGE_131_FIDELITY.md` (`test_stage131_fidelity_d1.py`); Stage 131 J1 Complete; Stage 131 B1 Complete; Stage 131 E1 Complete (MVP honesty); exit `docs/STAGE_131_EXIT_CRITERIA.md`, ADR-269.

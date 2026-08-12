@@ -974,6 +974,33 @@ export default function Page() {
               >
                 Send test email to me
               </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setError('');
+                  try {
+                    const token = localStorage.getItem('token') || '';
+                    const res = await fetch(`${apiBase}/settings/email/export`, {
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (!res.ok) {
+                      setError(await res.text());
+                      return;
+                    }
+                    const blob = await res.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'email_settings_export.csv';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    setMessage('Email settings CSV downloaded (Stage 131 E1; password excluded)');
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                Export email settings CSV
+              </button>
             </div>
           </div>
         </div>

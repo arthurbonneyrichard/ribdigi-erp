@@ -45,6 +45,7 @@ export default function Page() {
   const [trial, setTrial] = useState<any>(null);
   const [pnl, setPnl] = useState<any>(null);
   const [statements, setStatements] = useState<any[]>([]);
+  const [statementStatusFilter, setStatementStatusFilter] = useState('');
   const [selected, setSelected] = useState<any>(null);
   const [cheques, setCheques] = useState<any[]>([]);
   const [error, setError] = useState('');
@@ -121,6 +122,7 @@ export default function Page() {
     journalStoreId?: string;
     chequeDirection?: string;
     chequeStatus?: string;
+    statementStatus?: string;
     accountActive?: string;
     liquidActive?: string;
     bankConnActive?: string;
@@ -129,6 +131,8 @@ export default function Page() {
     const jStore = opts?.journalStoreId !== undefined ? opts.journalStoreId : journalStoreId;
     const cDir = opts?.chequeDirection !== undefined ? opts.chequeDirection : chequeDirectionFilter;
     const cStatus = opts?.chequeStatus !== undefined ? opts.chequeStatus : chequeStatusFilter;
+    const sStatus =
+      opts?.statementStatus !== undefined ? opts.statementStatus : statementStatusFilter;
     const accountActive =
       opts?.accountActive !== undefined ? opts.accountActive : accountActiveFilter;
     const accountQs =
@@ -182,6 +186,11 @@ export default function Page() {
     const chequeQs = chequeParams.toString()
       ? `/accounting/cheques?${chequeParams}`
       : '/accounting/cheques';
+    const stmtParams = new URLSearchParams();
+    if (sStatus) stmtParams.set('status', sStatus);
+    const stmtQs = stmtParams.toString()
+      ? `/accounting/bank-statements?${stmtParams}`
+      : '/accounting/bank-statements';
     const tbPath = tbAsOf
       ? `/accounting/trial-balance?as_of_date=${encodeURIComponent(tbAsOf)}`
       : '/accounting/trial-balance';
@@ -191,7 +200,7 @@ export default function Page() {
       api(tbPath),
       api(pnlPath),
       api(`/accounting/liquid-accounts${liquidQs}`),
-      api('/accounting/bank-statements'),
+      api(stmtQs),
       api(chequeQs),
       api(`/accounting/bank-connections${bankConnQs}`).catch(() => ({ data: [] })),
       api('/stores').catch(() => ({ data: [] })),
@@ -250,11 +259,18 @@ export default function Page() {
       bankActive = ba;
       setBankConnActiveFilter(ba);
     }
+    let stmtStatus = '';
+    const ss = params.get('statement_status')?.trim().toLowerCase() || '';
+    if (['draft', 'in_progress', 'reconciled'].includes(ss)) {
+      stmtStatus = ss;
+      setStatementStatusFilter(ss);
+    }
     refresh({
       journalStatus: jStatus,
       journalStoreId: store,
       chequeDirection: cDir,
       chequeStatus: cStatus,
+      statementStatus: stmtStatus,
       liquidActive: liqActive,
       bankConnActive: bankActive,
     }).catch((err) => setError(err.message));
@@ -1303,6 +1319,36 @@ export default function Page() {
             >
               Apply filter
             </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const params = new URLSearchParams();
+                if (journalStoreId) params.set('store_id', journalStoreId);
+                if (journalStatusFilter && journalStatusFilter !== 'all') {
+                  params.set('status', journalStatusFilter);
+                } else if (journalStatusFilter === 'all') {
+                  params.set('status', 'all');
+                }
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${apiBase}/accounting/journal-entries/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'journal_entries_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Journal entries CSV downloaded (Stage 131 J1)');
+              }}
+            >
+              Export journals CSV
+            </button>
           </div>
           <table className="table">
             <thead>
@@ -1522,7 +1568,61 @@ export default function Page() {
             </ul>
           </div>
 
-          <h3>Statements</h3>
+          <h3 id="statements">Statements</h3>
+          <p className="muted">
+            Filter via <code>statement_status</code> → <code>GET /accounting/bank-statements?status=</code>;
+            header list export via <code>/accounting/bank-statements/export</code> (Stage 131 B1).
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+            <select
+              value={statementStatusFilter}
+              onChange={(e) => setStatementStatusFilter(e.target.value)}
+              aria-label="Bank statement status filter"
+            >
+              <option value="">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="in_progress">In progress</option>
+              <option value="reconciled">Reconciled</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                writeAccountingQuery({
+                  statement_status: statementStatusFilter || null,
+                });
+                refresh({ statementStatus: statementStatusFilter }).catch((err) =>
+                  setError(err.message),
+                );
+              }}
+            >
+              Apply filter
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const params = new URLSearchParams();
+                if (statementStatusFilter) params.set('status', statementStatusFilter);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${apiBase}/accounting/bank-statements/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'bank_statements_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Bank statements CSV downloaded (Stage 131 B1)');
+              }}
+            >
+              Export statements CSV
+            </button>
+          </div>
           <table className="table">
             <thead>
               <tr>

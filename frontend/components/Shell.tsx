@@ -746,6 +746,24 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Draft Statements',
+    href: '/accounting?tab=reconcile&statement_status=draft#bank-reconciliation',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'In Progress Statements',
+    href: '/accounting?tab=reconcile&statement_status=in_progress#bank-reconciliation',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Reconciled Statements',
+    href: '/accounting?tab=reconcile&statement_status=reconciled#bank-reconciliation',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
     label: 'Active Bank Connections',
     href: '/accounting?tab=reconcile&bank_conn_active=true#bank-reconciliation',
     modules: ['accounting'],

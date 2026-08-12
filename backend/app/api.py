@@ -63,6 +63,7 @@ from app import api_fx_schedule_export as api_fx_schedule_export_svc
 from app import session_passkey_doc_export as session_passkey_doc_export_svc
 from app import admin_ops_export as admin_ops_export_svc
 from app import ops_lifecycle_export as ops_lifecycle_export_svc
+from app import finance_ops_export as finance_ops_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -742,6 +743,24 @@ async def settings_email_get(
 
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     return env(emailer.email_status(tenant))
+
+
+@api.get("/settings/email/export")
+async def settings_email_export(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 131 E1 — email/SMTP settings CSV (password never included)."""
+    text = await finance_ops_export_svc.export_email_settings_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="email_settings_export.csv"'
+        },
+    )
 
 
 @api.patch("/settings/email")
@@ -8947,17 +8966,52 @@ async def sync_bank_connection(
 
 @api.get("/accounting/bank-statements")
 async def list_bank_statements(
+    status: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 131 B1 — optional status=draft|in_progress|reconciled for statement honesty."""
     from app import bank_recon as bank_recon_svc
 
-    rows = await bank_recon_svc.list_statements(db, claims["tenant_id"])
+    status_n = (status or "").strip().lower() or None
+    if status_n and status_n not in {"draft", "in_progress", "reconciled"}:
+        raise HTTPException(
+            status_code=400,
+            detail="status must be draft, in_progress, or reconciled",
+        )
+    rows = await finance_ops_export_svc.list_bank_statements(
+        db, tenant_id=claims["tenant_id"], status=status_n
+    )
     out = []
     for row in rows:
         lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], row.id)
         out.append(bank_recon_svc.serialize_statement(row, lines))
     return env(out)
+
+
+@api.get("/accounting/bank-statements/export")
+async def bank_statements_export(
+    status: str | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 131 B1 — bank statement header CSV (line details omitted)."""
+    status_n = (status or "").strip().lower() or None
+    if status_n and status_n not in {"draft", "in_progress", "reconciled"}:
+        raise HTTPException(
+            status_code=400,
+            detail="status must be draft, in_progress, or reconciled",
+        )
+    text = await finance_ops_export_svc.export_bank_statements_csv(
+        db, tenant_id=claims["tenant_id"], status=status_n
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="bank_statements_export.csv"'
+        },
+    )
 
 
 @api.post("/accounting/bank-statements")
@@ -9377,6 +9431,35 @@ async def list_journals(
         stmt = stmt.where(m.JournalEntry.status == status_filter)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await accounting_svc.serialize_journal(db, e) for e in rows])
+
+
+@api.get("/accounting/journal-entries/export")
+async def export_journal_entries_csv(
+    store_id: str | None = None,
+    status: str | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 131 J1 — journal entry header CSV (no line dump)."""
+    status_filter = (status or "").strip().lower() or None
+    if status_filter and status_filter not in ("posted", "unposted", "all"):
+        raise HTTPException(
+            status_code=400,
+            detail="status must be one of: posted, unposted, all",
+        )
+    text = await finance_ops_export_svc.export_journals_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        status=None if status_filter == "all" else status_filter,
+        store_id=store_id,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="journal_entries_export.csv"'
+        },
+    )
 
 
 @api.get("/accounting/journal-entries/{entry_id}")

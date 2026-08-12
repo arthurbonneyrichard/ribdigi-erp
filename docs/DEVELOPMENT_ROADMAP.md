@@ -2174,6 +2174,18 @@ Every feature in every phase must meet:
 
 **Stage 130 exit (2026-08-12):** C1, P1, S1, D1, H130x met — `docs/STAGE_130_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_267_STAGE130_FREEZE.md`. Fidelity: `docs/STAGE_130_FIDELITY.md`.
 
+**Stage 131 open (2026-08-12):** Tenant MVP Journal Entry CSV, Bank Statement Status & Email-Settings Export Fidelity — `docs/ADR_268_STAGE131_OPEN.md` + `docs/STAGE_131_PLAN.md` (Journals CSV → Bank statements → Email settings → Fidelity; J1 next).
+
+**Stage 131 J1 (2026-08-12):** Journal entry header CSV (`test_stage131_journals_export_j1.py`).
+
+**Stage 131 B1 (2026-08-12):** Bank statement status + CSV (`test_stage131_bank_statements_b1.py`).
+
+**Stage 131 E1 (2026-08-12):** Email settings CSV secret-free (`test_stage131_email_settings_export_e1.py`).
+
+**Stage 131 D1 (2026-08-12):** Journal, bank statement & email-settings export fidelity sync — `docs/STAGE_131_FIDELITY.md` (`test_stage131_fidelity_d1.py`).
+
+**Stage 131 exit (2026-08-12):** J1, B1, E1, D1, H131x met — `docs/STAGE_131_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_269_STAGE131_FREEZE.md`. Fidelity: `docs/STAGE_131_FIDELITY.md`.
+
 
 
 

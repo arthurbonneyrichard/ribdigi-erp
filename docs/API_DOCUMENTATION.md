@@ -1642,3 +1642,5 @@ Stage 128 D1 — `docs/STAGE_128_FIDELITY.md` (`test_stage128_fidelity_d1.py`): 
 Stage 129 D1 — `docs/STAGE_129_FIDELITY.md` (`test_stage129_fidelity_d1.py`): Stage 129 A1 `GET /auth/tenant-sessions?status=` + `/auth/tenant-sessions/export`; Stage 129 N1 `GET /notifications/export`; Stage 129 B1 `GET /backup?status=` + `/backup/export`.
 
 Stage 130 D1 — `docs/STAGE_130_FIDELITY.md` (`test_stage130_fidelity_d1.py`): Stage 130 C1 `GET /accounting/cheques/export`; Stage 130 P1 `GET /pos/sessions?status=` + `/pos/sessions/export`; Stage 130 S1 `GET /inventory/stock-counts?status=` + `/inventory/stock-counts/export`.
+
+Stage 131 D1 — `docs/STAGE_131_FIDELITY.md` (`test_stage131_fidelity_d1.py`): Stage 131 J1 `GET /accounting/journal-entries/export`; Stage 131 B1 `GET /accounting/bank-statements?status=` + `/accounting/bank-statements/export`; Stage 131 E1 `GET /settings/email/export` (password never included).

@@ -24,3 +24,5 @@ Stage 130 Tenant MVP Cheque Lifecycle CSV, POS Session Status & Stock-Count List
 ## Next stage
 
 Stage 131 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 130 feature scope remains frozen.
+
+**Stage 131 opened and closed under ADR-268 / ADR-269** — Tenant MVP Journal Entry CSV, Bank Statement Status & Email-Settings Export Fidelity (CONTINUE/NEXT approved).

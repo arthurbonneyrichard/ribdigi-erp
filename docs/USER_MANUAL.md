@@ -204,6 +204,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Cheques CSV:** Accounting Export cheques CSV (Stage 130 C1)
 - **POS Session Status Filters:** POS open/closed filter + Shell leaves + CSV (Stage 130 P1)
 - **Stock Count List Filters:** Inventory draft/completed/cancelled filter + Shell leaves + list CSV (Stage 130 S1)
+- **Journal Entry CSV:** Accounting Export journals CSV (Stage 131 J1)
+- **Bank Statement Status Filters:** Draft/in progress/reconciled filter + Shell leaves + header CSV (Stage 131 B1)
+- **Email Settings CSV:** Company Export email settings CSV — password excluded (Stage 131 E1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
