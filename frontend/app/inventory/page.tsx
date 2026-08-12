@@ -69,6 +69,9 @@ export default function Page() {
   const [brandName, setBrandName] = useState('');
   const [unitCode, setUnitCode] = useState('');
   const [unitName, setUnitName] = useState('');
+  const [unitBaseId, setUnitBaseId] = useState('');
+  const [unitRatio, setUnitRatio] = useState('1');
+  const [stockUnitId, setStockUnitId] = useState('');
 
   const [variantName, setVariantName] = useState('');
   const [variantSku, setVariantSku] = useState('');
@@ -497,11 +500,16 @@ export default function Page() {
         body: JSON.stringify({
           product_id: selectedId,
           quantity: Number(stockQty),
+          unit_id: stockUnitId || null,
           batch_number: batchNumber,
           expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
         }),
       });
-      setMessage(`Stock in — on-hand ${r.data.stock_qty}`);
+      const converted =
+        r.data.quantity_base != null && r.data.quantity_entered != null
+          ? ` (${r.data.quantity_entered} entered → ${r.data.quantity_base} stock)`
+          : '';
+      setMessage(`Stock in — on-hand ${r.data.stock_qty}${converted}`);
       setBatchNumber('');
       await refresh();
       await refreshSelected(selectedId);
@@ -897,18 +905,45 @@ export default function Page() {
           </div>
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Unit of measure</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Optional base + ratio: 1 of this unit = ratio × base (e.g. BOX = 12 PCS). Stock stays in the
+              product&apos;s stock unit.
+            </p>
             <input value={unitCode} onChange={(e) => setUnitCode(e.target.value)} placeholder="Code" />
             <input value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="Name" />
+            <select value={unitBaseId} onChange={(e) => setUnitBaseId(e.target.value)}>
+              <option value="">Base unit (root / none)</option>
+              {units
+                .filter((u) => u.is_active !== false && !u.base_unit_id)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.code} — {u.name}
+                  </option>
+                ))}
+            </select>
+            <input
+              value={unitRatio}
+              onChange={(e) => setUnitRatio(e.target.value)}
+              placeholder="Conversion ratio"
+              disabled={!unitBaseId}
+            />
             <button
               onClick={async () => {
                 setError('');
                 try {
                   await api('/catalog/units', {
                     method: 'POST',
-                    body: JSON.stringify({ code: unitCode, name: unitName }),
+                    body: JSON.stringify({
+                      code: unitCode,
+                      name: unitName,
+                      base_unit_id: unitBaseId || null,
+                      conversion_ratio: unitBaseId ? Number(unitRatio) || 1 : 1,
+                    }),
                   });
                   setUnitCode('');
                   setUnitName('');
+                  setUnitBaseId('');
+                  setUnitRatio('1');
                   setMessage('Unit created');
                   await refresh();
                 } catch (err: any) {
@@ -924,6 +959,9 @@ export default function Page() {
                 <li key={u.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span>
                     {u.code} — {u.name}
+                    {u.base_unit_code
+                      ? ` (= ${u.conversion_ratio} ${u.base_unit_code})`
+                      : ' [root]'}
                     {!u.is_active ? ' [inactive]' : ''}
                   </span>
                   {u.is_active && (
@@ -1013,6 +1051,17 @@ export default function Page() {
             <input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Batch number" />
             <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
             <input value={stockQty} onChange={(e) => setStockQty(e.target.value)} placeholder="Quantity" />
+            <select value={stockUnitId} onChange={(e) => setStockUnitId(e.target.value)}>
+              <option value="">Unit (default = product stock unit)</option>
+              {units
+                .filter((u) => u.is_active !== false)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.code}
+                    {u.base_unit_code ? ` (= ${u.conversion_ratio} ${u.base_unit_code})` : ''}
+                  </option>
+                ))}
+            </select>
             <button onClick={stockInBatch} disabled={!selectedId || !batchNumber}>
               Receive batch
             </button>

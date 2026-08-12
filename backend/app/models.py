@@ -267,6 +267,11 @@ class UnitOfMeasure(Base):
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
     code: Mapped[str] = mapped_column(String(20))
     name: Mapped[str] = mapped_column(String(80))
+    # 1 of this unit = conversion_ratio × base_unit (root when base_unit_id is null)
+    base_unit_id: Mapped[str | None] = mapped_column(
+        ForeignKey("units_of_measure.id"), nullable=True, index=True
+    )
+    conversion_ratio: Mapped[float] = mapped_column(Numeric(18, 8), default=1)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
