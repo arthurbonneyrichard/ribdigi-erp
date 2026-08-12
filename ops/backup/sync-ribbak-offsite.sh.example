@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Stage 26 W1 — mirror encrypted logical .ribbak archives from BACKUP_DIR to S3-compatible storage.
+# Complements continuous WAL offsite; does not replace guarded restore APIs.
+# Operator template — bulk/cron complement to Stage 27 B1 opt-in in-app upload (BACKUP_OFFSITE_UPLOAD_ENABLED).
+# Not executed by CI. When in-app upload is disabled, this remains the offsite path.
+
+set -euo pipefail
+
+: "${BACKUP_DIR:?Set BACKUP_DIR (local .ribbak directory)}"
+: "${BACKUP_OFFSITE_S3_BUCKET:?Set BACKUP_OFFSITE_S3_BUCKET}"
+PREFIX="${BACKUP_OFFSITE_S3_PREFIX:-ribdigi/logical/ribbak}"
+ENDPOINT_ARGS=()
+if [[ -n "${S3_ENDPOINT:-}" ]]; then
+  ENDPOINT_ARGS+=(--endpoint-url "$S3_ENDPOINT")
+fi
+
+DEST="s3://${BACKUP_OFFSITE_S3_BUCKET}/${PREFIX}/"
+aws "${ENDPOINT_ARGS[@]}" s3 sync "$BACKUP_DIR" "$DEST" --exclude "*" --include "*.ribbak"
+echo "synced ${BACKUP_DIR} -> ${DEST}"
