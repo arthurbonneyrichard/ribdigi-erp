@@ -28,13 +28,37 @@ const primaryNavSpec: NavEntry[] = [
   { kind: 'link', label: 'Inventory', href: '/inventory', modules: ['inventory'] },
   { kind: 'link', label: 'Stock', href: '/inventory?tab=stock', modules: ['inventory'] },
   { kind: 'link', label: 'Low stock', href: '/inventory?tab=lowstock', modules: ['inventory'] },
+  {
+    kind: 'link',
+    label: 'Stock Counts',
+    href: '/inventory?tab=counts',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Warehouse Transfers',
+    href: '/inventory?tab=transfers',
+    modules: ['inventory'],
+  },
   { kind: 'link', label: 'Sales', href: '/sales', modules: ['sales'] },
+  {
+    kind: 'link',
+    label: 'Sales Returns',
+    href: '/sales?tab=returns',
+    modules: ['sales'],
+  },
   { kind: 'link', label: 'POS', href: '/pos', modules: ['pos'] },
   { kind: 'link', label: 'Purchasing', href: '/purchasing', modules: ['purchasing'] },
   {
     kind: 'link',
     label: 'Outstanding Purchases',
     href: '/purchasing?tab=invoices&status=outstanding',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
+    label: 'Purchase Returns',
+    href: '/purchasing?tab=returns',
     modules: ['purchasing'],
   },
   {
@@ -67,6 +91,18 @@ const primaryNavSpec: NavEntry[] = [
   { kind: 'link', label: 'Expenses', href: '/expenses', modules: ['expenses'] },
   {
     kind: 'link',
+    label: 'Pending Expenses',
+    href: '/expenses?status=pending',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
+    label: 'Expense Approval Matrix',
+    href: '/expenses#approval-matrix',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
     label: 'Income',
     href: '/accounting?tab=ledger#profit-loss',
     modules: ['accounting'],
@@ -84,7 +120,31 @@ const primaryNavSpec: NavEntry[] = [
     href: '/accounting?tab=ledger#opening-balances',
     modules: ['accounting'],
   },
+  {
+    kind: 'link',
+    label: 'Bank Reconciliation',
+    href: '/accounting?tab=reconcile',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Cheques',
+    href: '/accounting?tab=cheques',
+    modules: ['accounting'],
+  },
   { kind: 'link', label: 'Credit', href: '/credit', modules: ['credit'] },
+  {
+    kind: 'link',
+    label: 'Outstanding Receivables',
+    href: '/credit?kind=receivable',
+    modules: ['credit'],
+  },
+  {
+    kind: 'link',
+    label: 'Outstanding Payables',
+    href: '/credit?kind=payable',
+    modules: ['credit'],
+  },
   { kind: 'link', label: 'Tax', href: '/tax', modules: ['tax'] },
   {
     kind: 'link',

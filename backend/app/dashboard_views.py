@@ -36,7 +36,7 @@ SECTION_FIELDS: dict[str, tuple[str, ...]] = {
         "monthly_revenue_series",
     ),
     "purchasing": ("total_purchases",),
-    "expenses": ("total_expenses", "expenses_by_category"),
+    "expenses": ("total_expenses", "pending_expenses", "expenses_by_category"),
     # Stage 96 B1 — Profit Summary (MTD) when accounting:read
     "accounting": ("profit_summary", "income_mtd"),
     "inventory": ("products", "low_stock", "out_of_stock", "expiring_batches"),

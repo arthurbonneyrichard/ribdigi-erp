@@ -75,6 +75,7 @@ export default function Page() {
   const [departmentId, setDepartmentId] = useState('');
   const [filterStoreId, setFilterStoreId] = useState('');
   const [filterDepartmentId, setFilterDepartmentId] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const [reference, setReference] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [recAmount, setRecAmount] = useState('100');
@@ -109,10 +110,12 @@ export default function Page() {
   const [editBudgetAmount, setEditBudgetAmount] = useState('');
   const [editAccountId, setEditAccountId] = useState('');
 
-  async function refresh() {
+  async function refresh(statusOverride?: string) {
     const params = new URLSearchParams();
     if (filterStoreId) params.set('store_id', filterStoreId);
     if (filterDepartmentId) params.set('department_id', filterDepartmentId);
+    const status = statusOverride !== undefined ? statusOverride : filterStatus;
+    if (status) params.set('status', status);
     const expQs = params.toString() ? `?${params.toString()}` : '';
     const [exp, cats, settings, liquid, rec, bud, accounts, storeRows, deptRows] =
       await Promise.all([
@@ -141,6 +144,26 @@ export default function Page() {
     if (!categoryId && cats.data?.length) setCategoryId(cats.data[0].id);
     if (!recCategoryId && cats.data?.length) setRecCategoryId(cats.data[0].id);
   }
+
+  function setStatusFilter(next: string) {
+    setFilterStatus(next);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (!next) url.searchParams.delete('status');
+      else url.searchParams.set('status', next);
+      const qs = url.searchParams.toString();
+      window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
+    }
+    refresh(next).catch((err) => setError(err.message));
+  }
+
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('status')?.trim() || '';
+    const allowed = ['pending', 'approved', 'rejected'];
+    if (allowed.includes(raw)) setFilterStatus(raw);
+    refresh(allowed.includes(raw) ? raw : '').catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
@@ -779,7 +802,7 @@ export default function Page() {
         </table>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="approval-matrix">
         <h3>Approval matrix</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Amount must exceed a level&apos;s min to require that step. Roles are comma-separated.
@@ -895,6 +918,16 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Filter expenses</h3>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <select
+            value={filterStatus}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="Filter expenses by status"
+          >
+            <option value="">All statuses</option>
+            <option value="pending">pending</option>
+            <option value="approved">approved</option>
+            <option value="rejected">rejected</option>
+          </select>
           <select value={filterStoreId} onChange={(e) => setFilterStoreId(e.target.value)}>
             <option value="">All stores</option>
             {stores.map((s) => (

@@ -2541,6 +2541,13 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             m.Expense.status == "approved",
         )
     )
+    # Stage 98 Q1 — pending approval queue count (honesty for Pending Expenses deep-link)
+    pending_expenses = await scalar(
+        select(func.count(m.Expense.id)).where(
+            m.Expense.tenant_id == tid,
+            m.Expense.status == "pending",
+        )
+    )
     products = await scalar(select(func.count(m.Product.id)).where(m.Product.tenant_id == tid))
     low = await scalar(
         select(func.count(m.Product.id)).where(
@@ -2773,6 +2780,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         ),
         "total_purchases": float(purchases),
         "total_expenses": float(expenses),
+        "pending_expenses": int(pending_expenses or 0),
         "expenses_by_category": expenses_by_category,
         "credit_outstanding": ar_total_due,
         "ar_total_due": ar_total_due,
@@ -2811,10 +2819,11 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "total_sales": "/sales?tab=invoices",
             "total_purchases": "/purchasing?tab=invoices",
             "total_expenses": "/expenses",
-            "credit_outstanding": "/credit",
-            "ar_total_due": "/credit",
-            "ap_total_due": "/credit",
-            "ap_outstanding": "/credit",
+            "pending_expenses": "/expenses?status=pending",
+            "credit_outstanding": "/credit?kind=receivable",
+            "ar_total_due": "/credit?kind=receivable",
+            "ap_total_due": "/credit?kind=payable",
+            "ap_outstanding": "/credit?kind=payable",
             "profit_summary": "/accounting?tab=ledger#profit-loss",
             "income_mtd": "/accounting?tab=ledger#profit-loss",
             "customers": "/sales?tab=customers",
@@ -5672,14 +5681,21 @@ async def convert_order_invoice(
 
 @api.get("/sales/returns")
 async def list_sales_returns(
+    status: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 98 R1 — optional status filter (draft/posted)."""
     stmt = (
         select(m.SalesReturn)
         .where(m.SalesReturn.tenant_id == claims["tenant_id"])
         .order_by(m.SalesReturn.created_at.desc())
     )
+    if status:
+        key = status.strip().lower()
+        if key not in {"draft", "posted"}:
+            raise HTTPException(status_code=400, detail="status must be draft or posted")
+        stmt = stmt.where(m.SalesReturn.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesReturn, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_return(db, r) for r in rows])
@@ -6302,14 +6318,21 @@ async def get_grn(
 
 @api.get("/purchasing/returns")
 async def list_purchase_returns(
+    status: str | None = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 98 R1 — optional status filter (draft/posted)."""
     stmt = (
         select(m.PurchaseReturn)
         .where(m.PurchaseReturn.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseReturn.created_at.desc())
     )
+    if status:
+        key = status.strip().lower()
+        if key not in {"draft", "posted"}:
+            raise HTTPException(status_code=400, detail="status must be draft or posted")
+        stmt = stmt.where(m.PurchaseReturn.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseReturn, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_return(db, r) for r in rows])
@@ -7474,9 +7497,11 @@ async def generate_recurring_expenses(
 async def expenses(
     store_id: str | None = None,
     department_id: str | None = None,
+    status: str | None = None,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 98 Q1 — optional status filter for approval queue honesty."""
     stmt = (
         select(m.Expense)
         .where(m.Expense.tenant_id == claims["tenant_id"])
@@ -7486,6 +7511,15 @@ async def expenses(
         stmt = stmt.where(m.Expense.store_id == store_id)
     if department_id:
         stmt = stmt.where(m.Expense.department_id == department_id)
+    if status:
+        key = status.strip().lower()
+        allowed = {"pending", "approved", "rejected"}
+        if key not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be pending, approved, or rejected",
+            )
+        stmt = stmt.where(m.Expense.status == key)
     stmt = apply_created_by_scope(stmt, m.Expense, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await expenses_svc.serialize_expense_full(db, e) for e in rows])

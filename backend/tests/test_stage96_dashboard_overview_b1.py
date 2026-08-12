@@ -23,7 +23,9 @@ async def test_dashboard_profit_ap_kpi_links_b1(client):
     assert "ap_total_due" in data or "ap_outstanding" in data
     links = data.get("kpi_links") or {}
     assert links.get("profit_summary") == "/accounting?tab=ledger#profit-loss"
-    assert links.get("ap_total_due") == "/credit" or links.get("ap_outstanding") == "/credit"
+    # Stage 98 O1 deepened AP links to ?kind=payable; bare /credit remains acceptable historically
+    ap_link = links.get("ap_total_due") or links.get("ap_outstanding") or ""
+    assert ap_link.startswith("/credit")
 
 
 def test_dashboard_ui_overview_and_notification_links_b1():

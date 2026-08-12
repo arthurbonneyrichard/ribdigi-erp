@@ -103,3 +103,5 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 Until every applicable item above is verified, Cursor and developers must describe unfinished items as `PARTIAL`, `MISSING`, or `BLOCKED` — never as complete or production-ready.
 
 Stage 97 D1 Tenant MVP Module Leaf Honesty Ops — `docs/STAGE_97_FIDELITY.md` (`test_stage97_fidelity_d1.py`); Stage 97 S1 Complete; Stage 97 P1 Complete; Stage 97 I1 Complete (MVP honesty); exit `docs/STAGE_97_EXIT_CRITERIA.md`, ADR-201.
+
+Stage 98 D1 Tenant MVP Ops Queue & Returns Honesty Ops — `docs/STAGE_98_FIDELITY.md` (`test_stage98_fidelity_d1.py`); Stage 98 Q1 Complete; Stage 98 R1 Complete; Stage 98 O1 Complete (MVP honesty); exit `docs/STAGE_98_EXIT_CRITERIA.md`, ADR-203.

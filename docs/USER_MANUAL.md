@@ -107,6 +107,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Invoice status filters:** Sales invoices filter by status including unpaid (posted/sent); quotation → Invoice creates draft — Post required (Stage 97 S1)
 - **Outstanding Purchases / Purchase Settings:** Purchasing deep-links + Settings tab; Opening Balances / Fiscal Period anchors (Stage 97 P1)
 - **QR labels & Sub Categories:** Inventory catalog Sub Categories labeling; product QR labels via `code_type=qr`; Settings Email/SMS/Backup aliases (Stage 97 I1)
+- **Pending Expenses:** Filter expenses by approval status; Shell Pending Expenses + Approval Matrix anchor (Stage 98 Q1)
+- **Sales / Purchase Returns:** Shell deep-links; draft→post honesty for credit/debit notes; `return_status` filter (Stage 98 R1)
+- **Stock Counts / Bank Reconciliation / Cheques:** Shell discoverability; Credit Outstanding Receivables/Payables via `?kind=` (Stage 98 O1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

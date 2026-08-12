@@ -1020,7 +1020,11 @@ export default function Page() {
 
       {tab === 'reconcile' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
+          <div
+            className="card"
+            style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}
+            id="bank-reconciliation"
+          >
             <h3>New statement</h3>
             <select value={reconAccountId} onChange={(e) => setReconAccountId(e.target.value)}>
               {liquid.map((a) => (
@@ -1310,7 +1314,7 @@ export default function Page() {
 
       {tab === 'cheques' && (
         <>
-          <p className="muted">
+          <p className="muted" id="cheques">
             Received cheques post to 1020 then deposit/clear to Bank. Issued cheques post to 2015 until
             cleared against Bank.
           </p>

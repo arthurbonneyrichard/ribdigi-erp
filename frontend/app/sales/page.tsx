@@ -17,6 +17,7 @@ export default function Page() {
   const [orders, setOrders] = useState<any[]>([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('');
+  const [returnStatusFilter, setReturnStatusFilter] = useState('');
   const [returns, setReturns] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerGroups, setCustomerGroups] = useState<any[]>([]);
@@ -70,18 +71,22 @@ export default function Page() {
     return Math.round(Number(base || 0) * (1 - pct / 100) * 10000) / 10000;
   }
 
-  async function refresh(invoiceStatus?: string) {
+  async function refresh(invoiceStatus?: string, returnStatus?: string) {
     const status = invoiceStatus !== undefined ? invoiceStatus : invoiceStatusFilter;
+    const retStatus = returnStatus !== undefined ? returnStatus : returnStatusFilter;
     const invPath = status
       ? `/sales/invoices?status=${encodeURIComponent(status)}`
       : '/sales/invoices';
+    const retPath = retStatus
+      ? `/sales/returns?status=${encodeURIComponent(retStatus)}`
+      : '/sales/returns';
     const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, groupRes] = await Promise.all([
       api(invPath),
       api('/customers'),
       api('/products'),
       api('/sales/quotations'),
       api('/sales/orders'),
-      api('/sales/returns'),
+      api(retPath),
       api('/stores'),
       api('/customers/groups'),
     ]);
@@ -105,6 +110,18 @@ export default function Page() {
       window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
     }
     refresh(next).catch((err) => setError(err.message));
+  }
+
+  function setReturnStatus(next: string) {
+    setReturnStatusFilter(next);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (!next) url.searchParams.delete('return_status');
+      else url.searchParams.set('return_status', next);
+      const qs = url.searchParams.toString();
+      window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
+    }
+    refresh(undefined, next).catch((err) => setError(err.message));
   }
 
   function resetCustomerForm() {
@@ -159,10 +176,17 @@ export default function Page() {
   }
 
   useEffect(() => {
-    const raw = new URLSearchParams(window.location.search).get('status')?.trim() || '';
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('status')?.trim() || '';
+    const retRaw = params.get('return_status')?.trim() || '';
     const allowed = ['draft', 'posted', 'sent', 'paid', 'partial', 'unpaid', 'overdue', 'cancelled'];
+    const retAllowed = ['draft', 'posted'];
     if (allowed.includes(raw)) setInvoiceStatusFilter(raw);
-    refresh(allowed.includes(raw) ? raw : '').catch((err) => setError(err.message));
+    if (retAllowed.includes(retRaw)) setReturnStatusFilter(retRaw);
+    refresh(
+      allowed.includes(raw) ? raw : '',
+      retAllowed.includes(retRaw) ? retRaw : '',
+    ).catch((err) => setError(err.message));
   }, []);
 
   useEffect(() => {
@@ -1106,45 +1130,69 @@ export default function Page() {
       )}
 
       {tab === 'returns' && (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Number</th>
-              <th>Credit note</th>
-              <th>Status</th>
-              <th>Reason</th>
-              <th>Total</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {returns.map((r) => (
-              <tr key={r.id}>
-                <td>{r.return_number}</td>
-                <td>{r.credit_note_number || '—'}</td>
-                <td>{r.status}</td>
-                <td>{r.reason}</td>
-                <td>{r.total_amount}</td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(r)}>View</button>
-                  {r.status === 'draft' && (
-                    <button onClick={() => act(`/sales/returns/${r.id}/post`, 'Posted')}>Post</button>
-                  )}
-                  {r.status === 'posted' && (
-                    <>
-                      <button onClick={() => printCreditNote(r.id, printTemplate || undefined, 'html')}>
-                        Print
-                      </button>
-                      <button onClick={() => printCreditNote(r.id, printTemplate || undefined, 'pdf')}>
-                        PDF
-                      </button>
-                    </>
-                  )}
-                </td>
+        <>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            Sales returns start as draft; Post is required before the credit note is recognized.
+          </p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+            <strong>Return status</strong>
+            <select
+              value={returnStatusFilter}
+              onChange={(e) => setReturnStatus(e.target.value)}
+              aria-label="Filter sales returns by status"
+            >
+              <option value="">All statuses</option>
+              <option value="draft">draft</option>
+              <option value="posted">posted</option>
+            </select>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Credit note</th>
+                <th>Status</th>
+                <th>Reason</th>
+                <th>Total</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {returns.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.return_number}</td>
+                  <td>{r.credit_note_number || '—'}</td>
+                  <td>{r.status}</td>
+                  <td>{r.reason}</td>
+                  <td>{r.total_amount}</td>
+                  <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    <button onClick={() => setSelected(r)}>View</button>
+                    {r.status === 'draft' && (
+                      <button
+                        title="Post required before credit note recognition"
+                        onClick={() =>
+                          act(`/sales/returns/${r.id}/post`, 'Posted — credit note recognized')
+                        }
+                      >
+                        Post
+                      </button>
+                    )}
+                    {r.status === 'posted' && (
+                      <>
+                        <button onClick={() => printCreditNote(r.id, printTemplate || undefined, 'html')}>
+                          Print
+                        </button>
+                        <button onClick={() => printCreditNote(r.id, printTemplate || undefined, 'pdf')}>
+                          PDF
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
 
       {selected && (

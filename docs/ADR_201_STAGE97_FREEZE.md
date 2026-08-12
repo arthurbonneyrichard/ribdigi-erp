@@ -27,4 +27,4 @@ Stage 97 Tenant MVP Module Leaf Honesty Ops delivered Sales surface honesty (S1)
 
 ## Next stage
 
-Stage 98 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 97 feature scope remains frozen.
+Stage 98 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-202](ADR_202_STAGE98_OPEN.md) + [STAGE_98_PLAN.md](STAGE_98_PLAN.md) (Tenant MVP Ops Queue & Returns Honesty Ops). Stage 97 feature scope remains frozen.

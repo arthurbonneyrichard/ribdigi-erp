@@ -1777,3 +1777,15 @@ Every feature in every phase must meet:
 **Stage 97 D1 (2026-08-12):** Module leaf honesty fidelity sync — `docs/STAGE_97_FIDELITY.md` (`test_stage97_fidelity_d1.py`); maps S1–I1 → readiness / launch / deploy / security.
 
 **Stage 97 exit (2026-08-12):** S1, P1, I1, D1, H97x met — `docs/STAGE_97_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_201_STAGE97_FREEZE.md`. Fidelity: `docs/STAGE_97_FIDELITY.md`.
+
+**Stage 98 open (2026-08-12):** Tenant MVP Ops Queue & Returns Honesty Ops track approved — `docs/ADR_202_STAGE98_OPEN.md` + `docs/STAGE_98_PLAN.md` (Expense Approval Queue Honesty → Returns Pipeline Discoverability → Stock Ops & Bank Surface Discoverability → Tenant MVP Ops Queue & Returns Honesty Ops; Q1 next).
+
+**Stage 98 Q1 (2026-08-12):** Expense approval queue honesty — status filters + Pending Expenses + approval-matrix (`test_stage98_expense_queue_q1.py`).
+
+**Stage 98 R1 (2026-08-12):** Returns pipeline discoverability — Sales/Purchase Returns Shell + status + draft→post honesty (`test_stage98_returns_pipeline_r1.py`).
+
+**Stage 98 O1 (2026-08-12):** Stock ops & bank surface — Stock Counts / Transfers / Bank Reconciliation / Cheques / Credit kind (`test_stage98_stock_bank_o1.py`).
+
+**Stage 98 D1 (2026-08-12):** Ops queue fidelity sync — `docs/STAGE_98_FIDELITY.md` (`test_stage98_fidelity_d1.py`); maps Q1–O1 → readiness / launch / deploy / security.
+
+**Stage 98 exit (2026-08-12):** Q1, R1, O1, D1, H98x met — `docs/STAGE_98_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_203_STAGE98_FREEZE.md`. Fidelity: `docs/STAGE_98_FIDELITY.md`.

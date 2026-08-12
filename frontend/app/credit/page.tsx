@@ -59,6 +59,20 @@ export default function Page() {
     }
   }
 
+  function setKindAndUrl(next: 'receivable' | 'payable') {
+    setKind(next);
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('kind', next);
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
+  }
+
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('kind')?.trim() || '';
+    if (raw === 'payable' || raw === 'receivable') setKind(raw);
+  }, []);
+
   useEffect(() => {
     setStatement(null);
     setPaymentSchedule(null);
@@ -322,10 +336,10 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setKind('receivable')} disabled={kind === 'receivable'}>
+        <button onClick={() => setKindAndUrl('receivable')} disabled={kind === 'receivable'}>
           Receivables
         </button>
-        <button onClick={() => setKind('payable')} disabled={kind === 'payable'}>
+        <button onClick={() => setKindAndUrl('payable')} disabled={kind === 'payable'}>
           Payables
         </button>
       </div>

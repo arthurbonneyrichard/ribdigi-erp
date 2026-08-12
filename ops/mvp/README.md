@@ -255,6 +255,9 @@ Authoritative MVP docs:
 - `docs/STAGE_95_EXIT_CRITERIA.md` / `docs/ADR_197_STAGE95_FREEZE.md` (`backend/tests/test_stage95_exit_h95x.py`) — Stage 95 H95x
 - `docs/STAGE_96_EXIT_CRITERIA.md` / `docs/ADR_199_STAGE96_FREEZE.md` (`backend/tests/test_stage96_exit_h96x.py`) — Stage 96 H96x
 - `docs/STAGE_97_EXIT_CRITERIA.md` / `docs/ADR_201_STAGE97_FREEZE.md` (`backend/tests/test_stage97_exit_h97x.py`) — Stage 97 H97x
+- `docs/STAGE_98_EXIT_CRITERIA.md` / `docs/ADR_203_STAGE98_FREEZE.md` (`backend/tests/test_stage98_exit_h98x.py`) — Stage 98 H98x
+- `docs/STAGE_98_FIDELITY.md` (`backend/tests/test_stage98_fidelity_d1.py`) — Stage 98 D1
+- `docs/STAGE_98_PLAN.md` (`backend/tests/test_stage98_open.py`) — Stage 98 open (ADR-202)
 - `docs/STAGE_97_FIDELITY.md` (`backend/tests/test_stage97_fidelity_d1.py`) — Stage 97 D1
 - `docs/STAGE_97_PLAN.md` (`backend/tests/test_stage97_open.py`) — Stage 97 open (ADR-200)
 - `docs/STAGE_96_FIDELITY.md` (`backend/tests/test_stage96_fidelity_d1.py`) — Stage 96 D1
@@ -1092,6 +1095,30 @@ H96x met — `docs/STAGE_96_EXIT_CRITERIA.md`, ADR-199. Stages 1–96 frozen for
 ## Stage 97 exit
 
 H97x met — `docs/STAGE_97_EXIT_CRITERIA.md`, ADR-201. Stages 1–97 frozen for Stage 97 feature scope.
+
+## Stage 98 exit
+
+H98x met — `docs/STAGE_98_EXIT_CRITERIA.md`, ADR-203. Stages 1–98 frozen for Stage 98 feature scope.
+
+## Stage 98 D1 — Tenant MVP Ops Queue & Returns Honesty Ops
+
+`docs/STAGE_98_FIDELITY.md` — maps Q1–O1 → readiness / launch / deploy / security.
+
+## Stage 98 O1 — Stock ops & bank surface
+
+Stock Counts / Transfers / Bank Reconciliation / Cheques / Credit kind (`test_stage98_stock_bank_o1.py`).
+
+## Stage 98 R1 — Returns pipeline
+
+Sales/Purchase Returns Shell + status + draft→post honesty (`test_stage98_returns_pipeline_r1.py`).
+
+## Stage 98 Q1 — Expense approval queue
+
+Expense status filters + Pending Expenses (`test_stage98_expense_queue_q1.py`).
+
+## Stage 98 open
+
+ADR-202 + `docs/STAGE_98_PLAN.md` — Tenant MVP Ops Queue & Returns Honesty Ops.
 
 ## Stage 97 D1 — Tenant MVP Module Leaf Honesty Ops
 
