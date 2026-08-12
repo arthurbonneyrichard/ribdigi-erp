@@ -3931,6 +3931,8 @@ async def pos_search(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.tax import resolve_product_tax
+
     stmt = select(m.Product).where(
         m.Product.tenant_id == claims["tenant_id"],
         m.Product.is_active == True,  # noqa: E712
@@ -3953,8 +3955,26 @@ async def pos_search(
             | m.Product.barcode.ilike(like)
         )
     products = (await db.execute(stmt.limit(48))).scalars().all()
-    out = [
-        {
+    product_by_id = {p.id: p for p in products}
+    tax_cache: dict[str, dict] = {}
+
+    async def tax_fields_for(product: m.Product) -> dict:
+        cached = tax_cache.get(product.id)
+        if cached is not None:
+            return cached
+        spec = await resolve_product_tax(db, claims["tenant_id"], product)
+        payload = {
+            "tax_rate_pct": float(spec.rate_pct or 0),
+            "tax_pricing_mode": (spec.pricing_mode or "exclusive"),
+            "tax_reverse_charge": bool(spec.is_reverse_charge),
+            "tax_components": list(spec.components) if spec.components else None,
+        }
+        tax_cache[product.id] = payload
+        return payload
+
+    out = []
+    for p in products:
+        row = {
             "id": p.id,
             "product_id": p.id,
             "variant_id": None,
@@ -3966,8 +3986,8 @@ async def pos_search(
             "kind": "product",
             "has_image": bool(p.image_url),
         }
-        for p in products
-    ]
+        row.update(await tax_fields_for(p))
+        out.append(row)
     # Also surface matching variants for barcode/SKU search
     vstmt = select(m.ProductVariant).where(
         m.ProductVariant.tenant_id == claims["tenant_id"],
@@ -3991,21 +4011,44 @@ async def pos_search(
         vstmt = None
     if vstmt is not None:
         variants = (await db.execute(vstmt.limit(20))).scalars().all()
+        missing_ids = {v.product_id for v in variants if v.product_id not in product_by_id}
+        if missing_ids:
+            parents = (
+                await db.execute(
+                    select(m.Product).where(
+                        m.Product.tenant_id == claims["tenant_id"],
+                        m.Product.id.in_(missing_ids),
+                    )
+                )
+            ).scalars().all()
+            for parent in parents:
+                product_by_id[parent.id] = parent
         for v in variants:
-            out.append(
-                {
-                    "id": v.id,
-                    "product_id": v.product_id,
-                    "variant_id": v.id,
-                    "name": v.name,
-                    "sku": v.sku,
-                    "barcode": v.barcode,
-                    "selling_price": float(v.selling_price or 0),
-                    "stock_qty": float(v.stock_qty or 0),
-                    "kind": "variant",
-                    "has_image": False,
-                }
-            )
+            parent = product_by_id.get(v.product_id)
+            row = {
+                "id": v.id,
+                "product_id": v.product_id,
+                "variant_id": v.id,
+                "name": v.name,
+                "sku": v.sku,
+                "barcode": v.barcode,
+                "selling_price": float(v.selling_price or 0),
+                "stock_qty": float(v.stock_qty or 0),
+                "kind": "variant",
+                "has_image": False,
+            }
+            if parent is not None:
+                row.update(await tax_fields_for(parent))
+            else:
+                row.update(
+                    {
+                        "tax_rate_pct": 0.0,
+                        "tax_pricing_mode": "exclusive",
+                        "tax_reverse_charge": False,
+                        "tax_components": None,
+                    }
+                )
+            out.append(row)
     return env(out[:40])
 
 

@@ -4,6 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
+type TaxComponent = {
+  code?: string;
+  name?: string;
+  rate: number;
+  basis?: string;
+};
+
 type Product = {
   id: string;
   product_id?: string;
@@ -15,6 +22,10 @@ type Product = {
   stock_qty: number;
   kind?: string;
   has_image?: boolean;
+  tax_rate_pct?: number;
+  tax_pricing_mode?: string;
+  tax_reverse_charge?: boolean;
+  tax_components?: TaxComponent[] | null;
 };
 
 function looksLikeBarcode(value: string) {
@@ -84,6 +95,70 @@ async function downloadReceiptPdf(saleId: string, paper: string) {
 
 function money(n: number) {
   return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+
+/** Mirror backend `compute_tax_amounts` for cart preview (cashiers lack tax:read). */
+function computeLineTaxAmounts(
+  amount: number,
+  ratePct: number,
+  pricingMode = 'exclusive',
+  reverseCharge = false,
+  components?: TaxComponent[] | null
+): { net: number; tax: number; gross: number } {
+  const base = Number(amount) || 0;
+  const mode = (pricingMode || 'exclusive').toLowerCase();
+  const comps = Array.isArray(components) && components.length ? components : null;
+  let rate = Number(ratePct) || 0;
+  if (comps) {
+    const netSum = comps
+      .filter((c) => (c.basis || 'net') === 'net')
+      .reduce((s, c) => s + (Number(c.rate) || 0), 0);
+    rate = netSum > 0 ? netSum : comps.reduce((s, c) => s + (Number(c.rate) || 0), 0);
+  }
+  if (base <= 0) return { net: Math.round(base * 100) / 100, tax: 0, gross: Math.round(base * 100) / 100 };
+
+  let net: number;
+  let tax: number;
+  let gross: number;
+  if (comps) {
+    if (mode === 'inclusive') {
+      if (rate <= 0) {
+        net = Math.round(base * 100) / 100;
+        return { net, tax: 0, gross: net };
+      }
+      gross = Math.round(base * 100) / 100;
+      tax = Math.round((gross * rate) / (100 + rate) * 100) / 100;
+      net = Math.round((gross - tax) * 100) / 100;
+    } else {
+      net = Math.round(base * 100) / 100;
+      let running = net;
+      tax = 0;
+      for (const c of comps) {
+        const part =
+          (c.basis || 'net') === 'compound'
+            ? Math.round((running * (Number(c.rate) || 0)) / 100 * 100) / 100
+            : Math.round((net * (Number(c.rate) || 0)) / 100 * 100) / 100;
+        running += part;
+        tax += part;
+      }
+      tax = Math.round(tax * 100) / 100;
+      gross = Math.round((net + tax) * 100) / 100;
+    }
+  } else if (rate <= 0) {
+    net = Math.round(base * 100) / 100;
+    tax = 0;
+    gross = net;
+  } else if (mode === 'inclusive') {
+    gross = Math.round(base * 100) / 100;
+    tax = Math.round((gross * rate) / (100 + rate) * 100) / 100;
+    net = Math.round((gross - tax) * 100) / 100;
+  } else {
+    net = Math.round(base * 100) / 100;
+    tax = Math.round((net * rate) / 100 * 100) / 100;
+    gross = Math.round((net + tax) * 100) / 100;
+  }
+  if (reverseCharge) gross = net;
+  return { net, tax, gross };
 }
 
 function ProductThumb({
@@ -177,17 +252,33 @@ export default function Page() {
   const [shiftReport, setShiftReport] = useState<any>(null);
   const [reportBusy, setReportBusy] = useState(false);
 
-  const cartSubtotal = useMemo(
-    () =>
-      cart.reduce(
-        (sum, c) =>
-          sum + Math.max(0, Number(c.selling_price) * c.quantity - (Number(c.discount) || 0)),
-        0
-      ),
-    [cart]
-  );
+  const cartTotals = useMemo(() => {
+    let subtotal = 0;
+    let tax = 0;
+    for (const c of cart) {
+      const taxable = Math.max(
+        0,
+        Math.round((Number(c.selling_price) * c.quantity - (Number(c.discount) || 0)) * 100) / 100
+      );
+      const amounts = computeLineTaxAmounts(
+        taxable,
+        Number(c.tax_rate_pct) || 0,
+        c.tax_pricing_mode || 'exclusive',
+        Boolean(c.tax_reverse_charge),
+        c.tax_components
+      );
+      subtotal += amounts.net;
+      if (!c.tax_reverse_charge) tax += amounts.tax;
+    }
+    subtotal = Math.round(subtotal * 100) / 100;
+    tax = Math.round(tax * 100) / 100;
+    const maxDiscount = Math.round((subtotal + tax) * 100) / 100;
+    const discount = Math.max(0, Number(cartDiscount) || 0);
+    const due = Math.max(0, Math.round((subtotal + tax - discount) * 100) / 100);
+    return { subtotal, tax, maxDiscount, due };
+  }, [cart, cartDiscount]);
   const cartDiscountAmount = Math.max(0, Number(cartDiscount) || 0);
-  const cartTotal = Math.max(0, cartSubtotal - cartDiscountAmount);
+  const cartTotal = cartTotals.due;
   const cartCount = useMemo(() => cart.reduce((sum, c) => sum + c.quantity, 0), [cart]);
 
   async function refreshSession() {
@@ -450,8 +541,8 @@ export default function Page() {
       setError('Select a customer for credit sales');
       return;
     }
-    if (cartDiscountAmount > cartSubtotal + 1e-9) {
-      setError('Cart discount exceeds cart total');
+    if (cartDiscountAmount > cartTotals.maxDiscount + 1e-9) {
+      setError('Cart discount exceeds sale total');
       return;
     }
     const items = cart.map((c) => ({
@@ -868,8 +959,15 @@ export default function Page() {
             <div className="tpos-cart-list">
               {cart.length === 0 && <p className="muted">Tap a product image to add it.</p>}
               {cart.map((c) => {
-                const lineGross = Number(c.selling_price) * c.quantity;
-                const lineNet = Math.max(0, lineGross - (Number(c.discount) || 0));
+                const lineMerch = Number(c.selling_price) * c.quantity;
+                const taxable = Math.max(0, Math.round((lineMerch - (Number(c.discount) || 0)) * 100) / 100);
+                const lineAmounts = computeLineTaxAmounts(
+                  taxable,
+                  Number(c.tax_rate_pct) || 0,
+                  c.tax_pricing_mode || 'exclusive',
+                  Boolean(c.tax_reverse_charge),
+                  c.tax_components
+                );
                 return (
                   <div key={c.id} className="tpos-cart-row">
                     <div className="tpos-cart-mini">
@@ -887,7 +985,7 @@ export default function Page() {
                         <input
                           type="number"
                           min={0}
-                          max={lineGross}
+                          max={lineMerch}
                           step="0.01"
                           value={c.discount || 0}
                           onChange={(e) => setLineDiscount(c.id, Number(e.target.value) || 0)}
@@ -904,7 +1002,7 @@ export default function Page() {
                         +
                       </button>
                     </div>
-                    <div className="tpos-line">{money(lineNet)}</div>
+                    <div className="tpos-line">{money(lineAmounts.gross)}</div>
                   </div>
                 );
               })}
@@ -925,9 +1023,19 @@ export default function Page() {
                 />
               </label>
 
-              <div className="tpos-total">
-                <span>Total</span>
-                <strong>{money(cartTotal)}</strong>
+              <div className="tpos-totals">
+                <div className="tpos-total-row">
+                  <span>Subtotal</span>
+                  <strong>{money(cartTotals.subtotal)}</strong>
+                </div>
+                <div className="tpos-total-row">
+                  <span>Tax</span>
+                  <strong>{money(cartTotals.tax)}</strong>
+                </div>
+                <div className="tpos-total">
+                  <span>Amount due</span>
+                  <strong>{money(cartTotal)}</strong>
+                </div>
               </div>
 
               <label className="tpos-field">
@@ -1008,8 +1116,8 @@ export default function Page() {
                     />
                   </label>
                   <p className="tpos-split-hint">
-                    Split {money((Number(cashTender) || 0) + (Number(cardTender) || 0))} · cart{' '}
-                    {money(cartTotal)} (tax adjusted at charge)
+                    Split {money((Number(cashTender) || 0) + (Number(cardTender) || 0))} · due{' '}
+                    {money(cartTotal)}
                   </p>
                 </div>
               )}
