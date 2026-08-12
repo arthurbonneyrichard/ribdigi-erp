@@ -256,6 +256,46 @@ export default function Page() {
     }
   }
 
+  async function exportDocumentAnalyzeCsv() {
+    setError('');
+    setMessage('');
+    if (!docFile) {
+      setError('Choose a document file to export analyze CSV');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const form = new FormData();
+      form.append('file', docFile);
+      const res = await fetch(
+        `${apiBase}/ai/documents/analyze/export?document_type=${encodeURIComponent(docType)}`,
+        {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+          },
+          body: form,
+        },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Document analyze export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ai_document_analyze_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Document analyze CSV downloaded');
+    } catch (err: any) {
+      setError(typeof err.message === 'string' ? err.message : 'Unable to export document analyze CSV');
+    }
+  }
+
   async function loadCustomerInsights() {
     try {
       const r = await api('/ai/customers/insights');
@@ -824,7 +864,8 @@ export default function Page() {
         <h3>Document analyze</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           OCR extract / match / discrepancy flags via <code>POST /ai/documents/analyze</code>. Suggest
-          only — apply reviewed fields on expense or purchase-invoice OCR paths with confirm.
+          only — apply reviewed fields on expense or purchase-invoice OCR paths with confirm. Export
+          via <code>POST /ai/documents/analyze/export</code> (Stage 149 A1; no raw OCR dump).
         </p>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={docType} onChange={(e) => setDocType(e.target.value)}>
@@ -840,6 +881,9 @@ export default function Page() {
           />
           <button type="button" onClick={analyzeDocument}>
             Analyze document
+          </button>
+          <button type="button" onClick={exportDocumentAnalyzeCsv}>
+            Export analyze CSV
           </button>
         </div>
         {docResult && (

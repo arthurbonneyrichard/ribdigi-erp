@@ -14053,3 +14053,39 @@ async def ai_documents_analyze(
     )
     await db.commit()
     return env(data)
+
+
+@api.post("/ai/documents/analyze/export")
+async def ai_documents_analyze_export(
+    document_type: str = "receipt",
+    file: UploadFile = File(...),
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 149 A1 — document analyze multi-section CSV (suggest-only; no raw OCR dump)."""
+    text = await ai_ops_export_svc.export_document_analyze_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        upload=file,
+        document_type=document_type,
+    )
+    filename = getattr(file, "filename", None) or ""
+    await ai_guard_svc.audit_ai_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        action="ai_document_analyze_export",
+        entity="ai_document",
+        details={
+            "document_type": document_type,
+            "filename": ai_guard_svc.redact_for_audit(filename)[:200],
+        },
+    )
+    await db.commit()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_document_analyze_export.csv"'
+        },
+    )

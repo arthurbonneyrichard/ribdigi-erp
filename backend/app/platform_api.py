@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit, health as health_svc, platform as platform_svc
 from app import models as m
+from app import platform_staff_export as platform_staff_export_svc
 from app import reports as reports_svc
 from app import tenants as tenants_svc
 from app.db import get_db
@@ -1043,6 +1044,27 @@ async def platform_list_users(
     return env(out)
 
 
+@router.get("/users/export")
+async def platform_users_export(
+    claims: dict = Depends(require_platform_permission("platform_users", "read")),
+    db: AsyncSession = Depends(get_db),
+    q: str | None = Query(None),
+    role: str | None = Query(None),
+    is_active: bool | None = Query(None),
+):
+    """Stage 149 U1 — platform staff users CSV (no password/TOTP secrets)."""
+    text = await platform_staff_export_svc.export_platform_users_csv(
+        db, q=q, role=role, is_active=is_active
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_users_export.csv"'
+        },
+    )
+
+
 @router.get("/users/sessions")
 async def platform_list_staff_sessions(
     claims: dict = Depends(require_platform_permission("platform_users", "read")),
@@ -1078,6 +1100,24 @@ async def platform_list_staff_sessions(
             }
             for s, u in rows
         ]
+    )
+
+
+@router.get("/users/sessions/export")
+async def platform_users_sessions_export(
+    claims: dict = Depends(require_platform_permission("platform_users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 149 S1 — platform staff sessions CSV (no refresh-token secrets / no jti)."""
+    text = await platform_staff_export_svc.export_platform_sessions_csv(
+        db, current_jti=claims.get("jti")
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_staff_sessions_export.csv"'
+        },
     )
 
 

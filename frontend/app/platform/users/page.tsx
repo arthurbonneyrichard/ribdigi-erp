@@ -7,6 +7,8 @@ import { api } from '../../../lib/api';
 import { formatDateTime } from '../../../lib/format';
 import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 type PlatformUser = {
   id: string;
   email: string;
@@ -85,6 +87,33 @@ function PlatformUsersInner() {
       setSessions(s.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load users');
+    }
+  }
+
+  async function downloadPlatformCsv(path: string, filename: string) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}${path}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || `${filename} export failed`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
     }
   }
 
@@ -202,7 +231,9 @@ function PlatformUsersInner() {
       <p className="muted">Ribdigi House staff on the reserved platform tenant only.</p>
       <p className="muted">
         Deactivate soft-disables login (ADR-003 — no hard delete in MVP; hard_delete_claimed:
-        false).
+        false). Export via <code>GET /platform/users/export</code> (Stage 149 U1) and{' '}
+        <code>GET /platform/users/sessions/export</code> (Stage 149 S1; no refresh-token secrets / no
+        jti).
       </p>
       {error && <p>{error}</p>}
       {msg && <p style={{ color: '#047857' }}>{msg}</p>}
@@ -251,6 +282,25 @@ function PlatformUsersInner() {
         </select>
         <button type="submit" style={{ padding: '10px 14px', borderRadius: 8 }}>
           Apply
+        </button>
+        <button
+          type="button"
+          style={{ padding: '10px 14px', borderRadius: 8 }}
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (q.trim()) params.set('q', q.trim());
+            if (roleFilter) params.set('role', roleFilter);
+            if (activeFilter === 'true' || activeFilter === 'false') {
+              params.set('is_active', activeFilter);
+            }
+            const qs = params.toString();
+            downloadPlatformCsv(
+              `/platform/users/export${qs ? `?${qs}` : ''}`,
+              'platform_users_export.csv'
+            );
+          }}
+        >
+          Export users CSV
         </button>
       </form>
 
@@ -364,7 +414,23 @@ function PlatformUsersInner() {
       </table>
 
       <h2 style={{ fontSize: 16, marginTop: 32 }}>Active staff sessions</h2>
-      <p className="muted">House operators can revoke platform staff AuthSessions.</p>
+      <p className="muted">
+        House operators can revoke platform staff AuthSessions. Export via{' '}
+        <code>GET /platform/users/sessions/export</code> (Stage 149 S1).
+      </p>
+      <div style={{ marginBottom: 12 }}>
+        <button
+          type="button"
+          onClick={() =>
+            downloadPlatformCsv(
+              '/platform/users/sessions/export',
+              'platform_staff_sessions_export.csv'
+            )
+          }
+        >
+          Export sessions CSV
+        </button>
+      </div>
       <table className="table">
         <thead>
           <tr>

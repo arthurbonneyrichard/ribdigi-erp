@@ -23,4 +23,4 @@ Stage 148 Tenant MVP AI Chat History CSV, Customer Insights CSV & Cross-Domain A
 
 ## Next stage
 
-Stage 149 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 148 feature scope remains frozen.
+Stage 149 opened via CONTINUE/NEXT as **Tenant MVP AI Document Analyze CSV, Platform Staff Users CSV & Platform Staff Sessions CSV Export Fidelity** ([ADR-304](ADR_304_STAGE149_OPEN.md)) and closed under [ADR-305](ADR_305_STAGE149_FREEZE.md). Stage 148 feature scope remains frozen.

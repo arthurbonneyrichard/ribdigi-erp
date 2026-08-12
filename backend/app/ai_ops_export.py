@@ -1,7 +1,8 @@
 """CSV export for AI security alerts, report templates, business insights (Stage 145),
 inventory low-stock / forecast / dead-stock predictions (Stage 146),
 sales / expense / purchases analysis (Stage 147),
-and chat history / customer insights / cross-domain analysis (Stage 148)."""
+chat history / customer insights / cross-domain analysis (Stage 148),
+and document analyze results (Stage 149)."""
 
 from __future__ import annotations
 
@@ -10,10 +11,12 @@ import io
 import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import UploadFile
 
 from app import ai_chat as ai_chat_svc
 from app import ai_cross_domain as ai_cross_domain_svc
 from app import ai_customers as ai_customers_svc
+from app import ai_documents as ai_documents_svc
 from app import ai_expenses as ai_expenses_svc
 from app import ai_insights as ai_insights_svc
 from app import ai_inventory as ai_inventory_svc
@@ -262,6 +265,29 @@ CROSS_DOMAIN_EXPORT_COLUMNS = [
     "signal_action",
     "signal_domains",
     "signal_metrics",
+]
+
+DOCUMENT_ANALYZE_EXPORT_COLUMNS = [
+    "row_type",
+    "generated_at",
+    "method",
+    "document_type",
+    "filename",
+    "content_type",
+    "ocr_engine",
+    "ocr_confidence",
+    "field_name",
+    "field_value",
+    "match_kind",
+    "entity_id",
+    "entity_name",
+    "entity_kind",
+    "match_type",
+    "confidence",
+    "discrepancy_field",
+    "severity",
+    "detail",
+    "warning",
 ]
 
 
@@ -893,3 +919,127 @@ async def export_cross_domain_analysis_csv(
         )
         writer.writerow(row)
     return buf.getvalue()
+
+
+def document_analyze_result_to_csv(data: dict) -> str:
+    """Flatten document analyze JSON into multi-section CSV (no raw OCR blob dump)."""
+    ocr = data.get("ocr") or {}
+    fields = data.get("extracted_fields") or {}
+    matches = data.get("matches") or {}
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=DOCUMENT_ANALYZE_EXPORT_COLUMNS)
+    writer.writeheader()
+
+    meta = {
+        "generated_at": _cell(data.get("generated_at")),
+        "method": _cell(data.get("method")),
+        "document_type": _cell(data.get("document_type")),
+        "filename": _cell(data.get("filename")),
+        "content_type": _cell(data.get("content_type")),
+    }
+
+    summary = _blank_row(DOCUMENT_ANALYZE_EXPORT_COLUMNS)
+    summary.update(
+        {
+            **meta,
+            "row_type": "summary",
+            "ocr_engine": _cell(ocr.get("engine")),
+            "ocr_confidence": _cell(ocr.get("confidence")),
+        }
+    )
+    writer.writerow(summary)
+
+    for name, value in fields.items():
+        row = _blank_row(DOCUMENT_ANALYZE_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "field",
+                "field_name": _cell(name),
+                "field_value": _cell(value),
+            }
+        )
+        writer.writerow(row)
+
+    party = matches.get("party")
+    if party:
+        row = _blank_row(DOCUMENT_ANALYZE_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "match",
+                "match_kind": "party",
+                "entity_id": _cell(party.get("id")),
+                "entity_name": _cell(party.get("name")),
+                "entity_kind": _cell(party.get("kind")),
+                "match_type": _cell(party.get("match")),
+                "confidence": _cell(party.get("confidence")),
+            }
+        )
+        writer.writerow(row)
+
+    for product in matches.get("products") or []:
+        row = _blank_row(DOCUMENT_ANALYZE_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "match",
+                "match_kind": "product",
+                "entity_id": _cell(product.get("id")),
+                "entity_name": _cell(product.get("name") or product.get("sku")),
+                "entity_kind": "product",
+                "match_type": _cell(product.get("match")),
+                "confidence": _cell(product.get("confidence")),
+            }
+        )
+        writer.writerow(row)
+
+    for disc in data.get("discrepancies") or []:
+        if isinstance(disc, str):
+            detail = disc
+            field = ""
+            severity = ""
+        else:
+            detail = disc.get("detail") or disc.get("message") or ""
+            field = disc.get("field") or ""
+            severity = disc.get("severity") or ""
+        row = _blank_row(DOCUMENT_ANALYZE_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "discrepancy",
+                "discrepancy_field": _cell(field),
+                "severity": _cell(severity),
+                "detail": _cell(detail),
+            }
+        )
+        writer.writerow(row)
+
+    for warning in data.get("warnings") or []:
+        row = _blank_row(DOCUMENT_ANALYZE_EXPORT_COLUMNS)
+        row.update(
+            {
+                **meta,
+                "row_type": "warning",
+                "warning": _cell(warning if isinstance(warning, str) else json.dumps(warning)),
+            }
+        )
+        writer.writerow(row)
+    return buf.getvalue()
+
+
+async def export_document_analyze_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    upload: UploadFile,
+    document_type: str = "receipt",
+) -> str:
+    """Stage 149 A1 — document analyze result CSV."""
+    data = await ai_documents_svc.analyze_document(
+        db,
+        tenant_id,
+        upload=upload,
+        document_type=document_type,
+    )
+    return document_analyze_result_to_csv(data)

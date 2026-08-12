@@ -2390,6 +2390,18 @@ Every feature in every phase must meet:
 
 **Stage 148 exit (2026-08-12):** C1, I1, X1, D1, H148x met — `docs/STAGE_148_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_303_STAGE148_FREEZE.md`. Fidelity: `docs/STAGE_148_FIDELITY.md`.
 
+**Stage 149 open (2026-08-12):** Tenant MVP AI Document Analyze CSV, Platform Staff Users CSV & Platform Staff Sessions CSV Export Fidelity — `docs/ADR_304_STAGE149_OPEN.md` + `docs/STAGE_149_PLAN.md` (Document → Users → Sessions → Fidelity; A1 next).
+
+**Stage 149 A1 (2026-08-12):** Document analyze CSV (`test_stage149_document_analyze_a1.py`).
+
+**Stage 149 U1 (2026-08-12):** Platform staff users CSV (`test_stage149_platform_users_u1.py`).
+
+**Stage 149 S1 (2026-08-12):** Platform staff sessions CSV (`test_stage149_platform_sessions_s1.py`).
+
+**Stage 149 D1 (2026-08-12):** Document analyze / platform users / sessions export fidelity sync — `docs/STAGE_149_FIDELITY.md` (`test_stage149_fidelity_d1.py`).
+
+**Stage 149 exit (2026-08-12):** A1, U1, S1, D1, H149x met — `docs/STAGE_149_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_305_STAGE149_FREEZE.md`. Fidelity: `docs/STAGE_149_FIDELITY.md`.
+
 
 
 

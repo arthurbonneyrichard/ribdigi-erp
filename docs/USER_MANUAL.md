@@ -258,6 +258,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Chat History CSV:** AI Export chat history CSV (Stage 148 C1)
 - **Customer Insights CSV:** AI Export customer insights CSV (Stage 148 I1)
 - **Cross-Domain Analysis CSV:** AI Export cross-domain CSV (Stage 148 X1)
+- **Document Analyze CSV:** AI Export analyze CSV (Stage 149 A1)
+- **Platform Staff Users CSV:** Platform Users Export users CSV (Stage 149 U1)
+- **Platform Staff Sessions CSV:** Platform Users Export sessions CSV (Stage 149 S1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
