@@ -60,6 +60,24 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Draft Stock Counts',
+    href: '/inventory?tab=counts&count_status=draft',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Completed Stock Counts',
+    href: '/inventory?tab=counts&count_status=completed',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Cancelled Stock Counts',
+    href: '/inventory?tab=counts&count_status=cancelled',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
     label: 'Warehouse Transfers',
     href: '/inventory?tab=transfers',
     modules: ['inventory'],
@@ -334,6 +352,18 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'POS Sessions',
     href: '/pos#sessions',
+    modules: ['pos'],
+  },
+  {
+    kind: 'link',
+    label: 'Open POS Sessions',
+    href: '/pos?pos_session_status=open#sessions',
+    modules: ['pos'],
+  },
+  {
+    kind: 'link',
+    label: 'Closed POS Sessions',
+    href: '/pos?pos_session_status=closed#sessions',
     modules: ['pos'],
   },
   {

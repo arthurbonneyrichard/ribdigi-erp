@@ -1640,3 +1640,5 @@ Stage 127 D1 — `docs/STAGE_127_FIDELITY.md` (`test_stage127_fidelity_d1.py`): 
 Stage 128 D1 — `docs/STAGE_128_FIDELITY.md` (`test_stage128_fidelity_d1.py`): Stage 128 S1 `GET /auth/sessions?status=` + `/auth/sessions/export`; Stage 128 P1 `GET /auth/webauthn/credentials/export`; Stage 128 N1 `GET /tenants/me/document-settings/export`.
 
 Stage 129 D1 — `docs/STAGE_129_FIDELITY.md` (`test_stage129_fidelity_d1.py`): Stage 129 A1 `GET /auth/tenant-sessions?status=` + `/auth/tenant-sessions/export`; Stage 129 N1 `GET /notifications/export`; Stage 129 B1 `GET /backup?status=` + `/backup/export`.
+
+Stage 130 D1 — `docs/STAGE_130_FIDELITY.md` (`test_stage130_fidelity_d1.py`): Stage 130 C1 `GET /accounting/cheques/export`; Stage 130 P1 `GET /pos/sessions?status=` + `/pos/sessions/export`; Stage 130 S1 `GET /inventory/stock-counts?status=` + `/inventory/stock-counts/export`.

@@ -311,6 +311,9 @@ Authoritative MVP docs:
 - `docs/STAGE_129_EXIT_CRITERIA.md` / `docs/ADR_265_STAGE129_FREEZE.md` (`backend/tests/test_stage129_exit_h129x.py`) — Stage 129 H129x
 - `docs/STAGE_129_FIDELITY.md` (`backend/tests/test_stage129_fidelity_d1.py`) — Stage 129 D1
 - `docs/STAGE_129_PLAN.md` (`backend/tests/test_stage129_open.py`) — Stage 129 open (ADR-264)
+- `docs/STAGE_130_EXIT_CRITERIA.md` / `docs/ADR_267_STAGE130_FREEZE.md` (`backend/tests/test_stage130_exit_h130x.py`) — Stage 130 H130x
+- `docs/STAGE_130_FIDELITY.md` (`backend/tests/test_stage130_fidelity_d1.py`) — Stage 130 D1
+- `docs/STAGE_130_PLAN.md` (`backend/tests/test_stage130_open.py`) — Stage 130 open (ADR-266)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1396,6 +1399,18 @@ H129x met — `docs/STAGE_129_EXIT_CRITERIA.md`, ADR-265. Stages 1–129 frozen 
 ## Stage 129 open
 
 ADR-264 + `docs/STAGE_129_PLAN.md` — Tenant MVP Admin Session Inventory, Notifications CSV & Backup-Job History Export Fidelity.
+
+## Stage 130 exit
+
+H130x met — `docs/STAGE_130_EXIT_CRITERIA.md`, ADR-267. Stages 1–130 frozen for Stage 130 feature scope.
+
+## Stage 130 D1 — Tenant MVP Cheque Lifecycle CSV, POS Session Status & Stock-Count List Export Fidelity
+
+`docs/STAGE_130_FIDELITY.md` — maps C1–S1 → readiness / launch / deploy / security.
+
+## Stage 130 open
+
+ADR-266 + `docs/STAGE_130_PLAN.md` — Tenant MVP Cheque Lifecycle CSV, POS Session Status & Stock-Count List Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

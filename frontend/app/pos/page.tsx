@@ -91,14 +91,24 @@ export default function Page() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const [shiftReport, setShiftReport] = useState<any | null>(null);
+  // Stage 130 P1 — pos_session_status → GET /pos/sessions?status=
+  const [posSessionStatusFilter, setPosSessionStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('pos_session_status') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'open' || v === 'closed' ? v : '';
+  });
 
   async function refreshSession() {
     const r = await api('/pos/sessions/current');
     setSession(r.data || null);
   }
 
-  async function loadSessionHistory() {
-    const r = await api('/pos/sessions');
+  async function loadSessionHistory(opts?: { status?: string }) {
+    const st = opts?.status !== undefined ? opts.status : posSessionStatusFilter;
+    const qs = st === 'open' || st === 'closed' ? `?status=${st}` : '';
+    const r = await api(`/pos/sessions${qs}`);
     setSessionHistory(r.data || []);
   }
 
@@ -114,8 +124,12 @@ export default function Page() {
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ps = (params.get('pos_session_status') || '').trim().toLowerCase();
+    const initial = ps === 'open' || ps === 'closed' ? ps : posSessionStatusFilter;
+    if (initial) setPosSessionStatusFilter(initial);
     refreshSession().catch((err) => setError(err.message));
-    loadSessionHistory().catch((err) => setError(err.message));
+    loadSessionHistory({ status: initial }).catch((err) => setError(err.message));
     api('/customers?active_only=true')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
@@ -435,8 +449,55 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }} id="sessions">
         <h3>POS session history</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Recent shifts (tenant-scoped). View the shift report for closed or open sessions.
+          Recent shifts (tenant-scoped). Filter via <code>pos_session_status</code> →{' '}
+          <code>GET /pos/sessions?status=</code>; export via <code>/pos/sessions/export</code> (Stage
+          130 P1).
         </p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+          <select
+            value={posSessionStatusFilter || 'default'}
+            onChange={(e) => {
+              const v = e.target.value === 'default' ? '' : e.target.value;
+              setPosSessionStatusFilter(v);
+              const url = new URL(window.location.href);
+              if (v === 'open' || v === 'closed') url.searchParams.set('pos_session_status', v);
+              else url.searchParams.delete('pos_session_status');
+              window.history.replaceState({}, '', url.toString());
+              loadSessionHistory({ status: v }).catch((err) => setError(err.message));
+            }}
+          >
+            <option value="default">Status filter (all)</option>
+            <option value="open">Open only</option>
+            <option value="closed">Closed only</option>
+          </select>
+          <button
+            type="button"
+            onClick={async () => {
+              const token = localStorage.getItem('token') || '';
+              const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+              const qs =
+                posSessionStatusFilter === 'open' || posSessionStatusFilter === 'closed'
+                  ? `?status=${posSessionStatusFilter}`
+                  : '';
+              const res = await fetch(`${apiBase}/pos/sessions/export${qs}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'pos_sessions_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('POS sessions CSV downloaded');
+            }}
+          >
+            Export sessions CSV
+          </button>
+        </div>
         <table className="table">
           <thead>
             <tr>

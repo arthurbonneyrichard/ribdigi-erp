@@ -23,4 +23,4 @@ Stage 129 Tenant MVP Admin Session Inventory, Notifications CSV & Backup-Job His
 
 ## Next stage
 
-Stage 130 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 129 feature scope remains frozen.
+**Stage 130 opened** via CONTINUE/NEXT — [ADR-266](ADR_266_STAGE130_OPEN.md) · [STAGE_130_PLAN.md](STAGE_130_PLAN.md) — Tenant MVP Cheque Lifecycle CSV, POS Session Status & Stock-Count List Export Fidelity. Stage 129 feature scope remains frozen.

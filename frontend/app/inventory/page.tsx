@@ -196,6 +196,14 @@ export default function Page() {
       .toLowerCase();
     return v === 'true' || v === 'false' ? v : '';
   });
+  // Stage 130 S1 — count_status → GET /inventory/stock-counts?status=
+  const [countStatusFilter, setCountStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('count_status') || '')
+      .trim()
+      .toLowerCase();
+    return ['draft', 'completed', 'cancelled'].includes(v) ? v : '';
+  });
 
   function writeProductListFilters(next: {
     q?: string;
@@ -240,6 +248,7 @@ export default function Page() {
     categoryActive?: string;
     brandActive?: string;
     unitActive?: string;
+    countStatus?: string;
   }) {
     const productActive =
       opts?.productActive !== undefined ? opts.productActive : productActiveFilter;
@@ -247,6 +256,8 @@ export default function Page() {
       opts?.categoryActive !== undefined ? opts.categoryActive : categoryActiveFilter;
     const brandActive = opts?.brandActive !== undefined ? opts.brandActive : brandActiveFilter;
     const unitActive = opts?.unitActive !== undefined ? opts.unitActive : unitActiveFilter;
+    const countStatus =
+      opts?.countStatus !== undefined ? opts.countStatus : countStatusFilter;
     const productQs =
       productActive === 'true'
         ? '?is_active=true'
@@ -271,6 +282,10 @@ export default function Page() {
         : unitActive === 'false'
           ? '?is_active=false'
           : '';
+    const countQs =
+      countStatus === 'draft' || countStatus === 'completed' || countStatus === 'cancelled'
+        ? `?status=${countStatus}`
+        : '';
     const catFlat = catQs ? `?${catQs}` : '';
     const catTree = catQs ? `?tree=true&${catQs}` : '?tree=true';
     const [p, e, c, tree, b, u, w, sc, tr, ls, sup, tax] = await Promise.all([
@@ -281,7 +296,7 @@ export default function Page() {
       api(`/catalog/brands${brandQs}`),
       api(`/catalog/units${unitQs}`),
       api('/warehouses'),
-      api('/inventory/stock-counts'),
+      api(`/inventory/stock-counts${countQs}`),
       api('/inventory/stock-transfers').catch(() => ({ data: [] })),
       api('/inventory/low-stock').catch(() => ({ data: [] })),
       api('/suppliers').catch(() => ({ data: [] })),
@@ -2173,6 +2188,60 @@ export default function Page() {
             </select>
             <button type="button" onClick={startStockCount} disabled={!countWarehouseId}>
               Create draft count
+            </button>
+          </div>
+
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Filter via <code>count_status</code> → <code>GET /inventory/stock-counts?status=</code>;
+            list export via <code>/inventory/stock-counts/export</code> (Stage 130 S1).
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <select
+              value={countStatusFilter || 'default'}
+              onChange={(e) => {
+                const v = e.target.value === 'default' ? '' : e.target.value;
+                setCountStatusFilter(v);
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', 'counts');
+                if (['draft', 'completed', 'cancelled'].includes(v)) {
+                  url.searchParams.set('count_status', v);
+                } else url.searchParams.delete('count_status');
+                window.history.replaceState({}, '', url.toString());
+                refresh({ countStatus: v }).catch((err) => setError(err.message));
+              }}
+            >
+              <option value="default">Status filter (all)</option>
+              <option value="draft">Draft only</option>
+              <option value="completed">Completed only</option>
+              <option value="cancelled">Cancelled only</option>
+            </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const qs =
+                  countStatusFilter === 'draft' ||
+                  countStatusFilter === 'completed' ||
+                  countStatusFilter === 'cancelled'
+                    ? `?status=${countStatusFilter}`
+                    : '';
+                const res = await fetch(`${apiBase}/inventory/stock-counts/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'stock_counts_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Stock counts CSV downloaded');
+              }}
+            >
+              Export stock counts CSV
             </button>
           </div>
 

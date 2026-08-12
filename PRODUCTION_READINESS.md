@@ -149,3 +149,5 @@ Stage 127 D1 Tenant MVP API-Key Status, FX Rates CSV & Report-Schedule CSV Expor
 Stage 128 D1 Tenant MVP Session Status, Passkey Inventory CSV & Document-Numbering CSV Export Fidelity — `docs/STAGE_128_FIDELITY.md` (`test_stage128_fidelity_d1.py`); Stage 128 S1 Complete; Stage 128 P1 Complete; Stage 128 N1 Complete (MVP honesty); exit `docs/STAGE_128_EXIT_CRITERIA.md`, ADR-263.
 
 Stage 129 D1 Tenant MVP Admin Session Inventory, Notifications CSV & Backup-Job History Export Fidelity — `docs/STAGE_129_FIDELITY.md` (`test_stage129_fidelity_d1.py`); Stage 129 A1 Complete; Stage 129 N1 Complete; Stage 129 B1 Complete (MVP honesty); exit `docs/STAGE_129_EXIT_CRITERIA.md`, ADR-265.
+
+Stage 130 D1 Tenant MVP Cheque Lifecycle CSV, POS Session Status & Stock-Count List Export Fidelity — `docs/STAGE_130_FIDELITY.md` (`test_stage130_fidelity_d1.py`); Stage 130 C1 Complete; Stage 130 P1 Complete; Stage 130 S1 Complete (MVP honesty); exit `docs/STAGE_130_EXIT_CRITERIA.md`, ADR-267.

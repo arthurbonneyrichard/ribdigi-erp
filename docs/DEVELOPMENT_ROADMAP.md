@@ -2162,6 +2162,18 @@ Every feature in every phase must meet:
 
 **Stage 129 exit (2026-08-12):** A1, N1, B1, D1, H129x met — `docs/STAGE_129_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_265_STAGE129_FREEZE.md`. Fidelity: `docs/STAGE_129_FIDELITY.md`.
 
+**Stage 130 open (2026-08-12):** Tenant MVP Cheque Lifecycle CSV, POS Session Status & Stock-Count List Export Fidelity — `docs/ADR_266_STAGE130_OPEN.md` + `docs/STAGE_130_PLAN.md` (Cheques CSV → POS sessions → Stock counts → Fidelity; C1 next).
+
+**Stage 130 C1 (2026-08-12):** Cheques CSV export (`test_stage130_cheques_export_c1.py`).
+
+**Stage 130 P1 (2026-08-12):** POS session status + CSV (`test_stage130_pos_sessions_p1.py`).
+
+**Stage 130 S1 (2026-08-12):** Stock-count list status + CSV (`test_stage130_stock_counts_s1.py`).
+
+**Stage 130 D1 (2026-08-12):** Cheque, POS session & stock-count list export fidelity sync — `docs/STAGE_130_FIDELITY.md` (`test_stage130_fidelity_d1.py`).
+
+**Stage 130 exit (2026-08-12):** C1, P1, S1, D1, H130x met — `docs/STAGE_130_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_267_STAGE130_FREEZE.md`. Fidelity: `docs/STAGE_130_FIDELITY.md`.
+
 
 
 

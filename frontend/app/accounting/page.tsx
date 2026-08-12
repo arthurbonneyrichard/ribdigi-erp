@@ -1768,6 +1768,32 @@ export default function Page() {
             >
               Apply filter
             </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const params = new URLSearchParams();
+                if (chequeDirectionFilter) params.set('direction', chequeDirectionFilter);
+                if (chequeStatusFilter) params.set('status', chequeStatusFilter);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${apiBase}/accounting/cheques/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'cheques_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Cheques CSV downloaded (Stage 130 C1)');
+              }}
+            >
+              Export cheques CSV
+            </button>
           </div>
           <table className="table">
             <thead>

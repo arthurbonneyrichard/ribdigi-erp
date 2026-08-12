@@ -201,6 +201,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Tenant Session Inventory:** Security Tenant sessions filter + Shell leaves + CSV (Stage 129 A1)
 - **Notifications CSV:** Notifications Export CSV (Stage 129 N1)
 - **Backup Job History Filters:** Backup status filter + Shell Completed/Failed + CSV metadata export (Stage 129 B1)
+- **Cheques CSV:** Accounting Export cheques CSV (Stage 130 C1)
+- **POS Session Status Filters:** POS open/closed filter + Shell leaves + CSV (Stage 130 P1)
+- **Stock Count List Filters:** Inventory draft/completed/cancelled filter + Shell leaves + list CSV (Stage 130 S1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

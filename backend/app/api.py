@@ -62,6 +62,7 @@ from app import bank_webhook_export as bank_webhook_export_svc
 from app import api_fx_schedule_export as api_fx_schedule_export_svc
 from app import session_passkey_doc_export as session_passkey_doc_export_svc
 from app import admin_ops_export as admin_ops_export_svc
+from app import ops_lifecycle_export as ops_lifecycle_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -4395,16 +4396,41 @@ async def product_warehouse_stock(
 
 @api.get("/inventory/stock-counts")
 async def list_stock_counts(
+    status: str | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await stock_counts_svc.list_counts(db, claims["tenant_id"])
+    """Stage 130 S1 — optional status filter for stock-count list honesty."""
+    status_n = (status or "").strip().lower() or None
+    rows = await ops_lifecycle_export_svc.list_stock_counts(
+        db, tenant_id=claims["tenant_id"], status=status_n
+    )
     out = []
     for row in rows:
         data = await stock_counts_svc.serialize_count(db, row)
         data.pop("items", None)
         out.append(data)
     return env(out)
+
+
+@api.get("/inventory/stock-counts/export")
+async def stock_counts_export(
+    status: str | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 130 S1 — stock-count list CSV (header metadata; not variance lines)."""
+    status_n = (status or "").strip().lower() or None
+    text = await ops_lifecycle_export_svc.export_stock_counts_csv(
+        db, tenant_id=claims["tenant_id"], status=status_n
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="stock_counts_export.csv"'
+        },
+    )
 
 
 @api.post("/inventory/stock-counts")
@@ -7274,18 +7300,40 @@ async def pos_current_session(
 
 @api.get("/pos/sessions")
 async def pos_list_sessions(
+    status: str | None = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.PosSession)
-            .where(m.PosSession.tenant_id == claims["tenant_id"])
-            .order_by(m.PosSession.opened_at.desc())
-            .limit(50)
-        )
-    ).scalars().all()
+    """Stage 130 P1 — optional status=open|closed for POS session honesty."""
+    status_n = (status or "").strip().lower() or None
+    if status_n and status_n not in {"open", "closed"}:
+        raise HTTPException(status_code=400, detail="status must be open or closed")
+    rows = await ops_lifecycle_export_svc.list_pos_sessions(
+        db, tenant_id=claims["tenant_id"], status=status_n
+    )
     return env([await pos_svc.serialize_session(s) for s in rows])
+
+
+@api.get("/pos/sessions/export")
+async def pos_sessions_export(
+    status: str | None = None,
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 130 P1 — POS session inventory CSV."""
+    status_n = (status or "").strip().lower() or None
+    if status_n and status_n not in {"open", "closed"}:
+        raise HTTPException(status_code=400, detail="status must be open or closed")
+    text = await ops_lifecycle_export_svc.export_pos_sessions_csv(
+        db, tenant_id=claims["tenant_id"], status=status_n
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="pos_sessions_export.csv"'
+        },
+    )
 
 
 @api.post("/pos/sessions/{session_id}/close")
@@ -9205,6 +9253,27 @@ async def list_cheques(
         db, claims["tenant_id"], direction=direction, status=status
     )
     return env([cheques_svc.serialize_cheque(r) for r in rows])
+
+
+@api.get("/accounting/cheques/export")
+async def cheques_export(
+    direction: str | None = None,
+    status: str | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 130 C1 — cheques CSV honoring direction/status filters."""
+    text = await ops_lifecycle_export_svc.export_cheques_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        direction=direction,
+        status=status,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="cheques_export.csv"'},
+    )
 
 
 @api.get("/accounting/cheques/{cheque_id}")
