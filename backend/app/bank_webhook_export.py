@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import webhooks as webhooks_svc
 
 BANK_CONNECTION_EXPORT_COLUMNS = [
     "display_name",
@@ -33,6 +34,19 @@ WEBHOOK_EXPORT_COLUMNS = [
     "failure_count",
     "last_status_code",
     "last_delivery_at",
+]
+
+WEBHOOK_DELIVERY_EXPORT_COLUMNS = [
+    "id",
+    "webhook_id",
+    "event",
+    "status",
+    "attempt_count",
+    "response_status",
+    "error",
+    "next_retry_at",
+    "created_at",
+    "delivered_at",
 ]
 
 
@@ -128,4 +142,24 @@ async def export_webhooks_csv(
                 "last_delivery_at": _cell(row.last_delivery_at),
             }
         )
+    return buf.getvalue()
+
+
+async def export_webhook_deliveries_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    webhook_id: str | None = None,
+    status: str | None = None,
+) -> str:
+    """Stage 144 W1 — delivery attempt CSV; payload / signing secrets never included."""
+    rows = await webhooks_svc.list_deliveries(
+        db, tenant_id, webhook_id=webhook_id, status=status
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=WEBHOOK_DELIVERY_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        data = webhooks_svc.serialize_delivery(row)
+        writer.writerow({k: _cell(data.get(k)) for k in WEBHOOK_DELIVERY_EXPORT_COLUMNS})
     return buf.getvalue()

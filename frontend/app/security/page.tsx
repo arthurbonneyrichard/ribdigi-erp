@@ -149,6 +149,7 @@ export default function Page() {
   const [apiKeyUsage, setApiKeyUsage] = useState<any | null>(null);
   const [apiKeyUsageId, setApiKeyUsageId] = useState('');
   const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [webhookDeliveries, setWebhookDeliveries] = useState<any[]>([]);
   const [webhookUrl, setWebhookUrl] = useState('https://');
   const [webhookEvents, setWebhookEvents] = useState('sale.created,webhook.test');
   const [newWebhookSecret, setNewWebhookSecret] = useState('');
@@ -243,8 +244,15 @@ export default function Page() {
                 : '';
         const hooks = await api(`/webhooks${whQs}`);
         setWebhooks(hooks.data || []);
+        try {
+          const deliveries = await api('/webhooks/deliveries');
+          setWebhookDeliveries(deliveries.data || []);
+        } catch {
+          setWebhookDeliveries([]);
+        }
       } catch {
         setWebhooks([]);
+        setWebhookDeliveries([]);
       }
       try {
         const tenantSessionStatus =
@@ -265,6 +273,7 @@ export default function Page() {
     } else {
       setApiKeys([]);
       setWebhooks([]);
+      setWebhookDeliveries([]);
       setTenantSessions([]);
     }
   }
@@ -725,7 +734,9 @@ export default function Page() {
           <p className="muted">
             Outbound signed events use header <code>X-Ribdigi-Signature</code> (<code>t=…,v1=…</code>{' '}
             HMAC-SHA256). Filter via <code>webhook_active</code> →{' '}
-            <code>GET /webhooks?is_active=</code> (Stage 126 W1).
+            <code>GET /webhooks?is_active=</code> (Stage 126 W1). Delivery attempts via{' '}
+            <code>GET /webhooks/deliveries</code> / <code>/export</code> (Stage 144 W1; payload
+            excluded).
           </p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
             <select
@@ -774,6 +785,29 @@ export default function Page() {
               }}
             >
               Export webhooks CSV
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                // Stage 144 W1 — webhook deliveries CSV (no payload)
+                const token = localStorage.getItem('token') || '';
+                const res = await fetch(`${apiBase}/webhooks/deliveries/export`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'webhook_deliveries_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Webhook deliveries CSV downloaded (Stage 144 W1)');
+              }}
+            >
+              Export deliveries CSV
             </button>
           </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -838,6 +872,36 @@ export default function Page() {
                 <tr>
                   <td colSpan={4} className="muted">
                     No webhooks yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <h3 style={{ marginTop: 16 }}>Recent deliveries</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Status</th>
+                <th>Attempts</th>
+                <th>HTTP</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody>
+              {webhookDeliveries.slice(0, 20).map((d) => (
+                <tr key={d.id}>
+                  <td>{d.event}</td>
+                  <td>{d.status}</td>
+                  <td>{d.attempt_count ?? 0}</td>
+                  <td>{d.response_status ?? '—'}</td>
+                  <td>{d.created_at ? String(d.created_at).slice(0, 19) : '—'}</td>
+                </tr>
+              ))}
+              {!webhookDeliveries.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No delivery attempts yet
                   </td>
                 </tr>
               )}

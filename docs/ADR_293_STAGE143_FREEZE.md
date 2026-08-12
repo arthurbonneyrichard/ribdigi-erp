@@ -23,4 +23,4 @@ Stage 143 Tenant MVP Company Profile CSV, Jobs Catalog CSV & Onboarding Checklis
 
 ## Next stage
 
-Stage 144 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 143 feature scope remains frozen.
+Stage 144 opened via CONTINUE/NEXT as **Tenant MVP Webhook Deliveries CSV, Inventory FEFO Settings CSV & Audit Archives CSV Export Fidelity** ([ADR-294](ADR_294_STAGE144_OPEN.md)) and closed under [ADR-295](ADR_295_STAGE144_FREEZE.md). Stage 143 feature scope remains frozen.

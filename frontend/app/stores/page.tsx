@@ -506,6 +506,17 @@ export default function Page() {
           <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} /> FEFO
           strict warehouse (stock-out only from batches tagged to that warehouse)
         </label>
+        <p className="muted" style={{ marginTop: 8, marginBottom: 8 }}>
+          FEFO settings CSV via <code>GET /inventory/settings/export</code> (Stage 144 F1).
+        </p>
+        <button
+          type="button"
+          onClick={() =>
+            downloadCsv('/inventory/settings/export', 'inventory_fefo_settings_export.csv')
+          }
+        >
+          Export FEFO settings CSV
+        </button>
       </div>
 
       <div className="grid">

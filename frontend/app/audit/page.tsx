@@ -247,12 +247,44 @@ function PageInner() {
       )}
 
       {retention && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 16 }} id="archives">
           <h3 style={{ marginTop: 0 }}>Retention policy</h3>
           <p className="muted">{retention.notes}</p>
           <p>
             Purge allowed: {String(retention.purge_allowed)} · Archives on file: {archives.length}
           </p>
+          <p className="muted">
+            Archive manifest CSV via <code>GET /audit-logs/archives/export</code> (Stage 144 A1; no
+            blob download).
+          </p>
+          <button
+            type="button"
+            style={{ marginBottom: 8 }}
+            onClick={async () => {
+              setError('');
+              try {
+                const token = localStorage.getItem('token') || '';
+                const res = await fetch(`${base}/audit-logs/archives/export`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'audit_archives_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Audit archives CSV downloaded (Stage 144 A1)');
+              } catch (err: any) {
+                setError(err.message || 'Archives export failed');
+              }
+            }}
+          >
+            Export archives CSV
+          </button>
           {archives.slice(0, 5).map((a) => (
             <p key={a.id} className="muted">
               {a.event_count} events · {a.sha256?.slice(0, 12)}… · {a.storage_key}

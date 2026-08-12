@@ -243,6 +243,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Company Profile CSV:** Company Export profile CSV (Stage 143 P1)
 - **Jobs Catalog CSV:** Company Export jobs catalog CSV — broker URLs excluded (Stage 143 J1)
 - **Onboarding Checklist CSV:** Shell Export checklist CSV (Stage 143 O1)
+- **Webhook Deliveries CSV:** Security Export deliveries CSV — payload excluded (Stage 144 W1)
+- **FEFO Settings CSV:** Stores Export FEFO settings CSV (Stage 144 F1)
+- **Audit Archives CSV:** Audit Export archives CSV — blob download excluded (Stage 144 A1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

@@ -2330,6 +2330,18 @@ Every feature in every phase must meet:
 
 **Stage 143 exit (2026-08-12):** P1, J1, O1, D1, H143x met — `docs/STAGE_143_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_293_STAGE143_FREEZE.md`. Fidelity: `docs/STAGE_143_FIDELITY.md`.
 
+**Stage 144 open (2026-08-12):** Tenant MVP Webhook Deliveries CSV, Inventory FEFO Settings CSV & Audit Archives CSV Export Fidelity — `docs/ADR_294_STAGE144_OPEN.md` + `docs/STAGE_144_PLAN.md` (Deliveries → FEFO → Archives → Fidelity; W1 next).
+
+**Stage 144 W1 (2026-08-12):** Webhook deliveries CSV (`test_stage144_webhook_deliveries_w1.py`).
+
+**Stage 144 F1 (2026-08-12):** Inventory FEFO settings CSV (`test_stage144_fefo_settings_f1.py`).
+
+**Stage 144 A1 (2026-08-12):** Audit archives CSV (`test_stage144_audit_archives_a1.py`).
+
+**Stage 144 D1 (2026-08-12):** Webhook deliveries / FEFO / audit archives export fidelity sync — `docs/STAGE_144_FIDELITY.md` (`test_stage144_fidelity_d1.py`).
+
+**Stage 144 exit (2026-08-12):** W1, F1, A1, D1, H144x met — `docs/STAGE_144_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_295_STAGE144_FREEZE.md`. Fidelity: `docs/STAGE_144_FIDELITY.md`.
+
 
 
 

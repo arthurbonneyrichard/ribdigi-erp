@@ -162,6 +162,28 @@ def serialize_delivery(row: m.WebhookDelivery) -> dict[str, Any]:
     }
 
 
+async def list_deliveries(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    webhook_id: str | None = None,
+    status: str | None = None,
+    limit: int = 200,
+) -> list[m.WebhookDelivery]:
+    """Stage 144 W1 — tenant webhook delivery attempt log (payload excluded from serialize)."""
+    stmt = (
+        select(m.WebhookDelivery)
+        .where(m.WebhookDelivery.tenant_id == tenant_id)
+        .order_by(m.WebhookDelivery.created_at.desc())
+        .limit(min(max(limit, 1), 500))
+    )
+    if webhook_id:
+        stmt = stmt.where(m.WebhookDelivery.webhook_id == webhook_id.strip())
+    if status:
+        stmt = stmt.where(m.WebhookDelivery.status == status.strip().lower())
+    return list((await db.execute(stmt)).scalars().all())
+
+
 async def list_endpoints(
     db: AsyncSession,
     tenant_id: str,

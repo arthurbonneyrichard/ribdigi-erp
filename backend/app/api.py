@@ -73,6 +73,7 @@ from app import approval_settings_export as approval_settings_export_svc
 from app import ops_settings_export as ops_settings_export_svc
 from app import pos_ops_export as pos_ops_export_svc
 from app import tenant_bootstrap_export as tenant_bootstrap_export_svc
+from app import ops_compliance_export as ops_compliance_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -11752,6 +11753,24 @@ async def inventory_settings(
     )
 
 
+@api.get("/inventory/settings/export")
+async def inventory_settings_export(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 144 F1 — inventory FEFO settings CSV."""
+    text = await ops_compliance_export_svc.export_fefo_settings_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="inventory_fefo_settings_export.csv"'
+        },
+    )
+
+
 @api.patch("/inventory/settings")
 async def update_inventory_settings(
     payload: InventoryFefoSettingsUpdate,
@@ -12535,6 +12554,24 @@ async def audit_logs_archives(
     return env([audit_svc.serialize_cold_archive(r) for r in rows])
 
 
+@api.get("/audit-logs/archives/export")
+async def audit_logs_archives_export(
+    claims=Depends(require_permission("audit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 144 A1 — cold audit archive manifest CSV (no blob download)."""
+    text = await ops_compliance_export_svc.export_audit_archives_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="audit_archives_export.csv"'
+        },
+    )
+
+
 @api.post("/audit-logs/archive-cold")
 async def audit_logs_archive_cold(
     older_than_days: int | None = None,
@@ -12730,6 +12767,46 @@ async def webhooks_export(
         content=text,
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="webhooks_export.csv"'},
+    )
+
+
+@api.get("/webhooks/deliveries")
+async def webhooks_deliveries_list(
+    webhook_id: str | None = None,
+    status: str | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 144 W1 — webhook delivery attempt list (payload excluded)."""
+    rows = await webhooks_svc.list_deliveries(
+        db,
+        claims["tenant_id"],
+        webhook_id=webhook_id,
+        status=status,
+    )
+    return env([webhooks_svc.serialize_delivery(r) for r in rows])
+
+
+@api.get("/webhooks/deliveries/export")
+async def webhooks_deliveries_export(
+    webhook_id: str | None = None,
+    status: str | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 144 W1 — webhook deliveries CSV (payload / secrets never included)."""
+    text = await bank_webhook_export_svc.export_webhook_deliveries_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        webhook_id=webhook_id,
+        status=status,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="webhook_deliveries_export.csv"'
+        },
     )
 
 

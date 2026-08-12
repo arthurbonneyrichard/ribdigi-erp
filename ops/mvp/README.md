@@ -353,6 +353,9 @@ Authoritative MVP docs:
 - `docs/STAGE_143_EXIT_CRITERIA.md` / `docs/ADR_293_STAGE143_FREEZE.md` (`backend/tests/test_stage143_exit_h143x.py`) — Stage 143 H143x
 - `docs/STAGE_143_FIDELITY.md` (`backend/tests/test_stage143_fidelity_d1.py`) — Stage 143 D1
 - `docs/STAGE_143_PLAN.md` (`backend/tests/test_stage143_open.py`) — Stage 143 open (ADR-292)
+- `docs/STAGE_144_EXIT_CRITERIA.md` / `docs/ADR_295_STAGE144_FREEZE.md` (`backend/tests/test_stage144_exit_h144x.py`) — Stage 144 H144x
+- `docs/STAGE_144_FIDELITY.md` (`backend/tests/test_stage144_fidelity_d1.py`) — Stage 144 D1
+- `docs/STAGE_144_PLAN.md` (`backend/tests/test_stage144_open.py`) — Stage 144 open (ADR-294)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1606,6 +1609,18 @@ H143x met — `docs/STAGE_143_EXIT_CRITERIA.md`, ADR-293. Stages 1–143 frozen 
 ## Stage 143 open
 
 ADR-292 + `docs/STAGE_143_PLAN.md` — Tenant MVP Company Profile CSV, Jobs Catalog CSV & Onboarding Checklist CSV Export Fidelity.
+
+## Stage 144 exit
+
+H144x met — `docs/STAGE_144_EXIT_CRITERIA.md`, ADR-295. Stages 1–144 frozen for Stage 144 feature scope.
+
+## Stage 144 D1 — Tenant MVP Webhook Deliveries CSV, Inventory FEFO Settings CSV & Audit Archives CSV Export Fidelity
+
+`docs/STAGE_144_FIDELITY.md` — maps W1–A1 → readiness / launch / deploy / security.
+
+## Stage 144 open
+
+ADR-294 + `docs/STAGE_144_PLAN.md` — Tenant MVP Webhook Deliveries CSV, Inventory FEFO Settings CSV & Audit Archives CSV Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 
