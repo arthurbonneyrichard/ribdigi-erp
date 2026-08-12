@@ -609,9 +609,75 @@ export default function Page() {
           onChange={(e) => setTenant({ ...tenant, document_footer: e.target.value })}
           style={{ width: '100%', maxWidth: 560 }}
         />
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={save} disabled={!!tenant.read_only}>
             Save print templates
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              // Stage 119 T1 — sample invoice preview (current select value)
+              const tpl = encodeURIComponent(tenant.invoice_print_template || 'a4');
+              const token = localStorage.getItem('token');
+              const ten = localStorage.getItem('tenant');
+              const url = `${apiBase}/tenants/me/print-templates/preview?kind=invoice&format=html&template=${tpl}`;
+              const w = window.open('', '_blank');
+              fetch(url, {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  ...(ten ? { 'X-Tenant-ID': ten } : {}),
+                },
+              })
+                .then(async (res) => {
+                  if (!res.ok) throw new Error('Invoice preview failed');
+                  return res.text();
+                })
+                .then((html) => {
+                  if (w) {
+                    w.document.write(html);
+                    w.document.close();
+                  }
+                })
+                .catch((err) => {
+                  if (w) w.close();
+                  setError(err.message || 'Invoice preview failed');
+                });
+            }}
+          >
+            Preview sample invoice
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              // Stage 119 T1 — sample receipt preview
+              const tpl = encodeURIComponent(tenant.receipt_print_template || 'thermal_80');
+              const token = localStorage.getItem('token');
+              const ten = localStorage.getItem('tenant');
+              const url = `${apiBase}/tenants/me/print-templates/preview?kind=receipt&format=html&template=${tpl}`;
+              const w = window.open('', '_blank');
+              fetch(url, {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  ...(ten ? { 'X-Tenant-ID': ten } : {}),
+                },
+              })
+                .then(async (res) => {
+                  if (!res.ok) throw new Error('Receipt preview failed');
+                  return res.text();
+                })
+                .then((html) => {
+                  if (w) {
+                    w.document.write(html);
+                    w.document.close();
+                  }
+                })
+                .catch((err) => {
+                  if (w) w.close();
+                  setError(err.message || 'Receipt preview failed');
+                });
+            }}
+          >
+            Preview sample receipt
           </button>
         </div>
       </div>

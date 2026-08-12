@@ -23,4 +23,4 @@ Stage 118 Tenant MVP Fiscal Close, Inactive Customers & Catalog Export Fidelity 
 
 ## Next stage
 
-Stage 119 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 118 feature scope remains frozen.
+Stage 119 opened via CONTINUE/NEXT after this freeze — see [ADR-244](ADR_244_STAGE119_OPEN.md) / [STAGE_119_PLAN.md](STAGE_119_PLAN.md). Stage 118 feature scope remains frozen.

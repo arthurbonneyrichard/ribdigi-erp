@@ -192,6 +192,33 @@ export default function Page() {
     refresh({ customerStatus: next }).catch((err) => setError(err.message));
   }
 
+  async function downloadCustomersExport() {
+    // Stage 119 E1 — customers CSV export
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const res = await fetch(`${apiBase}/customers/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Customer export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'customers_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Customers CSV exported');
+    } catch (err: any) {
+      setError(err.message || 'Customer export failed');
+    }
+  }
+
   function resetCustomerForm() {
     setCustomerName('');
     setCustomerCode('');
@@ -733,7 +760,7 @@ export default function Page() {
       {tab === 'customers' && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h3>{selectedCustomerId ? 'Edit customer' : 'New customer'}</h3>
-          <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+          <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
             Customer list
             <select
               value={customerStatusFilter}
@@ -744,6 +771,9 @@ export default function Page() {
               <option value="active">Active only</option>
               <option value="inactive">Inactive only</option>
             </select>
+            <button type="button" onClick={downloadCustomersExport}>
+              Export customers CSV
+            </button>
           </label>
           <div style={{ display: 'grid', gap: 8, maxWidth: 560 }}>
             <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Name *" />

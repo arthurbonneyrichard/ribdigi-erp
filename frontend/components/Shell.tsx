@@ -488,6 +488,18 @@ const primaryNavSpec: NavEntry[] = [
     href: '/purchasing?tab=suppliers',
     modules: ['purchasing', 'suppliers'],
   },
+  {
+    kind: 'link',
+    label: 'Active Suppliers',
+    href: '/purchasing?tab=suppliers&supplier_status=active',
+    modules: ['purchasing', 'suppliers'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Suppliers',
+    href: '/purchasing?tab=suppliers&supplier_status=inactive',
+    modules: ['purchasing', 'suppliers'],
+  },
   // Stage 96 L1 — Billers alias (Users + salesperson report; not a parallel CRUD engine)
   {
     kind: 'link',

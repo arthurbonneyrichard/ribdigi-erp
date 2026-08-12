@@ -214,6 +214,14 @@ export default function Page() {
   const [prStatusFilter, setPrStatusFilter] = useState('');
   const [poStatusFilter, setPoStatusFilter] = useState('');
   const [grnStatusFilter, setGrnStatusFilter] = useState('');
+  // Stage 119 S1 — inactive-only via ?supplier_status=inactive (API status=inactive)
+  const [supplierStatusFilter, setSupplierStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const st = (new URLSearchParams(window.location.search).get('supplier_status') || '')
+      .trim()
+      .toLowerCase();
+    return st === 'active' || st === 'inactive' ? st : '';
+  });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -223,12 +231,15 @@ export default function Page() {
     prStatus?: string;
     poStatus?: string;
     grnStatus?: string;
+    supplierStatus?: string;
   }) {
     const status = opts?.invoiceStatus !== undefined ? opts.invoiceStatus : invoiceStatusFilter;
     const retStatus = opts?.returnStatus !== undefined ? opts.returnStatus : returnStatusFilter;
     const prStatus = opts?.prStatus !== undefined ? opts.prStatus : prStatusFilter;
     const poStatus = opts?.poStatus !== undefined ? opts.poStatus : poStatusFilter;
     const grnStatus = opts?.grnStatus !== undefined ? opts.grnStatus : grnStatusFilter;
+    const supplierStatus =
+      opts?.supplierStatus !== undefined ? opts.supplierStatus : supplierStatusFilter;
     const invPath = status
       ? `/purchasing/invoices?status=${encodeURIComponent(status)}`
       : '/purchasing/invoices';
@@ -244,10 +255,16 @@ export default function Page() {
     const grnPath = grnStatus
       ? `/purchasing/grn?status=${encodeURIComponent(grnStatus)}`
       : '/purchasing/grn';
+    const supplierQs =
+      supplierStatus === 'inactive'
+        ? '?status=inactive'
+        : supplierStatus === 'active'
+          ? '?status=active'
+          : '';
     const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes, settingsRes] = await Promise.all([
       api(prPath),
       api(poPath),
-      api('/suppliers'),
+      api(`/suppliers${supplierQs}`),
       api('/products'),
       api(grnPath),
       api(invPath),
@@ -303,7 +320,41 @@ export default function Page() {
     refresh({ grnStatus: next }).catch((err) => setError(err.message));
   }
 
+  function setSupplierListStatus(next: string) {
+    setSupplierStatusFilter(next);
+    writeQueryParam('supplier_status', next);
+    refresh({ supplierStatus: next }).catch((err) => setError(err.message));
+  }
+
+  async function downloadSuppliersExport() {
+    // Stage 119 E1 — suppliers CSV export
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const res = await fetch(`${apiBase}/suppliers/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Supplier export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'suppliers_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Suppliers CSV exported');
+    } catch (err: any) {
+      setError(err.message || 'Supplier export failed');
+    }
+  }
+
   // Stage 110 P1 / Stage 114 P1 / Stage 115 P1 — Shell PR/PO/GRN/returns + purchase invoice status leaves honor URL params
+  // Stage 119 S1 — Shell Active/Inactive Suppliers honor supplier_status
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('status')?.trim() || '';
@@ -311,22 +362,26 @@ export default function Page() {
     const prRaw = params.get('pr_status')?.trim() || '';
     const poRaw = params.get('po_status')?.trim() || '';
     const grnRaw = params.get('grn_status')?.trim() || '';
+    const supRaw = (params.get('supplier_status') || '').trim().toLowerCase();
     const allowed = ['draft', 'unpaid', 'partial', 'overdue', 'paid', 'cancelled', 'outstanding'];
     const retAllowed = ['draft', 'posted'];
     const prAllowed = ['draft', 'pending', 'approved', 'rejected', 'cancelled', 'converted'];
     const poAllowed = ['draft', 'sent', 'partially_received', 'received', 'cancelled', 'open'];
     const grnAllowed = ['draft', 'posted'];
+    const supplierStatus = supRaw === 'active' || supRaw === 'inactive' ? supRaw : '';
     if (allowed.includes(raw)) setInvoiceStatusFilter(raw);
     if (retAllowed.includes(retRaw)) setReturnStatusFilter(retRaw);
     if (prAllowed.includes(prRaw)) setPrStatusFilter(prRaw);
     if (poAllowed.includes(poRaw)) setPoStatusFilter(poRaw);
     if (grnAllowed.includes(grnRaw)) setGrnStatusFilter(grnRaw);
+    if (supplierStatus) setSupplierStatusFilter(supplierStatus);
     refresh({
       invoiceStatus: allowed.includes(raw) ? raw : '',
       returnStatus: retAllowed.includes(retRaw) ? retRaw : '',
       prStatus: prAllowed.includes(prRaw) ? prRaw : '',
       poStatus: poAllowed.includes(poRaw) ? poRaw : '',
       grnStatus: grnAllowed.includes(grnRaw) ? grnRaw : '',
+      supplierStatus,
     }).catch((err) => setError(err.message));
   }, []);
 
@@ -1102,6 +1157,21 @@ export default function Page() {
       {tab === 'suppliers' && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h3>{selectedSupplierId ? 'Edit supplier' : 'New supplier'}</h3>
+          <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+            Supplier list
+            <select
+              value={supplierStatusFilter}
+              onChange={(e) => setSupplierListStatus(e.target.value)}
+              aria-label="Filter suppliers by status"
+            >
+              <option value="">All suppliers</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
+            <button type="button" onClick={downloadSuppliersExport}>
+              Export suppliers CSV
+            </button>
+          </label>
           <div style={{ display: 'grid', gap: 8, maxWidth: 560 }}>
             <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Name *" />
             <input value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} placeholder="Code" />

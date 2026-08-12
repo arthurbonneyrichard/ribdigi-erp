@@ -170,6 +170,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Fiscal period Close / Reopen:** Company `#fiscal-period` console closes the open year for journal post/unpost (Stage 118 F1)
 - **Inactive Customers:** Sales customer list inactive-only filter + Shell leaf (Stage 118 C1)
 - **Export products CSV:** Inventory catalog export aligned with import template (Stage 118 E1)
+- **Inactive Suppliers:** Purchasing supplier list inactive-only filter + Shell leaves (Stage 119 S1)
+- **Export customers / suppliers CSV:** Party CSV export from Sales and Purchasing (Stage 119 E1)
+- **Preview sample invoice / receipt:** Company Document Templates sample print preview (Stage 119 T1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

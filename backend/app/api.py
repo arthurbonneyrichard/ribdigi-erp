@@ -49,6 +49,8 @@ from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
 from app import barcodes as barcode_svc
 from app import product_import as product_import_svc
+from app import party_export as party_export_svc
+from app import print_preview as print_preview_svc
 from app import user_import as user_import_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
@@ -403,6 +405,33 @@ async def tenant_me(
         raise HTTPException(status_code=403, detail="Tenant is suspended")
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant))
+
+
+@api.get("/tenants/me/print-templates/preview")
+async def tenant_print_templates_preview(
+    kind: str = "invoice",
+    template: str | None = None,
+    format: str = "html",
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 119 T1 — sample invoice/receipt preview using tenant print templates (not WYSIWYG)."""
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    kind_n = (kind or "invoice").strip().lower()
+    if kind_n == "invoice":
+        media, body = print_preview_svc.render_sample_invoice_preview(
+            tenant, template=template, fmt=format
+        )
+    elif kind_n == "receipt":
+        media, body = print_preview_svc.render_sample_receipt_preview(
+            tenant, template=template, fmt=format
+        )
+    else:
+        raise HTTPException(status_code=400, detail="kind must be invoice or receipt")
+    await db.commit()
+    if media == "text/html":
+        return HTMLResponse(body)
+    return PlainTextResponse(body)
 
 
 @api.patch("/tenants/me")
@@ -4737,6 +4766,20 @@ async def customers(
     return env(out)
 
 
+@api.get("/customers/export")
+async def customers_export(
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 119 E1 — customers CSV export."""
+    text = await party_export_svc.export_customers_csv(db, tenant_id=claims["tenant_id"])
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="customers_export.csv"'},
+    )
+
+
 @api.post("/customers")
 async def add_customer(
     payload: CustomerCreate,
@@ -4864,19 +4907,45 @@ async def customer_history(
 
 
 @api.get("/suppliers")
-async def suppliers(claims=Depends(require_permission("purchasing", "read")), db: AsyncSession = Depends(get_db)):
-    rows = (
-        await db.execute(
-            select(m.Party)
-            .where(m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "supplier")
-            .order_by(m.Party.name)
-        )
-    ).scalars().all()
+async def suppliers(
+    active_only: bool = False,
+    status: str | None = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 119 S1 — status=active|inactive for honest inactive-only lists; active_only=true remains active-only."""
+    stmt = (
+        select(m.Party)
+        .where(m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "supplier")
+        .order_by(m.Party.name)
+    )
+    status_filter = (status or "").strip().lower()
+    if status_filter and status_filter not in ("active", "inactive"):
+        raise HTTPException(status_code=400, detail="status must be active or inactive")
+    if status_filter == "active" or (active_only and not status_filter):
+        stmt = stmt.where(m.Party.status == "active")
+    elif status_filter == "inactive":
+        stmt = stmt.where(m.Party.status == "inactive")
+    rows = (await db.execute(stmt)).scalars().all()
     out = []
     for row in rows:
         contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], row.id)
         out.append(suppliers_svc.serialize_supplier(row, contacts))
     return env(out)
+
+
+@api.get("/suppliers/export")
+async def suppliers_export(
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 119 E1 — suppliers CSV export."""
+    text = await party_export_svc.export_suppliers_csv(db, tenant_id=claims["tenant_id"])
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="suppliers_export.csv"'},
+    )
 
 
 @api.post("/suppliers")
