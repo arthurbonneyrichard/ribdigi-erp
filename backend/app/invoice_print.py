@@ -18,7 +18,6 @@ from app.receipts import (
     _wrap,
     _clean_text,
 )
-from app.report_export import _pdf_escape
 from app.sales import get_customer, get_invoice, list_invoice_items
 
 PRINTABLE_INVOICE_STATUSES = frozenset({"posted", "sent", "partial", "paid", "overdue"})
@@ -90,6 +89,10 @@ async def build_invoice_print_payload(
     total = float(invoice.total_amount or 0)
     balance = max(total - paid, 0)
 
+    from app.print_branding import branding_fields_for_payload
+
+    branding = branding_fields_for_payload(tenant)
+
     return {
         "document_type": "sales_invoice",
         "invoice_id": invoice.id,
@@ -105,6 +108,13 @@ async def build_invoice_print_payload(
         "company_website": _clean_text(tenant.website if tenant else None),
         "company_address": _clean_text(store.address if store else None)
         or _clean_text(tenant.address if tenant else None),
+        "print_header": branding["print_header"],
+        "print_footer": branding["print_footer"],
+        "has_logo": branding["has_logo"],
+        "default_invoice_template": branding["default_invoice_template"],
+        "default_receipt_paper": branding["default_receipt_paper"],
+        "tenant_id": tenant_id,
+        "logo_key": getattr(tenant, "logo_url", None) if tenant else None,
         "currency": currency,
         "customer_name": customer.name,
         "customer_email": _clean_text(customer.email),
@@ -140,6 +150,9 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
             lines.append(_center(part, width))
     if payload.get("company_phone"):
         lines.append(_center(f"Tel: {payload['company_phone']}", width))
+    if payload.get("print_header"):
+        for part in _wrap(str(payload["print_header"]), width):
+            lines.append(_center(part, width))
     lines.append("-" * width)
     lines.append(_center("SALES INVOICE", width))
     lines.append(_lr("Invoice", str(payload.get("invoice_number") or ""), width))
@@ -179,67 +192,54 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
         for part in _wrap(f"Notes: {payload['notes']}", width):
             lines.append(part)
     lines.append("-" * width)
-    lines.append(_center("Thank you", width))
+    footer = payload.get("print_footer") or "Thank you"
+    for part in _wrap(str(footer), width):
+        lines.append(_center(part, width))
     lines.append(_center("Powered by RIBDIGI", width))
     lines.append("")
     return "\n".join(lines)
 
 
 def to_invoice_thermal_pdf(payload: dict[str, Any], *, paper: str = "80mm") -> bytes:
+    from app.print_branding import build_text_pdf, load_logo_jpeg
+
     text = render_invoice_thermal_text(payload, paper=paper)
-    lines = text.splitlines() or [""]
+    lines = [(line, 8) for line in (text.splitlines() or [""])]
     page_width = 226 if paper == "80mm" else 164
     line_height = 11
     top = 20
     bottom = 20
-    page_height = max(top + bottom + line_height * (len(lines) + 2), 200)
-    content: list[str] = []
-    y = page_height - top
-    for line in lines:
-        content.append(f"BT /F1 8 Tf 8 {y} Td ({_pdf_escape(line[:80])}) Tj ET")
-        y -= line_height
-        if y < bottom:
-            break
-    stream = "\n".join(content).encode("latin-1", errors="replace")
-    objects: list[bytes] = []
-    objects.append(b"1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n")
-    objects.append(b"2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n")
-    objects.append(
-        (
-            f"3 0 obj<< /Type /Page /Parent 2 0 R "
-            f"/MediaBox [0 0 {page_width} {page_height}] "
-            f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>endobj\n"
-        ).encode("ascii")
+    page_height = max(top + bottom + line_height * (len(lines) + 8), 200)
+    logo = None
+    if payload.get("logo_key") and payload.get("tenant_id"):
+
+        class _T:
+            id = payload["tenant_id"]
+            logo_url = payload["logo_key"]
+
+        logo = load_logo_jpeg(_T(), max_width_px=240, max_height_px=80)
+    return build_text_pdf(
+        lines,
+        page_width=page_width,
+        page_height=page_height,
+        margin=8 if paper == "58mm" else 10,
+        mono=True,
+        logo=logo,
+        logo_max_pt=48 if paper == "58mm" else 64,
     )
-    objects.append(
-        f"4 0 obj<< /Length {len(stream)} >>stream\n".encode("ascii")
-        + stream
-        + b"\nendstream\nendobj\n"
-    )
-    objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n")
-    out = bytearray(b"%PDF-1.4\n")
-    offsets = [0]
-    for obj in objects:
-        offsets.append(len(out))
-        out.extend(obj)
-    xref_pos = len(out)
-    out.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
-    out.extend(b"0000000000 65535 f \n")
-    for off in offsets[1:]:
-        out.extend(f"{off:010d} 00000 n \n".encode("ascii"))
-    out.extend(
-        f"trailer<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode(
-            "ascii"
-        )
-    )
-    return bytes(out)
 
 
 def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
-    """Simple A4 PDF invoice (Helvetica / Courier)."""
-    page_width, page_height = 595, 842  # A4 points
+    """Simple A4 PDF invoice (Helvetica) with optional company logo."""
+    from app.print_branding import (
+        DEFAULT_FOOTER_INVOICE,
+        build_text_pdf,
+        load_logo_jpeg,
+    )
+
+    page_width, page_height = 595, 842
     margin = 40
-    lines: list[tuple[str, int]] = []  # text, font size
+    lines: list[tuple[str, int]] = []
 
     def add(text: str, size: int = 10) -> None:
         lines.append((text, size))
@@ -251,6 +251,8 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
         add(f"Tel: {payload['company_phone']}", 9)
     if payload.get("company_email"):
         add(str(payload["company_email"]), 9)
+    if payload.get("print_header"):
+        add(str(payload["print_header"]), 10)
     add("", 10)
     add("SALES INVOICE", 14)
     add(f"Invoice: {payload.get('invoice_number') or ''}", 11)
@@ -297,50 +299,24 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
         add("", 10)
         add(f"Notes: {payload['notes']}", 9)
     add("", 10)
-    add("Thank you for your business.", 10)
+    add(str(payload.get("print_footer") or DEFAULT_FOOTER_INVOICE), 10)
     add("Powered by RIBDIGI", 8)
 
-    content: list[str] = []
-    y = page_height - margin
-    for text, size in lines:
-        font = "F2" if size >= 12 else "F1"
-        content.append(f"BT /{font} {size} Tf {margin} {y} Td ({_pdf_escape(text[:110])}) Tj ET")
-        y -= size + 4
-        if y < margin:
-            break
-    stream = "\n".join(content).encode("latin-1", errors="replace")
+    logo = None
+    if payload.get("logo_key") and payload.get("tenant_id"):
 
-    objects: list[bytes] = []
-    objects.append(b"1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n")
-    objects.append(b"2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n")
-    objects.append(
-        (
-            f"3 0 obj<< /Type /Page /Parent 2 0 R "
-            f"/MediaBox [0 0 {page_width} {page_height}] "
-            f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>endobj\n"
-        ).encode("ascii")
-    )
-    objects.append(
-        f"4 0 obj<< /Length {len(stream)} >>stream\n".encode("ascii")
-        + stream
-        + b"\nendstream\nendobj\n"
-    )
-    objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n")
-    objects.append(b"6 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>endobj\n")
+        class _T:
+            id = payload["tenant_id"]
+            logo_url = payload["logo_key"]
 
-    out = bytearray(b"%PDF-1.4\n")
-    offsets = [0]
-    for obj in objects:
-        offsets.append(len(out))
-        out.extend(obj)
-    xref_pos = len(out)
-    out.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
-    out.extend(b"0000000000 65535 f \n")
-    for off in offsets[1:]:
-        out.extend(f"{off:010d} 00000 n \n".encode("ascii"))
-    out.extend(
-        f"trailer<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode(
-            "ascii"
-        )
+        logo = load_logo_jpeg(_T(), max_width_px=420, max_height_px=140)
+
+    return build_text_pdf(
+        lines,
+        page_width=page_width,
+        page_height=page_height,
+        margin=margin,
+        mono=False,
+        logo=logo,
+        logo_max_pt=90,
     )
-    return bytes(out)

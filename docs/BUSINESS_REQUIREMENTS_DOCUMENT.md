@@ -962,7 +962,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [ ] Edit legal name, address, contact, tax ID
-  - [ ] Upload company logo (used on invoices, receipts)
+  - [x] Upload company logo (used on invoices, receipts)
 
 #### BR-20.2 Formatting
 - **Description:** Regional display preferences.
@@ -987,9 +987,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
   - [x] Configure PO, GRN, quotation numbering (`GET|PATCH /purchasing/settings`, quotation via `/sales/settings`)
-  - [ ] Receipt template selection and customization
-  - [ ] Invoice template selection and customization
-  - [ ] Header/footer customization with company branding
+  - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
+  - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
+  - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)
 
 ---
 

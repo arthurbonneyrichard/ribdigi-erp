@@ -9,7 +9,6 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.report_export import _pdf_escape
 
 # Typical 80mm thermal width (~48 monospace chars); 58mm ~32
 THERMAL_WIDTHS = {"80mm": 42, "58mm": 32}
@@ -113,6 +112,10 @@ def build_receipt_payload(
         tenant.address if tenant else None
     )
 
+    from app.print_branding import branding_fields_for_payload
+
+    branding = branding_fields_for_payload(tenant)
+
     return {
         "sale_id": tx.id,
         "reference": tx.reference,
@@ -123,6 +126,13 @@ def build_receipt_payload(
         "company_email": company_email,
         "company_website": company_website,
         "company_address": company_address,
+        "print_header": branding["print_header"],
+        "print_footer": branding["print_footer"],
+        "has_logo": branding["has_logo"],
+        "default_invoice_template": branding["default_invoice_template"],
+        "default_receipt_paper": branding["default_receipt_paper"],
+        "tenant_id": getattr(tx, "tenant_id", None) or getattr(tenant, "id", None),
+        "logo_key": getattr(tenant, "logo_url", None) if tenant else None,
         "currency": tenant.currency if tenant else "GHS",
         "cashier_name": cashier_name,
         "customer_name": customer_name,
@@ -155,6 +165,9 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         lines.append(_center(str(receipt["company_email"]), width))
     if receipt.get("company_website"):
         lines.append(_center(str(receipt["company_website"]), width))
+    if receipt.get("print_header"):
+        for part in _wrap(str(receipt["print_header"]), width):
+            lines.append(_center(part, width))
     lines.append("-" * width)
     lines.append(_lr("Sale", str(receipt.get("reference") or ""), width))
     created = receipt.get("created_at")
@@ -192,7 +205,9 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     else:
         lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
     lines.append("-" * width)
-    lines.append(_center("Thank you", width))
+    footer = receipt.get("print_footer") or "Thank you"
+    for part in _wrap(str(footer), width):
+        lines.append(_center(part, width))
     lines.append(_center("Powered by RIBDIGI", width))
     lines.append("")
     return "\n".join(lines)
@@ -207,58 +222,32 @@ def escpos_drawer_kick() -> bytes:
 
 def to_thermal_pdf(receipt: dict[str, Any], *, paper: str = "80mm") -> bytes:
     """Narrow receipt PDF suitable for 58/80mm thermal printers (or browser print)."""
+    from app.print_branding import build_text_pdf, load_logo_jpeg
+
     text = render_thermal_text(receipt, paper=paper)
-    lines = text.splitlines() or [""]
-    page_width = 226 if paper == "80mm" else 164  # ~80mm / ~58mm at 72dpi
+    lines = [(line, 8) for line in (text.splitlines() or [""])]
+    page_width = 226 if paper == "80mm" else 164
     line_height = 11
     top = 20
     bottom = 20
-    page_height = max(top + bottom + line_height * (len(lines) + 2), 200)
+    page_height = max(top + bottom + line_height * (len(lines) + 8), 200)
+    logo = None
+    if receipt.get("logo_key") and receipt.get("tenant_id"):
 
-    content: list[str] = []
-    y = page_height - top
-    for line in lines:
-        content.append(
-            f"BT /F1 8 Tf 8 {y} Td ({_pdf_escape(line[:80])}) Tj ET"
-        )
-        y -= line_height
-        if y < bottom:
-            break
-    stream = "\n".join(content).encode("latin-1", errors="replace")
+        class _T:
+            id = receipt["tenant_id"]
+            logo_url = receipt["logo_key"]
 
-    objects: list[bytes] = []
-    objects.append(b"1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n")
-    objects.append(b"2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n")
-    objects.append(
-        (
-            f"3 0 obj<< /Type /Page /Parent 2 0 R "
-            f"/MediaBox [0 0 {page_width} {page_height}] "
-            f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>endobj\n"
-        ).encode("ascii")
+        logo = load_logo_jpeg(_T(), max_width_px=240, max_height_px=80)
+    return build_text_pdf(
+        lines,
+        page_width=page_width,
+        page_height=page_height,
+        margin=8 if paper == "58mm" else 10,
+        mono=True,
+        logo=logo,
+        logo_max_pt=48 if paper == "58mm" else 64,
     )
-    objects.append(
-        f"4 0 obj<< /Length {len(stream)} >>stream\n".encode("ascii")
-        + stream
-        + b"\nendstream\nendobj\n"
-    )
-    objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n")
-
-    out = bytearray(b"%PDF-1.4\n")
-    offsets = [0]
-    for obj in objects:
-        offsets.append(len(out))
-        out.extend(obj)
-    xref_pos = len(out)
-    out.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
-    out.extend(b"0000000000 65535 f \n")
-    for off in offsets[1:]:
-        out.extend(f"{off:010d} 00000 n \n".encode("ascii"))
-    out.extend(
-        f"trailer<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode(
-            "ascii"
-        )
-    )
-    return bytes(out)
 
 
 async def build_sale_receipt(

@@ -57,6 +57,7 @@ from app.schemas import (
     SalesSettingsUpdate,
     PurchasingNumberingUpdate,
     DocumentNumberingFields,
+    PrintBrandingUpdate,
     EmailVerifyConfirm,
     ExchangeRateRefresh,
     ExchangeRateUpsert,
@@ -581,6 +582,34 @@ async def settings_storage_get(
     claims=Depends(require_roles("company_admin", "super_admin")),
 ):
     return env(storage_svc.storage_status())
+
+
+@api.get("/settings/print")
+async def settings_print_get(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.print_branding import print_branding_settings
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env(print_branding_settings(tenant))
+
+
+@api.patch("/settings/print")
+async def settings_print_patch(
+    payload: PrintBrandingUpdate,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.print_branding import apply_print_branding_update
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    data = apply_print_branding_update(
+        tenant,
+        payload.model_dump(exclude_unset=True),
+    )
+    await db.commit()
+    return env(data, "Print branding updated")
 
 
 @api.post("/settings/sms/test")
@@ -3216,23 +3245,27 @@ async def get_sales_invoice(
 @api.get("/sales/invoices/{invoice_id}/print")
 async def print_sales_invoice(
     invoice_id: str,
-    template: str = "a4",
+    template: str | None = None,
     format: str = "pdf",
-    paper: str = "80mm",
+    paper: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     """Printable sales invoice: template=a4|thermal, format=pdf|text|json, paper=58mm|80mm (thermal)."""
     from app import invoice_print as invoice_print_svc
+    from app.print_branding import print_branding_settings
 
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     payload = await invoice_print_svc.build_invoice_print_payload(
         db, tenant_id=claims["tenant_id"], invoice_id=invoice_id
     )
-    tmpl = (template or "a4").lower()
+    branding = print_branding_settings(
+        await tenants_svc.get_tenant(db, claims["tenant_id"])
+    )
+    tmpl = (template or branding["default_invoice_template"] or "a4").lower()
     fmt = (format or "pdf").lower()
-    paper = paper if paper in {"58mm", "80mm"} else "80mm"
+    paper = paper if paper in {"58mm", "80mm"} else branding["default_receipt_paper"]
     if tmpl not in {"a4", "thermal"}:
         raise HTTPException(status_code=400, detail="template must be a4 or thermal")
     if fmt not in {"pdf", "text", "json"}:
@@ -3241,10 +3274,11 @@ async def print_sales_invoice(
     if tmpl == "thermal":
         text = invoice_print_svc.render_invoice_thermal_text(payload, paper=paper)
         if fmt == "json":
-            payload["template"] = "thermal"
-            payload["paper"] = paper
-            payload["text"] = text
-            return env(payload)
+            public = {k: v for k, v in payload.items() if k != "logo_key"}
+            public["template"] = "thermal"
+            public["paper"] = paper
+            public["text"] = text
+            return env(public)
         if fmt == "text":
             return PlainTextResponse(text, media_type="text/plain; charset=utf-8")
         pdf = invoice_print_svc.to_invoice_thermal_pdf(payload, paper=paper)
@@ -3257,9 +3291,10 @@ async def print_sales_invoice(
 
     # A4
     if fmt == "json":
-        payload["template"] = "a4"
-        payload["text"] = invoice_print_svc.render_invoice_thermal_text(payload, paper="80mm")
-        return env(payload)
+        public = {k: v for k, v in payload.items() if k != "logo_key"}
+        public["template"] = "a4"
+        public["text"] = invoice_print_svc.render_invoice_thermal_text(payload, paper="80mm")
+        return env(public)
     if fmt == "text":
         # Readable plain-text A4-ish dump
         text = invoice_print_svc.render_invoice_thermal_text(payload, paper="80mm")
@@ -4890,11 +4925,12 @@ async def pos_search(
 async def pos_receipt(
     sale_id: str,
     format: str = "json",
-    paper: str = "80mm",
+    paper: str | None = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import receipts as receipts_svc
+    from app.print_branding import print_branding_settings
 
     receipt = await receipts_svc.build_sale_receipt(
         db,
@@ -4902,16 +4938,20 @@ async def pos_receipt(
         sale_id=sale_id,
         user_id=claims.get("sub"),
     )
+    branding = print_branding_settings(
+        await tenants_svc.get_tenant(db, claims["tenant_id"])
+    )
     fmt = (format or "json").lower()
-    paper = paper if paper in {"58mm", "80mm"} else "80mm"
+    paper = paper if paper in {"58mm", "80mm"} else branding["default_receipt_paper"]
     if fmt == "json":
-        receipt["paper"] = paper
-        receipt["text"] = receipts_svc.render_thermal_text(receipt, paper=paper)
+        public = {k: v for k, v in receipt.items() if k != "logo_key"}
+        public["paper"] = paper
+        public["text"] = receipts_svc.render_thermal_text(receipt, paper=paper)
         from app import cash_drawer as cash_drawer_svc
 
-        receipt["drawer_kick_base64"] = cash_drawer_svc.kick_base64()
-        receipt["drawer_kick_hex"] = cash_drawer_svc.kick_hex()
-        return env(receipt)
+        public["drawer_kick_base64"] = cash_drawer_svc.kick_base64()
+        public["drawer_kick_hex"] = cash_drawer_svc.kick_hex()
+        return env(public)
     if fmt == "text":
         text = receipts_svc.render_thermal_text(receipt, paper=paper)
         return PlainTextResponse(text, media_type="text/plain; charset=utf-8")

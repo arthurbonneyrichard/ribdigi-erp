@@ -664,6 +664,13 @@ class PurchasingNumberingUpdate(BaseModel):
     grn_numbering: DocumentNumberingFields | None = None
 
 
+class PrintBrandingUpdate(BaseModel):
+    header_text: str | None = Field(default=None, max_length=200)
+    footer_text: str | None = Field(default=None, max_length=300)
+    default_invoice_template: str | None = None
+    default_receipt_paper: str | None = None
+
+
 class ExchangeRateUpsert(BaseModel):
     currency_code: str
     rate_to_base: float = Field(gt=0)

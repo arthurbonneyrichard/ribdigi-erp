@@ -13,6 +13,10 @@ export default function Page() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [printHeader, setPrintHeader] = useState('');
+  const [printFooter, setPrintFooter] = useState('');
+  const [invTemplate, setInvTemplate] = useState('a4');
+  const [receiptPaper, setReceiptPaper] = useState('80mm');
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -42,18 +46,25 @@ export default function Page() {
   }
 
   async function refresh() {
-    const [r, e, s, me, st] = await Promise.all([
+    const [r, e, s, me, st, print] = await Promise.all([
       api('/tenants/me'),
       api('/settings/email'),
       api('/settings/sms'),
       api('/me'),
       api('/settings/storage').catch(() => ({ data: null })),
+      api('/settings/print').catch(() => ({ data: null })),
     ]);
     setTenant(r.data);
     setEmailStatus(e.data);
     setSmsStatus(s.data);
     setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
+    if (print.data) {
+      setPrintHeader(print.data.header_text || '');
+      setPrintFooter(print.data.footer_text || '');
+      setInvTemplate(print.data.default_invoice_template || 'a4');
+      setReceiptPaper(print.data.default_receipt_paper || '80mm');
+    }
     await loadLogoPreview(!!r.data?.has_logo);
   }
 
@@ -316,6 +327,69 @@ export default function Page() {
           </p>
         </div>
       )}
+
+      <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
+        <h2>Print branding</h2>
+        <p className="muted">
+          Header/footer on invoices and receipts. Logo from the company logo above is embedded on PDFs.
+        </p>
+        <label className="muted">Header text</label>
+        <input
+          value={printHeader}
+          onChange={(e) => setPrintHeader(e.target.value)}
+          placeholder="Tagline under company name"
+          style={{ width: '100%', marginBottom: 8 }}
+        />
+        <label className="muted">Footer text</label>
+        <input
+          value={printFooter}
+          onChange={(e) => setPrintFooter(e.target.value)}
+          placeholder="Thank you line"
+          style={{ width: '100%', marginBottom: 8 }}
+        />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+          <label>
+            Invoice template{' '}
+            <select value={invTemplate} onChange={(e) => setInvTemplate(e.target.value)}>
+              <option value="a4">A4</option>
+              <option value="thermal">Thermal</option>
+            </select>
+          </label>
+          <label>
+            Receipt paper{' '}
+            <select value={receiptPaper} onChange={(e) => setReceiptPaper(e.target.value)}>
+              <option value="80mm">80mm</option>
+              <option value="58mm">58mm</option>
+            </select>
+          </label>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            setError('');
+            try {
+              const r = await api('/settings/print', {
+                method: 'PATCH',
+                body: JSON.stringify({
+                  header_text: printHeader,
+                  footer_text: printFooter,
+                  default_invoice_template: invTemplate,
+                  default_receipt_paper: receiptPaper,
+                }),
+              });
+              setPrintHeader(r.data?.header_text || '');
+              setPrintFooter(r.data?.footer_text || '');
+              setInvTemplate(r.data?.default_invoice_template || 'a4');
+              setReceiptPaper(r.data?.default_receipt_paper || '80mm');
+              setMessage('Print branding saved');
+            } catch (err: any) {
+              setError(err.message);
+            }
+          }}
+        >
+          Save print branding
+        </button>
+      </div>
 
       {emailStatus && (
         <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>

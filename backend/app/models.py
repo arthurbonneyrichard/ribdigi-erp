@@ -56,6 +56,8 @@ class Tenant(Base):
     sales_invoice_number_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # PO / GRN / quotation (and future docs): {kind: {prefix, next, year}}
     document_numbering: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Print templates: {header_text, footer_text, default_invoice_template, default_receipt_paper}
+    print_branding: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # When true, scheduled FX job refreshes this tenant's exchange rates from the live feed.
     fx_auto_refresh: Mapped[bool] = mapped_column(Boolean, default=True)
     # When true, store/warehouse stock-outs only consume batches tagged to that warehouse (no NULL fallback).
