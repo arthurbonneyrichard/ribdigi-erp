@@ -397,6 +397,24 @@ const primaryNavSpec: NavEntry[] = [
     href: '/credit?kind=payable#payment-schedule',
     modules: ['credit'],
   },
+  {
+    kind: 'link',
+    label: 'Credit Party Actions',
+    href: '/credit#party-actions',
+    modules: ['credit'],
+  },
+  {
+    kind: 'link',
+    label: 'Credit By Party',
+    href: '/credit#by-party',
+    modules: ['credit'],
+  },
+  {
+    kind: 'link',
+    label: 'Credit Statement',
+    href: '/credit#statement',
+    modules: ['credit'],
+  },
   { kind: 'link', label: 'Tax', href: '/tax', modules: ['tax'] },
   {
     kind: 'link',
@@ -590,6 +608,54 @@ const primaryNavSpec: NavEntry[] = [
     href: '/ai#security',
     modules: ['ai'],
   },
+  {
+    kind: 'link',
+    label: 'AI Sales Analysis',
+    href: '/ai#sales-analysis',
+    modules: ['ai'],
+  },
+  {
+    kind: 'link',
+    label: 'AI Expense Analysis',
+    href: '/ai#expense-analysis',
+    modules: ['ai'],
+  },
+  {
+    kind: 'link',
+    label: 'AI Purchases Analysis',
+    href: '/ai#purchases-analysis',
+    modules: ['ai'],
+  },
+  {
+    kind: 'link',
+    label: 'AI Cross-Domain',
+    href: '/ai#cross-domain',
+    modules: ['ai'],
+  },
+  {
+    kind: 'link',
+    label: 'AI Document',
+    href: '/ai#document',
+    modules: ['ai'],
+  },
+  {
+    kind: 'link',
+    label: 'AI Customer',
+    href: '/ai#customer',
+    modules: ['ai'],
+  },
+  {
+    kind: 'link',
+    label: 'AI Report Generator',
+    href: '/ai#report-generator',
+    modules: ['ai'],
+  },
+  {
+    kind: 'link',
+    label: 'AI Low Stock',
+    href: '/ai#low-stock',
+    modules: ['ai'],
+  },
   { kind: 'link', label: 'Settings', href: '/company', modules: ['company'] },
   {
     kind: 'link',
@@ -673,6 +739,18 @@ const primaryNavSpec: NavEntry[] = [
 
 const userMgmtLinks: NavLink[] = [
   { kind: 'link', label: 'Users', href: '/users', modules: ['users'] },
+  {
+    kind: 'link',
+    label: 'Active Users',
+    href: '/users?is_active=true',
+    modules: ['users'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Users',
+    href: '/users?is_active=false',
+    modules: ['users'],
+  },
   { kind: 'link', label: 'Roles', href: '/admin/roles', modules: ['users'] },
   {
     kind: 'link',

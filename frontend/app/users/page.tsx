@@ -52,6 +52,7 @@ function PageInner() {
   const [busy, setBusy] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
   const [importReport, setImportReport] = useState<any>(null);
+  // Stage 100 U1 / Stage 108 U1 — shareable ?q=&role=&is_active= directory filters
   const [q, setQ] = useState(() => searchParams.get('q') || '');
   const [roleFilter, setRoleFilter] = useState(() => searchParams.get('role') || '');
   const [activeFilter, setActiveFilter] = useState(() => searchParams.get('is_active') || '');

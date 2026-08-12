@@ -137,6 +137,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **POS Shift / Cart / Receipt:** POS Shell deep-links and section scroll (Stage 107 P1)
 - **Active Customers / Groups; Product Search filters:** Shareable commerce list filters (Stage 107 S1)
 - **At-risk / New Tenants; Backup History:** Platform and Backup ops leaves (Stage 107 O1)
+- **AI Sales Analysis / Expense / Purchases / Cross-Domain / Document / Customer / Report / AI Low Stock:** AI Shell deep-links (Stage 108 A1)
+- **Credit Party Actions / By Party / Credit Statement:** Credit Shell deep-links (Stage 108 C1)
+- **Active Users / Inactive Users (tenant & platform):** Users directory Shell leaves (Stage 108 U1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

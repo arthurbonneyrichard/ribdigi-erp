@@ -13,6 +13,8 @@ const items: [string, string, string][] = [
   ['New Tenants', '/platform/tenants?created_this_month=true', 'platform_tenants'],
   ['Plans', '/platform/plans', 'platform_plans'],
   ['Users', '/platform/users', 'platform_users'],
+  ['Active Users', '/platform/users?is_active=true', 'platform_users'],
+  ['Inactive Users', '/platform/users?is_active=false', 'platform_users'],
   ['Billing', '/platform/billing', 'platform_billing'],
   ['Settings', '/platform/settings', 'platform_settings'],
   ['Health', '/platform/health', 'platform_health'],

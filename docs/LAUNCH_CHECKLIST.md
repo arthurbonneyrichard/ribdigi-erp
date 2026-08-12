@@ -420,6 +420,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Ops leaves discoverability (Stage 107 O1: `test_stage107_ops_leaves_o1.py`)
 - [x] Stage 107 fidelity sync (D1: `test_stage107_fidelity_d1.py`, `docs/STAGE_107_FIDELITY.md` — P1–O1 + readiness + deploy / launch / security)
 - [x] Stage 107 exit + freeze (H107x: `test_stage107_exit_h107x.py`, `docs/STAGE_107_EXIT_CRITERIA.md`, ADR-221)
+- [x] Stage 108 track opened (ADR-222: `test_stage108_open.py`, `docs/STAGE_108_PLAN.md`) — Tenant MVP AI Analysis Leaves, Credit Statement & Users Directory Ops; closed under ADR-223
+- [x] AI analysis leaves honesty (Stage 108 A1: `test_stage108_ai_analysis_a1.py`)
+- [x] Credit statement surfaces discoverability (Stage 108 C1: `test_stage108_credit_statement_c1.py`)
+- [x] Users directory leaves discoverability (Stage 108 U1: `test_stage108_users_directory_u1.py`)
+- [x] Stage 108 fidelity sync (D1: `test_stage108_fidelity_d1.py`, `docs/STAGE_108_FIDELITY.md` — A1–U1 + readiness + deploy / launch / security)
+- [x] Stage 108 exit + freeze (H108x: `test_stage108_exit_h108x.py`, `docs/STAGE_108_EXIT_CRITERIA.md`, ADR-223)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

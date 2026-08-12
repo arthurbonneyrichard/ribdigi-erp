@@ -73,7 +73,8 @@ export default function Page() {
     if (raw === 'payable' || raw === 'receivable') setKind(raw);
   }, []);
 
-  // Stage 104 R1 — honor Shell #aging / #early-pay / #exchange-rates / #payment-schedule
+  // Stage 104 R1 / Stage 108 C1 — honor Shell #aging / #early-pay / #exchange-rates /
+  // #payment-schedule / #party-actions / #by-party / #statement
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');

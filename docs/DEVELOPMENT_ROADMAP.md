@@ -1897,3 +1897,15 @@ Every feature in every phase must meet:
 **Stage 107 D1 (2026-08-12):** POS sections, commerce filters & ops leaves fidelity sync — `docs/STAGE_107_FIDELITY.md` (`test_stage107_fidelity_d1.py`).
 
 **Stage 107 exit (2026-08-12):** P1, S1, O1, D1, H107x met — `docs/STAGE_107_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_221_STAGE107_FREEZE.md`. Fidelity: `docs/STAGE_107_FIDELITY.md`.
+
+**Stage 108 open (2026-08-12):** Tenant MVP AI Analysis Leaves, Credit Statement & Users Directory Ops — `docs/ADR_222_STAGE108_OPEN.md` + `docs/STAGE_108_PLAN.md` (AI analysis → Credit statement → Users directory → AI Analysis Leaves, Credit Statement & Users Directory Ops; A1 next).
+
+**Stage 108 A1 (2026-08-12):** AI analysis leaves honesty (`test_stage108_ai_analysis_a1.py`).
+
+**Stage 108 C1 (2026-08-12):** Credit statement surfaces discoverability (`test_stage108_credit_statement_c1.py`).
+
+**Stage 108 U1 (2026-08-12):** Users directory leaves discoverability (`test_stage108_users_directory_u1.py`).
+
+**Stage 108 D1 (2026-08-12):** AI analysis leaves, credit statement & users directory fidelity sync — `docs/STAGE_108_FIDELITY.md` (`test_stage108_fidelity_d1.py`).
+
+**Stage 108 exit (2026-08-12):** A1, C1, U1, D1, H108x met — `docs/STAGE_108_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_223_STAGE108_FREEZE.md`. Fidelity: `docs/STAGE_108_FIDELITY.md`.

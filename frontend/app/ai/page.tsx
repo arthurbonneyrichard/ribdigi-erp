@@ -407,7 +407,7 @@ export default function Page() {
     }
   }
 
-  // Stage 102 A1 — honor Shell AI section hashes
+  // Stage 102 A1 / Stage 108 A1 — honor Shell AI section hashes
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
