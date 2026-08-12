@@ -23,4 +23,4 @@ Stage 116 Tenant MVP Officer Role Leaves, Exact Invoice Statuses & Residual Audi
 
 ## Next stage
 
-Stage 117 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 116 feature scope remains frozen.
+Stage 117 opened via CONTINUE/NEXT with a distinct product outline — Tenant MVP Permissions Role, Platform Audit Module & Stretch Audit Discoverability — see `docs/ADR_240_STAGE117_OPEN.md` + `docs/STAGE_117_PLAN.md`. Stage 116 feature scope remains frozen.

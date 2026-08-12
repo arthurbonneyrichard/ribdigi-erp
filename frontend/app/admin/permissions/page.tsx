@@ -87,7 +87,7 @@ export default function AdminPermissionsPage() {
       .catch((err) => setError(err.message));
   }, []);
 
-  // Stage 105 P1 — honor Shell #system / #custom
+  // Stage 105 P1 / Stage 117 P1 — honor Shell #system / #custom + ?role= permission matrix leaves
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');

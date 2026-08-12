@@ -41,7 +41,7 @@ export default function PlatformAuditPage() {
   const [verify, setVerify] = useState<any>(null);
   const [formats, setFormats] = useState(HOUSE_FORMAT_DEFAULTS);
 
-  // Stage 105 A1 — shareable platform audit filter URL (parity with tenant Audit)
+  // Stage 105 A1 / Stage 117 A1 — shareable platform audit filter URL (parity with tenant Audit)
   function syncUrl(next?: {
     module?: string;
     action?: string;

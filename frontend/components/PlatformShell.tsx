@@ -38,6 +38,11 @@ const items: [string, string, string][] = [
   ['Audit', '/platform/audit', 'platform_audit'],
   ['Activity', '/platform/activity', 'platform_audit'],
   ['Delivery Audit', '/platform/audit?delivery_only=true', 'platform_audit'],
+  ['Tenants Audit', '/platform/audit?module=platform_tenants', 'platform_audit'],
+  ['Plans Audit', '/platform/audit?module=platform_plans', 'platform_audit'],
+  ['Platform Users Audit', '/platform/audit?module=platform_users', 'platform_audit'],
+  ['Settings Audit', '/platform/audit?module=platform_settings', 'platform_audit'],
+  ['Email Audit', '/platform/audit?module=platform_email', 'platform_audit'],
   ['Security', '/security', 'security'],
 ];
 

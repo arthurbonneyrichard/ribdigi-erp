@@ -164,6 +164,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Inventory / Sales Officer Users:** Remaining tenant officer role Shell leaves (Stage 116 U1)
 - **Posted / Sent Invoices:** Exact sales invoice status Shell leaves (Stage 116 S1)
 - **Credit / POS / Tax / Users / Company / Stores / Security Audit:** Residual audit module Shell leaves (Stage 116 A1)
+- **Cashier+ / Super Admin Permissions:** Permissions matrix `?role=` Shell leaves (Stage 117 P1)
+- **Tenants / Plans / Platform Users / Settings / Email Audit:** Platform audit module Shell leaves (Stage 117 A1)
+- **Notifications / Backup / AI / Reports / Dashboard Audit:** Stretch tenant audit Shell leaves (Stage 117 S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

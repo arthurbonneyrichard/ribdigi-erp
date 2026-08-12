@@ -2005,3 +2005,15 @@ Every feature in every phase must meet:
 **Stage 116 D1 (2026-08-12):** Officer roles, exact invoices & residual audit fidelity sync — `docs/STAGE_116_FIDELITY.md` (`test_stage116_fidelity_d1.py`).
 
 **Stage 116 exit (2026-08-12):** U1, S1, A1, D1, H116x met — `docs/STAGE_116_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_239_STAGE116_FREEZE.md`. Fidelity: `docs/STAGE_116_FIDELITY.md`.
+
+**Stage 117 open (2026-08-12):** Tenant MVP Permissions Role, Platform Audit Module & Stretch Audit Discoverability — `docs/ADR_240_STAGE117_OPEN.md` + `docs/STAGE_117_PLAN.md` (Permissions roles → Platform audit modules → Stretch tenant audit → Permissions Role, Platform Audit Module & Stretch Audit Discoverability; P1 next).
+
+**Stage 117 P1 (2026-08-12):** Permissions `?role=` Shell leaves (`test_stage117_permissions_roles_p1.py`).
+
+**Stage 117 A1 (2026-08-12):** Platform audit `?module=` PlatformShell leaves (`test_stage117_platform_audit_modules_a1.py`).
+
+**Stage 117 S1 (2026-08-12):** Stretch tenant Audit module Shell leaves (`test_stage117_stretch_audit_s1.py`).
+
+**Stage 117 D1 (2026-08-12):** Permissions role, platform audit & stretch audit fidelity sync — `docs/STAGE_117_FIDELITY.md` (`test_stage117_fidelity_d1.py`).
+
+**Stage 117 exit (2026-08-12):** P1, A1, S1, D1, H117x met — `docs/STAGE_117_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_241_STAGE117_FREEZE.md`. Fidelity: `docs/STAGE_117_FIDELITY.md`.

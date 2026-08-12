@@ -1612,3 +1612,4 @@ Stage 113 D1 — `docs/STAGE_113_FIDELITY.md` (`test_stage113_fidelity_d1.py`): 
 Stage 114 D1 — `docs/STAGE_114_FIDELITY.md` (`test_stage114_fidelity_d1.py`): Stage 114 Q1 residual quote/order/invoice leaves; Stage 114 P1 residual PR/PO + Paid Purchases; Stage 114 O1 transfer scope / industry / role / audit modules.
 Stage 115 D1 — `docs/STAGE_115_FIDELITY.md` (`test_stage115_fidelity_d1.py`): Stage 115 N1 Notification History `?status=all`; Stage 115 P1 unpaid/partial/cancelled purchases; Stage 115 O1 Draft Orders + Platform Users role leaves.
 Stage 116 D1 — `docs/STAGE_116_FIDELITY.md` (`test_stage116_fidelity_d1.py`): Stage 116 U1 inventory/sales officer role leaves; Stage 116 S1 posted/sent invoices; Stage 116 A1 residual audit modules.
+Stage 117 D1 — `docs/STAGE_117_FIDELITY.md` (`test_stage117_fidelity_d1.py`): Stage 117 P1 Permissions `?role=` leaves; Stage 117 A1 platform audit modules; Stage 117 S1 stretch tenant audit modules.
