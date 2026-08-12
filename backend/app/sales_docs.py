@@ -701,7 +701,7 @@ async def create_return(
     if reason not in RETURN_REASONS:
         raise HTTPException(status_code=400, detail=f"reason must be one of {sorted(RETURN_REASONS)}")
     invoice = await get_invoice(db, tenant_id, sales_invoice_id)
-    if invoice.status not in {"posted", "partial", "paid"}:
+    if invoice.status not in {"posted", "sent", "partial", "paid", "overdue"}:
         raise HTTPException(status_code=409, detail="Returns require a posted invoice")
     inv_items = {
         (i.product_id, i.variant_id): i for i in await list_invoice_items(db, tenant_id, invoice.id)
@@ -848,14 +848,10 @@ async def post_return(
         float(invoice.total_amount),
         float(invoice.paid_amount or 0) + apply_to_invoice,
     )
-    from app.sales import invoice_payment_status
+    from app.sales import apply_invoice_status
 
-    if invoice.status in {"posted", "partial", "paid"}:
-        invoice.status = invoice_payment_status(float(invoice.total_amount), float(invoice.paid_amount))
-        if float(invoice.paid_amount) + 1e-9 >= float(invoice.total_amount):
-            invoice.status = "paid"
-        elif float(invoice.paid_amount) > 0:
-            invoice.status = "partial"
+    if invoice.status != "draft":
+        apply_invoice_status(invoice)
         invoice.updated_at = datetime.utcnow()
 
     customer = await get_customer(db, tenant_id, ret.customer_id)

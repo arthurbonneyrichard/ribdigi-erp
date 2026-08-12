@@ -496,10 +496,10 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Product lines with quantity, unit price, tax, discount, total
   - [x] Customer selection with auto-filled details
   - [x] Multiple print templates (A4, thermal receipt) via `GET /sales/invoices/{id}/print?template=a4|thermal`
-  - [ ] Status: Draft, Approved, Sent, Paid, Partially Paid, Overdue, Cancelled (today: draft→posted→partial|paid|cancelled + email stamp)
+  - [x] Status: Draft, Posted (approved), Sent (emailed), Partial, Paid, Overdue, Cancelled — overdue derived from due date; payment-due scan refreshes overdue
   - [x] Auto-update Accounts Receivable
   - [x] Support credit sales with credit limit check
-  - [x] Email posted/partial/paid invoice to customer (SMTP/console) with optional `to=` override; stamp `emailed_at`/`emailed_to`; resend without changing payment status
+  - [x] Email posted/sent/partial/paid/overdue invoice to customer (SMTP/console) with optional `to=` override; stamp `emailed_at`/`emailed_to`; unpaid → `sent` on first email; resend without changing payment status
 
 #### BR-7.5 Sales Return
 - **Description:** Customer returns and refunds.

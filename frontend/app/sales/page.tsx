@@ -357,7 +357,7 @@ export default function Page() {
           <select value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)}>
             <option value="">Return from invoice</option>
             {invoices
-              .filter((i) => ['posted', 'partial', 'paid'].includes(i.status))
+              .filter((i) => ['posted', 'sent', 'partial', 'overdue', 'paid'].includes(i.status))
               .map((i) => (
                 <option key={i.id} value={i.id}>
                   {i.invoice_number}
@@ -562,17 +562,17 @@ export default function Page() {
                       </button>
                     </>
                   )}
-                  {['posted', 'partial', 'paid'].includes(inv.status) && !inv.emailed_at && (
+                  {inv.can_email && (
                     <button onClick={() => act(`/sales/invoices/${inv.id}/send`, 'Invoice emailed')}>
-                      Email
+                      {inv.emailed_at ? 'Resend email' : 'Email'}
                     </button>
                   )}
-                  {['posted', 'partial', 'paid'].includes(inv.status) && inv.emailed_at && (
-                    <button onClick={() => act(`/sales/invoices/${inv.id}/send`, 'Invoice re-emailed')}>
-                      Resend
-                    </button>
+                  {inv.status === 'overdue' && (
+                    <span className="muted" style={{ alignSelf: 'center' }}>
+                      {inv.days_overdue}d overdue
+                    </span>
                   )}
-                  {['posted', 'partial'].includes(inv.status) && (
+                  {['posted', 'sent', 'partial', 'overdue'].includes(inv.status) && (
                     <>
                       <input
                         value={selected?.id === inv.id ? payAmount : ''}

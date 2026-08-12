@@ -15,12 +15,80 @@ from app.catalog import resolve_sale_line, stock_out_with_batch
 from app.doc_numbers import next_sales_invoice_number
 
 
-def invoice_payment_status(total: float, paid: float) -> str:
-    if paid <= 0:
-        return "posted"
-    if paid + 1e-9 >= total:
+SALES_INVOICE_OPEN = frozenset({"posted", "sent", "partial", "overdue"})
+SALES_INVOICE_BILLED = frozenset({"posted", "sent", "partial", "paid", "overdue"})
+
+
+def invoice_payment_status(
+    total: float,
+    paid: float,
+    due_date: datetime | None = None,
+    *,
+    emailed_at: datetime | None = None,
+    as_of: datetime | None = None,
+) -> str:
+    """Derive sales invoice payment/lifecycle status.
+
+    Open unpaid: posted (approved) → sent (emailed) → overdue (past due).
+    Partial payments stay partial unless past due (then overdue).
+    """
+    if paid + 1e-9 >= float(total):
         return "paid"
-    return "partial"
+    now = as_of or datetime.utcnow()
+    if due_date and now.date() > due_date.date():
+        return "overdue"
+    if paid > 0:
+        return "partial"
+    if emailed_at:
+        return "sent"
+    return "posted"
+
+
+def apply_invoice_status(
+    invoice: m.SalesInvoice,
+    *,
+    as_of: datetime | None = None,
+    leave_draft: bool = False,
+) -> str:
+    """Recompute open/billed status from balances. Cancelled is never changed.
+
+    Draft invoices stay draft unless ``leave_draft=True`` (used when posting).
+    """
+    if invoice.status == "cancelled":
+        return invoice.status
+    if invoice.status == "draft" and not leave_draft:
+        return invoice.status
+    invoice.status = invoice_payment_status(
+        float(invoice.total_amount),
+        float(invoice.paid_amount or 0),
+        invoice.due_date,
+        emailed_at=invoice.emailed_at,
+        as_of=as_of,
+    )
+    return invoice.status
+
+
+async def refresh_overdue_sales_invoices(
+    db: AsyncSession, tenant_id: str, *, as_of: datetime | None = None
+) -> int:
+    """Flip open invoices to overdue (and refresh sent/partial) when past due."""
+    rows = (
+        await db.execute(
+            select(m.SalesInvoice).where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.status.in_(list(SALES_INVOICE_OPEN)),
+            )
+        )
+    ).scalars().all()
+    changed = 0
+    for inv in rows:
+        before = inv.status
+        if apply_invoice_status(inv, as_of=as_of) != before:
+            inv.updated_at = datetime.utcnow()
+            changed += 1
+    if changed:
+        await db.flush()
+    return changed
 
 
 async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.Party:
@@ -65,12 +133,29 @@ async def list_invoice_items(db: AsyncSession, tenant_id: str, invoice_id: str) 
 
 async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
     items = await list_invoice_items(db, invoice.tenant_id, invoice.id)
+    status = invoice.status
+    if status not in {"draft", "cancelled"}:
+        status = invoice_payment_status(
+            float(invoice.total_amount),
+            float(invoice.paid_amount or 0),
+            invoice.due_date,
+            emailed_at=invoice.emailed_at,
+        )
+    from app.credit import days_overdue
+
+    overdue_days = 0
+    if status == "overdue" or (
+        invoice.due_date
+        and status in SALES_INVOICE_OPEN
+        and float(invoice.paid_amount or 0) + 1e-9 < float(invoice.total_amount)
+    ):
+        overdue_days = days_overdue(datetime.utcnow(), invoice.due_date, invoice.posted_at or invoice.created_at)
     return {
         "id": invoice.id,
         "invoice_number": invoice.invoice_number,
         "customer_id": invoice.customer_id,
         "store_id": invoice.store_id,
-        "status": invoice.status,
+        "status": status,
         "subtotal": float(invoice.subtotal),
         "tax_amount": float(invoice.tax_amount),
         "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
@@ -91,7 +176,9 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "emailed_at": invoice.emailed_at,
         "emailed_to": invoice.emailed_to,
         "created_at": invoice.created_at,
-        "can_print": invoice.status in {"posted", "partial", "paid"},
+        "days_overdue": overdue_days if status == "overdue" else 0,
+        "can_print": status in SALES_INVOICE_BILLED,
+        "can_email": status in SALES_INVOICE_BILLED,
         "items": [
             {
                 "id": i.id,
@@ -302,9 +389,9 @@ async def post_sales_invoice(
         )
 
     customer.balance = float(customer.balance or 0) + inv_base
-    invoice.status = "posted"
     invoice.posted_at = datetime.utcnow()
     invoice.due_date = invoice.due_date or default_due_date(invoice.posted_at)
+    apply_invoice_status(invoice, leave_draft=True)
     invoice.updated_at = datetime.utcnow()
 
     from app.accounting import post_sales_invoice_journal
@@ -363,11 +450,14 @@ async def send_sales_invoice(
     invoice_id: str,
     to: str | None = None,
 ) -> tuple[m.SalesInvoice, dict]:
-    """Email posted/partial/paid invoice to customer. Status is unchanged."""
+    """Email billed invoice to customer. Marks unpaid invoices as sent when emailed."""
     from app import emailer
 
     invoice = await get_invoice(db, tenant_id, invoice_id)
-    if invoice.status not in {"posted", "partial", "paid"}:
+    if invoice.status not in SALES_INVOICE_BILLED:
+        # Allow status refresh for overdue/sent drift before rejecting
+        apply_invoice_status(invoice)
+    if invoice.status not in SALES_INVOICE_BILLED:
         raise HTTPException(
             status_code=409,
             detail=f"Cannot email invoice in status {invoice.status}",
@@ -408,6 +498,7 @@ async def send_sales_invoice(
     now = datetime.utcnow()
     invoice.emailed_at = now
     invoice.emailed_to = recipient
+    apply_invoice_status(invoice, as_of=now)
     invoice.updated_at = now
     await db.flush()
     delivery = {
@@ -489,7 +580,9 @@ async def record_customer_payment(
         invoice = await get_invoice(db, tenant_id, sales_invoice_id)
         if invoice.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Invoice does not belong to this customer")
-        if invoice.status not in {"posted", "partial"}:
+        if invoice.status not in SALES_INVOICE_OPEN:
+            apply_invoice_status(invoice)
+        if invoice.status not in SALES_INVOICE_OPEN:
             raise HTTPException(status_code=409, detail=f"Cannot pay invoice in status {invoice.status}")
         due = float(invoice.total_amount) - float(invoice.paid_amount or 0)
         quote = invoice_early_discount(
@@ -523,7 +616,7 @@ async def record_customer_payment(
                 .where(
                     m.SalesInvoice.tenant_id == tenant_id,
                     m.SalesInvoice.customer_id == customer_id,
-                    m.SalesInvoice.status.in_(["posted", "partial"]),
+                    m.SalesInvoice.status.in_(list(SALES_INVOICE_OPEN)),
                 )
                 .order_by(m.SalesInvoice.due_date.asc(), m.SalesInvoice.posted_at.asc())
             )
@@ -616,7 +709,7 @@ async def record_customer_payment(
     customer.balance = max(float(customer.balance or 0) - settlement_base, 0)
     for invoice, apply_amt, _disc in allocations:
         invoice.paid_amount = float(invoice.paid_amount or 0) + apply_amt
-        invoice.status = invoice_payment_status(float(invoice.total_amount), float(invoice.paid_amount))
+        apply_invoice_status(invoice)
         invoice.updated_at = datetime.utcnow()
 
     from app.accounting import post_customer_payment_journal

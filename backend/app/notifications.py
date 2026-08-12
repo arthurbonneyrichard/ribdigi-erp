@@ -351,13 +351,16 @@ async def scan_low_stock(db: AsyncSession, tenant_id: str) -> int:
 
 
 async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 3) -> int:
+    from app.sales import refresh_overdue_sales_invoices
+
+    await refresh_overdue_sales_invoices(db, tenant_id)
     now = datetime.utcnow()
     horizon = now + timedelta(days=within_days)
     invoices = (
         await db.execute(
             select(m.SalesInvoice).where(
                 m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial"]),
+                m.SalesInvoice.status.in_(["posted", "sent", "partial", "overdue"]),
                 m.SalesInvoice.due_date.is_not(None),
                 m.SalesInvoice.due_date <= horizon,
             )

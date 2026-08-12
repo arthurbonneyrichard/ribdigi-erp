@@ -45,7 +45,7 @@ def invoice_early_discount(
     }
     if due <= 0 or pct <= 0 or days <= 0:
         return result
-    if invoice.status not in {"posted", "partial"}:
+    if invoice.status not in {"posted", "sent", "partial", "overdue"}:
         return result
     anchor = invoice.posted_at or invoice.created_at or as_of
     age = (as_of.date() - anchor.date()).days
@@ -127,7 +127,7 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
         await db.execute(
             select(m.SalesInvoice).where(
                 m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial"]),
+                m.SalesInvoice.status.in_(["posted", "sent", "partial", "overdue"]),
             )
         )
     ).scalars().all()
@@ -350,7 +350,7 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
                 "credit": 0,
                 "status": inv.status,
                 "balance_due": max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
-                if inv.status in {"posted", "partial"}
+                if inv.status in {"posted", "sent", "partial", "overdue"}
                 else 0,
             }
         )

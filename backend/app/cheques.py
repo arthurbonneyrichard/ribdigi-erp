@@ -238,7 +238,7 @@ async def clear_cheque(
 
 async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m.CustomerPayment) -> None:
     from app.fx import doc_rate, to_base
-    from app.sales import get_customer, get_invoice, invoice_payment_status
+    from app.sales import get_customer, get_invoice, apply_invoice_status
 
     amount = float(payment.amount)
     discount = float(getattr(payment, "early_payment_discount", 0) or 0)
@@ -279,12 +279,12 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
             if not inv:
                 continue
             inv.paid_amount = max(float(inv.paid_amount or 0) - amt, 0)
-            inv.status = invoice_payment_status(float(inv.total_amount), float(inv.paid_amount))
+            apply_invoice_status(inv)
             inv.updated_at = datetime.utcnow()
     elif payment.sales_invoice_id:
         inv = await get_invoice(db, tenant_id, payment.sales_invoice_id)
         inv.paid_amount = max(float(inv.paid_amount or 0) - settlement, 0)
-        inv.status = invoice_payment_status(float(inv.total_amount), float(inv.paid_amount))
+        apply_invoice_status(inv)
         inv.updated_at = datetime.utcnow()
 
 

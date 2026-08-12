@@ -50,7 +50,7 @@ async def sales_daily(db: AsyncSession, tenant_id: str, date: datetime | None = 
         await db.execute(
             select(m.SalesInvoice).where(
                 m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+                m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
                 m.SalesInvoice.posted_at >= start,
                 m.SalesInvoice.posted_at <= end,
             )
@@ -92,7 +92,7 @@ async def sales_monthly(db: AsyncSession, tenant_id: str, year: int, month: int)
         await db.execute(
             select(m.SalesInvoice).where(
                 m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+                m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
                 m.SalesInvoice.posted_at >= start,
                 m.SalesInvoice.posted_at <= end,
             )
@@ -139,7 +139,7 @@ async def sales_monthly_total(db: AsyncSession, tenant_id: str, year: int, month
             await db.execute(
                 select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
                     m.SalesInvoice.tenant_id == tenant_id,
-                    m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+                    m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
                     m.SalesInvoice.posted_at >= start,
                     m.SalesInvoice.posted_at <= end,
                 )
@@ -174,7 +174,7 @@ async def sales_by_product(
         m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id
     ).join(m.Product, m.Product.id == m.SalesInvoiceItem.product_id).where(
         m.SalesInvoiceItem.tenant_id == tenant_id,
-        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
     )
     if from_date:
         stmt = stmt.where(m.SalesInvoice.posted_at >= from_date)
@@ -274,7 +274,7 @@ async def sales_by_salesperson(
 
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
-        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
     )
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
@@ -395,7 +395,7 @@ async def sales_by_store(
 
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
-        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
     )
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)

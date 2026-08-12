@@ -398,7 +398,7 @@ async def tax_filing_pack(
     """Jurisdiction-neutral VAT/GST filing pack: boxes + detailed schedules for export."""
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
-        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
     )
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)

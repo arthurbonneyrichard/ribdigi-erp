@@ -21,7 +21,7 @@ from app.receipts import (
 from app.report_export import _pdf_escape
 from app.sales import get_customer, get_invoice, list_invoice_items
 
-PRINTABLE_INVOICE_STATUSES = frozenset({"posted", "partial", "paid"})
+PRINTABLE_INVOICE_STATUSES = frozenset({"posted", "sent", "partial", "paid", "overdue"})
 
 
 async def build_invoice_print_payload(

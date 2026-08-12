@@ -91,7 +91,7 @@ async def test_send_invoice_email_console_and_resend(client, db_session, monkeyp
     sent = await ac.post(f"/api/v1/sales/invoices/{inv_id}/send", headers=admin)
     assert sent.status_code == 200, sent.text
     body = sent.json()["data"]
-    assert body["status"] == "posted"
+    assert body["status"] == "sent"
     assert body["emailed_to"] == "buyer@example.com"
     assert body["emailed_at"]
     assert body["delivery"]["mode"] == "console"
@@ -101,7 +101,7 @@ async def test_send_invoice_email_console_and_resend(client, db_session, monkeyp
     assert out[0]["to"] == ["buyer@example.com"]
     assert "Net 14" in out[0]["text_body"]
 
-    # Resend with override — status stays posted
+    # Resend with override — stays sent while unpaid
     clear_dev_outbox()
     resent = await ac.post(
         f"/api/v1/sales/invoices/{inv_id}/send",
@@ -109,7 +109,7 @@ async def test_send_invoice_email_console_and_resend(client, db_session, monkeyp
         params={"to": "alt-buyer@example.com"},
     )
     assert resent.status_code == 200, resent.text
-    assert resent.json()["data"]["status"] == "posted"
+    assert resent.json()["data"]["status"] == "sent"
     assert resent.json()["data"]["emailed_to"] == "alt-buyer@example.com"
     assert get_dev_outbox()[0]["to"] == ["alt-buyer@example.com"]
 

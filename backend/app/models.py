@@ -745,7 +745,8 @@ class SalesInvoice(Base):
     invoice_number: Mapped[str] = mapped_column(String(50), index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft")
-    # draft -> posted -> partial/paid | cancelled
+    # draft -> posted/sent/partial/overdue/paid | cancelled
+    # posted = approved/open; sent = emailed while unpaid; overdue = past due with balance
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     # Memo tax under reverse charge (not charged to customer / not seller output).

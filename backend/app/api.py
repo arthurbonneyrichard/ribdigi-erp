@@ -6447,7 +6447,7 @@ async def customer_outstanding(
             select(m.SalesInvoice).where(
                 m.SalesInvoice.tenant_id == claims["tenant_id"],
                 m.SalesInvoice.customer_id == customer_id,
-                m.SalesInvoice.status.in_(["posted", "partial"]),
+                m.SalesInvoice.status.in_(["posted", "sent", "partial", "overdue"]),
             )
         )
     ).scalars().all()
