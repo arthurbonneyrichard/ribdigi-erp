@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_BACKEND: str = "auto"  # auto | redis | memory
     RATE_LIMIT_REQUIRE_REDIS: bool = False
     RATE_LIMIT_REDIS_PREFIX: str = "ribdigi:ratelimit"
+    # Auto-log successful POST/PUT/PATCH/DELETE under /api/v1 (BR-17.1 catch-all).
+    AUDIT_HTTP_MIDDLEWARE_ENABLED: bool = True
     ALLOW_DEVELOPMENT_SEED: bool = False
     BACKUP_DIR: str = "/data/backups"
     MEDIA_DIR: str = "/data/media"
