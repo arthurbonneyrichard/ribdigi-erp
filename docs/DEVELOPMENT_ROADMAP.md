@@ -1909,3 +1909,15 @@ Every feature in every phase must meet:
 **Stage 108 D1 (2026-08-12):** AI analysis leaves, credit statement & users directory fidelity sync — `docs/STAGE_108_FIDELITY.md` (`test_stage108_fidelity_d1.py`).
 
 **Stage 108 exit (2026-08-12):** A1, C1, U1, D1, H108x met — `docs/STAGE_108_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_223_STAGE108_FREEZE.md`. Fidelity: `docs/STAGE_108_FIDELITY.md`.
+
+**Stage 109 open (2026-08-12):** Tenant MVP Report Filters, Document Status Leaves & Platform Status Ops — `docs/ADR_224_STAGE109_OPEN.md` + `docs/STAGE_109_PLAN.md` (Report filters → Sales status leaves → Platform status & bank-recon → Report Filters, Document Status Leaves & Platform Status Ops; R1 next).
+
+**Stage 109 R1 (2026-08-12):** Report / tax / movements period & dimension URL sync (`test_stage109_report_filters_r1.py`).
+
+**Stage 109 S1 (2026-08-12):** Sales document status Shell leaves (`test_stage109_sales_status_s1.py`).
+
+**Stage 109 O1 (2026-08-12):** Platform status leaves + bank-recon hash (`test_stage109_ops_status_o1.py`).
+
+**Stage 109 D1 (2026-08-12):** Report filters, document status leaves & platform status fidelity sync — `docs/STAGE_109_FIDELITY.md` (`test_stage109_fidelity_d1.py`).
+
+**Stage 109 exit (2026-08-12):** R1, S1, O1, D1, H109x met — `docs/STAGE_109_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_225_STAGE109_FREEZE.md`. Fidelity: `docs/STAGE_109_FIDELITY.md`.

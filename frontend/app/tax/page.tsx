@@ -26,8 +26,15 @@ export default function Page() {
   const [rows, setRows] = useState<TaxRate[]>([]);
   const [report, setReport] = useState<any>(null);
   const [filing, setFiling] = useState<any>(null);
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  // Stage 109 R1 — shareable filing period dates
+  const [fromDate, setFromDate] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('from_date')?.trim() || '';
+  });
+  const [toDate, setToDate] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('to_date')?.trim() || '';
+  });
   const [periodPreset, setPeriodPreset] = useState('');
   const [name, setName] = useState('Standard VAT');
   const [rate, setRate] = useState('15');
@@ -40,6 +47,19 @@ export default function Page() {
   const [calcResult, setCalcResult] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  function writeTaxPeriodUrl(nextFrom?: string, nextTo?: string) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const fd = nextFrom !== undefined ? nextFrom : fromDate;
+    const td = nextTo !== undefined ? nextTo : toDate;
+    if (fd) url.searchParams.set('from_date', fd);
+    else url.searchParams.delete('from_date');
+    if (td) url.searchParams.set('to_date', td);
+    else url.searchParams.delete('to_date');
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}${url.hash}` : `${url.pathname}${url.hash}`);
+  }
 
   function qs(presetOverride?: string) {
     const params = new URLSearchParams();
@@ -272,7 +292,9 @@ export default function Page() {
             onChange={(e) => {
               setPeriodPreset('');
               setFromDate(e.target.value);
+              writeTaxPeriodUrl(e.target.value, toDate);
             }}
+            aria-label="Tax filing from date"
           />
           <input
             type="date"
@@ -280,7 +302,9 @@ export default function Page() {
             onChange={(e) => {
               setPeriodPreset('');
               setToDate(e.target.value);
+              writeTaxPeriodUrl(fromDate, e.target.value);
             }}
+            aria-label="Tax filing to date"
           />
           <button type="button" onClick={() => applyPeriod('monthly')}>
             This month
@@ -294,6 +318,7 @@ export default function Page() {
           <button
             onClick={() => {
               setPeriodPreset('');
+              writeTaxPeriodUrl();
               refresh().catch((err) => setError(err.message));
             }}
           >

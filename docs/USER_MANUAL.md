@@ -140,6 +140,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **AI Sales Analysis / Expense / Purchases / Cross-Domain / Document / Customer / Report / AI Low Stock:** AI Shell deep-links (Stage 108 A1)
 - **Credit Party Actions / By Party / Credit Statement:** Credit Shell deep-links (Stage 108 C1)
 - **Active Users / Inactive Users (tenant & platform):** Users directory Shell leaves (Stage 108 U1)
+- **Report period / store / branch / category filters:** Shareable report filters; tax filing & movement dates (Stage 109 R1)
+- **Draft Quotations / Confirmed Orders / Draft Sales Returns:** Sales document status Shell leaves (Stage 109 S1)
+- **Active / Trial / Grace / Suspended Tenants; Bank Reconciliation hash:** Platform status + accounting deep-link (Stage 109 O1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

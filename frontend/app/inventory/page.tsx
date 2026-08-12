@@ -74,8 +74,15 @@ export default function Page() {
   const [openingFiscal, setOpeningFiscal] = useState('');
   const [openingBatch, setOpeningBatch] = useState('');
   const [movements, setMovements] = useState<any[]>([]);
-  const [moveFrom, setMoveFrom] = useState('');
-  const [moveTo, setMoveTo] = useState('');
+  // Stage 109 R1 — shareable movements from_date / to_date (extends Stage 101 movement_type)
+  const [moveFrom, setMoveFrom] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('from_date')?.trim() || '';
+  });
+  const [moveTo, setMoveTo] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('to_date')?.trim() || '';
+  });
   const [moveType, setMoveType] = useState(() => {
     if (typeof window === 'undefined') return '';
     return new URLSearchParams(window.location.search).get('movement_type')?.trim() || '';
@@ -215,13 +222,28 @@ export default function Page() {
     if (!reorderSupplierId && sup.data?.length) setReorderSupplierId(sup.data[0].id);
   }
 
-  function syncMovementTypeUrl(nextType: string) {
+  function syncMovementFiltersUrl(next?: {
+    movement_type?: string;
+    from_date?: string;
+    to_date?: string;
+  }) {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     url.searchParams.set('tab', 'movements');
-    if (nextType) url.searchParams.set('movement_type', nextType);
+    const mt = next?.movement_type !== undefined ? next.movement_type : moveType;
+    const fd = next?.from_date !== undefined ? next.from_date : moveFrom;
+    const td = next?.to_date !== undefined ? next.to_date : moveTo;
+    if (mt) url.searchParams.set('movement_type', mt);
     else url.searchParams.delete('movement_type');
+    if (fd) url.searchParams.set('from_date', fd);
+    else url.searchParams.delete('from_date');
+    if (td) url.searchParams.set('to_date', td);
+    else url.searchParams.delete('to_date');
     window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}`);
+  }
+
+  function syncMovementTypeUrl(nextType: string) {
+    syncMovementFiltersUrl({ movement_type: nextType });
   }
 
   async function loadMovements() {
@@ -2010,8 +2032,24 @@ export default function Page() {
             <h3>Movement history</h3>
             <p className="muted">Filter by selected product, warehouse, type, and date range.</p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <input type="date" value={moveFrom} onChange={(e) => setMoveFrom(e.target.value)} />
-              <input type="date" value={moveTo} onChange={(e) => setMoveTo(e.target.value)} />
+              <input
+                type="date"
+                value={moveFrom}
+                onChange={(e) => {
+                  setMoveFrom(e.target.value);
+                  syncMovementFiltersUrl({ from_date: e.target.value });
+                }}
+                aria-label="Movements from date"
+              />
+              <input
+                type="date"
+                value={moveTo}
+                onChange={(e) => {
+                  setMoveTo(e.target.value);
+                  syncMovementFiltersUrl({ to_date: e.target.value });
+                }}
+                aria-label="Movements to date"
+              />
               <select
                 value={moveType}
                 onChange={(e) => setMoveType(e.target.value)}
@@ -2036,7 +2074,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={() => {
-                  syncMovementTypeUrl(moveType);
+                  syncMovementFiltersUrl();
                   loadMovements().catch((err) => setError(err.message));
                 }}
               >

@@ -115,6 +115,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Draft Quotations',
+    href: '/sales?tab=quotations&quote_status=draft',
+    modules: ['sales'],
+  },
+  {
+    kind: 'link',
+    label: 'Accepted Quotations',
+    href: '/sales?tab=quotations&quote_status=accepted',
+    modules: ['sales'],
+  },
+  {
+    kind: 'link',
     label: 'Customer Groups',
     href: '/sales?tab=groups',
     modules: ['sales', 'customers'],
@@ -129,6 +141,12 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Sales Returns',
     href: '/sales?tab=returns',
+    modules: ['sales'],
+  },
+  {
+    kind: 'link',
+    label: 'Draft Sales Returns',
+    href: '/sales?tab=returns&return_status=draft',
     modules: ['sales'],
   },
   {
@@ -333,7 +351,7 @@ const primaryNavSpec: NavEntry[] = [
   {
     kind: 'link',
     label: 'Bank Reconciliation',
-    href: '/accounting?tab=reconcile',
+    href: '/accounting?tab=reconcile#bank-reconciliation',
     modules: ['accounting'],
   },
   {
@@ -459,6 +477,18 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Delivery status',
     href: '/sales?tab=orders',
+    modules: ['sales'],
+  },
+  {
+    kind: 'link',
+    label: 'Confirmed Orders',
+    href: '/sales?tab=orders&order_status=confirmed',
+    modules: ['sales'],
+  },
+  {
+    kind: 'link',
+    label: 'Processing Orders',
+    href: '/sales?tab=orders&order_status=processing',
     modules: ['sales'],
   },
   { kind: 'link', label: 'Reports', href: '/reports', modules: ['reports'] },

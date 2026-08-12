@@ -23,4 +23,4 @@ Stage 108 Tenant MVP AI Analysis Leaves, Credit Statement & Users Directory Ops 
 
 ## Next stage
 
-Stage 109 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 108 feature scope remains frozen.
+Stage 109 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-224](ADR_224_STAGE109_OPEN.md) + [STAGE_109_PLAN.md](STAGE_109_PLAN.md) (Tenant MVP Report Filters, Document Status Leaves & Platform Status Ops). Stage 108 feature scope remains frozen.

@@ -189,7 +189,7 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Stage 100 G1 — honor Shell #coa / #journals / #trial-balance (and prior ledger anchors)
+  // Stage 100 G1 / Stage 109 O1 — honor Shell ledger hashes + #bank-reconciliation
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
@@ -202,6 +202,10 @@ export default function Page() {
       'opening-balances',
       'profit-loss',
     ];
+    if (hash === 'bank-reconciliation' && tab !== 'reconcile') {
+      setTab('reconcile');
+      return;
+    }
     if (ledgerAnchors.includes(hash) && tab !== 'ledger') {
       setTab('ledger');
       return;

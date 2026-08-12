@@ -266,6 +266,9 @@ Authoritative MVP docs:
 - `docs/STAGE_106_EXIT_CRITERIA.md` / `docs/ADR_219_STAGE106_FREEZE.md` (`backend/tests/test_stage106_exit_h106x.py`) — Stage 106 H106x
 - `docs/STAGE_107_EXIT_CRITERIA.md` / `docs/ADR_221_STAGE107_FREEZE.md` (`backend/tests/test_stage107_exit_h107x.py`) — Stage 107 H107x
 - `docs/STAGE_108_EXIT_CRITERIA.md` / `docs/ADR_223_STAGE108_FREEZE.md` (`backend/tests/test_stage108_exit_h108x.py`) — Stage 108 H108x
+- `docs/STAGE_109_EXIT_CRITERIA.md` / `docs/ADR_225_STAGE109_FREEZE.md` (`backend/tests/test_stage109_exit_h109x.py`) — Stage 109 H109x
+- `docs/STAGE_109_FIDELITY.md` (`backend/tests/test_stage109_fidelity_d1.py`) — Stage 109 D1
+- `docs/STAGE_109_PLAN.md` (`backend/tests/test_stage109_open.py`) — Stage 109 open (ADR-224)
 - `docs/STAGE_108_FIDELITY.md` (`backend/tests/test_stage108_fidelity_d1.py`) — Stage 108 D1
 - `docs/STAGE_108_PLAN.md` (`backend/tests/test_stage108_open.py`) — Stage 108 open (ADR-222)
 - `docs/STAGE_107_FIDELITY.md` (`backend/tests/test_stage107_fidelity_d1.py`) — Stage 107 D1
@@ -1169,6 +1172,18 @@ H107x met — `docs/STAGE_107_EXIT_CRITERIA.md`, ADR-221. Stages 1–107 frozen 
 ## Stage 108 exit
 
 H108x met — `docs/STAGE_108_EXIT_CRITERIA.md`, ADR-223. Stages 1–108 frozen for Stage 108 feature scope.
+
+## Stage 109 exit
+
+H109x met — `docs/STAGE_109_EXIT_CRITERIA.md`, ADR-225. Stages 1–109 frozen for Stage 109 feature scope.
+
+## Stage 109 D1 — Tenant MVP Report Filters, Document Status Leaves & Platform Status Ops
+
+`docs/STAGE_109_FIDELITY.md` — maps R1–O1 → readiness / launch / deploy / security.
+
+## Stage 109 open
+
+ADR-224 + `docs/STAGE_109_PLAN.md` — Tenant MVP Report Filters, Document Status Leaves & Platform Status Ops.
 
 ## Stage 108 D1 — Tenant MVP AI Analysis Leaves, Credit Statement & Users Directory Ops
 

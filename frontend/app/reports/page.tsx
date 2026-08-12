@@ -87,13 +87,35 @@ const REPORT_TYPES = [
 
 export default function Page() {
   const [tab, setTab] = useTabQuery(REPORT_TABS, 'summary');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
-  const [storeId, setStoreId] = useState('');
-  const [branchId, setBranchId] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [transferScope, setTransferScope] = useState('all');
-  const [transferStatus, setTransferStatus] = useState('');
+  // Stage 109 R1 — shareable period / dimension filters
+  const [fromDate, setFromDate] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('from_date')?.trim() || '';
+  });
+  const [toDate, setToDate] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('to_date')?.trim() || '';
+  });
+  const [storeId, setStoreId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('store_id')?.trim() || '';
+  });
+  const [branchId, setBranchId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('branch_id')?.trim() || '';
+  });
+  const [categoryId, setCategoryId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('category_id')?.trim() || '';
+  });
+  const [transferScope, setTransferScope] = useState(() => {
+    if (typeof window === 'undefined') return 'all';
+    return new URLSearchParams(window.location.search).get('scope')?.trim() || 'all';
+  });
+  const [transferStatus, setTransferStatus] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('status')?.trim() || '';
+  });
   const [stores, setStores] = useState<{ id: string; code: string; name: string; branch_id?: string | null }[]>([]);
   const [branches, setBranches] = useState<{ id: string; code: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
@@ -112,6 +134,42 @@ export default function Page() {
     recipients: '',
     enabled: true,
   });
+
+  function writeReportFilters(patch: {
+    from_date?: string;
+    to_date?: string;
+    store_id?: string;
+    branch_id?: string;
+    category_id?: string;
+    scope?: string;
+    status?: string;
+  }) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const fd = patch.from_date !== undefined ? patch.from_date : fromDate;
+    const td = patch.to_date !== undefined ? patch.to_date : toDate;
+    const sid = patch.store_id !== undefined ? patch.store_id : storeId;
+    const bid = patch.branch_id !== undefined ? patch.branch_id : branchId;
+    const cid = patch.category_id !== undefined ? patch.category_id : categoryId;
+    const sc = patch.scope !== undefined ? patch.scope : transferScope;
+    const st = patch.status !== undefined ? patch.status : transferStatus;
+    if (fd) url.searchParams.set('from_date', fd);
+    else url.searchParams.delete('from_date');
+    if (td) url.searchParams.set('to_date', td);
+    else url.searchParams.delete('to_date');
+    if (sid) url.searchParams.set('store_id', sid);
+    else url.searchParams.delete('store_id');
+    if (bid) url.searchParams.set('branch_id', bid);
+    else url.searchParams.delete('branch_id');
+    if (cid) url.searchParams.set('category_id', cid);
+    else url.searchParams.delete('category_id');
+    if (sc && sc !== 'all') url.searchParams.set('scope', sc);
+    else url.searchParams.delete('scope');
+    if (st) url.searchParams.set('status', st);
+    else url.searchParams.delete('status');
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
+  }
 
   function qs(extra: Record<string, string> = {}) {
     const params = new URLSearchParams();
@@ -408,14 +466,34 @@ export default function Page() {
 
       {tab !== 'schedules' && (
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => {
+            const next = e.target.value;
+            setFromDate(next);
+            writeReportFilters({ from_date: next });
+          }}
+          aria-label="Report from date"
+        />
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => {
+            const next = e.target.value;
+            setToDate(next);
+            writeReportFilters({ to_date: next });
+          }}
+          aria-label="Report to date"
+        />
         {financialTab && (
           <select
             value={branchId}
             onChange={(e) => {
-              setBranchId(e.target.value);
+              const next = e.target.value;
+              setBranchId(next);
               setStoreId('');
+              writeReportFilters({ branch_id: next, store_id: '' });
             }}
             aria-label="Branch filter"
           >
@@ -428,7 +506,15 @@ export default function Page() {
           </select>
         )}
         {(tab === 'sales' || tab === 'inventory' || tab === 'transfers' || financialTab) && (
-          <select value={storeId} onChange={(e) => setStoreId(e.target.value)} aria-label="Store filter">
+          <select
+            value={storeId}
+            onChange={(e) => {
+              const next = e.target.value;
+              setStoreId(next);
+              writeReportFilters({ store_id: next });
+            }}
+            aria-label="Store filter"
+          >
             <option value="">All stores</option>
             {storeOptions.map((s) => (
               <option key={s.id} value={s.id}>
@@ -441,7 +527,11 @@ export default function Page() {
           <>
             <select
               value={transferScope}
-              onChange={(e) => setTransferScope(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setTransferScope(next);
+                writeReportFilters({ scope: next });
+              }}
               aria-label="Transfer scope"
             >
               <option value="all">All scopes</option>
@@ -450,7 +540,11 @@ export default function Page() {
             </select>
             <select
               value={transferStatus}
-              onChange={(e) => setTransferStatus(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setTransferStatus(next);
+                writeReportFilters({ status: next });
+              }}
               aria-label="Transfer status"
             >
               <option value="">Any status</option>
@@ -465,7 +559,11 @@ export default function Page() {
         {tab === 'sales' && (
           <select
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setCategoryId(next);
+              writeReportFilters({ category_id: next });
+            }}
             aria-label="Category filter"
           >
             <option value="">All categories</option>
@@ -476,7 +574,13 @@ export default function Page() {
             ))}
           </select>
         )}
-        <button onClick={() => load()} disabled={loading}>
+        <button
+          onClick={() => {
+            writeReportFilters({});
+            load();
+          }}
+          disabled={loading}
+        >
           {loading ? 'Loading…' : 'Apply filters'}
         </button>
         <button onClick={() => download('csv')}>Export CSV</button>
