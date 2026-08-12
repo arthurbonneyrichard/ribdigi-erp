@@ -7778,6 +7778,49 @@ async def backup_download(
     )
 
 
+@api.post("/backup/{backup_id}/verify")
+async def backup_verify(
+    backup_id: str,
+    request: Request,
+    payload: dict | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Decrypt backup and prove field match against live tenant data."""
+    body = payload or {}
+    sample_limit = int(body.get("sample_limit") or 100)
+    sample_limit = max(1, min(sample_limit, 500))
+    report = await backup_svc.verify_backup(
+        db,
+        tenant_id=claims["tenant_id"],
+        backup_id=backup_id,
+        sample_limit=sample_limit,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="backup",
+        action="restore_verify",
+        entity="backup_job",
+        entity_id=backup_id,
+        details={
+            "proof_ok": (report.get("proof") or {}).get("ok"),
+            "checked": (report.get("proof") or {}).get("checked"),
+            "mismatch_count": (report.get("proof") or {}).get("mismatch_count"),
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    msg = (
+        "Backup verify passed"
+        if (report.get("proof") or {}).get("ok")
+        else "Backup verify found mismatches"
+    )
+    return env(report, msg)
+
+
 @api.post("/backup/{backup_id}/restore")
 async def backup_restore(
     backup_id: str,
@@ -7809,7 +7852,11 @@ async def backup_restore(
         action="restore_dry_run" if report.get("dry_run") else "restore_apply",
         entity="backup_job",
         entity_id=backup_id,
-        details={"applied": report.get("applied"), "counts": report.get("record_counts")},
+        details={
+            "applied": report.get("applied"),
+            "counts": report.get("record_counts"),
+            "proof_ok": (report.get("proof") or {}).get("ok"),
+        },
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
     )

@@ -17,4 +17,5 @@
 - **Metrics / request logs:** `GET /api/v1/metrics` (Prometheus text; `METRICS_ENABLED`); structured JSON via `ribdigi.request` + `X-Request-ID` (`REQUEST_LOG_ENABLED`). Operator scrape/alerts: `ops/prometheus/`, Grafana examples: `ops/grafana/`. See `docs/OPS_MONITORING_MVP.md`.
 - **Kubernetes:** Helm chart `helm/ribdigi/` + flat `k8s/`; probes are `/api/v1/health` (live) and `/api/v1/health/ready` (ready). Operator smoke: `ops/k8s/staging-smoke.sh.example`. Main CI stays deploy-free — see `docs/K8S_DEPLOY_MVP.md`.
 - **Load tests:** `cd backend && PYTHONPATH=. python -m loadtest.run_baseline --smoke` / `--ci-capacity`. ASGI proof via `test_load_capacity_c1.py`. Against a live API, keep concurrency low or raise `RATE_LIMIT_*` — auth bucket is easy to trip (`429`). Targets/docs: `docs/LOAD_TEST_BASELINE.md`.
+- **Logical DR drill:** `POST /backup` → corrupt → dry-run → `confirm_text=RESTORE` apply → `POST /backup/{id}/verify`. Cross-tenant backup ids must 404. Runbook: `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`.
 - Do not commit `.devdata/` or `dump.rdb`.
