@@ -1153,6 +1153,8 @@ Also accepts structured `{ "report_type": "sales", "period": "last_month", "form
 }
 ```
 
+Rule-based churn, best customers, promotions, and balance overview (RFM + credit). See `docs/AI_CUSTOMER_MVP.md`.
+
 ### 16.10 AI Security Monitor
 **List:** `GET /ai/security/alerts`  
 Query: `limit`, `min_score`, `scan=true` (optional inline rescan)
