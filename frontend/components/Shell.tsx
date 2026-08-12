@@ -32,10 +32,20 @@ const TENANT_ITEMS: NavItem[] = [
 /** Software-owner / platform console navigation only. */
 const PLATFORM_ITEMS: NavItem[] = [
   ['Platform', '/platform', 'platform'],
+  ['Staff', '/platform/staff', 'platform_staff'],
+  ['Reports', '/platform/reports', 'platform_reports'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Security', '/security', 'security'],
 ];
+
+const PLATFORM_ROLES = new Set([
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+]);
 
 /**
  * Modules each tenant role should see in the sidebar.
@@ -220,6 +230,20 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </>
   ),
+  platform_staff: (
+    <>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </>
+  ),
+  platform_reports: (
+    <>
+      <path d="M3 3v18h18" />
+      <path d="M7 14l4-4 4 4 5-6" />
+    </>
+  ),
   platform: (
     <>
       <circle cx="12" cy="12" r="3" />
@@ -258,11 +282,13 @@ function navItemsForRole(
   permissions: Record<string, string[]> | null,
   enabledModules: string[] | null
 ): NavItem[] {
-  // Software owner: platform console only — inventory/sales/etc. stay off the sidebar.
-  if (role === 'super_admin') {
-    return PLATFORM_ITEMS.filter(([, , module]) =>
-      module === 'platform' ? true : canReadModule(permissions, module)
-    );
+  // Software owner staff: platform console nav only.
+  if (PLATFORM_ROLES.has(role)) {
+    return PLATFORM_ITEMS.filter(([, , module]) => {
+      if (module === 'platform') return true;
+      if (permissions?.['*']?.includes('*')) return true;
+      return canReadModule(permissions, module);
+    });
   }
 
   const allowed = ROLE_NAV_MODULES[role] ?? ROLE_NAV_MODULES.cashier;
@@ -286,7 +312,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [fullName, setFullName] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const pathname = usePathname();
-  const isPlatformOwner = role === 'super_admin';
+  const isPlatformOwner = PLATFORM_ROLES.has(role);
 
   useEffect(() => {
     const el = document.documentElement;

@@ -4,6 +4,36 @@ from __future__ import annotations
 
 ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     "super_admin": {"*": ["*"]},
+    # Software-owner / RIBDIGI platform staff (home tenant = platform workspace)
+    "platform_owner": {"*": ["*"]},
+    "platform_admin": {
+        "platform": ["read", "write"],
+        "platform_tenants": ["read", "write"],
+        "platform_packages": ["read", "write"],
+        "platform_staff": ["read", "write"],
+        "platform_reports": ["read"],
+        "notifications": ["read", "write"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+    },
+    "platform_support": {
+        "platform": ["read"],
+        "platform_tenants": ["read", "write"],
+        "platform_packages": ["read"],
+        "platform_reports": ["read"],
+        "notifications": ["read"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+    },
+    "platform_finance": {
+        "platform": ["read"],
+        "platform_tenants": ["read"],
+        "platform_packages": ["read", "write"],
+        "platform_reports": ["read"],
+        "notifications": ["read"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+    },
     "company_admin": {"*": ["*"]},
     "store_manager": {
         "dashboard": ["read"],
@@ -72,6 +102,10 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
 
 ROLE_LABELS: dict[str, str] = {
     "super_admin": "Super Admin",
+    "platform_owner": "Platform Owner",
+    "platform_admin": "Platform Admin",
+    "platform_support": "Platform Support",
+    "platform_finance": "Platform Finance",
     "company_admin": "Company Admin",
     "store_manager": "Store Manager",
     "sales_officer": "Sales Officer",
@@ -80,11 +114,25 @@ ROLE_LABELS: dict[str, str] = {
     "cashier": "Cashier",
 }
 
+PLATFORM_ROLES = frozenset(
+    {
+        "super_admin",
+        "platform_owner",
+        "platform_admin",
+        "platform_support",
+        "platform_finance",
+    }
+)
+
+PLATFORM_OWNER_ROLES = frozenset({"super_admin", "platform_owner"})
+
 # Frontend nav href → required module (read). Used for menu filtering.
 # Platform owner (super_admin) UI only surfaces /platform + a small ops set;
 # tenant roles use the business modules below (see frontend Shell ROLE_NAV_MODULES).
 MENU_MODULE_BY_PATH: dict[str, str] = {
     "/platform": "platform",
+    "/platform/staff": "platform_staff",
+    "/platform/reports": "platform_reports",
     "/dashboard": "dashboard",
     "/company": "company",
     "/inventory": "inventory",
@@ -132,6 +180,10 @@ SYSTEM_MODULES = frozenset(
         "customers",
         "suppliers",
         "platform",
+        "platform_tenants",
+        "platform_packages",
+        "platform_staff",
+        "platform_reports",
     }
 )
 ALLOWED_ACTIONS = frozenset({"read", "write", "approve", "*"})
@@ -141,6 +193,25 @@ def is_system_role(role: str | None) -> bool:
     return (role or "") in SYSTEM_ROLES
 
 
+def is_platform_role(role: str | None) -> bool:
+    return (role or "") in PLATFORM_ROLES
+
+
+def is_platform_owner_role(role: str | None) -> bool:
+    return (role or "") in PLATFORM_OWNER_ROLES
+
+
+def can_assign_platform_role(actor_role: str, target_role: str) -> bool:
+    """Only platform owners can mint owners; admins can mint admin/support/finance."""
+    if target_role not in PLATFORM_ROLES:
+        return False
+    if target_role in PLATFORM_OWNER_ROLES:
+        return is_platform_owner_role(actor_role)
+    if target_role == "platform_admin":
+        return is_platform_owner_role(actor_role) or actor_role == "platform_admin"
+    return actor_role in {"super_admin", "platform_owner", "platform_admin"}
+
+
 # Record-level scope (BR-3.3). department/branch use peer users in the same org unit.
 RECORD_SCOPES = frozenset({"own", "department", "branch", "all"})
 RECORD_SCOPE_KEY = "_record_scope"
@@ -148,6 +219,10 @@ RECORD_SCOPE_KEY = "_record_scope"
 # Default record visibility by role. Approver/admin roles use `all`.
 ROLE_RECORD_SCOPE: dict[str, str] = {
     "super_admin": "all",
+    "platform_owner": "all",
+    "platform_admin": "all",
+    "platform_support": "all",
+    "platform_finance": "all",
     "company_admin": "all",
     "store_manager": "all",
     "accountant": "all",

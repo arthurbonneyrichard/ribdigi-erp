@@ -117,7 +117,15 @@ export default function PlatformConsole() {
 
   async function refresh() {
     const me = await api('/me');
-    if (me.data?.role !== 'super_admin') {
+    const role = me.data?.role || '';
+    const platformRoles = [
+      'super_admin',
+      'platform_owner',
+      'platform_admin',
+      'platform_support',
+      'platform_finance',
+    ];
+    if (!platformRoles.includes(role)) {
       router.replace('/dashboard');
       return;
     }

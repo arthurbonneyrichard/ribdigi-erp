@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app import models as m
-from app.rbac import has_permission, is_system_role, permissions_for_role
+from app.rbac import has_permission, is_system_role, permissions_for_role, is_platform_role
 
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
@@ -232,6 +232,26 @@ def require_roles(*roles: str):
     return dep
 
 
+def require_platform_permission(module: str, action: str = "read"):
+    """Gate software-owner console APIs (platform staff roles only)."""
+
+    async def dep(claims: dict = Depends(current_claims)) -> dict:
+        role = claims.get("role") or ""
+        if not is_platform_role(role):
+            raise HTTPException(status_code=403, detail="Platform staff access required")
+        overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+        if overrides and overrides.get("*") == ["*"]:
+            return claims
+        if not has_permission(role, module, action, overrides=overrides):
+            raise HTTPException(
+                status_code=403,
+                detail=f"Missing platform permission: {module}:{action}",
+            )
+        return claims
+
+    return dep
+
+
 def require_permission(module: str, action: str = "read"):
     async def dep(claims: dict = Depends(current_claims)) -> dict:
         if claims.get("read_only") and action != "read":
@@ -243,7 +263,7 @@ def require_permission(module: str, action: str = "read"):
                 },
             )
         # Package feature gate (software-owner controlled modules)
-        if claims.get("role") != "super_admin":
+        if not is_platform_role(claims.get("role")):
             from app import packages as packages_svc
 
             mod = (module or "").strip().lower()
@@ -253,6 +273,7 @@ def require_permission(module: str, action: str = "read"):
                 and mod
                 and mod not in packages_svc.ALWAYS_ON_MODULES
                 and mod != "platform"
+                and not mod.startswith("platform_")
                 and mod not in enabled
             ):
                 raise HTTPException(
