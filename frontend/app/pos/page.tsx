@@ -153,9 +153,10 @@ export default function Page() {
   const [customerName, setCustomerName] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [receipt, setReceipt] = useState<any>(null);
+  const [lastSale, setLastSale] = useState<{ id: string; reference: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [cashierName, setCashierName] = useState('');
+  const [receiptBusy, setReceiptBusy] = useState('');
 
   const cartTotal = useMemo(
     () => cart.reduce((sum, c) => sum + Number(c.selling_price) * c.quantity, 0),
@@ -328,7 +329,7 @@ export default function Page() {
   async function checkout() {
     setError('');
     setMessage('');
-    setReceipt(null);
+    setLastSale(null);
     if (!session) {
       setError('Open a POS shift before selling');
       return;
@@ -369,15 +370,45 @@ export default function Page() {
       }
       setCart([]);
       clearCustomer();
-      setReceipt(null);
+      setLastSale({ id: r.data.id, reference: r.data.reference });
       await refreshSession();
       await browse(q);
       setMessage('Sale successful');
     } catch (err: any) {
       setMessage('');
+      setLastSale(null);
       setError(err.message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function printLastReceipt() {
+    if (!lastSale) return;
+    setError('');
+    setReceiptBusy('print');
+    try {
+      await downloadReceiptPdf(lastSale.id, paper);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setReceiptBusy('');
+    }
+  }
+
+  async function sendLastReceipt(channel: 'email' | 'sms') {
+    if (!lastSale) return;
+    setError('');
+    setReceiptBusy(channel);
+    try {
+      await api(`/pos/sales/${lastSale.id}/receipt/send?channel=${channel}`, {
+        method: 'POST',
+        body: '{}',
+      });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setReceiptBusy('');
     }
   }
 
@@ -453,7 +484,39 @@ export default function Page() {
             {error}
           </p>
         )}
-        {message && <p className="tpos-banner tpos-banner-ok">{message}</p>}
+        {message && (
+          <div className="tpos-banner tpos-banner-ok tpos-success-bar">
+            <span>{message}</span>
+            {message === 'Sale successful' && lastSale && (
+              <div className="tpos-success-actions">
+                <button
+                  type="button"
+                  className="tpos-btn"
+                  onClick={printLastReceipt}
+                  disabled={!!receiptBusy}
+                >
+                  {receiptBusy === 'print' ? 'Printing…' : 'Print'}
+                </button>
+                <button
+                  type="button"
+                  className="tpos-btn"
+                  onClick={() => sendLastReceipt('email')}
+                  disabled={!!receiptBusy}
+                >
+                  {receiptBusy === 'email' ? 'Sending…' : 'Email'}
+                </button>
+                <button
+                  type="button"
+                  className="tpos-btn"
+                  onClick={() => sendLastReceipt('sms')}
+                  disabled={!!receiptBusy}
+                >
+                  {receiptBusy === 'sms' ? 'Sending…' : 'SMS'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="tpos-body">
           <section className="tpos-catalog" aria-label="Product catalog">
@@ -643,66 +706,6 @@ export default function Page() {
           </aside>
         </div>
 
-        {receipt && (
-          <div className="tpos-receipt card">
-            <h3>Receipt</h3>
-            <p>
-              {receipt.reference} · Total {receipt.total} · {receipt.payment_method}
-              {receipt.customer_name ? ` · ${receipt.customer_name}` : ''}
-            </p>
-            <pre className="tpos-receipt-text">{receipt.text}</pre>
-            <div className="tpos-receipt-actions">
-              <button
-                type="button"
-                className="tpos-btn"
-                onClick={async () => {
-                  try {
-                    await downloadReceiptPdf(receipt.sale_id, paper);
-                    setMessage('Thermal PDF downloaded');
-                  } catch (err: any) {
-                    setError(err.message);
-                  }
-                }}
-              >
-                Download PDF
-              </button>
-              <button
-                type="button"
-                className="tpos-btn"
-                onClick={async () => {
-                  try {
-                    const r = await api(`/pos/sales/${receipt.sale_id}/receipt/send?channel=email`, {
-                      method: 'POST',
-                      body: '{}',
-                    });
-                    setMessage(r.message || 'Receipt emailed');
-                  } catch (err: any) {
-                    setError(err.message);
-                  }
-                }}
-              >
-                Email
-              </button>
-              <button
-                type="button"
-                className="tpos-btn"
-                onClick={async () => {
-                  try {
-                    const r = await api(`/pos/sales/${receipt.sale_id}/receipt/send?channel=sms`, {
-                      method: 'POST',
-                      body: '{}',
-                    });
-                    setMessage(r.message || 'Receipt SMS sent');
-                  } catch (err: any) {
-                    setError(err.message);
-                  }
-                }}
-              >
-                SMS
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </Shell>
   );

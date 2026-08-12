@@ -385,6 +385,15 @@
 .tpos-banner{margin:0;padding:10px 12px;border-radius:10px;font-weight:600;font-size:14px}
 .tpos-banner-err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
 .tpos-banner-ok{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+.tpos-success-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tpos-success-actions{display:flex;gap:8px;flex-wrap:wrap}
+.tpos-success-actions .tpos-btn{
+  min-height:40px;padding:8px 14px;font-size:13px;background:#fff;border-color:#a7f3d0;color:#047857
+}
+.tpos-success-actions .tpos-btn:hover{background:#f0fdf4}
+[data-theme="dark"] .tpos-success-actions .tpos-btn{
+  background:#fff;border-color:#a7f3d0;color:#047857
+}
 .tpos-body{
   display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,360px);gap:14px;align-items:start
 }
