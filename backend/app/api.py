@@ -101,6 +101,7 @@ from app.schemas import (
     SalesOrderConfirm,
     SalesQuotationCreate,
     SalesReturnCreate,
+    SalesReturnPost,
     SmsTestRequest,
     StockAdjust,
     StockMove,
@@ -3542,16 +3543,26 @@ async def get_sales_return(
 @api.post("/sales/returns/{return_id}/post")
 async def post_sales_return(
     return_id: str,
+    payload: SalesReturnPost = SalesReturnPost(),
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     existing = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, existing.created_by)
     ret = await sales_docs_svc.post_return(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], return_id=return_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        return_id=return_id,
+        settlement_method=payload.settlement_method,
+        payment_method=payload.payment_method,
+        liquid_account_id=payload.liquid_account_id,
     )
     await db.commit()
-    return env(await sales_docs_svc.serialize_return(db, ret), "Return posted; stock/AR/journal updated")
+    return env(
+        await sales_docs_svc.serialize_return(db, ret),
+        f"Return posted ({ret.credit_note_number}); stock/AR/journal updated",
+    )
 
 
 @api.post("/sales/payments")

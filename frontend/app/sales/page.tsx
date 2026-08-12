@@ -605,7 +605,9 @@ export default function Page() {
           <thead>
             <tr>
               <th>Number</th>
+              <th>Credit note</th>
               <th>Status</th>
+              <th>Settlement</th>
               <th>Reason</th>
               <th>Total</th>
               <th>Actions</th>
@@ -615,13 +617,38 @@ export default function Page() {
             {returns.map((r) => (
               <tr key={r.id}>
                 <td>{r.return_number}</td>
+                <td>{r.credit_note_number || '—'}</td>
                 <td>{r.status}</td>
+                <td>
+                  {r.settlement_method || '—'}
+                  {r.refunded_amount > 0 ? ` (refunded ${r.refunded_amount})` : ''}
+                </td>
                 <td>{r.reason}</td>
                 <td>{r.total_amount}</td>
-                <td style={{ display: 'flex', gap: 4 }}>
+                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(r)}>View</button>
                   {r.status === 'draft' && (
-                    <button onClick={() => act(`/sales/returns/${r.id}/post`, 'Posted')}>Post</button>
+                    <>
+                      <button
+                        onClick={() =>
+                          act(`/sales/returns/${r.id}/post`, 'Posted (credit)', {
+                            settlement_method: 'adjust',
+                          })
+                        }
+                      >
+                        Post credit
+                      </button>
+                      <button
+                        onClick={() =>
+                          act(`/sales/returns/${r.id}/post`, 'Posted (refund)', {
+                            settlement_method: 'refund',
+                            payment_method: 'cash',
+                          })
+                        }
+                      >
+                        Post + refund
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>

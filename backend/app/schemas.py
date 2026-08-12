@@ -612,6 +612,12 @@ class SalesReturnCreate(BaseModel):
     items: list[SalesReturnItemCreate] = Field(min_length=1)
 
 
+class SalesReturnPost(BaseModel):
+    settlement_method: str | None = None  # adjust | refund (required when return exceeds open AR)
+    payment_method: str = "cash"
+    liquid_account_id: str | None = None
+
+
 class CustomerPaymentCreate(BaseModel):
     customer_id: str
     amount: float = Field(gt=0)

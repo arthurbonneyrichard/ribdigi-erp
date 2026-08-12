@@ -505,11 +505,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Customer returns and refunds.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create return referencing original invoice
-  - [ ] Record return reason and condition
-  - [ ] Restock or discard returned items
-  - [ ] Generate credit note
-  - [ ] Refund or adjust customer balance
+  - [x] Create return referencing original invoice
+  - [x] Record return reason and condition
+  - [x] Restock or discard returned items
+  - [x] Generate credit note (`credit_note_number` on post, unique per tenant)
+  - [x] Refund or adjust customer balance (`settlement_method=adjust|refund`; refund required/optional when return exceeds open invoice AR; cash/bank refund journal)
 
 ---
 

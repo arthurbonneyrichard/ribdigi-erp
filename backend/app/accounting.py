@@ -362,6 +362,7 @@ async def post_sales_return_journal(
     revenue = float(sales_return.subtotal or 0)
     tax = float(sales_return.tax_amount or 0)
     total = float(sales_return.total_amount)
+    cn = getattr(sales_return, "credit_note_number", None) or sales_return.return_number
     lines = [
         {"account_code": "4000", "debit": max(revenue, 0), "credit": 0, "description": "Sales return"},
         {"account_code": "1100", "debit": 0, "credit": total, "description": "AR credit"},
@@ -372,9 +373,53 @@ async def post_sales_return_journal(
         db,
         tenant_id=tenant_id,
         user_id=user_id,
-        description=f"Sales return {sales_return.return_number}",
-        reference=sales_return.return_number,
+        description=f"Sales return {sales_return.return_number} / {cn}",
+        reference=cn,
         source_type="sales_return",
+        source_id=sales_return.id,
+        lines=lines,
+    )
+
+
+async def post_sales_return_refund_journal(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    sales_return: m.SalesReturn,
+    amount: float,
+    payment_method: str = "cash",
+    liquid_account_id: str | None = None,
+) -> m.JournalEntry:
+    """Pay out customer credit from a return: Dr AR, Cr cash/bank."""
+    await ensure_default_accounts(db, tenant_id)
+    amount = round(float(amount), 2)
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Refund amount must be positive")
+    liquid_code, liquid_label = await resolve_settlement_gl(
+        db,
+        tenant_id,
+        payment_method,
+        liquid_account_id=liquid_account_id,
+        outflow=True,
+    )
+    cn = getattr(sales_return, "credit_note_number", None) or sales_return.return_number
+    lines = [
+        {"account_code": "1100", "debit": amount, "credit": 0, "description": "Clear AR credit for refund"},
+        {
+            "account_code": liquid_code,
+            "debit": 0,
+            "credit": amount,
+            "description": f"Customer refund via {liquid_label}",
+        },
+    ]
+    return await post_journal_entry(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=f"Refund for return {sales_return.return_number} / {cn}",
+        reference=cn,
+        source_type="sales_return_refund",
         source_id=sales_return.id,
         lines=lines,
     )

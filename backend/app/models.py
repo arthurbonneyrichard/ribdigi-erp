@@ -1218,7 +1218,10 @@ class SalesOrderItem(Base):
 
 class SalesReturn(Base):
     __tablename__ = "sales_returns"
-    __table_args__ = (UniqueConstraint("tenant_id", "return_number"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "return_number"),
+        UniqueConstraint("tenant_id", "credit_note_number", name="uq_sales_returns_tenant_credit_note"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1231,6 +1234,12 @@ class SalesReturn(Base):
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    credit_note_number: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    settlement_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # adjust = leave as customer credit; refund = cash/bank payout for excess over open AR
+    refund_payment_method: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    refund_liquid_account_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    refunded_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     posted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

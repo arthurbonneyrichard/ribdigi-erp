@@ -656,6 +656,7 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
     return {
         "id": ret.id,
         "return_number": ret.return_number,
+        "credit_note_number": getattr(ret, "credit_note_number", None),
         "customer_id": ret.customer_id,
         "sales_invoice_id": ret.sales_invoice_id,
         "status": ret.status,
@@ -664,6 +665,9 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
         "subtotal": float(ret.subtotal),
         "tax_amount": float(ret.tax_amount),
         "total_amount": float(ret.total_amount),
+        "settlement_method": getattr(ret, "settlement_method", None),
+        "refund_payment_method": getattr(ret, "refund_payment_method", None),
+        "refunded_amount": float(getattr(ret, "refunded_amount", 0) or 0),
         "notes": ret.notes,
         "posted_at": ret.posted_at,
         "created_at": ret.created_at,
@@ -770,6 +774,9 @@ async def post_return(
     tenant_id: str,
     user_id: str,
     return_id: str,
+    settlement_method: str | None = None,
+    payment_method: str = "cash",
+    liquid_account_id: str | None = None,
 ) -> m.SalesReturn:
     ret = await get_return(db, tenant_id, return_id)
     if ret.status != "draft":
@@ -797,7 +804,6 @@ async def post_return(
                 variant = await get_variant(db, tenant_id, item.variant_id)
                 variant.stock_qty = float(variant.stock_qty or 0) + qty
         else:
-            # Discarded: still log movement as adjust out of sold goods without increasing sellable stock
             db.add(
                 m.AuditLog(
                     tenant_id=tenant_id,
@@ -813,31 +819,75 @@ async def post_return(
                 )
             )
 
-    customer = await get_customer(db, tenant_id, ret.customer_id)
-    customer.balance = max(float(customer.balance or 0) - float(ret.total_amount), 0)
-
+    return_total = round(float(ret.total_amount), 2)
     invoice = await get_invoice(db, tenant_id, ret.sales_invoice_id)
+    open_ar = max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0.0)
+    apply_to_invoice = min(return_total, open_ar)
+    excess = round(return_total - apply_to_invoice, 2)
+
+    method = (settlement_method or "").strip().lower() or None
+    if excess > 1e-9:
+        if method not in {"adjust", "refund"}:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "SETTLEMENT_REQUIRED",
+                    "message": (
+                        "Return exceeds open invoice balance; "
+                        "provide settlement_method=adjust (customer credit) or refund"
+                    ),
+                    "open_invoice_balance": open_ar,
+                    "return_total": return_total,
+                    "excess": excess,
+                },
+            )
+    else:
+        method = method or "adjust"
+
     invoice.paid_amount = min(
         float(invoice.total_amount),
-        float(invoice.paid_amount or 0) + float(ret.total_amount),
+        float(invoice.paid_amount or 0) + apply_to_invoice,
     )
     from app.sales import invoice_payment_status
 
     if invoice.status in {"posted", "partial", "paid"}:
         invoice.status = invoice_payment_status(float(invoice.total_amount), float(invoice.paid_amount))
-        # credit note style: treat return as reducing open balance
         if float(invoice.paid_amount) + 1e-9 >= float(invoice.total_amount):
             invoice.status = "paid"
         elif float(invoice.paid_amount) > 0:
             invoice.status = "partial"
         invoice.updated_at = datetime.utcnow()
 
+    customer = await get_customer(db, tenant_id, ret.customer_id)
+    # Negative balance = customer store credit after return
+    customer.balance = round(float(customer.balance or 0) - return_total, 2)
+
+    ret.credit_note_number = f"CN-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+    ret.settlement_method = method
+    ret.refunded_amount = 0
     ret.status = "posted"
     ret.posted_at = datetime.utcnow()
 
-    from app.accounting import post_sales_return_journal
+    from app.accounting import post_sales_return_journal, post_sales_return_refund_journal
 
     await post_sales_return_journal(db, tenant_id=tenant_id, user_id=user_id, sales_return=ret)
+
+    if method == "refund" and excess > 1e-9:
+        pay_method = (payment_method or "cash").strip().lower() or "cash"
+        await post_sales_return_refund_journal(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            sales_return=ret,
+            amount=excess,
+            payment_method=pay_method,
+            liquid_account_id=liquid_account_id,
+        )
+        ret.refund_payment_method = pay_method
+        ret.refund_liquid_account_id = liquid_account_id
+        ret.refunded_amount = excess
+        # Cash paid out instead of leaving store credit for the excess
+        customer.balance = round(float(customer.balance or 0) + excess, 2)
 
     from app.notifications import create_notification
 
@@ -846,9 +896,31 @@ async def post_return(
         tenant_id=tenant_id,
         category="system",
         title="Sales return posted",
-        message=f"Return {ret.return_number} posted for {float(ret.total_amount):.2f}.",
+        message=(
+            f"Return {ret.return_number} / {ret.credit_note_number} posted for "
+            f"{return_total:.2f} ({method}"
+            + (f", refunded {excess:.2f}" if method == "refund" and excess > 1e-9 else "")
+            + ")."
+        ),
         entity_type="sales_return",
         entity_id=ret.id,
+    )
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="sales_return_posted",
+            entity="sales_return",
+            entity_id=ret.id,
+            details={
+                "return_number": ret.return_number,
+                "credit_note_number": ret.credit_note_number,
+                "total_amount": return_total,
+                "settlement_method": method,
+                "refunded_amount": float(ret.refunded_amount or 0),
+                "applied_to_invoice": apply_to_invoice,
+            },
+        )
     )
     await db.flush()
     return ret
