@@ -67,6 +67,7 @@ from app import finance_ops_export as finance_ops_export_svc
 from app import commerce_docs_export as commerce_docs_export_svc
 from app import sales_pipeline_export as sales_pipeline_export_svc
 from app import purchasing_pipeline_export as purchasing_pipeline_export_svc
+from app import credit_ops_export as credit_ops_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -10459,6 +10460,107 @@ async def credit_aging(
     if kind == "payable":
         return env(await credit_svc.ap_aging(db, claims["tenant_id"]))
     return env(await credit_svc.ar_aging(db, claims["tenant_id"]))
+
+
+@api.get("/credit/aging/export")
+async def credit_aging_export(
+    kind: str = "receivable",
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 136 A1 — aging document CSV (party/totals omitted; document rows only)."""
+    text = await credit_ops_export_svc.export_aging_csv(
+        db, tenant_id=claims["tenant_id"], kind=kind
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="credit_aging_export.csv"'},
+    )
+
+
+@api.get("/credit/customer-payments")
+async def list_credit_customer_payments(
+    customer_id: str | None = None,
+    payment_method: str | None = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 136 C1 — tenant customer payment register."""
+    rows = await credit_ops_export_svc.list_customer_payments(
+        db,
+        tenant_id=claims["tenant_id"],
+        claims=claims,
+        customer_id=customer_id,
+        payment_method=payment_method,
+    )
+    return env([credit_ops_export_svc.serialize_customer_payment(r) for r in rows])
+
+
+@api.get("/credit/customer-payments/export")
+async def export_credit_customer_payments(
+    customer_id: str | None = None,
+    payment_method: str | None = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 136 C1 — customer payment header CSV."""
+    text = await credit_ops_export_svc.export_customer_payments_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        claims=claims,
+        customer_id=customer_id,
+        payment_method=payment_method,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="customer_payments_export.csv"'
+        },
+    )
+
+
+@api.get("/credit/supplier-payments")
+async def list_credit_supplier_payments(
+    supplier_id: str | None = None,
+    payment_method: str | None = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 136 S1 — tenant supplier payment register."""
+    rows = await credit_ops_export_svc.list_supplier_payments(
+        db,
+        tenant_id=claims["tenant_id"],
+        claims=claims,
+        supplier_id=supplier_id,
+        payment_method=payment_method,
+    )
+    return env([credit_ops_export_svc.serialize_supplier_payment(r) for r in rows])
+
+
+@api.get("/credit/supplier-payments/export")
+async def export_credit_supplier_payments(
+    supplier_id: str | None = None,
+    payment_method: str | None = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 136 S1 — supplier payment header CSV."""
+    text = await credit_ops_export_svc.export_supplier_payments_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        claims=claims,
+        supplier_id=supplier_id,
+        payment_method=payment_method,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="supplier_payments_export.csv"'
+        },
+    )
 
 
 @api.get("/credit/settings")

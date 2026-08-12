@@ -2234,6 +2234,18 @@ Every feature in every phase must meet:
 
 **Stage 135 exit (2026-08-12):** R1, S1, T1, D1, H135x met — `docs/STAGE_135_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_277_STAGE135_FREEZE.md`. Fidelity: `docs/STAGE_135_FIDELITY.md`.
 
+**Stage 136 open (2026-08-12):** Tenant MVP Customer Payment Register CSV, Supplier Payment Register CSV & Credit Aging CSV Export Fidelity — `docs/ADR_278_STAGE136_OPEN.md` + `docs/STAGE_136_PLAN.md` (Customer payments → Supplier payments → Aging → Fidelity; C1 next).
+
+**Stage 136 C1 (2026-08-12):** Customer payment register list + CSV (`test_stage136_customer_payments_c1.py`).
+
+**Stage 136 S1 (2026-08-12):** Supplier payment register list + CSV (`test_stage136_supplier_payments_s1.py`).
+
+**Stage 136 A1 (2026-08-12):** Credit aging document CSV (`test_stage136_aging_export_a1.py`).
+
+**Stage 136 D1 (2026-08-12):** Customer/supplier payment & aging export fidelity sync — `docs/STAGE_136_FIDELITY.md` (`test_stage136_fidelity_d1.py`).
+
+**Stage 136 exit (2026-08-12):** C1, S1, A1, D1, H136x met — `docs/STAGE_136_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_279_STAGE136_FREEZE.md`. Fidelity: `docs/STAGE_136_FIDELITY.md`.
+
 
 
 

@@ -1484,3 +1484,5 @@ Stage 133 D1 sales quotation, order & return register export fidelity — `docs/
 Stage 134 D1 purchase request, purchase order & GRN register export fidelity — `docs/STAGE_134_FIDELITY.md` (`test_stage134_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 135 D1 purchase return, SMS settings & stores transfer export fidelity — `docs/STAGE_135_FIDELITY.md` (`test_stage135_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 136 D1 customer payment, supplier payment & credit aging export fidelity — `docs/STAGE_136_FIDELITY.md` (`test_stage136_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

@@ -873,6 +873,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Customer Payments',
+    href: '/credit?kind=receivable#payments',
+    modules: ['credit'],
+  },
+  {
+    kind: 'link',
+    label: 'Supplier Payments',
+    href: '/credit?kind=payable#payments',
+    modules: ['credit'],
+  },
+  {
+    kind: 'link',
     label: 'Early Pay Terms',
     href: '/credit#early-pay',
     modules: ['credit'],

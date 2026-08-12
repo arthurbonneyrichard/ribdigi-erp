@@ -24,3 +24,5 @@ Stage 135 Tenant MVP Purchase Return CSV, SMS Settings Export & Stores Transfer 
 ## Next stage
 
 Stage 136 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 135 feature scope remains frozen.
+
+**Stage 136 opened and closed under ADR-278 / ADR-279** — Tenant MVP Customer Payment Register CSV, Supplier Payment Register CSV & Credit Aging CSV Export Fidelity (CONTINUE/NEXT approved).

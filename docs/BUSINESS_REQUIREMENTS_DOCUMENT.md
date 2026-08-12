@@ -862,6 +862,7 @@ Stage 132 D1 — `docs/STAGE_132_FIDELITY.md` (`test_stage132_fidelity_d1.py`); 
 Stage 133 D1 — `docs/STAGE_133_FIDELITY.md` (`test_stage133_fidelity_d1.py`); Stage 133 Q1 / O1 / R1.
 Stage 134 D1 — `docs/STAGE_134_FIDELITY.md` (`test_stage134_fidelity_d1.py`); Stage 134 R1 / O1 / G1.
 Stage 135 D1 — `docs/STAGE_135_FIDELITY.md` (`test_stage135_fidelity_d1.py`); Stage 135 R1 / S1 / T1.
+Stage 136 D1 — `docs/STAGE_136_FIDELITY.md` (`test_stage136_fidelity_d1.py`); Stage 136 C1 / S1 / A1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1545,3 +1546,5 @@ Stage 133 D1 sales quotation, order & return register export fidelity — `docs/
 Stage 134 D1 purchase request, purchase order & GRN register export fidelity — `docs/STAGE_134_FIDELITY.md` (`test_stage134_fidelity_d1.py`); Stage 134 R1 requests CSV; Stage 134 O1 orders CSV; Stage 134 G1 GRN CSV.
 
 Stage 135 D1 purchase return, SMS settings & stores transfer export fidelity — `docs/STAGE_135_FIDELITY.md` (`test_stage135_fidelity_d1.py`); Stage 135 R1 returns CSV; Stage 135 S1 SMS settings CSV (secret-free); Stage 135 T1 stores transfer filter + CSV.
+
+Stage 136 D1 customer payment, supplier payment & credit aging export fidelity — `docs/STAGE_136_FIDELITY.md` (`test_stage136_fidelity_d1.py`); Stage 136 C1 customer payments CSV; Stage 136 S1 supplier payments CSV; Stage 136 A1 aging CSV.

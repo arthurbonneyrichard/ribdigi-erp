@@ -35,20 +35,40 @@ export default function Page() {
   const [payFxRate, setPayFxRate] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  // Stage 136 C1 / S1 — payment register list + method filter
+  const [payments, setPayments] = useState<any[]>([]);
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('payment_method') || '')
+      .trim()
+      .toLowerCase();
+    return ['cash', 'bank_transfer', 'card', 'cheque', 'mobile_money', 'other'].includes(v)
+      ? v
+      : '';
+  });
 
   async function refresh() {
-    const [aging, cust, supp, settings, liquid, fx] = await Promise.all([
+    const methodQs = paymentMethodFilter
+      ? `?payment_method=${encodeURIComponent(paymentMethodFilter)}`
+      : '';
+    const payPath =
+      kind === 'receivable'
+        ? `/credit/customer-payments${methodQs}`
+        : `/credit/supplier-payments${methodQs}`;
+    const [aging, cust, supp, settings, liquid, fx, payRes] = await Promise.all([
       api(`/credit/aging?kind=${kind}`),
       api('/customers'),
       api('/suppliers'),
       api('/credit/settings'),
       api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
       api('/credit/exchange-rates').catch(() => ({ data: { base_currency: 'GHS', rates: [] } })),
+      api(payPath).catch(() => ({ data: [] })),
     ]);
     setReport(aging.data);
     setCustomers(cust.data || []);
     setSuppliers(supp.data || []);
     setLiquidAccounts(liquid.data || []);
+    setPayments(payRes.data || []);
     setEpPct(String(settings.data?.early_pay_discount_pct ?? 0));
     setEpDays(String(settings.data?.early_pay_discount_days ?? 0));
     setEpEnabled(!!settings.data?.enabled);
@@ -77,6 +97,7 @@ export default function Page() {
 
   // Stage 104 R1 / Stage 108 C1 — honor Shell #aging / #early-pay / #exchange-rates /
   // #payment-schedule / #party-actions / #by-party / #statement
+  // Stage 136 C1 / S1 — honor #payments
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
@@ -96,8 +117,34 @@ export default function Page() {
     setAllocateKey('');
     setOpenDocs([]);
     refresh().catch((err) => setError(err.message));
-  }, [kind]);
+  }, [kind, paymentMethodFilter]);
 
+  async function downloadCreditExport(path: string, filename: string, okMessage: string) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token') || '';
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}${path}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        setError(await res.text());
+        return;
+      }
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setMessage(okMessage);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
   useEffect(() => {
     setAllocateKey('');
     if (!partyId) {
@@ -362,12 +409,28 @@ export default function Page() {
       <div className="grid">
         <div className="card" id="aging">
           <h3>Totals · {kind}</h3>
+          <p className="muted">
+            Document CSV via <code>GET /credit/aging/export?kind=</code> (Stage 136 A1).
+          </p>
           <p>Current: {totals.current ?? 0}</p>
           <p>1–30: {totals['1_30'] ?? 0}</p>
           <p>31–60: {totals['31_60'] ?? 0}</p>
           <p>61–90: {totals['61_90'] ?? 0}</p>
           <p>90+: {totals['90_plus'] ?? 0}</p>
           <div className="kpi">{report?.total_due ?? 0}</div>
+          <button
+            type="button"
+            style={{ marginTop: 8 }}
+            onClick={() =>
+              downloadCreditExport(
+                `/credit/aging/export?kind=${encodeURIComponent(kind)}`,
+                'credit_aging_export.csv',
+                'Aging CSV downloaded (Stage 136 A1)',
+              )
+            }
+          >
+            Export aging CSV
+          </button>
         </div>
         <div className="card" id="early-pay">
           <h3>Early payment terms</h3>
@@ -585,6 +648,105 @@ export default function Page() {
         </tbody>
       </table>
 
+      <div className="card" style={{ marginTop: 16 }} id="payments">
+        <h3>
+          {kind === 'receivable' ? 'Customer' : 'Supplier'} payment register
+        </h3>
+        <p className="muted">
+          Filter via <code>payment_method</code>; export via{' '}
+          <code>
+            /credit/{kind === 'receivable' ? 'customer' : 'supplier'}-payments/export
+          </code>{' '}
+          (Stage 136 {kind === 'receivable' ? 'C1' : 'S1'}).
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+          <select
+            value={paymentMethodFilter || 'default'}
+            onChange={(e) => {
+              const v = e.target.value === 'default' ? '' : e.target.value;
+              setPaymentMethodFilter(v);
+              const url = new URL(window.location.href);
+              if (v) url.searchParams.set('payment_method', v);
+              else url.searchParams.delete('payment_method');
+              const qs = url.searchParams.toString();
+              window.history.replaceState(
+                {},
+                '',
+                `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`,
+              );
+            }}
+            aria-label="Payment method filter"
+          >
+            <option value="default">All methods</option>
+            <option value="cash">cash</option>
+            <option value="bank_transfer">bank_transfer</option>
+            <option value="card">card</option>
+            <option value="cheque">cheque</option>
+            <option value="mobile_money">mobile_money</option>
+            <option value="other">other</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => {
+              const qs = paymentMethodFilter
+                ? `?payment_method=${encodeURIComponent(paymentMethodFilter)}`
+                : '';
+              const base =
+                kind === 'receivable'
+                  ? '/credit/customer-payments/export'
+                  : '/credit/supplier-payments/export';
+              downloadCreditExport(
+                `${base}${qs}`,
+                kind === 'receivable'
+                  ? 'customer_payments_export.csv'
+                  : 'supplier_payments_export.csv',
+                kind === 'receivable'
+                  ? 'Customer payments CSV downloaded (Stage 136 C1)'
+                  : 'Supplier payments CSV downloaded (Stage 136 S1)',
+              );
+            }}
+          >
+            Export {kind === 'receivable' ? 'customer' : 'supplier'} payments CSV
+          </button>
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Party</th>
+              <th>Method</th>
+              <th>Amount</th>
+              <th>Currency</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map((p: any) => (
+              <tr key={p.id}>
+                <td>{p.payment_number}</td>
+                <td>
+                  {kind === 'receivable' ? p.customer_id : p.supplier_id}
+                </td>
+                <td>{p.payment_method}</td>
+                <td>{p.amount}</td>
+                <td>{p.currency || '—'}</td>
+                <td>
+                  {p.created_at
+                    ? String(p.created_at).replace('T', ' ').slice(0, 16)
+                    : '—'}
+                </td>
+              </tr>
+            ))}
+            {!payments.length && (
+              <tr>
+                <td colSpan={6} className="muted">
+                  No payments in register
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
       {outstanding && (
         <div className="card" style={{ marginTop: 16 }}>
           <h3>
