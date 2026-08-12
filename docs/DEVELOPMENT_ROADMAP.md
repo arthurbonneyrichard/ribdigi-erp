@@ -279,7 +279,7 @@ Build the complete inventory management and purchasing system. This includes pro
 
 - [ ] Complete product catalog with variants, images, barcodes
 - [ ] Real-time stock tracking across multiple warehouses
-- [ ] Full purchasing workflow: Request → PO → GRN → Invoice → Return
+- [x] Full purchasing workflow: Request → PO → GRN → Invoice → Return
 - [ ] Low stock alert system with configurable thresholds
 - [ ] Stock movement audit trail (who, what, when, why)
 - [ ] Physical stock count module with variance reporting

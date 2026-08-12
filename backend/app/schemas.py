@@ -416,6 +416,30 @@ class PurchaseOrderCreate(BaseModel):
     items: list[PurchaseOrderItemCreate] = Field(min_length=1)
 
 
+class PurchaseRequestItemCreate(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    variant_id: str | None = None
+    notes: str | None = None
+
+
+class PurchaseRequestCreate(BaseModel):
+    preferred_supplier_id: str | None = None
+    warehouse_id: str | None = None
+    required_date: datetime | None = None
+    department: str | None = None
+    notes: str | None = None
+    items: list[PurchaseRequestItemCreate] = Field(min_length=1)
+
+
+class PurchaseRequestReject(BaseModel):
+    reason: str | None = None
+
+
+class PurchaseRequestConvert(BaseModel):
+    supplier_id: str | None = None
+
+
 class GrnItemCreate(BaseModel):
     po_item_id: str
     received_qty: float = Field(gt=0)

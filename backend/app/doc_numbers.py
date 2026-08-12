@@ -75,3 +75,17 @@ async def next_sales_invoice_number(db: AsyncSession, tenant_id: str) -> str:
         )
     ).scalars().all()
     return format_daily_number("I", day, _max_seq(list(rows), prefix) + 1)
+
+
+async def next_purchase_request_number(db: AsyncSession, tenant_id: str) -> str:
+    day = datetime.utcnow().strftime("%y%m%d")
+    prefix = f"R{day}-"
+    rows = (
+        await db.execute(
+            select(m.PurchaseRequest.request_number).where(
+                m.PurchaseRequest.tenant_id == tenant_id,
+                m.PurchaseRequest.request_number.like(f"{prefix}%"),
+            )
+        )
+    ).scalars().all()
+    return format_daily_number("R", day, _max_seq(list(rows), prefix) + 1)

@@ -4,9 +4,20 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'orders' | 'grn' | 'invoices' | 'returns';
+type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
 type Supplier = { id: string; name: string };
 type Product = { id: string; name: string; sku: string; cost_price: number };
+type PurchaseRequest = {
+  id: string;
+  request_number: string;
+  status: string;
+  preferred_supplier_id?: string | null;
+  department?: string | null;
+  notes?: string | null;
+  converted_po_id?: string | null;
+  items: { id: string; product_id: string; quantity: number }[];
+  purchase_order?: { id: string; po_number: string };
+};
 type PoItem = {
   id: string;
   product_id: string;
@@ -64,8 +75,9 @@ type PurchaseInvoice = {
 };
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('orders');
+  const [tab, setTab] = useState<Tab>('requests');
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [grns, setGrns] = useState<Grn[]>([]);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [returns, setReturns] = useState<PurchaseReturn[]>([]);
@@ -77,6 +89,12 @@ export default function Page() {
   const [productId, setProductId] = useState('');
   const [qty, setQty] = useState('10');
   const [unitPrice, setUnitPrice] = useState('0');
+  const [prSupplierId, setPrSupplierId] = useState('');
+  const [prProductId, setPrProductId] = useState('');
+  const [prQty, setPrQty] = useState('10');
+  const [prDepartment, setPrDepartment] = useState('');
+  const [prNotes, setPrNotes] = useState('');
+  const [prBusy, setPrBusy] = useState('');
   const [grnId, setGrnId] = useState('');
   const [grnItemId, setGrnItemId] = useState('');
   const [returnQty, setReturnQty] = useState('1');
@@ -100,8 +118,9 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [poRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
+    const [poRes, prRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
       api('/purchasing/orders'),
+      api('/purchasing/requests'),
       api('/suppliers'),
       api('/products'),
       api('/purchasing/grn'),
@@ -109,6 +128,7 @@ export default function Page() {
       api('/purchasing/returns'),
     ]);
     setOrders(poRes.data || []);
+    setRequests(prRes.data || []);
     setSuppliers(supRes.data || []);
     setProducts(prodRes.data || []);
     setGrns(grnRes.data || []);
@@ -416,18 +436,73 @@ export default function Page() {
     }
   }
 
+  async function createRequest() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/purchasing/requests', {
+        method: 'POST',
+        body: JSON.stringify({
+          preferred_supplier_id: prSupplierId || null,
+          department: prDepartment.trim() || null,
+          notes: prNotes.trim() || null,
+          items: [{ product_id: prProductId, quantity: Number(prQty) || 1 }],
+        }),
+      });
+      setMessage(`Created ${r.data.request_number}`);
+      setPrNotes('');
+      await refresh();
+      setTab('requests');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function prAction(id: string, action: 'submit' | 'approve' | 'reject' | 'convert') {
+    setError('');
+    setMessage('');
+    setPrBusy(`${action}:${id}`);
+    try {
+      const body =
+        action === 'reject'
+          ? JSON.stringify({ reason: 'Rejected from purchasing UI' })
+          : action === 'convert'
+            ? '{}'
+            : '{}';
+      const r = await api(`/purchasing/requests/${id}/${action}`, {
+        method: 'POST',
+        body,
+      });
+      if (action === 'convert') {
+        setMessage(
+          `Converted ${r.data.request_number} → ${r.data.purchase_order?.po_number || 'draft PO'}`
+        );
+        setTab('orders');
+      } else {
+        setMessage(`${r.data.request_number} is now ${r.data.status}`);
+      }
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setPrBusy('');
+    }
+  }
+
   const selectedGrn = grns.find((g) => g.id === grnId);
+  const productName = (id: string) => products.find((p) => p.id === id)?.name || id.slice(0, 8);
 
   return (
     <Shell>
       <h1>Purchasing</h1>
-      <p className="muted">Purchase orders → GRN → invoices → returns</p>
+      <p className="muted">Requests → purchase orders → GRN → invoices → returns</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {(
           [
+            ['requests', 'Requests'],
             ['orders', 'Orders'],
             ['grn', 'GRNs'],
             ['invoices', 'Invoices'],
@@ -439,6 +514,119 @@ export default function Page() {
           </button>
         ))}
       </div>
+
+      {tab === 'requests' && (
+        <>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3>Create purchase request</h3>
+            <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+              <select value={prSupplierId} onChange={(e) => setPrSupplierId(e.target.value)}>
+                <option value="">Preferred supplier (optional)</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              <select value={prProductId} onChange={(e) => setPrProductId(e.target.value)}>
+                <option value="">Select product</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.sku})
+                  </option>
+                ))}
+              </select>
+              <input value={prQty} onChange={(e) => setPrQty(e.target.value)} placeholder="Quantity" />
+              <input
+                value={prDepartment}
+                onChange={(e) => setPrDepartment(e.target.value)}
+                placeholder="Requesting department (optional)"
+              />
+              <input
+                value={prNotes}
+                onChange={(e) => setPrNotes(e.target.value)}
+                placeholder="Notes (optional)"
+              />
+              <button onClick={createRequest} disabled={!prProductId}>
+                Create draft PR
+              </button>
+            </div>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Status</th>
+                <th>Department</th>
+                <th>Lines</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.request_number}</td>
+                  <td>{r.status}</td>
+                  <td>{r.department || '—'}</td>
+                  <td>
+                    {(r.items || [])
+                      .map((i) => `${productName(i.product_id)} × ${i.quantity}`)
+                      .join(', ') || '—'}
+                  </td>
+                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {r.status === 'draft' && (
+                      <button
+                        type="button"
+                        disabled={prBusy === `submit:${r.id}`}
+                        onClick={() => prAction(r.id, 'submit')}
+                      >
+                        Submit
+                      </button>
+                    )}
+                    {r.status === 'pending' && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={prBusy === `approve:${r.id}`}
+                          onClick={() => prAction(r.id, 'approve')}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={prBusy === `reject:${r.id}`}
+                          onClick={() => prAction(r.id, 'reject')}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {r.status === 'approved' && (
+                      <button
+                        type="button"
+                        disabled={prBusy === `convert:${r.id}`}
+                        onClick={() => prAction(r.id, 'convert')}
+                      >
+                        Convert to PO
+                      </button>
+                    )}
+                    {r.status === 'converted' && (
+                      <span className="muted">{r.converted_po_id ? 'PO linked' : 'Converted'}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {requests.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No purchase requests yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </>
+      )}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Quick add supplier</h3>

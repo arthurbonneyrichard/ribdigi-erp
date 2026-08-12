@@ -403,10 +403,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Internal requisition for goods.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create PR with product, quantity, preferred supplier, required date, requesting department
-  - [ ] PR approval workflow (Inventory Officer → Store Manager → Company Admin)
-  - [ ] Status tracking: Draft, Pending, Approved, Rejected, Converted to PO
-  - [ ] Convert approved PR to Purchase Order with one click
+  - [x] Create PR with product, quantity, preferred supplier, required date, requesting department
+  - [x] PR approval workflow (Inventory Officer → Store Manager → Company Admin)
+  - [x] Status tracking: Draft, Pending, Approved, Rejected, Converted to PO
+  - [x] Convert approved PR to Purchase Order with one click
 
 #### BR-6.3 Purchase Order (PO)
 - **Description:** Formal order placed with suppliers.

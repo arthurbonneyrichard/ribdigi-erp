@@ -22,6 +22,7 @@ from app.rbac import (
     serialize_user,
 )
 from app import purchasing as purchasing_svc
+from app import purchase_requests as purchase_requests_svc
 from app import sales as sales_svc
 from app import sales_docs as sales_docs_svc
 from app import catalog as catalog_svc
@@ -80,6 +81,9 @@ from app.schemas import (
     ProductVariantUpdate,
     ProfileUpdate,
     PurchaseOrderCreate,
+    PurchaseRequestCreate,
+    PurchaseRequestConvert,
+    PurchaseRequestReject,
     UnitOfMeasureCreate,
     UnitOfMeasureUpdate,
     PurchaseInvoiceCreate,
@@ -3249,6 +3253,121 @@ async def purchase(
     db: AsyncSession = Depends(get_db),
 ):
     return await tx_add("purchase", payload, claims, db)
+
+
+@api.get("/purchasing/requests")
+async def list_purchase_requests(
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = (
+        await db.execute(
+            select(m.PurchaseRequest)
+            .where(m.PurchaseRequest.tenant_id == claims["tenant_id"])
+            .order_by(m.PurchaseRequest.created_at.desc())
+        )
+    ).scalars().all()
+    return env([await purchase_requests_svc.serialize_request(db, r) for r in rows])
+
+
+@api.post("/purchasing/requests")
+async def create_purchase_request(
+    payload: PurchaseRequestCreate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await purchase_requests_svc.create_request(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        preferred_supplier_id=payload.preferred_supplier_id,
+        warehouse_id=payload.warehouse_id,
+        required_date=payload.required_date,
+        department=payload.department,
+        notes=payload.notes,
+        items=[i.model_dump() for i in payload.items],
+    )
+    await db.commit()
+    return env(await purchase_requests_svc.serialize_request(db, row), "Purchase request created")
+
+
+@api.get("/purchasing/requests/{request_id}")
+async def get_purchase_request(
+    request_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await purchase_requests_svc.get_request(db, claims["tenant_id"], request_id)
+    return env(await purchase_requests_svc.serialize_request(db, row))
+
+
+@api.post("/purchasing/requests/{request_id}/submit")
+async def submit_purchase_request(
+    request_id: str,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await purchase_requests_svc.submit_request(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
+    )
+    await db.commit()
+    return env(await purchase_requests_svc.serialize_request(db, row), "Purchase request submitted")
+
+
+@api.post("/purchasing/requests/{request_id}/approve")
+async def approve_purchase_request(
+    request_id: str,
+    claims=Depends(require_permission("purchasing", "approve")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await purchase_requests_svc.approve_request(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        request_id=request_id,
+        actor_role=claims.get("role"),
+    )
+    await db.commit()
+    return env(await purchase_requests_svc.serialize_request(db, row), "Purchase request approved")
+
+
+@api.post("/purchasing/requests/{request_id}/reject")
+async def reject_purchase_request(
+    request_id: str,
+    payload: PurchaseRequestReject | None = None,
+    claims=Depends(require_permission("purchasing", "approve")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await purchase_requests_svc.reject_request(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        request_id=request_id,
+        reason=(payload.reason if payload else None),
+        actor_role=claims.get("role"),
+    )
+    await db.commit()
+    return env(await purchase_requests_svc.serialize_request(db, row), "Purchase request rejected")
+
+
+@api.post("/purchasing/requests/{request_id}/convert")
+async def convert_purchase_request(
+    request_id: str,
+    payload: PurchaseRequestConvert | None = None,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row, po = await purchase_requests_svc.convert_to_po(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        request_id=request_id,
+        supplier_id=(payload.supplier_id if payload else None),
+    )
+    await db.commit()
+    data = await purchase_requests_svc.serialize_request(db, row)
+    data["purchase_order"] = await purchasing_svc.serialize_po(db, po)
+    return env(data, "Purchase request converted to draft PO")
 
 
 @api.get("/purchasing/orders")
