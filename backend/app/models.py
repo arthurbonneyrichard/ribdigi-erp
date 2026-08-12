@@ -86,6 +86,23 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class CustomRole(Base):
+    __tablename__ = "custom_roles"
+    __table_args__ = (UniqueConstraint("tenant_id", "key"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    key: Mapped[str] = mapped_column(String(50))
+    label: Mapped[str] = mapped_column(String(120))
+    base_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    permissions: Mapped[dict] = mapped_column(JSON, default=dict)
+    record_scope: Mapped[str] = mapped_column(String(20), default="own")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class AuthSession(Base):
     __tablename__ = "auth_sessions"
 

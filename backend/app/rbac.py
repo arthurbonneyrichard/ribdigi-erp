@@ -106,6 +106,12 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
 }
 
 VALID_ROLES = set(ROLE_PERMISSIONS.keys())
+SYSTEM_ROLES = frozenset(VALID_ROLES)
+
+
+def is_system_role(role: str | None) -> bool:
+    return (role or "") in SYSTEM_ROLES
+
 
 # Record-level scope (BR-3.3). `department` reserved until org units exist.
 RECORD_SCOPES = frozenset({"own", "all"})
@@ -213,16 +219,30 @@ def serialize_user(user) -> dict:
     }
 
 
+def strip_meta_permissions(permissions: dict | None) -> dict:
+    if not isinstance(permissions, dict):
+        return {}
+    return {k: v for k, v in permissions.items() if k != RECORD_SCOPE_KEY and isinstance(v, list)}
+
+
 def has_permission(
     role: str,
     module: str,
     action: str,
     overrides: dict | None = None,
 ) -> bool:
-    """Check module/action permission. Role catalog is base; user overrides win."""
-    perms = permissions_for_role(role)
-    if overrides:
-        perms = {**perms, **overrides}
+    """Check module/action permission. Role catalog is base; user overrides win.
+
+    Custom (non-system) roles use overrides as the full permission map — never merge
+    onto a system default, or denied modules would leak from cashier defaults.
+    """
+    clean_overrides = strip_meta_permissions(overrides)
+    if not is_system_role(role):
+        perms = clean_overrides
+    else:
+        perms = permissions_for_role(role)
+        if clean_overrides:
+            perms = {**perms, **clean_overrides}
 
     if perms.get("*") == ["*"] or "*" in (perms.get("*") or []):
         return True

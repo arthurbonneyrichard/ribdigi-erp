@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type RoleRow = { role: string; label: string };
+type RoleRow = {
+  role: string;
+  label: string;
+  system?: boolean;
+  base_role?: string | null;
+  record_scope?: string;
+};
 type UserRow = {
   id: string;
   full_name: string;
@@ -46,6 +52,11 @@ export default function Page() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [roleForm, setRoleForm] = useState({
+    key: '',
+    label: '',
+    base_role: 'inventory_officer',
+  });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -100,6 +111,42 @@ export default function Page() {
       setError(err.message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function createCustomRole(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    setBusy(true);
+    try {
+      const r = await api('/roles', {
+        method: 'POST',
+        body: JSON.stringify({
+          key: roleForm.key.trim(),
+          label: roleForm.label.trim(),
+          base_role: roleForm.base_role || null,
+        }),
+      });
+      setRoleForm({ key: '', label: '', base_role: 'inventory_officer' });
+      setMessage(`Custom role ${r.data?.role || roleForm.key} created`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteCustomRole(role: string) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/roles/${role}`, { method: 'DELETE' });
+      setMessage(`Deleted role ${role}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
     }
   }
 
@@ -222,9 +269,64 @@ export default function Page() {
   return (
     <Shell>
       <h1>User Management</h1>
-      <p className="muted">Create users, assign system roles, and activate or deactivate accounts.</p>
+      <p className="muted">
+        Create users, assign system or custom roles, and activate or deactivate accounts.
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      {canWrite && (
+        <form onSubmit={createCustomRole} className="card" style={{ margin: '20px 0', display: 'grid', gap: 8 }}>
+          <h2 style={{ fontSize: 18, margin: 0 }}>Custom roles</h2>
+          <p className="muted" style={{ margin: 0 }}>
+            Clone a system role&apos;s permissions into a tenant-specific role key, then assign it to
+            users. System roles stay immutable.
+          </p>
+          <input
+            value={roleForm.key}
+            onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
+            placeholder="Role key (e.g. warehouse_lead)"
+            required
+          />
+          <input
+            value={roleForm.label}
+            onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
+            placeholder="Display label"
+            required
+          />
+          <select
+            value={roleForm.base_role}
+            onChange={(e) => setRoleForm({ ...roleForm, base_role: e.target.value })}
+          >
+            {roles
+              .filter((r) => r.system !== false && r.role !== 'super_admin')
+              .map((r) => (
+                <option key={r.role} value={r.role}>
+                  Clone from {r.label}
+                </option>
+              ))}
+          </select>
+          <button type="submit" disabled={busy}>
+            {busy ? 'Saving…' : 'Create custom role'}
+          </button>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {roles
+              .filter((r) => r.system === false)
+              .map((r) => (
+                <li key={r.role}>
+                  {r.label} <code>{r.role}</code>
+                  <button
+                    type="button"
+                    style={{ marginLeft: 8 }}
+                    onClick={() => deleteCustomRole(r.role)}
+                  >
+                    Delete
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </form>
+      )}
 
       {canWrite && (
         <div className="card" style={{ margin: '20px 0', display: 'grid', gap: 12 }}>
@@ -341,6 +443,7 @@ export default function Page() {
               .map((r) => (
                 <option key={r.role} value={r.role}>
                   {r.label}
+                  {r.system === false ? ' (custom)' : ''}
                 </option>
               ))}
           </select>
@@ -371,6 +474,7 @@ export default function Page() {
                     {roles.map((role) => (
                       <option key={role.role} value={role.role}>
                         {role.label}
+                        {role.system === false ? ' (custom)' : ''}
                       </option>
                     ))}
                   </select>

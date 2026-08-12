@@ -275,10 +275,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Predefined and custom role definitions.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Predefined roles: Super Admin, Company Admin, Store Manager, Sales Officer, Inventory Officer, Accountant, Cashier
-  - [ ] Each role has default permission set
-  - [ ] Custom role creation capability
-  - [ ] Role assignment to users
+  - [x] Predefined roles: Super Admin, Company Admin, Store Manager, Sales Officer, Inventory Officer, Accountant, Cashier
+  - [x] Each role has default permission set
+  - [x] Custom role creation capability
+  - [x] Role assignment to users
 
 #### BR-3.3 Permission System
 - **Description:** Granular access control across three dimensions.

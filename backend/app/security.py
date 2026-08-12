@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app import models as m
-from app.rbac import has_permission, permissions_for_role
+from app.rbac import has_permission, is_system_role, permissions_for_role
 
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
@@ -173,9 +173,17 @@ def require_permission(module: str, action: str = "read"):
         role = claims.get("role", "")
         overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
         # permissions in claims may be the full map from user; treat wildcard user override specially
-        user_overrides = None
         if overrides and overrides.get("*") == ["*"]:
             return claims
+        # Custom roles: evaluate against the full stored permission map.
+        if not is_system_role(role):
+            if not has_permission(role, module, action, overrides=overrides):
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Missing permission: {module}:{action}",
+                )
+            return claims
+        user_overrides = None
         if overrides and module in overrides:
             user_overrides = {module: overrides[module]}
         if not has_permission(role, module, action, overrides=user_overrides if user_overrides else overrides):

@@ -26,6 +26,7 @@ FORMAT_VERSION = 1
 
 # Restore order respects FK dependencies (parents before children).
 DATASET_SPECS: list[tuple[str, type]] = [
+    ("custom_roles", m.CustomRole),
     ("stores", m.Store),
     ("warehouses", m.Warehouse),
     ("product_categories", m.ProductCategory),
