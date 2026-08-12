@@ -1,4 +1,4 @@
-"""CSV export for stores, warehouses, and tax rates (Stage 121 X1)."""
+"""CSV export for stores, warehouses, tax rates (Stage 121 X1), and drawer settings (Stage 142 C1)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import cash_drawer as cash_drawer_svc
 from app import models as m
 
 STORE_EXPORT_COLUMNS = [
@@ -40,6 +41,17 @@ TAX_RATE_EXPORT_COLUMNS = [
     "pricing_mode",
     "is_reverse_charge",
     "is_default",
+    "is_active",
+]
+
+DRAWER_SETTINGS_EXPORT_COLUMNS = [
+    "store_id",
+    "code",
+    "name",
+    "drawer_mode",
+    "drawer_host",
+    "drawer_port",
+    "drawer_open_on_cash",
     "is_active",
 ]
 
@@ -153,6 +165,37 @@ async def export_tax_rates_csv(
                 "is_reverse_charge": _cell(bool(row.is_reverse_charge)),
                 "is_default": _cell(bool(row.is_default)),
                 "is_active": _cell(bool(row.is_active)),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_drawer_settings_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    is_active: bool | None = None,
+) -> str:
+    """Stage 142 C1 — secret-free cash drawer settings (kick bytes never included)."""
+    stmt = select(m.Store).where(m.Store.tenant_id == tenant_id)
+    if is_active is not None:
+        stmt = stmt.where(m.Store.is_active.is_(bool(is_active)))
+    rows = (await db.execute(stmt.order_by(m.Store.code))).scalars().all()
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=DRAWER_SETTINGS_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        cfg = cash_drawer_svc.serialize_drawer_settings(row)
+        writer.writerow(
+            {
+                "store_id": _cell(row.id),
+                "code": _cell(row.code),
+                "name": _cell(row.name),
+                "drawer_mode": _cell(cfg.get("drawer_mode")),
+                "drawer_host": _cell(cfg.get("drawer_host")),
+                "drawer_port": _cell(cfg.get("drawer_port")),
+                "drawer_open_on_cash": _cell(bool(cfg.get("drawer_open_on_cash"))),
+                "is_active": _cell(bool(getattr(row, "is_active", True))),
             }
         )
     return buf.getvalue()

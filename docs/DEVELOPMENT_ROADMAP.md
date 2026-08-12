@@ -2306,6 +2306,18 @@ Every feature in every phase must meet:
 
 **Stage 141 exit (2026-08-12):** O1, P1, T1, D1, H141x met — `docs/STAGE_141_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_289_STAGE141_FREEZE.md`. Fidelity: `docs/STAGE_141_FIDELITY.md`.
 
+**Stage 142 open (2026-08-12):** Tenant MVP POS Sales Register CSV, Session Z-Report CSV & Store Cash Drawer Settings CSV Export Fidelity — `docs/ADR_290_STAGE142_OPEN.md` + `docs/STAGE_142_PLAN.md` (Sales register → Z-report → Drawer settings → Fidelity; S1 next).
+
+**Stage 142 S1 (2026-08-12):** POS sales register CSV (`test_stage142_pos_sales_s1.py`).
+
+**Stage 142 Z1 (2026-08-12):** Session Z-report CSV (`test_stage142_z_report_z1.py`).
+
+**Stage 142 C1 (2026-08-12):** Store cash drawer settings CSV (`test_stage142_drawer_settings_c1.py`).
+
+**Stage 142 D1 (2026-08-12):** POS sales / Z-report / drawer settings export fidelity sync — `docs/STAGE_142_FIDELITY.md` (`test_stage142_fidelity_d1.py`).
+
+**Stage 142 exit (2026-08-12):** S1, Z1, C1, D1, H142x met — `docs/STAGE_142_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_291_STAGE142_FREEZE.md`. Fidelity: `docs/STAGE_142_FIDELITY.md`.
+
 
 
 

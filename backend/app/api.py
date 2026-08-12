@@ -71,6 +71,7 @@ from app import credit_ops_export as credit_ops_export_svc
 from app import inventory_ops_export as inventory_ops_export_svc
 from app import approval_settings_export as approval_settings_export_svc
 from app import ops_settings_export as ops_settings_export_svc
+from app import pos_ops_export as pos_ops_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -7654,6 +7655,75 @@ async def pos_session_report(
     return env(await pos_svc.shift_report(db, session))
 
 
+@api.get("/pos/sessions/{session_id}/report/export")
+async def pos_session_report_export(
+    session_id: str,
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 142 Z1 — POS session Z-report CSV (summary + sale lines)."""
+    text = await pos_ops_export_svc.export_session_z_report_csv(
+        db, tenant_id=claims["tenant_id"], session_id=session_id
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="pos_session_z_report_export.csv"'
+        },
+    )
+
+
+@api.get("/pos/sales")
+async def pos_list_sales(
+    session_id: str | None = None,
+    store_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 142 S1 — POS sales register list."""
+    rows = await pos_ops_export_svc.list_pos_sales(
+        db,
+        tenant_id=claims["tenant_id"],
+        session_id=session_id,
+        store_id=store_id,
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+    )
+    return env(
+        [pos_ops_export_svc.serialize_pos_sale(tx, sess) for tx, sess in rows]
+    )
+
+
+@api.get("/pos/sales/export")
+async def pos_sales_export(
+    session_id: str | None = None,
+    store_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 142 S1 — POS sales register CSV."""
+    text = await pos_ops_export_svc.export_pos_sales_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        session_id=session_id,
+        store_id=store_id,
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="pos_sales_export.csv"'
+        },
+    )
+
+
 @api.post("/pos/sales")
 async def pos_sale(
     payload: PosSaleCreate,
@@ -11455,6 +11525,25 @@ async def stores_export(
         content=text,
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="stores_export.csv"'},
+    )
+
+
+@api.get("/stores/drawer-settings/export")
+async def stores_drawer_settings_export(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 142 C1 — store cash drawer settings CSV (kick bytes never included)."""
+    text = await location_export_svc.export_drawer_settings_csv(
+        db, tenant_id=claims["tenant_id"], is_active=is_active
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="store_drawer_settings_export.csv"'
+        },
     )
 
 

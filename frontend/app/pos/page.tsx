@@ -123,6 +123,34 @@ export default function Page() {
     }
   }
 
+  async function downloadPosCsv(path: string, filename: string) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}${path}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || `${filename} export failed`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage(`${filename} exported`);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ps = (params.get('pos_session_status') || '').trim().toLowerCase();
@@ -451,7 +479,8 @@ export default function Page() {
         <p className="muted" style={{ marginBottom: 8 }}>
           Recent shifts (tenant-scoped). Filter via <code>pos_session_status</code> →{' '}
           <code>GET /pos/sessions?status=</code>; export via <code>/pos/sessions/export</code> (Stage
-          130 P1).
+          130 P1). Sales register CSV via <code>GET /pos/sales/export</code> (Stage 142 S1); Z-report
+          CSV via <code>GET /pos/sessions/&#123;id&#125;/report/export</code> (Stage 142 Z1).
         </p>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
           <select
@@ -497,6 +526,12 @@ export default function Page() {
           >
             Export sessions CSV
           </button>
+          <button
+            type="button"
+            onClick={() => downloadPosCsv('/pos/sales/export', 'pos_sales_export.csv')}
+          >
+            Export sales CSV
+          </button>
         </div>
         <table className="table">
           <thead>
@@ -529,6 +564,17 @@ export default function Page() {
                 <td>
                   <button type="button" onClick={() => viewShiftReport(s.session_id || s.id)}>
                     Report
+                  </button>{' '}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      downloadPosCsv(
+                        `/pos/sessions/${s.session_id || s.id}/report/export`,
+                        'pos_session_z_report_export.csv'
+                      )
+                    }
+                  >
+                    Export Z-report CSV
                   </button>
                 </td>
               </tr>
@@ -546,6 +592,19 @@ export default function Page() {
               {shiftReport.payment_breakdown?.other ?? 0} · Lines{' '}
               {(shiftReport.sales || []).length}
             </p>
+            <button
+              type="button"
+              style={{ marginTop: 8 }}
+              onClick={() =>
+                downloadPosCsv(
+                  `/pos/sessions/${shiftReport.session?.session_id || ''}/report/export`,
+                  'pos_session_z_report_export.csv'
+                )
+              }
+              disabled={!shiftReport.session?.session_id}
+            >
+              Export Z-report CSV
+            </button>
           </div>
         )}
       </div>

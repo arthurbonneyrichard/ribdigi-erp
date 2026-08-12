@@ -23,4 +23,4 @@ Stage 141 Tenant MVP Outstanding Bills CSV, Supplier Payment Schedule CSV & Part
 
 ## Next stage
 
-Stage 142 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 141 feature scope remains frozen.
+Stage 142 opened via CONTINUE/NEXT as **Tenant MVP POS Sales Register CSV, Session Z-Report CSV & Store Cash Drawer Settings CSV Export Fidelity** ([ADR-290](ADR_290_STAGE142_OPEN.md)) and closed under [ADR-291](ADR_291_STAGE142_FREEZE.md). Stage 141 feature scope remains frozen.

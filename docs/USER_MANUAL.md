@@ -237,6 +237,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Outstanding Bills CSV:** Credit Export outstanding CSV (Stage 141 O1)
 - **Supplier Payment Schedule CSV:** Credit Export schedule CSV (Stage 141 P1)
 - **Party Statement CSV:** Credit Export statement CSV (Stage 141 T1)
+- **POS Sales Register CSV:** POS Export sales CSV (Stage 142 S1)
+- **Session Z-Report CSV:** POS Export Z-report CSV (Stage 142 Z1)
+- **Cash Drawer Settings CSV:** Stores Export drawer settings CSV — kick bytes excluded (Stage 142 C1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

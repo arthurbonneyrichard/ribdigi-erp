@@ -726,6 +726,10 @@ export default function Page() {
         </div>
         <div className="card" id="cash-drawer">
           <h3>Cash drawer</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Drawer settings CSV via <code>GET /stores/drawer-settings/export</code> (Stage 142 C1;
+            kick bytes never included).
+          </p>
           <div style={{ display: 'grid', gap: 8 }}>
             <select
               value={drawerStoreId}
@@ -777,6 +781,14 @@ export default function Page() {
             </label>
             <button onClick={saveDrawerSettings} disabled={!drawerStoreId}>
               Save drawer settings
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv('/stores/drawer-settings/export', 'store_drawer_settings_export.csv')
+              }
+            >
+              Export drawer settings CSV
             </button>
           </div>
         </div>
