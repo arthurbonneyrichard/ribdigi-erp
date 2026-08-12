@@ -23,4 +23,4 @@ Stage 101 Tenant MVP Inventory Ops & Shift History Ops delivered Opening Stock &
 
 ## Next stage
 
-Stage 102 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 101 feature scope remains frozen.
+Stage 102 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-210](ADR_210_STAGE102_OPEN.md) + [STAGE_102_PLAN.md](STAGE_102_PLAN.md) (Tenant MVP Residual Reports & Surface Honesty Ops). Stage 101 feature scope remains frozen.

@@ -119,6 +119,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Opening Stock / Movements:** Shell deep-links; Catalog Categories anchor; movement type URL filter (Stage 101 O1)
 - **Recurring Expenses / Budgets:** Shell anchors; expense notifications open pending queue or recurring section (Stage 101 E1)
 - **POS Sessions:** Session history and shift reports on POS; Shell POS Sessions leaf (Stage 101 P1)
+- **Reports Summary / Sales / Customers / Stores / Transfers / Schedules:** Shell deep-links to remaining report tabs (Stage 102 R1)
+- **Tax Calculator / Filing Pack / Company Tax / Inter-store Transfers:** Shell anchors on Tax, Company, and Stores (Stage 102 T1)
+- **AI Chat / Forecast / Dead Stock / Insights / Security:** Shell deep-links; Audit date-range filters; Sales Invoices leaf (Stage 102 A1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

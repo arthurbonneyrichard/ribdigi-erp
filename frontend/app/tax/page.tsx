@@ -84,6 +84,18 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
+  // Stage 102 T1 — honor Shell #rates / #calculator / #filing
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
   function applyPeriod(kind: 'monthly' | 'quarterly' | 'annually') {
     setPeriodPreset(kind);
     refresh(kind).catch((err) => setError(err.message));
@@ -299,7 +311,7 @@ export default function Page() {
       </div>
 
       <div className="grid">
-        <div className="card">
+        <div className="card" id="rates">
           <h3>{editId ? 'Edit rate' : 'Create rate'}</h3>
           <div style={{ display: 'grid', gap: 8 }}>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
@@ -340,7 +352,7 @@ export default function Page() {
             </div>
           </div>
         </div>
-        <div className="card">
+        <div className="card" id="calculator">
           <h3>Calculator</h3>
           <input value={calcAmount} onChange={(e) => setCalcAmount(e.target.value)} />
           <button onClick={calculate} style={{ marginTop: 8 }}>
@@ -370,7 +382,7 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card" style={{ marginTop: 16 }} id="filing">
         <h3>Filing pack</h3>
         <p className="muted">
           Jurisdiction-neutral boxes + output/input schedules

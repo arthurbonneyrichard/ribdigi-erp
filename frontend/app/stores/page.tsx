@@ -173,6 +173,18 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
+  // Stage 102 T1 — honor Shell #transfers / #warehouses
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
   async function createStore() {
     setError('');
     try {
@@ -530,7 +542,7 @@ export default function Page() {
             </button>
           </div>
         </div>
-        <div className="card">
+        <div className="card" id="transfers">
           <h3>New transfer</h3>
           <div style={{ display: 'grid', gap: 8 }}>
             <select value={fromStore} onChange={(e) => setFromStore(e.target.value)}>

@@ -1825,3 +1825,15 @@ Every feature in every phase must meet:
 **Stage 101 D1 (2026-08-12):** Inventory ops & shift history fidelity sync — `docs/STAGE_101_FIDELITY.md` (`test_stage101_fidelity_d1.py`).
 
 **Stage 101 exit (2026-08-12):** O1, E1, P1, D1, H101x met — `docs/STAGE_101_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_209_STAGE101_FREEZE.md`. Fidelity: `docs/STAGE_101_FIDELITY.md`.
+
+**Stage 102 open (2026-08-12):** Tenant MVP Residual Reports & Surface Honesty Ops — `docs/ADR_210_STAGE102_OPEN.md` + `docs/STAGE_102_PLAN.md` (Residual report tabs → Tax/transfers → AI/Activity → Residual Reports & Surface Honesty Ops; R1 next).
+
+**Stage 102 R1 (2026-08-12):** Remaining Reports tab Shell discoverability (`test_stage102_reports_residual_r1.py`).
+
+**Stage 102 T1 (2026-08-12):** Tax filing / company tax / inter-store transfer honesty (`test_stage102_tax_transfer_t1.py`).
+
+**Stage 102 A1 (2026-08-12):** AI section + Activity surface discoverability (`test_stage102_ai_activity_a1.py`).
+
+**Stage 102 D1 (2026-08-12):** Residual reports & surface honesty fidelity sync — `docs/STAGE_102_FIDELITY.md` (`test_stage102_fidelity_d1.py`).
+
+**Stage 102 exit (2026-08-12):** R1, T1, A1, D1, H102x met — `docs/STAGE_102_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_211_STAGE102_FREEZE.md`. Fidelity: `docs/STAGE_102_FIDELITY.md`.

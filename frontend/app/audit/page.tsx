@@ -15,6 +15,8 @@ export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
   const [module, setModule] = useState(() => searchParams.get('module') || '');
   const [action, setAction] = useState(() => searchParams.get('action') || '');
+  const [fromDate, setFromDate] = useState(() => searchParams.get('from_date') || '');
+  const [toDate, setToDate] = useState(() => searchParams.get('to_date') || '');
   const [verify, setVerify] = useState<any>(null);
   const [retention, setRetention] = useState<any>(null);
   const [archives, setArchives] = useState<any[]>([]);
@@ -22,22 +24,40 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  function syncUrl(next: { module?: string; action?: string }) {
+  function syncUrl(next: {
+    module?: string;
+    action?: string;
+    fromDate?: string;
+    toDate?: string;
+  }) {
     const params = new URLSearchParams();
     const nm = next.module !== undefined ? next.module : module;
     const na = next.action !== undefined ? next.action : action;
+    const nf = next.fromDate !== undefined ? next.fromDate : fromDate;
+    const nt = next.toDate !== undefined ? next.toDate : toDate;
     if (nm.trim()) params.set('module', nm.trim());
     if (na.trim()) params.set('action', na.trim());
+    if (nf.trim()) params.set('from_date', nf.trim());
+    if (nt.trim()) params.set('to_date', nt.trim());
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
 
-  async function refresh(overrides?: { module?: string; action?: string }) {
+  async function refresh(overrides?: {
+    module?: string;
+    action?: string;
+    fromDate?: string;
+    toDate?: string;
+  }) {
     const mod = overrides?.module !== undefined ? overrides.module : module;
     const act = overrides?.action !== undefined ? overrides.action : action;
+    const fd = overrides?.fromDate !== undefined ? overrides.fromDate : fromDate;
+    const td = overrides?.toDate !== undefined ? overrides.toDate : toDate;
     const params = new URLSearchParams();
     if (mod.trim()) params.set('module', mod.trim());
     if (act.trim()) params.set('action', act.trim());
+    if (fd.trim()) params.set('from_date', fd.trim());
+    if (td.trim()) params.set('to_date', td.trim());
     const q = params.toString() ? `?${params}` : '';
     const [logs, policy, archiveList] = await Promise.all([
       api(`/audit-logs${q}`),
@@ -64,9 +84,18 @@ export default function Page() {
   useEffect(() => {
     const fromModule = searchParams.get('module') || '';
     const fromAction = searchParams.get('action') || '';
+    const fromFrom = searchParams.get('from_date') || '';
+    const fromTo = searchParams.get('to_date') || '';
     setModule(fromModule);
     setAction(fromAction);
-    refresh({ module: fromModule, action: fromAction }).catch((err) => setError(err.message));
+    setFromDate(fromFrom);
+    setToDate(fromTo);
+    refresh({
+      module: fromModule,
+      action: fromAction,
+      fromDate: fromFrom,
+      toDate: fromTo,
+    }).catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -105,6 +134,8 @@ export default function Page() {
       const params = new URLSearchParams();
       if (module) params.set('module', module);
       if (action) params.set('action', action);
+      if (fromDate) params.set('from_date', fromDate);
+      if (toDate) params.set('to_date', toDate);
       params.set('format', 'csv');
       const res = await fetch(`${base}/audit-logs/export?${params}`, {
         headers: {
@@ -134,6 +165,8 @@ export default function Page() {
       const params = new URLSearchParams();
       if (module) params.set('module', module);
       if (action) params.set('action', action);
+      if (fromDate) params.set('from_date', fromDate);
+      if (toDate) params.set('to_date', toDate);
       params.set('format', 'pdf');
       const res = await fetch(`${base}/audit-logs/export?${params}`, {
         headers: {
@@ -178,9 +211,21 @@ export default function Page() {
           onChange={(e) => setAction(e.target.value)}
           placeholder="Action"
         />
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          aria-label="From date"
+        />
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          aria-label="To date"
+        />
         <button
           onClick={() => {
-            syncUrl({ module, action });
+            syncUrl({ module, action, fromDate, toDate });
             refresh().catch((e) => setError(e.message));
           }}
         >

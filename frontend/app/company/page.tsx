@@ -118,6 +118,18 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
+  // Stage 102 T1 — honor Shell #tax (and prior settings anchors)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
   async function save() {
     setError('');
     try {

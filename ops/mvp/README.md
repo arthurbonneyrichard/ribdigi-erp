@@ -259,6 +259,9 @@ Authoritative MVP docs:
 - `docs/STAGE_99_EXIT_CRITERIA.md` / `docs/ADR_205_STAGE99_FREEZE.md` (`backend/tests/test_stage99_exit_h99x.py`) — Stage 99 H99x
 - `docs/STAGE_100_EXIT_CRITERIA.md` / `docs/ADR_207_STAGE100_FREEZE.md` (`backend/tests/test_stage100_exit_h100x.py`) — Stage 100 H100x
 - `docs/STAGE_101_EXIT_CRITERIA.md` / `docs/ADR_209_STAGE101_FREEZE.md` (`backend/tests/test_stage101_exit_h101x.py`) — Stage 101 H101x
+- `docs/STAGE_102_EXIT_CRITERIA.md` / `docs/ADR_211_STAGE102_FREEZE.md` (`backend/tests/test_stage102_exit_h102x.py`) — Stage 102 H102x
+- `docs/STAGE_102_FIDELITY.md` (`backend/tests/test_stage102_fidelity_d1.py`) — Stage 102 D1
+- `docs/STAGE_102_PLAN.md` (`backend/tests/test_stage102_open.py`) — Stage 102 open (ADR-210)
 - `docs/STAGE_101_FIDELITY.md` (`backend/tests/test_stage101_fidelity_d1.py`) — Stage 101 D1
 - `docs/STAGE_101_PLAN.md` (`backend/tests/test_stage101_open.py`) — Stage 101 open (ADR-208)
 - `docs/STAGE_100_FIDELITY.md` (`backend/tests/test_stage100_fidelity_d1.py`) — Stage 100 D1
@@ -1120,6 +1123,18 @@ H100x met — `docs/STAGE_100_EXIT_CRITERIA.md`, ADR-207. Stages 1–100 frozen 
 ## Stage 101 exit
 
 H101x met — `docs/STAGE_101_EXIT_CRITERIA.md`, ADR-209. Stages 1–101 frozen for Stage 101 feature scope.
+
+## Stage 102 exit
+
+H102x met — `docs/STAGE_102_EXIT_CRITERIA.md`, ADR-211. Stages 1–102 frozen for Stage 102 feature scope.
+
+## Stage 102 D1 — Tenant MVP Residual Reports & Surface Honesty Ops
+
+`docs/STAGE_102_FIDELITY.md` — maps R1–A1 → readiness / launch / deploy / security.
+
+## Stage 102 open
+
+ADR-210 + `docs/STAGE_102_PLAN.md` — Tenant MVP Residual Reports & Surface Honesty Ops.
 
 ## Stage 101 D1 — Tenant MVP Inventory Ops & Shift History Ops
 

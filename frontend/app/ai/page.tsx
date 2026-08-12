@@ -407,6 +407,18 @@ export default function Page() {
     }
   }
 
+  // Stage 102 A1 — honor Shell AI section hashes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
   return (
     <Shell>
       <h1>AI Business Assistant</h1>
@@ -418,7 +430,8 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      {/* Stage 102 A1 — section anchors for Shell deep-links */}
+      <div className="card" style={{ marginBottom: 16 }} id="chat">
         <h3>Chat</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Try: &quot;What is my top selling product this month?&quot; or &quot;Create a purchase order for 50
@@ -459,7 +472,7 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="forecast">
         <h3>Demand forecast</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           7 / 30 / 90-day unit demand from sales velocity with short-window seasonality and optimal
@@ -510,7 +523,7 @@ export default function Page() {
         </table>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="dead-stock">
         <h3>Dead stock</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           On-hand inventory with no posted sales in the last 90 days.
@@ -549,7 +562,7 @@ export default function Page() {
         </table>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="sales-analysis">
         <h3>Sales analysis</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Trends, RFM segments, product affinity, and peak hour/day from posted invoices.
@@ -595,7 +608,7 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="expense-analysis">
         <h3>Expense analysis</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Budget variance, unusual spends, and cost optimization suggestions.
@@ -625,7 +638,7 @@ export default function Page() {
         ))}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="purchases-analysis">
         <h3>Purchases analysis</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Spend trend, supplier concentration, PO fill/open backlog, and overdue bills from live PO /
@@ -661,7 +674,7 @@ export default function Page() {
         ))}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="cross-domain">
         <h3>Cross-domain analysis</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Orchestrates Inventory, Sales, Purchases, and Expenses analyzers into synthesis signals.
@@ -695,7 +708,7 @@ export default function Page() {
         ))}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="document">
         <h3>Document analyze</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           OCR extract / match / discrepancy flags via <code>POST /ai/documents/analyze</code>. Suggest
@@ -747,7 +760,7 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="customer">
         <h3>Customer assistant</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Churn risk, best customers, and promotion suggestions from sales history.
@@ -787,7 +800,7 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="report-generator">
         <h3>Report generator</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Ask in plain language, e.g. &quot;Show me monthly sales for Q2&quot; or &quot;low stock as pdf&quot;.
@@ -845,7 +858,7 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="security">
         <h3>Security monitor</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Unusual logins and suspicious transaction bursts from audit history.
@@ -867,7 +880,7 @@ export default function Page() {
         ))}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="insights">
         <h3>Business insights</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Sales spikes/drops, purchase spend and overdue bills, expense anomalies, and restock
@@ -895,7 +908,7 @@ export default function Page() {
         ))}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="low-stock">
         <h3>Low stock prediction</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Sales velocity over ~30 days with a short seasonality factor. Horizon 7–14 days.
