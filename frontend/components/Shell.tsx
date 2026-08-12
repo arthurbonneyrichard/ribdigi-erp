@@ -31,6 +31,18 @@ const primaryNavSpec: NavEntry[] = [
   { kind: 'link', label: 'Sales', href: '/sales', modules: ['sales'] },
   { kind: 'link', label: 'POS', href: '/pos', modules: ['pos'] },
   { kind: 'link', label: 'Purchasing', href: '/purchasing', modules: ['purchasing'] },
+  {
+    kind: 'link',
+    label: 'Outstanding Purchases',
+    href: '/purchasing?tab=invoices&status=outstanding',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
+    label: 'Purchase Settings',
+    href: '/purchasing?tab=settings',
+    modules: ['purchasing'],
+  },
   { kind: 'section', label: 'People' },
   {
     kind: 'link',
@@ -66,8 +78,20 @@ const primaryNavSpec: NavEntry[] = [
     modules: ['accounting'],
   },
   { kind: 'link', label: 'Accounting', href: '/accounting', modules: ['accounting'] },
+  {
+    kind: 'link',
+    label: 'Opening Balances',
+    href: '/accounting?tab=ledger#opening-balances',
+    modules: ['accounting'],
+  },
   { kind: 'link', label: 'Credit', href: '/credit', modules: ['credit'] },
   { kind: 'link', label: 'Tax', href: '/tax', modules: ['tax'] },
+  {
+    kind: 'link',
+    label: 'Tax Rates',
+    href: '/tax',
+    modules: ['tax'],
+  },
   { kind: 'section', label: 'Operations' },
   { kind: 'link', label: 'Stores', href: '/stores', modules: ['stores'] },
   { kind: 'link', label: 'Warehouse', href: '/stores#warehouses', modules: ['stores'] },
@@ -81,6 +105,24 @@ const primaryNavSpec: NavEntry[] = [
   { kind: 'link', label: 'Notifications', href: '/notifications', modules: ['notifications'] },
   { kind: 'link', label: 'AI Assistant', href: '/ai', modules: ['ai'] },
   { kind: 'link', label: 'Settings', href: '/company', modules: ['company'] },
+  {
+    kind: 'link',
+    label: 'Fiscal Period',
+    href: '/company#fiscal-period',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Email Settings',
+    href: '/company#email',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'SMS Settings',
+    href: '/company#sms',
+    modules: ['company'],
+  },
   {
     kind: 'link',
     label: 'Document templates',
@@ -102,6 +144,12 @@ const userMgmtLinks: NavLink[] = [
   { kind: 'link', label: 'Audit', href: '/audit', modules: ['audit'] },
   { kind: 'link', label: 'Activity', href: '/activity', modules: ['audit'] },
   { kind: 'link', label: 'Backup', href: '/backup', modules: ['backup'] },
+  {
+    kind: 'link',
+    label: 'Backup & Restore',
+    href: '/backup',
+    modules: ['backup'],
+  },
   { kind: 'link', label: 'Security', href: '/security', modules: ['security'] },
 ];
 

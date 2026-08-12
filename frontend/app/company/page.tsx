@@ -440,28 +440,33 @@ export default function Page() {
           onChange={(e) => setTenant({ ...tenant, timezone: e.target.value })}
           placeholder="Timezone"
         />
-        <input
-          value={tenant.fiscal_year_start || ''}
-          onChange={(e) => setTenant({ ...tenant, fiscal_year_start: e.target.value })}
-          placeholder="Fiscal year start MM-DD"
-        />
-        <input
-          value={tenant.tax_jurisdiction || 'GH'}
-          onChange={(e) => setTenant({ ...tenant, tax_jurisdiction: e.target.value.toUpperCase() })}
-          placeholder="Tax jurisdiction (e.g. GH)"
-        />
-        <input
-          value={tenant.tax_registration_number || ''}
-          onChange={(e) => setTenant({ ...tenant, tax_registration_number: e.target.value })}
-          placeholder="TIN / VAT registration number"
-        />
-        <select
-          value={tenant.tax_filing_period || 'monthly'}
-          onChange={(e) => setTenant({ ...tenant, tax_filing_period: e.target.value })}
-        >
-          <option value="monthly">Filing period: monthly</option>
-          <option value="quarterly">Filing period: quarterly</option>
-        </select>
+        <div id="fiscal-period" style={{ display: 'grid', gap: 8 }}>
+          <input
+            value={tenant.fiscal_year_start || ''}
+            onChange={(e) => setTenant({ ...tenant, fiscal_year_start: e.target.value })}
+            placeholder="Fiscal year start MM-DD"
+            aria-label="Fiscal year start"
+          />
+        </div>
+        <div id="tax" style={{ display: 'grid', gap: 8 }}>
+          <input
+            value={tenant.tax_jurisdiction || 'GH'}
+            onChange={(e) => setTenant({ ...tenant, tax_jurisdiction: e.target.value.toUpperCase() })}
+            placeholder="Tax jurisdiction (e.g. GH)"
+          />
+          <input
+            value={tenant.tax_registration_number || ''}
+            onChange={(e) => setTenant({ ...tenant, tax_registration_number: e.target.value })}
+            placeholder="TIN / VAT registration number"
+          />
+          <select
+            value={tenant.tax_filing_period || 'monthly'}
+            onChange={(e) => setTenant({ ...tenant, tax_filing_period: e.target.value })}
+          >
+            <option value="monthly">Filing period: monthly</option>
+            <option value="quarterly">Filing period: quarterly</option>
+          </select>
+        </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={save} disabled={!!tenant.read_only}>
             Save profile
@@ -656,7 +661,7 @@ export default function Page() {
       )}
 
       {emailStatus && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
+        <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="email">
           <h2>Email / SMTP</h2>
           <p className="muted">
             Mode: {emailStatus.mode} · Source: {emailStatus.source} · Configured:{' '}
@@ -772,7 +777,7 @@ export default function Page() {
       )}
 
       {smsStatus && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
+        <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="sms">
           <h2>SMS / Twilio</h2>
           <p className="muted">
             Mode: {smsStatus.mode} · Configured: {String(smsStatus.configured)} · Enabled:{' '}

@@ -271,6 +271,21 @@ def _font(size: int = 14) -> ImageFont.ImageFont:
             return ImageFont.load_default()
 
 
+def render_qr_image(code: str, *, box_size: int = 5, border: int = 2) -> Image.Image:
+    """Stage 97 I1 — QR encoding of the product barcode/SKU payload."""
+    import qrcode
+
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=box_size,
+        border=border,
+    )
+    qr.add_data(code)
+    qr.make(fit=True)
+    return qr.make_image(fill_color="black", back_color="white").convert("RGB")
+
+
 def render_label_image(
     *,
     name: str,
@@ -280,6 +295,7 @@ def render_label_image(
     currency: str = "GHS",
     width: int = 400,
     height: int = 220,
+    code_type: str = "barcode",
 ) -> Image.Image:
     img = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(img)
@@ -293,12 +309,19 @@ def render_label_image(
     if price is not None:
         draw.text((12, 52), f"{currency} {float(price):.2f}", fill="black", font=small_font)
 
-    bars = render_barcode_image(barcode, module_width=2, height=70)
-    # Fit barcode into label width with margins
-    max_bar_w = width - 24
-    if bars.width > max_bar_w:
-        ratio = max_bar_w / bars.width
-        bars = bars.resize((max_bar_w, max(40, int(bars.height * ratio))), Image.Resampling.NEAREST)
+    ctype = (code_type or "barcode").strip().lower()
+    if ctype == "qr":
+        bars = render_qr_image(barcode, box_size=4, border=1)
+        max_side = min(width - 24, height - 100)
+        if bars.width > max_side or bars.height > max_side:
+            bars = bars.resize((max_side, max_side), Image.Resampling.NEAREST)
+    else:
+        bars = render_barcode_image(barcode, module_width=2, height=70)
+        # Fit barcode into label width with margins
+        max_bar_w = width - 24
+        if bars.width > max_bar_w:
+            ratio = max_bar_w / bars.width
+            bars = bars.resize((max_bar_w, max(40, int(bars.height * ratio))), Image.Resampling.NEAREST)
     bx = (width - bars.width) // 2
     by = 78
     img.paste(bars, (bx, by))
@@ -317,7 +340,9 @@ def label_png_bytes(**kwargs: Any) -> bytes:
     return buf.getvalue()
 
 
-def build_labels_html(labels: list[dict[str, Any]], *, currency: str = "GHS") -> str:
+def build_labels_html(
+    labels: list[dict[str, Any]], *, currency: str = "GHS", code_type: str = "barcode"
+) -> str:
     cards: list[str] = []
     for label in labels:
         png = label_png_bytes(
@@ -326,6 +351,7 @@ def build_labels_html(labels: list[dict[str, Any]], *, currency: str = "GHS") ->
             barcode=label["barcode"],
             price=label.get("price"),
             currency=currency,
+            code_type=code_type,
         )
         b64 = base64.b64encode(png).decode("ascii")
         copies = max(1, int(label.get("copies") or 1))
@@ -333,9 +359,10 @@ def build_labels_html(labels: list[dict[str, Any]], *, currency: str = "GHS") ->
             cards.append(
                 f'<div class="label"><img src="data:image/png;base64,{b64}" alt="{label["barcode"]}"/></div>'
             )
+    title = "QR labels" if (code_type or "barcode").strip().lower() == "qr" else "Barcode labels"
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"/>
-<title>Barcode labels</title>
+<title>{title}</title>
 <style>
   @page {{ margin: 8mm; }}
   body {{ font-family: sans-serif; margin: 0; }}
@@ -351,7 +378,13 @@ def build_labels_html(labels: list[dict[str, Any]], *, currency: str = "GHS") ->
 </body></html>"""
 
 
-def build_labels_sheet_png(labels: list[dict[str, Any]], *, currency: str = "GHS", cols: int = 3) -> bytes:
+def build_labels_sheet_png(
+    labels: list[dict[str, Any]],
+    *,
+    currency: str = "GHS",
+    cols: int = 3,
+    code_type: str = "barcode",
+) -> bytes:
     expanded: list[Image.Image] = []
     for label in labels:
         copies = max(1, int(label.get("copies") or 1))
@@ -361,6 +394,7 @@ def build_labels_sheet_png(labels: list[dict[str, Any]], *, currency: str = "GHS
             barcode=label["barcode"],
             price=label.get("price"),
             currency=currency,
+            code_type=code_type,
         )
         for _ in range(copies):
             expanded.append(img)
@@ -429,8 +463,10 @@ def _png_to_pdf(png_bytes: bytes) -> bytes:
     return bytes(out)
 
 
-def build_labels_pdf(labels: list[dict[str, Any]], *, currency: str = "GHS") -> bytes:
-    return _png_to_pdf(build_labels_sheet_png(labels, currency=currency))
+def build_labels_pdf(
+    labels: list[dict[str, Any]], *, currency: str = "GHS", code_type: str = "barcode"
+) -> bytes:
+    return _png_to_pdf(build_labels_sheet_png(labels, currency=currency, code_type=code_type))
 
 
 async def resolve_label_targets(

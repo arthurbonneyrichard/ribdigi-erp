@@ -820,6 +820,8 @@ class BarcodeLabelPrintRequest(BaseModel):
     format: str = "html"
     include_price: bool = True
     columns: int = Field(default=3, ge=1, le=4)
+    # Stage 97 I1 — barcode (default) or qr
+    code_type: str = "barcode"
 
 
 class PurchaseOrderItemUpdate(BaseModel):

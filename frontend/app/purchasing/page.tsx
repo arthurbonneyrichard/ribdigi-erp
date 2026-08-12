@@ -5,8 +5,16 @@ import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
 
-type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
-const PURCHASING_TABS: Tab[] = ['suppliers', 'requests', 'orders', 'grn', 'invoices', 'returns'];
+type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns' | 'settings';
+const PURCHASING_TABS: Tab[] = [
+  'suppliers',
+  'requests',
+  'orders',
+  'grn',
+  'invoices',
+  'returns',
+  'settings',
+];
 type SupplierContact = {
   id: string;
   name: string;
@@ -201,17 +209,22 @@ export default function Page() {
     invoice_date: string;
   } | null>(null);
   const [ocrMeta, setOcrMeta] = useState<any>(null);
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  async function refresh() {
+  async function refresh(invoiceStatus?: string) {
+    const status = invoiceStatus !== undefined ? invoiceStatus : invoiceStatusFilter;
+    const invPath = status
+      ? `/purchasing/invoices?status=${encodeURIComponent(status)}`
+      : '/purchasing/invoices';
     const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes, settingsRes] = await Promise.all([
       api('/purchasing/requests'),
       api('/purchasing/orders'),
       api('/suppliers'),
       api('/products'),
       api('/purchasing/grn'),
-      api('/purchasing/invoices'),
+      api(invPath),
       api('/purchasing/returns'),
       api('/purchasing/settings'),
     ]);
@@ -225,8 +238,23 @@ export default function Page() {
     setPrLevels(settingsRes.data?.levels || []);
   }
 
+  function setInvoiceStatus(next: string) {
+    setInvoiceStatusFilter(next);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (!next) url.searchParams.delete('status');
+      else url.searchParams.set('status', next);
+      const qs = url.searchParams.toString();
+      window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
+    }
+    refresh(next).catch((err) => setError(err.message));
+  }
+
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    const raw = new URLSearchParams(window.location.search).get('status')?.trim() || '';
+    const allowed = ['draft', 'unpaid', 'partial', 'overdue', 'paid', 'cancelled', 'outstanding'];
+    if (allowed.includes(raw)) setInvoiceStatusFilter(raw);
+    refresh(allowed.includes(raw) ? raw : '').catch((err) => setError(err.message));
   }, []);
 
   useEffect(() => {
@@ -976,6 +1004,7 @@ export default function Page() {
             ['grn', 'GRNs'],
             ['invoices', 'Invoices'],
             ['returns', 'Returns'],
+            ['settings', 'Settings'],
           ] as const
         ).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
@@ -1119,47 +1148,51 @@ export default function Page() {
         </div>
       )}
 
-      {tab === 'requests' && prLevels.length > 0 && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <h3>PR approval matrix</h3>
+      {tab === 'settings' && (
+        <div className="card" style={{ marginBottom: 16 }} id="purchase-settings">
+          <h3>Purchase settings</h3>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Estimated total must exceed a level&apos;s min to require that step (Store Manager → Company Admin by
-            default). Company admins can save changes.
+            PR approval matrix — estimated total must exceed a level&apos;s min to require that step (Store
+            Manager → Company Admin by default). Company admins can save changes.
           </p>
-          {prLevels.map((lvl, idx) => (
-            <div
-              key={idx}
-              style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}
-            >
-              <span className="muted">L{idx + 1}</span>
-              <input
-                value={lvl.min_amount}
-                onChange={(e) => updatePrLevel(idx, { min_amount: Number(e.target.value) || 0 })}
-                placeholder="Min amount"
-                style={{ width: 100 }}
-              />
-              <input
-                value={lvl.label || ''}
-                onChange={(e) => updatePrLevel(idx, { label: e.target.value })}
-                placeholder="Label"
-                style={{ width: 140 }}
-              />
-              <input
-                value={(lvl.roles || []).join(', ')}
-                onChange={(e) =>
-                  updatePrLevel(idx, {
-                    roles: e.target.value
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  })
-                }
-                placeholder="roles"
-                style={{ minWidth: 220, flex: 1 }}
-              />
-            </div>
-          ))}
-          <button type="button" onClick={savePrMatrix}>
+          {prLevels.length === 0 ? (
+            <p className="muted">No approval levels loaded.</p>
+          ) : (
+            prLevels.map((lvl, idx) => (
+              <div
+                key={idx}
+                style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}
+              >
+                <span className="muted">L{idx + 1}</span>
+                <input
+                  value={lvl.min_amount}
+                  onChange={(e) => updatePrLevel(idx, { min_amount: Number(e.target.value) || 0 })}
+                  placeholder="Min amount"
+                  style={{ width: 100 }}
+                />
+                <input
+                  value={lvl.label || ''}
+                  onChange={(e) => updatePrLevel(idx, { label: e.target.value })}
+                  placeholder="Label"
+                  style={{ width: 140 }}
+                />
+                <input
+                  value={(lvl.roles || []).join(', ')}
+                  onChange={(e) =>
+                    updatePrLevel(idx, {
+                      roles: e.target.value
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                  placeholder="roles"
+                  style={{ minWidth: 220, flex: 1 }}
+                />
+              </div>
+            ))
+          )}
+          <button type="button" onClick={savePrMatrix} disabled={prLevels.length === 0}>
             Save matrix
           </button>
         </div>
@@ -1686,6 +1719,24 @@ export default function Page() {
 
       {tab === 'invoices' && (
         <>
+          <div
+            style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}
+          >
+            <strong>Outstanding / status</strong>
+            <select
+              value={invoiceStatusFilter}
+              onChange={(e) => setInvoiceStatus(e.target.value)}
+              aria-label="Filter purchase invoices by status"
+            >
+              <option value="">All statuses</option>
+              {['draft', 'outstanding', 'unpaid', 'partial', 'overdue', 'paid', 'cancelled'].map((s) => (
+                <option key={s} value={s}>
+                  {s === 'outstanding' ? 'outstanding (unpaid/partial/overdue)' : s}
+                </option>
+              ))}
+            </select>
+            <span className="muted">Deep-link: ?tab=invoices&amp;status=outstanding</span>
+          </div>
           {ocrDraft && ocrFor && (
             <div className="card" style={{ marginBottom: 16 }}>
               <h3>Supplier invoice OCR</h3>

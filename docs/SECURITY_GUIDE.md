@@ -588,6 +588,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 96 L1** | Finance / Sales / Settings leaf fidelity — Money Transfer, Income, Billers alias, Delivery status (`test_stage96_leaf_fidelity_l1.py`) |
 | **Stage 96 D1** | Outline surface fidelity — `docs/STAGE_96_FIDELITY.md` (`test_stage96_fidelity_d1.py`); maps B1–L1 → readiness / launch / deploy / security |
 | **Stage 96 H96x** | Exit + freeze — `docs/STAGE_96_EXIT_CRITERIA.md`, ADR-199 (`test_stage96_exit_h96x.py`); Stages 1–96 frozen for Stage 96 scope; Stage 97+ requires CONTINUE/NEXT |
+| **Stage 97 open** | Tenant MVP Module Leaf Honesty Ops — `docs/STAGE_97_PLAN.md`, ADR-200 (`test_stage97_open.py`); Stages 1–96 remain frozen for prior scopes; S1 next historically |
+| **Stage 97 S1** | Sales surface honesty — invoice status filters + quotation→invoice honesty (`test_stage97_sales_honesty_s1.py`) |
+| **Stage 97 P1** | Purchase & Finance discoverability — Outstanding Purchases, Purchase Settings, Opening Balances / Fiscal Period (`test_stage97_purchase_finance_p1.py`) |
+| **Stage 97 I1** | Inventory & Settings leaf honesty — Sub Categories, QR labels, Tax/Email/SMS/Backup aliases (`test_stage97_inventory_settings_i1.py`) |
+| **Stage 97 D1** | Module leaf honesty — `docs/STAGE_97_FIDELITY.md` (`test_stage97_fidelity_d1.py`); maps S1–I1 → readiness / launch / deploy / security |
+| **Stage 97 H97x** | Exit + freeze — `docs/STAGE_97_EXIT_CRITERIA.md`, ADR-201 (`test_stage97_exit_h97x.py`); Stages 1–97 frozen for Stage 97 scope; Stage 98+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

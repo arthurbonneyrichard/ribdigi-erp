@@ -1424,3 +1424,5 @@ kubectl describe ingress -n ribdigi-production
 **Technical Stack:** FastAPI, SQLAlchemy 2.0, PostgreSQL, Redis, Celery + RabbitMQ, React/Next.js, Docker, Kubernetes, GitHub Actions  
 **Owner:** DevOps & Platform Engineering Team  
 **Review Cycle:** Monthly or upon infrastructure changes
+
+Stage 97 D1 module leaf honesty fidelity — `docs/STAGE_97_FIDELITY.md` (`test_stage97_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

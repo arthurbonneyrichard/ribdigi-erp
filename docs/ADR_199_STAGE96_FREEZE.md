@@ -27,4 +27,4 @@ Stage 96 Tenant MVP Outline Surface Fidelity Ops delivered Dashboard Business Ov
 
 ## Next stage
 
-Stage 97 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 96 feature scope remains frozen.
+Stage 97 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-200](ADR_200_STAGE97_OPEN.md) + [STAGE_97_PLAN.md](STAGE_97_PLAN.md) (Tenant MVP Module Leaf Honesty Ops). Stage 96 feature scope remains frozen.

@@ -1765,3 +1765,15 @@ Every feature in every phase must meet:
 **Stage 96 D1 (2026-08-12):** Outline surface fidelity sync — `docs/STAGE_96_FIDELITY.md` (`test_stage96_fidelity_d1.py`); maps B1–L1 → readiness / launch / deploy / security.
 
 **Stage 96 exit (2026-08-12):** B1, G1, L1, D1, H96x met — `docs/STAGE_96_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_199_STAGE96_FREEZE.md`. Fidelity: `docs/STAGE_96_FIDELITY.md`.
+
+**Stage 97 open (2026-08-12):** Tenant MVP Module Leaf Honesty Ops track approved — `docs/ADR_200_STAGE97_OPEN.md` + `docs/STAGE_97_PLAN.md` (Sales Surface Honesty → Purchase & Finance Discoverability → Inventory & Settings Leaf Honesty → Tenant MVP Module Leaf Honesty Ops; S1 next).
+
+**Stage 97 S1 (2026-08-12):** Sales surface honesty — invoice status filters + quotation→invoice draft/Post honesty (`test_stage97_sales_honesty_s1.py`).
+
+**Stage 97 P1 (2026-08-12):** Purchase & Finance discoverability — Outstanding Purchases, Purchase Settings tab, Opening Balances / Fiscal Period anchors (`test_stage97_purchase_finance_p1.py`).
+
+**Stage 97 I1 (2026-08-12):** Inventory & Settings leaf honesty — Sub Categories, QR labels, Tax/Email/SMS/Backup aliases (`test_stage97_inventory_settings_i1.py`).
+
+**Stage 97 D1 (2026-08-12):** Module leaf honesty fidelity sync — `docs/STAGE_97_FIDELITY.md` (`test_stage97_fidelity_d1.py`); maps S1–I1 → readiness / launch / deploy / security.
+
+**Stage 97 exit (2026-08-12):** S1, P1, I1, D1, H97x met — `docs/STAGE_97_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_201_STAGE97_FREEZE.md`. Fidelity: `docs/STAGE_97_FIDELITY.md`.

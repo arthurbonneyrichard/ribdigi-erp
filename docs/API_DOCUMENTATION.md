@@ -1586,3 +1586,5 @@ Authorization: Bearer <jwt_token>
 **Document Version:** 1.0.0  
 **Compatible With:** RIBDIGI ERP MVP (Version 1.0)  
 **Technical Stack:** FastAPI, SQLAlchemy 2.0, PostgreSQL, Redis, JWT + OAuth2
+
+Stage 97 D1 — `docs/STAGE_97_FIDELITY.md` (`test_stage97_fidelity_d1.py`): Stage 97 S1 `GET /sales/invoices?status=`; Stage 97 P1 `GET /purchasing/invoices?status=outstanding`; Stage 97 I1 product labels `code_type=qr`.

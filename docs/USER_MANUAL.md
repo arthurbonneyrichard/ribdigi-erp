@@ -104,6 +104,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Global Search:** Products and customers (`GET /search`) — RBAC-gated; navigates to Inventory / Sales deep-links (Stage 96 G1)
+- **Invoice status filters:** Sales invoices filter by status including unpaid (posted/sent); quotation → Invoice creates draft — Post required (Stage 97 S1)
+- **Outstanding Purchases / Purchase Settings:** Purchasing deep-links + Settings tab; Opening Balances / Fiscal Period anchors (Stage 97 P1)
+- **QR labels & Sub Categories:** Inventory catalog Sub Categories labeling; product QR labels via `code_type=qr`; Settings Email/SMS/Backup aliases (Stage 97 I1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

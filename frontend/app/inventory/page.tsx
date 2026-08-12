@@ -691,7 +691,10 @@ export default function Page() {
     }
   }
 
-  async function printProductLabels(format: 'html' | 'pdf' | 'png' = 'html') {
+  async function printProductLabels(
+    format: 'html' | 'pdf' | 'png' = 'html',
+    codeType: 'barcode' | 'qr' = 'barcode',
+  ) {
     if (!selectedId) return;
     setError('');
     try {
@@ -699,7 +702,7 @@ export default function Page() {
       const tenant = localStorage.getItem('tenant');
       const copies = Math.max(1, Math.min(50, Number(labelCopies) || 1));
       const res = await fetch(
-        `${apiBase}/products/${selectedId}/labels?format=${format}&copies=${copies}`,
+        `${apiBase}/products/${selectedId}/labels?format=${format}&copies=${copies}&code_type=${codeType}`,
         {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -711,6 +714,7 @@ export default function Page() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Label print failed');
       }
+      const prefix = codeType === 'qr' ? 'qr' : 'barcode';
       if (format === 'html') {
         const html = await res.text();
         const win = window.open('', '_blank', 'noopener,noreferrer');
@@ -723,11 +727,13 @@ export default function Page() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = format === 'pdf' ? 'barcode_labels.pdf' : 'barcode_labels.png';
+        a.download = format === 'pdf' ? `${prefix}_labels.pdf` : `${prefix}_labels.png`;
         a.click();
         URL.revokeObjectURL(url);
       }
-      setMessage(`Labels ready (${copies} cop${copies === 1 ? 'y' : 'ies'})`);
+      setMessage(
+        `${codeType === 'qr' ? 'QR' : 'Barcode'} labels ready (${copies} cop${copies === 1 ? 'y' : 'ies'})`,
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -852,6 +858,7 @@ export default function Page() {
       return (
         <li key={node.id} style={{ marginLeft: depth * 16 }}>
           <span>
+            {depth > 0 ? 'Sub Category: ' : ''}
             {node.code} — {node.name}
             {rate ? ` · tax ${rate.name} (${rate.rate}%)` : ''}
             {!node.is_active ? ' [inactive]' : ''}
@@ -1050,6 +1057,21 @@ export default function Page() {
               <button type="button" onClick={() => printProductLabels('png')} disabled={!editBarcode}>
                 Download PNG
               </button>
+              <button
+                type="button"
+                onClick={() => printProductLabels('html', 'qr')}
+                disabled={!editBarcode}
+                title="Print QR labels encoding the product barcode"
+              >
+                Print QR labels
+              </button>
+              <button
+                type="button"
+                onClick={() => printProductLabels('pdf', 'qr')}
+                disabled={!editBarcode}
+              >
+                QR PDF
+              </button>
             </div>
           </div>
         )}
@@ -1227,11 +1249,18 @@ export default function Page() {
       {tab === 'catalog' && (
         <div style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
           <div className="card" style={{ display: 'grid', gap: 8 }}>
-            <h3>Category</h3>
+            <h3>Categories &amp; Sub Categories</h3>
+            <p className="muted">
+              Leave parent empty for a top-level Category. Choose a parent to create a Sub Category.
+            </p>
             <input value={catCode} onChange={(e) => setCatCode(e.target.value)} placeholder="Code" />
             <input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="Name" />
-            <select value={catParentId} onChange={(e) => setCatParentId(e.target.value)}>
-              <option value="">Parent (optional)</option>
+            <select
+              value={catParentId}
+              onChange={(e) => setCatParentId(e.target.value)}
+              aria-label="Parent category for Sub Category"
+            >
+              <option value="">Parent category (optional — Sub Category when set)</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -1265,11 +1294,12 @@ export default function Page() {
                       tax_rate_id: catTaxRateId || null,
                     }),
                   });
+                  const wasSub = Boolean(catParentId);
                   setCatCode('');
                   setCatName('');
                   setCatParentId('');
                   setCatTaxRateId('');
-                  setMessage('Category created');
+                  setMessage(wasSub ? 'Sub Category created' : 'Category created');
                   await refresh();
                 } catch (err: any) {
                   setError(err.message);
@@ -1277,7 +1307,7 @@ export default function Page() {
               }}
               disabled={!catCode || !catName}
             >
-              Add category
+              {catParentId ? 'Add Sub Category' : 'Add category'}
             </button>
             <ul className="muted">{renderCategoryNodes(categoryTree)}</ul>
           </div>

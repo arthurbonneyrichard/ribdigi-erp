@@ -254,6 +254,9 @@ Authoritative MVP docs:
 - `docs/STAGE_94_EXIT_CRITERIA.md` / `docs/ADR_195_STAGE94_FREEZE.md` (`backend/tests/test_stage94_exit_h94x.py`) — Stage 94 H94x
 - `docs/STAGE_95_EXIT_CRITERIA.md` / `docs/ADR_197_STAGE95_FREEZE.md` (`backend/tests/test_stage95_exit_h95x.py`) — Stage 95 H95x
 - `docs/STAGE_96_EXIT_CRITERIA.md` / `docs/ADR_199_STAGE96_FREEZE.md` (`backend/tests/test_stage96_exit_h96x.py`) — Stage 96 H96x
+- `docs/STAGE_97_EXIT_CRITERIA.md` / `docs/ADR_201_STAGE97_FREEZE.md` (`backend/tests/test_stage97_exit_h97x.py`) — Stage 97 H97x
+- `docs/STAGE_97_FIDELITY.md` (`backend/tests/test_stage97_fidelity_d1.py`) — Stage 97 D1
+- `docs/STAGE_97_PLAN.md` (`backend/tests/test_stage97_open.py`) — Stage 97 open (ADR-200)
 - `docs/STAGE_96_FIDELITY.md` (`backend/tests/test_stage96_fidelity_d1.py`) — Stage 96 D1
 - `docs/STAGE_96_PLAN.md` (`backend/tests/test_stage96_open.py`) — Stage 96 open (ADR-198)
 - `docs/STAGE_95_FIDELITY.md` (`backend/tests/test_stage95_fidelity_d1.py`) — Stage 95 D1
@@ -1085,6 +1088,30 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 ## Stage 96 exit
 
 H96x met — `docs/STAGE_96_EXIT_CRITERIA.md`, ADR-199. Stages 1–96 frozen for Stage 96 feature scope.
+
+## Stage 97 exit
+
+H97x met — `docs/STAGE_97_EXIT_CRITERIA.md`, ADR-201. Stages 1–97 frozen for Stage 97 feature scope.
+
+## Stage 97 D1 — Tenant MVP Module Leaf Honesty Ops
+
+`docs/STAGE_97_FIDELITY.md` — maps S1–I1 → readiness / launch / deploy / security.
+
+## Stage 97 I1 — Inventory & Settings leaf honesty
+
+Sub Categories, QR labels, Tax/Email/SMS/Backup aliases (`test_stage97_inventory_settings_i1.py`).
+
+## Stage 97 P1 — Purchase & Finance discoverability
+
+Outstanding Purchases, Purchase Settings, Opening Balances / Fiscal Period (`test_stage97_purchase_finance_p1.py`).
+
+## Stage 97 S1 — Sales surface honesty
+
+Invoice status filters + quotation→invoice honesty (`test_stage97_sales_honesty_s1.py`).
+
+## Stage 97 open
+
+ADR-200 + `docs/STAGE_97_PLAN.md` — Tenant MVP Module Leaf Honesty Ops.
 
 ## Stage 96 D1 — Tenant MVP Outline Surface Fidelity Ops
 

@@ -4336,11 +4336,16 @@ async def product_barcode_labels(
     format: str = "html",
     copies: int = 1,
     include_price: bool = True,
+    code_type: str = "barcode",
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 97 I1 — `code_type=barcode|qr` for printable product labels."""
     from app import tenants as tenants_svc
 
+    ctype = (code_type or "barcode").strip().lower()
+    if ctype not in {"barcode", "qr"}:
+        raise HTTPException(status_code=400, detail="code_type must be barcode or qr")
     labels = await barcode_labels_svc.resolve_label_targets(
         db,
         tenant_id=claims["tenant_id"],
@@ -4353,20 +4358,28 @@ async def product_barcode_labels(
             label["price"] = None
     fmt = (format or "html").strip().lower()
     if fmt == "html":
-        return HTMLResponse(barcode_labels_svc.build_labels_html(labels, currency=currency))
+        return HTMLResponse(
+            barcode_labels_svc.build_labels_html(labels, currency=currency, code_type=ctype)
+        )
     if fmt == "png":
-        png = barcode_labels_svc.build_labels_sheet_png(labels, currency=currency)
+        png = barcode_labels_svc.build_labels_sheet_png(
+            labels, currency=currency, code_type=ctype
+        )
         return Response(
             content=png,
             media_type="image/png",
-            headers={"Content-Disposition": 'inline; filename="barcode_labels.png"'},
+            headers={
+                "Content-Disposition": f'inline; filename="{"qr" if ctype == "qr" else "barcode"}_labels.png"'
+            },
         )
     if fmt == "pdf":
-        pdf = barcode_labels_svc.build_labels_pdf(labels, currency=currency)
+        pdf = barcode_labels_svc.build_labels_pdf(labels, currency=currency, code_type=ctype)
         return Response(
             content=pdf,
             media_type="application/pdf",
-            headers={"Content-Disposition": 'inline; filename="barcode_labels.pdf"'},
+            headers={
+                "Content-Disposition": f'inline; filename="{"qr" if ctype == "qr" else "barcode"}_labels.pdf"'
+            },
         )
     raise HTTPException(status_code=400, detail="format must be html, png, or pdf")
 
@@ -4379,6 +4392,9 @@ async def print_barcode_labels(
 ):
     from app import tenants as tenants_svc
 
+    ctype = (payload.code_type or "barcode").strip().lower()
+    if ctype not in {"barcode", "qr"}:
+        raise HTTPException(status_code=400, detail="code_type must be barcode or qr")
     labels = await barcode_labels_svc.resolve_label_targets(
         db,
         tenant_id=claims["tenant_id"],
@@ -4391,22 +4407,28 @@ async def print_barcode_labels(
             label["price"] = None
     fmt = (payload.format or "html").strip().lower()
     if fmt == "html":
-        return HTMLResponse(barcode_labels_svc.build_labels_html(labels, currency=currency))
+        return HTMLResponse(
+            barcode_labels_svc.build_labels_html(labels, currency=currency, code_type=ctype)
+        )
     if fmt == "png":
         png = barcode_labels_svc.build_labels_sheet_png(
-            labels, currency=currency, cols=payload.columns
+            labels, currency=currency, cols=payload.columns, code_type=ctype
         )
         return Response(
             content=png,
             media_type="image/png",
-            headers={"Content-Disposition": 'inline; filename="barcode_labels.png"'},
+            headers={
+                "Content-Disposition": f'inline; filename="{"qr" if ctype == "qr" else "barcode"}_labels.png"'
+            },
         )
     if fmt == "pdf":
-        pdf = barcode_labels_svc.build_labels_pdf(labels, currency=currency)
+        pdf = barcode_labels_svc.build_labels_pdf(labels, currency=currency, code_type=ctype)
         return Response(
             content=pdf,
             media_type="application/pdf",
-            headers={"Content-Disposition": 'inline; filename="barcode_labels.pdf"'},
+            headers={
+                "Content-Disposition": f'inline; filename="{"qr" if ctype == "qr" else "barcode"}_labels.pdf"'
+            },
         )
     raise HTTPException(status_code=400, detail="format must be html, png, or pdf")
 
@@ -5014,14 +5036,28 @@ async def sale(
 
 @api.get("/sales/invoices")
 async def list_sales_invoices(
+    status: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 97 S1 — optional status filter (`unpaid` → posted∪sent)."""
     stmt = (
         select(m.SalesInvoice)
         .where(m.SalesInvoice.tenant_id == claims["tenant_id"])
         .order_by(m.SalesInvoice.created_at.desc())
     )
+    if status:
+        key = status.strip().lower()
+        allowed = {"draft", "posted", "sent", "paid", "partial", "overdue", "cancelled", "unpaid"}
+        if key not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be draft, posted, sent, paid, partial, unpaid, overdue, or cancelled",
+            )
+        if key == "unpaid":
+            stmt = stmt.where(m.SalesInvoice.status.in_(["posted", "sent"]))
+        else:
+            stmt = stmt.where(m.SalesInvoice.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
     out = [await sales_svc.serialize_invoice(db, inv) for inv in rows]
@@ -5447,7 +5483,11 @@ async def convert_quotation_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
     )
     await db.commit()
-    return env(await sales_svc.serialize_invoice(db, invoice), "Converted to draft invoice")
+    # Stage 97 S1 — honesty: convert creates draft; Post required before AR recognition
+    return env(
+        await sales_svc.serialize_invoice(db, invoice),
+        "Converted to draft invoice — Post required before AR",
+    )
 
 
 @api.get("/sales/orders")
@@ -6364,14 +6404,28 @@ async def post_purchase_return(
 
 @api.get("/purchasing/invoices")
 async def list_purchase_invoices(
+    status: str | None = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 97 P1 — optional status filter (`outstanding` → unpaid∪partial∪overdue)."""
     stmt = (
         select(m.PurchaseInvoice)
         .where(m.PurchaseInvoice.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseInvoice.created_at.desc())
     )
+    if status:
+        key = status.strip().lower()
+        allowed = {"draft", "unpaid", "partial", "overdue", "paid", "cancelled", "outstanding"}
+        if key not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be draft, unpaid, partial, overdue, paid, cancelled, or outstanding",
+            )
+        if key == "outstanding":
+            stmt = stmt.where(m.PurchaseInvoice.status.in_(list(purchasing_svc.PURCHASE_INVOICE_OPEN)))
+        else:
+            stmt = stmt.where(m.PurchaseInvoice.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_invoice(db, r) for r in rows])

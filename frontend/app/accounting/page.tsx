@@ -765,7 +765,10 @@ export default function Page() {
                 Create account
               </button>
             </div>
-            <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
+            <div
+              style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}
+              id="opening-balances"
+            >
               <h4 style={{ margin: 0 }}>Opening balance</h4>
               <select value={obAccountId} onChange={(e) => setObAccountId(e.target.value)}>
                 {accounts.map((a) => (

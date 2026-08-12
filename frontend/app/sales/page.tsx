@@ -16,6 +16,7 @@ export default function Page() {
   const [quotations, setQuotations] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('');
   const [returns, setReturns] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerGroups, setCustomerGroups] = useState<any[]>([]);
@@ -69,9 +70,13 @@ export default function Page() {
     return Math.round(Number(base || 0) * (1 - pct / 100) * 10000) / 10000;
   }
 
-  async function refresh() {
+  async function refresh(invoiceStatus?: string) {
+    const status = invoiceStatus !== undefined ? invoiceStatus : invoiceStatusFilter;
+    const invPath = status
+      ? `/sales/invoices?status=${encodeURIComponent(status)}`
+      : '/sales/invoices';
     const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, groupRes] = await Promise.all([
-      api('/sales/invoices'),
+      api(invPath),
       api('/customers'),
       api('/products'),
       api('/sales/quotations'),
@@ -88,6 +93,18 @@ export default function Page() {
     setReturns(rRes.data || []);
     setStores(storeRes.data || []);
     setCustomerGroups(groupRes.data || []);
+  }
+
+  function setInvoiceStatus(next: string) {
+    setInvoiceStatusFilter(next);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (!next) url.searchParams.delete('status');
+      else url.searchParams.set('status', next);
+      const qs = url.searchParams.toString();
+      window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
+    }
+    refresh(next).catch((err) => setError(err.message));
   }
 
   function resetCustomerForm() {
@@ -142,7 +159,10 @@ export default function Page() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    const raw = new URLSearchParams(window.location.search).get('status')?.trim() || '';
+    const allowed = ['draft', 'posted', 'sent', 'paid', 'partial', 'unpaid', 'overdue', 'cancelled'];
+    if (allowed.includes(raw)) setInvoiceStatusFilter(raw);
+    refresh(allowed.includes(raw) ? raw : '').catch((err) => setError(err.message));
   }, []);
 
   useEffect(() => {
@@ -828,53 +848,68 @@ export default function Page() {
       )}
 
       {tab === 'quotations' && (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Number</th>
-              <th>Status</th>
-              <th>Total</th>
-              <th>Valid</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {quotations.map((q) => (
-              <tr key={q.id}>
-                <td>{q.quotation_number}</td>
-                <td>{q.status}</td>
-                <td>{q.total_amount}</td>
-                <td>{q.valid_until ? String(q.valid_until).slice(0, 10) : '—'}</td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(q)}>View</button>
-                  <button onClick={() => printQuotation(q.id, printTemplate || undefined, 'html')}>
-                    Print
-                  </button>
-                  <button onClick={() => printQuotation(q.id, printTemplate || undefined, 'pdf')}>
-                    PDF
-                  </button>
-                  {q.status === 'draft' && (
-                    <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}>
-                      Email
-                    </button>
-                  )}
-                  {q.status === 'sent' && (
-                    <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation re-emailed')}>
-                      Resend
-                    </button>
-                  )}
-                  {['draft', 'sent'].includes(q.status) && (
-                    <>
-                      <button onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
-                      <button onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}>→ Order</button>
-                      <button onClick={() => act(`/sales/quotations/${q.id}/convert-invoice`, 'Invoice')}>→ Invoice</button>
-                    </>
-                  )}
-                </td>
+        <>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            → Invoice creates a draft sales invoice; Post is required before AR recognition.
+          </p>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Valid</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {quotations.map((q) => (
+                <tr key={q.id}>
+                  <td>{q.quotation_number}</td>
+                  <td>{q.status}</td>
+                  <td>{q.total_amount}</td>
+                  <td>{q.valid_until ? String(q.valid_until).slice(0, 10) : '—'}</td>
+                  <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    <button onClick={() => setSelected(q)}>View</button>
+                    <button onClick={() => printQuotation(q.id, printTemplate || undefined, 'html')}>
+                      Print
+                    </button>
+                    <button onClick={() => printQuotation(q.id, printTemplate || undefined, 'pdf')}>
+                      PDF
+                    </button>
+                    {q.status === 'draft' && (
+                      <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}>
+                        Email
+                      </button>
+                    )}
+                    {q.status === 'sent' && (
+                      <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation re-emailed')}>
+                        Resend
+                      </button>
+                    )}
+                    {['draft', 'sent'].includes(q.status) && (
+                      <>
+                        <button onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
+                        <button onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}>→ Order</button>
+                        <button
+                          title="Creates a draft invoice — Post required before AR"
+                          onClick={() =>
+                            act(
+                              `/sales/quotations/${q.id}/convert-invoice`,
+                              'Converted to draft invoice — Post required before AR'
+                            )
+                          }
+                        >
+                          → Invoice
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
 
       {tab === 'orders' && (
@@ -961,6 +996,19 @@ export default function Page() {
       {tab === 'invoices' && (
         <>
           <div className="card" style={{ marginBottom: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <label className="muted">Status</label>
+            <select
+              value={invoiceStatusFilter}
+              onChange={(e) => setInvoiceStatus(e.target.value)}
+              aria-label="Filter invoices by status"
+            >
+              <option value="">All statuses</option>
+              {['draft', 'posted', 'sent', 'unpaid', 'partial', 'paid', 'overdue', 'cancelled'].map((s) => (
+                <option key={s} value={s}>
+                  {s === 'unpaid' ? 'unpaid (posted/sent)' : s}
+                </option>
+              ))}
+            </select>
             <label className="muted">Print template</label>
             <select value={printTemplate} onChange={(e) => setPrintTemplate(e.target.value)}>
               <option value="">Tenant default</option>
