@@ -28,7 +28,16 @@ type PoItem = {
   quantity: number;
   received_qty: number;
   unit_price: number;
+  tax_rate?: number;
   outstanding_qty: number;
+};
+type PoAmendment = {
+  id: string;
+  revision_no: number;
+  reason?: string | null;
+  notified_supplier?: boolean;
+  emailed_to?: string | null;
+  created_at?: string;
 };
 type PurchaseOrder = {
   id: string;
@@ -36,6 +45,10 @@ type PurchaseOrder = {
   supplier_id: string;
   status: string;
   total_amount: number;
+  notes?: string | null;
+  revision_no?: number;
+  can_amend?: boolean;
+  amendments?: PoAmendment[];
   emailed_at?: string | null;
   emailed_to?: string | null;
   delivery?: { to?: string; mode?: string };
@@ -96,6 +109,11 @@ export default function Page() {
   const [productId, setProductId] = useState('');
   const [qty, setQty] = useState('10');
   const [unitPrice, setUnitPrice] = useState('0');
+  const [amendQty, setAmendQty] = useState('');
+  const [amendPrice, setAmendPrice] = useState('');
+  const [amendNotes, setAmendNotes] = useState('');
+  const [amendReason, setAmendReason] = useState('');
+  const [amendNotify, setAmendNotify] = useState(false);
   const [prSupplierId, setPrSupplierId] = useState('');
   const [prProductId, setPrProductId] = useState('');
   const [prQty, setPrQty] = useState('10');
@@ -227,6 +245,47 @@ export default function Page() {
           ? `Re-emailed ${r.data.po_number} to ${to}${mode}`
           : `Emailed ${r.data.po_number} to ${to}${mode}`,
       );
+      await refresh();
+      setSelected(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function openAmend(po: PurchaseOrder) {
+    setSelected(po);
+    const line = po.items?.[0];
+    setAmendQty(String(line?.quantity ?? ''));
+    setAmendPrice(String(line?.unit_price ?? ''));
+    setAmendNotes(po.notes || '');
+    setAmendReason('');
+    setAmendNotify(po.status === 'sent');
+  }
+
+  async function amendPo() {
+    if (!selected?.id || !selected.items?.length) return;
+    setError('');
+    setMessage('');
+    try {
+      const line = selected.items[0];
+      const r = await api(`/purchasing/orders/${selected.id}/amend`, {
+        method: 'POST',
+        body: JSON.stringify({
+          reason: amendReason.trim() || null,
+          notes: amendNotes,
+          notify_supplier: amendNotify,
+          items: [
+            {
+              product_id: line.product_id,
+              quantity: Number(amendQty) || line.quantity,
+              unit_price: Number(amendPrice) || line.unit_price,
+              tax_rate: line.tax_rate || 0,
+            },
+          ],
+        }),
+      });
+      const rev = r.data?.revision_no ?? r.data?.amendment?.revision_no;
+      setMessage(r.message || `Amended ${r.data.po_number} (rev.${rev})`);
       await refresh();
       setSelected(r.data);
     } catch (err: any) {
@@ -874,6 +933,7 @@ export default function Page() {
               <tr>
                 <th>PO</th>
                 <th>Status</th>
+                <th>Rev</th>
                 <th>Total</th>
                 <th>Actions</th>
               </tr>
@@ -883,18 +943,24 @@ export default function Page() {
                 <tr key={o.id}>
                   <td>
                     <button
-                      onClick={() => setSelected(o)}
+                      onClick={() => openAmend(o)}
                       style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
                     >
                       {o.po_number}
                     </button>
                   </td>
                   <td>{o.status}</td>
+                  <td>{o.revision_no ?? 0}</td>
                   <td>{o.total_amount}</td>
                   <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {o.status === 'draft' && <button onClick={() => sendPo(o.id)}>Email</button>}
                     {o.status === 'sent' && (
                       <button onClick={() => sendPo(o.id, true)}>Resend</button>
+                    )}
+                    {o.can_amend && (
+                      <button type="button" onClick={() => openAmend(o)}>
+                        Amend
+                      </button>
                     )}
                     {(o.status === 'sent' || o.status === 'partially_received') && (
                       <button onClick={() => receiveAll(o)}>Receive all</button>
@@ -908,6 +974,7 @@ export default function Page() {
             <div className="card" style={{ marginTop: 16 }}>
               <h3>
                 {selected.po_number} — {selected.status}
+                {selected.revision_no ? ` · rev.${selected.revision_no}` : ''}
               </h3>
               {selected.emailed_to && (
                 <p style={{ marginTop: 0, color: '#475569', fontSize: 14 }}>
@@ -937,6 +1004,58 @@ export default function Page() {
                   ))}
                 </tbody>
               </table>
+              {selected.can_amend && (
+                <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+                  <h4 style={{ margin: 0 }}>Amend (first line)</h4>
+                  <input
+                    value={amendQty}
+                    onChange={(e) => setAmendQty(e.target.value)}
+                    placeholder="Quantity"
+                  />
+                  <input
+                    value={amendPrice}
+                    onChange={(e) => setAmendPrice(e.target.value)}
+                    placeholder="Unit price"
+                  />
+                  <input
+                    value={amendNotes}
+                    onChange={(e) => setAmendNotes(e.target.value)}
+                    placeholder="Notes"
+                  />
+                  <input
+                    value={amendReason}
+                    onChange={(e) => setAmendReason(e.target.value)}
+                    placeholder="Amendment reason"
+                  />
+                  <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={amendNotify}
+                      onChange={(e) => setAmendNotify(e.target.checked)}
+                      disabled={selected.status !== 'sent' && !selected.emailed_at}
+                    />
+                    Email supplier about amendment
+                  </label>
+                  <button type="button" onClick={amendPo}>
+                    Save amendment
+                  </button>
+                </div>
+              )}
+              {(selected.amendments || []).length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <h4>Amendment history</h4>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {selected.amendments!.map((a) => (
+                      <li key={a.id}>
+                        Rev.{a.revision_no}
+                        {a.reason ? ` — ${a.reason}` : ''}
+                        {a.notified_supplier ? ` · emailed ${a.emailed_to || 'supplier'}` : ''}
+                        {a.created_at ? ` · ${String(a.created_at).slice(0, 19)}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </>

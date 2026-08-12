@@ -653,6 +653,7 @@ class PurchaseOrder(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    revision_no: Mapped[int] = mapped_column(Integer, default=0)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -670,6 +671,22 @@ class PurchaseOrderItem(Base):
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class PurchaseOrderAmendment(Base):
+    __tablename__ = "purchase_order_amendments"
+    __table_args__ = (UniqueConstraint("purchase_order_id", "revision_no"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    purchase_order_id: Mapped[str] = mapped_column(ForeignKey("purchase_orders.id"), index=True)
+    revision_no: Mapped[int] = mapped_column(Integer)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    changes: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    notified_supplier: Mapped[bool] = mapped_column(Boolean, default=False)
+    emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class GoodsReceipt(Base):

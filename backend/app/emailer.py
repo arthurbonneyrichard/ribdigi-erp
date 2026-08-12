@@ -402,9 +402,14 @@ async def send_purchase_order_email(
     currency: str,
     supplier_name: str,
     purchase_order: dict[str, Any],
+    amended: bool = False,
 ) -> EmailResult:
     number = purchase_order.get("po_number") or ""
-    subject = f"Purchase Order {number} from {company_name}"
+    rev = purchase_order.get("revision_no")
+    if amended and rev:
+        subject = f"Purchase Order {number} (amended rev.{rev}) from {company_name}"
+    else:
+        subject = f"Purchase Order {number} from {company_name}"
     text, html = render_purchase_order_bodies(
         company_name=company_name,
         currency=currency,

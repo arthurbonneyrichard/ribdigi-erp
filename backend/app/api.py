@@ -82,6 +82,7 @@ from app.schemas import (
     ProductVariantUpdate,
     ProfileUpdate,
     PurchaseOrderCreate,
+    PurchaseOrderAmend,
     PurchaseRequestCreate,
     PurchaseRequestConvert,
     PurchaseRequestReject,
@@ -3655,6 +3656,67 @@ async def send_purchase_order(
     data = await purchasing_svc.serialize_po(db, po)
     data["delivery"] = delivery
     return env(data, f"Purchase order emailed to {delivery['to']} ({delivery['mode']})")
+
+
+@api.post("/purchasing/orders/{po_id}/amend")
+async def amend_purchase_order(
+    po_id: str,
+    payload: PurchaseOrderAmend,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, existing.created_by)
+    items = [i.model_dump() for i in payload.items] if payload.items is not None else None
+    po, amendment, delivery = await purchasing_svc.amend_purchase_order(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        po_id=po_id,
+        items=items,
+        notes=payload.notes,
+        due_date=payload.due_date,
+        clear_due_date=payload.clear_due_date,
+        reason=payload.reason,
+        notify_supplier=payload.notify_supplier,
+        notify_to=payload.to,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="po_amend",
+        entity="purchase_order",
+        entity_id=po.id,
+        details={
+            "revision_no": amendment.revision_no,
+            "reason": amendment.reason,
+            "notified_supplier": amendment.notified_supplier,
+            "delivery": delivery,
+        },
+    )
+    await db.commit()
+    data = await purchasing_svc.serialize_po(db, po)
+    data["amendment"] = purchasing_svc.serialize_po_amendment(amendment)
+    if delivery:
+        data["delivery"] = delivery
+    msg = f"Purchase order amended (rev.{amendment.revision_no})"
+    if delivery:
+        msg += f"; emailed {delivery['to']} ({delivery['mode']})"
+    return env(data, msg)
+
+
+@api.get("/purchasing/orders/{po_id}/amendments")
+async def list_purchase_order_amendments(
+    po_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, po.created_by)
+    rows = await purchasing_svc.list_po_amendments(db, claims["tenant_id"], po_id)
+    return env([purchasing_svc.serialize_po_amendment(r) for r in rows])
 
 
 @api.post("/purchasing/orders/{po_id}/cancel")

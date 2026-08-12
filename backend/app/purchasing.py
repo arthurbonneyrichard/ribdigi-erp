@@ -14,6 +14,7 @@ from app.tax import compute_line_total
 from app.credit import default_due_date
 
 PO_EDITABLE = {"draft"}
+PO_AMENDABLE = frozenset({"draft", "sent"})
 PO_RECEIVABLE = {"sent", "partially_received"}
 PURCHASE_RETURN_REASONS = frozenset({"damaged", "wrong_item", "expiry", "quality", "other"})
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
@@ -80,8 +81,69 @@ async def list_po_items(db: AsyncSession, tenant_id: str, po_id: str) -> list[m.
     ).scalars().all()
 
 
+def _po_items_snapshot(items: list[m.PurchaseOrderItem]) -> list[dict]:
+    return [
+        {
+            "product_id": i.product_id,
+            "quantity": float(i.quantity),
+            "unit_price": float(i.unit_price),
+            "tax_rate": float(i.tax_rate),
+            "line_total": float(i.line_total),
+        }
+        for i in items
+    ]
+
+
+def _po_header_snapshot(po: m.PurchaseOrder) -> dict:
+    return {
+        "notes": po.notes,
+        "due_date": po.due_date.isoformat() if po.due_date else None,
+        "subtotal": float(po.subtotal),
+        "tax_amount": float(po.tax_amount),
+        "total_amount": float(po.total_amount),
+        "revision_no": int(getattr(po, "revision_no", 0) or 0),
+    }
+
+
+async def list_po_amendments(
+    db: AsyncSession, tenant_id: str, po_id: str
+) -> list[m.PurchaseOrderAmendment]:
+    return list(
+        (
+            await db.execute(
+                select(m.PurchaseOrderAmendment)
+                .where(
+                    m.PurchaseOrderAmendment.tenant_id == tenant_id,
+                    m.PurchaseOrderAmendment.purchase_order_id == po_id,
+                )
+                .order_by(m.PurchaseOrderAmendment.revision_no.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+def serialize_po_amendment(row: m.PurchaseOrderAmendment) -> dict:
+    return {
+        "id": row.id,
+        "purchase_order_id": row.purchase_order_id,
+        "revision_no": int(row.revision_no),
+        "reason": row.reason,
+        "actor_id": row.actor_id,
+        "changes": row.changes,
+        "notified_supplier": bool(row.notified_supplier),
+        "emailed_to": row.emailed_to,
+        "created_at": row.created_at,
+    }
+
+
 async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
     items = await list_po_items(db, po.tenant_id, po.id)
+    amendments = await list_po_amendments(db, po.tenant_id, po.id)
+    can_amend = po.status in PO_AMENDABLE and not any(
+        float(i.received_qty or 0) > 0 for i in items
+    )
     return {
         "id": po.id,
         "po_number": po.po_number,
@@ -97,6 +159,9 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "notes": po.notes,
         "emailed_at": po.emailed_at,
         "emailed_to": po.emailed_to,
+        "revision_no": int(getattr(po, "revision_no", 0) or 0),
+        "can_amend": can_amend,
+        "amendments": [serialize_po_amendment(a) for a in amendments],
         "created_at": po.created_at,
         "items": [
             {
@@ -271,6 +336,201 @@ async def cancel_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: st
         )
     )
     return po
+
+
+async def amend_purchase_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    po_id: str,
+    items: list[dict] | None = None,
+    notes: str | None = None,
+    due_date: datetime | None = None,
+    clear_due_date: bool = False,
+    reason: str | None = None,
+    notify_supplier: bool = False,
+    notify_to: str | None = None,
+) -> tuple[m.PurchaseOrder, m.PurchaseOrderAmendment, dict | None]:
+    """Amend draft/sent PO lines/notes/due_date; record revision history.
+
+    Blocked after any receipt. Optional supplier notify fails closed (rollback amend).
+    """
+    from app import emailer
+
+    po = await get_po(db, tenant_id, po_id)
+    if po.status not in PO_AMENDABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot amend PO in status {po.status}")
+    existing_items = await list_po_items(db, tenant_id, po.id)
+    if any(float(i.received_qty or 0) > 0 for i in existing_items):
+        raise HTTPException(status_code=409, detail="Cannot amend PO after goods have been received")
+
+    before = {
+        "header": _po_header_snapshot(po),
+        "items": _po_items_snapshot(existing_items),
+    }
+
+    header_touched = notes is not None or due_date is not None or clear_due_date
+    items_touched = items is not None
+    if not header_touched and not items_touched:
+        raise HTTPException(
+            status_code=400,
+            detail="Amend requires items and/or notes/due_date changes",
+        )
+
+    if items_touched:
+        if not items:
+            raise HTTPException(status_code=400, detail="Amended purchase order requires at least one line")
+        subtotal = 0.0
+        tax_total = 0.0
+        prepared: list[tuple[dict, float]] = []
+        for item in items:
+            product = (
+                await db.execute(
+                    select(m.Product).where(
+                        m.Product.id == item["product_id"],
+                        m.Product.tenant_id == tenant_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if not product:
+                raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+            qty = float(item["quantity"])
+            if qty <= 0:
+                raise HTTPException(status_code=400, detail="Line quantity must be > 0")
+            line_sub, line_tax, line_total = compute_line_total(
+                qty, item.get("unit_price", 0), item.get("tax_rate", 0)
+            )
+            subtotal += line_sub
+            tax_total += line_tax
+            prepared.append(
+                (
+                    {
+                        "product_id": product.id,
+                        "quantity": qty,
+                        "unit_price": float(item.get("unit_price") or 0),
+                        "tax_rate": float(item.get("tax_rate") or 0),
+                    },
+                    line_total,
+                )
+            )
+        for old in existing_items:
+            await db.delete(old)
+        await db.flush()
+        for item, line_total in prepared:
+            db.add(
+                m.PurchaseOrderItem(
+                    tenant_id=tenant_id,
+                    purchase_order_id=po.id,
+                    product_id=item["product_id"],
+                    quantity=item["quantity"],
+                    received_qty=0,
+                    unit_price=item["unit_price"],
+                    tax_rate=item["tax_rate"],
+                    line_total=line_total,
+                )
+            )
+        po.subtotal = round(subtotal, 2)
+        po.tax_amount = round(tax_total, 2)
+        po.total_amount = round(subtotal + tax_total, 2)
+
+    if notes is not None:
+        po.notes = notes
+    if clear_due_date:
+        po.due_date = None
+    elif due_date is not None:
+        po.due_date = due_date
+
+    new_items = await list_po_items(db, tenant_id, po.id)
+    after = {
+        "header": _po_header_snapshot(po),
+        "items": _po_items_snapshot(new_items),
+    }
+    if before == after:
+        raise HTTPException(status_code=400, detail="No changes detected for amendment")
+
+    revision = int(getattr(po, "revision_no", 0) or 0) + 1
+    po.revision_no = revision
+    after["header"]["revision_no"] = revision
+    po.updated_at = datetime.utcnow()
+
+    delivery: dict | None = None
+    emailed_to: str | None = None
+    if notify_supplier:
+        if po.status != "sent" and not po.emailed_at:
+            raise HTTPException(
+                status_code=400,
+                detail="notify_supplier requires a sent/emailed purchase order",
+            )
+        if not new_items:
+            raise HTTPException(status_code=400, detail="Cannot notify supplier for empty purchase order")
+        supplier = await get_supplier(db, tenant_id, po.supplier_id)
+        recipient = (notify_to or supplier.email or "").strip()
+        if not recipient:
+            raise HTTPException(
+                status_code=400,
+                detail="Supplier has no email; set supplier email or pass to= override",
+            )
+        tenant = await db.get(m.Tenant, tenant_id)
+        company_name = tenant.company_name if tenant else "RIBDIGI ERP"
+        currency = (tenant.currency if tenant else None) or "GHS"
+        # Flush mutation before serializing for email body
+        await db.flush()
+        payload = await serialize_po(db, po)
+        result = await emailer.send_purchase_order_email(
+            to=recipient,
+            company_name=company_name,
+            currency=currency,
+            supplier_name=supplier.name,
+            purchase_order=payload,
+            amended=True,
+        )
+        if not result.sent:
+            if result.mode == "disabled":
+                raise HTTPException(status_code=503, detail="Email delivery is disabled")
+            raise HTTPException(status_code=502, detail=result.error or "Email send failed")
+        now = datetime.utcnow()
+        po.emailed_at = now
+        po.emailed_to = recipient
+        emailed_to = recipient
+        delivery = {
+            "sent": result.sent,
+            "mode": result.mode,
+            "to": recipient,
+            "emailed_at": now.isoformat(),
+            "po_number": po.po_number,
+            "amended": True,
+            "revision_no": revision,
+        }
+
+    amendment = m.PurchaseOrderAmendment(
+        tenant_id=tenant_id,
+        purchase_order_id=po.id,
+        revision_no=revision,
+        reason=(reason or "").strip() or None,
+        actor_id=user_id,
+        changes={"before": before, "after": after},
+        notified_supplier=bool(notify_supplier),
+        emailed_to=emailed_to,
+    )
+    db.add(amendment)
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="po_amended",
+            entity="purchase_order",
+            entity_id=po.id,
+            details={
+                "po_number": po.po_number,
+                "revision_no": revision,
+                "notified_supplier": bool(notify_supplier),
+                "reason": amendment.reason,
+            },
+        )
+    )
+    await db.flush()
+    return po, amendment, delivery
 
 
 async def create_grn(

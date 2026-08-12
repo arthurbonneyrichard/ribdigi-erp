@@ -418,6 +418,16 @@ class PurchaseOrderCreate(BaseModel):
     items: list[PurchaseOrderItemCreate] = Field(min_length=1)
 
 
+class PurchaseOrderAmend(BaseModel):
+    items: list[PurchaseOrderItemCreate] | None = None
+    notes: str | None = None
+    due_date: datetime | None = None
+    clear_due_date: bool = False
+    reason: str | None = None
+    notify_supplier: bool = False
+    to: str | None = None
+
+
 class PurchaseRequestItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
