@@ -886,6 +886,7 @@ Stage 156 D1 — `docs/STAGE_156_FIDELITY.md` (`test_stage156_fidelity_d1.py`); 
 Stage 157 D1 — `docs/STAGE_157_FIDELITY.md` (`test_stage157_fidelity_d1.py`); Stage 157 P1 / S1 / T1.
 Stage 158 D1 — `docs/STAGE_158_FIDELITY.md` (`test_stage158_fidelity_d1.py`); Stage 158 A1 / E1 / C1.
 Stage 159 D1 — `docs/STAGE_159_FIDELITY.md` (`test_stage159_fidelity_d1.py`); Stage 159 U1 / M1 / B1.
+Stage 160 D1 — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`); Stage 160 P1 / C1 / S1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1617,3 +1618,5 @@ Stage 157 D1 AI inventory predictions, dashboard sales-trend & dashboard top-pro
 Stage 158 D1 dashboard stock-alerts, expenses & credit export fidelity — `docs/STAGE_158_FIDELITY.md` (`test_stage158_fidelity_d1.py`); Stage 158 A1 dashboard stock-alerts CSV; Stage 158 E1 dashboard expenses CSV; Stage 158 C1 dashboard credit CSV.
 
 Stage 159 D1 dashboard user-stats, summary & accounting trial-balance export fidelity — `docs/STAGE_159_FIDELITY.md` (`test_stage159_fidelity_d1.py`); Stage 159 U1 dashboard user-stats CSV; Stage 159 M1 dashboard summary CSV; Stage 159 B1 accounting trial-balance CSV.
+
+Stage 160 D1 accounting profit-loss, reports cash-flow & balance-sheet path export fidelity — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`); Stage 160 P1 accounting profit-loss CSV; Stage 160 C1 reports cash-flow path CSV; Stage 160 S1 reports balance-sheet path CSV.

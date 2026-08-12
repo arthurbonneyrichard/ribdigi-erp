@@ -642,6 +642,79 @@ export default function Page() {
         <button onClick={() => download('csv')}>Export CSV</button>
         <button onClick={() => download('xlsx')}>Export Excel</button>
         <button onClick={() => download('pdf')}>Export PDF</button>
+        {tab === 'cashflow' && (
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const params = new URLSearchParams();
+                if (fromDate) params.set('from_date', fromDate);
+                if (toDate) params.set('to_date', toDate);
+                if (storeId) params.set('store_id', storeId);
+                if (branchId) params.set('branch_id', branchId);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${base}/reports/cash-flow/export${qs}`, {
+                  headers: {
+                    Authorization: token ? `Bearer ${token}` : '',
+                    'X-Tenant-ID': tenant || '',
+                  },
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'reports_cash_flow_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Cash-flow path CSV downloaded (Stage 160 C1)');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Export cash-flow path CSV
+          </button>
+        )}
+        {tab === 'balancesheet' && (
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const params = new URLSearchParams();
+                if (toDate) params.set('as_of_date', toDate);
+                if (storeId) params.set('store_id', storeId);
+                if (branchId) params.set('branch_id', branchId);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${base}/reports/balance-sheet/export${qs}`, {
+                  headers: {
+                    Authorization: token ? `Bearer ${token}` : '',
+                    'X-Tenant-ID': tenant || '',
+                  },
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'reports_balance_sheet_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Balance-sheet path CSV downloaded (Stage 160 S1)');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Export balance-sheet path CSV
+          </button>
+        )}
         {tab === 'sales' && (
           <>
             <button onClick={() => download('csv', 'sales_daily')}>Daily CSV</button>

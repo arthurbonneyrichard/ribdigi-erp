@@ -1700,3 +1700,5 @@ Stage 157 D1 — `docs/STAGE_157_FIDELITY.md` (`test_stage157_fidelity_d1.py`): 
 Stage 158 D1 — `docs/STAGE_158_FIDELITY.md` (`test_stage158_fidelity_d1.py`): Stage 158 A1 `GET /dashboard/stock-alerts/export`; Stage 158 E1 `GET /dashboard/expenses/export`; Stage 158 C1 `GET /dashboard/credit/export`.
 
 Stage 159 D1 — `docs/STAGE_159_FIDELITY.md` (`test_stage159_fidelity_d1.py`): Stage 159 U1 `GET /dashboard/user-stats/export`; Stage 159 M1 `GET /dashboard/summary/export`; Stage 159 B1 `GET /accounting/trial-balance/export`.
+
+Stage 160 D1 — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`): Stage 160 P1 `GET /accounting/profit-loss/export`; Stage 160 C1 `GET /reports/cash-flow/export`; Stage 160 S1 `GET /reports/balance-sheet/export`.

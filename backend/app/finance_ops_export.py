@@ -333,3 +333,252 @@ async def export_trial_balance_csv(
             }
         )
     return buf.getvalue()
+
+
+PROFIT_LOSS_EXPORT_COLUMNS = [
+    "from_date",
+    "to_date",
+    "store_id",
+    "branch_id",
+    "account_id",
+    "code",
+    "name",
+    "account_type",
+    "bucket",
+    "balance",
+    "revenue",
+    "other_income",
+    "cogs",
+    "gross_profit",
+    "operating_expenses",
+    "income",
+    "expense",
+    "net_profit",
+]
+
+
+async def export_profit_loss_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_date=None,
+    to_date=None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+) -> str:
+    """Stage 160 P1 — accounting profit-loss CSV (path-scoped; distinct from reports/export)."""
+    from app.accounting import ensure_default_accounts, profit_and_loss
+
+    await ensure_default_accounts(db, tenant_id)
+    data = await profit_and_loss(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=PROFIT_LOSS_EXPORT_COLUMNS)
+    writer.writeheader()
+    summary = {
+        "from_date": _cell(data.get("from_date")),
+        "to_date": _cell(data.get("to_date")),
+        "store_id": _cell(data.get("store_id")),
+        "branch_id": _cell(data.get("branch_id")),
+        "revenue": _cell(data.get("revenue")),
+        "other_income": _cell(data.get("other_income")),
+        "cogs": _cell(data.get("cogs")),
+        "gross_profit": _cell(data.get("gross_profit")),
+        "operating_expenses": _cell(data.get("operating_expenses")),
+        "income": _cell(data.get("income")),
+        "expense": _cell(data.get("expense")),
+        "net_profit": _cell(data.get("net_profit")),
+    }
+    accounts = data.get("accounts") or []
+    if not accounts:
+        writer.writerow(
+            {
+                **summary,
+                "account_id": "",
+                "code": "",
+                "name": "",
+                "account_type": "",
+                "bucket": "",
+                "balance": "",
+            }
+        )
+        return buf.getvalue()
+    for row in accounts:
+        writer.writerow(
+            {
+                **summary,
+                "account_id": _cell(row.get("account_id")),
+                "code": _cell(row.get("code")),
+                "name": _cell(row.get("name")),
+                "account_type": _cell(row.get("account_type")),
+                "bucket": _cell(row.get("bucket")),
+                "balance": _cell(row.get("balance")),
+            }
+        )
+    return buf.getvalue()
+
+
+CASH_FLOW_EXPORT_COLUMNS = [
+    "from_date",
+    "to_date",
+    "store_id",
+    "branch_id",
+    "date",
+    "entry_number",
+    "description",
+    "account_code",
+    "account_name",
+    "activity",
+    "source_type",
+    "inflow",
+    "outflow",
+    "opening_cash",
+    "closing_cash",
+    "net_change",
+    "operating_net",
+    "investing_net",
+    "financing_net",
+]
+
+
+async def export_cash_flow_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_date=None,
+    to_date=None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+) -> str:
+    """Stage 160 C1 — reports cash-flow path CSV (distinct from generic /reports/export)."""
+    from app import reports as reports_svc
+
+    data = await reports_svc.cash_flow(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=CASH_FLOW_EXPORT_COLUMNS)
+    writer.writeheader()
+    summary = {
+        "from_date": _cell(data.get("from_date")),
+        "to_date": _cell(data.get("to_date")),
+        "store_id": _cell(data.get("store_id")),
+        "branch_id": _cell(data.get("branch_id")),
+        "opening_cash": _cell(data.get("opening_cash")),
+        "closing_cash": _cell(data.get("closing_cash")),
+        "net_change": _cell(data.get("net_change")),
+        "operating_net": _cell((data.get("operating") or {}).get("net")),
+        "investing_net": _cell((data.get("investing") or {}).get("net")),
+        "financing_net": _cell((data.get("financing") or {}).get("net")),
+    }
+    lines = data.get("lines") or []
+    if not lines:
+        writer.writerow(
+            {
+                **summary,
+                "date": "",
+                "entry_number": "",
+                "description": "",
+                "account_code": "",
+                "account_name": "",
+                "activity": "",
+                "source_type": "",
+                "inflow": "",
+                "outflow": "",
+            }
+        )
+        return buf.getvalue()
+    for row in lines:
+        writer.writerow(
+            {
+                **summary,
+                "date": _cell(row.get("date")),
+                "entry_number": _cell(row.get("entry_number")),
+                "description": _cell(row.get("description")),
+                "account_code": _cell(row.get("account_code")),
+                "account_name": _cell(row.get("account_name")),
+                "activity": _cell(row.get("activity")),
+                "source_type": _cell(row.get("source_type")),
+                "inflow": _cell(row.get("inflow")),
+                "outflow": _cell(row.get("outflow")),
+            }
+        )
+    return buf.getvalue()
+
+
+BALANCE_SHEET_EXPORT_COLUMNS = [
+    "as_of",
+    "store_id",
+    "branch_id",
+    "section",
+    "code",
+    "name",
+    "balance",
+    "total_assets",
+    "total_liabilities",
+    "total_equity",
+    "total_liabilities_and_equity",
+    "balanced",
+]
+
+
+async def export_balance_sheet_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    as_of=None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+) -> str:
+    """Stage 160 S1 — reports balance-sheet path CSV (distinct from generic /reports/export)."""
+    from app import reports as reports_svc
+
+    data = await reports_svc.balance_sheet(
+        db,
+        tenant_id,
+        as_of=as_of,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=BALANCE_SHEET_EXPORT_COLUMNS)
+    writer.writeheader()
+    summary = {
+        "as_of": _cell(data.get("as_of")),
+        "store_id": _cell(data.get("store_id")),
+        "branch_id": _cell(data.get("branch_id")),
+        "total_assets": _cell(data.get("total_assets")),
+        "total_liabilities": _cell(data.get("total_liabilities")),
+        "total_equity": _cell(data.get("total_equity")),
+        "total_liabilities_and_equity": _cell(data.get("total_liabilities_and_equity")),
+        "balanced": _cell(data.get("balanced")),
+    }
+    rows: list[tuple[str, dict]] = []
+    for section in ("assets", "liabilities", "equity"):
+        for row in data.get(section) or []:
+            rows.append((section, row))
+    if not rows:
+        writer.writerow({**summary, "section": "", "code": "", "name": "", "balance": ""})
+        return buf.getvalue()
+    for section, row in rows:
+        writer.writerow(
+            {
+                **summary,
+                "section": section,
+                "code": _cell(row.get("code")),
+                "name": _cell(row.get("name")),
+                "balance": _cell(row.get("balance")),
+            }
+        )
+    return buf.getvalue()

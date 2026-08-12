@@ -209,3 +209,5 @@ Stage 157 D1 Tenant MVP AI Inventory Predictions CSV, Dashboard Sales-Trend CSV 
 Stage 158 D1 Tenant MVP Dashboard Stock-Alerts CSV, Dashboard Expenses CSV & Dashboard Credit CSV Export Fidelity — `docs/STAGE_158_FIDELITY.md` (`test_stage158_fidelity_d1.py`); Stage 158 A1 Complete; Stage 158 E1 Complete; Stage 158 C1 Complete (MVP honesty); exit `docs/STAGE_158_EXIT_CRITERIA.md`, ADR-323.
 
 Stage 159 D1 Tenant MVP Dashboard User-Stats CSV, Dashboard Summary CSV & Accounting Trial-Balance CSV Export Fidelity — `docs/STAGE_159_FIDELITY.md` (`test_stage159_fidelity_d1.py`); Stage 159 U1 Complete; Stage 159 M1 Complete; Stage 159 B1 Complete (MVP honesty); exit `docs/STAGE_159_EXIT_CRITERIA.md`, ADR-325.
+
+Stage 160 D1 Tenant MVP Accounting Profit-Loss CSV, Reports Cash-Flow Path CSV & Reports Balance-Sheet Path CSV Export Fidelity — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`); Stage 160 P1 Complete; Stage 160 C1 Complete; Stage 160 S1 Complete (MVP honesty); exit `docs/STAGE_160_EXIT_CRITERIA.md`, ADR-327.

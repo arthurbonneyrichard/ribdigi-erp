@@ -401,6 +401,9 @@ Authoritative MVP docs:
 - `docs/STAGE_159_EXIT_CRITERIA.md` / `docs/ADR_325_STAGE159_FREEZE.md` (`backend/tests/test_stage159_exit_h159x.py`) — Stage 159 H159x
 - `docs/STAGE_159_FIDELITY.md` (`backend/tests/test_stage159_fidelity_d1.py`) — Stage 159 D1
 - `docs/STAGE_159_PLAN.md` (`backend/tests/test_stage159_open.py`) — Stage 159 open (ADR-324)
+- `docs/STAGE_160_EXIT_CRITERIA.md` / `docs/ADR_327_STAGE160_FREEZE.md` (`backend/tests/test_stage160_exit_h160x.py`) — Stage 160 H160x
+- `docs/STAGE_160_FIDELITY.md` (`backend/tests/test_stage160_fidelity_d1.py`) — Stage 160 D1
+- `docs/STAGE_160_PLAN.md` (`backend/tests/test_stage160_open.py`) — Stage 160 open (ADR-326)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1846,6 +1849,18 @@ H159x met — `docs/STAGE_159_EXIT_CRITERIA.md`, ADR-325. Stages 1–159 frozen 
 ## Stage 159 open
 
 ADR-324 + `docs/STAGE_159_PLAN.md` — Tenant MVP Dashboard User-Stats CSV, Dashboard Summary CSV & Accounting Trial-Balance CSV Export Fidelity.
+
+## Stage 160 exit
+
+H160x met — `docs/STAGE_160_EXIT_CRITERIA.md`, ADR-327. Stages 1–160 frozen for Stage 160 feature scope.
+
+## Stage 160 D1 — Tenant MVP Accounting Profit-Loss CSV, Reports Cash-Flow Path CSV & Reports Balance-Sheet Path CSV Export Fidelity
+
+`docs/STAGE_160_FIDELITY.md` — maps P1–S1 → readiness / launch / deploy / security.
+
+## Stage 160 open
+
+ADR-326 + `docs/STAGE_160_PLAN.md` — Tenant MVP Accounting Profit-Loss CSV, Reports Cash-Flow Path CSV & Reports Balance-Sheet Path CSV Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

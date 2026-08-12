@@ -1532,3 +1532,5 @@ Stage 157 D1 AI inventory predictions, dashboard sales-trend & top-products expo
 Stage 158 D1 dashboard stock-alerts, expenses & credit export fidelity — `docs/STAGE_158_FIDELITY.md` (`test_stage158_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 159 D1 dashboard user-stats, summary & accounting trial-balance export fidelity — `docs/STAGE_159_FIDELITY.md` (`test_stage159_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 160 D1 accounting profit-loss, reports cash-flow & balance-sheet path export fidelity — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

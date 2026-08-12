@@ -23,6 +23,4 @@ Stage 159 Tenant MVP Dashboard User-Stats CSV, Dashboard Summary CSV & Accountin
 
 ## Next stage
 
-Stage 160 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 159 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Accounting Profit-Loss path CSV + remaining distinct path exports (if still distinct from `/reports/export` and prior stages).
+Stage 160 opened via CONTINUE/NEXT as ADR-326 / ADR-327 (accounting profit-loss CSV + reports cash-flow / balance-sheet path CSV export fidelity). Stage 159 feature scope remains frozen.

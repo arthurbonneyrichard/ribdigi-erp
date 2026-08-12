@@ -10480,6 +10480,33 @@ async def get_profit_loss(
     )
 
 
+@api.get("/accounting/profit-loss/export")
+async def accounting_profit_loss_export(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 160 P1 — accounting profit-loss CSV (path-scoped; distinct from /reports/export)."""
+    text = await finance_ops_export_svc.export_profit_loss_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="accounting_profit_loss_export.csv"'
+        },
+    )
+
+
 @api.get("/reports/profit-loss")
 async def report_profit_loss(
     from_date: str | None = None,
@@ -10527,6 +10554,33 @@ async def report_cash_flow(
     )
 
 
+@api.get("/reports/cash-flow/export")
+async def reports_cash_flow_export(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 160 C1 — reports cash-flow path CSV (distinct from generic /reports/export)."""
+    text = await finance_ops_export_svc.export_cash_flow_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="reports_cash_flow_export.csv"'
+        },
+    )
+
+
 @api.get("/reports/balance-sheet")
 async def report_balance_sheet(
     as_of_date: str | None = None,
@@ -10545,6 +10599,31 @@ async def report_balance_sheet(
             branch_id=branch_id,
             compare=compare,
         )
+    )
+
+
+@api.get("/reports/balance-sheet/export")
+async def reports_balance_sheet_export(
+    as_of_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 160 S1 — reports balance-sheet path CSV (distinct from generic /reports/export)."""
+    text = await finance_ops_export_svc.export_balance_sheet_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="reports_balance_sheet_export.csv"'
+        },
     )
 
 

@@ -1349,6 +1349,34 @@ export default function Page() {
                 <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
                   Apply
                 </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const token = localStorage.getItem('token') || '';
+                    const params = new URLSearchParams();
+                    if (pnlFrom) params.set('from_date', pnlFrom);
+                    if (pnlTo) params.set('to_date', pnlTo);
+                    if (pnlStoreId) params.set('store_id', pnlStoreId);
+                    const qs = params.toString() ? `?${params}` : '';
+                    const res = await fetch(
+                      `${apiBase}/accounting/profit-loss/export${qs}`,
+                      { headers: { Authorization: `Bearer ${token}` } },
+                    );
+                    if (!res.ok) {
+                      setError(await res.text());
+                      return;
+                    }
+                    const blob = await res.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'accounting_profit_loss_export.csv';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    setMessage('Profit-loss CSV downloaded (Stage 160 P1)');
+                  }}
+                >
+                  Export profit-loss CSV
+                </button>
               </div>
               <p>Revenue: {pnl?.revenue ?? pnl?.income}</p>
               <p>COGS: {pnl?.cogs ?? 0}</p>
@@ -1356,6 +1384,10 @@ export default function Page() {
               <p>OpEx: {pnl?.operating_expenses ?? 0}</p>
               <p>Income: {pnl?.income} · Expense: {pnl?.expense}</p>
               <div className="kpi">{pnl?.net_profit}</div>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Export via <code>GET /accounting/profit-loss/export</code> (Stage 160 P1;
+                path-scoped — distinct from generic <code>/reports/export</code>).
+              </p>
             </div>
           </div>
 
