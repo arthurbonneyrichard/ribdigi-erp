@@ -1478,3 +1478,5 @@ Stage 130 D1 cheque, POS session & stock-count list export fidelity — `docs/ST
 Stage 131 D1 journal entry, bank statement & email-settings export fidelity — `docs/STAGE_131_FIDELITY.md` (`test_stage131_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 132 D1 sales invoice, stock-transfer & purchase invoice register export fidelity — `docs/STAGE_132_FIDELITY.md` (`test_stage132_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 133 D1 sales quotation, order & return register export fidelity — `docs/STAGE_133_FIDELITY.md` (`test_stage133_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

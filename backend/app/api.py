@@ -65,6 +65,7 @@ from app import admin_ops_export as admin_ops_export_svc
 from app import ops_lifecycle_export as ops_lifecycle_export_svc
 from app import finance_ops_export as finance_ops_export_svc
 from app import commerce_docs_export as commerce_docs_export_svc
+from app import sales_pipeline_export as sales_pipeline_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -5831,6 +5832,25 @@ async def list_quotations(
     return env([await sales_docs_svc.serialize_quotation(db, q) for q in rows])
 
 
+@api.get("/sales/quotations/export")
+async def export_sales_quotations_csv(
+    status: str | None = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 133 Q1 — sales quotation header CSV (no line dump)."""
+    text = await sales_pipeline_export_svc.export_quotations_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="sales_quotations_export.csv"'
+        },
+    )
+
+
 @api.post("/sales/quotations")
 async def create_quotation(
     payload: SalesQuotationCreate,
@@ -6073,6 +6093,25 @@ async def list_sales_orders(
     return env([await sales_docs_svc.serialize_order(db, o) for o in rows])
 
 
+@api.get("/sales/orders/export")
+async def export_sales_orders_csv(
+    status: str | None = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 133 O1 — sales order header CSV (no line dump)."""
+    text = await sales_pipeline_export_svc.export_orders_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="sales_orders_export.csv"'
+        },
+    )
+
+
 @api.post("/sales/orders")
 async def create_sales_order(
     payload: SalesOrderCreate,
@@ -6258,6 +6297,25 @@ async def list_sales_returns(
     stmt = apply_created_by_scope(stmt, m.SalesReturn, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_return(db, r) for r in rows])
+
+
+@api.get("/sales/returns/export")
+async def export_sales_returns_csv(
+    status: str | None = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 133 R1 — sales return header CSV (no line dump)."""
+    text = await sales_pipeline_export_svc.export_returns_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="sales_returns_export.csv"'
+        },
+    )
 
 
 @api.post("/sales/returns")

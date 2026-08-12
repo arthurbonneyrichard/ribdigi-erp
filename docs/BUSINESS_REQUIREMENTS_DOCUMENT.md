@@ -859,6 +859,7 @@ Stage 129 D1 — `docs/STAGE_129_FIDELITY.md` (`test_stage129_fidelity_d1.py`); 
 Stage 130 D1 — `docs/STAGE_130_FIDELITY.md` (`test_stage130_fidelity_d1.py`); Stage 130 C1 / P1 / S1.
 Stage 131 D1 — `docs/STAGE_131_FIDELITY.md` (`test_stage131_fidelity_d1.py`); Stage 131 J1 / B1 / E1.
 Stage 132 D1 — `docs/STAGE_132_FIDELITY.md` (`test_stage132_fidelity_d1.py`); Stage 132 I1 / T1 / P1.
+Stage 133 D1 — `docs/STAGE_133_FIDELITY.md` (`test_stage133_fidelity_d1.py`); Stage 133 Q1 / O1 / R1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1536,3 +1537,5 @@ Stage 130 D1 cheque, POS session & stock-count list export fidelity — `docs/ST
 Stage 131 D1 journal entry, bank statement & email-settings export fidelity — `docs/STAGE_131_FIDELITY.md` (`test_stage131_fidelity_d1.py`); Stage 131 J1 journals CSV; Stage 131 B1 bank statements filter + CSV; Stage 131 E1 email settings CSV (secret-free).
 
 Stage 132 D1 sales invoice, stock-transfer & purchase invoice register export fidelity — `docs/STAGE_132_FIDELITY.md` (`test_stage132_fidelity_d1.py`); Stage 132 I1 sales invoices CSV; Stage 132 T1 stock-transfer list filter + CSV; Stage 132 P1 purchase invoices CSV.
+
+Stage 133 D1 sales quotation, order & return register export fidelity — `docs/STAGE_133_FIDELITY.md` (`test_stage133_fidelity_d1.py`); Stage 133 Q1 quotations CSV; Stage 133 O1 orders CSV; Stage 133 R1 returns CSV.

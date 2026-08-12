@@ -281,6 +281,39 @@ export default function Page() {
     }
   }
 
+  async function downloadPipelineExport(
+    kind: 'quotations' | 'orders' | 'returns',
+    status: string,
+  ) {
+    // Stage 133 Q1 / O1 / R1 — sales pipeline header CSVs
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+      const res = await fetch(`${apiBase}/sales/${kind}/export${qs}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error(`${kind} export failed`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sales_${kind}_export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      const label =
+        kind === 'quotations' ? 'quotations (Stage 133 Q1)' : kind === 'orders' ? 'orders (Stage 133 O1)' : 'returns (Stage 133 R1)';
+      setMessage(`Sales ${label} CSV downloaded`);
+    } catch (err: any) {
+      setError(err.message || `${kind} export failed`);
+    }
+  }
+
   function resetCustomerForm() {
     setCustomerName('');
     setCustomerCode('');
@@ -1147,6 +1180,9 @@ export default function Page() {
                 </option>
               ))}
             </select>
+            <button type="button" onClick={() => downloadPipelineExport('quotations', quoteStatusFilter)}>
+              Export quotations CSV
+            </button>
           </div>
           <table className="table">
             <thead>
@@ -1234,6 +1270,9 @@ export default function Page() {
               </option>
             ))}
           </select>
+          <button type="button" onClick={() => downloadPipelineExport('orders', orderStatusFilter)}>
+            Export orders CSV
+          </button>
           <span className="muted">Server-side filter via order_status (Stage 99 T1)</span>
         </div>
         <table className="table">
@@ -1428,6 +1467,9 @@ export default function Page() {
               <option value="draft">draft</option>
               <option value="posted">posted</option>
             </select>
+            <button type="button" onClick={() => downloadPipelineExport('returns', returnStatusFilter)}>
+              Export returns CSV
+            </button>
           </div>
           <table className="table">
             <thead>

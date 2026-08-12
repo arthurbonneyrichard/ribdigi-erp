@@ -2198,6 +2198,18 @@ Every feature in every phase must meet:
 
 **Stage 132 exit (2026-08-12):** I1, T1, P1, D1, H132x met — `docs/STAGE_132_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_271_STAGE132_FREEZE.md`. Fidelity: `docs/STAGE_132_FIDELITY.md`.
 
+**Stage 133 open (2026-08-12):** Tenant MVP Sales Quotation CSV, Sales Order CSV & Sales Return CSV Export Fidelity — `docs/ADR_272_STAGE133_OPEN.md` + `docs/STAGE_133_PLAN.md` (Quotations → Orders → Returns → Fidelity; Q1 next).
+
+**Stage 133 Q1 (2026-08-12):** Sales quotation register CSV (`test_stage133_quotations_export_q1.py`).
+
+**Stage 133 O1 (2026-08-12):** Sales order register CSV (`test_stage133_orders_export_o1.py`).
+
+**Stage 133 R1 (2026-08-12):** Sales return register CSV (`test_stage133_returns_export_r1.py`).
+
+**Stage 133 D1 (2026-08-12):** Sales quotation, order & return register export fidelity sync — `docs/STAGE_133_FIDELITY.md` (`test_stage133_fidelity_d1.py`).
+
+**Stage 133 exit (2026-08-12):** Q1, O1, R1, D1, H133x met — `docs/STAGE_133_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_273_STAGE133_FREEZE.md`. Fidelity: `docs/STAGE_133_FIDELITY.md`.
+
 
 
 

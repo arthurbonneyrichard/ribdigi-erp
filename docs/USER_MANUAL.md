@@ -210,6 +210,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Sales Invoice CSV:** Sales Export invoices CSV (Stage 132 I1)
 - **Warehouse Transfer Status Filters:** Inventory draft/requested/in-transit/received/cancelled filter + Shell leaves + list CSV (Stage 132 T1)
 - **Purchase Invoice CSV:** Purchasing Export invoices CSV (Stage 132 P1)
+- **Sales Quotation CSV:** Sales Export quotations CSV (Stage 133 Q1)
+- **Sales Order CSV:** Sales Export orders CSV (Stage 133 O1)
+- **Sales Return CSV:** Sales Export returns CSV (Stage 133 R1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
