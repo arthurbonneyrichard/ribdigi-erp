@@ -26,10 +26,10 @@ async def test_stock_transfers_status_filter_and_export(client, db_session):
     headers = await _super(ac, seed)
 
     wh_a = m.Warehouse(
-        tenant_id=seed["t1"].id, code="WH-132-A", name="Stage132 A", is_default=True
+        tenant_id=seed["t1"].id, code="WH-132-A", name="Stage132 A"
     )
     wh_b = m.Warehouse(
-        tenant_id=seed["t1"].id, code="WH-132-B", name="Stage132 B", is_default=False
+        tenant_id=seed["t1"].id, code="WH-132-B", name="Stage132 B"
     )
     db_session.add_all([wh_a, wh_b])
     await db_session.flush()
