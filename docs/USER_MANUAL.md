@@ -264,6 +264,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Platform Plans Catalog CSV:** Platform Plans Export plans CSV (Stage 150 P1)
 - **Platform Subscriptions Roster CSV:** Platform Billing Export subscriptions CSV (Stage 150 R1)
 - **Platform House Settings CSV:** Platform Settings Export settings CSV (Stage 150 S1)
+- **Platform Health Checks CSV:** Platform Health Export health CSV (Stage 151 H1)
+- **Platform Operator Evidence CSV:** Platform Health Export evidence CSV (Stage 151 E1)
+- **Platform At-Risk Tenants CSV:** Platform Tenants Export at-risk CSV (Stage 151 A1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

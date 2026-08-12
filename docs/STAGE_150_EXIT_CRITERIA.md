@@ -27,4 +27,4 @@ None for planned Stage 150 workstreams.
 - Admin remote-revoke-others; API-key un-revoke; FX soft-`is_active`
 - Main `ci.yml` deploy jobs; LAUNCH §§1–3 / §7 / go-live Completes
 - Reopening Stages 1–149 frozen scopes
-- External LLM Complete; platform health checks CSV
+- External LLM Complete; platform health checks CSV (completed Stage 151)

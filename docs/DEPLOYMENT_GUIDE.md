@@ -1514,3 +1514,5 @@ Stage 148 D1 AI chat history, customer insights & cross-domain analysis export f
 Stage 149 D1 AI document analyze, platform staff users & platform staff sessions export fidelity — `docs/STAGE_149_FIDELITY.md` (`test_stage149_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 150 D1 platform plans catalog, subscriptions roster & house settings export fidelity — `docs/STAGE_150_FIDELITY.md` (`test_stage150_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 151 D1 platform health checks, operator evidence & at-risk tenants export fidelity — `docs/STAGE_151_FIDELITY.md` (`test_stage151_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

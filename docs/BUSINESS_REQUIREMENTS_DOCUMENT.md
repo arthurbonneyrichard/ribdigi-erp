@@ -877,6 +877,7 @@ Stage 147 D1 — `docs/STAGE_147_FIDELITY.md` (`test_stage147_fidelity_d1.py`); 
 Stage 148 D1 — `docs/STAGE_148_FIDELITY.md` (`test_stage148_fidelity_d1.py`); Stage 148 C1 / I1 / X1.
 Stage 149 D1 — `docs/STAGE_149_FIDELITY.md` (`test_stage149_fidelity_d1.py`); Stage 149 A1 / U1 / S1.
 Stage 150 D1 — `docs/STAGE_150_FIDELITY.md` (`test_stage150_fidelity_d1.py`); Stage 150 P1 / R1 / S1.
+Stage 151 D1 — `docs/STAGE_151_FIDELITY.md` (`test_stage151_fidelity_d1.py`); Stage 151 H1 / E1 / A1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1590,3 +1591,5 @@ Stage 148 D1 AI chat history, customer insights & cross-domain analysis export f
 Stage 149 D1 AI document analyze, platform staff users & platform staff sessions export fidelity — `docs/STAGE_149_FIDELITY.md` (`test_stage149_fidelity_d1.py`); Stage 149 A1 document analyze CSV; Stage 149 U1 platform staff users CSV; Stage 149 S1 platform staff sessions CSV.
 
 Stage 150 D1 platform plans catalog, subscriptions roster & house settings export fidelity — `docs/STAGE_150_FIDELITY.md` (`test_stage150_fidelity_d1.py`); Stage 150 P1 plans catalog CSV; Stage 150 R1 subscriptions roster CSV; Stage 150 S1 house settings CSV.
+
+Stage 151 D1 platform health checks, operator evidence & at-risk tenants export fidelity — `docs/STAGE_151_FIDELITY.md` (`test_stage151_fidelity_d1.py`); Stage 151 H1 health checks CSV; Stage 151 E1 operator evidence CSV; Stage 151 A1 at-risk tenants CSV.

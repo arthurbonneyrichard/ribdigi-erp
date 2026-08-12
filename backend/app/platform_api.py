@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import audit, health as health_svc, platform as platform_svc
 from app import models as m
 from app import platform_catalog_export as platform_catalog_export_svc
+from app import platform_ops_export as platform_ops_export_svc
 from app import platform_staff_export as platform_staff_export_svc
 from app import reports as reports_svc
 from app import tenants as tenants_svc
@@ -268,6 +269,27 @@ async def platform_tenants_at_risk(
 ):
     """Stage 88 R1 — trial/grace tenants nearing expiry."""
     return env(await platform_svc.list_at_risk_tenants(db, within_days=within_days))
+
+
+@router.get("/tenants/at-risk/export")
+async def platform_tenants_at_risk_export(
+    claims: dict = Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+    within_days: int = Query(14, ge=1, le=90),
+):
+    """Stage 151 A1 — at-risk tenants CSV (same queue as GET /platform/tenants/at-risk)."""
+    payload = await platform_svc.list_at_risk_tenants(db, within_days=within_days)
+    text = platform_ops_export_svc.export_platform_at_risk_tenants_csv(
+        items=payload.get("items") or [],
+        within_days=payload.get("within_days"),
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_at_risk_tenants_export.csv"'
+        },
+    )
 
 
 @router.post("/tenants")
@@ -1496,6 +1518,44 @@ async def platform_health(
     return env(report)
 
 
+@router.get("/health/export")
+async def platform_health_export(
+    claims: dict = Depends(require_platform_permission("platform_health", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 151 H1 — platform health checks CSV (operator posture; not go-live Complete)."""
+    report, _status = await health_svc.assemble_health(deep=True)
+    await platform_svc.ensure_platform_tenant(db)
+    platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
+    operator_contacts = {
+        "support_email": getattr(platform_tenant, "email", None) if platform_tenant else None,
+        "support_phone": getattr(platform_tenant, "phone", None) if platform_tenant else None,
+        "company_name": getattr(platform_tenant, "company_name", None) if platform_tenant else None,
+    }
+    security = _platform_security_detail()
+    house_runtime = _house_runtime(platform_tenant)
+    runtime_identity = _runtime_identity()
+    report["operator_contacts"] = operator_contacts
+    report["security"] = security
+    report["house_runtime"] = house_runtime
+    report["runtime_identity"] = runtime_identity
+    report["generated_at"] = datetime.utcnow().isoformat() + "Z"
+    text = platform_ops_export_svc.export_platform_health_csv(
+        health_payload=report,
+        operator_contacts=operator_contacts,
+        security=security,
+        house_runtime=house_runtime,
+        runtime_identity=runtime_identity,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_health_export.csv"'
+        },
+    )
+
+
 async def _platform_audit_list_payload(
     db: AsyncSession,
     *,
@@ -1717,4 +1777,59 @@ async def platform_operator_evidence(
                 "attestation_claimed": False,
             },
         }
+    )
+
+
+@router.get("/evidence/export")
+async def platform_operator_evidence_export(
+    claims: dict = Depends(require_platform_permission("platform_health", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 151 E1 — operator evidence CSV (packaging honesty only; not go-live Complete)."""
+    report, _status = await health_svc.assemble_health(deep=True)
+    await platform_svc.ensure_platform_tenant(db)
+    platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
+    report["security"] = _platform_security_detail()
+    report["runtime_identity"] = _runtime_identity()
+    identity = _runtime_identity()
+    evidence = {
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "packaging_only": True,
+        "note": (
+            "Operator evidence pack for Ribdigi House — packaging honesty only; "
+            "not sections 1–3 verified, section 7 signed, or go-live Complete."
+        ),
+        "house": {
+            "tenant_id": PLATFORM_TENANT_ID,
+            "company_name": getattr(platform_tenant, "company_name", None)
+            if platform_tenant
+            else None,
+            "support_email": getattr(platform_tenant, "email", None)
+            if platform_tenant
+            else None,
+            **_house_runtime(platform_tenant),
+        },
+        "house_runtime": _house_runtime(platform_tenant),
+        "runtime_identity": identity,
+        "health": report,
+        "security": _platform_security_detail(),
+        "honesty_flags": {
+            "mrr_fabricated_claimed": False,
+            "billing_complete_claimed": False,
+            "subscriptions_live_claimed": False,
+            "user_store_membership_claimed": False,
+            "hard_delete_claimed": False,
+            "sections_1_3_verified": False,
+            "section_7_signed": False,
+            "go_live_claimed": False,
+            "attestation_claimed": False,
+        },
+    }
+    text = platform_ops_export_svc.export_platform_evidence_csv(evidence=evidence)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_evidence_export.csv"'
+        },
     )

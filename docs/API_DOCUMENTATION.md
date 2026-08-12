@@ -1682,3 +1682,5 @@ Stage 148 D1 — `docs/STAGE_148_FIDELITY.md` (`test_stage148_fidelity_d1.py`): 
 Stage 149 D1 — `docs/STAGE_149_FIDELITY.md` (`test_stage149_fidelity_d1.py`): Stage 149 A1 `POST /ai/documents/analyze/export`; Stage 149 U1 `GET /platform/users/export`; Stage 149 S1 `GET /platform/users/sessions/export`.
 
 Stage 150 D1 — `docs/STAGE_150_FIDELITY.md` (`test_stage150_fidelity_d1.py`): Stage 150 P1 `GET /platform/plans/export`; Stage 150 R1 `GET /platform/subscriptions/export`; Stage 150 S1 `GET /platform/settings/export`.
+
+Stage 151 D1 — `docs/STAGE_151_FIDELITY.md` (`test_stage151_fidelity_d1.py`): Stage 151 H1 `GET /platform/health/export`; Stage 151 E1 `GET /platform/evidence/export`; Stage 151 A1 `GET /platform/tenants/at-risk/export`.

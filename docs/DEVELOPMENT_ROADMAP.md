@@ -2414,6 +2414,18 @@ Every feature in every phase must meet:
 
 **Stage 150 exit (2026-08-12):** P1, R1, S1, D1, H150x met — `docs/STAGE_150_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_307_STAGE150_FREEZE.md`. Fidelity: `docs/STAGE_150_FIDELITY.md`.
 
+**Stage 151 open (2026-08-12):** Tenant MVP Platform Health Checks CSV, Platform Operator Evidence CSV & Platform At-Risk Tenants CSV Export Fidelity — `docs/ADR_308_STAGE151_OPEN.md` + `docs/STAGE_151_PLAN.md` (Health → Evidence → At-risk → Fidelity; H1 next).
+
+**Stage 151 H1 (2026-08-12):** Health checks CSV (`test_stage151_platform_health_h1.py`).
+
+**Stage 151 E1 (2026-08-12):** Operator evidence CSV (`test_stage151_platform_evidence_e1.py`).
+
+**Stage 151 A1 (2026-08-12):** At-risk tenants CSV (`test_stage151_at_risk_a1.py`).
+
+**Stage 151 D1 (2026-08-12):** Health / evidence / at-risk export fidelity sync — `docs/STAGE_151_FIDELITY.md` (`test_stage151_fidelity_d1.py`).
+
+**Stage 151 exit (2026-08-12):** H1, E1, A1, D1, H151x met — `docs/STAGE_151_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_309_STAGE151_FREEZE.md`. Fidelity: `docs/STAGE_151_FIDELITY.md`.
+
 
 
 

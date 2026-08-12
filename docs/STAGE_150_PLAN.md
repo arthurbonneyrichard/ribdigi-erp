@@ -37,7 +37,7 @@ Tenant MVP Platform Plans Catalog CSV, Platform Subscriptions Roster CSV & Platf
 - Impersonation; POS Hold/Resume; Billers CRUD; parallel Income; WYSIWYG Complete; PO OCR
 - Admin remote-revoke-others; API-key un-revoke; FX soft-`is_active`
 - Main `ci.yml` deploy; reopen Stages 1–149
-- External LLM Complete; Stage 149 staff CSV reopen; platform health checks CSV
+- External LLM Complete; Stage 149 staff CSV reopen; platform health checks CSV (completed Stage 151)
 
 ## P1 acceptance criteria
 

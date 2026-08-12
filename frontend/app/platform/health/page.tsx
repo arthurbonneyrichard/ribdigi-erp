@@ -7,6 +7,8 @@ import { downloadPlatformEvidence } from '../../../lib/platformEvidence';
 
 type Check = { status?: string; latency_ms?: number; reason?: string; mode?: string; required?: boolean };
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 export default function PlatformHealthPage() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
@@ -28,6 +30,32 @@ export default function PlatformHealthPage() {
     }
   }
 
+  async function exportCsv(path: string, filename: string, okMsg: string) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}${path}`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error(`${filename} export failed`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage(okMsg);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   const checks: Record<string, Check> = data?.checks || {};
   const security = data?.security || {};
   const contacts = data?.operator_contacts || {};
@@ -37,7 +65,12 @@ export default function PlatformHealthPage() {
   return (
     <PlatformShell>
       <h1>Platform health</h1>
-      <p className="muted">Deep readiness checks for Ribdigi House operators.</p>
+      <p className="muted">
+        Deep readiness checks for Ribdigi House operators. Export via{' '}
+        <code>GET /platform/health/export</code> (Stage 151 H1) and{' '}
+        <code>GET /platform/evidence/export</code> (Stage 151 E1; packaging honesty — not go-live
+        Complete).
+      </p>
       {error && <p>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
       {data && (
@@ -45,9 +78,33 @@ export default function PlatformHealthPage() {
           <p style={{ marginTop: 12 }}>
             Overall: <strong>{data.status}</strong>
           </p>
-          <p style={{ marginTop: 8 }}>
+          <p style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <button type="button" onClick={downloadEvidence}>
               Download evidence JSON
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                exportCsv(
+                  '/platform/health/export',
+                  'platform_health_export.csv',
+                  'Health CSV downloaded (Stage 151 H1)',
+                )
+              }
+            >
+              Export health CSV
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                exportCsv(
+                  '/platform/evidence/export',
+                  'platform_evidence_export.csv',
+                  'Evidence CSV downloaded (Stage 151 E1; packaging honesty only)',
+                )
+              }
+            >
+              Export evidence CSV
             </button>
           </p>
           <div className="grid" style={{ marginTop: 16 }}>
@@ -152,7 +209,8 @@ export default function PlatformHealthPage() {
           </div>
           <p className="muted" style={{ marginTop: 16 }}>
             Operator evidence pack via Download evidence JSON /{' '}
-            <code>GET /platform/evidence</code> (packaging honesty — not go-live Complete).
+            <code>GET /platform/evidence</code> and Export evidence CSV /{' '}
+            <code>GET /platform/evidence/export</code> (packaging honesty — not go-live Complete).
           </p>
           <details style={{ marginTop: 20 }}>
             <summary className="muted">Raw payload</summary>

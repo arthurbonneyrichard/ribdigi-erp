@@ -238,6 +238,32 @@ function PlatformTenantsInner() {
     }
   }
 
+  async function exportAtRiskCsv() {
+    setError('');
+    setMsg('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/platform/tenants/at-risk/export?within_days=14`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('At-risk CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'platform_at_risk_tenants_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMsg('At-risk CSV downloaded (Stage 151 A1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   return (
     <PlatformShell>
       <h1>Customer tenants</h1>
@@ -455,7 +481,15 @@ function PlatformTenantsInner() {
       >
         At-risk (trial/grace within 14 days)
       </h2>
-      <p className="muted">{atRisk.length} tenant(s) in queue</p>
+      <p className="muted">
+        {atRisk.length} tenant(s) in queue. Export via{' '}
+        <code>GET /platform/tenants/at-risk/export</code> (Stage 151 A1).
+      </p>
+      <p style={{ marginTop: 8 }}>
+        <button type="button" onClick={exportAtRiskCsv}>
+          Export at-risk CSV
+        </button>
+      </p>
       <table className="table">
         <thead>
           <tr>
