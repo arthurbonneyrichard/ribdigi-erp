@@ -145,18 +145,53 @@ export default function Page() {
     }
   }
 
+  async function analyzeDocument(file: File) {
+    setError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('document_type', 'auto');
+      const r = await api('/ai/documents/analyze', { method: 'POST', body: fd });
+      const d = r.data || {};
+      setA(
+        [
+          `type=${d.document_type} engine=${d.engine} conf=${d.confidence}`,
+          `amount=${d.extracted?.amount} date=${d.extracted?.expense_date} payee=${d.extracted?.payee} ref=${d.extracted?.reference}`,
+          `party_matches=${(d.matches?.parties || []).length} po_matches=${(d.matches?.purchase_orders || []).length}`,
+          `discrepancies=${(d.discrepancies || []).map((x: any) => x.code).join(',') || 'none'}`,
+          d.apply_hint || '',
+        ].join('\n')
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to analyze document');
+    }
+  }
+
   return (
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, report generator, customer assistant, and the Security Monitor are available now.
+        Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, report generator, customer/document assistants, and the Security Monitor are available now.
       </p>
       <div className="card">
         <textarea value={q} onChange={(e) => setQ(e.target.value)} style={{ width: '100%', minHeight: 100 }} placeholder="Ask a business question, report prompt, or customer query e.g. best customers / outstanding balance" />
-        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={go}>Ask</button>
           <button onClick={generateReport}>Generate report</button>
           <button onClick={customerAssist}>Customer assist</button>
+          <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
+            <span style={{ border: '1px solid #ccc', padding: '6px 10px', borderRadius: 4 }}>Analyze document</span>
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void analyzeDocument(f);
+                e.target.value = '';
+              }}
+            />
+          </label>
           <button onClick={loadInsights}>Load insights</button>
           <button onClick={loadInventoryPredictions}>Inventory predictions</button>
           <button onClick={loadSalesAnalysis}>Sales analysis</button>
