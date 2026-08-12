@@ -147,6 +147,9 @@ export default function Page() {
   const [openingCash, setOpeningCash] = useState('100');
   const [actualCash, setActualCash] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [splitTender, setSplitTender] = useState(false);
+  const [cashTender, setCashTender] = useState('');
+  const [cardTender, setCardTender] = useState('');
   const [paper, setPaper] = useState('80mm');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
@@ -353,6 +356,33 @@ export default function Page() {
   function clearCart() {
     setCart([]);
     setCartDiscount('');
+    setCashTender('');
+    setCardTender('');
+  }
+
+  function scalePayments(
+    payments: { payment_method: string; amount: number }[],
+    target: number
+  ) {
+    const sum = payments.reduce((s, p) => s + p.amount, 0);
+    if (sum <= 0 || payments.length === 0) return payments;
+    const scaled = payments.map((p) => ({
+      ...p,
+      amount: Math.round((p.amount / sum) * target * 100) / 100,
+    }));
+    const paid = scaled.reduce((s, p) => s + p.amount, 0);
+    const last = scaled[scaled.length - 1];
+    last.amount = Math.round((last.amount + (target - paid)) * 100) / 100;
+    return scaled.filter((p) => p.amount > 0);
+  }
+
+  function enableSplit(next: boolean) {
+    setSplitTender(next);
+    if (next) {
+      const half = Math.round((cartTotal / 2) * 100) / 100;
+      setCashTender(String(half || ''));
+      setCardTender(String(Math.max(0, Math.round((cartTotal - half) * 100) / 100) || ''));
+    }
   }
 
   async function checkout() {
@@ -368,7 +398,7 @@ export default function Page() {
       return;
     }
     const name = customerName.trim();
-    if (paymentMethod === 'credit' && !customerId) {
+    if (!splitTender && paymentMethod === 'credit' && !customerId) {
       setError('Select a customer for credit sales');
       return;
     }
@@ -382,25 +412,64 @@ export default function Page() {
       quantity: c.quantity,
       discount: Number(c.discount) || 0,
     }));
+    const body: Record<string, unknown> = {
+      session_id: session.session_id,
+      discount_amount: cartDiscountAmount,
+      status: 'completed',
+      party_id: customerId || null,
+      customer_name: name || null,
+      items,
+    };
+    let payments: { payment_method: string; amount: number }[] | null = null;
+    if (splitTender) {
+      payments = [
+        { payment_method: 'cash', amount: Number(cashTender) || 0 },
+        { payment_method: 'card', amount: Number(cardTender) || 0 },
+      ].filter((p) => p.amount > 0);
+      if (payments.length < 2) {
+        setError('Split tender needs cash and card amounts');
+        return;
+      }
+      body.payments = payments;
+      body.payment_method = 'split';
+    } else {
+      body.payment_method = paymentMethod;
+    }
     setBusy(true);
     try {
-      const r = await api('/pos/sales', {
-        method: 'POST',
-        body: JSON.stringify({
-          session_id: session.session_id,
-          discount_amount: cartDiscountAmount,
-          status: 'completed',
-          payment_method: paymentMethod,
-          party_id: customerId || null,
-          customer_name: name || null,
-          items,
-        }),
-      });
+      let r;
+      try {
+        r = await api('/pos/sales', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+      } catch (err: any) {
+        const detail = err?.detail;
+        if (
+          splitTender &&
+          payments &&
+          detail &&
+          typeof detail === 'object' &&
+          detail.code === 'PAYMENT_TOTAL_MISMATCH' &&
+          typeof detail.sale_total === 'number'
+        ) {
+          body.payments = scalePayments(payments, detail.sale_total);
+          setCashTender(String((body.payments as any[]).find((p) => p.payment_method === 'cash')?.amount ?? ''));
+          setCardTender(String((body.payments as any[]).find((p) => p.payment_method === 'card')?.amount ?? ''));
+          r = await api('/pos/sales', {
+            method: 'POST',
+            body: JSON.stringify(body),
+          });
+        } else {
+          throw err;
+        }
+      }
       if (!r?.data?.id || !r?.data?.reference) {
         throw new Error(r?.message || 'Sale failed');
       }
       clearCart();
       clearCustomer();
+      setSplitTender(false);
       setLastSale({ id: r.data.id, reference: r.data.reference });
       await refreshSession();
       await browse(q);
@@ -727,15 +796,65 @@ export default function Page() {
                 />
               </label>
 
-              <label className="tpos-field">
-                <span>Payment</span>
-                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                  <option value="cash">Cash</option>
-                  <option value="card">Card</option>
-                  <option value="wallet">Wallet</option>
-                  <option value="credit">Credit</option>
-                </select>
+              <label className="tpos-split-toggle">
+                <input
+                  type="checkbox"
+                  checked={splitTender}
+                  onChange={(e) => enableSplit(e.target.checked)}
+                />
+                <span>Split tender (cash + card)</span>
               </label>
+
+              {!splitTender ? (
+                <label className="tpos-field">
+                  <span>Payment</span>
+                  <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="wallet">Wallet</option>
+                    <option value="credit">Credit</option>
+                  </select>
+                </label>
+              ) : (
+                <div className="tpos-split-fields">
+                  <label className="tpos-field">
+                    <span>Cash</span>
+                    <input
+                      className="tpos-input"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={cashTender}
+                      onChange={(e) => {
+                        const cash = Number(e.target.value) || 0;
+                        setCashTender(e.target.value);
+                        setCardTender(String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100)));
+                      }}
+                      inputMode="decimal"
+                    />
+                  </label>
+                  <label className="tpos-field">
+                    <span>Card</span>
+                    <input
+                      className="tpos-input"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={cardTender}
+                      onChange={(e) => {
+                        const card = Number(e.target.value) || 0;
+                        setCardTender(e.target.value);
+                        setCashTender(String(Math.max(0, Math.round((cartTotal - card) * 100) / 100)));
+                      }}
+                      inputMode="decimal"
+                    />
+                  </label>
+                  <p className="tpos-split-hint">
+                    Split {money((Number(cashTender) || 0) + (Number(cardTender) || 0))} · cart{' '}
+                    {money(cartTotal)} (tax adjusted at charge)
+                  </p>
+                </div>
+              )}
 
               <label className="tpos-field">
                 <span>Receipt</span>

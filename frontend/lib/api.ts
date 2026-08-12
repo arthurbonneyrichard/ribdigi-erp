@@ -73,7 +73,10 @@ export async function api(path: string, opts: RequestInit = {}, retryOn401 = tru
       typeof detail === 'string'
         ? detail
         : detail?.message || detail?.code || body.message || 'Request failed';
-    throw new Error(message);
+    const err = new Error(message) as Error & { detail?: unknown; status?: number };
+    err.detail = detail;
+    err.status = response.status;
+    throw err;
   }
   return body;
 }

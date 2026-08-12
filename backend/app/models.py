@@ -801,6 +801,23 @@ class PosSession(Base):
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
+class PosPayment(Base):
+    """Tender line for a POS sale (supports split payments)."""
+
+    __tablename__ = "pos_payments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    sale_id: Mapped[str] = mapped_column(ForeignKey("transactions.id"), index=True)
+    payment_method: Mapped[str] = mapped_column(String(40), default="cash")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    liquid_account_id: Mapped[str | None] = mapped_column(
+        ForeignKey("accounts.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class JournalEntry(Base):
     __tablename__ = "journal_entries"
     __table_args__ = (UniqueConstraint("tenant_id", "entry_number"),)

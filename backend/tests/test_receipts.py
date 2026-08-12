@@ -98,6 +98,21 @@ def test_thermal_text_includes_cart_discount():
     assert "-2.50" in text
 
 
+def test_thermal_text_lists_split_payments():
+    receipt = _sample_receipt()
+    receipt["payment_method"] = "split"
+    receipt["payments"] = [
+        {"payment_method": "cash", "amount": 10},
+        {"payment_method": "card", "amount": 12.5},
+    ]
+    text = render_thermal_text(receipt, paper="80mm")
+    assert "Payments" in text
+    assert "CASH" in text
+    assert "CARD" in text
+    assert "10.00" in text
+    assert "12.50" in text
+
+
 def test_thermal_pdf_is_valid_pdf_bytes():
     receipt = _sample_receipt()
     pdf = to_thermal_pdf(receipt, paper="58mm")

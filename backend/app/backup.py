@@ -58,6 +58,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("recurring_expenses", m.RecurringExpense),
     ("pos_sessions", m.PosSession),
     ("transactions", m.Transaction),
+    ("pos_payments", m.PosPayment),
     ("journal_entries", m.JournalEntry),
     ("journal_entry_lines", m.JournalEntryLine),
     ("bank_statements", m.BankStatement),

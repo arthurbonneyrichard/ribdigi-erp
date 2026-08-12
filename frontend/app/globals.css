@@ -477,6 +477,13 @@
 .tpos-field select,.tpos-cart-foot .tpos-input{width:100%;background:#1e293b;border-color:#475569;color:#f8fafc}
 .tpos-cart-foot .tpos-input::placeholder{color:#64748b}
 .tpos-cart-actions{display:flex;gap:8px}
+.tpos-split-toggle{
+  display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#94a3b8;cursor:pointer
+}
+.tpos-split-toggle input{width:16px;height:16px;accent-color:#0f766e}
+.tpos-split-fields{display:flex;flex-direction:column;gap:8px}
+.tpos-split-hint{margin:0;font-size:11px;font-weight:600;color:#94a3b8}
+[data-theme="dark"] .tpos-split-toggle,[data-theme="dark"] .tpos-split-hint{color:#64748b}
 .tpos-receipt{margin-top:4px}
 .tpos-receipt-text{
   background:#111;color:#eee;padding:12px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;

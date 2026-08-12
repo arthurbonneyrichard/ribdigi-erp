@@ -133,6 +133,7 @@ def build_receipt_payload(
         "total": float(tx.total or 0),
         "items": normalized_items,
         "payment_method": payload.get("payment_method", "cash"),
+        "payments": payload.get("payments") or [],
         "session_id": payload.get("session_id") or getattr(tx, "session_id", None),
         "created_at": tx.created_at,
         "format": "json",
@@ -182,7 +183,14 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     if discount_amount > 0:
         lines.append(_lr("Discount", f"-{_money(discount_amount)}", width))
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0), width))
-    lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
+    payments = receipt.get("payments") or []
+    if len(payments) > 1:
+        lines.append(_center("Payments", width))
+        for pay in payments:
+            method = str(pay.get("payment_method") or "cash").upper()
+            lines.append(_lr(method, _money(pay.get("amount") or 0), width))
+    else:
+        lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
     lines.append("-" * width)
     lines.append(_center("Thank you", width))
     lines.append(_center("Powered by RIBDIGI", width))

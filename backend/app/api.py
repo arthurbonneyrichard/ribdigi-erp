@@ -3710,7 +3710,6 @@ async def pos_sale(
         session_id=payload.session_id,
     )
     items = [i.model_dump() for i in payload.items]
-    payment_method = pos_svc.normalize_payment_method(payload.payment_method)
     from app.tax import resolve_product_tax
     from app.catalog import resolve_sale_line
 
@@ -3756,6 +3755,19 @@ async def pos_sale(
         raise HTTPException(status_code=400, detail="Cart discount exceeds sale total")
     total = round(subtotal + tax_total - cart_discount, 2)
 
+    payments = pos_svc.resolve_sale_payments(
+        total=total,
+        payment_method=payload.payment_method,
+        payments=[p.model_dump() for p in payload.payments] if payload.payments else None,
+    )
+    payment_method = pos_svc.primary_payment_method(payments)
+    credit_amount = pos_svc.credit_portion(payments)
+    if credit_amount > 0 and not payload.party_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Select a customer for credit sales",
+        )
+
     party = None
     customer_name = (payload.customer_name or "").strip() or None
     if payload.party_id:
@@ -3772,27 +3784,24 @@ async def pos_sale(
             raise HTTPException(status_code=404, detail="Customer not found")
         if not customer_name:
             customer_name = party.name
-        if float(party.credit_limit or 0) > 0:
-            projected = float(party.balance or 0) + float(total)
+        if credit_amount > 0 and float(party.credit_limit or 0) > 0:
+            projected = float(party.balance or 0) + float(credit_amount)
             if projected > float(party.credit_limit):
                 raise HTTPException(status_code=409, detail="CREDIT_LIMIT_EXCEEDED")
-    elif payment_method == "credit":
-        raise HTTPException(
-            status_code=400,
-            detail="Select a customer for credit sales",
-        )
 
     ref = await pos_svc.next_pos_sale_number(db, claims["tenant_id"])
     body = payload.model_dump()
     body.pop("items", None)
     body.pop("session_id", None)
     body.pop("payment_method", None)
+    body.pop("payments", None)
     body.pop("customer_name", None)
     body.pop("discount_amount", None)
     body["payload"] = {
         **(body.get("payload") or {}),
         "items": priced_items,
         "payment_method": payment_method,
+        "payments": payments,
         "session_id": session.id,
         "customer_name": customer_name,
         "discount_amount": cart_discount,
@@ -3812,6 +3821,12 @@ async def pos_sale(
     )
     db.add(tx)
     await db.flush()
+    payment_rows = await pos_svc.record_pos_payments(
+        db,
+        tenant_id=claims["tenant_id"],
+        sale_id=tx.id,
+        payments=payments,
+    )
 
     warehouse_id = None
     if session.store_id:
@@ -3829,12 +3844,14 @@ async def pos_sale(
         outbound=True,
         warehouse_id=warehouse_id,
     )
-    await pos_svc.apply_sale_to_session(session, total=total, payment_method=payment_method)
+    await pos_svc.apply_sale_to_session(
+        session, total=total, payment_method=payment_method, payments=payments
+    )
 
-    if payload.party_id and payment_method == "credit":
+    if payload.party_id and credit_amount > 0:
         party = await db.get(m.Party, payload.party_id)
         if party and party.tenant_id == claims["tenant_id"]:
-            party.balance = float(party.balance or 0) + float(total)
+            party.balance = float(party.balance or 0) + float(credit_amount)
 
     from app.accounting import post_pos_sale_journal
 
@@ -3844,6 +3861,7 @@ async def pos_sale(
         user_id=claims["sub"],
         tx=tx,
         payment_method=payment_method,
+        payments=payments,
     )
 
     from app import cash_drawer as cash_drawer_svc
@@ -3852,7 +3870,7 @@ async def pos_sale(
         db,
         tenant_id=claims["tenant_id"],
         store_id=session.store_id,
-        payment_method=payment_method,
+        payment_method="cash" if pos_svc.has_cash_tender(payments) else payment_method,
         sale_id=tx.id,
         user_id=claims.get("sub"),
     )
@@ -3867,6 +3885,7 @@ async def pos_sale(
         "discount_amount": cart_discount,
         "line_discounts": round(line_discounts, 2),
         "payment_method": payment_method,
+        "payments": [pos_svc.serialize_payment(p) for p in payment_rows],
         "customer_name": customer_name,
         "party_id": payload.party_id,
     }
