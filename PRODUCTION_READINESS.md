@@ -201,3 +201,5 @@ Stage 153 D1 Tenant MVP Tenant Dashboard Aggregates CSV, Customer History CSV & 
 Stage 154 D1 Tenant MVP PO Amendments CSV, Product Batches CSV & API-Key Usage CSV Export Fidelity — `docs/STAGE_154_FIDELITY.md` (`test_stage154_fidelity_d1.py`); Stage 154 A1 Complete; Stage 154 K1 Complete; Stage 154 U1 Complete (MVP honesty); exit `docs/STAGE_154_EXIT_CRITERIA.md`, ADR-315.
 
 Stage 155 D1 Tenant MVP Store Inventory CSV, Store Sales CSV & Product Warehouse-Stock CSV Export Fidelity — `docs/STAGE_155_FIDELITY.md` (`test_stage155_fidelity_d1.py`); Stage 155 I1 Complete; Stage 155 S1 Complete; Stage 155 W1 Complete (MVP honesty); exit `docs/STAGE_155_EXIT_CRITERIA.md`, ADR-317.
+
+Stage 156 D1 Tenant MVP Product Images CSV, Per-Product Variants CSV & Bank-Feed Settings CSV Export Fidelity — `docs/STAGE_156_FIDELITY.md` (`test_stage156_fidelity_d1.py`); Stage 156 G1 Complete; Stage 156 V1 Complete; Stage 156 F1 Complete (MVP honesty); exit `docs/STAGE_156_EXIT_CRITERIA.md`, ADR-319.

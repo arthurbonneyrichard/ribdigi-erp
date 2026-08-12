@@ -1,4 +1,5 @@
-"""CSV export for product variants and custom roles (Stage 124 X1)."""
+"""CSV export for product variants and custom roles (Stage 124 X1);
+per-product variants path export (Stage 156 V1)."""
 
 from __future__ import annotations
 
@@ -10,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import catalog as catalog_svc
 
 VARIANT_EXPORT_COLUMNS = [
     "product_id",
@@ -110,6 +112,25 @@ async def export_variants_csv(
             }
         )
     return buf.getvalue()
+
+
+async def export_product_variants_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+    is_active: bool | None = None,
+    active_only: bool = False,
+) -> str:
+    """Stage 156 V1 — path-scoped per-product variants CSV (distinct from Stage 124 roster)."""
+    await catalog_svc.get_product(db, tenant_id, product_id)
+    return await export_variants_csv(
+        db,
+        tenant_id=tenant_id,
+        product_id=product_id,
+        is_active=is_active,
+        active_only=active_only,
+    )
 
 
 async def export_custom_roles_csv(

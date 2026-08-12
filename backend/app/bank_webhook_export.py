@@ -1,9 +1,10 @@
-"""CSV export for bank connections and webhooks (Stage 126 X1). Secrets excluded."""
+"""CSV export for bank connections and webhooks (Stage 126 X1) and bank-feed settings (Stage 156 F1). Secrets excluded."""
 
 from __future__ import annotations
 
 import csv
 import io
+import json
 from datetime import datetime
 
 from sqlalchemy import select
@@ -24,6 +25,13 @@ BANK_CONNECTION_EXPORT_COLUMNS = [
     "is_active",
     "last_sync_status",
     "last_synced_at",
+]
+
+BANK_FEED_SETTINGS_EXPORT_COLUMNS = [
+    "sync_enabled",
+    "providers",
+    "timeout_seconds",
+    "celery_interval_minutes",
 ]
 
 WEBHOOK_EXPORT_COLUMNS = [
@@ -110,6 +118,27 @@ async def export_bank_connections_csv(
                 "last_synced_at": _cell(row.last_synced_at),
             }
         )
+    return buf.getvalue()
+
+
+def export_bank_feed_settings_csv() -> str:
+    """Stage 156 F1 — secret-free bank-feed capability settings (no tokens/credentials)."""
+    from app import bank_connectors as bank_connectors_svc
+
+    payload = bank_connectors_svc.settings_payload()
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=BANK_FEED_SETTINGS_EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerow(
+        {
+            "sync_enabled": _cell(bool(payload.get("sync_enabled"))),
+            "providers": _cell(
+                json.dumps(payload.get("providers") or [], separators=(",", ":"))
+            ),
+            "timeout_seconds": _cell(payload.get("timeout_seconds")),
+            "celery_interval_minutes": _cell(payload.get("celery_interval_minutes")),
+        }
+    )
     return buf.getvalue()
 
 

@@ -1513,6 +1513,41 @@ export default function Page() {
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
+            <h3>Bank feed settings</h3>
+            <p className="muted">
+              Capability metadata for bank-feed sync (providers, timeouts). Secrets and connection
+              tokens are never included. Export via <code>GET /settings/bank-feed/export</code>{' '}
+              (Stage 156 F1).
+            </p>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const tenant = localStorage.getItem('tenant') || '';
+                const res = await fetch(`${apiBase}/settings/bank-feed/export`, {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                  },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'bank_feed_settings_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Bank-feed settings CSV downloaded (Stage 156 F1)');
+              }}
+            >
+              Export bank-feed settings CSV
+            </button>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
             <h3>Bank API connections</h3>
             <p className="muted">
               Link a liquid GL account to a live feed (`mock` for demos/tests, `http_json` for any

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 from datetime import datetime
 
 from fastapi import HTTPException
@@ -12,6 +14,27 @@ from app import models as m
 from app import storage as storage_svc
 
 MAX_PRODUCT_IMAGES = 5
+
+PRODUCT_IMAGE_EXPORT_COLUMNS = [
+    "id",
+    "product_id",
+    "storage_key",
+    "content_type",
+    "sort_order",
+    "is_primary",
+    "original_filename",
+    "created_at",
+]
+
+
+def _cell(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, datetime):
+        return value.isoformat(timespec="seconds")
+    return str(value)
 
 
 def serialize_image(row: m.ProductImage) -> dict:
@@ -173,3 +196,20 @@ async def delete_primary_product_image(
         await db.flush()
     await db.refresh(product)
     return product
+
+
+async def export_product_images_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+) -> str:
+    """Stage 156 G1 — per-product image metadata CSV (no binary payloads)."""
+    rows = await list_product_images(db, tenant_id=tenant_id, product_id=product_id)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=PRODUCT_IMAGE_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in rows:
+        data = serialize_image(row)
+        writer.writerow({k: _cell(data.get(k)) for k in PRODUCT_IMAGE_EXPORT_COLUMNS})
+    return buf.getvalue()

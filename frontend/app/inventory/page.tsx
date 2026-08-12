@@ -1333,6 +1333,25 @@ export default function Page() {
             e.target.value = '';
           }}
         />
+        {selectedId && (
+          <p className="muted" style={{ marginTop: 8 }}>
+            Export via <code>{'GET /products/{id}/images/export'}</code> (Stage 156 G1).
+          </p>
+        )}
+        {selectedId && (
+          <button
+            type="button"
+            style={{ marginTop: 8 }}
+            onClick={() =>
+              downloadCatalogCsv(
+                `/products/${selectedId}/images/export`,
+                `product_${selectedId}_images_export.csv`,
+              ).then(() => setMessage('Product images CSV downloaded (Stage 156 G1)'))
+            }
+          >
+            Export images CSV
+          </button>
+        )}
         {gallery.length > 0 && (
           <ul className="muted" style={{ marginTop: 8 }}>
             {gallery.map((img) => (
@@ -2023,7 +2042,9 @@ export default function Page() {
         <>
           <p className="muted" style={{ marginBottom: 8 }}>
             Filter via <code>variant_active</code> → <code>GET /products/&#123;id&#125;/variants?is_active=</code>{' '}
-            (Stage 124 V1).
+            (Stage 124 V1). Path-scoped export via{' '}
+            <code>{'GET /products/{id}/variants/export'}</code> (Stage 156 V1); tenant roster remains{' '}
+            <code>/products/variants/export</code> (Stage 124 X1).
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
             <label className="muted">
@@ -2091,6 +2112,24 @@ export default function Page() {
               }}
             >
               Export variants CSV
+            </button>
+            <button
+              type="button"
+              disabled={!selectedId}
+              onClick={() => {
+                if (!selectedId) return;
+                const qs = new URLSearchParams();
+                if (variantActiveFilter === 'true' || variantActiveFilter === 'false') {
+                  qs.set('is_active', variantActiveFilter);
+                }
+                const q = qs.toString();
+                downloadCatalogCsv(
+                  `/products/${selectedId}/variants/export${q ? `?${q}` : ''}`,
+                  `product_${selectedId}_variants_export.csv`,
+                ).then(() => setMessage('Product variants CSV downloaded (Stage 156 V1)'));
+              }}
+            >
+              Export product variants CSV
             </button>
           </div>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 480 }}>

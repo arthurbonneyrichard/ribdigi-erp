@@ -2474,6 +2474,18 @@ Every feature in every phase must meet:
 
 **Stage 155 exit (2026-08-12):** I1, S1, W1, D1, H155x met — `docs/STAGE_155_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_317_STAGE155_FREEZE.md`. Fidelity: `docs/STAGE_155_FIDELITY.md`.
 
+**Stage 156 open (2026-08-12):** Tenant MVP Product Images CSV, Per-Product Variants CSV & Bank-Feed Settings CSV Export Fidelity — `docs/ADR_318_STAGE156_OPEN.md` + `docs/STAGE_156_PLAN.md` (Images → Variants → Bank-feed → Fidelity; G1 next).
+
+**Stage 156 G1 (2026-08-12):** Product images CSV (`test_stage156_product_images_g1.py`).
+
+**Stage 156 V1 (2026-08-12):** Per-product variants CSV (`test_stage156_product_variants_v1.py`).
+
+**Stage 156 F1 (2026-08-12):** Bank-feed settings CSV (`test_stage156_bank_feed_settings_f1.py`).
+
+**Stage 156 D1 (2026-08-12):** Product images / per-product variants / bank-feed settings export fidelity sync — `docs/STAGE_156_FIDELITY.md` (`test_stage156_fidelity_d1.py`).
+
+**Stage 156 exit (2026-08-12):** G1, V1, F1, D1, H156x met — `docs/STAGE_156_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_319_STAGE156_FREEZE.md`. Fidelity: `docs/STAGE_156_FIDELITY.md`.
+
 
 
 

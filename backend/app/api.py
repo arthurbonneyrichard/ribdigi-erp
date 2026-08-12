@@ -4199,6 +4199,27 @@ async def product_images_list(
     return env([product_images_svc.serialize_image(r) for r in rows])
 
 
+@api.get("/products/{product_id}/images/export")
+async def product_images_export(
+    product_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 156 G1 — per-product image metadata CSV (no binary payloads)."""
+    text = await product_images_svc.export_product_images_csv(
+        db, tenant_id=claims["tenant_id"], product_id=product_id
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="product_{product_id}_images_export.csv"'
+            )
+        },
+    )
+
+
 @api.post("/products/{product_id}/images")
 async def product_images_upload(
     product_id: str,
@@ -4844,6 +4865,33 @@ async def list_product_variants(
         is_active=is_active,
     )
     return env([catalog_svc.serialize_variant(v) for v in rows])
+
+
+@api.get("/products/{product_id}/variants/export")
+async def export_product_variants(
+    product_id: str,
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 156 V1 — path-scoped per-product variants CSV (distinct from Stage 124 roster)."""
+    text = await variant_role_export_svc.export_product_variants_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="product_{product_id}_variants_export.csv"'
+            )
+        },
+    )
 
 
 @api.post("/products/{product_id}/barcode/generate")
@@ -9324,6 +9372,21 @@ async def bank_feed_settings(claims=Depends(require_permission("accounting", "re
     from app import bank_connectors as bank_connectors_svc
 
     return env(bank_connectors_svc.settings_payload())
+
+
+@api.get("/settings/bank-feed/export")
+async def bank_feed_settings_export(
+    claims=Depends(require_permission("accounting", "read")),
+):
+    """Stage 156 F1 — secret-free bank-feed settings CSV (no tokens/credentials)."""
+    text = bank_webhook_export_svc.export_bank_feed_settings_csv()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="bank_feed_settings_export.csv"'
+        },
+    )
 
 
 @api.get("/accounting/bank-connections")

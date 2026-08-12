@@ -23,6 +23,4 @@ Stage 155 Tenant MVP Store Inventory CSV, Store Sales CSV & Product Warehouse-St
 
 ## Next stage
 
-Stage 156 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 155 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Product Images CSV + Per-Product Variants CSV + Bank-Feed Settings CSV (metadata/secret-free).
+Stage 156 opened via CONTINUE/NEXT as ADR-318 / ADR-319 (product images / per-product variants / bank-feed settings CSV export fidelity). Stage 155 feature scope remains frozen.
