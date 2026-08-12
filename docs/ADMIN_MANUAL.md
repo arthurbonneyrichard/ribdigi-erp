@@ -549,18 +549,18 @@ For onboarding multiple users at once:
 1. Go to **Admin → Users → Import**
 2. Download the **CSV Template**
 3. Fill in required columns:
-   - `full_name`, `email`, `phone`, `role`
-   - Optional: `branch`, `store`, `department`, `employee_id`
+   - `full_name`, `email`, `role`, `temporary_password`
+   - Optional: `phone`
 4. Upload CSV file
 5. System validates:
-   - Email uniqueness
-   - Role existence
-   - Branch/store validity
+   - Email uniqueness (file + tenant)
+   - Role existence (system roles; `super_admin` blocked for non–super admins)
+   - Password policy (upper, lower, number, symbol, min 8)
 6. Review validation report
-7. Click **Import Valid Rows**
-8. Welcome emails sent automatically
+7. Click **Import valid rows** (all-or-nothing)
+8. Verification emails dispatched for each created user
 
-> **Template Download:** Available at `Admin → Users → Import → Download Template`
+> **Template Download:** Available at **Users → Bulk import users → Download CSV template** (`GET /users/import/template`)
 
 ### 5.6 User Profile Management
 

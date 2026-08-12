@@ -1373,6 +1373,71 @@ async def users(claims=Depends(require_permission("users", "read")), db: AsyncSe
     return env([serialize_user(u) for u in rows])
 
 
+@api.get("/users/import/template")
+async def users_import_template(
+    claims=Depends(require_permission("users", "read")),
+):
+    from app import user_import as user_import_svc
+
+    csv_text = user_import_svc.template_csv()
+    return Response(
+        content=csv_text,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=users-import-template.csv"},
+    )
+
+
+@api.post("/users/import")
+async def users_import(
+    file: UploadFile = File(...),
+    dry_run: bool = True,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Validate (default) or commit a user CSV import. Commit is all-or-nothing."""
+    from app import user_import as user_import_svc
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    try:
+        content = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        content = raw.decode("latin-1")
+
+    rows = user_import_svc.parse_csv_rows(content)
+    report = await user_import_svc.validate_import_rows(
+        db,
+        tenant_id=claims["tenant_id"],
+        rows=rows,
+        actor_role=claims.get("role"),
+    )
+    prepared = report.pop("_prepared", [])
+    if dry_run:
+        return env(report, "Validation complete — no users created")
+
+    if not report["can_commit"]:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "IMPORT_VALIDATION_FAILED",
+                "message": "Fix CSV errors before importing",
+                "report": report,
+            },
+        )
+
+    created = await user_import_svc.commit_import(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_user_id=claims["sub"],
+        prepared=prepared,
+    )
+    await db.commit()
+    report["created"] = [{"id": c["id"], "email": c["user"]["email"], "role": c["user"]["role"]} for c in created]
+    report["imported"] = len(created)
+    return env(report, f"Imported {len(created)} users")
+
+
 @api.get("/users/{user_id}")
 async def get_user(
     user_id: str,

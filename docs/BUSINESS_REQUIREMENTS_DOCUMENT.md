@@ -269,7 +269,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Soft delete (deactivate) user
   - [ ] Hard delete with data archival option
   - [ ] Activate/deactivate toggle
-  - [ ] Bulk user import via CSV
+  - [x] Bulk user import via CSV
 
 #### BR-3.2 Role Management
 - **Description:** Predefined and custom role definitions.

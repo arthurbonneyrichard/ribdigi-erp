@@ -22,6 +22,26 @@ const emptyForm = {
   phone: '',
 };
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+type ImportReportRow = {
+  line: number;
+  email: string;
+  full_name: string;
+  role: string;
+  ok: boolean;
+  errors: string[];
+};
+
+type ImportReport = {
+  total_rows: number;
+  valid_rows: number;
+  error_rows: number;
+  can_commit: boolean;
+  imported?: number;
+  rows: ImportReportRow[];
+};
+
 export default function Page() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [roles, setRoles] = useState<RoleRow[]>([]);
@@ -30,6 +50,9 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importReport, setImportReport] = useState<ImportReport | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
 
   async function refresh() {
     const [usersRes, rolesRes, meRes] = await Promise.all([
@@ -115,12 +138,166 @@ export default function Page() {
     }
   }
 
+  async function downloadImportTemplate() {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/users/import/template`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Template download failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'users-import-template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('CSV template downloaded');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function runUserImport(dryRun: boolean) {
+    if (!importFile) {
+      setError('Choose a CSV file first');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setImportBusy(true);
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const formData = new FormData();
+      formData.append('file', importFile);
+      const res = await fetch(`${apiBase}/users/import?dry_run=${dryRun ? 'true' : 'false'}`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+        body: formData,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = body.detail;
+        if (detail && typeof detail === 'object' && detail.report) {
+          setImportReport(detail.report);
+          throw new Error(detail.message || 'Import validation failed');
+        }
+        throw new Error(
+          typeof detail === 'string'
+            ? detail
+            : detail?.message || body.message || 'Import failed'
+        );
+      }
+      setImportReport(body.data as ImportReport);
+      if (dryRun) {
+        setMessage(
+          body.data?.can_commit
+            ? `Validation OK — ${body.data.valid_rows} user(s) ready to import`
+            : `Validation found ${body.data?.error_rows || 0} error row(s)`
+        );
+      } else {
+        setMessage(`Imported ${body.data?.imported || 0} user(s)`);
+        setImportFile(null);
+        await refresh();
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
   return (
     <Shell>
       <h1>User Management</h1>
       <p className="muted">Create users, assign system roles, and activate or deactivate accounts.</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      {canWrite && (
+        <div className="card" style={{ margin: '20px 0', maxWidth: 720, display: 'grid', gap: 12 }}>
+          <h2 style={{ fontSize: 18, margin: 0 }}>Bulk import users</h2>
+          <p className="muted" style={{ margin: 0 }}>
+            Download the CSV template, fill rows (role must be a system role; temporary password must
+            meet policy), validate, then import. Import is all-or-nothing.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={downloadImportTemplate}>
+              Download CSV template
+            </button>
+          </div>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => {
+              setImportFile(e.target.files?.[0] || null);
+              setImportReport(null);
+            }}
+          />
+          {importFile && <p className="muted">Selected: {importFile.name}</p>}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => runUserImport(true)}
+              disabled={!importFile || importBusy}
+            >
+              {importBusy ? 'Working…' : 'Validate'}
+            </button>
+            <button
+              type="button"
+              onClick={() => runUserImport(false)}
+              disabled={!importFile || importBusy || !importReport?.can_commit}
+            >
+              Import valid rows
+            </button>
+          </div>
+          {importReport && (
+            <div>
+              <p className="muted">
+                {importReport.total_rows} rows · {importReport.valid_rows} valid ·{' '}
+                {importReport.error_rows} errors
+                {importReport.imported != null ? ` · imported ${importReport.imported}` : ''}
+              </p>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Line</th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Errors</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importReport.rows.map((r) => (
+                    <tr key={`${r.line}-${r.email}`}>
+                      <td>{r.line}</td>
+                      <td>{r.email || '—'}</td>
+                      <td>{r.full_name || '—'}</td>
+                      <td>{r.role || '—'}</td>
+                      <td style={{ color: r.ok ? '#047857' : '#b91c1c' }}>{r.ok ? 'OK' : 'Error'}</td>
+                      <td>{r.errors?.length ? r.errors.join('; ') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {canWrite && (
         <form onSubmit={createUser} style={{ margin: '20px 0', maxWidth: 520 }}>
