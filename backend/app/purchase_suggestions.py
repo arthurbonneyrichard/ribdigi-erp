@@ -287,6 +287,7 @@ async def create_requests_from_predictions(
     at_risk_lines: list[dict],
     notes: str | None = None,
     min_confidence: float = 0.0,
+    include_open: bool = False,
 ) -> dict:
     """Turn AI low-stock prediction rows into draft PRs (BR-21.4 auto-suggestions)."""
     lines: list[dict] = []
@@ -313,4 +314,5 @@ async def create_requests_from_predictions(
         user_id=user_id,
         lines=lines,
         notes=notes or "Created from AI low-stock predictions",
+        include_open=include_open,
     )

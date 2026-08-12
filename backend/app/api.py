@@ -8329,6 +8329,7 @@ async def ai_low_stock_prediction_requests(
         at_risk_lines=lines,
         notes=body.get("notes"),
         min_confidence=min_confidence,
+        include_open=bool(body.get("include_open")),
     )
     await db.commit()
     return env(result, f"Created {result.get('created_count', 0)} draft purchase request(s)")
