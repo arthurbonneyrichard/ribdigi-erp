@@ -134,6 +134,18 @@ async def current_claims(
     data["totp_enabled"] = bool(user.totp_enabled)
     data["tenant_status"] = tenant.status
     data["read_only"] = tenants_svc.is_read_only(tenant)
+    data["branch_id"] = getattr(user, "branch_id", None)
+    data["department_id"] = getattr(user, "department_id", None)
+    from app.rbac import record_scope_from_permissions
+    from app import org_units as org_units_svc
+
+    scope = record_scope_from_permissions(
+        user.role, data["permissions"] if isinstance(data["permissions"], dict) else None
+    )
+    data["record_scope"] = scope
+    data["scope_user_ids"] = await org_units_svc.scope_user_ids(
+        db, tenant_id=tenant_id, user=user, scope=scope
+    )
     from app.totp import path_allowed_during_enrollment, role_requires_2fa
     from app import webauthn_svc as webauthn
 

@@ -22,6 +22,7 @@ from app.rbac import (
     serialize_user,
 )
 from app import custom_roles as custom_roles_svc
+from app import org_units as org_units_svc
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
 from app import purchase_suggestions as purchase_suggestions_svc
@@ -134,6 +135,10 @@ from app.schemas import (
     UserUpdate,
     CustomRoleCreate,
     CustomRoleUpdate,
+    BranchCreate,
+    BranchUpdate,
+    DepartmentCreate,
+    DepartmentUpdate,
     ProductUpdate,
     StockCountCreate,
     StockCountItemsUpdate,
@@ -1511,6 +1516,172 @@ async def delete_custom_role(
     return env({"role": role}, "Custom role deleted")
 
 
+@api.get("/branches")
+async def list_branches(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await org_units_svc.list_branches(
+        db, claims["tenant_id"], active_only=active_only, is_active=is_active
+    )
+    return env([org_units_svc.serialize_branch(r) for r in rows])
+
+
+@api.post("/branches")
+async def create_branch(
+    payload: BranchCreate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    row = await org_units_svc.create_branch(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        address=payload.address,
+        phone=payload.phone,
+        email=str(payload.email) if payload.email is not None else None,
+        manager_id=payload.manager_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="branch_created",
+        entity="branch",
+        entity_id=row.id,
+        details={"code": row.code},
+    )
+    await db.commit()
+    return env(org_units_svc.serialize_branch(row), "Branch created")
+
+
+@api.patch("/branches/{branch_id}")
+async def update_branch(
+    branch_id: str,
+    payload: BranchUpdate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    row = await org_units_svc.update_branch(
+        db,
+        tenant_id=claims["tenant_id"],
+        branch_id=branch_id,
+        name=payload.name,
+        address=payload.address,
+        phone=payload.phone,
+        email=str(payload.email) if payload.email is not None else None,
+        manager_id=payload.manager_id,
+        clear_manager=payload.clear_manager,
+        is_active=payload.is_active,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="branch_updated",
+        entity="branch",
+        entity_id=row.id,
+        details={"code": row.code, "is_active": bool(row.is_active)},
+    )
+    await db.commit()
+    return env(org_units_svc.serialize_branch(row), "Branch updated")
+
+
+@api.get("/departments")
+async def list_departments(
+    branch_id: str | None = None,
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await org_units_svc.list_departments(
+        db,
+        claims["tenant_id"],
+        branch_id=branch_id,
+        active_only=active_only,
+        is_active=is_active,
+    )
+    return env([org_units_svc.serialize_department(r) for r in rows])
+
+
+@api.post("/departments")
+async def create_department(
+    payload: DepartmentCreate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    row = await org_units_svc.create_department(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        branch_id=payload.branch_id,
+        head_user_id=payload.head_user_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="department_created",
+        entity="department",
+        entity_id=row.id,
+        details={"code": row.code},
+    )
+    await db.commit()
+    return env(org_units_svc.serialize_department(row), "Department created")
+
+
+@api.patch("/departments/{department_id}")
+async def update_department(
+    department_id: str,
+    payload: DepartmentUpdate,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    row = await org_units_svc.update_department(
+        db,
+        tenant_id=claims["tenant_id"],
+        department_id=department_id,
+        name=payload.name,
+        branch_id=payload.branch_id,
+        clear_branch=payload.clear_branch,
+        head_user_id=payload.head_user_id,
+        clear_head=payload.clear_head,
+        is_active=payload.is_active,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="department_updated",
+        entity="department",
+        entity_id=row.id,
+        details={"code": row.code, "is_active": bool(row.is_active)},
+    )
+    await db.commit()
+    return env(org_units_svc.serialize_department(row), "Department updated")
+
+
 @api.get("/users")
 async def users(claims=Depends(require_permission("users", "read")), db: AsyncSession = Depends(get_db)):
     rows = (
@@ -1620,6 +1791,19 @@ async def add_user(
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="User email already exists in tenant")
+    branch_id, department_id = await org_units_svc.assert_user_org_assignment(
+        db,
+        claims["tenant_id"],
+        branch_id=payload.branch_id,
+        department_id=payload.department_id,
+    )
+    if payload.record_scope is not None:
+        try:
+            scope = normalize_record_scope(payload.record_scope)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        role_perms = dict(role_perms)
+        role_perms[RECORD_SCOPE_KEY] = scope
     user = m.User(
         tenant_id=claims["tenant_id"],
         email=payload.email,
@@ -1628,6 +1812,8 @@ async def add_user(
         password_hash=hash_password(payload.password),
         role=role_key,
         permissions=role_perms,
+        branch_id=branch_id,
+        department_id=department_id,
         email_verified=False,
         is_active=True,
     )
@@ -1732,6 +1918,31 @@ async def update_user(
             perms[RECORD_SCOPE_KEY] = scope
             user.permissions = perms
             changes["record_scope"] = scope
+
+    if (
+        payload.clear_branch
+        or payload.clear_department
+        or payload.branch_id is not None
+        or payload.department_id is not None
+    ):
+        desired_branch = None if payload.clear_branch else (
+            payload.branch_id if payload.branch_id is not None else user.branch_id
+        )
+        desired_dept = None if payload.clear_department else (
+            payload.department_id if payload.department_id is not None else user.department_id
+        )
+        branch_id, department_id = await org_units_svc.assert_user_org_assignment(
+            db,
+            claims["tenant_id"],
+            branch_id=desired_branch,
+            department_id=desired_dept,
+        )
+        if user.branch_id != branch_id:
+            user.branch_id = branch_id
+            changes["branch_id"] = branch_id
+        if user.department_id != department_id:
+            user.department_id = department_id
+            changes["department_id"] = department_id
 
     if not changes:
         return env(serialize_user(user), "No changes")
@@ -6783,6 +6994,7 @@ async def stores(claims=Depends(require_permission("stores", "read")), db: Async
                 "address": s.address,
                 "phone": s.phone,
                 "manager_id": s.manager_id,
+                "branch_id": getattr(s, "branch_id", None),
                 "is_active": s.is_active,
                 **{k: v for k, v in cash_drawer_svc.serialize_drawer_settings(s).items() if k != "source"},
             }
@@ -6805,9 +7017,13 @@ async def add_store(
         address=payload.address,
         phone=payload.phone,
         manager_id=payload.manager_id,
+        branch_id=payload.branch_id,
     )
     await db.commit()
-    return env({"id": store.id, "code": store.code}, "Store created with warehouse")
+    return env(
+        {"id": store.id, "code": store.code, "branch_id": store.branch_id},
+        "Store created with warehouse",
+    )
 
 
 @api.patch("/stores/{store_id}/drawer")
