@@ -618,11 +618,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Track liquid assets.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create cash accounts (petty cash, main cash)
-  - [ ] Create bank accounts with bank name, account number, branch
-  - [ ] Record deposits, withdrawals, transfers between accounts
-  - [ ] Bank reconciliation (system balance vs statement)
-  - [ ] Cheque management (issue, deposit, bounce tracking)
+  - [x] Create cash accounts (petty cash, main cash)
+  - [x] Create bank accounts with bank name, account number, branch
+  - [x] Record deposits, withdrawals, transfers between accounts
+  - [x] Bank reconciliation (system balance vs statement)
+  - [x] Cheque management (issue, deposit, bounce tracking)
 
 #### BR-10.4 Accounts Receivable (AR)
 - **Description:** Track money owed by customers.

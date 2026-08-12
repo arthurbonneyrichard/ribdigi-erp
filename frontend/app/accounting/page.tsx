@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'ledger' | 'reconcile' | 'cheques';
+type Tab = 'ledger' | 'cash' | 'reconcile' | 'cheques';
 
 export default function Page() {
   const [tab, setTab] = useState<Tab>('ledger');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
+  const [transfers, setTransfers] = useState<any[]>([]);
   const [trial, setTrial] = useState<any>(null);
   const [pnl, setPnl] = useState<any>(null);
   const [statements, setStatements] = useState<any[]>([]);
@@ -35,9 +36,21 @@ export default function Page() {
   const [connProvider, setConnProvider] = useState('mock');
   const [connFeedUrl, setConnFeedUrl] = useState('');
   const [connExtId, setConnExtId] = useState('demo-acct-1');
+  const [xferKind, setXferKind] = useState('transfer');
+  const [xferFrom, setXferFrom] = useState('');
+  const [xferTo, setXferTo] = useState('');
+  const [xferAmount, setXferAmount] = useState('100');
+  const [xferRef, setXferRef] = useState('');
+  const [xferNotes, setXferNotes] = useState('');
+  const [newAcctCode, setNewAcctCode] = useState('');
+  const [newAcctName, setNewAcctName] = useState('');
+  const [newAcctKind, setNewAcctKind] = useState('cash');
+  const [newBankName, setNewBankName] = useState('');
+  const [newAcctNumber, setNewAcctNumber] = useState('');
+  const [newBankBranch, setNewBankBranch] = useState('');
 
   async function refresh() {
-    const [a, j, t, p, liq, stmts, chq, conns] = await Promise.all([
+    const [a, j, t, p, liq, stmts, chq, conns, xfers] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
       api('/accounting/trial-balance'),
@@ -46,6 +59,7 @@ export default function Page() {
       api('/accounting/bank-statements'),
       api('/accounting/cheques'),
       api('/accounting/bank-connections').catch(() => ({ data: [] })),
+      api('/accounting/transfers').catch(() => ({ data: [] })),
     ]);
     setAccounts(a.data || []);
     setJournals(j.data || []);
@@ -55,7 +69,11 @@ export default function Page() {
     setStatements(stmts.data || []);
     setCheques(chq.data || []);
     setConnections(conns.data || []);
+    setTransfers(xfers.data || []);
     if (!reconAccountId && liq.data?.length) setReconAccountId(liq.data[0].id);
+    if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
+    if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
+    else if (!xferTo && liq.data?.length) setXferTo(liq.data[0].id);
   }
 
   useEffect(() => {
@@ -78,6 +96,54 @@ export default function Page() {
         }),
       });
       setMessage('Journal posted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createLiquidAccount() {
+    setError('');
+    setMessage('');
+    try {
+      const body: Record<string, unknown> = {
+        code: newAcctCode.trim(),
+        name: newAcctName.trim(),
+        liquid_kind: newAcctKind,
+      };
+      if (newAcctKind === 'bank') {
+        body.bank_name = newBankName.trim();
+        body.account_number = newAcctNumber.trim() || null;
+        body.bank_branch = newBankBranch.trim() || null;
+      }
+      const r = await api('/accounting/accounts', { method: 'POST', body: JSON.stringify(body) });
+      setMessage(`Account ${r.data.code} created`);
+      setNewAcctCode('');
+      setNewAcctName('');
+      setNewBankName('');
+      setNewAcctNumber('');
+      setNewBankBranch('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function postTransfer() {
+    setError('');
+    setMessage('');
+    try {
+      const body: Record<string, unknown> = {
+        kind: xferKind,
+        amount: Number(xferAmount),
+        reference: xferRef.trim() || null,
+        notes: xferNotes.trim() || null,
+      };
+      if (xferKind === 'transfer' || xferKind === 'withdrawal') body.from_account_id = xferFrom;
+      if (xferKind === 'transfer' || xferKind === 'deposit') body.to_account_id = xferTo;
+      const r = await api('/accounting/transfers', { method: 'POST', body: JSON.stringify(body) });
+      setMessage(`${r.data.kind} posted for ${r.data.amount}`);
+      setXferNotes('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -354,6 +420,9 @@ export default function Page() {
         <button onClick={() => setTab('ledger')} disabled={tab === 'ledger'}>
           Ledger
         </button>
+        <button onClick={() => setTab('cash')} disabled={tab === 'cash'}>
+          Cash &amp; Bank
+        </button>
         <button onClick={() => setTab('reconcile')} disabled={tab === 'reconcile'}>
           Reconcile
         </button>
@@ -445,6 +514,162 @@ export default function Page() {
                   <td>{j.source_type || 'manual'}</td>
                   <td>{j.total_debit}</td>
                   <td>{j.total_credit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'cash' && (
+        <>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+            <h3>Create cash / bank account</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Add petty cash tills or bank accounts (BR-10.3). Bank accounts need a bank name.
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <input
+                value={newAcctCode}
+                onChange={(e) => setNewAcctCode(e.target.value)}
+                placeholder="Code (e.g. 1001)"
+                style={{ width: 120 }}
+              />
+              <input
+                value={newAcctName}
+                onChange={(e) => setNewAcctName(e.target.value)}
+                placeholder="Name (e.g. Petty Cash)"
+              />
+              <select value={newAcctKind} onChange={(e) => setNewAcctKind(e.target.value)}>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+              </select>
+              {newAcctKind === 'bank' && (
+                <>
+                  <input
+                    value={newBankName}
+                    onChange={(e) => setNewBankName(e.target.value)}
+                    placeholder="Bank name"
+                  />
+                  <input
+                    value={newAcctNumber}
+                    onChange={(e) => setNewAcctNumber(e.target.value)}
+                    placeholder="Account number"
+                  />
+                  <input
+                    value={newBankBranch}
+                    onChange={(e) => setNewBankBranch(e.target.value)}
+                    placeholder="Branch"
+                  />
+                </>
+              )}
+              <button type="button" onClick={createLiquidAccount}>
+                Create account
+              </button>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+            <h3>Transfer / deposit / withdrawal</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Transfer moves funds between liquid accounts. Deposit credits Owner&apos;s Equity (3000);
+              withdrawal debits equity.
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select value={xferKind} onChange={(e) => setXferKind(e.target.value)}>
+                <option value="transfer">Transfer</option>
+                <option value="deposit">Deposit</option>
+                <option value="withdrawal">Withdrawal</option>
+              </select>
+              {(xferKind === 'transfer' || xferKind === 'withdrawal') && (
+                <select value={xferFrom} onChange={(e) => setXferFrom(e.target.value)}>
+                  <option value="">From</option>
+                  {liquid.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.code} — {a.name} ({a.balance})
+                    </option>
+                  ))}
+                </select>
+              )}
+              {(xferKind === 'transfer' || xferKind === 'deposit') && (
+                <select value={xferTo} onChange={(e) => setXferTo(e.target.value)}>
+                  <option value="">To</option>
+                  {liquid.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.code} — {a.name} ({a.balance})
+                    </option>
+                  ))}
+                </select>
+              )}
+              <input
+                value={xferAmount}
+                onChange={(e) => setXferAmount(e.target.value)}
+                placeholder="Amount"
+                style={{ width: 100 }}
+              />
+              <input
+                value={xferRef}
+                onChange={(e) => setXferRef(e.target.value)}
+                placeholder="Reference"
+              />
+              <input
+                value={xferNotes}
+                onChange={(e) => setXferNotes(e.target.value)}
+                placeholder="Notes"
+              />
+              <button type="button" onClick={postTransfer}>
+                Post
+              </button>
+            </div>
+          </div>
+
+          <h3>Liquid accounts</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Kind</th>
+                <th>Bank</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {liquid.map((a) => (
+                <tr key={a.id}>
+                  <td>{a.code}</td>
+                  <td>{a.name}</td>
+                  <td>{a.is_cash_account ? 'cash' : a.is_bank_account ? 'bank' : '—'}</td>
+                  <td>
+                    {a.bank_name || '—'}
+                    {a.bank_branch ? ` / ${a.bank_branch}` : ''}
+                    {a.account_number ? ` (#${a.account_number})` : ''}
+                  </td>
+                  <td>{a.balance}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 style={{ marginTop: 16 }}>Recent movements</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Kind</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Amount</th>
+                <th>Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.kind}</td>
+                  <td>{t.from_account ? `${t.from_account.code} ${t.from_account.name}` : '—'}</td>
+                  <td>{t.to_account ? `${t.to_account.code} ${t.to_account.name}` : '—'}</td>
+                  <td>{t.amount}</td>
+                  <td>{t.reference || '—'}</td>
                 </tr>
               ))}
             </tbody>

@@ -921,9 +921,20 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 ```
 
 ### 10.3 Cash & Bank Accounts
-**List:** `GET /accounting/accounts?type=asset&sub_type=cash`  
-**Create:** `POST /accounting/accounts`  
-**Get Transactions:** `GET /accounting/accounts/{account_id}/transactions`
+**List liquid:** `GET /accounting/liquid-accounts`  
+**Create account:** `POST /accounting/accounts`  
+```json
+{ "code": "1001", "name": "Petty Cash", "liquid_kind": "cash" }
+```
+Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank_name": "Acme Bank", "account_number": "123", "bank_branch": "Main" }`
+
+**Transfers / deposits / withdrawals:**  
+- `GET /accounting/transfers`  
+- `POST /accounting/transfers` `{ "kind": "transfer|deposit|withdrawal", "from_account_id", "to_account_id", "amount", "reference", "notes" }`  
+- `GET /accounting/transfers/{id}`  
+
+`transfer` requires two distinct liquid accounts (Dr destination / Cr source).  
+`deposit` credits Owner's Equity `3000` into a liquid account; `withdrawal` is the reverse.
 
 ### 10.4 Financial Reports
 **Profit & Loss:** `GET /reports/profit-loss?from_date=&to_date=`  
