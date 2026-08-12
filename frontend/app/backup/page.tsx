@@ -24,7 +24,7 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
-  // Stage 103 B1 — honor Shell #schedule / #restore
+  // Stage 103 B1 / Stage 107 O1 — honor Shell #schedule / #restore / #history
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
@@ -190,6 +190,8 @@ export default function Page() {
         </div>
       )}
 
+      <div id="history">
+      <h2 style={{ fontSize: 18, marginTop: 8 }}>Backup history</h2>
       <table className="table">
         <thead>
           <tr>
@@ -220,6 +222,7 @@ export default function Page() {
           ))}
         </tbody>
       </table>
+      </div>
       </div>
     </Shell>
   );

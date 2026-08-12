@@ -128,17 +128,17 @@ export default function Page() {
       .catch(() => undefined);
   }, []);
 
-  // Stage 101 P1 — honor Shell /pos#sessions
+  // Stage 101 P1 / Stage 107 P1 — honor Shell /pos#sessions / #shift / #cart / #receipt
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
-    if (hash !== 'sessions') return;
+    if (!['sessions', 'shift', 'cart', 'receipt'].includes(hash)) return;
     const t = window.setTimeout(() => {
-      const el = document.getElementById('sessions');
+      const el = document.getElementById(hash);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 80);
     return () => window.clearTimeout(t);
-  }, [sessionHistory]);
+  }, [sessionHistory, receipt]);
 
   async function openShift() {
     setError('');
@@ -381,7 +381,7 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }} id="shift">
         <h3>Shift</h3>
         {!session ? (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -536,7 +536,7 @@ export default function Page() {
         ))}
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card" style={{ marginTop: 16 }} id="cart">
         <h3>Cart</h3>
         <label style={{ display: 'block', marginBottom: 12 }}>
           Customer{' '}
@@ -699,9 +699,10 @@ export default function Page() {
         </button>
       </div>
 
-      {receipt && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h3>Receipt</h3>
+      <div className="card" style={{ marginTop: 16 }} id="receipt">
+        <h3>Receipt</h3>
+        {receipt ? (
+          <>
           <p>
             {receipt.reference} · Total {receipt.total} · {receipt.payment_method}
             {receipt.payments?.length > 1
@@ -768,8 +769,11 @@ export default function Page() {
               SMS receipt
             </button>
           </div>
-        </div>
-      )}
+          </>
+        ) : (
+          <p className="muted">Complete a sale to view the thermal receipt here.</p>
+        )}
+      </div>
     </Shell>
   );
 }

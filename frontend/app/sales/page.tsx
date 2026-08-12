@@ -61,6 +61,12 @@ export default function Page() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  // Stage 107 S1 — shareable ?active_only= for customers / groups list fetches
+  const [activeOnlyFilter, setActiveOnlyFilter] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const v = new URLSearchParams(window.location.search).get('active_only');
+    return v === 'true' || v === '1';
+  });
 
   const activeCustomers = customers.filter((c) => (c.status || 'active') === 'active');
 
@@ -77,11 +83,13 @@ export default function Page() {
     returnStatus?: string;
     quoteStatus?: string;
     orderStatus?: string;
+    activeOnly?: boolean;
   }) {
     const status = opts?.invoiceStatus !== undefined ? opts.invoiceStatus : invoiceStatusFilter;
     const retStatus = opts?.returnStatus !== undefined ? opts.returnStatus : returnStatusFilter;
     const quoteStatus = opts?.quoteStatus !== undefined ? opts.quoteStatus : quoteStatusFilter;
     const orderStatus = opts?.orderStatus !== undefined ? opts.orderStatus : orderStatusFilter;
+    const activeOnly = opts?.activeOnly !== undefined ? opts.activeOnly : activeOnlyFilter;
     const invPath = status
       ? `/sales/invoices?status=${encodeURIComponent(status)}`
       : '/sales/invoices';
@@ -94,15 +102,16 @@ export default function Page() {
     const orderPath = orderStatus
       ? `/sales/orders?status=${encodeURIComponent(orderStatus)}`
       : '/sales/orders';
+    const custQs = activeOnly ? '?active_only=true' : '';
     const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, groupRes] = await Promise.all([
       api(invPath),
-      api('/customers'),
+      api(`/customers${custQs}`),
       api('/products'),
       api(quotePath),
       api(orderPath),
       api(retPath),
       api('/stores'),
-      api('/customers/groups'),
+      api(`/customers/groups${custQs}`),
     ]);
     setInvoices(invRes.data || []);
     setCustomers(custRes.data || []);
@@ -145,6 +154,12 @@ export default function Page() {
     setOrderStatusFilter(next);
     writeQueryParam('order_status', next);
     refresh({ orderStatus: next }).catch((err) => setError(err.message));
+  }
+
+  function setActiveOnly(next: boolean) {
+    setActiveOnlyFilter(next);
+    writeQueryParam('active_only', next ? 'true' : '');
+    refresh({ activeOnly: next }).catch((err) => setError(err.message));
   }
 
   function resetCustomerForm() {
@@ -204,6 +219,8 @@ export default function Page() {
     const retRaw = params.get('return_status')?.trim() || '';
     const quoteRaw = params.get('quote_status')?.trim() || '';
     const orderRaw = params.get('order_status')?.trim() || '';
+    const activeRaw = params.get('active_only');
+    const activeOnly = activeRaw === 'true' || activeRaw === '1';
     const allowed = ['draft', 'posted', 'sent', 'paid', 'partial', 'unpaid', 'overdue', 'cancelled'];
     const retAllowed = ['draft', 'posted'];
     const quoteAllowed = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
@@ -212,11 +229,13 @@ export default function Page() {
     if (retAllowed.includes(retRaw)) setReturnStatusFilter(retRaw);
     if (quoteAllowed.includes(quoteRaw)) setQuoteStatusFilter(quoteRaw);
     if (orderAllowed.includes(orderRaw)) setOrderStatusFilter(orderRaw);
+    setActiveOnlyFilter(activeOnly);
     refresh({
       invoiceStatus: allowed.includes(raw) ? raw : '',
       returnStatus: retAllowed.includes(retRaw) ? retRaw : '',
       quoteStatus: quoteAllowed.includes(quoteRaw) ? quoteRaw : '',
       orderStatus: orderAllowed.includes(orderRaw) ? orderRaw : '',
+      activeOnly,
     }).catch((err) => setError(err.message));
   }, []);
 
@@ -600,6 +619,14 @@ export default function Page() {
         <div className="card" style={{ marginBottom: 16 }}>
           <h3>{selectedGroupId ? 'Edit customer group' : 'New customer group'}</h3>
           <p className="muted">Group discount applies when catalog price is used (no manual unit price override).</p>
+          <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={activeOnlyFilter}
+              onChange={(e) => setActiveOnly(e.target.checked)}
+            />
+            Active groups only (shareable URL)
+          </label>
           <div style={{ display: 'grid', gap: 8, maxWidth: 420 }}>
             <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Name *" />
             <input
@@ -667,6 +694,14 @@ export default function Page() {
       {tab === 'customers' && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h3>{selectedCustomerId ? 'Edit customer' : 'New customer'}</h3>
+          <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={activeOnlyFilter}
+              onChange={(e) => setActiveOnly(e.target.checked)}
+            />
+            Active customers only (shareable URL)
+          </label>
           <div style={{ display: 'grid', gap: 8, maxWidth: 560 }}>
             <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Name *" />
             <input value={customerCode} onChange={(e) => setCustomerCode(e.target.value)} placeholder="Code" />

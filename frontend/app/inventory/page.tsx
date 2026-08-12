@@ -135,6 +135,51 @@ export default function Page() {
   const [expiryDate, setExpiryDate] = useState('');
   const [stockQty, setStockQty] = useState('10');
 
+  // Stage 107 S1 — shareable product list filters (client-side; GET /products has no server filters)
+  const [listFilterQ, setListFilterQ] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('q')?.trim() || '';
+  });
+  const [listFilterCategoryId, setListFilterCategoryId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('category_id')?.trim() || '';
+  });
+  const [listFilterBrandId, setListFilterBrandId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('brand_id')?.trim() || '';
+  });
+
+  function writeProductListFilters(next: {
+    q?: string;
+    category_id?: string;
+    brand_id?: string;
+  }) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'products');
+    const q = next.q !== undefined ? next.q : listFilterQ;
+    const cat = next.category_id !== undefined ? next.category_id : listFilterCategoryId;
+    const brand = next.brand_id !== undefined ? next.brand_id : listFilterBrandId;
+    if (q.trim()) url.searchParams.set('q', q.trim());
+    else url.searchParams.delete('q');
+    if (cat) url.searchParams.set('category_id', cat);
+    else url.searchParams.delete('category_id');
+    if (brand) url.searchParams.set('brand_id', brand);
+    else url.searchParams.delete('brand_id');
+    window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}`);
+  }
+
+  const filteredProducts = products.filter((p) => {
+    const q = listFilterQ.trim().toLowerCase();
+    if (q) {
+      const hay = `${p.name || ''} ${p.sku || ''} ${p.barcode || ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (listFilterCategoryId && p.category_id !== listFilterCategoryId) return false;
+    if (listFilterBrandId && p.brand_id !== listFilterBrandId) return false;
+    return true;
+  });
+
   async function refresh() {
     const [p, e, c, tree, b, u, w, sc, tr, ls, sup, tax] = await Promise.all([
       api('/products'),
@@ -1234,6 +1279,52 @@ export default function Page() {
               </div>
             )}
           </div>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 520 }}>
+            <h3>Filter products</h3>
+            <p className="muted">Shareable URL filters (q / category_id / brand_id). Applied client-side.</p>
+            <input
+              value={listFilterQ}
+              onChange={(e) => {
+                const next = e.target.value;
+                setListFilterQ(next);
+                writeProductListFilters({ q: next });
+              }}
+              placeholder="Search name / SKU / barcode"
+              aria-label="Product search filter"
+            />
+            <select
+              value={listFilterCategoryId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setListFilterCategoryId(next);
+                writeProductListFilters({ category_id: next });
+              }}
+              aria-label="Filter products by category"
+            >
+              <option value="">All categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={listFilterBrandId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setListFilterBrandId(next);
+                writeProductListFilters({ brand_id: next });
+              }}
+              aria-label="Filter products by brand"
+            >
+              <option value="">All brands</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <table className="table">
             <thead>
               <tr>
@@ -1249,7 +1340,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
+              {filteredProducts.map((p) => (
                 <tr key={p.id}>
                   <td>
                     <button

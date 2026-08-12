@@ -32,6 +32,12 @@ const primaryNavSpec: NavEntry[] = [
     href: '/inventory?tab=products',
     modules: ['inventory'],
   },
+  {
+    kind: 'link',
+    label: 'Product Search',
+    href: '/inventory?tab=products&q=',
+    modules: ['inventory'],
+  },
   { kind: 'link', label: 'Stock', href: '/inventory?tab=stock', modules: ['inventory'] },
   { kind: 'link', label: 'Low stock', href: '/inventory?tab=lowstock', modules: ['inventory'] },
   {
@@ -115,6 +121,12 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Active Customer Groups',
+    href: '/sales?tab=groups&active_only=true',
+    modules: ['sales', 'customers'],
+  },
+  {
+    kind: 'link',
     label: 'Sales Returns',
     href: '/sales?tab=returns',
     modules: ['sales'],
@@ -142,6 +154,24 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'POS Sessions',
     href: '/pos#sessions',
+    modules: ['pos'],
+  },
+  {
+    kind: 'link',
+    label: 'POS Shift',
+    href: '/pos#shift',
+    modules: ['pos'],
+  },
+  {
+    kind: 'link',
+    label: 'POS Cart',
+    href: '/pos#cart',
+    modules: ['pos'],
+  },
+  {
+    kind: 'link',
+    label: 'POS Receipt',
+    href: '/pos#receipt',
     modules: ['pos'],
   },
   { kind: 'link', label: 'Purchasing', href: '/purchasing', modules: ['purchasing'] },
@@ -204,6 +234,12 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Customers',
     href: '/sales?tab=customers',
+    modules: ['sales', 'customers'],
+  },
+  {
+    kind: 'link',
+    label: 'Active Customers',
+    href: '/sales?tab=customers&active_only=true',
     modules: ['sales', 'customers'],
   },
   {
@@ -670,6 +706,12 @@ const userMgmtLinks: NavLink[] = [
     kind: 'link',
     label: 'Backup & Restore',
     href: '/backup#restore',
+    modules: ['backup'],
+  },
+  {
+    kind: 'link',
+    label: 'Backup History',
+    href: '/backup#history',
     modules: ['backup'],
   },
   { kind: 'link', label: 'Security', href: '/security', modules: ['security'] },

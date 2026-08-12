@@ -23,4 +23,4 @@ Stage 106 Tenant MVP Approval Filters, Company Profile & Notification Inbox Ops 
 
 ## Next stage
 
-Stage 107 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 106 feature scope remains frozen.
+Stage 107 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-220](ADR_220_STAGE107_OPEN.md) + [STAGE_107_PLAN.md](STAGE_107_PLAN.md) (Tenant MVP POS Sections, Commerce Filters & Ops Leaves Ops). Stage 106 feature scope remains frozen.

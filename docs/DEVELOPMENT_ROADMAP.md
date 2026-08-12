@@ -1885,3 +1885,15 @@ Every feature in every phase must meet:
 **Stage 106 D1 (2026-08-12):** Approval filters, company profile & notification inbox fidelity sync — `docs/STAGE_106_FIDELITY.md` (`test_stage106_fidelity_d1.py`).
 
 **Stage 106 exit (2026-08-12):** E1, C1, N1, D1, H106x met — `docs/STAGE_106_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_219_STAGE106_FREEZE.md`. Fidelity: `docs/STAGE_106_FIDELITY.md`.
+
+**Stage 107 open (2026-08-12):** Tenant MVP POS Sections, Commerce Filters & Ops Leaves Ops — `docs/ADR_220_STAGE107_OPEN.md` + `docs/STAGE_107_PLAN.md` (POS sections → Commerce filters → Ops leaves → POS Sections, Commerce Filters & Ops Leaves Ops; P1 next).
+
+**Stage 107 P1 (2026-08-12):** POS sections honesty (`test_stage107_pos_sections_p1.py`).
+
+**Stage 107 S1 (2026-08-12):** Commerce filters honesty (`test_stage107_commerce_filters_s1.py`).
+
+**Stage 107 O1 (2026-08-12):** Ops leaves discoverability (`test_stage107_ops_leaves_o1.py`).
+
+**Stage 107 D1 (2026-08-12):** POS sections, commerce filters & ops leaves fidelity sync — `docs/STAGE_107_FIDELITY.md` (`test_stage107_fidelity_d1.py`).
+
+**Stage 107 exit (2026-08-12):** P1, S1, O1, D1, H107x met — `docs/STAGE_107_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_221_STAGE107_FREEZE.md`. Fidelity: `docs/STAGE_107_FIDELITY.md`.

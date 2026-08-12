@@ -134,6 +134,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Expense store/department filters; Purchase Settings hash:** Shareable expense scope + PR approval settings scroll (Stage 106 E1)
 - **Company Profile / Logo / Locale / Departments:** Settings Shell deep-links (Stage 106 C1)
 - **Unread / Stock / Order / Payment / System notification inbox:** Notifications Shell leaves (Stage 106 N1)
+- **POS Shift / Cart / Receipt:** POS Shell deep-links and section scroll (Stage 107 P1)
+- **Active Customers / Groups; Product Search filters:** Shareable commerce list filters (Stage 107 S1)
+- **At-risk / New Tenants; Backup History:** Platform and Backup ops leaves (Stage 107 O1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out
