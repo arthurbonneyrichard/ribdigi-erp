@@ -51,6 +51,8 @@ export default function Page() {
   const [deptForm, setDeptForm] = useState({ code: '', name: '', branch_id: '' });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  // Stage 118 F1 — fiscal period close console status
+  const [fiscalPeriod, setFiscalPeriod] = useState<any>(null);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -112,11 +114,39 @@ export default function Page() {
     setDepartments(dep.data || []);
     setOrgUsers(users.data || []);
     await loadLogoPreview(!!r.data?.has_logo);
+    try {
+      const fp = await api('/accounting/fiscal-period');
+      setFiscalPeriod(fp.data);
+    } catch {
+      setFiscalPeriod(null);
+    }
   }
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  async function closeFiscalPeriod() {
+    setError('');
+    try {
+      const r = await api('/accounting/fiscal-period/close', { method: 'POST', body: '{}' });
+      setFiscalPeriod(r.data);
+      setMessage('Fiscal period closed');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function reopenFiscalPeriod() {
+    setError('');
+    try {
+      const r = await api('/accounting/fiscal-period/reopen', { method: 'POST', body: '{}' });
+      setFiscalPeriod(r.data);
+      setMessage('Fiscal period reopened');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
 
   // Stage 102 T1 / Stage 103 C1 / Stage 106 C1 — honor Shell #tax / #branches / #logo / #profile / #locale / #departments
   useEffect(() => {
@@ -461,6 +491,38 @@ export default function Page() {
             placeholder="Fiscal year start MM-DD"
             aria-label="Fiscal year start"
           />
+          {/* Stage 118 F1 — close/reopen console (MVP; not a year-end wizard) */}
+          {fiscalPeriod && (
+            <div className="muted" style={{ display: 'grid', gap: 6 }}>
+              <p>
+                Open period: <strong>{fiscalPeriod.open_period_start}</strong> →{' '}
+                <strong>{fiscalPeriod.open_period_end_exclusive}</strong> (exclusive end)
+              </p>
+              <p>
+                Status:{' '}
+                <strong>{fiscalPeriod.current_period_closed ? 'Closed' : 'Open'}</strong>
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={closeFiscalPeriod}
+                  disabled={!!fiscalPeriod.current_period_closed || !!tenant.read_only}
+                >
+                  Close current period
+                </button>
+                <button
+                  type="button"
+                  onClick={reopenFiscalPeriod}
+                  disabled={!fiscalPeriod.current_period_closed || !!tenant.read_only}
+                >
+                  Reopen current period
+                </button>
+              </div>
+              <p className="muted">
+                Closing blocks journal post/unpost in this period. Reopen requires company admin.
+              </p>
+            </div>
+          )}
         </div>
         <div id="tax" style={{ display: 'grid', gap: 8 }}>
           <input

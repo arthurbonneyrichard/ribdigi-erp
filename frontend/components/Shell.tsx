@@ -478,6 +478,12 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Inactive Customers',
+    href: '/sales?tab=customers&customer_status=inactive',
+    modules: ['sales', 'customers'],
+  },
+  {
+    kind: 'link',
     label: 'Suppliers',
     href: '/purchasing?tab=suppliers',
     modules: ['purchasing', 'suppliers'],

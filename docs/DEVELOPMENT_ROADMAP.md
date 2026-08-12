@@ -2017,3 +2017,15 @@ Every feature in every phase must meet:
 **Stage 117 D1 (2026-08-12):** Permissions role, platform audit & stretch audit fidelity sync — `docs/STAGE_117_FIDELITY.md` (`test_stage117_fidelity_d1.py`).
 
 **Stage 117 exit (2026-08-12):** P1, A1, S1, D1, H117x met — `docs/STAGE_117_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_241_STAGE117_FREEZE.md`. Fidelity: `docs/STAGE_117_FIDELITY.md`.
+
+**Stage 118 open (2026-08-12):** Tenant MVP Fiscal Close, Inactive Customers & Catalog Export Fidelity — `docs/ADR_242_STAGE118_OPEN.md` + `docs/STAGE_118_PLAN.md` (Fiscal close → Inactive customers → Catalog export → Fiscal Close, Inactive Customers & Catalog Export Fidelity; F1 next).
+
+**Stage 118 F1 (2026-08-12):** Fiscal period close/reopen console (`test_stage118_fiscal_close_f1.py`).
+
+**Stage 118 C1 (2026-08-12):** Inactive customers honesty (`test_stage118_inactive_customers_c1.py`).
+
+**Stage 118 E1 (2026-08-12):** Catalog CSV export (`test_stage118_catalog_export_e1.py`).
+
+**Stage 118 D1 (2026-08-12):** Fiscal close, inactive customers & catalog export fidelity sync — `docs/STAGE_118_FIDELITY.md` (`test_stage118_fidelity_d1.py`).
+
+**Stage 118 exit (2026-08-12):** F1, C1, E1, D1, H118x met — `docs/STAGE_118_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_243_STAGE118_FREEZE.md`. Fidelity: `docs/STAGE_118_FIDELITY.md`.

@@ -63,6 +63,8 @@ class Tenant(Base):
     smtp_use_ssl: Mapped[bool] = mapped_column(Boolean, default=False)
     timezone: Mapped[str] = mapped_column(String(64), default="Africa/Accra")
     fiscal_year_start: Mapped[str] = mapped_column(String(5), default="01-01")
+    # Stage 118 F1 — ISO period_start dates for manually closed fiscal years (MVP close console)
+    fiscal_closed_period_starts: Mapped[list | None] = mapped_column(JSON, nullable=True)
     expense_approval_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=100)
     expense_l2_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=1000)
     # Optional N-level approval matrix: {"levels": [{step, min_amount, roles, label}, ...]}

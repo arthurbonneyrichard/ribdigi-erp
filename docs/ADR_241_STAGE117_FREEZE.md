@@ -24,4 +24,4 @@ Stage 117 Tenant MVP Permissions Role, Platform Audit Module & Stretch Audit Dis
 
 ## Next stage
 
-Stage 118 requires CONTINUE/NEXT with a distinct product outline after this freeze (likely a non-discoverability MVP surface). Stage 117 feature scope remains frozen.
+Stage 118 opened via CONTINUE/NEXT with a distinct product outline — Tenant MVP Fiscal Close, Inactive Customers & Catalog Export Fidelity — see `docs/ADR_242_STAGE118_OPEN.md` + `docs/STAGE_118_PLAN.md`. Stage 117 feature scope remains frozen.

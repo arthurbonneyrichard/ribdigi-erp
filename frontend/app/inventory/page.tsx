@@ -883,6 +883,32 @@ export default function Page() {
     }
   }
 
+  async function downloadProductsExport() {
+    // Stage 118 E1 — catalog CSV export
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/products/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Product export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'products_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Products CSV exported');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function importProductsCsv(file: File, dryRun: boolean) {
     setError('');
     try {
@@ -1226,9 +1252,14 @@ export default function Page() {
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 520 }}>
             <h3>Import products (CSV)</h3>
             <p className="muted">Download the template, fill rows, dry-run validate, then import.</p>
-            <button type="button" onClick={downloadImportTemplate}>
-              Download template
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={downloadImportTemplate}>
+                Download template
+              </button>
+              <button type="button" onClick={downloadProductsExport}>
+                Export products CSV
+              </button>
+            </div>
             <input
               type="file"
               accept=".csv,text/csv"

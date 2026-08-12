@@ -53,6 +53,54 @@ def template_csv() -> str:
     return buf.getvalue()
 
 
+async def export_products_csv(db: AsyncSession, *, tenant_id: str) -> str:
+    """Stage 118 E1 — export tenant products using the same columns as the import template."""
+    await catalog_meta_svc.ensure_default_catalog(db, tenant_id)
+    cats = {
+        c.id: c.code
+        for c in (
+            await db.execute(select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id))
+        ).scalars().all()
+    }
+    brands = {
+        b.id: b.code
+        for b in (await db.execute(select(m.Brand).where(m.Brand.tenant_id == tenant_id))).scalars().all()
+    }
+    units = {
+        u.id: u.code
+        for u in (
+            await db.execute(select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id))
+        ).scalars().all()
+    }
+    products = (
+        await db.execute(
+            select(m.Product)
+            .where(m.Product.tenant_id == tenant_id)
+            .order_by(m.Product.sku)
+        )
+    ).scalars().all()
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=TEMPLATE_COLUMNS)
+    writer.writeheader()
+    for p in products:
+        writer.writerow(
+            {
+                "name": p.name or "",
+                "sku": p.sku or "",
+                "barcode": p.barcode or "",
+                "category_code": cats.get(p.category_id) or "",
+                "brand_code": brands.get(p.brand_id) or "",
+                "unit_code": units.get(p.unit_id) or "",
+                "cost_price": f"{float(p.cost_price or 0):.2f}",
+                "selling_price": f"{float(p.selling_price or 0):.2f}",
+                "reorder_level": f"{float(p.reorder_level or 0):.2f}",
+                "stock_qty": f"{float(p.stock_qty or 0):.2f}",
+                "tracks_batches": "true" if p.tracks_batches else "false",
+            }
+        )
+    return buf.getvalue()
+
+
 def _norm_header(h: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", (h or "").strip().lower()).strip("_")
 

@@ -836,6 +836,136 @@ def entry_in_open_fiscal_period(
     return start <= ed < end
 
 
+def _closed_period_starts(tenant: m.Tenant) -> list[str]:
+    raw = getattr(tenant, "fiscal_closed_period_starts", None) or []
+    if not isinstance(raw, list):
+        return []
+    return [str(x) for x in raw]
+
+
+def fiscal_period_manually_closed(
+    tenant: m.Tenant,
+    entry_date: date | datetime,
+) -> bool:
+    """Stage 118 F1 — True when the FY containing entry_date was closed via the console."""
+    fys = tenant.fiscal_year_start or "01-01"
+    start, _end = fiscal_year_bounds(fys, as_of=entry_date)
+    return start.isoformat() in _closed_period_starts(tenant)
+
+
+def assert_fiscal_period_open_for_mutation(
+    tenant: m.Tenant,
+    entry_date: date | datetime,
+) -> None:
+    """Block post/unpost when calendar period is past OR current FY was manually closed."""
+    fys = tenant.fiscal_year_start or "01-01"
+    start, end = fiscal_year_bounds(fys)
+    if not entry_in_open_fiscal_period(entry_date, fys) or fiscal_period_manually_closed(
+        tenant, entry_date
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "FISCAL_PERIOD_CLOSED",
+                "message": "Mutation is only allowed within an open fiscal period",
+                "open_period_start": start.isoformat(),
+                "open_period_end_exclusive": end.isoformat(),
+                "current_period_closed": start.isoformat() in _closed_period_starts(tenant),
+            },
+        )
+
+
+def serialize_fiscal_period_status(tenant: m.Tenant) -> dict:
+    fys = tenant.fiscal_year_start or "01-01"
+    start, end = fiscal_year_bounds(fys)
+    closed_starts = _closed_period_starts(tenant)
+    return {
+        "fiscal_year_start": fys,
+        "open_period_start": start.isoformat(),
+        "open_period_end_exclusive": end.isoformat(),
+        "current_period_closed": start.isoformat() in closed_starts,
+        "closed_period_starts": closed_starts,
+    }
+
+
+async def close_current_fiscal_period(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+) -> dict:
+    """Stage 118 F1 — lock the calendar-open fiscal year for post/unpost mutations."""
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
+    ).scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    fys = tenant.fiscal_year_start or "01-01"
+    start, end = fiscal_year_bounds(fys)
+    closed = list(_closed_period_starts(tenant))
+    key = start.isoformat()
+    if key not in closed:
+        closed.append(key)
+        tenant.fiscal_closed_period_starts = closed
+        from sqlalchemy.orm.attributes import flag_modified
+
+        flag_modified(tenant, "fiscal_closed_period_starts")
+        from app import audit as audit_svc
+
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            module="accounting",
+            action="fiscal_period_close",
+            entity="tenant",
+            entity_id=tenant_id,
+            details={
+                "period_start": key,
+                "period_end_exclusive": end.isoformat(),
+            },
+        )
+    return serialize_fiscal_period_status(tenant)
+
+
+async def reopen_current_fiscal_period(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+) -> dict:
+    """Stage 118 F1 — reopen the calendar-open fiscal year (company admin)."""
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
+    ).scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    fys = tenant.fiscal_year_start or "01-01"
+    start, end = fiscal_year_bounds(fys)
+    key = start.isoformat()
+    closed = [x for x in _closed_period_starts(tenant) if x != key]
+    tenant.fiscal_closed_period_starts = closed
+    from sqlalchemy.orm.attributes import flag_modified
+
+    flag_modified(tenant, "fiscal_closed_period_starts")
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="accounting",
+        action="fiscal_period_reopen",
+        entity="tenant",
+        entity_id=tenant_id,
+        details={
+            "period_start": key,
+            "period_end_exclusive": end.isoformat(),
+        },
+    )
+    return serialize_fiscal_period_status(tenant)
+
+
 async def unpost_journal_entry(
     db: AsyncSession,
     *,
@@ -868,18 +998,7 @@ async def unpost_journal_entry(
     ).scalar_one_or_none()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
-    fys = tenant.fiscal_year_start or "01-01"
-    if not entry_in_open_fiscal_period(entry.entry_date, fys):
-        start, end = fiscal_year_bounds(fys)
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "code": "FISCAL_PERIOD_CLOSED",
-                "message": "Unpost is only allowed within the open fiscal period",
-                "open_period_start": start.isoformat(),
-                "open_period_end_exclusive": end.isoformat(),
-            },
-        )
+    assert_fiscal_period_open_for_mutation(tenant, entry.entry_date)
 
     lines = (
         await db.execute(
@@ -1045,6 +1164,14 @@ async def post_journal_entry(
 
     if not lines_are_balanced(normalized):
         raise HTTPException(status_code=400, detail="Journal entry is not balanced")
+
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
+    ).scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    # Stage 118 F1 — block posting into a manually closed current fiscal period
+    assert_fiscal_period_open_for_mutation(tenant, datetime.utcnow())
 
     total_debit = sum(x["debit"] for x in normalized)
     total_credit = sum(x["credit"] for x in normalized)

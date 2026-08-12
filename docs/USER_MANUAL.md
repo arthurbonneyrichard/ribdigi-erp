@@ -167,6 +167,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Cashier+ / Super Admin Permissions:** Permissions matrix `?role=` Shell leaves (Stage 117 P1)
 - **Tenants / Plans / Platform Users / Settings / Email Audit:** Platform audit module Shell leaves (Stage 117 A1)
 - **Notifications / Backup / AI / Reports / Dashboard Audit:** Stretch tenant audit Shell leaves (Stage 117 S1)
+- **Fiscal period Close / Reopen:** Company `#fiscal-period` console closes the open year for journal post/unpost (Stage 118 F1)
+- **Inactive Customers:** Sales customer list inactive-only filter + Shell leaf (Stage 118 C1)
+- **Export products CSV:** Inventory catalog export aligned with import template (Stage 118 E1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

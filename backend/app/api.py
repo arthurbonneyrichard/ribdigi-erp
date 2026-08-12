@@ -3059,6 +3059,20 @@ async def products_import_template(
     )
 
 
+@api.get("/products/export")
+async def products_export(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 118 E1 — catalog CSV export aligned with the product import template columns."""
+    text = await product_import_svc.export_products_csv(db, tenant_id=claims["tenant_id"])
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="products_export.csv"'},
+    )
+
+
 @api.post("/products/import")
 async def products_import(
     file: UploadFile = File(...),
@@ -4689,17 +4703,24 @@ async def delete_customer_group(
 @api.get("/customers")
 async def customers(
     active_only: bool = False,
+    status: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 118 C1 — status=active|inactive for honest inactive-only lists; active_only=true remains active-only."""
     await customers_svc.ensure_default_customer_groups(db, claims["tenant_id"])
     stmt = (
         select(m.Party)
         .where(m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "customer")
         .order_by(m.Party.name)
     )
-    if active_only:
+    status_filter = (status or "").strip().lower()
+    if status_filter and status_filter not in ("active", "inactive"):
+        raise HTTPException(status_code=400, detail="status must be active or inactive")
+    if status_filter == "active" or (active_only and not status_filter):
         stmt = stmt.where(m.Party.status == "active")
+    elif status_filter == "inactive":
+        stmt = stmt.where(m.Party.status == "inactive")
     rows = (await db.execute(stmt)).scalars().all()
     group_map = await customers_svc.load_group_map(
         db, claims["tenant_id"], [r.customer_group_id for r in rows if r.customer_group_id]
@@ -8736,6 +8757,52 @@ async def create_journal(
     )
     await db.commit()
     return env(await accounting_svc.serialize_journal(db, entry), "Journal entry posted")
+
+
+@api.get("/accounting/fiscal-period")
+async def get_fiscal_period(
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 118 F1 — open fiscal year bounds + manual close status."""
+    from app import accounting as accounting_svc
+
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == claims["tenant_id"]))
+    ).scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return env(accounting_svc.serialize_fiscal_period_status(tenant))
+
+
+@api.post("/accounting/fiscal-period/close")
+async def close_fiscal_period(
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 118 F1 — close the calendar-open fiscal year (blocks post/unpost)."""
+    from app import accounting as accounting_svc
+
+    data = await accounting_svc.close_current_fiscal_period(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    await db.commit()
+    return env(data, "Fiscal period closed")
+
+
+@api.post("/accounting/fiscal-period/reopen")
+async def reopen_fiscal_period(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 118 F1 — reopen current fiscal year (company admin / super admin)."""
+    from app import accounting as accounting_svc
+
+    data = await accounting_svc.reopen_current_fiscal_period(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    await db.commit()
+    return env(data, "Fiscal period reopened")
 
 
 @api.post("/accounting/journal-entries/{entry_id}/unpost")

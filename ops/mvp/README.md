@@ -275,6 +275,9 @@ Authoritative MVP docs:
 - `docs/STAGE_115_EXIT_CRITERIA.md` / `docs/ADR_237_STAGE115_FREEZE.md` (`backend/tests/test_stage115_exit_h115x.py`) — Stage 115 H115x
 - `docs/STAGE_116_EXIT_CRITERIA.md` / `docs/ADR_239_STAGE116_FREEZE.md` (`backend/tests/test_stage116_exit_h116x.py`) — Stage 116 H116x
 - `docs/STAGE_117_EXIT_CRITERIA.md` / `docs/ADR_241_STAGE117_FREEZE.md` (`backend/tests/test_stage117_exit_h117x.py`) — Stage 117 H117x
+- `docs/STAGE_118_EXIT_CRITERIA.md` / `docs/ADR_243_STAGE118_FREEZE.md` (`backend/tests/test_stage118_exit_h118x.py`) — Stage 118 H118x
+- `docs/STAGE_118_FIDELITY.md` (`backend/tests/test_stage118_fidelity_d1.py`) — Stage 118 D1
+- `docs/STAGE_118_PLAN.md` (`backend/tests/test_stage118_open.py`) — Stage 118 open (ADR-242)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1232,6 +1235,18 @@ H116x met — `docs/STAGE_116_EXIT_CRITERIA.md`, ADR-239. Stages 1–116 frozen 
 ## Stage 117 exit
 
 H117x met — `docs/STAGE_117_EXIT_CRITERIA.md`, ADR-241. Stages 1–117 frozen for Stage 117 feature scope.
+
+## Stage 118 exit
+
+H118x met — `docs/STAGE_118_EXIT_CRITERIA.md`, ADR-243. Stages 1–118 frozen for Stage 118 feature scope.
+
+## Stage 118 D1 — Tenant MVP Fiscal Close, Inactive Customers & Catalog Export Fidelity
+
+`docs/STAGE_118_FIDELITY.md` — maps F1–E1 → readiness / launch / deploy / security.
+
+## Stage 118 open
+
+ADR-242 + `docs/STAGE_118_PLAN.md` — Tenant MVP Fiscal Close, Inactive Customers & Catalog Export Fidelity.
 
 ## Stage 117 D1 — Tenant MVP Permissions Role, Platform Audit Module & Stretch Audit Discoverability
 
