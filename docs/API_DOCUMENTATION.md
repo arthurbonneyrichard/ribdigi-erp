@@ -1616,3 +1616,5 @@ Stage 117 D1 — `docs/STAGE_117_FIDELITY.md` (`test_stage117_fidelity_d1.py`): 
 Stage 118 D1 — `docs/STAGE_118_FIDELITY.md` (`test_stage118_fidelity_d1.py`): Stage 118 F1 fiscal-period close/reopen; Stage 118 C1 customers `status=inactive`; Stage 118 E1 `GET /products/export`.
 Stage 119 D1 — `docs/STAGE_119_FIDELITY.md` (`test_stage119_fidelity_d1.py`): Stage 119 S1 suppliers `status=inactive`; Stage 119 E1 `GET /customers/export` + `GET /suppliers/export`; Stage 119 T1 `GET /tenants/me/print-templates/preview`.
 Stage 120 D1 — `docs/STAGE_120_FIDELITY.md` (`test_stage120_fidelity_d1.py`): Stage 120 P1 products `is_active`/`active_only`; Stage 120 U1 `GET /users/export`; Stage 120 X1 `GET /expenses/export`.
+
+Stage 121 D1 — `docs/STAGE_121_FIDELITY.md` (`test_stage121_fidelity_d1.py`): Stage 121 S1 stores `is_active`/`active_only`; Stage 121 W1 warehouses `is_active`/`active_only`; Stage 121 X1 `GET /stores/export`, `GET /warehouses/export`, `GET /tax/rates/export`.

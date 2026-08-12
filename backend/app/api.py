@@ -53,6 +53,7 @@ from app import party_export as party_export_svc
 from app import print_preview as print_preview_svc
 from app import user_import as user_import_svc
 from app import expense_export as expense_export_svc
+from app import location_export as location_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -9988,6 +9989,27 @@ async def add_tax(
     return env(tax_svc.serialize_tax_rate(tax), "Tax rate created")
 
 
+@api.get("/tax/rates/export")
+async def tax_rates_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("tax", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 121 X1 — tax rates CSV export."""
+    text = await location_export_svc.export_tax_rates_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="tax_rates_export.csv"'},
+    )
+
+
 @api.get("/tax/rates/{rate_id}")
 async def get_tax_rate(
     rate_id: str,
@@ -10192,12 +10214,21 @@ async def taxes_alias(
 
 
 @api.get("/stores")
-async def stores(claims=Depends(require_permission("stores", "read")), db: AsyncSession = Depends(get_db)):
+async def stores(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 121 S1 — active_only / is_active for honest inactive-only store lists."""
     from app import cash_drawer as cash_drawer_svc
 
-    rows = (
-        await db.execute(select(m.Store).where(m.Store.tenant_id == claims["tenant_id"]))
-    ).scalars().all()
+    stmt = select(m.Store).where(m.Store.tenant_id == claims["tenant_id"])
+    if is_active is not None:
+        stmt = stmt.where(m.Store.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.Store.is_active.is_(True))
+    rows = (await db.execute(stmt)).scalars().all()
     out = []
     for s in rows:
         detail = await stores_svc.serialize_store_detail(db, s)
@@ -10210,6 +10241,27 @@ async def stores(claims=Depends(require_permission("stores", "read")), db: Async
         )
         out.append(detail)
     return env(out)
+
+
+@api.get("/stores/export")
+async def stores_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 121 X1 — stores CSV export."""
+    text = await location_export_svc.export_stores_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="stores_export.csv"'},
+    )
 
 
 @api.post("/stores")
@@ -10528,11 +10580,41 @@ async def cancel_transfer(
 
 
 @api.get("/warehouses")
-async def warehouses(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
-    rows = (
-        await db.execute(select(m.Warehouse).where(m.Warehouse.tenant_id == claims["tenant_id"]))
-    ).scalars().all()
+async def warehouses(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 121 W1 — active_only / is_active for honest inactive-only warehouse lists."""
+    stmt = select(m.Warehouse).where(m.Warehouse.tenant_id == claims["tenant_id"])
+    if is_active is not None:
+        stmt = stmt.where(m.Warehouse.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.Warehouse.is_active.is_(True))
+    rows = (await db.execute(stmt)).scalars().all()
     return env([stores_svc.serialize_warehouse(r) for r in rows])
+
+
+@api.get("/warehouses/export")
+async def warehouses_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 121 X1 — warehouses CSV export."""
+    text = await location_export_svc.export_warehouses_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="warehouses_export.csv"'},
+    )
 
 
 @api.post("/warehouses")

@@ -9,6 +9,8 @@ import {
   subscribeStoreContext,
 } from '../../lib/storeContext';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 type Store = {
   id: string;
   code: string;
@@ -136,16 +138,47 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [me, setMe] = useState<Me | null>(null);
+  // Stage 121 S1 / W1 — store_active / warehouse_active → GET ?is_active=
+  const [storeActiveFilter, setStoreActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('store_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
+  const [warehouseActiveFilter, setWarehouseActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('warehouse_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
 
-  async function refresh() {
+  async function refresh(opts?: { storeActive?: string; warehouseActive?: string }) {
+    const storeActive =
+      opts?.storeActive !== undefined ? opts.storeActive : storeActiveFilter;
+    const warehouseActive =
+      opts?.warehouseActive !== undefined ? opts.warehouseActive : warehouseActiveFilter;
+    const storeQs =
+      storeActive === 'true'
+        ? '?is_active=true'
+        : storeActive === 'false'
+          ? '?is_active=false'
+          : '';
+    const warehouseQs =
+      warehouseActive === 'true'
+        ? '?is_active=true'
+        : warehouseActive === 'false'
+          ? '?is_active=false'
+          : '';
     const [s, p, t, settings, b, u, w, meRes] = await Promise.all([
-      api('/stores'),
+      api(`/stores${storeQs}`),
       api('/products'),
       api('/stores/transfers'),
       api('/inventory/settings').catch(() => ({ data: { fefo_strict_warehouse: false } })),
       api('/branches').catch(() => ({ data: [] })),
       api('/users').catch(() => ({ data: [] })),
-      api('/warehouses').catch(() => ({ data: [] })),
+      api(`/warehouses${warehouseQs}`).catch(() => ({ data: [] })),
       api('/me').catch(() => ({ data: null })),
     ]);
     setStores(s.data || []);
@@ -166,6 +199,32 @@ export default function Page() {
       setDrawerHost(s.data[0].drawer_host || '');
       setDrawerPort(String(s.data[0].drawer_port || 9100));
       setDrawerOnCash(s.data[0].drawer_open_on_cash !== false);
+    }
+  }
+
+  async function downloadCsv(path: string, filename: string) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}${path}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error(`${filename} export failed`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage(`${filename} exported`);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
     }
   }
 
@@ -647,6 +706,43 @@ export default function Page() {
       </div>
 
       <h3 style={{ marginTop: 16 }}>Stores</h3>
+      <p className="muted" style={{ marginBottom: 8 }}>
+        Filter via <code>store_active</code> → <code>GET /stores?is_active=</code> (Stage 121 S1).
+      </p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+        <label className="muted">
+          Active status{' '}
+          <select
+            value={storeActiveFilter}
+            onChange={(e) => {
+              const v = e.target.value;
+              setStoreActiveFilter(v);
+              writeStoresQuery({ store_active: v || null });
+              refresh({ storeActive: v }).catch((err) => setError(err.message));
+            }}
+            aria-label="Store active filter"
+          >
+            <option value="">All</option>
+            <option value="true">Active only</option>
+            <option value="false">Inactive only</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            // Stage 121 X1 — stores CSV export
+            const qs =
+              storeActiveFilter === 'true'
+                ? '?is_active=true'
+                : storeActiveFilter === 'false'
+                  ? '?is_active=false'
+                  : '';
+            downloadCsv(`/stores/export${qs}`, 'stores_export.csv');
+          }}
+        >
+          Export stores CSV
+        </button>
+      </div>
       <table className="table">
         <thead>
           <tr>
@@ -852,6 +948,44 @@ export default function Page() {
       </div>
 
       <h3 style={{ marginTop: 16 }}>Warehouses</h3>
+      <p className="muted" style={{ marginBottom: 8 }}>
+        Filter via <code>warehouse_active</code> → <code>GET /warehouses?is_active=</code> (Stage
+        121 W1).
+      </p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+        <label className="muted">
+          Active status{' '}
+          <select
+            value={warehouseActiveFilter}
+            onChange={(e) => {
+              const v = e.target.value;
+              setWarehouseActiveFilter(v);
+              writeStoresQuery({ warehouse_active: v || null });
+              refresh({ warehouseActive: v }).catch((err) => setError(err.message));
+            }}
+            aria-label="Warehouse active filter"
+          >
+            <option value="">All</option>
+            <option value="true">Active only</option>
+            <option value="false">Inactive only</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            // Stage 121 X1 — warehouses CSV export
+            const qs =
+              warehouseActiveFilter === 'true'
+                ? '?is_active=true'
+                : warehouseActiveFilter === 'false'
+                  ? '?is_active=false'
+                  : '';
+            downloadCsv(`/warehouses/export${qs}`, 'warehouses_export.csv');
+          }}
+        >
+          Export warehouses CSV
+        </button>
+      </div>
       <table className="table">
         <thead>
           <tr>

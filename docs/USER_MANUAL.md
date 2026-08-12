@@ -176,6 +176,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Inactive Products:** Inventory product list active/inactive filter + Shell leaves (Stage 120 P1)
 - **Export users CSV:** Users directory export aligned with import columns (Stage 120 U1)
 - **Export expenses CSV:** Expenses list export (record-scope aware) (Stage 120 X1)
+- **Inactive Stores:** Stores list active/inactive filter + Shell leaves (Stage 121 S1)
+- **Inactive Warehouses:** Warehouses list active/inactive filter + Shell leaves (Stage 121 W1)
+- **Export stores / warehouses / tax rates CSV:** Location CSV export buttons (Stage 121 X1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

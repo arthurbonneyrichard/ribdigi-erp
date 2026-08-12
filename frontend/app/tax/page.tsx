@@ -492,7 +492,41 @@ export default function Page() {
         </p>
       </div>
 
-      <table className="table" style={{ marginTop: 16 }}>
+      <h3 style={{ marginTop: 16 }}>Tax rates</h3>
+      <div style={{ marginBottom: 8 }}>
+        <button
+          type="button"
+          onClick={async () => {
+            // Stage 121 X1 — tax rates CSV export
+            setError('');
+            setMessage('');
+            try {
+              const token = localStorage.getItem('token');
+              const tenant = localStorage.getItem('tenant');
+              const res = await fetch(`${base}/tax/rates/export`, {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                },
+              });
+              if (!res.ok) throw new Error('Tax rates export failed');
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'tax_rates_export.csv';
+              a.click();
+              URL.revokeObjectURL(url);
+              setMessage('Tax rates CSV exported');
+            } catch (err: any) {
+              setError(err.message || 'Tax rates export failed');
+            }
+          }}
+        >
+          Export tax rates CSV
+        </button>
+      </div>
+      <table className="table" style={{ marginTop: 8 }}>
         <thead>
           <tr>
             <th>Name</th>

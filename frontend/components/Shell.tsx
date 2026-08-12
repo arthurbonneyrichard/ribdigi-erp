@@ -736,7 +736,31 @@ const primaryNavSpec: NavEntry[] = [
   },
   { kind: 'section', label: 'Operations' },
   { kind: 'link', label: 'Stores', href: '/stores', modules: ['stores'] },
+  {
+    kind: 'link',
+    label: 'Active Stores',
+    href: '/stores?store_active=true',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Stores',
+    href: '/stores?store_active=false',
+    modules: ['stores'],
+  },
   { kind: 'link', label: 'Warehouse', href: '/stores#warehouses', modules: ['stores'] },
+  {
+    kind: 'link',
+    label: 'Active Warehouses',
+    href: '/stores?warehouse_active=true#warehouses',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Warehouses',
+    href: '/stores?warehouse_active=false#warehouses',
+    modules: ['stores'],
+  },
   {
     kind: 'link',
     label: 'FEFO Policy',
