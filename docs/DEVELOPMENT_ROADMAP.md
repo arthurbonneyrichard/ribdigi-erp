@@ -2210,6 +2210,18 @@ Every feature in every phase must meet:
 
 **Stage 133 exit (2026-08-12):** Q1, O1, R1, D1, H133x met — `docs/STAGE_133_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_273_STAGE133_FREEZE.md`. Fidelity: `docs/STAGE_133_FIDELITY.md`.
 
+**Stage 134 open (2026-08-12):** Tenant MVP Purchase Request CSV, Purchase Order CSV & GRN CSV Export Fidelity — `docs/ADR_274_STAGE134_OPEN.md` + `docs/STAGE_134_PLAN.md` (Requests → Orders → GRNs → Fidelity; R1 next).
+
+**Stage 134 R1 (2026-08-12):** Purchase request register CSV (`test_stage134_requests_export_r1.py`).
+
+**Stage 134 O1 (2026-08-12):** Purchase order register CSV (`test_stage134_orders_export_o1.py`).
+
+**Stage 134 G1 (2026-08-12):** GRN register CSV (`test_stage134_grn_export_g1.py`).
+
+**Stage 134 D1 (2026-08-12):** Purchase request, order & GRN register export fidelity sync — `docs/STAGE_134_FIDELITY.md` (`test_stage134_fidelity_d1.py`).
+
+**Stage 134 exit (2026-08-12):** R1, O1, G1, D1, H134x met — `docs/STAGE_134_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_275_STAGE134_FREEZE.md`. Fidelity: `docs/STAGE_134_FIDELITY.md`.
+
 
 
 

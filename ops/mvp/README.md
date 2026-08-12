@@ -323,6 +323,9 @@ Authoritative MVP docs:
 - `docs/STAGE_133_EXIT_CRITERIA.md` / `docs/ADR_273_STAGE133_FREEZE.md` (`backend/tests/test_stage133_exit_h133x.py`) — Stage 133 H133x
 - `docs/STAGE_133_FIDELITY.md` (`backend/tests/test_stage133_fidelity_d1.py`) — Stage 133 D1
 - `docs/STAGE_133_PLAN.md` (`backend/tests/test_stage133_open.py`) — Stage 133 open (ADR-272)
+- `docs/STAGE_134_EXIT_CRITERIA.md` / `docs/ADR_275_STAGE134_FREEZE.md` (`backend/tests/test_stage134_exit_h134x.py`) — Stage 134 H134x
+- `docs/STAGE_134_FIDELITY.md` (`backend/tests/test_stage134_fidelity_d1.py`) — Stage 134 D1
+- `docs/STAGE_134_PLAN.md` (`backend/tests/test_stage134_open.py`) — Stage 134 open (ADR-274)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1456,6 +1459,18 @@ H133x met — `docs/STAGE_133_EXIT_CRITERIA.md`, ADR-273. Stages 1–133 frozen 
 ## Stage 133 open
 
 ADR-272 + `docs/STAGE_133_PLAN.md` — Tenant MVP Sales Quotation CSV, Sales Order CSV & Sales Return CSV Export Fidelity.
+
+## Stage 134 exit
+
+H134x met — `docs/STAGE_134_EXIT_CRITERIA.md`, ADR-275. Stages 1–134 frozen for Stage 134 feature scope.
+
+## Stage 134 D1 — Tenant MVP Purchase Request CSV, Purchase Order CSV & GRN CSV Export Fidelity
+
+`docs/STAGE_134_FIDELITY.md` — maps R1–G1 → readiness / launch / deploy / security.
+
+## Stage 134 open
+
+ADR-274 + `docs/STAGE_134_PLAN.md` — Tenant MVP Purchase Request CSV, Purchase Order CSV & GRN CSV Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

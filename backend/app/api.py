@@ -66,6 +66,7 @@ from app import ops_lifecycle_export as ops_lifecycle_export_svc
 from app import finance_ops_export as finance_ops_export_svc
 from app import commerce_docs_export as commerce_docs_export_svc
 from app import sales_pipeline_export as sales_pipeline_export_svc
+from app import purchasing_pipeline_export as purchasing_pipeline_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -6555,6 +6556,25 @@ async def list_purchase_requests(
     return env([await purchasing_svc.serialize_pr(db, pr) for pr in rows])
 
 
+@api.get("/purchasing/requests/export")
+async def export_purchase_requests_csv(
+    status: str | None = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 134 R1 — purchase request header CSV (no line dump)."""
+    text = await purchasing_pipeline_export_svc.export_purchase_requests_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="purchase_requests_export.csv"'
+        },
+    )
+
+
 @api.get("/purchasing/settings")
 async def get_purchasing_settings(
     claims=Depends(require_permission("purchasing", "read")),
@@ -6753,6 +6773,25 @@ async def list_purchase_orders(
     return env([await purchasing_svc.serialize_po(db, po) for po in rows])
 
 
+@api.get("/purchasing/orders/export")
+async def export_purchase_orders_csv(
+    status: str | None = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 134 O1 — purchase order header CSV (no line dump)."""
+    text = await purchasing_pipeline_export_svc.export_purchase_orders_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="purchase_orders_export.csv"'
+        },
+    )
+
+
 @api.post("/purchasing/orders")
 async def create_purchase_order(
     payload: PurchaseOrderCreate,
@@ -6939,6 +6978,23 @@ async def list_grns(
     stmt = apply_created_by_scope(stmt, m.GoodsReceipt, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_grn(db, g) for g in rows])
+
+
+@api.get("/purchasing/grn/export")
+async def export_grns_csv(
+    status: str | None = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 134 G1 — GRN header CSV (no line dump)."""
+    text = await purchasing_pipeline_export_svc.export_grns_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="grns_export.csv"'},
+    )
 
 
 @api.post("/purchasing/grn")

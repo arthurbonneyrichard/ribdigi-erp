@@ -383,6 +383,48 @@ export default function Page() {
     }
   }
 
+  async function downloadPurchasingPipelineExport(
+    kind: 'requests' | 'orders' | 'grn',
+    status: string,
+  ) {
+    // Stage 134 R1 / O1 / G1 — purchasing pipeline header CSVs
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+      const res = await fetch(`${apiBase}/purchasing/${kind}/export${qs}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error(`${kind} export failed`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download =
+        kind === 'requests'
+          ? 'purchase_requests_export.csv'
+          : kind === 'orders'
+            ? 'purchase_orders_export.csv'
+            : 'grns_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      const label =
+        kind === 'requests'
+          ? 'requests (Stage 134 R1)'
+          : kind === 'orders'
+            ? 'orders (Stage 134 O1)'
+            : 'GRNs (Stage 134 G1)';
+      setMessage(`Purchase ${label} CSV downloaded`);
+    } catch (err: any) {
+      setError(err.message || `${kind} export failed`);
+    }
+  }
+
   // Stage 110 P1 / Stage 114 P1 / Stage 115 P1 — Shell PR/PO/GRN/returns + purchase invoice status leaves honor URL params
   // Stage 119 S1 — Shell Active/Inactive Suppliers honor supplier_status
   useEffect(() => {
@@ -1611,6 +1653,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={() => downloadPurchasingPipelineExport('requests', prStatusFilter)}
+            >
+              Export requests CSV
+            </button>
           </div>
           <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
             <label className="muted">Rejection reason (optional)</label>
@@ -1680,6 +1728,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={() => downloadPurchasingPipelineExport('orders', poStatusFilter)}
+            >
+              Export orders CSV
+            </button>
           </div>
           <table className="table">
             <thead>
@@ -1923,6 +1977,12 @@ export default function Page() {
               <option value="draft">draft</option>
               <option value="posted">posted</option>
             </select>
+            <button
+              type="button"
+              onClick={() => downloadPurchasingPipelineExport('grn', grnStatusFilter)}
+            >
+              Export GRNs CSV
+            </button>
           </div>
           <table className="table">
             <thead>

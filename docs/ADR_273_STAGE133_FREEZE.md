@@ -24,3 +24,5 @@ Stage 133 Tenant MVP Sales Quotation CSV, Sales Order CSV & Sales Return CSV Exp
 ## Next stage
 
 Stage 134 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 133 feature scope remains frozen.
+
+**Stage 134 opened and closed under ADR-274 / ADR-275** — Tenant MVP Purchase Request CSV, Purchase Order CSV & GRN CSV Export Fidelity (CONTINUE/NEXT approved).

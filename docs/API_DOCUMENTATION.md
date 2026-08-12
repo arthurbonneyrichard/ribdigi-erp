@@ -1648,3 +1648,5 @@ Stage 131 D1 — `docs/STAGE_131_FIDELITY.md` (`test_stage131_fidelity_d1.py`): 
 Stage 132 D1 — `docs/STAGE_132_FIDELITY.md` (`test_stage132_fidelity_d1.py`): Stage 132 I1 `GET /sales/invoices/export`; Stage 132 T1 `GET /inventory/stock-transfers?status=` + `/inventory/stock-transfers/export`; Stage 132 P1 `GET /purchasing/invoices/export`.
 
 Stage 133 D1 — `docs/STAGE_133_FIDELITY.md` (`test_stage133_fidelity_d1.py`): Stage 133 Q1 `GET /sales/quotations/export`; Stage 133 O1 `GET /sales/orders/export`; Stage 133 R1 `GET /sales/returns/export`.
+
+Stage 134 D1 — `docs/STAGE_134_FIDELITY.md` (`test_stage134_fidelity_d1.py`): Stage 134 R1 `GET /purchasing/requests/export`; Stage 134 O1 `GET /purchasing/orders/export`; Stage 134 G1 `GET /purchasing/grn/export`.
