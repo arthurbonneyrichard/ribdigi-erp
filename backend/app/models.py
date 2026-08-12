@@ -712,6 +712,8 @@ class SalesInvoice(Base):
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     quotation_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     sales_order_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

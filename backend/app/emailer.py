@@ -414,6 +414,92 @@ async def send_purchase_order_email(
     return await send_email(to=to, subject=subject, text_body=text, html_body=html)
 
 
+def render_sales_invoice_bodies(
+    *,
+    company_name: str,
+    currency: str,
+    customer_name: str,
+    invoice: dict[str, Any],
+) -> tuple[str, str]:
+    number = invoice.get("invoice_number") or ""
+    due = invoice.get("due_date")
+    due_s = str(due)[:10] if due else "—"
+    lines = [
+        f"Sales Invoice {number}",
+        f"From: {company_name}",
+        f"To: {customer_name}",
+        f"Due date: {due_s}",
+        "",
+        "Items:",
+    ]
+    html_rows = []
+    for item in invoice.get("items") or []:
+        desc = item.get("product_id") or "Item"
+        if item.get("variant_id"):
+            desc = f"{desc} (variant {item['variant_id'][:8]})"
+        qty = item.get("quantity")
+        price = _fmt_money(item.get("unit_price"))
+        total = _fmt_money(item.get("line_total"))
+        tax = _fmt_money(item.get("tax_rate"))
+        lines.append(
+            f"  - {desc}: qty {qty} × {currency} {price} (tax {tax}%) = {currency} {total}"
+        )
+        html_rows.append(
+            f"<tr><td>{desc}</td><td>{qty}</td><td>{currency} {price}</td>"
+            f"<td>{tax}%</td><td>{currency} {total}</td></tr>"
+        )
+    lines.extend(
+        [
+            "",
+            f"Subtotal: {currency} {_fmt_money(invoice.get('subtotal'))}",
+            f"Tax: {currency} {_fmt_money(invoice.get('tax_amount'))}",
+            f"Discount: {currency} {_fmt_money(invoice.get('discount_amount'))}",
+            f"Total: {currency} {_fmt_money(invoice.get('total_amount'))}",
+            f"Paid: {currency} {_fmt_money(invoice.get('paid_amount'))}",
+            f"Balance due: {currency} {_fmt_money(invoice.get('balance_due'))}",
+        ]
+    )
+    if invoice.get("notes"):
+        lines.extend(["", f"Notes: {invoice['notes']}"])
+    lines.append("\nThank you for your business.")
+    text = "\n".join(lines)
+    html = (
+        f"<h2>Sales Invoice {number}</h2>"
+        f"<p>From <strong>{company_name}</strong><br/>To {customer_name}<br/>Due {due_s}</p>"
+        "<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\">"
+        "<thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Tax</th><th>Line</th></tr></thead>"
+        f"<tbody>{''.join(html_rows)}</tbody></table>"
+        f"<p>Subtotal: {currency} {_fmt_money(invoice.get('subtotal'))}<br/>"
+        f"Tax: {currency} {_fmt_money(invoice.get('tax_amount'))}<br/>"
+        f"Discount: {currency} {_fmt_money(invoice.get('discount_amount'))}<br/>"
+        f"<strong>Total: {currency} {_fmt_money(invoice.get('total_amount'))}</strong><br/>"
+        f"Paid: {currency} {_fmt_money(invoice.get('paid_amount'))}<br/>"
+        f"Balance due: {currency} {_fmt_money(invoice.get('balance_due'))}</p>"
+    )
+    if invoice.get("notes"):
+        html += f"<p>Notes: {invoice['notes']}</p>"
+    return text, html
+
+
+async def send_sales_invoice_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    customer_name: str,
+    invoice: dict[str, Any],
+) -> EmailResult:
+    number = invoice.get("invoice_number") or ""
+    subject = f"Invoice {number} from {company_name}"
+    text, html = render_sales_invoice_bodies(
+        company_name=company_name,
+        currency=currency,
+        customer_name=customer_name,
+        invoice=invoice,
+    )
+    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+
+
 async def send_test_email(*, to: str) -> EmailResult:
     if not settings.EMAIL_ENABLED:
         raise HTTPException(status_code=400, detail="EMAIL_ENABLED is false")

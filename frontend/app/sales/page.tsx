@@ -433,6 +433,16 @@ export default function Page() {
                       <button onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
                     </>
                   )}
+                  {['posted', 'partial', 'paid'].includes(inv.status) && !inv.emailed_at && (
+                    <button onClick={() => act(`/sales/invoices/${inv.id}/send`, 'Invoice emailed')}>
+                      Email
+                    </button>
+                  )}
+                  {['posted', 'partial', 'paid'].includes(inv.status) && inv.emailed_at && (
+                    <button onClick={() => act(`/sales/invoices/${inv.id}/send`, 'Invoice re-emailed')}>
+                      Resend
+                    </button>
+                  )}
                   {['posted', 'partial'].includes(inv.status) && (
                     <>
                       <input
@@ -494,6 +504,12 @@ export default function Page() {
       {selected && (
         <div className="card" style={{ marginTop: 16 }}>
           <h3>Selected</h3>
+          {selected.emailed_to && (
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Last emailed to {selected.emailed_to}
+              {selected.emailed_at ? ` · ${String(selected.emailed_at).slice(0, 19)}` : ''}
+            </p>
+          )}
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{JSON.stringify(selected, null, 2)}</pre>
         </div>
       )}

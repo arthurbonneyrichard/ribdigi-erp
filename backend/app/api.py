@@ -3003,6 +3003,38 @@ async def post_sales_invoice(
     return env(await sales_svc.serialize_invoice(db, invoice), "Invoice posted; stock and AR updated")
 
 
+@api.post("/sales/invoices/{invoice_id}/send")
+async def send_sales_invoice(
+    invoice_id: str,
+    to: str | None = None,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
+    invoice, delivery = await sales_svc.send_sales_invoice(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        invoice_id=invoice_id,
+        to=to,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="sales",
+        action="invoice_email",
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        details=delivery,
+    )
+    await db.commit()
+    data = await sales_svc.serialize_invoice(db, invoice)
+    data["delivery"] = delivery
+    return env(data, f"Invoice emailed to {delivery['to']} ({delivery['mode']})")
+
+
 @api.post("/sales/invoices/{invoice_id}/cancel")
 async def cancel_sales_invoice(
     invoice_id: str,

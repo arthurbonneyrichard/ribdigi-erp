@@ -499,6 +499,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Status: Draft, Approved, Sent, Paid, Partially Paid, Overdue, Cancelled
   - [ ] Auto-update Accounts Receivable
   - [ ] Support credit sales with credit limit check
+  - [x] Email posted/partial/paid invoice to customer (SMTP/console) with optional `to=` override; stamp `emailed_at`/`emailed_to`; resend without changing payment status
 
 #### BR-7.5 Sales Return
 - **Description:** Customer returns and refunds.

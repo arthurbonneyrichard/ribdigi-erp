@@ -88,6 +88,8 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "notes": invoice.notes,
         "posted_at": invoice.posted_at,
         "due_date": invoice.due_date,
+        "emailed_at": invoice.emailed_at,
+        "emailed_to": invoice.emailed_to,
         "created_at": invoice.created_at,
         "items": [
             {
@@ -343,6 +345,72 @@ async def post_sales_invoice(
         )
     )
     return invoice
+
+
+async def send_sales_invoice(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    invoice_id: str,
+    to: str | None = None,
+) -> tuple[m.SalesInvoice, dict]:
+    """Email posted/partial/paid invoice to customer. Status is unchanged."""
+    from app import emailer
+
+    invoice = await get_invoice(db, tenant_id, invoice_id)
+    if invoice.status not in {"posted", "partial", "paid"}:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot email invoice in status {invoice.status}",
+        )
+    items = await list_invoice_items(db, tenant_id, invoice.id)
+    if not items:
+        raise HTTPException(status_code=400, detail="Cannot email empty invoice")
+
+    customer = await get_customer(db, tenant_id, invoice.customer_id)
+    recipient = (to or customer.email or "").strip()
+    if not recipient:
+        raise HTTPException(
+            status_code=400,
+            detail="Customer has no email; set customer email or pass to= override",
+        )
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    company_name = tenant.company_name if tenant else "RIBDIGI ERP"
+    currency = (
+        (getattr(invoice, "currency", None) or "").strip()
+        or (tenant.currency if tenant else None)
+        or "GHS"
+    )
+    payload = await serialize_invoice(db, invoice)
+
+    result = await emailer.send_sales_invoice_email(
+        to=recipient,
+        company_name=company_name,
+        currency=currency,
+        customer_name=customer.name,
+        invoice=payload,
+    )
+    if not result.sent:
+        if result.mode == "disabled":
+            raise HTTPException(status_code=503, detail="Email delivery is disabled")
+        raise HTTPException(status_code=502, detail=result.error or "Email send failed")
+
+    now = datetime.utcnow()
+    invoice.emailed_at = now
+    invoice.emailed_to = recipient
+    invoice.updated_at = now
+    await db.flush()
+    delivery = {
+        "sent": result.sent,
+        "mode": result.mode,
+        "to": recipient,
+        "emailed_at": now.isoformat(),
+        "invoice_number": invoice.invoice_number,
+        "status": invoice.status,
+    }
+    return invoice, delivery
 
 
 async def cancel_sales_invoice(
