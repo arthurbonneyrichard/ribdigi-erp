@@ -9,6 +9,7 @@
 - Standard lint/test/run commands: see root README / `backend` and `frontend` package scripts. Reliability packaging: `docs/CELERY_RELIABILITY_RUNBOOK.md`, `docs/DR_WAL_PITR_RUNBOOK.md`.
 
 ### Non-obvious gotchas
+- **Login 2FA:** `LOGIN_2FA_ENABLED` (default `false`) controls whether enrolled TOTP/passkeys are challenged at `/auth/login` and whether `must_enroll_2fa` blocks APIs. Set `true` in production (see `.env.production.example`). Setup endpoints under `/auth/2fa` and `/auth/webauthn` remain available either way.
 - **Celery does not auto-reload.** After changing `backend/app/jobs.py`, `tasks.py`, or beat schedule, restart `celery_worker` and `celery_beat` or workers keep stale handler maps / crash on unknown jobs.
 - **`run_async` uses one event loop per worker process** so sequential Celery tasks do not hit async SQLAlchemy “Future attached to a different loop” errors. Do not switch back to bare `asyncio.run()` per task without disposing the engine.
 - Deep readiness: `GET /api/v1/health/ready` (and `?deep=true`) probes DB + Redis + Celery broker; shallow `/health` stays liveness-only.

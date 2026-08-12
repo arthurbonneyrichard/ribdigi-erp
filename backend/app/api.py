@@ -1132,14 +1132,14 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
     from app import webauthn_svc as webauthn
 
     has_webauthn = await webauthn.user_has_webauthn(db, user.id)
-    needs_2fa = bool(user.totp_enabled) or has_webauthn
+    needs_2fa = totp_svc.login_2fa_enabled() and (bool(user.totp_enabled) or has_webauthn)
     methods: list[str] = []
     if user.totp_enabled:
         methods.append("totp")
     if has_webauthn:
         methods.append("webauthn")
 
-    # 2FA challenge when TOTP and/or passkeys are enrolled
+    # 2FA challenge when login MFA is enabled and TOTP and/or passkeys are enrolled
     if needs_2fa:
         if payload.totp_code and user.totp_enabled:
             ok = await totp_svc.verify_user_second_factor(db, user, payload.totp_code)
@@ -1218,7 +1218,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
             "refresh_token": refresh,
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            "must_enroll_2fa": totp_svc.role_requires_2fa(user.role) and not has_mfa,
+            "must_enroll_2fa": totp_svc.must_enroll_2fa(user.role, has_mfa=has_mfa),
             "user": {
                 "id": user.id,
                 "email": user.email,
@@ -1301,7 +1301,7 @@ async def auth_2fa_status(claims=Depends(current_claims), db: AsyncSession = Dep
         {
             "webauthn_enabled": count > 0,
             "webauthn_count": count,
-            "must_enroll_2fa": totp_svc.role_requires_2fa(user.role) and not has_mfa,
+            "must_enroll_2fa": totp_svc.must_enroll_2fa(user.role, has_mfa=has_mfa),
             "methods": (
                 (["totp"] if user.totp_enabled else [])
                 + (["webauthn"] if count > 0 else [])
@@ -1523,7 +1523,7 @@ async def auth_2fa_disable(
     user = await db.get(m.User, claims["sub"])
     if not user.totp_enabled:
         raise HTTPException(status_code=400, detail="2FA is not enabled")
-    if totp_svc.role_requires_2fa(user.role):
+    if totp_svc.login_2fa_enabled() and totp_svc.role_requires_2fa(user.role):
         raise HTTPException(
             status_code=400,
             detail="2FA cannot be disabled for this role",

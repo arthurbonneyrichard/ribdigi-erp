@@ -206,12 +206,12 @@ async def current_claims(
     data["scope_user_ids"] = await org_units_svc.scope_user_ids(
         db, tenant_id=tenant_id, user=user, scope=scope
     )
-    from app.totp import path_allowed_during_enrollment, role_requires_2fa
+    from app.totp import must_enroll_2fa, path_allowed_during_enrollment
     from app import webauthn_svc as webauthn
 
     has_mfa = await webauthn.user_has_mfa(db, user)
     data["webauthn_enabled"] = await webauthn.user_has_webauthn(db, user.id)
-    must_enroll = role_requires_2fa(user.role) and not has_mfa
+    must_enroll = must_enroll_2fa(user.role, has_mfa=has_mfa)
     data["must_enroll_2fa"] = must_enroll
     if must_enroll and not path_allowed_during_enrollment(request.url.path):
         raise HTTPException(

@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     BACKUP_ENCRYPTION_KEY: str = ""
     TOTP_ENCRYPTION_KEY: str = ""
     TOTP_ENFORCED_ROLES: str = "company_admin,super_admin"
+    # When false, login skips TOTP/passkey challenge and enrollment gates (password + tenant only).
+    # Set true in production to require enrolled second factors at sign-in.
+    LOGIN_2FA_ENABLED: bool = False
     WEBAUTHN_RP_ID: str = "localhost"
     WEBAUTHN_RP_NAME: str = "RIBDIGI ERP"
     WEBAUTHN_ORIGIN: str = ""  # defaults to FRONTEND_URL
