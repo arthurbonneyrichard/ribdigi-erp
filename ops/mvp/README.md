@@ -317,6 +317,9 @@ Authoritative MVP docs:
 - `docs/STAGE_131_EXIT_CRITERIA.md` / `docs/ADR_269_STAGE131_FREEZE.md` (`backend/tests/test_stage131_exit_h131x.py`) — Stage 131 H131x
 - `docs/STAGE_131_FIDELITY.md` (`backend/tests/test_stage131_fidelity_d1.py`) — Stage 131 D1
 - `docs/STAGE_131_PLAN.md` (`backend/tests/test_stage131_open.py`) — Stage 131 open (ADR-268)
+- `docs/STAGE_132_EXIT_CRITERIA.md` / `docs/ADR_271_STAGE132_FREEZE.md` (`backend/tests/test_stage132_exit_h132x.py`) — Stage 132 H132x
+- `docs/STAGE_132_FIDELITY.md` (`backend/tests/test_stage132_fidelity_d1.py`) — Stage 132 D1
+- `docs/STAGE_132_PLAN.md` (`backend/tests/test_stage132_open.py`) — Stage 132 open (ADR-270)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1426,6 +1429,18 @@ H131x met — `docs/STAGE_131_EXIT_CRITERIA.md`, ADR-269. Stages 1–131 frozen 
 ## Stage 131 open
 
 ADR-268 + `docs/STAGE_131_PLAN.md` — Tenant MVP Journal Entry CSV, Bank Statement Status & Email-Settings Export Fidelity.
+
+## Stage 132 exit
+
+H132x met — `docs/STAGE_132_EXIT_CRITERIA.md`, ADR-271. Stages 1–132 frozen for Stage 132 feature scope.
+
+## Stage 132 D1 — Tenant MVP Sales Invoice Register CSV, Stock-Transfer List Export & Purchase Invoice Register Fidelity
+
+`docs/STAGE_132_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security.
+
+## Stage 132 open
+
+ADR-270 + `docs/STAGE_132_PLAN.md` — Tenant MVP Sales Invoice Register CSV, Stock-Transfer List Export & Purchase Invoice Register Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

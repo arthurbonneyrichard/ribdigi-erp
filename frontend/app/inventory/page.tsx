@@ -204,6 +204,14 @@ export default function Page() {
       .toLowerCase();
     return ['draft', 'completed', 'cancelled'].includes(v) ? v : '';
   });
+  // Stage 132 T1 — transfer_status → GET /inventory/stock-transfers?status=
+  const [transferStatusFilter, setTransferStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('transfer_status') || '')
+      .trim()
+      .toLowerCase();
+    return ['draft', 'requested', 'in_transit', 'received', 'cancelled'].includes(v) ? v : '';
+  });
 
   function writeProductListFilters(next: {
     q?: string;
@@ -249,6 +257,7 @@ export default function Page() {
     brandActive?: string;
     unitActive?: string;
     countStatus?: string;
+    transferStatus?: string;
   }) {
     const productActive =
       opts?.productActive !== undefined ? opts.productActive : productActiveFilter;
@@ -258,6 +267,8 @@ export default function Page() {
     const unitActive = opts?.unitActive !== undefined ? opts.unitActive : unitActiveFilter;
     const countStatus =
       opts?.countStatus !== undefined ? opts.countStatus : countStatusFilter;
+    const transferStatus =
+      opts?.transferStatus !== undefined ? opts.transferStatus : transferStatusFilter;
     const productQs =
       productActive === 'true'
         ? '?is_active=true'
@@ -286,6 +297,14 @@ export default function Page() {
       countStatus === 'draft' || countStatus === 'completed' || countStatus === 'cancelled'
         ? `?status=${countStatus}`
         : '';
+    const transferQs =
+      transferStatus === 'draft' ||
+      transferStatus === 'requested' ||
+      transferStatus === 'in_transit' ||
+      transferStatus === 'received' ||
+      transferStatus === 'cancelled'
+        ? `?status=${transferStatus}`
+        : '';
     const catFlat = catQs ? `?${catQs}` : '';
     const catTree = catQs ? `?tree=true&${catQs}` : '?tree=true';
     const [p, e, c, tree, b, u, w, sc, tr, ls, sup, tax] = await Promise.all([
@@ -297,7 +316,7 @@ export default function Page() {
       api(`/catalog/units${unitQs}`),
       api('/warehouses'),
       api(`/inventory/stock-counts${countQs}`),
-      api('/inventory/stock-transfers').catch(() => ({ data: [] })),
+      api(`/inventory/stock-transfers${transferQs}`).catch(() => ({ data: [] })),
       api('/inventory/low-stock').catch(() => ({ data: [] })),
       api('/suppliers').catch(() => ({ data: [] })),
       api('/tax/rates').catch(() => ({ data: [] })),
@@ -2718,6 +2737,63 @@ export default function Page() {
           <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
             <h3>Inter-warehouse transfer</h3>
             <p className="muted">Moves located stock between warehouses without changing consolidated qty.</p>
+            <p className="muted">
+              Filter via <code>transfer_status</code> →{' '}
+              <code>GET /inventory/stock-transfers?status=</code>; list export via{' '}
+              <code>/inventory/stock-transfers/export</code> (Stage 132 T1).
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select
+                value={transferStatusFilter || 'default'}
+                onChange={(e) => {
+                  const v = e.target.value === 'default' ? '' : e.target.value;
+                  setTransferStatusFilter(v);
+                  const url = new URL(window.location.href);
+                  if (v) url.searchParams.set('transfer_status', v);
+                  else url.searchParams.delete('transfer_status');
+                  window.history.replaceState({}, '', url.toString());
+                  refresh({ transferStatus: v }).catch((err) => setError(err.message));
+                }}
+                aria-label="Transfer status filter"
+              >
+                <option value="default">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="requested">Requested</option>
+                <option value="in_transit">In transit</option>
+                <option value="received">Received</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <button
+                type="button"
+                onClick={async () => {
+                  const token = localStorage.getItem('token') || '';
+                  const qs =
+                    transferStatusFilter === 'draft' ||
+                    transferStatusFilter === 'requested' ||
+                    transferStatusFilter === 'in_transit' ||
+                    transferStatusFilter === 'received' ||
+                    transferStatusFilter === 'cancelled'
+                      ? `?status=${transferStatusFilter}`
+                      : '';
+                  const res = await fetch(`${apiBase}/inventory/stock-transfers/export${qs}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!res.ok) {
+                    setError(await res.text());
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'stock_transfers_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('Stock transfers CSV downloaded (Stage 132 T1)');
+                }}
+              >
+                Export transfers CSV
+              </button>
+            </div>
             <select value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)}>
               <option value="">From warehouse</option>
               {warehouses.map((w) => (

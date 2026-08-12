@@ -353,6 +353,36 @@ export default function Page() {
     }
   }
 
+  async function downloadPurchaseInvoicesExport() {
+    // Stage 132 P1 — purchase invoice header CSV
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const qs = invoiceStatusFilter
+        ? `?status=${encodeURIComponent(invoiceStatusFilter)}`
+        : '';
+      const res = await fetch(`${apiBase}/purchasing/invoices/export${qs}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Purchase invoice export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'purchase_invoices_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Purchase invoices CSV downloaded (Stage 132 P1)');
+    } catch (err: any) {
+      setError(err.message || 'Purchase invoice export failed');
+    }
+  }
+
   // Stage 110 P1 / Stage 114 P1 / Stage 115 P1 — Shell PR/PO/GRN/returns + purchase invoice status leaves honor URL params
   // Stage 119 S1 — Shell Active/Inactive Suppliers honor supplier_status
   useEffect(() => {
@@ -1935,6 +1965,9 @@ export default function Page() {
                 </option>
               ))}
             </select>
+            <button type="button" onClick={downloadPurchaseInvoicesExport}>
+              Export invoices CSV
+            </button>
             <span className="muted">Deep-link: ?tab=invoices&amp;status=outstanding</span>
           </div>
           {ocrDraft && ocrFor && (

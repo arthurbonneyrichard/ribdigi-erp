@@ -2186,6 +2186,18 @@ Every feature in every phase must meet:
 
 **Stage 131 exit (2026-08-12):** J1, B1, E1, D1, H131x met — `docs/STAGE_131_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_269_STAGE131_FREEZE.md`. Fidelity: `docs/STAGE_131_FIDELITY.md`.
 
+**Stage 132 open (2026-08-12):** Tenant MVP Sales Invoice Register CSV, Stock-Transfer List Export & Purchase Invoice Register Fidelity — `docs/ADR_270_STAGE132_OPEN.md` + `docs/STAGE_132_PLAN.md` (Sales invoices → Stock transfers → Purchase invoices → Fidelity; I1 next).
+
+**Stage 132 I1 (2026-08-12):** Sales invoice register CSV (`test_stage132_sales_invoices_export_i1.py`).
+
+**Stage 132 T1 (2026-08-12):** Stock-transfer list status + CSV (`test_stage132_stock_transfers_t1.py`).
+
+**Stage 132 P1 (2026-08-12):** Purchase invoice register CSV (`test_stage132_purchase_invoices_export_p1.py`).
+
+**Stage 132 D1 (2026-08-12):** Sales invoice, stock-transfer & purchase invoice register export fidelity sync — `docs/STAGE_132_FIDELITY.md` (`test_stage132_fidelity_d1.py`).
+
+**Stage 132 exit (2026-08-12):** I1, T1, P1, D1, H132x met — `docs/STAGE_132_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_271_STAGE132_FREEZE.md`. Fidelity: `docs/STAGE_132_FIDELITY.md`.
+
 
 
 

@@ -84,6 +84,36 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Draft Warehouse Transfers',
+    href: '/inventory?tab=transfers&transfer_status=draft',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Requested Warehouse Transfers',
+    href: '/inventory?tab=transfers&transfer_status=requested',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'In-transit Warehouse Transfers',
+    href: '/inventory?tab=transfers&transfer_status=in_transit',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Received Warehouse Transfers',
+    href: '/inventory?tab=transfers&transfer_status=received',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Cancelled Warehouse Transfers',
+    href: '/inventory?tab=transfers&transfer_status=cancelled',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
     label: 'Variants',
     href: '/inventory?tab=variants',
     modules: ['inventory'],

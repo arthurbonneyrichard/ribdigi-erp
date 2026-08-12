@@ -251,6 +251,36 @@ export default function Page() {
     }
   }
 
+  async function downloadInvoicesExport() {
+    // Stage 132 I1 — sales invoice header CSV
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const qs = invoiceStatusFilter
+        ? `?status=${encodeURIComponent(invoiceStatusFilter)}`
+        : '';
+      const res = await fetch(`${apiBase}/sales/invoices/export${qs}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Invoice export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sales_invoices_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Sales invoices CSV downloaded (Stage 132 I1)');
+    } catch (err: any) {
+      setError(err.message || 'Invoice export failed');
+    }
+  }
+
   function resetCustomerForm() {
     setCustomerName('');
     setCustomerCode('');
@@ -1283,6 +1313,9 @@ export default function Page() {
                 </option>
               ))}
             </select>
+            <button type="button" onClick={downloadInvoicesExport}>
+              Export invoices CSV
+            </button>
             <label className="muted">Print template</label>
             <select value={printTemplate} onChange={(e) => setPrintTemplate(e.target.value)}>
               <option value="">Tenant default</option>

@@ -24,3 +24,5 @@ Stage 131 Tenant MVP Journal Entry CSV, Bank Statement Status & Email-Settings E
 ## Next stage
 
 Stage 132 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 131 feature scope remains frozen.
+
+**Stage 132 opened and closed under ADR-270 / ADR-271** — Tenant MVP Sales Invoice Register CSV, Stock-Transfer List Export & Purchase Invoice Register Fidelity (CONTINUE/NEXT approved).

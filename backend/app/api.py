@@ -64,6 +64,7 @@ from app import session_passkey_doc_export as session_passkey_doc_export_svc
 from app import admin_ops_export as admin_ops_export_svc
 from app import ops_lifecycle_export as ops_lifecycle_export_svc
 from app import finance_ops_export as finance_ops_export_svc
+from app import commerce_docs_export as commerce_docs_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -5586,6 +5587,26 @@ async def list_sales_invoices(
     return env(out)
 
 
+@api.get("/sales/invoices/export")
+async def export_sales_invoices_csv(
+    status: str | None = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 132 I1 — sales invoice header CSV (no line dump)."""
+    text = await commerce_docs_export_svc.export_sales_invoices_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+    )
+    await db.commit()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="sales_invoices_export.csv"'
+        },
+    )
+
+
 @api.post("/sales/invoices")
 async def create_sales_invoice(
     payload: SalesInvoiceCreate,
@@ -7029,6 +7050,26 @@ async def list_purchase_invoices(
     stmt = apply_created_by_scope(stmt, m.PurchaseInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_invoice(db, r) for r in rows])
+
+
+@api.get("/purchasing/invoices/export")
+async def export_purchase_invoices_csv(
+    status: str | None = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 132 P1 — purchase invoice header CSV (no line dump)."""
+    text = await commerce_docs_export_svc.export_purchase_invoices_csv(
+        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+    )
+    await db.commit()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="purchase_invoices_export.csv"'
+        },
+    )
 
 
 @api.post("/purchasing/invoices")
@@ -11404,6 +11445,31 @@ async def list_inventory_stock_transfers(
         limit=limit,
     )
     return env([await stores_svc.serialize_transfer(db, row) for row in rows])
+
+
+@api.get("/inventory/stock-transfers/export")
+async def export_inventory_stock_transfers_csv(
+    status: str | None = None,
+    store_id: str | None = None,
+    scope: str = "all",
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 132 T1 — stock-transfer header CSV (no line dump)."""
+    text = await commerce_docs_export_svc.export_stock_transfers_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status,
+        store_id=store_id,
+        scope=scope,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="stock_transfers_export.csv"'
+        },
+    )
 
 
 @api.post("/inventory/stock-transfers")
