@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { formatDateTime, type RegionalFormats } from '../../lib/format';
@@ -8,9 +9,12 @@ import { formatDateTime, type RegionalFormats } from '../../lib/format';
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [rows, setRows] = useState<any[]>([]);
-  const [module, setModule] = useState('');
-  const [action, setAction] = useState('');
+  const [module, setModule] = useState(() => searchParams.get('module') || '');
+  const [action, setAction] = useState(() => searchParams.get('action') || '');
   const [verify, setVerify] = useState<any>(null);
   const [retention, setRetention] = useState<any>(null);
   const [archives, setArchives] = useState<any[]>([]);
@@ -18,10 +22,22 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  async function refresh() {
+  function syncUrl(next: { module?: string; action?: string }) {
     const params = new URLSearchParams();
-    if (module) params.set('module', module);
-    if (action) params.set('action', action);
+    const nm = next.module !== undefined ? next.module : module;
+    const na = next.action !== undefined ? next.action : action;
+    if (nm.trim()) params.set('module', nm.trim());
+    if (na.trim()) params.set('action', na.trim());
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  async function refresh(overrides?: { module?: string; action?: string }) {
+    const mod = overrides?.module !== undefined ? overrides.module : module;
+    const act = overrides?.action !== undefined ? overrides.action : action;
+    const params = new URLSearchParams();
+    if (mod.trim()) params.set('module', mod.trim());
+    if (act.trim()) params.set('action', act.trim());
     const q = params.toString() ? `?${params}` : '';
     const [logs, policy, archiveList] = await Promise.all([
       api(`/audit-logs${q}`),
@@ -43,8 +59,16 @@ export default function Page() {
         }),
       )
       .catch(() => undefined);
-    refresh().catch((err) => setError(err.message));
   }, []);
+
+  useEffect(() => {
+    const fromModule = searchParams.get('module') || '';
+    const fromAction = searchParams.get('action') || '';
+    setModule(fromModule);
+    setAction(fromAction);
+    refresh({ module: fromModule, action: fromAction }).catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function runVerify() {
     setError('');
@@ -144,9 +168,24 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <input value={module} onChange={(e) => setModule(e.target.value)} placeholder="Module (auth, users…)" />
-        <input value={action} onChange={(e) => setAction(e.target.value)} placeholder="Action" />
-        <button onClick={() => refresh().catch((e) => setError(e.message))}>Filter</button>
+        <input
+          value={module}
+          onChange={(e) => setModule(e.target.value)}
+          placeholder="Module (auth, users…)"
+        />
+        <input
+          value={action}
+          onChange={(e) => setAction(e.target.value)}
+          placeholder="Action"
+        />
+        <button
+          onClick={() => {
+            syncUrl({ module, action });
+            refresh().catch((e) => setError(e.message));
+          }}
+        >
+          Filter
+        </button>
         <button onClick={runVerify}>Verify chain</button>
         <button onClick={exportCsv}>Export CSV</button>
         <button onClick={exportPdf}>Export PDF</button>

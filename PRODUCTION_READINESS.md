@@ -107,3 +107,5 @@ Stage 97 D1 Tenant MVP Module Leaf Honesty Ops — `docs/STAGE_97_FIDELITY.md` (
 Stage 98 D1 Tenant MVP Ops Queue & Returns Honesty Ops — `docs/STAGE_98_FIDELITY.md` (`test_stage98_fidelity_d1.py`); Stage 98 Q1 Complete; Stage 98 R1 Complete; Stage 98 O1 Complete (MVP honesty); exit `docs/STAGE_98_EXIT_CRITERIA.md`, ADR-203.
 
 Stage 99 D1 Tenant MVP Document Pipeline Honesty Ops — `docs/STAGE_99_FIDELITY.md` (`test_stage99_fidelity_d1.py`); Stage 99 T1 Complete; Stage 99 C1 Complete; Stage 99 L1 Complete (MVP honesty); exit `docs/STAGE_99_EXIT_CRITERIA.md`, ADR-205.
+
+Stage 100 D1 Tenant MVP Reports & Ledger Discovery Ops — `docs/STAGE_100_FIDELITY.md` (`test_stage100_fidelity_d1.py`); Stage 100 R1 Complete; Stage 100 G1 Complete; Stage 100 U1 Complete (MVP honesty); exit `docs/STAGE_100_EXIT_CRITERIA.md`, ADR-207.

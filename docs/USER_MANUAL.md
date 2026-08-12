@@ -113,6 +113,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Quotations / Customer Groups:** Shell deep-links; quotation status filter; → Order creates draft — Confirm reserves stock (Stage 99 T1)
 - **Purchase Requests / Open POs / GRN:** Shell + status filters; purchase order notifications open Orders tab (Stage 99 C1)
 - **Variants / Batches / Expiry / Stock Adjustments:** Shell leaves; Catalog Brands/Units anchors (Stage 99 L1)
+- **Profit & Loss / Cash Flow / Balance Sheet:** Shell deep-links to Reports statement tabs (Stage 100 R1)
+- **Chart of Accounts / Journals / Trial Balance:** Accounting ledger anchors; journal status filter (Stage 100 G1)
+- **Users & Audit discovery:** Filter users by search/role/active; Audit module/action URL sync (Stage 100 U1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

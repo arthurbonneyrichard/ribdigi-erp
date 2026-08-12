@@ -1801,3 +1801,15 @@ Every feature in every phase must meet:
 **Stage 99 D1 (2026-08-12):** Document pipeline fidelity sync — `docs/STAGE_99_FIDELITY.md` (`test_stage99_fidelity_d1.py`).
 
 **Stage 99 exit (2026-08-12):** T1, C1, L1, D1, H99x met — `docs/STAGE_99_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_205_STAGE99_FREEZE.md`. Fidelity: `docs/STAGE_99_FIDELITY.md`.
+
+**Stage 100 open (2026-08-12):** Tenant MVP Reports & Ledger Discovery Ops — `docs/ADR_206_STAGE100_OPEN.md` + `docs/STAGE_100_PLAN.md` (Reports statements → GL leaves → Tenant admin discovery → Reports & Ledger Discovery Ops; R1 next).
+
+**Stage 100 R1 (2026-08-12):** Reports financial statement discoverability (`test_stage100_reports_statements_r1.py`).
+
+**Stage 100 G1 (2026-08-12):** Accounting GL leaf discoverability (`test_stage100_gl_leaves_g1.py`).
+
+**Stage 100 U1 (2026-08-12):** Tenant admin discovery honesty (`test_stage100_tenant_admin_u1.py`).
+
+**Stage 100 D1 (2026-08-12):** Reports & ledger discovery fidelity sync — `docs/STAGE_100_FIDELITY.md` (`test_stage100_fidelity_d1.py`).
+
+**Stage 100 exit (2026-08-12):** R1, G1, U1, D1, H100x met — `docs/STAGE_100_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_207_STAGE100_FREEZE.md`. Fidelity: `docs/STAGE_100_FIDELITY.md`.

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -2143,13 +2143,26 @@ async def update_department(
 
 
 @api.get("/users")
-async def users(claims=Depends(require_permission("users", "read")), db: AsyncSession = Depends(get_db)):
+async def users(
+    q: str | None = None,
+    role: str | None = None,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 100 U1 — optional q / role / is_active discovery filters (tenant-scoped)."""
+    filters = [m.User.tenant_id == claims["tenant_id"]]
+    q_filter = (q or "").strip() or None
+    role_filter = (role or "").strip() or None
+    if q_filter:
+        like = f"%{q_filter}%"
+        filters.append(or_(m.User.email.ilike(like), m.User.full_name.ilike(like)))
+    if role_filter:
+        filters.append(m.User.role == role_filter)
+    if is_active is not None:
+        filters.append(m.User.is_active.is_(bool(is_active)))
     rows = (
-        await db.execute(
-            select(m.User)
-            .where(m.User.tenant_id == claims["tenant_id"])
-            .order_by(m.User.full_name.asc())
-        )
+        await db.execute(select(m.User).where(*filters).order_by(m.User.full_name.asc()))
     ).scalars().all()
     return env([serialize_user(u) for u in rows])
 
@@ -8653,10 +8666,19 @@ async def cancel_cheque_api(
 @api.get("/accounting/journal-entries")
 async def list_journals(
     store_id: str | None = None,
+    status: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 100 G1 — optional status filter (posted / unposted / all)."""
     from app import accounting as accounting_svc
+
+    status_filter = (status or "").strip().lower() or None
+    if status_filter and status_filter not in ("posted", "unposted", "all"):
+        raise HTTPException(
+            status_code=400,
+            detail="status must be one of: posted, unposted, all",
+        )
 
     stmt = (
         select(m.JournalEntry)
@@ -8666,6 +8688,8 @@ async def list_journals(
     )
     if store_id:
         stmt = stmt.where(m.JournalEntry.store_id == store_id)
+    if status_filter and status_filter != "all":
+        stmt = stmt.where(m.JournalEntry.status == status_filter)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await accounting_svc.serialize_journal(db, e) for e in rows])
 

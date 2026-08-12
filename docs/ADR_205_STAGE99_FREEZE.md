@@ -23,4 +23,4 @@ Stage 99 Tenant MVP Document Pipeline Honesty Ops delivered Quote-to-Order hones
 
 ## Next stage
 
-Stage 100 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 99 feature scope remains frozen.
+Stage 100 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-206](ADR_206_STAGE100_OPEN.md) + [STAGE_100_PLAN.md](STAGE_100_PLAN.md) (Tenant MVP Reports & Ledger Discovery Ops). Stage 99 feature scope remains frozen.

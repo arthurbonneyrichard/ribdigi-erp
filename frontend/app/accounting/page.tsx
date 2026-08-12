@@ -15,6 +15,7 @@ export default function Page() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
+  const [journalStatusFilter, setJournalStatusFilter] = useState('all');
   const [trial, setTrial] = useState<any>(null);
   const [pnl, setPnl] = useState<any>(null);
   const [statements, setStatements] = useState<any[]>([]);
@@ -86,8 +87,15 @@ export default function Page() {
     const pnlPath = pnlQs.toString()
       ? `/accounting/profit-loss?${pnlQs}`
       : '/accounting/profit-loss';
-    const journalQs = journalStoreId
-      ? `/accounting/journal-entries?store_id=${encodeURIComponent(journalStoreId)}`
+    const journalParams = new URLSearchParams();
+    if (journalStoreId) journalParams.set('store_id', journalStoreId);
+    if (journalStatusFilter && journalStatusFilter !== 'all') {
+      journalParams.set('status', journalStatusFilter);
+    } else if (journalStatusFilter === 'all') {
+      journalParams.set('status', 'all');
+    }
+    const journalQs = journalParams.toString()
+      ? `/accounting/journal-entries?${journalParams}`
       : '/accounting/journal-entries';
     const tbPath = tbAsOf
       ? `/accounting/trial-balance?as_of_date=${encodeURIComponent(tbAsOf)}`
@@ -124,6 +132,30 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  // Stage 100 G1 — honor Shell #coa / #journals / #trial-balance (and prior ledger anchors)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const ledgerAnchors = [
+      'coa',
+      'journals',
+      'trial-balance',
+      'money-transfer',
+      'opening-balances',
+      'profit-loss',
+    ];
+    if (ledgerAnchors.includes(hash) && tab !== 'ledger') {
+      setTab('ledger');
+      return;
+    }
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [tab, setTab]);
 
   async function postManual() {
     setError('');
@@ -735,7 +767,7 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="card" style={{ marginBottom: 16 }}>
+          <div className="card" style={{ marginBottom: 16 }} id="coa">
             <h3>Chart of accounts</h3>
             <p className="muted" style={{ marginBottom: 8 }}>
               Add non-system accounts with optional parent (same type). Opening balances post a
@@ -885,7 +917,7 @@ export default function Page() {
           </div>
 
           <div className="grid" style={{ marginTop: 16 }}>
-            <div className="card">
+            <div className="card" id="trial-balance">
               <h3>Trial balance</h3>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <input
@@ -933,6 +965,7 @@ export default function Page() {
             </div>
           </div>
 
+          <div id="journals">
           <h3 style={{ marginTop: 16 }}>Recent journals</h3>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
             <select
@@ -946,6 +979,15 @@ export default function Page() {
                   {s.code} — {s.name}
                 </option>
               ))}
+            </select>
+            <select
+              value={journalStatusFilter}
+              onChange={(e) => setJournalStatusFilter(e.target.value)}
+              aria-label="Journal status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="posted">Posted</option>
+              <option value="unposted">Unposted</option>
             </select>
             <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
               Apply filter
@@ -1015,6 +1057,7 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
 

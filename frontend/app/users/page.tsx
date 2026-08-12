@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
@@ -38,6 +39,9 @@ const emptyForm = {
 
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [rows, setRows] = useState<UserRow[]>([]);
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -48,11 +52,34 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
   const [importReport, setImportReport] = useState<any>(null);
+  const [q, setQ] = useState(() => searchParams.get('q') || '');
+  const [roleFilter, setRoleFilter] = useState(() => searchParams.get('role') || '');
+  const [activeFilter, setActiveFilter] = useState(() => searchParams.get('is_active') || '');
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-  async function refresh() {
+  function syncUrl(next: { q?: string; role?: string; isActive?: string }) {
+    const params = new URLSearchParams();
+    const nq = next.q !== undefined ? next.q : q;
+    const nr = next.role !== undefined ? next.role : roleFilter;
+    const na = next.isActive !== undefined ? next.isActive : activeFilter;
+    if (nq.trim()) params.set('q', nq.trim());
+    if (nr) params.set('role', nr);
+    if (na) params.set('is_active', na);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  async function refresh(overrides?: { q?: string; role?: string; isActive?: string }) {
+    const qf = overrides?.q !== undefined ? overrides.q : q;
+    const rf = overrides?.role !== undefined ? overrides.role : roleFilter;
+    const af = overrides?.isActive !== undefined ? overrides.isActive : activeFilter;
+    const params = new URLSearchParams();
+    if (qf.trim()) params.set('q', qf.trim());
+    if (rf) params.set('role', rf);
+    if (af === 'true' || af === 'false') params.set('is_active', af);
+    const qs = params.toString();
     const [usersRes, rolesRes, meRes, br, dep] = await Promise.all([
-      api('/users'),
+      api(`/users${qs ? `?${qs}` : ''}`),
       api('/roles'),
       api('/me'),
       api('/branches').catch(() => ({ data: [] })),
@@ -74,8 +101,15 @@ export default function Page() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
-  }, []);
+    const fromQ = searchParams.get('q') || '';
+    const fromRole = searchParams.get('role') || '';
+    const fromActive = searchParams.get('is_active') || '';
+    setQ(fromQ);
+    setRoleFilter(fromRole);
+    setActiveFilter(fromActive);
+    refresh({ q: fromQ, role: fromRole, isActive: fromActive }).catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
 
   async function createUser(e: React.FormEvent) {
@@ -257,6 +291,56 @@ export default function Page() {
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          syncUrl({ q, role: roleFilter, isActive: activeFilter });
+          refresh().catch((err) => setError(err.message));
+        }}
+        style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '16px 0', alignItems: 'center' }}
+      >
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search name or email"
+          style={{ padding: 10, minWidth: 200 }}
+        />
+        <select
+          value={roleFilter}
+          onChange={(e) => {
+            const v = e.target.value;
+            setRoleFilter(v);
+            syncUrl({ role: v });
+            refresh({ role: v }).catch((err) => setError(err.message));
+          }}
+          style={{ padding: 10 }}
+          aria-label="Role filter"
+        >
+          <option value="">All roles</option>
+          {roles.map((r) => (
+            <option key={r.role} value={r.role}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={activeFilter}
+          onChange={(e) => {
+            const v = e.target.value;
+            setActiveFilter(v);
+            syncUrl({ isActive: v });
+            refresh({ isActive: v }).catch((err) => setError(err.message));
+          }}
+          style={{ padding: 10 }}
+          aria-label="Active filter"
+        >
+          <option value="">All statuses</option>
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+        <button type="submit">Apply</button>
+      </form>
 
       {canWrite && (
         <div className="card" style={{ margin: '20px 0', maxWidth: 640 }}>
