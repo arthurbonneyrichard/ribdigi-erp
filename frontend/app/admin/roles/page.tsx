@@ -47,7 +47,7 @@ export default function AdminRolesPage() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
-  // Stage 104 R1 — honor Shell #create / #custom / #system
+  // Stage 104 R1 / Stage 110 A1 — honor Shell #create / #custom / #system
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');

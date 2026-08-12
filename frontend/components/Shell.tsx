@@ -225,6 +225,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Draft GRN',
+    href: '/purchasing?tab=grn&grn_status=draft',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
+    label: 'Posted GRN',
+    href: '/purchasing?tab=grn&grn_status=posted',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
     label: 'Purchase Invoices',
     href: '/purchasing?tab=invoices',
     modules: ['purchasing'],
@@ -237,8 +249,32 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Draft Purchases',
+    href: '/purchasing?tab=invoices&status=draft',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
+    label: 'Overdue Purchases',
+    href: '/purchasing?tab=invoices&status=overdue',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
     label: 'Purchase Returns',
     href: '/purchasing?tab=returns',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
+    label: 'Draft Purchase Returns',
+    href: '/purchasing?tab=returns&return_status=draft',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
+    label: 'Posted Purchase Returns',
+    href: '/purchasing?tab=returns&return_status=posted',
     modules: ['purchasing'],
   },
   {
@@ -279,6 +315,18 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Pending Expenses',
     href: '/expenses?status=pending',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
+    label: 'Approved Expenses',
+    href: '/expenses?status=approved',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
+    label: 'Rejected Expenses',
+    href: '/expenses?status=rejected',
     modules: ['expenses'],
   },
   {
@@ -784,6 +832,12 @@ const userMgmtLinks: NavLink[] = [
   { kind: 'link', label: 'Roles', href: '/admin/roles', modules: ['users'] },
   {
     kind: 'link',
+    label: 'Create Role',
+    href: '/admin/roles#create',
+    modules: ['users'],
+  },
+  {
+    kind: 'link',
     label: 'Custom Roles',
     href: '/admin/roles#custom',
     modules: ['users'],
@@ -808,6 +862,18 @@ const userMgmtLinks: NavLink[] = [
     modules: ['users'],
   },
   { kind: 'link', label: 'Audit', href: '/audit', modules: ['audit'] },
+  {
+    kind: 'link',
+    label: 'Auth Audit',
+    href: '/audit?module=auth',
+    modules: ['audit'],
+  },
+  {
+    kind: 'link',
+    label: 'Sales Audit',
+    href: '/audit?module=sales',
+    modules: ['audit'],
+  },
   { kind: 'link', label: 'Activity', href: '/activity', modules: ['audit'] },
   { kind: 'link', label: 'Backup', href: '/backup#schedule', modules: ['backup'] },
   {

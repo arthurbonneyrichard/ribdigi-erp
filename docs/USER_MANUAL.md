@@ -143,6 +143,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Report period / store / branch / category filters:** Shareable report filters; tax filing & movement dates (Stage 109 R1)
 - **Draft Quotations / Confirmed Orders / Draft Sales Returns:** Sales document status Shell leaves (Stage 109 S1)
 - **Active / Trial / Grace / Suspended Tenants; Bank Reconciliation hash:** Platform status + accounting deep-link (Stage 109 O1)
+- **Draft/Posted GRN & Purchase Returns; Draft/Overdue Purchases:** Purchasing status Shell leaves (Stage 110 P1)
+- **Approved / Rejected Expenses:** Expense decision queue Shell leaves (Stage 110 E1)
+- **Create Role; Auth Audit / Sales Audit:** Admin Roles hash + tenant Audit module leaves (Stage 110 A1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

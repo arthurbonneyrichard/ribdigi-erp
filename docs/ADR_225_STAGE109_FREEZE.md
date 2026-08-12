@@ -23,4 +23,4 @@ Stage 109 Tenant MVP Report Filters, Document Status Leaves & Platform Status Op
 
 ## Next stage
 
-Stage 110 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 109 feature scope remains frozen.
+Stage 110 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-226](ADR_226_STAGE110_OPEN.md) + [STAGE_110_PLAN.md](STAGE_110_PLAN.md) (Tenant MVP Purchasing Status Leaves, Expense Decision Queue & Admin Audit Ops). Stage 109 feature scope remains frozen.

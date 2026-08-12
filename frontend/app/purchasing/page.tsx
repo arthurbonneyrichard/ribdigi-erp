@@ -303,6 +303,7 @@ export default function Page() {
     refresh({ grnStatus: next }).catch((err) => setError(err.message));
   }
 
+  // Stage 110 P1 — Shell Draft/Posted GRN & Purchase Returns + Draft/Overdue invoices honor URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('status')?.trim() || '';

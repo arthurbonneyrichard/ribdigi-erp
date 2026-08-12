@@ -1921,3 +1921,15 @@ Every feature in every phase must meet:
 **Stage 109 D1 (2026-08-12):** Report filters, document status leaves & platform status fidelity sync — `docs/STAGE_109_FIDELITY.md` (`test_stage109_fidelity_d1.py`).
 
 **Stage 109 exit (2026-08-12):** R1, S1, O1, D1, H109x met — `docs/STAGE_109_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_225_STAGE109_FREEZE.md`. Fidelity: `docs/STAGE_109_FIDELITY.md`.
+
+**Stage 110 open (2026-08-12):** Tenant MVP Purchasing Status Leaves, Expense Decision Queue & Admin Audit Ops — `docs/ADR_226_STAGE110_OPEN.md` + `docs/STAGE_110_PLAN.md` (Purchasing status → Expense queue → Admin Create Role & Audit → Purchasing Status Leaves, Expense Decision Queue & Admin Audit Ops; P1 next).
+
+**Stage 110 P1 (2026-08-12):** Purchasing document status Shell leaves (`test_stage110_purchasing_status_p1.py`).
+
+**Stage 110 E1 (2026-08-12):** Expense decision queue Shell leaves (`test_stage110_expense_queue_e1.py`).
+
+**Stage 110 A1 (2026-08-12):** Admin Create Role hash & tenant Audit module leaves (`test_stage110_admin_audit_a1.py`).
+
+**Stage 110 D1 (2026-08-12):** Purchasing status leaves, expense decision queue & admin audit fidelity sync — `docs/STAGE_110_FIDELITY.md` (`test_stage110_fidelity_d1.py`).
+
+**Stage 110 exit (2026-08-12):** P1, E1, A1, D1, H110x met — `docs/STAGE_110_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_227_STAGE110_FREEZE.md`. Fidelity: `docs/STAGE_110_FIDELITY.md`.

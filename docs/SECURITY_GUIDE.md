@@ -666,6 +666,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 109 O1** | Platform status leaves + bank-recon hash (`test_stage109_ops_status_o1.py`) |
 | **Stage 109 D1** | Report filters, document status leaves & platform status — `docs/STAGE_109_FIDELITY.md` (`test_stage109_fidelity_d1.py`) |
 | **Stage 109 H109x** | Exit + freeze — `docs/STAGE_109_EXIT_CRITERIA.md`, ADR-225 (`test_stage109_exit_h109x.py`); Stages 1–109 frozen; Stage 110+ requires CONTINUE/NEXT |
+| **Stage 110 open** | Tenant MVP Purchasing Status Leaves, Expense Decision Queue & Admin Audit Ops — `docs/STAGE_110_PLAN.md`, ADR-226 (`test_stage110_open.py`); Stages 1–109 remain frozen; P1 next historically |
+| **Stage 110 P1** | Purchasing document status Shell leaves (`test_stage110_purchasing_status_p1.py`) |
+| **Stage 110 E1** | Expense decision queue Shell leaves (`test_stage110_expense_queue_e1.py`) |
+| **Stage 110 A1** | Admin Create Role hash & tenant Audit module leaves (`test_stage110_admin_audit_a1.py`) |
+| **Stage 110 D1** | Purchasing status leaves, expense decision queue & admin audit — `docs/STAGE_110_FIDELITY.md` (`test_stage110_fidelity_d1.py`) |
+| **Stage 110 H110x** | Exit + freeze — `docs/STAGE_110_EXIT_CRITERIA.md`, ADR-227 (`test_stage110_exit_h110x.py`); Stages 1–110 frozen; Stage 111+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

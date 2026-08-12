@@ -150,7 +150,8 @@ export default function Page() {
     if (!recCategoryId && cats.data?.length) setRecCategoryId(cats.data[0].id);
   }
 
-  // Stage 106 E1 — shareable status + store_id + department_id filters
+  // Stage 106 E1 / Stage 110 E1 — shareable status + store_id + department_id filters
+  // (Pending/Approved/Rejected Shell leaves honor ?status=)
   function writeExpenseFilters(patch: {
     status?: string;
     storeId?: string;
