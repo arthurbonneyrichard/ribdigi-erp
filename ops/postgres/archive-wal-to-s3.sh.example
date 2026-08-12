@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Stage 26 W1 — archive_command helper: copy a finished WAL segment to S3-compatible storage.
+# Usage (as archive_command): archive-wal-to-s3.sh %p %f
+# Requires: aws CLI (or mc) + credentials for MinIO/AWS.
+# This is an operator template — not executed by CI or the RIBDIGI API.
+
+set -euo pipefail
+
+WAL_PATH="${1:?WAL path (%p) required}"
+WAL_FILE="${2:?WAL filename (%f) required}"
+
+: "${WAL_S3_BUCKET:?Set WAL_S3_BUCKET}"
+WAL_S3_PREFIX="${WAL_S3_PREFIX:-ribdigi/postgres/wal}"
+ENDPOINT_ARGS=()
+if [[ -n "${S3_ENDPOINT:-}" ]]; then
+  ENDPOINT_ARGS+=(--endpoint-url "$S3_ENDPOINT")
+fi
+
+DEST="s3://${WAL_S3_BUCKET}/${WAL_S3_PREFIX}/${WAL_FILE}"
+aws "${ENDPOINT_ARGS[@]}" s3 cp "$WAL_PATH" "$DEST"
+echo "archived ${WAL_FILE} -> ${DEST}"
