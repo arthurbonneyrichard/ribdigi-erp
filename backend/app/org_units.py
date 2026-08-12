@@ -88,9 +88,18 @@ async def get_department(db: AsyncSession, tenant_id: str, department_id: str) -
     return row
 
 
-async def list_branches(db: AsyncSession, tenant_id: str, *, active_only: bool = False) -> list[m.Branch]:
+async def list_branches(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.Branch]:
+    """Stage 122 O1 — is_active for honest inactive-only branch lists."""
     stmt = select(m.Branch).where(m.Branch.tenant_id == tenant_id)
-    if active_only:
+    if is_active is not None:
+        stmt = stmt.where(m.Branch.is_active.is_(bool(is_active)))
+    elif active_only:
         stmt = stmt.where(m.Branch.is_active == True)  # noqa: E712
     return list((await db.execute(stmt.order_by(m.Branch.name))).scalars().all())
 
@@ -101,11 +110,15 @@ async def list_departments(
     *,
     branch_id: str | None = None,
     active_only: bool = False,
+    is_active: bool | None = None,
 ) -> list[m.Department]:
+    """Stage 122 O1 — is_active for honest inactive-only department lists."""
     stmt = select(m.Department).where(m.Department.tenant_id == tenant_id)
     if branch_id:
         stmt = stmt.where(m.Department.branch_id == branch_id)
-    if active_only:
+    if is_active is not None:
+        stmt = stmt.where(m.Department.is_active.is_(bool(is_active)))
+    elif active_only:
         stmt = stmt.where(m.Department.is_active == True)  # noqa: E712
     return list((await db.execute(stmt.order_by(m.Department.name))).scalars().all())
 

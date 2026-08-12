@@ -166,6 +166,28 @@ export default function Page() {
       .toLowerCase();
     return v === 'true' || v === 'false' ? v : '';
   });
+  // Stage 122 M1 — category_active / brand_active / unit_active → GET ?is_active=
+  const [categoryActiveFilter, setCategoryActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('category_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
+  const [brandActiveFilter, setBrandActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('brand_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
+  const [unitActiveFilter, setUnitActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('unit_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
 
   function writeProductListFilters(next: {
     q?: string;
@@ -205,22 +227,51 @@ export default function Page() {
     return true;
   });
 
-  async function refresh(opts?: { productActive?: string }) {
+  async function refresh(opts?: {
+    productActive?: string;
+    categoryActive?: string;
+    brandActive?: string;
+    unitActive?: string;
+  }) {
     const productActive =
       opts?.productActive !== undefined ? opts.productActive : productActiveFilter;
+    const categoryActive =
+      opts?.categoryActive !== undefined ? opts.categoryActive : categoryActiveFilter;
+    const brandActive = opts?.brandActive !== undefined ? opts.brandActive : brandActiveFilter;
+    const unitActive = opts?.unitActive !== undefined ? opts.unitActive : unitActiveFilter;
     const productQs =
       productActive === 'true'
         ? '?is_active=true'
         : productActive === 'false'
           ? '?is_active=false'
           : '';
+    const catQs =
+      categoryActive === 'true'
+        ? 'is_active=true'
+        : categoryActive === 'false'
+          ? 'is_active=false'
+          : '';
+    const brandQs =
+      brandActive === 'true'
+        ? '?is_active=true'
+        : brandActive === 'false'
+          ? '?is_active=false'
+          : '';
+    const unitQs =
+      unitActive === 'true'
+        ? '?is_active=true'
+        : unitActive === 'false'
+          ? '?is_active=false'
+          : '';
+    const catFlat = catQs ? `?${catQs}` : '';
+    const catTree = catQs ? `?tree=true&${catQs}` : '?tree=true';
     const [p, e, c, tree, b, u, w, sc, tr, ls, sup, tax] = await Promise.all([
       api(`/products${productQs}`),
       api('/inventory/batches/expiring?days=60'),
-      api('/catalog/categories'),
-      api('/catalog/categories?tree=true'),
-      api('/catalog/brands'),
-      api('/catalog/units'),
+      api(`/catalog/categories${catFlat}`),
+      api(`/catalog/categories${catTree}`),
+      api(`/catalog/brands${brandQs}`),
+      api(`/catalog/units${unitQs}`),
       api('/warehouses'),
       api('/inventory/stock-counts'),
       api('/inventory/stock-transfers').catch(() => ({ data: [] })),
@@ -246,6 +297,53 @@ export default function Page() {
     if (!toWarehouseId && w.data?.length > 1) setToWarehouseId(w.data[1].id);
     if (!opsWarehouseId && w.data?.length) setOpsWarehouseId(w.data[0].id);
     if (!reorderSupplierId && sup.data?.length) setReorderSupplierId(sup.data[0].id);
+  }
+
+  function writeCatalogMetaFilters(next: {
+    category_active?: string;
+    brand_active?: string;
+    unit_active?: string;
+  }) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'catalog');
+    const cat =
+      next.category_active !== undefined ? next.category_active : categoryActiveFilter;
+    const brand = next.brand_active !== undefined ? next.brand_active : brandActiveFilter;
+    const unit = next.unit_active !== undefined ? next.unit_active : unitActiveFilter;
+    if (cat === 'true' || cat === 'false') url.searchParams.set('category_active', cat);
+    else url.searchParams.delete('category_active');
+    if (brand === 'true' || brand === 'false') url.searchParams.set('brand_active', brand);
+    else url.searchParams.delete('brand_active');
+    if (unit === 'true' || unit === 'false') url.searchParams.set('unit_active', unit);
+    else url.searchParams.delete('unit_active');
+    window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
+  }
+
+  async function downloadCatalogCsv(path: string, filename: string) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}${path}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) throw new Error(`${filename} export failed`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage(`${filename} exported`);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
   }
 
   // Stage 109 R1 / Stage 111 I1 — shareable movements filters (type / dates / warehouse)
@@ -1473,8 +1571,46 @@ export default function Page() {
 
       {tab === 'catalog' && (
         <div style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
+          <p className="muted" style={{ margin: 0 }}>
+            Catalog meta active filters use <code>category_active</code> / <code>brand_active</code>{' '}
+            / <code>unit_active</code> → <code>GET ?is_active=</code> (Stage 122 M1).
+          </p>
           <div className="card" style={{ display: 'grid', gap: 8 }} id="categories">
             <h3>Categories &amp; Sub Categories</h3>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <label className="muted">
+                Active status{' '}
+                <select
+                  value={categoryActiveFilter}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCategoryActiveFilter(v);
+                    writeCatalogMetaFilters({ category_active: v });
+                    refresh({ categoryActive: v }).catch((err) => setError(err.message));
+                  }}
+                  aria-label="Category active filter"
+                >
+                  <option value="">All</option>
+                  <option value="true">Active only</option>
+                  <option value="false">Inactive only</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  // Stage 122 X1 — categories CSV export
+                  const qs =
+                    categoryActiveFilter === 'true'
+                      ? '?is_active=true'
+                      : categoryActiveFilter === 'false'
+                        ? '?is_active=false'
+                        : '';
+                  downloadCatalogCsv(`/catalog/categories/export${qs}`, 'categories_export.csv');
+                }}
+              >
+                Export categories CSV
+              </button>
+            </div>
             <p className="muted">
               Leave parent empty for a top-level Category. Choose a parent to create a Sub Category.
             </p>
@@ -1538,6 +1674,40 @@ export default function Page() {
           </div>
           <div className="card" style={{ display: 'grid', gap: 8 }} id="brands">
             <h3>Brand</h3>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <label className="muted">
+                Active status{' '}
+                <select
+                  value={brandActiveFilter}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setBrandActiveFilter(v);
+                    writeCatalogMetaFilters({ brand_active: v });
+                    refresh({ brandActive: v }).catch((err) => setError(err.message));
+                  }}
+                  aria-label="Brand active filter"
+                >
+                  <option value="">All</option>
+                  <option value="true">Active only</option>
+                  <option value="false">Inactive only</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  // Stage 122 X1 — brands CSV export
+                  const qs =
+                    brandActiveFilter === 'true'
+                      ? '?is_active=true'
+                      : brandActiveFilter === 'false'
+                        ? '?is_active=false'
+                        : '';
+                  downloadCatalogCsv(`/catalog/brands/export${qs}`, 'brands_export.csv');
+                }}
+              >
+                Export brands CSV
+              </button>
+            </div>
             <input value={brandCode} onChange={(e) => setBrandCode(e.target.value)} placeholder="Code" />
             <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Name" />
             <button
@@ -1644,6 +1814,40 @@ export default function Page() {
           </div>
           <div className="card" style={{ display: 'grid', gap: 8 }} id="units">
             <h3>Unit of measure</h3>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <label className="muted">
+                Active status{' '}
+                <select
+                  value={unitActiveFilter}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setUnitActiveFilter(v);
+                    writeCatalogMetaFilters({ unit_active: v });
+                    refresh({ unitActive: v }).catch((err) => setError(err.message));
+                  }}
+                  aria-label="Unit active filter"
+                >
+                  <option value="">All</option>
+                  <option value="true">Active only</option>
+                  <option value="false">Inactive only</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  // Stage 122 X1 — units CSV export
+                  const qs =
+                    unitActiveFilter === 'true'
+                      ? '?is_active=true'
+                      : unitActiveFilter === 'false'
+                        ? '?is_active=false'
+                        : '';
+                  downloadCatalogCsv(`/catalog/units/export${qs}`, 'units_export.csv');
+                }}
+              >
+                Export units CSV
+              </button>
+            </div>
             <p className="muted">Optional base unit + factor (e.g. 1 BOX = 12 PCS).</p>
             <input value={unitCode} onChange={(e) => setUnitCode(e.target.value)} placeholder="Code" />
             <input value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="Name" />

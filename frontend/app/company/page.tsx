@@ -26,6 +26,21 @@ export default function Page() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  // Stage 122 O1 — branch_active / dept_active → GET ?is_active=
+  const [branchActiveFilter, setBranchActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('branch_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
+  const [deptActiveFilter, setDeptActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('dept_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
   const [orgUsers, setOrgUsers] = useState<any[]>([]);
   const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
   const [editingDeptId, setEditingDeptId] = useState<string | null>(null);
@@ -81,15 +96,30 @@ export default function Page() {
     }
   }
 
-  async function refresh() {
+  async function refresh(opts?: { branchActive?: string; deptActive?: string }) {
+    const branchActive =
+      opts?.branchActive !== undefined ? opts.branchActive : branchActiveFilter;
+    const deptActive = opts?.deptActive !== undefined ? opts.deptActive : deptActiveFilter;
+    const branchQs =
+      branchActive === 'true'
+        ? '?is_active=true'
+        : branchActive === 'false'
+          ? '?is_active=false'
+          : '';
+    const deptQs =
+      deptActive === 'true'
+        ? '?is_active=true'
+        : deptActive === 'false'
+          ? '?is_active=false'
+          : '';
     const [r, e, s, me, st, br, dep, users] = await Promise.all([
       api('/tenants/me'),
       api('/settings/email'),
       api('/settings/sms'),
       api('/me'),
       api('/settings/storage').catch(() => ({ data: null })),
-      api('/branches').catch(() => ({ data: [] })),
-      api('/departments').catch(() => ({ data: [] })),
+      api(`/branches${branchQs}`).catch(() => ({ data: [] })),
+      api(`/departments${deptQs}`).catch(() => ({ data: [] })),
       api('/users').catch(() => ({ data: [] })),
     ]);
     setTenant(r.data);
@@ -973,7 +1003,137 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 16 }} id="branches">
         <h3>Branches &amp; departments</h3>
-        <p className="muted">Org units for user assignment and department/branch record scopes. Soft-deactivate keeps history; reactivate anytime.</p>
+        <p className="muted">
+          Org units for user assignment and department/branch record scopes. Soft-deactivate keeps
+          history; reactivate anytime. Filter via <code>branch_active</code> /{' '}
+          <code>dept_active</code> → <code>GET ?is_active=</code> (Stage 122 O1).
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
+          <label className="muted">
+            Branches{' '}
+            <select
+              value={branchActiveFilter}
+              onChange={(e) => {
+                const v = e.target.value;
+                setBranchActiveFilter(v);
+                const url = new URL(window.location.href);
+                if (v === 'true' || v === 'false') url.searchParams.set('branch_active', v);
+                else url.searchParams.delete('branch_active');
+                const qs = url.searchParams.toString();
+                window.history.replaceState(
+                  {},
+                  '',
+                  `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`
+                );
+                refresh({ branchActive: v }).catch((err) => setError(err.message));
+              }}
+              aria-label="Branch active filter"
+            >
+              <option value="">All</option>
+              <option value="true">Active only</option>
+              <option value="false">Inactive only</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={async () => {
+              // Stage 122 X1 — branches CSV export
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const qs =
+                  branchActiveFilter === 'true'
+                    ? '?is_active=true'
+                    : branchActiveFilter === 'false'
+                      ? '?is_active=false'
+                      : '';
+                const res = await fetch(`${apiBase}/branches/export${qs}`, {
+                  headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                  },
+                });
+                if (!res.ok) throw new Error('Branches export failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'branches_export.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                setMessage('Branches CSV exported');
+              } catch (err: any) {
+                setError(err.message || 'Branches export failed');
+              }
+            }}
+          >
+            Export branches CSV
+          </button>
+          <label className="muted">
+            Departments{' '}
+            <select
+              value={deptActiveFilter}
+              onChange={(e) => {
+                const v = e.target.value;
+                setDeptActiveFilter(v);
+                const url = new URL(window.location.href);
+                if (v === 'true' || v === 'false') url.searchParams.set('dept_active', v);
+                else url.searchParams.delete('dept_active');
+                const qs = url.searchParams.toString();
+                window.history.replaceState(
+                  {},
+                  '',
+                  `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`
+                );
+                refresh({ deptActive: v }).catch((err) => setError(err.message));
+              }}
+              aria-label="Department active filter"
+            >
+              <option value="">All</option>
+              <option value="true">Active only</option>
+              <option value="false">Inactive only</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={async () => {
+              // Stage 122 X1 — departments CSV export
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const qs =
+                  deptActiveFilter === 'true'
+                    ? '?is_active=true'
+                    : deptActiveFilter === 'false'
+                      ? '?is_active=false'
+                      : '';
+                const res = await fetch(`${apiBase}/departments/export${qs}`, {
+                  headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                  },
+                });
+                if (!res.ok) throw new Error('Departments export failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'departments_export.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                setMessage('Departments CSV exported');
+              } catch (err: any) {
+                setError(err.message || 'Departments export failed');
+              }
+            }}
+          >
+            Export departments CSV
+          </button>
+        </div>
         <form
           onSubmit={async (e) => {
             e.preventDefault();

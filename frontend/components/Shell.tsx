@@ -144,14 +144,50 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Active Categories',
+    href: '/inventory?tab=catalog&category_active=true#categories',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Categories',
+    href: '/inventory?tab=catalog&category_active=false#categories',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
     label: 'Catalog Brands',
     href: '/inventory?tab=catalog#brands',
     modules: ['inventory'],
   },
   {
     kind: 'link',
+    label: 'Active Brands',
+    href: '/inventory?tab=catalog&brand_active=true#brands',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Brands',
+    href: '/inventory?tab=catalog&brand_active=false#brands',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
     label: 'Catalog Units',
     href: '/inventory?tab=catalog#units',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Active Units',
+    href: '/inventory?tab=catalog&unit_active=true#units',
+    modules: ['inventory'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Units',
+    href: '/inventory?tab=catalog&unit_active=false#units',
     modules: ['inventory'],
   },
   { kind: 'link', label: 'Sales', href: '/sales', modules: ['sales'] },
@@ -1157,8 +1193,32 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Active Branches',
+    href: '/company?branch_active=true#branches',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Branches',
+    href: '/company?branch_active=false#branches',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
     label: 'Departments',
     href: '/company#departments',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Active Departments',
+    href: '/company?dept_active=true#departments',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Departments',
+    href: '/company?dept_active=false#departments',
     modules: ['company'],
   },
   {

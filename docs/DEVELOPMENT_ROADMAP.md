@@ -2065,3 +2065,16 @@ Every feature in every phase must meet:
 **Stage 121 D1 (2026-08-12):** Inactive stores, warehouses & location export fidelity sync — `docs/STAGE_121_FIDELITY.md` (`test_stage121_fidelity_d1.py`).
 
 **Stage 121 exit (2026-08-12):** S1, W1, X1, D1, H121x met — `docs/STAGE_121_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_249_STAGE121_FREEZE.md`. Fidelity: `docs/STAGE_121_FIDELITY.md`.
+
+**Stage 122 open (2026-08-12):** Tenant MVP Inactive Org Units, Catalog Meta & Org/Catalog-Meta CSV Export Fidelity — `docs/ADR_250_STAGE122_OPEN.md` + `docs/STAGE_122_PLAN.md` (Inactive org units → Inactive catalog meta → Org/catalog-meta CSV export → Fidelity; O1 next).
+
+**Stage 122 O1 (2026-08-12):** Inactive org units honesty (`test_stage122_inactive_org_units_o1.py`).
+
+**Stage 122 M1 (2026-08-12):** Inactive catalog meta honesty (`test_stage122_inactive_catalog_meta_m1.py`).
+
+**Stage 122 X1 (2026-08-12):** Org & catalog-meta CSV export (`test_stage122_org_catalog_export_x1.py`).
+
+**Stage 122 D1 (2026-08-12):** Inactive org units, catalog meta & export fidelity sync — `docs/STAGE_122_FIDELITY.md` (`test_stage122_fidelity_d1.py`).
+
+**Stage 122 exit (2026-08-12):** O1, M1, X1, D1, H122x met — `docs/STAGE_122_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_251_STAGE122_FREEZE.md`. Fidelity: `docs/STAGE_122_FIDELITY.md`.
+

@@ -23,4 +23,4 @@ Stage 121 Tenant MVP Inactive Stores & Warehouses & Location CSV Export Fidelity
 
 ## Next stage
 
-Stage 122 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 121 feature scope remains frozen.
+Stage 122 opened via CONTINUE/NEXT after this freeze — see [ADR-250](ADR_250_STAGE122_OPEN.md) / [STAGE_122_PLAN.md](STAGE_122_PLAN.md). Stage 121 feature scope remains frozen.

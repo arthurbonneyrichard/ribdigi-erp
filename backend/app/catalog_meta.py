@@ -197,18 +197,20 @@ async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
     await db.flush()
 
 
-async def list_categories(db: AsyncSession, tenant_id: str) -> list[m.ProductCategory]:
-    return list(
-        (
-            await db.execute(
-                select(m.ProductCategory)
-                .where(m.ProductCategory.tenant_id == tenant_id)
-                .order_by(m.ProductCategory.name)
-            )
-        )
-        .scalars()
-        .all()
-    )
+async def list_categories(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.ProductCategory]:
+    """Stage 122 M1 — is_active / active_only for honest inactive-only category lists."""
+    stmt = select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
+    if is_active is not None:
+        stmt = stmt.where(m.ProductCategory.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.ProductCategory.is_active.is_(True))
+    return list((await db.execute(stmt.order_by(m.ProductCategory.name))).scalars().all())
 
 
 async def _validate_category_tax_rate(
@@ -352,16 +354,20 @@ async def deactivate_category(
     )
 
 
-async def list_brands(db: AsyncSession, tenant_id: str) -> list[m.Brand]:
-    return list(
-        (
-            await db.execute(
-                select(m.Brand).where(m.Brand.tenant_id == tenant_id).order_by(m.Brand.name)
-            )
-        )
-        .scalars()
-        .all()
-    )
+async def list_brands(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.Brand]:
+    """Stage 122 M1 — is_active / active_only for honest inactive-only brand lists."""
+    stmt = select(m.Brand).where(m.Brand.tenant_id == tenant_id)
+    if is_active is not None:
+        stmt = stmt.where(m.Brand.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.Brand.is_active.is_(True))
+    return list((await db.execute(stmt.order_by(m.Brand.name))).scalars().all())
 
 
 async def create_brand(
@@ -444,18 +450,20 @@ async def deactivate_brand(db: AsyncSession, *, tenant_id: str, brand_id: str) -
     return await update_brand(db, tenant_id=tenant_id, brand_id=brand_id, is_active=False)
 
 
-async def list_units(db: AsyncSession, tenant_id: str) -> list[m.UnitOfMeasure]:
-    return list(
-        (
-            await db.execute(
-                select(m.UnitOfMeasure)
-                .where(m.UnitOfMeasure.tenant_id == tenant_id)
-                .order_by(m.UnitOfMeasure.code)
-            )
-        )
-        .scalars()
-        .all()
-    )
+async def list_units(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.UnitOfMeasure]:
+    """Stage 122 M1 — is_active / active_only for honest inactive-only unit lists."""
+    stmt = select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id)
+    if is_active is not None:
+        stmt = stmt.where(m.UnitOfMeasure.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.UnitOfMeasure.is_active.is_(True))
+    return list((await db.execute(stmt.order_by(m.UnitOfMeasure.code))).scalars().all())
 
 
 async def get_unit(db: AsyncSession, tenant_id: str, unit_id: str) -> m.UnitOfMeasure:

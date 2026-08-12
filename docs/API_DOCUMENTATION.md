@@ -1618,3 +1618,5 @@ Stage 119 D1 — `docs/STAGE_119_FIDELITY.md` (`test_stage119_fidelity_d1.py`): 
 Stage 120 D1 — `docs/STAGE_120_FIDELITY.md` (`test_stage120_fidelity_d1.py`): Stage 120 P1 products `is_active`/`active_only`; Stage 120 U1 `GET /users/export`; Stage 120 X1 `GET /expenses/export`.
 
 Stage 121 D1 — `docs/STAGE_121_FIDELITY.md` (`test_stage121_fidelity_d1.py`): Stage 121 S1 stores `is_active`/`active_only`; Stage 121 W1 warehouses `is_active`/`active_only`; Stage 121 X1 `GET /stores/export`, `GET /warehouses/export`, `GET /tax/rates/export`.
+
+Stage 122 D1 — `docs/STAGE_122_FIDELITY.md` (`test_stage122_fidelity_d1.py`): Stage 122 O1 branches/departments `is_active`/`active_only`; Stage 122 M1 catalog categories/brands/units `is_active`/`active_only`; Stage 122 X1 `GET /branches/export`, `/departments/export`, `/catalog/categories/export`, `/catalog/brands/export`, `/catalog/units/export`.

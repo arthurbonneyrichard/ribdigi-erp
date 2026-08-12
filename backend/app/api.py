@@ -54,6 +54,7 @@ from app import print_preview as print_preview_svc
 from app import user_import as user_import_svc
 from app import expense_export as expense_export_svc
 from app import location_export as location_export_svc
+from app import org_catalog_export as org_catalog_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -2024,13 +2025,36 @@ async def delete_custom_role(
 @api.get("/branches")
 async def list_branches(
     active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 122 O1 — active_only / is_active for honest inactive-only branch lists."""
     rows = await org_units_svc.list_branches(
-        db, claims["tenant_id"], active_only=active_only
+        db, claims["tenant_id"], active_only=active_only, is_active=is_active
     )
     return env([org_units_svc.serialize_branch(r) for r in rows])
+
+
+@api.get("/branches/export")
+async def branches_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 122 X1 — branches CSV export."""
+    text = await org_catalog_export_svc.export_branches_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="branches_export.csv"'},
+    )
 
 
 @api.post("/branches")
@@ -2102,13 +2126,42 @@ async def update_branch(
 async def list_departments(
     branch_id: str | None = None,
     active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 122 O1 — active_only / is_active for honest inactive-only department lists."""
     rows = await org_units_svc.list_departments(
-        db, claims["tenant_id"], branch_id=branch_id, active_only=active_only
+        db,
+        claims["tenant_id"],
+        branch_id=branch_id,
+        active_only=active_only,
+        is_active=is_active,
     )
     return env([org_units_svc.serialize_department(r) for r in rows])
+
+
+@api.get("/departments/export")
+async def departments_export(
+    branch_id: str | None = None,
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 122 X1 — departments CSV export."""
+    text = await org_catalog_export_svc.export_departments_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        branch_id=branch_id,
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="departments_export.csv"'},
+    )
 
 
 @api.post("/departments")
@@ -3425,26 +3478,55 @@ async def patch_product(
 @api.get("/catalog/categories")
 async def catalog_categories(
     tree: bool = False,
+    active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 122 M1 — active_only / is_active for honest inactive-only category lists."""
     tid = claims["tenant_id"]
-    cat_key = cache_svc.app_cache.categories_key(tid, tree=tree)
-    cached = await cache_svc.app_cache.get_json(cat_key)
-    if cached is not None:
-        return env(cached)
+    use_cache = not active_only and is_active is None
+    if use_cache:
+        cat_key = cache_svc.app_cache.categories_key(tid, tree=tree)
+        cached = await cache_svc.app_cache.get_json(cat_key)
+        if cached is not None:
+            return env(cached)
 
     await catalog_meta_svc.ensure_default_catalog(db, tid)
-    rows = await catalog_meta_svc.list_categories(db, tid)
+    rows = await catalog_meta_svc.list_categories(
+        db, tid, active_only=active_only, is_active=is_active
+    )
     payload = (
         catalog_meta_svc.build_category_tree(rows)
         if tree
         else [catalog_meta_svc.serialize_category(r) for r in rows]
     )
-    await cache_svc.app_cache.set_json(
-        cat_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
-    )
+    if use_cache:
+        await cache_svc.app_cache.set_json(
+            cat_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
+        )
     return env(payload)
+
+
+@api.get("/catalog/categories/export")
+async def catalog_categories_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 122 X1 — categories CSV export."""
+    text = await org_catalog_export_svc.export_categories_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="categories_export.csv"'},
+    )
 
 
 @api.post("/catalog/categories")
@@ -3509,11 +3591,37 @@ async def catalog_delete_category(
 
 @api.get("/catalog/brands")
 async def catalog_brands(
+    active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await catalog_meta_svc.list_brands(db, claims["tenant_id"])
+    """Stage 122 M1 — active_only / is_active for honest inactive-only brand lists."""
+    rows = await catalog_meta_svc.list_brands(
+        db, claims["tenant_id"], active_only=active_only, is_active=is_active
+    )
     return env([catalog_meta_svc.serialize_brand(r) for r in rows])
+
+
+@api.get("/catalog/brands/export")
+async def catalog_brands_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 122 X1 — brands CSV export."""
+    text = await org_catalog_export_svc.export_brands_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="brands_export.csv"'},
+    )
 
 
 @api.post("/catalog/brands")
@@ -3639,12 +3747,38 @@ async def catalog_brand_logo_delete(
 
 @api.get("/catalog/units")
 async def catalog_units(
+    active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 122 M1 — active_only / is_active for honest inactive-only unit lists."""
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
-    rows = await catalog_meta_svc.list_units(db, claims["tenant_id"])
+    rows = await catalog_meta_svc.list_units(
+        db, claims["tenant_id"], active_only=active_only, is_active=is_active
+    )
     return env([catalog_meta_svc.serialize_unit(r) for r in rows])
+
+
+@api.get("/catalog/units/export")
+async def catalog_units_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 122 X1 — units CSV export."""
+    text = await org_catalog_export_svc.export_units_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="units_export.csv"'},
+    )
 
 
 @api.get("/catalog/units/convert")
