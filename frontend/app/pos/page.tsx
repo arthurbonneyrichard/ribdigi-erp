@@ -69,17 +69,6 @@ type Session = {
   store_address?: string | null;
 };
 
-type RecentSale = {
-  id: string;
-  reference: string;
-  total: number;
-  tax?: number;
-  payment_method?: string;
-  payments?: { payment_method: string; amount: number }[];
-  customer_name?: string | null;
-  created_at?: string;
-};
-
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 async function downloadReceiptPdf(saleId: string, paper: string) {
@@ -262,7 +251,6 @@ export default function Page() {
   const [receiptBusy, setReceiptBusy] = useState('');
   const [shiftReport, setShiftReport] = useState<any>(null);
   const [reportBusy, setReportBusy] = useState(false);
-  const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
 
   const cartTotals = useMemo(() => {
     let subtotal = 0;
@@ -298,20 +286,6 @@ export default function Page() {
     setSession(r.data || null);
   }
 
-  async function loadRecentSales(sessionId?: string | null) {
-    const sid = sessionId || session?.session_id;
-    if (!sid) {
-      setRecentSales([]);
-      return;
-    }
-    try {
-      const r = await api(`/pos/sessions/${sid}/report`);
-      const sales: RecentSale[] = r.data?.sales || [];
-      setRecentSales(sales.slice(0, 12));
-    } catch {
-      /* keep prior list if report fails mid-shift */
-    }
-  }
 
   const browse = useCallback(async (query = '') => {
     const r = await api('/pos/products/search?q=' + encodeURIComponent(query));
@@ -338,14 +312,6 @@ export default function Page() {
       .catch(() => setStores([]));
   }, [browse]);
 
-  useEffect(() => {
-    if (session?.session_id) {
-      loadRecentSales(session.session_id);
-    } else {
-      setRecentSales([]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.session_id]);
 
   function selectCustomer(id: string) {
     setCustomerId(id);
@@ -405,7 +371,6 @@ export default function Page() {
       });
       setSession(null);
       setShiftReport(null);
-      setRecentSales([]);
       setMessage(
         `Shift closed. Variance: ${r.data.variance ?? 0} (expected ${r.data.expected_cash})`
       );
@@ -648,7 +613,6 @@ export default function Page() {
       setSplitTender(false);
       setLastSale({ id: r.data.id, reference: r.data.reference });
       await refreshSession();
-      await loadRecentSales(session.session_id);
       await browse(q);
       setMessage('Sale successful');
     } catch (err: any) {
@@ -1190,70 +1154,6 @@ export default function Page() {
           </aside>
         </div>
 
-        <section className="tpos-recent" aria-label="Recent sales">
-          <div className="tpos-recent-head">
-            <h2>Recent sales</h2>
-            <span>{session ? `${recentSales.length} this shift` : 'Open a shift to see sales'}</span>
-          </div>
-          {!session ? (
-            <p className="muted">Recent POS sales for the open shift will appear here.</p>
-          ) : recentSales.length === 0 ? (
-            <p className="muted">No sales in this shift yet.</p>
-          ) : (
-            <div className="tpos-recent-table-wrap">
-              <table className="tpos-recent-table">
-                <thead>
-                  <tr>
-                    <th>Reference</th>
-                    <th>Time</th>
-                    <th>Customer</th>
-                    <th>Pay</th>
-                    <th>Tax</th>
-                    <th>Total</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentSales.map((s) => {
-                    const pay =
-                      Array.isArray(s.payments) && s.payments.length > 1
-                        ? s.payments.map((p) => p.payment_method).join('+')
-                        : s.payment_method || '—';
-                    const when = s.created_at ? String(s.created_at).slice(11, 19) : '—';
-                    return (
-                      <tr key={s.id}>
-                        <td>{s.reference}</td>
-                        <td>{when}</td>
-                        <td>{s.customer_name || 'Walk-in'}</td>
-                        <td>{pay}</td>
-                        <td>{money(Number(s.tax || 0))}</td>
-                        <td>
-                          <strong>{money(Number(s.total || 0))}</strong>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="tpos-btn"
-                            onClick={async () => {
-                              setError('');
-                              try {
-                                await downloadReceiptPdf(s.id, paper);
-                              } catch (err: any) {
-                                setError(err.message);
-                              }
-                            }}
-                          >
-                            Print
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
 
       </div>
     </Shell>

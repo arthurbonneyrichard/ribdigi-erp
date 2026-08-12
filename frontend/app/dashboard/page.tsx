@@ -70,6 +70,16 @@ const PANEL_ICONS: Record<string, React.ReactNode> = {
       <path d="M12 22.08V12" />
     </>
   ),
+  recent: (
+    <>
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </>
+  ),
 };
 
 function PanelIcon({ name }: { name: string }) {
@@ -243,6 +253,7 @@ export default function Page() {
 
   const daily = d.daily_sales || [];
   const dailyEmpty = daily.every((x) => !x.sales && !x.profit);
+  const recent = d.recent_sales || [];
 
   const finItems = [
     { label: 'Sales', value: sales, color: '#22c55e' },
@@ -486,6 +497,40 @@ export default function Page() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="panel">
+          <h3>
+            <PanelIcon name="recent" />
+            Recent sales
+          </h3>
+          <p className="hint">Your latest sales transactions</p>
+          {recent.length === 0 ? (
+            <div className="empty">No sales yet — new sales will show up here.</div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>Customer</th>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th style={{ textAlign: 'right' }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.map((s) => (
+                  <tr key={s.reference}>
+                    <td>{s.reference}</td>
+                    <td>{s.customer}</td>
+                    <td>{s.type === 'pos_sale' ? 'POS' : 'Sale'}</td>
+                    <td>{fmtDate(s.date)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{num(s.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
       </div>
     </Shell>
