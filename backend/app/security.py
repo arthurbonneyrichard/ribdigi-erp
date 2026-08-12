@@ -78,6 +78,7 @@ async def _claims_from_api_key(
 ) -> dict:
     from app import api_keys as api_keys_svc
     from app import tenants as tenants_svc
+    from app import packages as packages_svc
 
     row = await api_keys_svc.authenticate_api_key(db, raw_key)
     tenant_id = row.tenant_id
@@ -103,6 +104,8 @@ async def _claims_from_api_key(
         "must_enroll_2fa": False,
         "tenant_status": tenant.status,
         "read_only": tenants_svc.is_read_only(tenant),
+        "package_code": getattr(tenant, "package_code", None) or "trial",
+        "enabled_modules": packages_svc.resolve_enabled_modules(tenant),
         "branch_id": None,
         "department_id": None,
         "record_scope": "all",
@@ -187,6 +190,10 @@ async def current_claims(
     data["totp_enabled"] = bool(user.totp_enabled)
     data["tenant_status"] = tenant.status
     data["read_only"] = tenants_svc.is_read_only(tenant)
+    from app import packages as packages_svc
+
+    data["package_code"] = getattr(tenant, "package_code", None) or "trial"
+    data["enabled_modules"] = packages_svc.resolve_enabled_modules(tenant)
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
     from app.rbac import record_scope_from_permissions
@@ -235,6 +242,28 @@ def require_permission(module: str, action: str = "read"):
                     "message": "Trial expired; account is read-only during the grace period. Activate to restore write access.",
                 },
             )
+        # Package feature gate (software-owner controlled modules)
+        if claims.get("role") != "super_admin":
+            from app import packages as packages_svc
+
+            mod = (module or "").strip().lower()
+            enabled = claims.get("enabled_modules")
+            if (
+                enabled is not None
+                and mod
+                and mod not in packages_svc.ALWAYS_ON_MODULES
+                and mod != "platform"
+                and mod not in enabled
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "code": "PACKAGE_FEATURE_DISABLED",
+                        "message": f"Module '{mod}' is not included in this tenant's package",
+                        "module": mod,
+                        "package_code": claims.get("package_code"),
+                    },
+                )
         role = claims.get("role", "")
         overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
         # permissions in claims may be the full map from user; treat wildcard user override specially

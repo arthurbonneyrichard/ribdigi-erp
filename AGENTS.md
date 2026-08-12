@@ -13,6 +13,7 @@
 - **`run_async` uses one event loop per worker process** so sequential Celery tasks do not hit async SQLAlchemy “Future attached to a different loop” errors. Do not switch back to bare `asyncio.run()` per task without disposing the engine.
 - Deep readiness: `GET /api/v1/health/ready` (and `?deep=true`) probes DB + Redis + Celery broker; shallow `/health` stays liveness-only.
 - Admin job triggers: `GET /api/v1/jobs` (company_admin+) and `POST /api/v1/jobs/{name}/run` (**super_admin** only). Pass `X-Tenant-ID` as the JWT `tenant_id` UUID (slug mismatch → cross-tenant 403).
+- **Platform subscriptions:** `GET /packages`, `POST /tenants/{slug}/subscription` (package + months/years), `PATCH /tenants/{slug}/modules`, `GET /tenants/{slug}/usage`. Sidebar hides modules not in `enabled_modules` from `/me`. Run Alembic `20260812_0070` after pull.
 - Rate-limit tests: force `RATE_LIMIT_BACKEND=memory` + `rate_limiter.reset_for_tests()` under TestClient to avoid Redis event-loop flakes.
 - **Metrics / request logs:** `GET /api/v1/metrics` (Prometheus text; `METRICS_ENABLED`); structured JSON via `ribdigi.request` + `X-Request-ID` (`REQUEST_LOG_ENABLED`). Operator scrape/alerts: `ops/prometheus/`, Grafana examples: `ops/grafana/`. See `docs/OPS_MONITORING_MVP.md`.
 - **Kubernetes:** Helm chart `helm/ribdigi/` + flat `k8s/`; probes are `/api/v1/health` (live) and `/api/v1/health/ready` (ready). Operator smoke: `ops/k8s/staging-smoke.sh.example`. Main CI stays deploy-free — see `docs/K8S_DEPLOY_MVP.md`.

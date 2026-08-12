@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import packages as packages_svc
 from app.config import settings
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
@@ -42,6 +43,11 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         days_left = calendar_days_until(tenant.trial_ends_at, now=now)
     elif tenant.status == "grace":
         days_left = calendar_days_until(tenant.grace_ends_at, now=now)
+    usage = packages_svc.usage_snapshot(tenant, now=now)
+    # Prefer subscription remaining when a paid/assigned term exists
+    if usage.get("days_remaining") is not None and tenant.status in {"active", "trial"}:
+        if getattr(tenant, "subscription_ends_at", None) is not None:
+            days_left = usage["days_remaining"]
     return {
         "id": tenant.id,
         "slug": tenant.slug,
@@ -74,8 +80,102 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "has_logo": bool(tenant.logo_url),
         "suspended_at": tenant.suspended_at,
         "suspended_reason": tenant.suspended_reason,
+        "package_code": getattr(tenant, "package_code", None) or "trial",
+        "subscription": usage,
+        "enabled_modules": usage["enabled_modules"],
         "created_at": tenant.created_at,
     }
+
+
+async def assign_subscription(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    package_code: str,
+    term_value: int,
+    term_unit: str = "months",
+    start_at: datetime | None = None,
+    activate: bool = True,
+    enabled_modules: list[str] | None = None,
+) -> m.Tenant:
+    code = (package_code or "").strip().lower()
+    if code not in packages_svc.VALID_PACKAGE_CODES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"package_code must be one of: {', '.join(sorted(packages_svc.VALID_PACKAGE_CODES))}",
+        )
+    unit = (term_unit or "months").strip().lower()
+    if unit not in packages_svc.VALID_TERM_UNITS:
+        raise HTTPException(status_code=422, detail="term_unit must be months or years")
+    value = int(term_value)
+    if value < 1 or value > 120:
+        raise HTTPException(status_code=422, detail="term_value must be between 1 and 120")
+
+    now = datetime.utcnow()
+    starts = start_at or now
+    months = packages_svc.term_to_months(value, unit)
+    ends = packages_svc.add_calendar_months(starts, months)
+
+    tenant.package_code = code
+    tenant.subscription_term_unit = unit
+    tenant.subscription_term_value = value
+    tenant.subscription_starts_at = starts
+    tenant.subscription_ends_at = ends
+    tenant.package_assigned_at = now
+
+    if enabled_modules is not None:
+        await set_enabled_modules(db, tenant, enabled_modules, commit=False)
+    else:
+        # Clear custom override so package defaults apply
+        tenant.enabled_modules = None
+
+    if activate and tenant.status in {"trial", "grace", "suspended", "active"}:
+        if tenant.status == "suspended":
+            tenant.suspended_at = None
+            tenant.suspended_reason = None
+        tenant.status = "active"
+        # Align trial end with subscription when converting from trial
+        tenant.trial_ends_at = ends
+        tenant.grace_ends_at = None
+
+    await db.flush()
+    return tenant
+
+
+async def set_enabled_modules(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    modules: list[str],
+    *,
+    commit: bool = True,
+) -> m.Tenant:
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for raw in modules or []:
+        mod = str(raw).strip().lower()
+        if not mod or mod in seen:
+            continue
+        if mod == "platform":
+            continue
+        if mod not in packages_svc.PACKAGEABLE_MODULES:
+            raise HTTPException(status_code=422, detail=f"Unknown module: {mod}")
+        seen.add(mod)
+        cleaned.append(mod)
+    for m_on in packages_svc.ALWAYS_ON_MODULES:
+        if m_on not in seen:
+            cleaned.append(m_on)
+            seen.add(m_on)
+    tenant.enabled_modules = cleaned
+    await db.flush()
+    if commit:
+        await db.commit()
+    return tenant
+
+
+async def clear_module_override(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
+    tenant.enabled_modules = None
+    await db.flush()
+    return tenant
 
 
 async def get_tenant(db: AsyncSession, tenant_id: str) -> m.Tenant:

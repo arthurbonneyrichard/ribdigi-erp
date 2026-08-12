@@ -235,16 +235,32 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 ```
 
 ### 3.4 Tenant Status Management
-**Endpoint:** `PATCH /tenants/{tenant_id}/status`
+**Suspend:** `POST /tenants/{tenant_ref}/suspend`  
+**Activate:** `POST /tenants/{tenant_ref}/activate`  
+(`tenant_ref` = id or slug; **super_admin** only for cross-tenant)
 
-**Request:**
+**Allowed statuses:** `trial`, `active`, `grace`, `suspended`
+
+### 3.4b Packages, subscription term & feature control (software owner)
+**Catalog:** `GET /packages`  
+**Assign term + package:** `POST /tenants/{tenant_ref}/subscription`
+
 ```json
 {
-  "status": "active"
+  "package_code": "professional",
+  "term_value": 12,
+  "term_unit": "months",
+  "activate": true
 }
 ```
 
-**Allowed statuses:** `trial`, `active`, `suspended`
+`term_unit` is `months` or `years`. Response includes `subscription` usage: months/years assigned, used, remaining, renewal date, and effective `enabled_modules`.
+
+**Feature modules:** `PATCH /tenants/{tenant_ref}/modules`  
+`{ "enabled_modules": ["dashboard","pos",...] }` or `{ "reset_to_package": true }`
+
+**Usage detail:** `GET /tenants/{tenant_ref}/usage`  
+Packages: `trial` | `starter` | `professional` | `enterprise`. Disabled modules return `403 PACKAGE_FEATURE_DISABLED`.
 
 ### 3.5 Company Setup
 **Endpoint:** `POST /tenants/{tenant_id}/setup`

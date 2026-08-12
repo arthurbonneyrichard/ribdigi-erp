@@ -69,6 +69,15 @@ class Tenant(Base):
     onboarding_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     suspended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     suspended_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Software-owner commercial package + term (BR-1 plan / editions)
+    package_code: Mapped[str] = mapped_column(String(40), default="trial", index=True)
+    subscription_term_unit: Mapped[str | None] = mapped_column(String(10), nullable=True)  # months|years
+    subscription_term_value: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    subscription_starts_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    subscription_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    package_assigned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Optional override list of module keys; null → package default
+    enabled_modules: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

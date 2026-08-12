@@ -255,7 +255,8 @@ function canReadModule(permissions: Record<string, string[]> | null | undefined,
 
 function navItemsForRole(
   role: string,
-  permissions: Record<string, string[]> | null
+  permissions: Record<string, string[]> | null,
+  enabledModules: string[] | null
 ): NavItem[] {
   // Software owner: platform console only — inventory/sales/etc. stay off the sidebar.
   if (role === 'super_admin') {
@@ -265,8 +266,13 @@ function navItemsForRole(
   }
 
   const allowed = ROLE_NAV_MODULES[role] ?? ROLE_NAV_MODULES.cashier;
+  const packageSet =
+    enabledModules && enabledModules.length > 0 ? new Set(enabledModules) : null;
   return TENANT_ITEMS.filter(([, , module]) => {
     if (allowed !== '*' && !allowed.includes(module)) return false;
+    if (packageSet && !packageSet.has(module) && !['dashboard', 'notifications', 'security'].includes(module)) {
+      return false;
+    }
     return canReadModule(permissions, module);
   });
 }
@@ -274,6 +280,7 @@ function navItemsForRole(
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
+  const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
   const [role, setRole] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [fullName, setFullName] = useState('');
@@ -327,12 +334,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         if (!active) return;
         setUnread(countRes.data?.count || 0);
         setPermissions(meRes.data?.permissions || {});
+        setEnabledModules(
+          Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : null
+        );
         setRole(meRes.data?.role || '');
         setFullName(meRes.data?.full_name || '');
       } catch {
         if (active) {
           setUnread(0);
           setPermissions({});
+          setEnabledModules(null);
           setRole('');
         }
       }
@@ -345,7 +356,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const visible = useMemo(() => navItemsForRole(role, permissions), [role, permissions]);
+  const visible = useMemo(
+    () => navItemsForRole(role, permissions, enabledModules),
+    [role, permissions, enabledModules]
+  );
   const showAlerts = visible.some(([, href]) => href === '/notifications');
 
   return (

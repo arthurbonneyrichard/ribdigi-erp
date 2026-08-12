@@ -160,10 +160,14 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Track and manage tenant subscription lifecycle.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Support statuses: Trial, Active, Suspended
-  - [ ] Automatic trial expiration notification (7 days, 3 days, 1 day before)
-  - [ ] Grace period handling for suspended tenants (read-only access)
-  - [ ] Upgrade/downgrade plan capability
+  - [x] Support statuses: Trial, Active, Suspended
+    - Complete (MVP): also `grace`; platform list/filter + suspend/activate
+  - [x] Automatic trial expiration notification (7 days, 3 days, 1 day before)
+    - Complete (MVP): Celery `scan_trial_lifecycle` + in-app billing notices
+  - [x] Grace period handling for suspended tenants (read-only access)
+    - Complete (MVP): `status=grace` → `read_only` claims (writes blocked)
+  - [x] Upgrade/downgrade plan capability
+    - Complete (MVP): software owner assigns `package_code` + term (months/years), usage/remaining, and per-tenant `enabled_modules`; see `POST /tenants/{ref}/subscription`, `PATCH /tenants/{ref}/modules`
 
 #### BR-1.4 Data Isolation
 - **Description:** Ensure complete data separation between tenants.
