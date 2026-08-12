@@ -14,7 +14,7 @@ function PageInner() {
   const pathname = usePathname();
   const [rows, setRows] = useState<any[]>([]);
   const [module, setModule] = useState(() => searchParams.get('module') || '');
-  // Stage 110 A1 — Shell Auth/Sales Audit leaves honor ?module=
+  // Stage 110 A1 / Stage 114 O1 — Shell Auth/Sales/Purchasing/Inventory/Accounting/Expenses Audit leaves honor ?module=
   const [action, setAction] = useState(() => searchParams.get('action') || '');
   const [fromDate, setFromDate] = useState(() => searchParams.get('from_date') || '');
   const [toDate, setToDate] = useState(() => searchParams.get('to_date') || '');

@@ -23,4 +23,4 @@ Stage 113 Tenant MVP Notification Read, Cheque Exceptions & Fulfillment Status O
 
 ## Next stage
 
-Stage 114 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 113 feature scope remains frozen.
+Stage 114 opened via CONTINUE/NEXT with a distinct product outline — Tenant MVP Residual Status & Ops Filter Discoverability — see `docs/ADR_234_STAGE114_OPEN.md` + `docs/STAGE_114_PLAN.md`. Stage 113 feature scope remains frozen.

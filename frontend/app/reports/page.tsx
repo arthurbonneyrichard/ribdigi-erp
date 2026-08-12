@@ -87,7 +87,7 @@ const REPORT_TYPES = [
 
 export default function Page() {
   const [tab, setTab] = useTabQuery(REPORT_TABS, 'summary');
-  // Stage 109 R1 / Stage 113 S1 — shareable period / dimension filters (+ transfer status Shell leaves)
+  // Stage 109 R1 / Stage 113 S1 / Stage 114 O1 — shareable period / dimension filters (+ transfer status/scope Shell leaves)
   const [fromDate, setFromDate] = useState(() => {
     if (typeof window === 'undefined') return '';
     return new URLSearchParams(window.location.search).get('from_date')?.trim() || '';

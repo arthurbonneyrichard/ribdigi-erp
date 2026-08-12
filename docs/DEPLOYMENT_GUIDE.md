@@ -1447,3 +1447,4 @@ Stage 110 D1 purchasing status leaves, expense decision queue & admin audit fide
 Stage 111 D1 inventory movement types, posted sales returns & cheque hash fidelity — `docs/STAGE_111_FIDELITY.md` (`test_stage111_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 112 D1 report schedule leaves, stores cash drawer & platform plan fidelity — `docs/STAGE_112_FIDELITY.md` (`test_stage112_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 113 D1 notification read, cheque exceptions & fulfillment status fidelity — `docs/STAGE_113_FIDELITY.md` (`test_stage113_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+Stage 114 D1 residual status & ops filter discoverability fidelity — `docs/STAGE_114_FIDELITY.md` (`test_stage114_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

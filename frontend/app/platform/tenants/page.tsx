@@ -161,7 +161,7 @@ function PlatformTenantsInner() {
       industry: fromIndustry,
       createdThisMonth: fromMonth,
     });
-    // Stage 112 P1 — PlatformShell At-risk leaf includes #at-risk-queue
+    // Stage 112 P1 / Stage 114 O1 — PlatformShell At-risk hash + industry leaves honor URL filters
     if (fromFocus) {
       const el = document.getElementById('at-risk-queue');
       if (el) {

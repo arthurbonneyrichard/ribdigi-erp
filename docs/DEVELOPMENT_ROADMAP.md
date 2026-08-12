@@ -1969,3 +1969,15 @@ Every feature in every phase must meet:
 **Stage 113 D1 (2026-08-12):** Notification read, cheque exceptions & fulfillment status fidelity sync — `docs/STAGE_113_FIDELITY.md` (`test_stage113_fidelity_d1.py`).
 
 **Stage 113 exit (2026-08-12):** N1, C1, S1, D1, H113x met — `docs/STAGE_113_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_233_STAGE113_FREEZE.md`. Fidelity: `docs/STAGE_113_FIDELITY.md`.
+
+**Stage 114 open (2026-08-12):** Tenant MVP Residual Status & Ops Filter Discoverability — `docs/ADR_234_STAGE114_OPEN.md` + `docs/STAGE_114_PLAN.md` (Sales residual → Purchasing residual → Ops filters → Residual Status & Ops Filter Discoverability; Q1 next).
+
+**Stage 114 Q1 (2026-08-12):** Residual sales quote/order/invoice Shell leaves (`test_stage114_sales_residual_q1.py`).
+
+**Stage 114 P1 (2026-08-12):** Residual PR/PO + Paid Purchases Shell leaves (`test_stage114_purchasing_residual_p1.py`).
+
+**Stage 114 O1 (2026-08-12):** Transfer scope + industry + role + Audit module leaves (`test_stage114_ops_filters_o1.py`).
+
+**Stage 114 D1 (2026-08-12):** Residual status & ops filter discoverability fidelity sync — `docs/STAGE_114_FIDELITY.md` (`test_stage114_fidelity_d1.py`).
+
+**Stage 114 exit (2026-08-12):** Q1, P1, O1, D1, H114x met — `docs/STAGE_114_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_235_STAGE114_FREEZE.md`. Fidelity: `docs/STAGE_114_FIDELITY.md`.
