@@ -189,9 +189,41 @@ export default function Page() {
             <button disabled={busy} onClick={createBackup}>
               {busy ? 'Working…' : 'Create backup now'}
             </button>
+            <button
+              type="button"
+              onClick={async () => {
+                // Stage 140 B1 — backup schedule settings CSV
+                setError('');
+                try {
+                  const token = localStorage.getItem('token');
+                  const res = await fetch(`${base}/backup/settings/export`, {
+                    headers: {
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                  });
+                  if (!res.ok) throw new Error('Backup settings export failed');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'backup_settings_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  setMessage('Backup settings CSV exported (Stage 140 B1)');
+                } catch (err: any) {
+                  setError(err.message || 'Backup settings export failed');
+                }
+              }}
+            >
+              Export backup settings CSV
+            </button>
           </div>
         )}
         {settings?.last_run_at && <p className="muted">Last run: {String(settings.last_run_at)}</p>}
+        <p className="muted" style={{ marginTop: 8 }}>
+          Schedule CSV via <code>GET /backup/settings/export</code> (Stage 140 B1) — distinct from job
+          history <code>/backup/export</code>.
+        </p>
       </div>
 
       <div id="restore">

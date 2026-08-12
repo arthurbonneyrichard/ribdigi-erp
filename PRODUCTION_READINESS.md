@@ -169,3 +169,5 @@ Stage 137 D1 Tenant MVP Stock Movements CSV, Low-Stock Alert CSV & Expiring Batc
 Stage 138 D1 Tenant MVP Early-Pay Settings CSV, Expense Approval Settings CSV & Purchasing Approval Settings CSV Export Fidelity — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`); Stage 138 C1 Complete; Stage 138 E1 Complete; Stage 138 P1 Complete (MVP honesty); exit `docs/STAGE_138_EXIT_CRITERIA.md`, ADR-283.
 
 Stage 139 D1 Tenant MVP Expense Budgets CSV, Account Transactions CSV & Fiscal Period CSV Export Fidelity — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); Stage 139 B1 Complete; Stage 139 A1 Complete; Stage 139 F1 Complete (MVP honesty); exit `docs/STAGE_139_EXIT_CRITERIA.md`, ADR-285.
+
+Stage 140 D1 Tenant MVP Storage Settings CSV, Notification Preferences CSV & Backup Settings CSV Export Fidelity — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`); Stage 140 S1 Complete; Stage 140 N1 Complete; Stage 140 B1 Complete (MVP honesty); exit `docs/STAGE_140_EXIT_CRITERIA.md`, ADR-287.

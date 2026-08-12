@@ -1492,3 +1492,5 @@ Stage 137 D1 stock movements, low-stock alert & expiring batches export fidelity
 Stage 138 D1 early-pay settings, expense approval settings & purchasing approval settings export fidelity — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 139 D1 expense budgets, account transactions & fiscal period export fidelity — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 140 D1 storage settings, notification preferences & backup settings export fidelity — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

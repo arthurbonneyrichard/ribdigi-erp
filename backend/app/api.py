@@ -70,6 +70,7 @@ from app import purchasing_pipeline_export as purchasing_pipeline_export_svc
 from app import credit_ops_export as credit_ops_export_svc
 from app import inventory_ops_export as inventory_ops_export_svc
 from app import approval_settings_export as approval_settings_export_svc
+from app import ops_settings_export as ops_settings_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -872,6 +873,21 @@ async def settings_storage_get(
     claims=Depends(require_roles("company_admin", "super_admin")),
 ):
     return env(storage_svc.storage_status())
+
+
+@api.get("/settings/storage/export")
+async def settings_storage_export(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+):
+    """Stage 140 S1 — storage backend status CSV (S3 access/secret keys never included)."""
+    text = ops_settings_export_svc.export_storage_settings_csv()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="storage_settings_export.csv"'
+        },
+    )
 
 
 @api.post("/settings/sms/test")
@@ -12086,6 +12102,24 @@ async def notification_settings(
     return env(prefs)
 
 
+@api.get("/notifications/settings/export")
+async def export_notification_settings(
+    claims=Depends(require_permission("notifications", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 140 N1 — notification channel preferences CSV for the calling user."""
+    text = await ops_settings_export_svc.export_notification_preferences_csv(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="notification_preferences_export.csv"'
+        },
+    )
+
+
 @api.patch("/notifications/settings")
 async def update_notification_settings(
     payload: NotificationPreferencesUpdate,
@@ -12687,6 +12721,25 @@ async def backup_settings_get(
     row = await backup_svc.get_or_create_settings(db, claims["tenant_id"])
     await db.commit()
     return env(backup_svc.serialize_settings(row))
+
+
+@api.get("/backup/settings/export")
+async def backup_settings_export(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 140 B1 — backup schedule settings CSV (no archive bytes / credentials)."""
+    text = await ops_settings_export_svc.export_backup_settings_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    await db.commit()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="backup_settings_export.csv"'
+        },
+    )
 
 
 @api.patch("/backup/settings")

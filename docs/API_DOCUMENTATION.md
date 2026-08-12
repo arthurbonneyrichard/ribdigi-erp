@@ -1660,3 +1660,5 @@ Stage 137 D1 — `docs/STAGE_137_FIDELITY.md` (`test_stage137_fidelity_d1.py`): 
 Stage 138 D1 — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`): Stage 138 C1 `GET /credit/settings/export`; Stage 138 E1 `GET /expenses/settings/export`; Stage 138 P1 `GET /purchasing/settings/export`.
 
 Stage 139 D1 — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`): Stage 139 B1 `GET /expenses/budgets/export`; Stage 139 A1 `GET /accounting/accounts/{id}/transactions/export`; Stage 139 F1 `GET /accounting/fiscal-period/export`.
+
+Stage 140 D1 — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`): Stage 140 S1 `GET /settings/storage/export` (S3 keys never included); Stage 140 N1 `GET /notifications/settings/export`; Stage 140 B1 `GET /backup/settings/export`.

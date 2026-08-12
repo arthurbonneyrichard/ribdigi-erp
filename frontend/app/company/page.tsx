@@ -884,8 +884,38 @@ export default function Page() {
                 : ` · Dir ${storageStatus.media_dir || '—'}`}
             </p>
             <p className="muted">
-              Set STORAGE_BACKEND=s3 with S3_* / MinIO env vars for object storage. Keys stay tenant-scoped.
+              Set STORAGE_BACKEND=s3 with S3_* / MinIO env vars for object storage. Keys stay
+              tenant-scoped. Secret-free export via <code>/settings/storage/export</code> (Stage 140
+              S1).
             </p>
+            <button
+              type="button"
+              onClick={async () => {
+                // Stage 140 S1 — storage settings CSV (no S3 keys)
+                setError('');
+                try {
+                  const token = localStorage.getItem('token') || '';
+                  const res = await fetch(`${apiBase}/settings/storage/export`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!res.ok) {
+                    setError(await res.text());
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'storage_settings_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('Storage settings CSV downloaded (Stage 140 S1; secrets excluded)');
+                } catch (err: any) {
+                  setError(err.message || 'Storage settings export failed');
+                }
+              }}
+            >
+              Export storage settings CSV
+            </button>
           </>
         ) : (
           <p className="muted">Loading storage status…</p>

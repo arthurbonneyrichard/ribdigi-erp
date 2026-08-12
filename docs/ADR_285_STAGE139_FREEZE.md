@@ -24,3 +24,5 @@ Stage 139 Tenant MVP Expense Budgets CSV, Account Transactions CSV & Fiscal Peri
 ## Next stage
 
 Stage 140 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 139 feature scope remains frozen.
+
+**Stage 140 opened and closed under ADR-286 / ADR-287** — Tenant MVP Storage Settings CSV, Notification Preferences CSV & Backup Settings CSV Export Fidelity (CONTINUE/NEXT approved).

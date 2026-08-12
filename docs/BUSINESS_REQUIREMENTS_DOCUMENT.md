@@ -866,6 +866,7 @@ Stage 136 D1 — `docs/STAGE_136_FIDELITY.md` (`test_stage136_fidelity_d1.py`); 
 Stage 137 D1 — `docs/STAGE_137_FIDELITY.md` (`test_stage137_fidelity_d1.py`); Stage 137 M1 / L1 / E1.
 Stage 138 D1 — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`); Stage 138 C1 / E1 / P1.
 Stage 139 D1 — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); Stage 139 B1 / A1 / F1.
+Stage 140 D1 — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`); Stage 140 S1 / N1 / B1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1557,3 +1558,5 @@ Stage 137 D1 stock movements, low-stock alert & expiring batches export fidelity
 Stage 138 D1 early-pay settings, expense approval settings & purchasing approval settings export fidelity — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`); Stage 138 C1 early-pay settings CSV; Stage 138 E1 expense approval settings CSV; Stage 138 P1 purchasing approval settings CSV.
 
 Stage 139 D1 expense budgets, account transactions & fiscal period export fidelity — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); Stage 139 B1 budgets CSV; Stage 139 A1 account transactions CSV; Stage 139 F1 fiscal period CSV.
+
+Stage 140 D1 storage settings, notification preferences & backup settings export fidelity — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`); Stage 140 S1 storage settings CSV (secret-free); Stage 140 N1 notification preferences CSV; Stage 140 B1 backup settings CSV.

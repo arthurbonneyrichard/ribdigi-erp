@@ -231,6 +231,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Expense Budgets CSV:** Expenses Export budgets CSV (Stage 139 B1)
 - **Account Ledger CSV:** Accounting Export account ledger CSV (Stage 139 A1)
 - **Fiscal Period CSV:** Company Export fiscal period CSV (Stage 139 F1)
+- **Storage Settings CSV:** Company Export storage settings CSV — secrets excluded (Stage 140 S1)
+- **Notification Preferences CSV:** Notifications Export preferences CSV (Stage 140 N1)
+- **Backup Settings CSV:** Backup Export backup settings CSV (Stage 140 B1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

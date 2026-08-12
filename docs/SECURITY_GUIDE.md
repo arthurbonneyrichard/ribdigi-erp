@@ -846,6 +846,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 139 F1** | Fiscal period CSV (`test_stage139_fiscal_period_f1.py`) |
 | **Stage 139 D1** | Budgets / account-tx / fiscal export — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`) |
 | **Stage 139 H139x** | Exit + freeze — `docs/STAGE_139_EXIT_CRITERIA.md`, ADR-285 (`test_stage139_exit_h139x.py`); Stages 1–139 frozen; Stage 140+ requires CONTINUE/NEXT |
+| **Stage 140 open** | Tenant MVP Storage Settings CSV, Notification Preferences CSV & Backup Settings CSV Export Fidelity — `docs/STAGE_140_PLAN.md`, ADR-286 (`test_stage140_open.py`); Stages 1–139 remain frozen; S1 next historically |
+| **Stage 140 S1** | Storage settings CSV (`test_stage140_storage_settings_s1.py`) |
+| **Stage 140 N1** | Notification preferences CSV (`test_stage140_notification_prefs_n1.py`) |
+| **Stage 140 B1** | Backup settings CSV (`test_stage140_backup_settings_b1.py`) |
+| **Stage 140 D1** | Storage / preferences / backup settings export — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`) |
+| **Stage 140 H140x** | Exit + freeze — `docs/STAGE_140_EXIT_CRITERIA.md`, ADR-287 (`test_stage140_exit_h140x.py`); Stages 1–140 frozen; Stage 141+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

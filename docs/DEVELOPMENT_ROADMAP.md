@@ -2282,6 +2282,18 @@ Every feature in every phase must meet:
 
 **Stage 139 exit (2026-08-12):** B1, A1, F1, D1, H139x met — `docs/STAGE_139_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_285_STAGE139_FREEZE.md`. Fidelity: `docs/STAGE_139_FIDELITY.md`.
 
+**Stage 140 open (2026-08-12):** Tenant MVP Storage Settings CSV, Notification Preferences CSV & Backup Settings CSV Export Fidelity — `docs/ADR_286_STAGE140_OPEN.md` + `docs/STAGE_140_PLAN.md` (Storage → Preferences → Backup → Fidelity; S1 next).
+
+**Stage 140 S1 (2026-08-12):** Storage settings CSV (`test_stage140_storage_settings_s1.py`).
+
+**Stage 140 N1 (2026-08-12):** Notification preferences CSV (`test_stage140_notification_prefs_n1.py`).
+
+**Stage 140 B1 (2026-08-12):** Backup settings CSV (`test_stage140_backup_settings_b1.py`).
+
+**Stage 140 D1 (2026-08-12):** Storage / notification preferences / backup settings export fidelity sync — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`).
+
+**Stage 140 exit (2026-08-12):** S1, N1, B1, D1, H140x met — `docs/STAGE_140_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_287_STAGE140_FREEZE.md`. Fidelity: `docs/STAGE_140_FIDELITY.md`.
+
 
 
 

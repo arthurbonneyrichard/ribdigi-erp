@@ -321,9 +321,44 @@ function PageInner() {
               ))}
             </tbody>
           </table>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={async () => {
+                // Stage 140 N1 — notification preferences CSV
+                setError('');
+                try {
+                  const token = localStorage.getItem('token');
+                  const tenant = localStorage.getItem('tenant');
+                  const apiBase =
+                    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+                  const res = await fetch(`${apiBase}/notifications/settings/export`, {
+                    headers: {
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                    },
+                  });
+                  if (!res.ok) throw new Error('Notification preferences export failed');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'notification_preferences_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  setMessage('Notification preferences CSV exported (Stage 140 N1)');
+                } catch (err: any) {
+                  setError(err.message || 'Notification preferences export failed');
+                }
+              }}
+            >
+              Export preferences CSV
+            </button>
+          </div>
           <p className="muted">
             Email uses SMTP (or console in dev). SMS uses Twilio when configured, otherwise console
-            fallback. Set your phone on Company settings for SMS tests.
+            fallback. Set your phone on Company settings for SMS tests. Preferences CSV via{' '}
+            <code>GET /notifications/settings/export</code> (Stage 140 N1).
           </p>
         </div>
       )}
