@@ -383,7 +383,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Set reorder level (trigger point for purchase)
   - [ ] Visual indicators on product list (green/yellow/red status)
   - [ ] Automated low-stock notifications to Inventory Officer and Store Manager
-  - [ ] Generate purchase suggestions based on reorder levels
+  - [x] Generate purchase suggestions based on reorder levels
 
 ---
 

@@ -23,6 +23,7 @@ from app.rbac import (
 )
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
+from app import purchase_suggestions as purchase_suggestions_svc
 from app import sales as sales_svc
 from app import sales_docs as sales_docs_svc
 from app import catalog as catalog_svc
@@ -84,6 +85,7 @@ from app.schemas import (
     PurchaseRequestCreate,
     PurchaseRequestConvert,
     PurchaseRequestReject,
+    LowStockSuggestionsCreate,
     UnitOfMeasureCreate,
     UnitOfMeasureUpdate,
     PurchaseInvoiceCreate,
@@ -3369,6 +3371,45 @@ async def list_purchase_requests(
     stmt = apply_created_by_scope(stmt, m.PurchaseRequest, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchase_requests_svc.serialize_request(db, r) for r in rows])
+
+
+@api.get("/purchasing/suggestions/low-stock")
+async def list_low_stock_suggestions(
+    store_id: str | None = None,
+    warehouse_id: str | None = None,
+    include_open: bool = False,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await purchase_suggestions_svc.list_low_stock_suggestions(
+            db,
+            claims["tenant_id"],
+            store_id=store_id,
+            warehouse_id=warehouse_id,
+            include_open=include_open,
+        )
+    )
+
+
+@api.post("/purchasing/requests/from-low-stock")
+async def create_purchase_requests_from_low_stock(
+    payload: LowStockSuggestionsCreate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await purchase_suggestions_svc.create_requests_from_low_stock(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        lines=[ln.model_dump() for ln in payload.lines],
+        notes=payload.notes,
+        department=payload.department,
+        include_open=payload.include_open,
+    )
+    await db.commit()
+    n = result["created_count"]
+    return env(result, f"Created {n} draft purchase request(s) from low-stock suggestions")
 
 
 @api.post("/purchasing/requests")

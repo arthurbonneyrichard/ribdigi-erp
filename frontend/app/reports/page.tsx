@@ -67,6 +67,8 @@ export default function Page() {
     recipients: '',
     enabled: true,
   });
+  const [suggestSelected, setSuggestSelected] = useState<Record<string, boolean>>({});
+  const [suggestBusy, setSuggestBusy] = useState(false);
 
   function qs(extra: Record<string, string> = {}) {
     const params = new URLSearchParams();
@@ -104,11 +106,18 @@ export default function Page() {
         ]);
         setData({ products: r.data, daily: daily.data, monthly: monthly.data });
       } else if (nextTab === 'inventory') {
-        const [balance, movements] = await Promise.all([
+        const [balance, movements, suggestions] = await Promise.all([
           api('/reports/inventory/balance'),
           api('/reports/inventory/movements'),
+          api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
         ]);
-        setData({ lowStock: r.data, balance: balance.data, movements: movements.data });
+        setData({
+          lowStock: r.data,
+          balance: balance.data,
+          movements: movements.data,
+          suggestions: suggestions.data,
+        });
+        setSuggestSelected({});
       } else if (nextTab === 'purchases') {
         const suppliers = await api(`/reports/purchases/suppliers${qs()}`);
         setData({ summary: r.data, suppliers: suppliers.data });
@@ -129,6 +138,49 @@ export default function Page() {
   function switchTab(t: Tab) {
     setTab(t);
     load(t);
+  }
+
+  function suggestionKey(line: any) {
+    return `${line.product_id}:${line.warehouse_id || 'product'}`;
+  }
+
+  async function createDraftPrsFromSuggestions() {
+    const lines = (data?.suggestions?.lines || []).filter(
+      (ln: any) => suggestSelected[suggestionKey(ln)]
+    );
+    if (!lines.length) {
+      setError('Select at least one low-stock line');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setSuggestBusy(true);
+    try {
+      const r = await api('/purchasing/requests/from-low-stock', {
+        method: 'POST',
+        body: JSON.stringify({
+          lines: lines.map((ln: any) => ({
+            product_id: ln.product_id,
+            quantity: ln.suggested_order_qty,
+            warehouse_id: ln.warehouse_id || null,
+            preferred_supplier_id: ln.preferred_supplier_id || null,
+          })),
+          notes: 'Created from low-stock suggestions',
+        }),
+      });
+      const created = r.data?.created || [];
+      const nums = created.map((p: any) => p.request_number).join(', ');
+      setMessage(
+        created.length
+          ? `Created draft PR(s): ${nums}. Open Purchasing → Requests to submit.`
+          : r.message || 'Done'
+      );
+      await load('inventory');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSuggestBusy(false);
+    }
   }
 
   async function download(format: 'csv' | 'pdf' | 'xlsx', reportType?: string) {
@@ -451,14 +503,86 @@ export default function Page() {
       {tab === 'inventory' && data && (
         <>
           <div className="card">
-            <h3>Low stock ({data.lowStock?.count ?? 0})</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>
+                Low-stock suggestions ({data.suggestions?.count ?? data.lowStock?.count ?? 0})
+              </h3>
+              <button
+                type="button"
+                onClick={createDraftPrsFromSuggestions}
+                disabled={suggestBusy || !(data.suggestions?.lines || []).length}
+              >
+                {suggestBusy ? 'Creating…' : 'Create draft PR'}
+              </button>
+            </div>
+            <p className="muted" style={{ marginTop: 8 }}>
+              Select lines to raise draft purchase requests. Submit/approve remains in Purchasing.
+            </p>
+            {(data.suggestions?.lines || []).length === 0 ? (
+              <p className="muted">No actionable low-stock lines (or all already on an open PR).</p>
+            ) : (
+              <table className="table" style={{ marginTop: 8 }}>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>SKU</th>
+                    <th>Name</th>
+                    <th>On hand</th>
+                    <th>Reorder</th>
+                    <th>Suggest qty</th>
+                    <th>Warehouse</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.suggestions?.lines || []).map((ln: any) => {
+                    const key = suggestionKey(ln);
+                    return (
+                      <tr key={key}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={!!suggestSelected[key]}
+                            onChange={(e) =>
+                              setSuggestSelected((prev) => ({ ...prev, [key]: e.target.checked }))
+                            }
+                          />
+                        </td>
+                        <td>{ln.sku}</td>
+                        <td>{ln.name}</td>
+                        <td>{ln.stock_qty}</td>
+                        <td>{ln.reorder_level}</td>
+                        <td>{ln.suggested_order_qty}</td>
+                        <td>{ln.warehouse_name || '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div className="card" style={{ marginTop: 16 }}>
+            <h3>Low stock products ({data.lowStock?.count ?? 0})</h3>
             <ul>
               {(data.lowStock?.products || []).map((p: any) => (
                 <li key={p.id}>
                   {p.name}: {p.stock_qty} / reorder {p.reorder_level}
+                  {p.suggested_order_qty ? ` · suggest ${p.suggested_order_qty}` : ''}
                 </li>
               ))}
             </ul>
+            {(data.lowStock?.warehouse_low_stock || []).length > 0 && (
+              <>
+                <h4 style={{ marginTop: 12 }}>Warehouse reorder breaches</h4>
+                <ul>
+                  {(data.lowStock.warehouse_low_stock || []).map((w: any) => (
+                    <li key={`${w.warehouse_id}-${w.product_id}`}>
+                      {w.name} @ {w.warehouse_name}: {w.quantity} / {w.reorder_level} · suggest{' '}
+                      {w.suggested_order_qty}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
           <h3 style={{ marginTop: 16 }}>Stock value: {data.balance?.total_value ?? 0}</h3>
           <table className="table">

@@ -593,6 +593,11 @@ async def inventory_low_stock(
             "name": p.name,
             "stock_qty": float(p.stock_qty or 0),
             "reorder_level": float(p.reorder_level or 0),
+            "suggested_order_qty": max(
+                1.0, round(float(p.reorder_level or 0) - float(p.stock_qty or 0), 3)
+            )
+            if float(p.stock_qty or 0) <= float(p.reorder_level or 0)
+            else 0.0,
             "scope": "product",
         }
         for p in products

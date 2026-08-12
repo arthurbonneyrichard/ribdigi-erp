@@ -442,6 +442,21 @@ class PurchaseRequestConvert(BaseModel):
     supplier_id: str | None = None
 
 
+class LowStockSuggestionLine(BaseModel):
+    product_id: str
+    quantity: float | None = Field(default=None, gt=0)
+    warehouse_id: str | None = None
+    preferred_supplier_id: str | None = None
+    notes: str | None = None
+
+
+class LowStockSuggestionsCreate(BaseModel):
+    lines: list[LowStockSuggestionLine] = Field(min_length=1)
+    notes: str | None = None
+    department: str | None = None
+    include_open: bool = False
+
+
 class GrnItemCreate(BaseModel):
     po_item_id: str
     received_qty: float = Field(gt=0)
