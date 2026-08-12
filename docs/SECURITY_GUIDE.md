@@ -582,6 +582,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 95 C1** | Chrome & settings alias — profile/logout, mobile nav collapse (`test_stage95_chrome_c1.py`); packaging honesty only — not go-live Complete |
 | **Stage 95 D1** | Tenant MVP Navigation Ops fidelity — `docs/STAGE_95_FIDELITY.md` (`test_stage95_fidelity_d1.py`); maps N1–C1 → readiness / launch / deploy / security |
 | **Stage 95 H95x** | Exit + freeze — `docs/STAGE_95_EXIT_CRITERIA.md`, ADR-197 (`test_stage95_exit_h95x.py`); Stages 1–95 frozen for Stage 95 scope; Stage 96+ requires CONTINUE/NEXT |
+| **Stage 96 open** | Tenant MVP Outline Surface Fidelity Ops — `docs/STAGE_96_PLAN.md`, ADR-198 (`test_stage96_open.py`); Stages 1–95 remain frozen for prior scopes; B1 next historically |
+| **Stage 96 B1** | Dashboard Business Overview — Profit Summary, AP Payables, notification deep-links (`test_stage96_dashboard_overview_b1.py`) |
+| **Stage 96 G1** | Global topbar search — `GET /search` RBAC-gated products + customers (`test_stage96_global_search_g1.py`); no fabricated hits |
+| **Stage 96 L1** | Finance / Sales / Settings leaf fidelity — Money Transfer, Income, Billers alias, Delivery status (`test_stage96_leaf_fidelity_l1.py`) |
+| **Stage 96 D1** | Outline surface fidelity — `docs/STAGE_96_FIDELITY.md` (`test_stage96_fidelity_d1.py`); maps B1–L1 → readiness / launch / deploy / security |
+| **Stage 96 H96x** | Exit + freeze — `docs/STAGE_96_EXIT_CRITERIA.md`, ADR-199 (`test_stage96_exit_h96x.py`); Stages 1–96 frozen for Stage 96 scope; Stage 97+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

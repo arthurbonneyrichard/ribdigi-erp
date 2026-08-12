@@ -1753,3 +1753,15 @@ Every feature in every phase must meet:
 **Stage 95 D1 (2026-08-12):** Tenant MVP Navigation Ops fidelity sync — `docs/STAGE_95_FIDELITY.md` (`test_stage95_fidelity_d1.py`); maps N1–C1 → readiness / launch / deploy / security.
 
 **Stage 95 exit (2026-08-12):** N1, P1, C1, D1, H95x met — `docs/STAGE_95_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_197_STAGE95_FREEZE.md`. Fidelity: `docs/STAGE_95_FIDELITY.md`.
+
+**Stage 96 open (2026-08-12):** Tenant MVP Outline Surface Fidelity Ops track approved — `docs/ADR_198_STAGE96_OPEN.md` + `docs/STAGE_96_PLAN.md` (Dashboard Business Overview Fidelity → Global Topbar Search → Finance / Sales / Settings Leaf Fidelity → Tenant MVP Outline Surface Fidelity Ops; B1 next).
+
+**Stage 96 B1 (2026-08-12):** Dashboard Business Overview — Profit Summary, AP Payables, notification deep-links (`test_stage96_dashboard_overview_b1.py`).
+
+**Stage 96 G1 (2026-08-12):** Global topbar search — `GET /search` products + customers (`test_stage96_global_search_g1.py`).
+
+**Stage 96 L1 (2026-08-12):** Finance / Sales / Settings leaf fidelity — Money Transfer, Income, Billers alias, Delivery status, document templates (`test_stage96_leaf_fidelity_l1.py`).
+
+**Stage 96 D1 (2026-08-12):** Outline surface fidelity sync — `docs/STAGE_96_FIDELITY.md` (`test_stage96_fidelity_d1.py`); maps B1–L1 → readiness / launch / deploy / security.
+
+**Stage 96 exit (2026-08-12):** B1, G1, L1, D1, H96x met — `docs/STAGE_96_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_199_STAGE96_FREEZE.md`. Fidelity: `docs/STAGE_96_FIDELITY.md`.

@@ -15,6 +15,7 @@ export default function Page() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [quotations, setQuotations] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [orderStatusFilter, setOrderStatusFilter] = useState('');
   const [returns, setReturns] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerGroups, setCustomerGroups] = useState<any[]>([]);
@@ -877,6 +878,23 @@ export default function Page() {
       )}
 
       {tab === 'orders' && (
+        <>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+          <strong>Delivery status</strong>
+          <select
+            value={orderStatusFilter}
+            onChange={(e) => setOrderStatusFilter(e.target.value)}
+            aria-label="Filter orders by delivery status"
+          >
+            <option value="">All statuses</option>
+            {['draft', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <span className="muted">Filter sales orders by logistics status</span>
+        </div>
         <table className="table">
           <thead>
             <tr>
@@ -890,7 +908,9 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
+            {orders
+              .filter((o) => !orderStatusFilter || o.status === orderStatusFilter)
+              .map((o) => (
               <tr key={o.id}>
                 <td>{o.order_number}</td>
                 <td>{o.status}</td>
@@ -935,6 +955,7 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+        </>
       )}
 
       {tab === 'invoices' && (

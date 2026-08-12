@@ -14,6 +14,10 @@ type Dash = {
   expenses_by_category?: { category: string; total: number }[];
   credit_outstanding?: number;
   ar_total_due?: number;
+  ap_total_due?: number;
+  ap_outstanding?: number;
+  profit_summary?: number;
+  income_mtd?: number;
   products?: number;
   low_stock?: number;
   out_of_stock?: number;
@@ -70,7 +74,20 @@ type Note = {
   message: string;
   status: string;
   created_at?: string;
+  entity_type?: string | null;
+  entity_id?: string | null;
 };
+
+function notificationHref(note: Note): string | null {
+  const t = (note.entity_type || '').toLowerCase();
+  if (t === 'product' || t === 'warehouse_stock') return '/inventory?tab=products';
+  if (t === 'sales_invoice') return '/sales?tab=invoices';
+  if (t === 'sales_quotation') return '/sales?tab=quotations';
+  if (t === 'purchase_invoice' || t === 'purchase_order') return '/purchasing?tab=invoices';
+  if (t === 'recurring_expense' || t === 'expense') return '/expenses';
+  if (t.includes('stock') || t.includes('batch')) return '/inventory?tab=lowstock';
+  return null;
+}
 
 type KpiCard = {
   key: string;
@@ -137,13 +154,32 @@ export default function Page() {
 
   const allCards: KpiCard[] = [
     { key: 'total_sales', label: 'Total Sales', value: d.total_sales ?? 0, href: links.total_sales },
+    { key: 'daily_revenue', label: "Today's Sales", value: d.daily_revenue ?? 0, href: links.daily_revenue },
     { key: 'total_purchases', label: 'Purchases', value: d.total_purchases ?? 0, href: links.total_purchases },
     { key: 'total_expenses', label: 'Expenses', value: d.total_expenses ?? 0, href: links.total_expenses },
     {
+      key: 'income_mtd',
+      label: 'Income (MTD)',
+      value: d.income_mtd ?? 0,
+      href: links.income_mtd,
+    },
+    {
+      key: 'profit_summary',
+      label: 'Profit Summary (MTD)',
+      value: d.profit_summary ?? 0,
+      href: links.profit_summary,
+    },
+    {
       key: 'credit_outstanding',
-      label: 'AR Outstanding',
+      label: 'Receivables (AR)',
       value: d.credit_outstanding ?? d.ar_total_due ?? 0,
       href: links.credit_outstanding || links.ar_total_due,
+    },
+    {
+      key: 'ap_total_due',
+      label: 'Payables (AP)',
+      value: d.ap_total_due ?? d.ap_outstanding ?? 0,
+      href: links.ap_total_due || links.ap_outstanding,
     },
     { key: 'customers', label: 'Customers', value: d.customers ?? 0, href: links.customers },
     { key: 'suppliers', label: 'Suppliers', value: d.suppliers ?? 0, href: links.suppliers },
@@ -156,7 +192,6 @@ export default function Page() {
       value: d.expiring_batches ?? 0,
       href: links.expiring_batches,
     },
-    { key: 'daily_revenue', label: "Today's Sales", value: d.daily_revenue ?? 0, href: links.daily_revenue },
     {
       key: 'yesterday_revenue',
       label: 'Yesterday Revenue',
@@ -211,12 +246,18 @@ export default function Page() {
       ? 'POS-focused KPIs for your shift — company accounting is hidden'
       : view === 'store_manager'
         ? 'Store operations KPIs from your tenant data'
-        : `Live KPIs for ${d.role_label || 'Tenant Admin'} — click a card to open the related module`;
+        : `Business Overview for ${d.role_label || 'Tenant Admin'} — click a card to open the related module`;
 
   return (
     <Shell>
       <h1>{title}</h1>
       <p className="muted">{subtitle}</p>
+      {view !== 'cashier' && (
+        <p className="muted" style={{ marginTop: -4 }}>
+          Business Overview · Today&apos;s Sales · Purchases · Expenses · Income · Profit · Receivables ·
+          Payables · Stock alerts
+        </p>
+      )}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       <div className="grid">
         {cards.map((card) => {
@@ -334,13 +375,22 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {notes.map((note) => (
-                <tr key={note.id}>
-                  <td>{note.group || note.category}</td>
-                  <td>{note.title}</td>
-                  <td>{note.message}</td>
-                </tr>
-              ))}
+              {notes.map((note) => {
+                const href = notificationHref(note);
+                return (
+                  <tr key={note.id}>
+                    <td>{note.group || note.category}</td>
+                    <td>
+                      {href ? (
+                        <Link href={href}>{note.title}</Link>
+                      ) : (
+                        note.title
+                      )}
+                    </td>
+                    <td>{note.message}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

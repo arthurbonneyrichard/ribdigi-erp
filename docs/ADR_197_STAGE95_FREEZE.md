@@ -27,4 +27,4 @@ Stage 95 Tenant MVP Navigation Ops delivered Shell IA regrouping (N1), party & s
 
 ## Next stage
 
-Stage 96 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 95 feature scope remains frozen.
+Stage 96 opened via CONTINUE/NEXT with a distinct product outline — see [ADR-198](ADR_198_STAGE96_OPEN.md) + [STAGE_96_PLAN.md](STAGE_96_PLAN.md) (Dashboard Business Overview Fidelity → Global Topbar Search → Finance / Sales / Settings Leaf Fidelity → Tenant MVP Outline Surface Fidelity Ops). Stage 95 feature scope remains frozen.

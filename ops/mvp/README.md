@@ -253,6 +253,9 @@ Authoritative MVP docs:
 - `docs/STAGE_93_EXIT_CRITERIA.md` / `docs/ADR_193_STAGE93_FREEZE.md` (`backend/tests/test_stage93_exit_h93x.py`) — Stage 93 H93x
 - `docs/STAGE_94_EXIT_CRITERIA.md` / `docs/ADR_195_STAGE94_FREEZE.md` (`backend/tests/test_stage94_exit_h94x.py`) — Stage 94 H94x
 - `docs/STAGE_95_EXIT_CRITERIA.md` / `docs/ADR_197_STAGE95_FREEZE.md` (`backend/tests/test_stage95_exit_h95x.py`) — Stage 95 H95x
+- `docs/STAGE_96_EXIT_CRITERIA.md` / `docs/ADR_199_STAGE96_FREEZE.md` (`backend/tests/test_stage96_exit_h96x.py`) — Stage 96 H96x
+- `docs/STAGE_96_FIDELITY.md` (`backend/tests/test_stage96_fidelity_d1.py`) — Stage 96 D1
+- `docs/STAGE_96_PLAN.md` (`backend/tests/test_stage96_open.py`) — Stage 96 open (ADR-198)
 - `docs/STAGE_95_FIDELITY.md` (`backend/tests/test_stage95_fidelity_d1.py`) — Stage 95 D1
 - `docs/STAGE_95_PLAN.md` (`backend/tests/test_stage95_open.py`) — Stage 95 open (ADR-196)
 - `docs/STAGE_94_FIDELITY.md` (`backend/tests/test_stage94_fidelity_d1.py`) — Stage 94 D1
@@ -1078,6 +1081,30 @@ H63x met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132. Stages 1–63 frozen for
 
 
 
+
+## Stage 96 exit
+
+H96x met — `docs/STAGE_96_EXIT_CRITERIA.md`, ADR-199. Stages 1–96 frozen for Stage 96 feature scope.
+
+## Stage 96 D1 — Tenant MVP Outline Surface Fidelity Ops
+
+`docs/STAGE_96_FIDELITY.md` — maps B1–L1 → readiness / launch / deploy / security.
+
+## Stage 96 L1 — Finance / Sales / Settings leaf fidelity
+
+`test_stage96_leaf_fidelity_l1.py` — Money Transfer, Income, Billers alias, Delivery status, document templates.
+
+## Stage 96 G1 — Global topbar search
+
+`test_stage96_global_search_g1.py` — `GET /search` products + customers.
+
+## Stage 96 B1 — Dashboard Business Overview fidelity
+
+`test_stage96_dashboard_overview_b1.py` — Profit Summary, AP Payables, notification deep-links.
+
+## Stage 96 open
+
+ADR-198 + `docs/STAGE_96_PLAN.md` — Tenant MVP Outline Surface Fidelity Ops.
 
 ## Stage 95 exit
 

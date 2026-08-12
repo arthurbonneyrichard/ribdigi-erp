@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useTabQuery } from '../../lib/tabQuery';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type Tab = 'ledger' | 'reconcile' | 'cheques';
+const ACCOUNTING_TABS: Tab[] = ['ledger', 'reconcile', 'cheques'];
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('ledger');
+  const [tab, setTab] = useTabQuery(ACCOUNTING_TABS, 'ledger');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
@@ -600,11 +602,11 @@ export default function Page() {
 
       {tab === 'ledger' && (
         <>
-          <div className="card" style={{ marginBottom: 16 }}>
+          <div className="card" style={{ marginBottom: 16 }} id="money-transfer">
             <h3>Cash &amp; bank accounts</h3>
             <p className="muted" style={{ marginBottom: 8 }}>
-              Create petty cash / bank accounts; deposit (cash→bank), withdrawal (bank→cash), or
-              transfer between liquid accounts.
+              Money Transfer — create petty cash / bank accounts; deposit (cash→bank), withdrawal
+              (bank→cash), or transfer between liquid accounts.
             </p>
             <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
               <select
@@ -898,8 +900,8 @@ export default function Page() {
                 {trial?.total_debit} / Cr {trial?.total_credit}
               </p>
             </div>
-            <div className="card">
-              <h3>Profit &amp; Loss</h3>
+            <div className="card" id="profit-loss">
+              <h3>Profit &amp; Loss / Income</h3>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <input type="date" value={pnlFrom} onChange={(e) => setPnlFrom(e.target.value)} />
                 <input type="date" value={pnlTo} onChange={(e) => setPnlTo(e.target.value)} />

@@ -2751,6 +2751,16 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     expenses_by_category = await dashboard_slices_svc.expenses_by_category(db, tid)
     ar_aging = await credit_svc.ar_aging(db, tid)
     ar_total_due = float(ar_aging.get("total_due") or 0)
+    # Stage 96 B1 — AP Payables + MTD Profit Summary (real aggregates; no fabricated KPIs)
+    ap_aging = await credit_svc.ap_aging(db, tid)
+    ap_total_due = float(ap_aging.get("total_due") or 0)
+    from app import accounting as accounting_svc
+
+    pnl_mtd = await accounting_svc.profit_and_loss(
+        db, tid, from_date=month_start, to_date=now
+    )
+    profit_summary = float(pnl_mtd.get("net_profit") or 0)
+    income_mtd = float(pnl_mtd.get("income") or 0)
 
     payload = {
         "total_sales": float(sales) + float(
@@ -2766,6 +2776,10 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         "expenses_by_category": expenses_by_category,
         "credit_outstanding": ar_total_due,
         "ar_total_due": ar_total_due,
+        "ap_total_due": ap_total_due,
+        "ap_outstanding": ap_total_due,
+        "profit_summary": profit_summary,
+        "income_mtd": income_mtd,
         "products": products,
         "low_stock": low,
         "out_of_stock": out_of_stock,
@@ -2792,13 +2806,17 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         },
         "role_label": ROLE_LABELS.get(role, role),
         "store_scope": dashboard_scope_svc.store_scope_payload(managed_ids),
-        # BR-4.1 click-through targets (Stage 1 F17 / Stage 21 V1)
+        # BR-4.1 click-through targets (Stage 1 F17 / Stage 21 V1 / Stage 96 B1)
         "kpi_links": {
             "total_sales": "/sales?tab=invoices",
             "total_purchases": "/purchasing?tab=invoices",
             "total_expenses": "/expenses",
             "credit_outstanding": "/credit",
             "ar_total_due": "/credit",
+            "ap_total_due": "/credit",
+            "ap_outstanding": "/credit",
+            "profit_summary": "/accounting?tab=ledger#profit-loss",
+            "income_mtd": "/accounting?tab=ledger#profit-loss",
             "customers": "/sales?tab=customers",
             "suppliers": "/purchasing?tab=suppliers",
             "products": "/inventory?tab=products",
@@ -2903,6 +2921,69 @@ async def dashboard_user_stats(
     from app import dashboard_slices as slices_svc
 
     return env(await slices_svc.user_stats_slice(db, claims))
+
+
+@api.get("/search")
+async def global_search(
+    q: str = "",
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 96 G1 — RBAC-gated topbar search (products + customers). No fabricated hits."""
+    from app.rbac import has_permission
+
+    query = (q or "").strip()
+    role = claims.get("role") or ""
+    overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    results: list[dict] = []
+    if not query:
+        return env({"q": query, "results": results, "total": 0})
+
+    if has_permission(role, "inventory", "read", overrides=overrides):
+        products = await product_lookup_svc.lookup_products(
+            db, tenant_id=claims["tenant_id"], q=query, limit=12
+        )
+        for p in products[:8]:
+            results.append(
+                {
+                    "kind": "product",
+                    "id": p.get("id") or p.get("product_id"),
+                    "label": p.get("name") or p.get("sku") or "Product",
+                    "meta": p.get("sku") or p.get("barcode") or "",
+                    "href": "/inventory?tab=products",
+                }
+            )
+
+    if has_permission(role, "sales", "read", overrides=overrides) or has_permission(
+        role, "customers", "read", overrides=overrides
+    ):
+        like = f"%{query}%"
+        rows = (
+            await db.execute(
+                select(m.Party)
+                .where(
+                    m.Party.tenant_id == claims["tenant_id"],
+                    m.Party.kind == "customer",
+                    (m.Party.name.ilike(like))
+                    | (m.Party.email.ilike(like))
+                    | (m.Party.phone.ilike(like)),
+                )
+                .order_by(m.Party.name.asc())
+                .limit(8)
+            )
+        ).scalars().all()
+        for row in rows:
+            results.append(
+                {
+                    "kind": "customer",
+                    "id": row.id,
+                    "label": row.name,
+                    "meta": row.email or row.phone or "",
+                    "href": "/sales?tab=customers",
+                }
+            )
+
+    return env({"q": query, "results": results, "total": len(results)})
 
 
 @api.get("/products")

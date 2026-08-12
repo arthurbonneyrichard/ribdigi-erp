@@ -44,18 +44,55 @@ const primaryNavSpec: NavEntry[] = [
     href: '/purchasing?tab=suppliers',
     modules: ['purchasing', 'suppliers'],
   },
+  // Stage 96 L1 — Billers alias (Users + salesperson report; not a parallel CRUD engine)
+  {
+    kind: 'link',
+    label: 'Billers',
+    href: '/reports?tab=salesperson',
+    modules: ['reports', 'users'],
+  },
   { kind: 'section', label: 'Finance' },
   { kind: 'link', label: 'Expenses', href: '/expenses', modules: ['expenses'] },
+  {
+    kind: 'link',
+    label: 'Income',
+    href: '/accounting?tab=ledger#profit-loss',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Money Transfer',
+    href: '/accounting?tab=ledger#money-transfer',
+    modules: ['accounting'],
+  },
   { kind: 'link', label: 'Accounting', href: '/accounting', modules: ['accounting'] },
   { kind: 'link', label: 'Credit', href: '/credit', modules: ['credit'] },
   { kind: 'link', label: 'Tax', href: '/tax', modules: ['tax'] },
   { kind: 'section', label: 'Operations' },
   { kind: 'link', label: 'Stores', href: '/stores', modules: ['stores'] },
   { kind: 'link', label: 'Warehouse', href: '/stores#warehouses', modules: ['stores'] },
+  {
+    kind: 'link',
+    label: 'Delivery status',
+    href: '/sales?tab=orders',
+    modules: ['sales'],
+  },
   { kind: 'link', label: 'Reports', href: '/reports', modules: ['reports'] },
   { kind: 'link', label: 'Notifications', href: '/notifications', modules: ['notifications'] },
   { kind: 'link', label: 'AI Assistant', href: '/ai', modules: ['ai'] },
   { kind: 'link', label: 'Settings', href: '/company', modules: ['company'] },
+  {
+    kind: 'link',
+    label: 'Document templates',
+    href: '/company#document-templates',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Notification settings',
+    href: '/notifications#preferences',
+    modules: ['notifications'],
+  },
 ];
 
 const userMgmtLinks: NavLink[] = [
@@ -104,6 +141,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  const [searchBusy, setSearchBusy] = useState(false);
+  const [searchResults, setSearchResults] = useState<
+    { kind: string; id?: string; label: string; meta?: string; href: string }[]
+  >([]);
+  const [searchOpen, setSearchOpen] = useState(false);
   const canManageOnboarding = role === 'company_admin' || role === 'super_admin';
 
   useEffect(() => {
@@ -267,6 +310,27 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     window.location.href = '/';
   }
 
+  async function runSearch(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    const q = searchQ.trim();
+    if (!q) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      return;
+    }
+    setSearchBusy(true);
+    try {
+      const r = await api(`/search?q=${encodeURIComponent(q)}`);
+      setSearchResults(r.data?.results || []);
+      setSearchOpen(true);
+    } catch {
+      setSearchResults([]);
+      setSearchOpen(true);
+    } finally {
+      setSearchBusy(false);
+    }
+  }
+
   const linkVisible = (link: NavLink) =>
     principal === 'platform'
       ? link.href === '/security' || link.href.startsWith('/security')
@@ -359,6 +423,50 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           >
             Menu
           </button>
+          {principal !== 'platform' && (
+            <form className="global-search" onSubmit={runSearch} role="search">
+              <input
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                onFocus={() => {
+                  if (searchResults.length) setSearchOpen(true);
+                }}
+                placeholder="Search products or customers"
+                aria-label="Global search"
+              />
+              <button type="submit" disabled={searchBusy}>
+                {searchBusy ? '…' : 'Search'}
+              </button>
+              {searchOpen && (
+                <div className="global-search-results" role="listbox">
+                  {searchResults.length === 0 ? (
+                    <p className="muted" style={{ margin: 0, padding: 8 }}>
+                      No matches
+                    </p>
+                  ) : (
+                    searchResults.map((hit) => (
+                      <Link
+                        key={`${hit.kind}-${hit.id || hit.label}`}
+                        href={hit.href}
+                        role="option"
+                        onClick={() => {
+                          setSearchOpen(false);
+                          setSearchQ('');
+                        }}
+                      >
+                        <strong>{hit.label}</strong>
+                        <span className="muted">
+                          {' '}
+                          · {hit.kind}
+                          {hit.meta ? ` · ${hit.meta}` : ''}
+                        </span>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              )}
+            </form>
+          )}
           {showStoreSwitcher && (
             <label className="store-switcher">
               <span className="muted">Store</span>

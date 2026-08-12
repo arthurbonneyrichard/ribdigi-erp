@@ -201,8 +201,8 @@ export default function Page() {
       </table>
 
       {prefs && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h3>Channel preferences</h3>
+        <div className="card" style={{ marginTop: 16 }} id="preferences">
+          <h3>Notification settings / channel preferences</h3>
           <table className="table">
             <thead>
               <tr>

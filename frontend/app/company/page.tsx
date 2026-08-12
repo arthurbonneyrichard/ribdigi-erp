@@ -477,11 +477,11 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 16, maxWidth: 720 }}>
-        <h2>Print templates</h2>
+      <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="document-templates">
+        <h2>Document templates</h2>
         <p className="muted">
-          Default layouts for invoices and POS receipts, plus optional header/footer text on printed
-          documents.
+          Print templates — default layouts for invoices and POS receipts, plus optional
+          header/footer text on printed documents (MVP Navigation: Document Templates).
         </p>
         <label className="muted" style={{ display: 'block', marginTop: 8 }}>
           Invoice print template

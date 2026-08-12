@@ -37,8 +37,11 @@ SECTION_FIELDS: dict[str, tuple[str, ...]] = {
     ),
     "purchasing": ("total_purchases",),
     "expenses": ("total_expenses", "expenses_by_category"),
+    # Stage 96 B1 — Profit Summary (MTD) when accounting:read
+    "accounting": ("profit_summary", "income_mtd"),
     "inventory": ("products", "low_stock", "out_of_stock", "expiring_batches"),
-    "credit": ("credit_outstanding", "ar_total_due"),
+    # Stage 96 B1 — AP Payables alongside AR
+    "credit": ("credit_outstanding", "ar_total_due", "ap_total_due", "ap_outstanding"),
     "customers": ("customers",),
     "suppliers": ("suppliers",),
     "users": ("user_stats",),

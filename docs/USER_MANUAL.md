@@ -103,9 +103,10 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
+- **Global Search:** Products and customers (`GET /search`) — RBAC-gated; navigates to Inventory / Sales deep-links (Stage 96 G1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
-- **Profile Menu:** Security / 2FA and log out (global product search remains a later roadmap item — not claimed Complete here)
+- **Profile Menu:** Security / 2FA and log out
 
 #### Common UI Patterns
 | Element | Action |
