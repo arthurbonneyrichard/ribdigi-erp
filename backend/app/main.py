@@ -34,6 +34,7 @@ cors_kwargs = {
         "Authorization",
         "Content-Type",
         "X-Tenant-ID",
+        "X-API-Key",
         "Accept",
         "Origin",
     ],

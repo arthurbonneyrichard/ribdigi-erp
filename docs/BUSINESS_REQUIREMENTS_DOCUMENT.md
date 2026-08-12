@@ -869,10 +869,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Secure API access.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] OAuth2 / JWT token generation
-  - [ ] Token refresh endpoint
-  - [ ] API key support for service integrations
-  - [ ] Rate limiting per tenant
+  - [x] OAuth2 / JWT token generation
+  - [x] Token refresh endpoint
+  - [x] API key support for service integrations
+  - [x] Rate limiting per tenant
 
 #### BR-18.2 Products API
 - **Description:** Product data access and management.
