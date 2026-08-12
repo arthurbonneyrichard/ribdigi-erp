@@ -912,13 +912,13 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Consistent API design.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] RESTful design with standard HTTP methods
-  - [ ] JSON request/response format
-  - [ ] Standard error response structure
-  - [ ] Pagination for list endpoints
-  - [ ] Versioning (/api/v1/)
-  - [ ] OpenAPI/Swagger documentation auto-generated
-  - [ ] Webhook support for event subscriptions
+  - [x] RESTful design with standard HTTP methods
+  - [x] JSON request/response format
+  - [x] Standard error response structure
+  - [x] Pagination for list endpoints
+  - [x] Versioning (/api/v1/)
+  - [x] OpenAPI/Swagger documentation auto-generated
+  - [x] Webhook support for event subscriptions
 
 ---
 

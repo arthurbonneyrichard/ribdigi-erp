@@ -171,6 +171,16 @@ async def job_archive_cold_audit_logs() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_retry_due_webhooks() -> dict:
+    """Re-attempt pending_retry webhook deliveries that are due (BR-18.6)."""
+    from app import webhooks as webhooks_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await webhooks_svc.process_due_retries(db, tenant_id=tenant_id)
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
@@ -181,6 +191,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "refresh_fx_rates": job_refresh_fx_rates,
     "sync_bank_feeds": job_sync_bank_feeds,
     "archive_cold_audit_logs": job_archive_cold_audit_logs,
+    "retry_due_webhooks": job_retry_due_webhooks,
 }
 
 

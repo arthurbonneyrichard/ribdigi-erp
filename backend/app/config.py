@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     AUDIT_RETENTION_YEARS: int = 7
     AUDIT_COLD_ARCHIVE_AFTER_DAYS: int = 365
     CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES: int = 1440
+    # BR-18.6 — webhook delivery retries (exponential backoff from base)
+    WEBHOOK_MAX_ATTEMPTS: int = 5
+    WEBHOOK_RETRY_BASE_SECONDS: int = 60
+    CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS: int = 30
     ALLOW_DEVELOPMENT_SEED: bool = False
     BACKUP_DIR: str = "/data/backups"
     MEDIA_DIR: str = "/data/media"
