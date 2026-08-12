@@ -1,0 +1,79 @@
+{
+  "stage": "28",
+  "workstream": "C1",
+  "doc": "docs/LOAD_CERT_PACK_MVP.md",
+  "capacity_mvp": "docs/LOAD_CAPACITY_MVP.md",
+  "baseline": "docs/LOAD_TEST_BASELINE.md",
+  "harness": "backend/loadtest/",
+  "locustfile": "backend/loadtest/locustfile.py",
+  "operator_1000vu_executed": false,
+  "ci_1000vu_certificate_claimed": false,
+  "targets": {
+    "concurrent_users": 1000,
+    "p95_ms": 500,
+    "max_error_rate": 0.0
+  },
+  "artifact_schema": {
+    "required_fields": [
+      "run_id",
+      "started_at",
+      "finished_at",
+      "base_url",
+      "tool",
+      "concurrent_users",
+      "scenarios",
+      "p50_ms",
+      "p95_ms",
+      "error_rate",
+      "passed",
+      "operator",
+      "notes"
+    ],
+    "example_path": "/opt/cursor/artifacts/loadtest/operator_1000vu_run.example.json",
+    "note": "Operator fills a real run JSON outside CI; packaging does not invent pass=true at 1000 VU"
+  },
+  "steps": [
+    {
+      "id": "1",
+      "title": "Size staging API + DB + Redis/Rabbit; tune RATE_LIMIT_* so the run measures capacity not intentional 429s",
+      "class": "operator_required"
+    },
+    {
+      "id": "2",
+      "title": "Use a real staging tenant (never demo/production secrets in git)",
+      "class": "operator_required"
+    },
+    {
+      "id": "3",
+      "title": "Run Locust (locustfile.py) or httpx toward ~1000 concurrent users",
+      "class": "operator_required"
+    },
+    {
+      "id": "4",
+      "title": "Record p95 < 500 ms and 0% errors against documented scenarios",
+      "class": "operator_required"
+    },
+    {
+      "id": "5",
+      "title": "Scrape GET /api/v1/metrics during the run (ribdigi_http_requests_total)",
+      "class": "operator_required"
+    },
+    {
+      "id": "6",
+      "title": "Write operator run JSON matching artifact_schema; attach to launch change log",
+      "class": "operator_required"
+    }
+  ],
+  "pass_criteria": [
+    "concurrent_users >= 1000 (or documented ramp with peak 1000)",
+    "p95_ms < 500",
+    "error_rate == 0",
+    "Operator run JSON + change-log entry recorded"
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/loadtest/stage28_c1_load_cert_pack.json",
+  "deferred": [
+    "Certified ~1000-VU staging capacity certificate in CI",
+    "Forged operator_1000vu_run.json with passed true without a real staging run",
+    "Vendor ZAP-under-load"
+  ]
+}
