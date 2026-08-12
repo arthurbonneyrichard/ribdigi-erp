@@ -466,7 +466,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] **Customer Profile:** Name, code, type (walk-in/registered), status
   - [ ] **Contact Details:** Phone, email, address, GPS coordinates
-  - [ ] **Customer Groups:** Wholesale, Retail, VIP, etc. with group-based pricing
+  - [x] **Customer Groups:** Wholesale, Retail, VIP, etc. with group-based pricing
   - [ ] **Customer Balance:** Real-time outstanding receivable balance
   - [ ] **Credit Limit:** Per-customer credit limit with enforcement
   - [ ] **Customer History:** Purchase history, return history, payment history
@@ -891,7 +891,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Customer data access.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] CRUD operations for customers and customer groups
+  - [x] CRUD operations for customers and customer groups
   - [ ] Balance inquiry
   - [ ] Purchase history
 

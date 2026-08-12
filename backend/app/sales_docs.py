@@ -22,6 +22,8 @@ async def _prepare_lines(
     db: AsyncSession,
     tenant_id: str,
     items: list[dict],
+    *,
+    customer_id: str | None = None,
 ) -> tuple[float, float, list[tuple[dict, float]]]:
     if not items:
         raise HTTPException(status_code=400, detail="At least one line item is required")
@@ -29,7 +31,9 @@ async def _prepare_lines(
     tax_total = 0.0
     prepared: list[tuple[dict, float]] = []
     for item in items:
-        product, variant, unit = await resolve_sale_line(db, tenant_id, item)
+        product, variant, unit = await resolve_sale_line(
+            db, tenant_id, item, customer_id=customer_id
+        )
         qty = float(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Quantity must be positive")
@@ -141,7 +145,9 @@ async def create_quotation(
     valid_days: int = 14,
 ) -> m.SalesQuotation:
     await get_customer(db, tenant_id, customer_id)
-    subtotal, tax_total, prepared = await _prepare_lines(db, tenant_id, items)
+    subtotal, tax_total, prepared = await _prepare_lines(
+        db, tenant_id, items, customer_id=customer_id
+    )
     discount_amount = float(discount_amount or 0)
     total = round(subtotal + tax_total - discount_amount, 2)
     if total < 0:
@@ -354,7 +360,9 @@ async def create_order(
 
         store = await get_store(db, tenant_id, store_id)
         resolved_store_id = store.id
-    subtotal, tax_total, prepared = await _prepare_lines(db, tenant_id, items)
+    subtotal, tax_total, prepared = await _prepare_lines(
+        db, tenant_id, items, customer_id=customer_id
+    )
     discount_amount = float(discount_amount or 0)
     total = round(subtotal + tax_total - discount_amount, 2)
     order = m.SalesOrder(

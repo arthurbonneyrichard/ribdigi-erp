@@ -672,8 +672,13 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 ```
 
 ### 7.2 Customer Groups
-**List:** `GET /customers/groups`  
-**Create:** `POST /customers/groups`
+**List:** `GET /customers/groups` (seeds Retail / Wholesale / VIP defaults)  
+**Create:** `POST /customers/groups`  
+**Update:** `PATCH /customers/groups/{group_id}`  
+**Assign on customer:** `POST /customers` / `PATCH /customers/{customer_id}` with `customer_group_id`  
+**Preview price:** `GET /products/{product_id}/price?customer_id=&variant_id=`
+
+When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is used and the customer group's `discount_percent` is applied. An explicit `unit_price` is treated as a cashier override.
 
 ### 7.3 Quotations
 **List:** `GET /sales/quotations`  

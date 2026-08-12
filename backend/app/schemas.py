@@ -297,6 +297,27 @@ class PartyCreate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
     credit_limit: float = 0
+    customer_group_id: str | None = None
+
+
+class PartyUpdate(BaseModel):
+    name: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    credit_limit: float | None = None
+    customer_group_id: str | None = None
+
+
+class CustomerGroupCreate(BaseModel):
+    name: str
+    code: str | None = None
+    discount_percent: float = 0
+
+
+class CustomerGroupUpdate(BaseModel):
+    name: str | None = None
+    discount_percent: float | None = None
+    is_active: bool | None = None
 
 
 class LineItem(BaseModel):
