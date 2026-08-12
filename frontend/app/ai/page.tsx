@@ -102,16 +102,38 @@ export default function Page() {
     }
   }
 
+  async function generateReport() {
+    setError('');
+    try {
+      const prompt = q.trim() || 'monthly sales for this month';
+      const r = await api('/ai/reports/generate', {
+        method: 'POST',
+        body: JSON.stringify({ prompt, format: 'csv' }),
+      });
+      const d = r.data || {};
+      setA(
+        [
+          `type=${d.report_type} period=${d.period_label || '-'} rows=${d.row_count}`,
+          `method=${d.method}`,
+          JSON.stringify(d.preview_rows?.slice?.(0, 3) || d.data || {}, null, 2).slice(0, 1200),
+        ].join('\n')
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to generate report');
+    }
+  }
+
   return (
     <Shell>
       <h1>AI Business Assistant</h1>
       <p className="muted">
-        Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, and the Security Monitor are available now.
+        Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, report generator, and the Security Monitor are available now.
       </p>
       <div className="card">
-        <textarea value={q} onChange={(e) => setQ(e.target.value)} style={{ width: '100%', minHeight: 100 }} placeholder="Ask a business question" />
+        <textarea value={q} onChange={(e) => setQ(e.target.value)} style={{ width: '100%', minHeight: 100 }} placeholder="Ask a business question or report prompt e.g. monthly sales for Q2" />
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           <button onClick={go}>Ask</button>
+          <button onClick={generateReport}>Generate report</button>
           <button onClick={loadInsights}>Load insights</button>
           <button onClick={loadInventoryPredictions}>Inventory predictions</button>
           <button onClick={loadSalesAnalysis}>Sales analysis</button>

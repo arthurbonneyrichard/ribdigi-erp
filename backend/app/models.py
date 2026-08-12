@@ -1509,3 +1509,21 @@ class AiSecurityAlert(Base):
     status: Mapped[str] = mapped_column(String(20), default="open", index=True)
     notified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class AiReportTemplate(Base):
+    """Saved NL/structured intents for AI report generator (BR-21.7)."""
+
+    __tablename__ = "ai_report_templates"
+    __table_args__ = (UniqueConstraint("tenant_id", "name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    prompt: Mapped[str] = mapped_column(Text)
+    report_type: Mapped[str] = mapped_column(String(60), index=True)
+    params: Mapped[dict] = mapped_column(JSON, default=dict)
+    format: Mapped[str] = mapped_column(String(10), default="csv")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

@@ -1121,19 +1121,15 @@ Rule-based trend forecast, RFM segments, product affinity, peak hours/days. See 
 Budget variance, unusual/duplicate detection, cost-optimization suggestions; OCR may suggest category keywords.
 
 ### 16.7 AI Report Generator
-**Endpoint:** `POST /ai/reports/generate`
+**Generate (JSON preview):** `POST /ai/reports/generate`  
+**Export file:** `POST /ai/reports/export`  
+**Templates:** `GET|POST /ai/reports/templates`, `DELETE /ai/reports/templates/{id}`
 
 ```json
-{
-  "report_type": "sales",
-  "period": "last_month",
-  "format": "pdf",
-  "filters": {
-    "store_id": "st_001",
-    "category_id": "cat_001"
-  }
-}
+{ "prompt": "Show me monthly sales for Q2 2026", "format": "csv" }
 ```
+
+Also accepts structured `{ "report_type": "sales", "period": "last_month", "format": "pdf" }` (mapped onto EXPORTABLE types). Constrained NL — see `docs/AI_REPORT_GENERATOR_MVP.md`.
 
 ### 16.8 AI Document Assistant
 **Endpoint:** `POST /ai/documents/analyze`
