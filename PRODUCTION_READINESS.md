@@ -83,10 +83,14 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
   - Complete (MVP logical): Stage 23 B1 automated quarterly drill evidence — create → corrupt → dry-run → guarded `confirm_text=RESTORE` apply → verify proof + audits; foreign-tenant backup restore/verify/download → 404; durable artifact `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json` (`test_logical_dr_drill_b1.py`; runbook `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`). `POST /backup/{id}/verify` proves field match vs live data. Stage 26 W1 WAL/PITR strategy packaging Complete (MVP) — `docs/DR_WAL_PITR_RUNBOOK.md` (`test_wal_pitr_w1.py`). Stage 28 R1 operator PITR drill pack Complete (MVP packaging) — `docs/PITR_DRILL_PACK_MVP.md` (`test_pitr_drill_pack_r1.py`); not live CI replay. Honesty: `wal_pitr_deferred: true`, `operator_pitr_drill_executed: false`. Remaining post-MVP: operator staging infrastructure PITR drill **execution** (base + WAL replay).
 
 ### AI
-- [ ] AI provider configured securely.
-- [ ] Tenant-safe data access enforced.
+- [x] AI provider configured securely.
+  - Complete (MVP packaging): optional `AI_ENABLED` / `AI_PROVIDER` / `AI_API_KEY` in settings; production rejects weak keys and `mock`; chat fail-closed (503) until configured; `GET /ai/status` never leaks secrets. Live OpenAI HTTP client still Incomplete (`provider_pending` when key present). See `docs/AI_SECURITY_MVP.md`.
+- [x] Tenant-safe data access enforced.
+  - Complete (MVP packaging): insights built from tenant-scoped dashboard only; `ai_queries` rows and `/ai/queries` list are tenant-filtered; cross-tenant previews must not leak. Full RAG/LLM context isolation remains Incomplete until provider chat lands.
 - [ ] AI functions use real tenant data and satisfy documented acceptance criteria.
-- [ ] AI audit logging and prompt/data protections complete.
+  - Partial: rule-based `/ai/insights` only. Chat / forecasts / NL reports / document+customer AI remain Incomplete (no live LLM).
+- [x] AI audit logging and prompt/data protections complete.
+  - Complete (MVP packaging): `ai_queries` table + `audit_logs` module=`ai`; prompt SHA-256 + redacted preview (no raw secrets); max message length; injection deny-list → 400. AI Security Monitor / output PII scanner remain Partial/aspirational per SECURITY_GUIDE §13.
 
 ## Current repository rule
 

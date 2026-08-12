@@ -1470,3 +1470,22 @@ class WebhookDelivery(Base):
     next_retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class AiQuery(Base):
+    """Tenant-scoped AI interaction log (no raw prompts / secrets)."""
+
+    __tablename__ = "ai_queries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    endpoint: Mapped[str] = mapped_column(String(40), index=True)  # chat | insights | status
+    status: Mapped[str] = mapped_column(String(40), index=True)
+    prompt_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    prompt_preview: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    message_length: Mapped[int] = mapped_column(Integer, default=0)
+    blocked_reason: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    insight_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)

@@ -26,6 +26,7 @@ from app import org_units as org_units_svc
 from app import api_keys as api_keys_svc
 from app import webhooks as webhooks_svc
 from app import onboarding as onboarding_svc
+from app import ai as ai_svc
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
 from app import purchase_suggestions as purchase_suggestions_svc
@@ -8188,25 +8189,32 @@ async def onboarding_checklist_restore(
     return env(data, "Onboarding checklist restored")
 
 
+@api.get("/ai/status")
+async def ai_status(claims=Depends(require_permission("ai", "read"))):
+    """Operator-visible AI packaging status (never returns API keys)."""
+    return env(ai_svc.status_payload())
+
+
+@api.get("/ai/queries")
+async def ai_queries(
+    limit: int = 50,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await ai_svc.list_queries(db, tenant_id=claims["tenant_id"], limit=limit)
+    return env([ai_svc.serialize_query(r) for r in rows])
+
+
 @api.post("/ai/chat")
-async def ai_chat(payload: dict, claims=Depends(require_permission("ai", "write"))):
-    raise HTTPException(
-        status_code=503,
-        detail="AI Business Assistant is not configured. Configure an approved AI provider before enabling this feature.",
-    )
+async def ai_chat(payload: dict, claims=Depends(require_permission("ai", "write")), db: AsyncSession = Depends(get_db)):
+    data = await ai_svc.handle_chat(db, claims=claims, payload=payload)
+    return env(data)
 
 
 @api.get("/ai/insights")
 async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSession = Depends(get_db)):
-    dash = (await dashboard(claims, db))["data"]
-    notes = []
-    if dash["low_stock"] > 0:
-        notes.append(f"{dash['low_stock']} product(s) are at or below reorder level.")
-    if dash["total_expenses"] > dash["total_sales"] and dash["total_sales"] > 0:
-        notes.append("Expenses currently exceed recorded sales.")
-    return env(
-        {
-            "insights": notes
-            or ["No urgent anomaly detected from the currently configured business rules."]
-        }
-    )
+    from app.dashboard import build_dashboard
+
+    dash = await build_dashboard(db, claims["tenant_id"])
+    data = await ai_svc.handle_insights(db, claims=claims, dash=dash)
+    return env(data)
