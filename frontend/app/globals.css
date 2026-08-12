@@ -396,7 +396,7 @@
 }
 .tpos-body{
   display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,420px);gap:14px;align-items:stretch;
-  height:min(54vh, calc(100vh - 280px));min-height:420px
+  height:min(65vh, calc(100vh - 220px));min-height:520px
 }
 .tpos-catalog{
   background:#fff;border:1px solid #eef1f7;border-radius:18px;padding:14px;
