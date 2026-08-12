@@ -297,27 +297,27 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** At-a-glance business metrics.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Display: Total Sales, Total Purchases, Total Expenses, Total Customers, Total Suppliers, Total Products
-  - [ ] Real-time or near-real-time updates (within 5 minutes)
-  - [ ] Period comparison (Today vs Yesterday, This Month vs Last Month)
-  - [ ] Click-through to detailed reports
+  - [x] Display: Total Sales, Total Purchases, Total Expenses, Total Customers, Total Suppliers, Total Products
+  - [x] Real-time or near-real-time updates (within 5 minutes) — live `GET /dashboard` on page load
+  - [x] Period comparison (Today vs Yesterday, This Month vs Last Month) via `comparisons` on `/dashboard`
+  - [x] Click-through to detailed reports (KPI cards + inventory alerts link to module/report pages)
 
 #### BR-4.2 Inventory Alerts
 - **Description:** Visual indicators for inventory issues.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Low stock products count with quick link
-  - [ ] Out-of-stock products count
-  - [ ] Expiring products (pharmacy/food) count
+  - [x] Low stock products count with quick link
+  - [x] Out-of-stock products count
+  - [x] Expiring products (pharmacy/food) count (`expiring_soon` batches within 30 days)
 
 #### BR-4.3 Sales Visualization
 - **Description:** Charts and trends for sales performance.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Recent sales list (last 10 transactions)
-  - [ ] Top products by revenue and quantity
-  - [ ] Daily revenue line chart (last 30 days)
-  - [ ] Monthly revenue bar chart (last 12 months)
+  - [x] Recent sales list (last 10 transactions)
+  - [x] Top products by revenue and quantity (30-day window)
+  - [x] Daily revenue line chart (last 30 days)
+  - [x] Monthly revenue bar chart (last 12 months)
 
 #### BR-4.4 Notifications Panel
 - **Description:** Centralized notification stream.

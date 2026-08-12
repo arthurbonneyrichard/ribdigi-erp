@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
@@ -13,17 +14,38 @@ type Subscription = {
   trial_days?: number;
 };
 
+type TopProduct = {
+  product_id: string;
+  name: string;
+  sku?: string | null;
+  quantity: number;
+  revenue: number;
+};
+
 type Dash = {
   total_sales?: number;
   total_purchases?: number;
   total_expenses?: number;
   products?: number;
   low_stock?: number;
+  out_of_stock?: number;
+  expiring_soon?: number;
   customers?: number;
   suppliers?: number;
+  comparisons?: {
+    sales_today?: number;
+    sales_yesterday?: number;
+    sales_today_pct?: number | null;
+    sales_mtd?: number;
+    sales_prev_month?: number;
+    sales_mtd_pct?: number | null;
+  };
   monthly_sales?: { label: string; total: number }[];
   daily_sales?: { label: string; sales: number; profit: number }[];
   recent_sales?: { reference: string; date: string; total: number; customer: string; type: string }[];
+  top_products_by_revenue?: TopProduct[];
+  top_products_by_quantity?: TopProduct[];
+  links?: Record<string, string>;
   subscription?: Subscription;
 };
 
@@ -138,6 +160,67 @@ function DailyBars({
   );
 }
 
+function TrendLine({
+  data,
+  color,
+}: {
+  data: { label: string; sales: number }[];
+  color: string;
+}) {
+  const max = Math.max(1, ...data.map((x) => x.sales || 0));
+  const pts = data.map((t, i) => {
+    const x = data.length <= 1 ? 150 : (i / (data.length - 1)) * 284 + 8;
+    const y = 138 - ((t.sales || 0) / max) * 112;
+    return `${x},${y}`;
+  });
+  return (
+    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="30-day sales">
+      <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+      <polyline fill="none" stroke={color} strokeWidth="2.5" points={pts.join(' ')} />
+      <text x="8" y="156" className="vbar-label">
+        {data[0]?.label || ''}
+      </text>
+      <text x="292" y="156" textAnchor="end" className="vbar-label">
+        {data[data.length - 1]?.label || ''}
+      </text>
+    </svg>
+  );
+}
+
+function MonthlyBars({ data }: { data: { label: string; total: number }[] }) {
+  const n = data.length || 1;
+  const max = Math.max(1, ...data.map((x) => x.total || 0));
+  const slot = 300 / n;
+  const bw = Math.min(18, slot * 0.65);
+  return (
+    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="Monthly sales">
+      <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+      {data.map((t, i) => {
+        const v = t.total || 0;
+        const h = Math.max(0, (v / max) * 112);
+        const x = i * slot + (slot - bw) / 2;
+        const y = 138 - h;
+        return (
+          <g key={t.label + i}>
+            <rect x={x} y={y} width={bw} height={h} rx={3} fill="#38bdf8" />
+            {i % 2 === 0 && (
+              <text x={x + bw / 2} y={156} textAnchor="middle" className="vbar-label">
+                {t.label.split(' ')[0]}
+              </text>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function pctLabel(pct?: number | null) {
+  if (pct == null) return '—';
+  const sign = pct > 0 ? '+' : '';
+  return `${sign}${pct}%`;
+}
+
 function polar(cx: number, cy: number, r: number, angle: number): [number, number] {
   return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
 }
@@ -229,9 +312,15 @@ export default function Page() {
   const net = sales - purchases - expenses;
   const products = d.products || 0;
   const low = d.low_stock || 0;
+  const oos = d.out_of_stock || 0;
+  const expiring = d.expiring_soon || 0;
   const inStock = Math.max(0, products - low);
   const customers = d.customers || 0;
   const suppliers = d.suppliers || 0;
+  const cmp = d.comparisons || {};
+  const links = d.links || {};
+  const topRev = d.top_products_by_revenue || [];
+  const monthly = d.monthly_sales || [];
 
   const flow = [
     { label: 'Sales', value: sales, color: '#22c55e' },
@@ -251,7 +340,8 @@ export default function Page() {
   const healthFrac = products ? inStock / products : 0;
   const healthArc = arc(healthFrac, rr);
 
-  const daily = d.daily_sales || [];
+  const dailyAll = d.daily_sales || [];
+  const daily = dailyAll.slice(-7);
   const dailyEmpty = daily.every((x) => !x.sales && !x.profit);
   const recent = d.recent_sales || [];
 
@@ -264,10 +354,23 @@ export default function Page() {
   const finSlices = pieSlices(finItems, 70, 70, 66);
 
   const stats = [
-    { cls: 's-sales', ico: '\ud83d\udcb0', label: 'Total Sales', val: num(sales) },
-    { cls: 's-buy', ico: '\ud83d\uded2', label: 'Purchases', val: num(purchases) },
-    { cls: 's-exp', ico: '\ud83e\udde7', label: 'Expenses', val: num(expenses) },
-    { cls: 's-net', ico: '\ud83d\udcc8', label: 'Net Position', val: num(net) },
+    {
+      cls: 's-sales',
+      ico: '\ud83d\udcb0',
+      label: 'Total Sales',
+      val: num(sales),
+      href: links.sales || '/sales',
+      sub: `Today ${num(cmp.sales_today)} (${pctLabel(cmp.sales_today_pct)} vs yday) · MTD ${num(cmp.sales_mtd)} (${pctLabel(cmp.sales_mtd_pct)} vs last mo)`,
+    },
+    { cls: 's-buy', ico: '\ud83d\uded2', label: 'Purchases', val: num(purchases), href: links.purchases || '/purchasing' },
+    { cls: 's-exp', ico: '\ud83e\udde7', label: 'Expenses', val: num(expenses), href: links.expenses || '/expenses' },
+    { cls: 's-net', ico: '\ud83d\udcc8', label: 'Net Position', val: num(net), href: links.reports_sales || '/reports' },
+  ];
+
+  const countStats = [
+    { label: 'Customers', val: customers, href: links.customers || '/sales' },
+    { label: 'Suppliers', val: suppliers, href: links.suppliers || '/purchasing' },
+    { label: 'Products', val: products, href: links.products || '/inventory' },
   ];
 
   return (
@@ -298,22 +401,40 @@ export default function Page() {
 
         <section className="stat-grid">
           {stats.map((s) => (
-            <div className={`stat ${s.cls}`} key={s.label}>
+            <Link className={`stat ${s.cls}`} key={s.label} href={s.href} style={{ textDecoration: 'none', color: 'inherit' }}>
               <span className="rail" />
               <div className="ico">{s.ico}</div>
               <div className="label">{s.label}</div>
               <div className="val">{s.val}</div>
-            </div>
+              {s.sub && <p className="hint" style={{ marginTop: 6, fontSize: 12 }}>{s.sub}</p>}
+            </Link>
           ))}
+        </section>
+
+        <section className="stat-grid" style={{ marginTop: 12 }}>
+          {countStats.map((s) => (
+            <Link className="stat" key={s.label} href={s.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="label">{s.label}</div>
+              <div className="val">{num(s.val)}</div>
+            </Link>
+          ))}
+          <Link className="stat" href={links.low_stock || '/reports'} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div className="label">Inventory alerts</div>
+            <div className="val" style={{ fontSize: 16 }}>
+              Low {num(low)} · OOS {num(oos)} · Exp {num(expiring)}
+            </div>
+          </Link>
         </section>
 
         <section className="info-grid">
           <div className="panel">
             <h3>
               <PanelIcon name="daily" />
-              Daily sales
+              Daily sales (7d)
             </h3>
-            <p className="hint">Sales for the last 7 days</p>
+            <p className="hint">
+              Last 7 days · <Link href={links.reports_sales || '/reports'}>Open reports</Link>
+            </p>
             {dailyEmpty ? (
               <div className="empty">No sales in the last 7 days yet.</div>
             ) : (
@@ -324,13 +445,26 @@ export default function Page() {
           <div className="panel">
             <h3>
               <PanelIcon name="profit" />
-              Daily profit
+              Revenue trend (30d)
             </h3>
-            <p className="hint">Gross profit (revenue − cost) per day</p>
-            {dailyEmpty ? (
-              <div className="empty">No profit data in the last 7 days yet.</div>
+            <p className="hint">Daily revenue line — last 30 days</p>
+            {dailyAll.every((x) => !x.sales) ? (
+              <div className="empty">No sales in the last 30 days yet.</div>
             ) : (
-              <DailyBars data={daily} field="profit" color="#6366f1" />
+              <TrendLine data={dailyAll} color="#6366f1" />
+            )}
+          </div>
+
+          <div className="panel">
+            <h3>
+              <PanelIcon name="cashflow" />
+              Monthly sales (12 mo)
+            </h3>
+            <p className="hint">Bar chart of the last 12 calendar months</p>
+            {monthly.every((x) => !x.total) ? (
+              <div className="empty">No monthly sales yet.</div>
+            ) : (
+              <MonthlyBars data={monthly} />
             )}
           </div>
 
@@ -339,7 +473,9 @@ export default function Page() {
               <PanelIcon name="health" />
               Inventory health
             </h3>
-            <p className="hint">In-stock vs items at or below reorder level</p>
+            <p className="hint">
+              In-stock vs reorder · <Link href={links.products || '/inventory'}>Inventory</Link>
+            </p>
             <div className="health">
               <svg width="130" height="130" viewBox="0 0 130 130" role="img" aria-label="Inventory health">
                 <circle cx="65" cy="65" r={rr} fill="none" stroke="#fee2e2" strokeWidth="14" />
@@ -366,14 +502,18 @@ export default function Page() {
                   <span className="dot" style={{ background: '#22c55e', width: 12, height: 12, borderRadius: 4 }} />
                   In stock&nbsp;<b>{num(inStock)}</b>
                 </span>
-                <span className="pill">
+                <Link className="pill" href={links.low_stock || '/reports'} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <span className="dot" style={{ background: '#fb7185', width: 12, height: 12, borderRadius: 4 }} />
                   Low stock&nbsp;<b>{num(low)}</b>
-                </span>
-                <span className="pill">
-                  <span className="dot" style={{ background: '#94a3b8', width: 12, height: 12, borderRadius: 4 }} />
-                  Products&nbsp;<b>{num(products)}</b>
-                </span>
+                </Link>
+                <Link className="pill" href={links.products || '/inventory'} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <span className="dot" style={{ background: '#f59e0b', width: 12, height: 12, borderRadius: 4 }} />
+                  Out of stock&nbsp;<b>{num(oos)}</b>
+                </Link>
+                <Link className="pill" href={links.expiring || '/inventory'} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <span className="dot" style={{ background: '#6366f1', width: 12, height: 12, borderRadius: 4 }} />
+                  Expiring (30d)&nbsp;<b>{num(expiring)}</b>
+                </Link>
               </div>
             </div>
           </div>
@@ -499,12 +639,44 @@ export default function Page() {
           </div>
         </section>
 
+        <section className="panel" style={{ marginTop: 16 }}>
+          <h3>
+            <PanelIcon name="recent" />
+            Top products (30d)
+          </h3>
+          <p className="hint">By revenue from POS/sales lines · <Link href={links.reports_sales || '/reports'}>Reports</Link></p>
+          {topRev.length === 0 ? (
+            <div className="empty">No product sales in the last 30 days yet.</div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>SKU</th>
+                  <th style={{ textAlign: 'right' }}>Qty</th>
+                  <th style={{ textAlign: 'right' }}>Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topRev.map((p) => (
+                  <tr key={p.product_id}>
+                    <td>{p.name}</td>
+                    <td>{p.sku || '—'}</td>
+                    <td style={{ textAlign: 'right' }}>{num(p.quantity)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{num(p.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
         <section className="panel">
           <h3>
             <PanelIcon name="recent" />
             Recent sales
           </h3>
-          <p className="hint">Your latest sales transactions</p>
+          <p className="hint">Latest 10 sales · <Link href={links.sales || '/sales'}>Sales</Link></p>
           {recent.length === 0 ? (
             <div className="empty">No sales yet — new sales will show up here.</div>
           ) : (
