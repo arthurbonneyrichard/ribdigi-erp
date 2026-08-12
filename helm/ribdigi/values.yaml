@@ -1,0 +1,84 @@
+# Stage 26 K1 — default values. Override with values-staging.yaml / values-production.yaml.
+# Managed PostgreSQL / Redis / RabbitMQ / object storage expected (not in-cluster).
+
+namespace: ribdigi
+
+backend:
+  replicaCount: 2
+  image:
+    repository: ribdigi/erp-backend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    port: 8000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+  command:
+    - sh
+    - -c
+    - alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+
+frontend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ribdigi/erp-frontend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    port: 3000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+celeryWorker:
+  enabled: true
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+celeryBeat:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+migration:
+  enabled: true
+
+ingress:
+  enabled: false
+  className: nginx
+  host: app.example.com
+  tls: false
+
+secretName: ribdigi-secrets
+
+# Documented secret keys (create via kubectl --from-env-file=.env.production).
+# Do not commit real secrets.
+requiredSecretKeys:
+  - JWT_SECRET_KEY
+  - DATABASE_URL
+  - REDIS_URL
+  - CELERY_BROKER_URL
+  - APP_ENV
+  - CORS_ORIGINS
