@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-08-12  
-**Related:** [ADR-253](ADR_253_STAGE123_FREEZE.md), [STAGE_124_PLAN.md](STAGE_124_PLAN.md), [ADR-003](ADR_003_SOFT_DELETE.md)
+**Related:** [ADR-253](ADR_253_STAGE123_FREEZE.md), [STAGE_124_PLAN.md](STAGE_124_PLAN.md), [ADR-003](ADR_003_USER_DELETE_POLICY.md)
 
 ## Context
 
