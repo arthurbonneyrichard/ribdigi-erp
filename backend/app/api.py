@@ -85,6 +85,7 @@ from app.schemas import (
     PurchaseRequestCreate,
     PurchaseRequestConvert,
     PurchaseRequestReject,
+    PurchaseApprovalSettingsUpdate,
     LowStockSuggestionsCreate,
     UnitOfMeasureCreate,
     UnitOfMeasureUpdate,
@@ -3405,6 +3406,32 @@ async def list_purchase_requests(
     return env([await purchase_requests_svc.serialize_request(db, r) for r in rows])
 
 
+@api.get("/purchasing/requests/settings")
+async def purchase_request_settings(
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await purchase_requests_svc.get_approval_settings(db, claims["tenant_id"]))
+
+
+@api.patch("/purchasing/requests/settings")
+async def update_purchase_request_settings(
+    payload: PurchaseApprovalSettingsUpdate,
+    claims=Depends(require_permission("purchasing", "approve")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    data = await purchase_requests_svc.update_approval_settings(
+        db,
+        tenant,
+        levels=[lvl.model_dump() for lvl in payload.levels],
+    )
+    await db.commit()
+    return env(data, "Purchase approval matrix updated")
+
+
 @api.get("/purchasing/suggestions/low-stock")
 async def list_low_stock_suggestions(
     store_id: str | None = None,
@@ -3505,7 +3532,15 @@ async def approve_purchase_request(
         actor_role=claims.get("role"),
     )
     await db.commit()
-    return env(await purchase_requests_svc.serialize_request(db, row), "Purchase request approved")
+    data = await purchase_requests_svc.serialize_request(db, row)
+    if row.status == "pending":
+        msg = (
+            f"Level {int(row.approval_step) - 1} approved; "
+            f"awaiting level {row.approval_step}"
+        )
+    else:
+        msg = "Purchase request approved"
+    return env(data, msg)
 
 
 @api.post("/purchasing/requests/{request_id}/reject")

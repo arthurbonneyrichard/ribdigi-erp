@@ -442,6 +442,16 @@ class PurchaseRequestConvert(BaseModel):
     supplier_id: str | None = None
 
 
+class PurchaseApprovalLevelUpdate(BaseModel):
+    roles: list[str] = Field(min_length=1)
+    label: str | None = None
+    step: int | None = None
+
+
+class PurchaseApprovalSettingsUpdate(BaseModel):
+    levels: list[PurchaseApprovalLevelUpdate] = Field(min_length=1)
+
+
 class LowStockSuggestionLine(BaseModel):
     product_id: str
     quantity: float | None = Field(default=None, gt=0)

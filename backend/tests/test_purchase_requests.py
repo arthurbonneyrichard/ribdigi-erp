@@ -78,9 +78,13 @@ async def test_purchase_request_happy_path_convert(client, db_session):
         json={},
     )
     assert submitted.status_code == 200, submitted.text
-    assert submitted.json()["data"]["status"] == "pending"
+    body = submitted.json()["data"]
+    assert body["status"] == "pending"
+    assert body["approval_steps_required"] == 2
+    assert body["approval_step"] == 1
+    assert "store_manager" in body["awaiting_roles"]
 
-    # No self-approve: IO cannot approve own PR even with elevate — use manager
+    # No self-approve
     self_approve = await ac.post(
         f"/api/v1/purchasing/requests/{request_id}/approve",
         headers=io,
@@ -88,13 +92,42 @@ async def test_purchase_request_happy_path_convert(client, db_session):
     )
     assert self_approve.status_code == 403
 
-    approved = await ac.post(
+    # L1 — store manager
+    l1 = await ac.post(
         f"/api/v1/purchasing/requests/{request_id}/approve",
         headers=mgr,
         json={},
     )
+    assert l1.status_code == 200, l1.text
+    assert l1.json()["data"]["status"] == "pending"
+    assert l1.json()["data"]["approval_step"] == 2
+
+    # Manager cannot do L2
+    blocked = await ac.post(
+        f"/api/v1/purchasing/requests/{request_id}/approve",
+        headers=mgr,
+        json={},
+    )
+    assert blocked.status_code == 403
+
+    # Convert blocked while still pending
+    early = await ac.post(
+        f"/api/v1/purchasing/requests/{request_id}/convert",
+        headers=io,
+        json={},
+    )
+    assert early.status_code == 409
+
+    # L2 — company_admin / super_admin
+    approved = await ac.post(
+        f"/api/v1/purchasing/requests/{request_id}/approve",
+        headers=admin,
+        json={},
+    )
     assert approved.status_code == 200, approved.text
     assert approved.json()["data"]["status"] == "approved"
+    assert approved.json()["data"]["approval_step"] == 2
+    assert len(approved.json()["data"]["approval_actions"]) == 2
 
     converted = await ac.post(
         f"/api/v1/purchasing/requests/{request_id}/convert",

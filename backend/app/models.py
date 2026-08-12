@@ -45,6 +45,8 @@ class Tenant(Base):
     expense_l2_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=1000)
     # Optional N-level approval matrix: {"levels": [{step, min_amount, roles, label}, ...]}
     expense_approval_matrix: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # PR role-chain matrix: {"levels": [{step, roles, label}, ...]} (no amount thresholds)
+    purchase_approval_matrix: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # e.g. 2/10 net 30 → pct=2, days=10 (0 disables)
     early_pay_discount_pct: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     early_pay_discount_days: Mapped[int] = mapped_column(Integer, default=0)
@@ -599,9 +601,24 @@ class PurchaseRequest(Base):
     approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     rejected_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    approval_step: Mapped[int] = mapped_column(Integer, default=1)
+    approval_steps_required: Mapped[int] = mapped_column(Integer, default=1)
     converted_po_id: Mapped[str | None] = mapped_column(ForeignKey("purchase_orders.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PurchaseRequestApprovalAction(Base):
+    __tablename__ = "purchase_request_approval_actions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    purchase_request_id: Mapped[str] = mapped_column(ForeignKey("purchase_requests.id"), index=True)
+    step: Mapped[int] = mapped_column(Integer)
+    action: Mapped[str] = mapped_column(String(20))  # approve | reject
+    actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PurchaseRequestItem(Base):

@@ -15,6 +15,10 @@ type PurchaseRequest = {
   department?: string | null;
   notes?: string | null;
   converted_po_id?: string | null;
+  approval_step?: number;
+  approval_steps_required?: number;
+  awaiting_level?: number | null;
+  awaiting_roles?: string[];
   items: { id: string; product_id: string; quantity: number }[];
   purchase_order?: { id: string; po_number: string };
 };
@@ -98,6 +102,10 @@ export default function Page() {
   const [prDepartment, setPrDepartment] = useState('');
   const [prNotes, setPrNotes] = useState('');
   const [prBusy, setPrBusy] = useState('');
+  const [prLevels, setPrLevels] = useState<{ roles: string[]; label?: string }[]>([
+    { roles: ['store_manager'], label: 'Store Manager' },
+    { roles: ['company_admin', 'super_admin'], label: 'Company Admin' },
+  ]);
   const [grnId, setGrnId] = useState('');
   const [grnItemId, setGrnItemId] = useState('');
   const [returnQty, setReturnQty] = useState('1');
@@ -121,9 +129,10 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [poRes, prRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
+    const [poRes, prRes, settingsRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
       api('/purchasing/orders'),
       api('/purchasing/requests'),
+      api('/purchasing/requests/settings'),
       api('/suppliers'),
       api('/products'),
       api('/purchasing/grn'),
@@ -132,6 +141,7 @@ export default function Page() {
     ]);
     setOrders(poRes.data || []);
     setRequests(prRes.data || []);
+    setPrLevels(settingsRes.data?.levels || []);
     setSuppliers(supRes.data || []);
     setProducts(prodRes.data || []);
     setGrns(grnRes.data || []);
@@ -467,6 +477,30 @@ export default function Page() {
     }
   }
 
+  async function savePrSettings() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/purchasing/requests/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          levels: prLevels.map((l) => ({
+            roles: l.roles,
+            label: l.label || undefined,
+          })),
+        }),
+      });
+      setPrLevels(r.data?.levels || []);
+      setMessage(`PR approval matrix saved (${r.data?.steps_required || prLevels.length} levels)`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function updatePrLevel(idx: number, patch: Partial<(typeof prLevels)[0]>) {
+    setPrLevels((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
+  }
+
   async function prAction(id: string, action: 'submit' | 'approve' | 'reject' | 'convert') {
     setError('');
     setMessage('');
@@ -527,6 +561,61 @@ export default function Page() {
       {tab === 'requests' && (
         <>
           <div className="card" style={{ marginBottom: 16 }}>
+            <h3>PR approval matrix</h3>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Role chain (no amount thresholds). Default: Store Manager → Company Admin. Roles are
+              comma-separated.
+            </p>
+            {prLevels.map((lvl, idx) => (
+              <div
+                key={idx}
+                style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}
+              >
+                <span className="muted">L{idx + 1}</span>
+                <input
+                  value={lvl.label || ''}
+                  onChange={(e) => updatePrLevel(idx, { label: e.target.value })}
+                  placeholder="Label"
+                  style={{ width: 160 }}
+                />
+                <input
+                  value={(lvl.roles || []).join(', ')}
+                  onChange={(e) =>
+                    updatePrLevel(idx, {
+                      roles: e.target.value
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                  placeholder="Roles"
+                  style={{ minWidth: 280, flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setPrLevels((prev) => prev.filter((_, i) => i !== idx))}
+                  disabled={prLevels.length <= 1}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() =>
+                  setPrLevels((prev) => [...prev, { roles: ['company_admin'], label: `Level ${prev.length + 1}` }])
+                }
+                disabled={prLevels.length >= 5}
+              >
+                Add level
+              </button>
+              <button type="button" onClick={savePrSettings}>
+                Save matrix
+              </button>
+            </div>
+          </div>
+          <div className="card" style={{ marginBottom: 16 }}>
             <h3>Create purchase request</h3>
             <div style={{ display: 'grid', gap: 8 }}>
               <select value={prSupplierId} onChange={(e) => setPrSupplierId(e.target.value)}>
@@ -566,6 +655,7 @@ export default function Page() {
               <tr>
                 <th>Number</th>
                 <th>Status</th>
+                <th>Approval</th>
                 <th>Department</th>
                 <th>Lines</th>
                 <th>Actions</th>
@@ -576,6 +666,13 @@ export default function Page() {
                 <tr key={r.id}>
                   <td>{r.request_number}</td>
                   <td>{r.status}</td>
+                  <td>
+                    {r.status === 'pending'
+                      ? `L${r.awaiting_level || r.approval_step || 1}/${r.approval_steps_required || 1}`
+                      : r.approval_steps_required
+                        ? `${r.approval_steps_required} level(s)`
+                        : '—'}
+                  </td>
                   <td>{r.department || '—'}</td>
                   <td>
                     {(r.items || [])
@@ -599,7 +696,7 @@ export default function Page() {
                           disabled={prBusy === `approve:${r.id}`}
                           onClick={() => prAction(r.id, 'approve')}
                         >
-                          Approve
+                          Approve L{r.awaiting_level || r.approval_step || 1}
                         </button>
                         <button
                           type="button"
@@ -627,7 +724,7 @@ export default function Page() {
               ))}
               {requests.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="muted">
+                  <td colSpan={6} className="muted">
                     No purchase requests yet
                   </td>
                 </tr>
