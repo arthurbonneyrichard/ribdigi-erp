@@ -24,3 +24,5 @@ Stage 137 Tenant MVP Stock Movements CSV, Low-Stock Alert CSV & Expiring Batches
 ## Next stage
 
 Stage 138 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 137 feature scope remains frozen.
+
+**Stage 138 opened and closed under ADR-282 / ADR-283** — Tenant MVP Early-Pay Settings CSV, Expense Approval Settings CSV & Purchasing Approval Settings CSV Export Fidelity (CONTINUE/NEXT approved).

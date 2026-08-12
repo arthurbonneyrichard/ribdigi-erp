@@ -1386,7 +1386,8 @@ export default function Page() {
           <h3>Purchase settings</h3>
           <p className="muted" style={{ marginBottom: 8 }}>
             PR approval matrix — estimated total must exceed a level&apos;s min to require that step (Store
-            Manager → Company Admin by default). Company admins can save changes.
+            Manager → Company Admin by default). Company admins can save changes. Export via{' '}
+            <code>GET /purchasing/settings/export</code> (Stage 138 P1).
           </p>
           {prLevels.length === 0 ? (
             <p className="muted">No approval levels loaded.</p>
@@ -1425,9 +1426,42 @@ export default function Page() {
               </div>
             ))
           )}
-          <button type="button" onClick={savePrMatrix} disabled={prLevels.length === 0}>
-            Save matrix
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={savePrMatrix} disabled={prLevels.length === 0}>
+              Save matrix
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                // Stage 138 P1 — purchasing approval settings CSV
+                setError('');
+                try {
+                  const token = localStorage.getItem('token');
+                  const tenant = localStorage.getItem('tenant');
+                  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+                  const res = await fetch(`${apiBase}/purchasing/settings/export`, {
+                    headers: {
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                    },
+                  });
+                  if (!res.ok) throw new Error('Purchasing settings export failed');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'purchasing_settings_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  setMessage('Purchasing approval settings CSV exported (Stage 138 P1)');
+                } catch (err: any) {
+                  setError(err.message || 'Purchasing settings export failed');
+                }
+              }}
+            >
+              Export approval settings CSV
+            </button>
+          </div>
         </div>
       )}
 

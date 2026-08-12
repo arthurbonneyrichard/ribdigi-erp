@@ -434,7 +434,10 @@ export default function Page() {
         </div>
         <div className="card" id="early-pay">
           <h3>Early payment terms</h3>
-          <p className="muted">e.g. 2% if paid within 10 days (AR give / AP take)</p>
+          <p className="muted">
+            e.g. 2% if paid within 10 days (AR give / AP take). Export via{' '}
+            <code>GET /credit/settings/export</code> (Stage 138 C1).
+          </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
               value={epPct}
@@ -449,6 +452,18 @@ export default function Page() {
               style={{ width: 80 }}
             />
             <button onClick={saveEarlyPay}>Save terms</button>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCreditExport(
+                  '/credit/settings/export',
+                  'early_pay_settings_export.csv',
+                  'Early-pay settings CSV downloaded (Stage 138 C1)',
+                )
+              }
+            >
+              Export early-pay settings CSV
+            </button>
           </div>
           <p className="muted" style={{ marginTop: 8 }}>
             Status: {epEnabled ? 'enabled' : 'disabled'}

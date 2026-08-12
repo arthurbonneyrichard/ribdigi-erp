@@ -1656,3 +1656,5 @@ Stage 135 D1 — `docs/STAGE_135_FIDELITY.md` (`test_stage135_fidelity_d1.py`): 
 Stage 136 D1 — `docs/STAGE_136_FIDELITY.md` (`test_stage136_fidelity_d1.py`): Stage 136 C1 `GET /credit/customer-payments` + `/export`; Stage 136 S1 `GET /credit/supplier-payments` + `/export`; Stage 136 A1 `GET /credit/aging/export?kind=`.
 
 Stage 137 D1 — `docs/STAGE_137_FIDELITY.md` (`test_stage137_fidelity_d1.py`): Stage 137 M1 `GET /inventory/movements/export`; Stage 137 L1 `GET /inventory/low-stock?stock_status=` + `/export`; Stage 137 E1 `GET /inventory/batches/expiring/export?days=`.
+
+Stage 138 D1 — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`): Stage 138 C1 `GET /credit/settings/export`; Stage 138 E1 `GET /expenses/settings/export`; Stage 138 P1 `GET /purchasing/settings/export`.

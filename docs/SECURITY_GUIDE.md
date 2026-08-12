@@ -834,6 +834,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 137 E1** | Expiring batches CSV (`test_stage137_expiring_batches_e1.py`) |
 | **Stage 137 D1** | Movements / low-stock / expiring export — `docs/STAGE_137_FIDELITY.md` (`test_stage137_fidelity_d1.py`) |
 | **Stage 137 H137x** | Exit + freeze — `docs/STAGE_137_EXIT_CRITERIA.md`, ADR-281 (`test_stage137_exit_h137x.py`); Stages 1–137 frozen; Stage 138+ requires CONTINUE/NEXT |
+| **Stage 138 open** | Tenant MVP Early-Pay Settings CSV, Expense Approval Settings CSV & Purchasing Approval Settings CSV Export Fidelity — `docs/STAGE_138_PLAN.md`, ADR-282 (`test_stage138_open.py`); Stages 1–137 remain frozen; C1 next historically |
+| **Stage 138 C1** | Early-pay settings CSV (`test_stage138_early_pay_settings_c1.py`) |
+| **Stage 138 E1** | Expense approval settings CSV (`test_stage138_expense_settings_e1.py`) |
+| **Stage 138 P1** | Purchasing approval settings CSV (`test_stage138_purchasing_settings_p1.py`) |
+| **Stage 138 D1** | Early-pay / expense / purchasing approval settings export — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`) |
+| **Stage 138 H138x** | Exit + freeze — `docs/STAGE_138_EXIT_CRITERIA.md`, ADR-283 (`test_stage138_exit_h138x.py`); Stages 1–138 frozen; Stage 139+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

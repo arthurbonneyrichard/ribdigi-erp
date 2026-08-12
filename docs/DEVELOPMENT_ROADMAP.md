@@ -2258,6 +2258,18 @@ Every feature in every phase must meet:
 
 **Stage 137 exit (2026-08-12):** M1, L1, E1, D1, H137x met — `docs/STAGE_137_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_281_STAGE137_FREEZE.md`. Fidelity: `docs/STAGE_137_FIDELITY.md`.
 
+**Stage 138 open (2026-08-12):** Tenant MVP Early-Pay Settings CSV, Expense Approval Settings CSV & Purchasing Approval Settings CSV Export Fidelity — `docs/ADR_282_STAGE138_OPEN.md` + `docs/STAGE_138_PLAN.md` (Early-pay → Expense → Purchasing → Fidelity; C1 next).
+
+**Stage 138 C1 (2026-08-12):** Early-pay settings CSV (`test_stage138_early_pay_settings_c1.py`).
+
+**Stage 138 E1 (2026-08-12):** Expense approval settings CSV (`test_stage138_expense_settings_e1.py`).
+
+**Stage 138 P1 (2026-08-12):** Purchasing approval settings CSV (`test_stage138_purchasing_settings_p1.py`).
+
+**Stage 138 D1 (2026-08-12):** Early-pay / expense / purchasing approval settings export fidelity sync — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`).
+
+**Stage 138 exit (2026-08-12):** C1, E1, P1, D1, H138x met — `docs/STAGE_138_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_283_STAGE138_FREEZE.md`. Fidelity: `docs/STAGE_138_FIDELITY.md`.
+
 
 
 

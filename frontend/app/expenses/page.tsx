@@ -1074,6 +1074,7 @@ export default function Page() {
         <h3>Approval matrix</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Amount must exceed a level&apos;s min to require that step. Roles are comma-separated.
+          Export via <code>GET /expenses/settings/export</code> (Stage 138 E1).
         </p>
         {levels.map((lvl, idx) => (
           <div
@@ -1111,12 +1112,43 @@ export default function Page() {
             </button>
           </div>
         ))}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button type="button" onClick={addLevel} disabled={levels.length >= 5}>
             Add level
           </button>
           <button type="button" onClick={saveApprovalMatrix}>
             Save matrix
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              // Stage 138 E1 — expense approval settings CSV
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const res = await fetch(`${apiBase}/expenses/settings/export`, {
+                  headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                  },
+                });
+                if (!res.ok) throw new Error('Expense settings export failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'expense_settings_export.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                setMessage('Expense approval settings CSV exported (Stage 138 E1)');
+              } catch (err: any) {
+                setError(err.message || 'Expense settings export failed');
+              }
+            }}
+          >
+            Export approval settings CSV
           </button>
         </div>
       </div>

@@ -69,6 +69,7 @@ from app import sales_pipeline_export as sales_pipeline_export_svc
 from app import purchasing_pipeline_export as purchasing_pipeline_export_svc
 from app import credit_ops_export as credit_ops_export_svc
 from app import inventory_ops_export as inventory_ops_export_svc
+from app import approval_settings_export as approval_settings_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -6589,6 +6590,24 @@ async def get_purchasing_settings(
     return env(await purchasing_svc.get_pr_approval_settings(db, claims["tenant_id"]))
 
 
+@api.get("/purchasing/settings/export")
+async def export_purchasing_settings(
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 138 P1 — purchasing PR approval settings CSV (levels as levels_json)."""
+    text = await approval_settings_export_svc.export_purchasing_approval_settings_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="purchasing_settings_export.csv"'
+        },
+    )
+
+
 @api.patch("/purchasing/settings")
 async def patch_purchasing_settings(
     payload: PurchaseRequestApprovalSettingsUpdate,
@@ -8192,6 +8211,24 @@ async def expense_settings(
     db: AsyncSession = Depends(get_db),
 ):
     return env(await expenses_svc.get_approval_settings(db, claims["tenant_id"]))
+
+
+@api.get("/expenses/settings/export")
+async def export_expense_settings(
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 138 E1 — expense approval settings CSV (levels as levels_json)."""
+    text = await approval_settings_export_svc.export_expense_approval_settings_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="expense_settings_export.csv"'
+        },
+    )
 
 
 @api.patch("/expenses/settings")
@@ -10560,6 +10597,24 @@ async def credit_settings(
 ):
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     return env(credit_svc.early_pay_settings(tenant))
+
+
+@api.get("/credit/settings/export")
+async def export_credit_settings(
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 138 C1 — early-pay settings CSV (tenant terms; no secrets)."""
+    text = await approval_settings_export_svc.export_early_pay_settings_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="early_pay_settings_export.csv"'
+        },
+    )
 
 
 @api.patch("/credit/settings")
