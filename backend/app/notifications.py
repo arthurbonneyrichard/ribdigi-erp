@@ -19,6 +19,7 @@ DEFAULT_PREFERENCES = {
     "payment_due": {"dashboard": True, "email": True, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
+    "security": {"dashboard": True, "email": True, "sms": False},
     "system": {"dashboard": True, "email": False, "sms": False},
 }
 

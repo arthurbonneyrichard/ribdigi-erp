@@ -1077,9 +1077,12 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Behavioral security analysis.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Detect unusual login patterns (time, location, device)
-  - [ ] Flag suspicious transaction patterns
-  - [ ] Alert admins on potential fraud indicators
+  - [x] Detect unusual login patterns (time, location, device)
+    - Complete (MVP rule-based): unusual hour + new IP; device fingerprinting remains post-MVP
+  - [x] Flag suspicious transaction patterns
+    - Complete (MVP rule-based): HTTP write bursts + cancel/restore/delete bursts + AI query bursts
+  - [x] Alert admins on potential fraud indicators
+    - Complete (MVP): in-app `security` notifications when risk_score ≥ threshold; `GET /ai/security/alerts`
 
 ---
 

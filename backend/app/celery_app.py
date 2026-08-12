@@ -79,5 +79,11 @@ celery.conf.update(
                 run_every=max(5, int(settings.CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS))
             ),
         },
+        "scan-ai-security-alerts": {
+            "task": "app.tasks.scan_ai_security_alerts",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_AI_SECURITY_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
     },
 )

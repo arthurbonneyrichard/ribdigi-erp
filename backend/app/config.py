@@ -104,6 +104,10 @@ class Settings(BaseSettings):
     AI_MODEL: str = ""
     AI_MAX_MESSAGE_CHARS: int = 16000  # ~4096 tokens heuristic
     AI_CHAT_TIMEOUT_SECONDS: float = 30.0
+    # AI Security Monitor (rule-based; no LLM)
+    AI_SECURITY_MONITOR_ENABLED: bool = True
+    AI_SECURITY_ALERT_THRESHOLD: int = 60
+    CELERY_AI_SECURITY_INTERVAL_MINUTES: int = 15
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 

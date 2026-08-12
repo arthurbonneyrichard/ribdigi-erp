@@ -189,6 +189,24 @@ async def job_retry_due_webhooks() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_scan_ai_security_alerts() -> dict:
+    """Rule-based AI Security Monitor scan (BR-21.10)."""
+    from app import ai_security as ai_security_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        summary = await ai_security_svc.scan_tenant(
+            db, tenant_id=tenant_id, actor_user_id=SYSTEM_USER_ID, notify=True
+        )
+        return {
+            "created": summary.get("created", 0),
+            "updated": summary.get("updated", 0),
+            "notified": summary.get("notified", 0),
+            "enabled": summary.get("enabled", False),
+        }
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
@@ -200,6 +218,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "sync_bank_feeds": job_sync_bank_feeds,
     "archive_cold_audit_logs": job_archive_cold_audit_logs,
     "retry_due_webhooks": job_retry_due_webhooks,
+    "scan_ai_security_alerts": job_scan_ai_security_alerts,
 }
 
 
