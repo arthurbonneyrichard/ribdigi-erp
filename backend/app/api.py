@@ -57,6 +57,7 @@ from app import location_export as location_export_svc
 from app import org_catalog_export as org_catalog_export_svc
 from app import finance_meta_export as finance_meta_export_svc
 from app import variant_role_export as variant_role_export_svc
+from app import liquid_recurring_export as liquid_recurring_export_svc
 from app import product_lookup as product_lookup_svc
 from app import stock_import as stock_import_svc
 from app import barcode_labels as barcode_labels_svc
@@ -7855,17 +7856,40 @@ async def update_expense_settings(
 
 @api.get("/expenses/recurring")
 async def list_recurring_expenses(
+    active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.RecurringExpense)
-            .where(m.RecurringExpense.tenant_id == claims["tenant_id"])
-            .order_by(m.RecurringExpense.created_at.desc())
-        )
-    ).scalars().all()
+    """Stage 125 R1 — active_only / is_active for honest paused-only recurring lists."""
+    rows = await expenses_svc.list_recurring(
+        db,
+        claims["tenant_id"],
+        active_only=active_only,
+        is_active=is_active,
+    )
     return env([expenses_svc.serialize_recurring(r) for r in rows])
+
+
+@api.get("/expenses/recurring/export")
+async def expenses_recurring_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 125 X1 — recurring expenses CSV export."""
+    text = await liquid_recurring_export_svc.export_recurring_expenses_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="recurring_expenses_export.csv"'},
+    )
 
 
 @api.post("/expenses/recurring")
@@ -8459,16 +8483,49 @@ async def post_opening_balance(
 
 @api.get("/accounting/liquid-accounts")
 async def liquid_accounts(
+    active_only: bool = False,
+    is_active: bool | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stage 125 L1 — active_only / is_active for honest inactive-only liquid lists."""
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
-    rows = await bank_recon_svc.list_liquid_accounts(db, claims["tenant_id"])
+    rows = await bank_recon_svc.list_liquid_accounts(
+        db,
+        claims["tenant_id"],
+        active_only=active_only,
+        is_active=is_active,
+    )
     return env([bank_recon_svc.serialize_account(r) for r in rows])
+
+
+@api.get("/accounting/liquid-accounts/export")
+async def liquid_accounts_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 125 X1 — liquid cash/bank accounts CSV export (includes bank details)."""
+    from app.accounting import ensure_default_accounts
+
+    await ensure_default_accounts(db, claims["tenant_id"])
+    await db.commit()
+    text = await liquid_recurring_export_svc.export_liquid_accounts_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="liquid_accounts_export.csv"'},
+    )
 
 
 @api.post("/accounting/liquid-accounts")
@@ -8528,6 +8585,7 @@ async def update_liquid_account(
         account_number=payload.account_number,
         bank_branch=payload.bank_branch,
         clear_bank_details=payload.clear_bank_details,
+        is_active=payload.is_active,
     )
     await db.commit()
     return env(bank_recon_svc.serialize_account(row), "Liquid account updated")

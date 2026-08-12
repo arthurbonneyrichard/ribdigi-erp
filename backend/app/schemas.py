@@ -1150,6 +1150,7 @@ class LiquidAccountUpdate(BaseModel):
     account_number: str | None = None
     bank_branch: str | None = None
     clear_bank_details: bool | None = None
+    is_active: bool | None = None
 
 
 class LiquidTransferCreate(BaseModel):

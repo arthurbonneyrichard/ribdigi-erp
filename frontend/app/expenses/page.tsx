@@ -117,10 +117,23 @@ export default function Page() {
       .toLowerCase();
     return v === 'true' || v === 'false' ? v : '';
   });
+  // Stage 125 R1 — recurring_active → GET /expenses/recurring?is_active=
+  const [recurringActiveFilter, setRecurringActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('recurring_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
 
   async function refresh(
     statusOverride?: string,
-    opts?: { storeId?: string; departmentId?: string; categoryActive?: string },
+    opts?: {
+      storeId?: string;
+      departmentId?: string;
+      categoryActive?: string;
+      recurringActive?: string;
+    },
   ) {
     const params = new URLSearchParams();
     const store = opts?.storeId !== undefined ? opts.storeId : filterStoreId;
@@ -138,13 +151,23 @@ export default function Page() {
         : categoryActive === 'false'
           ? '?is_active=false'
           : '';
+    const recurringActive =
+      opts?.recurringActive !== undefined ? opts.recurringActive : recurringActiveFilter;
+    const recQs =
+      recurringActive === 'true'
+        ? '?is_active=true'
+        : recurringActive === 'false'
+          ? '?is_active=false'
+          : recurringActive === 'all'
+            ? '?active_only=false'
+            : '';
     const [exp, cats, settings, liquid, rec, bud, accounts, storeRows, deptRows] =
       await Promise.all([
         api(`/expenses${expQs}`),
         api(`/expenses/categories${catQs}`),
         api('/expenses/settings'),
         api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
-        api('/expenses/recurring').catch(() => ({ data: [] })),
+        api(`/expenses/recurring${recQs}`).catch(() => ({ data: [] })),
         api('/expenses/budgets').catch(() => ({ data: null })),
         api('/accounting/accounts').catch(() => ({ data: [] })),
         api('/stores').catch(() => ({ data: [] })),
@@ -207,7 +230,15 @@ export default function Page() {
     if (status) setFilterStatus(status);
     if (store) setFilterStoreId(store);
     if (dept) setFilterDepartmentId(dept);
-    refresh(status, { storeId: store, departmentId: dept }).catch((err) => setError(err.message));
+    let recActive = recurringActiveFilter;
+    const ra = params.get('recurring_active')?.trim().toLowerCase() || '';
+    if (ra === 'true' || ra === 'false') {
+      recActive = ra;
+      setRecurringActiveFilter(ra);
+    }
+    refresh(status, { storeId: store, departmentId: dept, recurringActive: recActive }).catch(
+      (err) => setError(err.message),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -489,6 +520,21 @@ export default function Page() {
         body: JSON.stringify({ skip_next: true }),
       });
       setMessage('Next occurrence marked to skip');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setRecurringActive(id: string, next: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/expenses/recurring/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: next }),
+      });
+      setMessage(next ? 'Recurring expense resumed' : 'Recurring expense paused');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -812,8 +858,59 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }} id="recurring">
         <h3>Recurring expenses</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Notify before auto-generate; skip or modify the next occurrence.
+          Notify before auto-generate; skip or modify the next occurrence. Filter via{' '}
+          <code>recurring_active</code> → <code>GET /expenses/recurring?is_active=</code> (Stage
+          125 R1).
         </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <select
+            value={recurringActiveFilter || 'default'}
+            onChange={(e) => {
+              const v = e.target.value === 'default' ? '' : e.target.value;
+              setRecurringActiveFilter(v);
+              const url = new URL(window.location.href);
+              if (v === 'true' || v === 'false') url.searchParams.set('recurring_active', v);
+              else url.searchParams.delete('recurring_active');
+              window.history.replaceState({}, '', url.toString());
+              refresh(undefined, { recurringActive: v }).catch((err) => setError(err.message));
+            }}
+          >
+            <option value="default">Active filter (default / all)</option>
+            <option value="true">Active only</option>
+            <option value="false">Paused only</option>
+            <option value="all">All (active_only=false)</option>
+          </select>
+          <button
+            type="button"
+            onClick={async () => {
+              const token = localStorage.getItem('access_token') || '';
+              const qs =
+                recurringActiveFilter === 'true'
+                  ? '?is_active=true'
+                  : recurringActiveFilter === 'false'
+                    ? '?is_active=false'
+                    : recurringActiveFilter === 'all'
+                      ? '?active_only=false'
+                      : '';
+              const res = await fetch(`${apiBase}/expenses/recurring/export${qs}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'recurring_expenses_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('Recurring expenses CSV downloaded');
+            }}
+          >
+            Export recurring CSV
+          </button>
+        </div>
         <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>
           <select value={recCategoryId} onChange={(e) => setRecCategoryId(e.target.value)}>
             {categories.map((c) => (
@@ -950,6 +1047,15 @@ export default function Page() {
                   >
                     Modify next
                   </button>
+                  {r.is_active === false ? (
+                    <button type="button" onClick={() => setRecurringActive(r.id, true)}>
+                      Resume
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => setRecurringActive(r.id, false)}>
+                      Pause
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

@@ -296,6 +296,9 @@ Authoritative MVP docs:
 - `docs/STAGE_124_EXIT_CRITERIA.md` / `docs/ADR_255_STAGE124_FREEZE.md` (`backend/tests/test_stage124_exit_h124x.py`) — Stage 124 H124x
 - `docs/STAGE_124_FIDELITY.md` (`backend/tests/test_stage124_fidelity_d1.py`) — Stage 124 D1
 - `docs/STAGE_124_PLAN.md` (`backend/tests/test_stage124_open.py`) — Stage 124 open (ADR-254)
+- `docs/STAGE_125_EXIT_CRITERIA.md` / `docs/ADR_257_STAGE125_FREEZE.md` (`backend/tests/test_stage125_exit_h125x.py`) — Stage 125 H125x
+- `docs/STAGE_125_FIDELITY.md` (`backend/tests/test_stage125_fidelity_d1.py`) — Stage 125 D1
+- `docs/STAGE_125_PLAN.md` (`backend/tests/test_stage125_open.py`) — Stage 125 open (ADR-256)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1321,6 +1324,18 @@ H124x met — `docs/STAGE_124_EXIT_CRITERIA.md`, ADR-255. Stages 1–124 frozen 
 ## Stage 124 open
 
 ADR-254 + `docs/STAGE_124_PLAN.md` — Tenant MVP Inactive Product Variants, Custom Roles & Variant/Role CSV Export Fidelity.
+
+## Stage 125 exit
+
+H125x met — `docs/STAGE_125_EXIT_CRITERIA.md`, ADR-257. Stages 1–125 frozen for Stage 125 feature scope.
+
+## Stage 125 D1 — Tenant MVP Inactive Liquid Accounts, Recurring Expenses & Liquid/Recurring CSV Export Fidelity
+
+`docs/STAGE_125_FIDELITY.md` — maps L1–X1 → readiness / launch / deploy / security.
+
+## Stage 125 open
+
+ADR-256 + `docs/STAGE_125_PLAN.md` — Tenant MVP Inactive Liquid Accounts, Recurring Expenses & Liquid/Recurring CSV Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

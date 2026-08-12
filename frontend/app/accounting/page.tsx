@@ -21,6 +21,14 @@ export default function Page() {
       .toLowerCase();
     return v === 'true' || v === 'false' ? v : '';
   });
+  // Stage 125 L1 — liquid_active → GET /accounting/liquid-accounts?is_active=
+  const [liquidActiveFilter, setLiquidActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('liquid_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
   const [journalStatusFilter, setJournalStatusFilter] = useState('all');
@@ -106,6 +114,7 @@ export default function Page() {
     chequeDirection?: string;
     chequeStatus?: string;
     accountActive?: string;
+    liquidActive?: string;
   }) {
     const jStatus = opts?.journalStatus !== undefined ? opts.journalStatus : journalStatusFilter;
     const jStore = opts?.journalStoreId !== undefined ? opts.journalStoreId : journalStoreId;
@@ -119,6 +128,16 @@ export default function Page() {
         : accountActive === 'false'
           ? '?is_active=false&active_only=false'
           : accountActive === 'all'
+            ? '?active_only=false'
+            : '';
+    const liquidActive =
+      opts?.liquidActive !== undefined ? opts.liquidActive : liquidActiveFilter;
+    const liquidQs =
+      liquidActive === 'true'
+        ? '?is_active=true'
+        : liquidActive === 'false'
+          ? '?is_active=false'
+          : liquidActive === 'all'
             ? '?active_only=false'
             : '';
     const pnlQs = new URLSearchParams();
@@ -152,7 +171,7 @@ export default function Page() {
       api(journalQs),
       api(tbPath),
       api(pnlPath),
-      api('/accounting/liquid-accounts'),
+      api(`/accounting/liquid-accounts${liquidQs}`),
       api('/accounting/bank-statements'),
       api(chequeQs),
       api('/accounting/bank-connections').catch(() => ({ data: [] })),
@@ -167,9 +186,10 @@ export default function Page() {
     setCheques(chq.data || []);
     setConnections(conns.data || []);
     setStores(storeRows.data || []);
-    if (!reconAccountId && liq.data?.length) setReconAccountId(liq.data[0].id);
-    if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
-    if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
+    const activeLiquid = (liq.data || []).filter((r: any) => r.is_active !== false);
+    if (!reconAccountId && activeLiquid.length) setReconAccountId(activeLiquid[0].id);
+    if (!xferFrom && activeLiquid.length) setXferFrom(activeLiquid[0].id);
+    if (!xferTo && activeLiquid.length > 1) setXferTo(activeLiquid[1].id);
     if (!obAccountId && a.data?.length) {
       const cash = a.data.find((r: any) => r.code === '1000') || a.data[0];
       setObAccountId(cash.id);
@@ -199,11 +219,18 @@ export default function Page() {
       cStatus = cs;
       setChequeStatusFilter(cs);
     }
+    let liqActive = liquidActiveFilter;
+    const la = params.get('liquid_active')?.trim().toLowerCase() || '';
+    if (la === 'true' || la === 'false') {
+      liqActive = la;
+      setLiquidActiveFilter(la);
+    }
     refresh({
       journalStatus: jStatus,
       journalStoreId: store,
       chequeDirection: cDir,
       chequeStatus: cStatus,
+      liquidActive: liqActive,
     }).catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -359,6 +386,21 @@ export default function Page() {
         }),
       });
       setMessage(`${liqKind === 'cash' ? 'Cash' : 'Bank'} account created`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setLiquidActive(accountId: string, next: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/liquid-accounts/${accountId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: next }),
+      });
+      setMessage(next ? 'Liquid account reactivated' : 'Liquid account deactivated');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -721,8 +763,59 @@ export default function Page() {
             <h3>Cash &amp; bank accounts</h3>
             <p className="muted" style={{ marginBottom: 8 }}>
               Money Transfer — create petty cash / bank accounts; deposit (cash→bank), withdrawal
-              (bank→cash), or transfer between liquid accounts.
+              (bank→cash), or transfer between liquid accounts. Filter via{' '}
+              <code>liquid_active</code> → <code>GET /accounting/liquid-accounts?is_active=</code>{' '}
+              (Stage 125 L1).
             </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              <select
+                value={liquidActiveFilter || 'default'}
+                onChange={(e) => {
+                  const v = e.target.value === 'default' ? '' : e.target.value;
+                  setLiquidActiveFilter(v);
+                  const url = new URL(window.location.href);
+                  if (v === 'true' || v === 'false') url.searchParams.set('liquid_active', v);
+                  else url.searchParams.delete('liquid_active');
+                  window.history.replaceState({}, '', url.toString());
+                  refresh({ liquidActive: v }).catch((err) => setError(err.message));
+                }}
+              >
+                <option value="default">Active filter (default / all)</option>
+                <option value="true">Active only</option>
+                <option value="false">Inactive only</option>
+                <option value="all">All (active_only=false)</option>
+              </select>
+              <button
+                type="button"
+                onClick={async () => {
+                  const token = localStorage.getItem('access_token') || '';
+                  const qs = new URLSearchParams();
+                  if (liquidActiveFilter === 'true' || liquidActiveFilter === 'false') {
+                    qs.set('is_active', liquidActiveFilter);
+                  } else if (liquidActiveFilter === 'all') {
+                    qs.set('active_only', 'false');
+                  }
+                  const q = qs.toString();
+                  const res = await fetch(
+                    `${apiBase}/accounting/liquid-accounts/export${q ? `?${q}` : ''}`,
+                    { headers: { Authorization: `Bearer ${token}` } },
+                  );
+                  if (!res.ok) {
+                    setError(await res.text());
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'liquid_accounts_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('Liquid accounts CSV downloaded');
+                }}
+              >
+                Export liquid accounts CSV
+              </button>
+            </div>
             <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
               <select
                 value={liqKind}
@@ -764,6 +857,8 @@ export default function Page() {
                   <th>Kind</th>
                   <th>Bank</th>
                   <th>Balance</th>
+                  <th>Active</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -779,6 +874,18 @@ export default function Page() {
                         : '—'}
                     </td>
                     <td>{a.balance}</td>
+                    <td>{a.is_active === false ? 'no' : 'yes'}</td>
+                    <td>
+                      {a.is_active === false ? (
+                        <button type="button" onClick={() => setLiquidActive(a.id, true)}>
+                          Reactivate
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => setLiquidActive(a.id, false)}>
+                          Deactivate
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -786,18 +893,22 @@ export default function Page() {
             <h4>Deposit / withdrawal / transfer</h4>
             <div style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
               <select value={xferFrom} onChange={(e) => setXferFrom(e.target.value)}>
-                {liquid.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    From {a.code} {a.name} ({a.balance})
-                  </option>
-                ))}
+                {liquid
+                  .filter((a) => a.is_active !== false)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      From {a.code} {a.name} ({a.balance})
+                    </option>
+                  ))}
               </select>
               <select value={xferTo} onChange={(e) => setXferTo(e.target.value)}>
-                {liquid.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    To {a.code} {a.name} ({a.balance})
-                  </option>
-                ))}
+                {liquid
+                  .filter((a) => a.is_active !== false)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      To {a.code} {a.name} ({a.balance})
+                    </option>
+                  ))}
               </select>
               <input
                 value={xferAmount}
@@ -1229,7 +1340,9 @@ export default function Page() {
           >
             <h3>New statement</h3>
             <select value={reconAccountId} onChange={(e) => setReconAccountId(e.target.value)}>
-              {liquid.map((a) => (
+              {liquid
+                .filter((a) => a.is_active !== false)
+                .map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.code} — {a.name} ({a.balance})
                 </option>

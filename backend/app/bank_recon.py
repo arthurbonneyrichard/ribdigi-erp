@@ -77,21 +77,23 @@ async def get_liquid_account(db: AsyncSession, tenant_id: str, account_id: str) 
     return account
 
 
-async def list_liquid_accounts(db: AsyncSession, tenant_id: str) -> list[m.Account]:
-    return list(
-        (
-            await db.execute(
-                select(m.Account)
-                .where(
-                    m.Account.tenant_id == tenant_id,
-                    or_(m.Account.is_cash_account.is_(True), m.Account.is_bank_account.is_(True)),
-                )
-                .order_by(m.Account.code)
-            )
-        )
-        .scalars()
-        .all()
+async def list_liquid_accounts(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.Account]:
+    """Stage 125 L1 — is_active / active_only for honest inactive-only liquid lists."""
+    stmt = select(m.Account).where(
+        m.Account.tenant_id == tenant_id,
+        or_(m.Account.is_cash_account.is_(True), m.Account.is_bank_account.is_(True)),
     )
+    if is_active is not None:
+        stmt = stmt.where(m.Account.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.Account.is_active.is_(True))
+    return list((await db.execute(stmt.order_by(m.Account.code))).scalars().all())
 
 
 async def get_statement(db: AsyncSession, tenant_id: str, statement_id: str) -> m.BankStatement:

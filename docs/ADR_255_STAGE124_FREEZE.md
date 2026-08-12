@@ -23,4 +23,4 @@ Stage 124 Tenant MVP Inactive Product Variants, Custom Roles & Variant/Role CSV 
 
 ## Next stage
 
-Stage 125 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 124 feature scope remains frozen.
+**Stage 125 opened** via CONTINUE/NEXT after this freeze — see [ADR-256](ADR_256_STAGE125_OPEN.md) / [STAGE_125_PLAN.md](STAGE_125_PLAN.md); frozen as [ADR-257](ADR_257_STAGE125_FREEZE.md). Stage 124 feature scope remains frozen.

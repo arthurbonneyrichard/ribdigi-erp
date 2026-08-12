@@ -2102,5 +2102,18 @@ Every feature in every phase must meet:
 
 **Stage 124 exit (2026-08-12):** V1, R1, X1, D1, H124x met — `docs/STAGE_124_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_255_STAGE124_FREEZE.md`. Fidelity: `docs/STAGE_124_FIDELITY.md`.
 
+**Stage 125 open (2026-08-12):** Tenant MVP Inactive Liquid Accounts, Recurring Expenses & Liquid/Recurring CSV Export Fidelity — `docs/ADR_256_STAGE125_OPEN.md` + `docs/STAGE_125_PLAN.md` (Inactive liquid accounts → Paused recurring → Liquid/recurring CSV export → Fidelity; L1 next).
+
+**Stage 125 L1 (2026-08-12):** Inactive liquid accounts honesty (`test_stage125_inactive_liquid_accounts_l1.py`).
+
+**Stage 125 R1 (2026-08-12):** Paused recurring expenses honesty (`test_stage125_inactive_recurring_expenses_r1.py`).
+
+**Stage 125 X1 (2026-08-12):** Liquid & recurring CSV export (`test_stage125_liquid_recurring_export_x1.py`).
+
+**Stage 125 D1 (2026-08-12):** Inactive liquid accounts, recurring expenses & export fidelity sync — `docs/STAGE_125_FIDELITY.md` (`test_stage125_fidelity_d1.py`).
+
+**Stage 125 exit (2026-08-12):** L1, R1, X1, D1, H125x met — `docs/STAGE_125_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_257_STAGE125_FREEZE.md`. Fidelity: `docs/STAGE_125_FIDELITY.md`.
+
+
 
 

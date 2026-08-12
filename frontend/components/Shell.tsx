@@ -607,6 +607,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Active Recurring Expenses',
+    href: '/expenses?recurring_active=true#recurring',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
+    label: 'Paused Recurring Expenses',
+    href: '/expenses?recurring_active=false#recurring',
+    modules: ['expenses'],
+  },
+  {
+    kind: 'link',
     label: 'Expense Categories & Budgets',
     href: '/expenses#budgets',
     modules: ['expenses'],
@@ -633,6 +645,18 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Money Transfer',
     href: '/accounting?tab=ledger#money-transfer',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Active Liquid Accounts',
+    href: '/accounting?tab=ledger&liquid_active=true#money-transfer',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Inactive Liquid Accounts',
+    href: '/accounting?tab=ledger&liquid_active=false#money-transfer',
     modules: ['accounting'],
   },
   { kind: 'link', label: 'Accounting', href: '/accounting', modules: ['accounting'] },

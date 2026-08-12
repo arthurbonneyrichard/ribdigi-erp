@@ -682,6 +682,7 @@ async def update_liquid_account(
     account_number: str | None = None,
     bank_branch: str | None = None,
     clear_bank_details: bool | None = None,
+    is_active: bool | None = None,
 ) -> m.Account:
     from app.bank_recon import get_liquid_account
 
@@ -701,7 +702,9 @@ async def update_liquid_account(
         row.account_number = account_number.strip() or None
     if bank_branch is not None:
         row.bank_branch = bank_branch.strip() or None
-    if row.is_bank_account and not (row.bank_name or "").strip():
+    if is_active is not None:
+        row.is_active = bool(is_active)
+    if row.is_bank_account and not (row.bank_name or "").strip() and row.is_active:
         raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
     await db.flush()
     return row

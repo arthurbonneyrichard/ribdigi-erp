@@ -188,6 +188,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Inactive Product Variants:** Inventory Variants active/inactive filter + Shell leaves (Stage 124 V1)
 - **Inactive Custom Roles:** Admin Roles active/inactive filter + Shell leaves (Stage 124 R1)
 - **Export variants / custom roles CSV:** Inventory & Admin Roles export buttons (Stage 124 X1)
+- **Inactive Liquid Accounts:** Accounting Cash & Bank active/inactive filter + Shell leaves (Stage 125 L1)
+- **Paused Recurring Expenses:** Expenses Recurring active/paused filter + Shell leaves (Stage 125 R1)
+- **Export liquid accounts / recurring CSV:** Accounting & Expenses export buttons (Stage 125 X1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

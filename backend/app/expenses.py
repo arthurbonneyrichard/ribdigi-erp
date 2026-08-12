@@ -1215,6 +1215,23 @@ def serialize_recurring(row: m.RecurringExpense) -> dict:
     }
 
 
+async def list_recurring(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+) -> list[m.RecurringExpense]:
+    """Stage 125 R1 — is_active / active_only for honest paused-only recurring lists."""
+    stmt = select(m.RecurringExpense).where(m.RecurringExpense.tenant_id == tenant_id)
+    if is_active is not None:
+        stmt = stmt.where(m.RecurringExpense.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.RecurringExpense.is_active.is_(True))
+    stmt = stmt.order_by(m.RecurringExpense.created_at.desc())
+    return list((await db.execute(stmt)).scalars().all())
+
+
 def _clear_occurrence_overrides(row: m.RecurringExpense) -> None:
     row.skip_next = False
     row.next_amount = None

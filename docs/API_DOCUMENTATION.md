@@ -1624,3 +1624,5 @@ Stage 122 D1 — `docs/STAGE_122_FIDELITY.md` (`test_stage122_fidelity_d1.py`): 
 Stage 123 D1 — `docs/STAGE_123_FIDELITY.md` (`test_stage123_fidelity_d1.py`): Stage 123 F1 tax/accounts/expense-categories `is_active`/`active_only`; Stage 123 G1 customer groups `is_active`/`active_only`; Stage 123 X1 `GET /accounting/accounts/export`, `/expenses/categories/export`, `/customers/groups/export`.
 
 Stage 124 D1 — `docs/STAGE_124_FIDELITY.md` (`test_stage124_fidelity_d1.py`): Stage 124 V1 product variants `is_active`/`active_only`; Stage 124 R1 roles `is_active`/`active_only`; Stage 124 X1 `GET /products/variants/export`, `/roles/export`.
+
+Stage 125 D1 — `docs/STAGE_125_FIDELITY.md` (`test_stage125_fidelity_d1.py`): Stage 125 L1 liquid-accounts `is_active`/`active_only`; Stage 125 R1 recurring `is_active`/`active_only`; Stage 125 X1 `GET /accounting/liquid-accounts/export`, `/expenses/recurring/export`.
