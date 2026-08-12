@@ -7830,6 +7830,15 @@ async def api_keys_get(
     return env(api_keys_svc.serialize_key(row))
 
 
+@api.get("/api-keys/{key_id}/usage")
+async def api_keys_usage(
+    key_id: str,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await api_keys_svc.usage_stats(db, claims["tenant_id"], key_id))
+
+
 @api.delete("/api-keys/{key_id}")
 async def api_keys_revoke(
     key_id: str,

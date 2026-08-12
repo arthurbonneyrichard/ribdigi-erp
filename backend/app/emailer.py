@@ -53,6 +53,8 @@ def email_status() -> dict:
         "use_tls": bool(settings.SMTP_USE_TLS),
         "use_ssl": bool(settings.SMTP_USE_SSL),
         "frontend_url": settings.FRONTEND_URL,
+        # Never expose SMTP_PASSWORD — only a boolean for admin UI.
+        "has_password": bool(settings.SMTP_PASSWORD),
     }
 
 

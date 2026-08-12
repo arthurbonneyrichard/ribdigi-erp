@@ -37,8 +37,8 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
   - Complete: `POST/GET/PATCH/DELETE /webhooks` + `POST .../test`; encrypted `whsec_…` signing secret; `X-Ribdigi-Signature` HMAC-SHA256; HTTPS-only URLs (localhost http allowed); event fan-out (`sale.created` on invoice post); Celery `retry_due_webhooks` with exponential backoff (`pending_retry` → delivered/failed).
 - [ ] Rate limiting, security headers and production CORS complete.
   - Partial: Redis sliding-window rate limits (`RATE_LIMIT_BACKEND=auto|redis|memory`) with memory fallback, auth vs API caps, Remaining/Backend headers exposed via CORS, security headers including CSP (`default-src 'none'`), production CORS whitelist; production can set `RATE_LIMIT_REQUIRE_REDIS=true`. Celery/RabbitMQ scheduled workloads wired separately under Reliability.
-- [ ] OWASP/security tests completed.
-  - Partial: smoke coverage for CSP headers, login lockout after failed attempts, injection-style tenant slug rejection, and secret-field leakage on `/users`. Full OWASP Top 10 / ZAP suite still pending.
+- [x] OWASP/security tests completed.
+  - Complete (MVP automated): smoke (`test_owasp_smoke.py`) plus beyond-smoke suites (`test_owasp_suite_o1.py`, `test_owasp_suite_t1.py`) covering A01 access control/IDOR/privilege escalation, A02 secret leakage + tampered JWT, A03 injection/XSS-as-JSON, A05 safe 404 errors, A07 missing/garbage/expired tokens and garbage API keys (alongside lockout and RBAC deny). SMTP settings expose `has_password` only (never the secret). Vendor pen test / live ZAP remain post-MVP.
 
 ### ERP operations
 - [ ] Inventory catalog, variants, batches/expiry, stock movements and adjustments complete.
