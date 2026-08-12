@@ -23,7 +23,7 @@ function looksLikeBarcode(value: string) {
   return /^[A-Za-z0-9\-._]{4,48}$/.test(text);
 }
 
-type CartItem = Product & { quantity: number };
+type CartItem = Product & { quantity: number; discount: number };
 
 type Customer = {
   id: string;
@@ -151,6 +151,7 @@ export default function Page() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [cartDiscount, setCartDiscount] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [lastSale, setLastSale] = useState<{ id: string; reference: string } | null>(null);
@@ -158,10 +159,17 @@ export default function Page() {
   const [cashierName, setCashierName] = useState('');
   const [receiptBusy, setReceiptBusy] = useState('');
 
-  const cartTotal = useMemo(
-    () => cart.reduce((sum, c) => sum + Number(c.selling_price) * c.quantity, 0),
+  const cartSubtotal = useMemo(
+    () =>
+      cart.reduce(
+        (sum, c) =>
+          sum + Math.max(0, Number(c.selling_price) * c.quantity - (Number(c.discount) || 0)),
+        0
+      ),
     [cart]
   );
+  const cartDiscountAmount = Math.max(0, Number(cartDiscount) || 0);
+  const cartTotal = Math.max(0, cartSubtotal - cartDiscountAmount);
   const cartCount = useMemo(() => cart.reduce((sum, c) => sum + c.quantity, 0), [cart]);
 
   async function refreshSession() {
@@ -197,6 +205,16 @@ export default function Page() {
   function clearCustomer() {
     setCustomerId('');
     setCustomerName('');
+  }
+
+  function setLineDiscount(id: string, discount: number) {
+    setCart((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const maxDisc = Number(p.selling_price) * p.quantity;
+        return { ...p, discount: Math.min(Math.max(0, discount), maxDisc) };
+      })
+    );
   }
 
   async function openShift() {
@@ -309,6 +327,7 @@ export default function Page() {
           product_id: pid,
           variant_id: product.variant_id || null,
           quantity: 1,
+          discount: 0,
         },
       ];
     });
@@ -317,13 +336,23 @@ export default function Page() {
   function bumpQty(id: string, delta: number) {
     setCart((prev) =>
       prev
-        .map((p) => (p.id === id ? { ...p, quantity: p.quantity + delta } : p))
+        .map((p) => {
+          if (p.id !== id) return p;
+          const quantity = p.quantity + delta;
+          const maxDisc = Number(p.selling_price) * Math.max(quantity, 0);
+          return {
+            ...p,
+            quantity,
+            discount: Math.min(p.discount || 0, maxDisc),
+          };
+        })
         .filter((p) => p.quantity > 0)
     );
   }
 
   function clearCart() {
     setCart([]);
+    setCartDiscount('');
   }
 
   async function checkout() {
@@ -343,21 +372,23 @@ export default function Page() {
       setError('Select a customer for credit sales');
       return;
     }
+    if (cartDiscountAmount > cartSubtotal + 1e-9) {
+      setError('Cart discount exceeds cart total');
+      return;
+    }
     const items = cart.map((c) => ({
       product_id: c.product_id || c.id,
       variant_id: c.variant_id || null,
       quantity: c.quantity,
+      discount: Number(c.discount) || 0,
     }));
-    const subtotal = cart.reduce((sum, c) => sum + Number(c.selling_price) * c.quantity, 0);
     setBusy(true);
     try {
       const r = await api('/pos/sales', {
         method: 'POST',
         body: JSON.stringify({
           session_id: session.session_id,
-          subtotal,
-          tax: 0,
-          total: subtotal,
+          discount_amount: cartDiscountAmount,
           status: 'completed',
           payment_method: paymentMethod,
           party_id: customerId || null,
@@ -368,7 +399,7 @@ export default function Page() {
       if (!r?.data?.id || !r?.data?.reference) {
         throw new Error(r?.message || 'Sale failed');
       }
-      setCart([]);
+      clearCart();
       clearCustomer();
       setLastSale({ id: r.data.id, reference: r.data.reference });
       await refreshSession();
@@ -609,34 +640,64 @@ export default function Page() {
 
             <div className="tpos-cart-list">
               {cart.length === 0 && <p className="muted">Tap a product image to add it.</p>}
-              {cart.map((c) => (
-                <div key={c.id} className="tpos-cart-row">
-                  <div className="tpos-cart-mini">
-                    <ProductThumb
-                      productId={c.product_id || c.id}
-                      hasImage={c.has_image}
-                      name={c.name}
-                    />
+              {cart.map((c) => {
+                const lineGross = Number(c.selling_price) * c.quantity;
+                const lineNet = Math.max(0, lineGross - (Number(c.discount) || 0));
+                return (
+                  <div key={c.id} className="tpos-cart-row">
+                    <div className="tpos-cart-mini">
+                      <ProductThumb
+                        productId={c.product_id || c.id}
+                        hasImage={c.has_image}
+                        name={c.name}
+                      />
+                    </div>
+                    <div className="tpos-cart-info">
+                      <strong>{c.name}</strong>
+                      <span>{money(Number(c.selling_price))} each</span>
+                      <label className="tpos-line-disc">
+                        <span>Disc</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={lineGross}
+                          step="0.01"
+                          value={c.discount || 0}
+                          onChange={(e) => setLineDiscount(c.id, Number(e.target.value) || 0)}
+                          aria-label={`Discount for ${c.name}`}
+                        />
+                      </label>
+                    </div>
+                    <div className="tpos-qty">
+                      <button type="button" aria-label="Decrease" onClick={() => bumpQty(c.id, -1)}>
+                        −
+                      </button>
+                      <span>{c.quantity}</span>
+                      <button type="button" aria-label="Increase" onClick={() => bumpQty(c.id, 1)}>
+                        +
+                      </button>
+                    </div>
+                    <div className="tpos-line">{money(lineNet)}</div>
                   </div>
-                  <div className="tpos-cart-info">
-                    <strong>{c.name}</strong>
-                    <span>{money(Number(c.selling_price))} each</span>
-                  </div>
-                  <div className="tpos-qty">
-                    <button type="button" aria-label="Decrease" onClick={() => bumpQty(c.id, -1)}>
-                      −
-                    </button>
-                    <span>{c.quantity}</span>
-                    <button type="button" aria-label="Increase" onClick={() => bumpQty(c.id, 1)}>
-                      +
-                    </button>
-                  </div>
-                  <div className="tpos-line">{money(Number(c.selling_price) * c.quantity)}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="tpos-cart-foot">
+              <label className="tpos-field">
+                <span>Cart discount</span>
+                <input
+                  className="tpos-input"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={cartDiscount}
+                  onChange={(e) => setCartDiscount(e.target.value)}
+                  placeholder="0.00"
+                  inputMode="decimal"
+                />
+              </label>
+
               <div className="tpos-total">
                 <span>Total</span>
                 <strong>{money(cartTotal)}</strong>

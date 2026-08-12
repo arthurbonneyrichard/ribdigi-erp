@@ -3716,14 +3716,21 @@ async def pos_sale(
 
     subtotal = 0.0
     tax_total = 0.0
+    line_discounts = 0.0
     priced_items = []
     for item in items:
         product, variant, unit_price = await resolve_sale_line(db, claims["tenant_id"], item)
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
-        line_sub, line_tax, line_gross = spec.compute_amounts(
-            float(item["quantity"]) * float(unit_price)
-        )
+        line_discount = round(float(item.get("discount") or 0), 2)
+        if line_discount < 0:
+            raise HTTPException(status_code=400, detail="Line discount must be >= 0")
+        gross_before_discount = round(float(item["quantity"]) * float(unit_price), 2)
+        if line_discount > gross_before_discount + 1e-9:
+            raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
+        taxable_base = round(gross_before_discount - line_discount, 2)
+        line_sub, line_tax, line_gross = spec.compute_amounts(taxable_base)
         subtotal += line_sub
+        line_discounts += line_discount
         if not spec.is_reverse_charge:
             tax_total += line_tax
         priced_items.append(
@@ -3733,6 +3740,7 @@ async def pos_sale(
                 "name": variant.name if variant else product.name,
                 "sku": variant.sku if variant else product.sku,
                 "unit_price": unit_price,
+                "discount": line_discount,
                 "tax_rate": spec.rate_pct,
                 "line_subtotal": line_sub,
                 "line_tax": 0.0 if spec.is_reverse_charge else line_tax,
@@ -3740,7 +3748,13 @@ async def pos_sale(
                 "is_reverse_charge": spec.is_reverse_charge,
             }
         )
-    total = round(subtotal + tax_total, 2)
+    cart_discount = round(float(payload.discount_amount or 0), 2)
+    if cart_discount < 0:
+        raise HTTPException(status_code=400, detail="discount_amount must be >= 0")
+    max_cart_discount = round(subtotal + tax_total, 2)
+    if cart_discount > max_cart_discount + 1e-9:
+        raise HTTPException(status_code=400, detail="Cart discount exceeds sale total")
+    total = round(subtotal + tax_total - cart_discount, 2)
 
     party = None
     customer_name = (payload.customer_name or "").strip() or None
@@ -3774,12 +3788,15 @@ async def pos_sale(
     body.pop("session_id", None)
     body.pop("payment_method", None)
     body.pop("customer_name", None)
+    body.pop("discount_amount", None)
     body["payload"] = {
         **(body.get("payload") or {}),
         "items": priced_items,
         "payment_method": payment_method,
         "session_id": session.id,
         "customer_name": customer_name,
+        "discount_amount": cart_discount,
+        "line_discounts": round(line_discounts, 2),
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
@@ -3847,6 +3864,8 @@ async def pos_sale(
         "subtotal": float(tx.subtotal),
         "tax": float(tx.tax),
         "total": float(tx.total),
+        "discount_amount": cart_discount,
+        "line_discounts": round(line_discounts, 2),
         "payment_method": payment_method,
         "customer_name": customer_name,
         "party_id": payload.party_id,
