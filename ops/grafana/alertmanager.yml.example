@@ -1,0 +1,48 @@
+# Stage 28 A1 — Alertmanager example (operator / staging only).
+# NOT a hosted PagerDuty/SIEM claim. Wire receivers when secrets exist.
+# Pair with ops/prometheus/alerts/ribdigi.yml (Stage 26 M1).
+# See docs/GRAFANA_PACK_MVP.md.
+
+global:
+  resolve_timeout: 5m
+  # smtp_smarthost: 'smtp.example:587'
+  # smtp_from: 'alerts@example.com'
+
+route:
+  receiver: default-log
+  group_by: [alertname, severity]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = critical
+      receiver: critical-ops
+      continue: false
+
+receivers:
+  - name: default-log
+    # Local/dev: write to webhook logger or leave empty for Alertmanager UI only.
+    webhook_configs:
+      - url: "http://127.0.0.1:9093/noop"
+        send_resolved: true
+
+  - name: critical-ops
+    # Operator: uncomment and set PAGERDUTY_ROUTING_KEY when ready.
+    # pagerduty_configs:
+    #   - routing_key: "<PAGERDUTY_ROUTING_KEY>"
+    #     severity: critical
+    #     description: '{{ .CommonAnnotations.summary }}'
+    webhook_configs:
+      - url: "http://127.0.0.1:9093/noop"
+        send_resolved: true
+
+inhibit_rules:
+  - source_matchers:
+      - severity = critical
+    target_matchers:
+      - severity = warning
+    equal: [alertname]
+
+# Explicitly deferred: hosted Alertmanager-as-a-service, production PagerDuty Complete,
+# SIEM routing. Do not treat this file as proof of a green paging stack.

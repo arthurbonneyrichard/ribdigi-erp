@@ -6,9 +6,16 @@ from app.api import api
 from app.audit_middleware import AuditMutationMiddleware
 from app.config import settings
 from app.db import SessionLocal
-from app.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
+from app.middleware import MetricsMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
+from app.request_logging import RequestLoggingMiddleware
+import logging
 
 is_prod = settings.APP_ENV.lower() == "production"
+
+_level = getattr(logging, str(settings.LOG_LEVEL or "INFO").upper(), logging.INFO)
+logging.getLogger("ribdigi.request").setLevel(_level)
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=_level)
 
 app = FastAPI(
     title="RIBDIGI BUSINESS ERP API",
@@ -20,6 +27,7 @@ app = FastAPI(
 
 # Middleware order: last added runs first on request.
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(AuditMutationMiddleware)
 
@@ -35,6 +43,7 @@ cors_kwargs = {
         "Content-Type",
         "X-Tenant-ID",
         "X-API-Key",
+        "X-Request-ID",
         "Accept",
         "Origin",
     ],
@@ -43,10 +52,13 @@ cors_kwargs = {
         "X-RateLimit-Remaining",
         "X-RateLimit-Backend",
         "Retry-After",
+        "X-Request-ID",
     ],
     "max_age": 600,
 }
 app.add_middleware(CORSMiddleware, **cors_kwargs)
+# Outer logging so latency includes rate-limit / audit middleware and X-Request-ID is always set.
+app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(api)
 # Used by AuditMutationMiddleware (overridable in tests via app.state.session_factory).
