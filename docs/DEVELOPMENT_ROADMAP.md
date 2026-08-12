@@ -2294,6 +2294,18 @@ Every feature in every phase must meet:
 
 **Stage 140 exit (2026-08-12):** S1, N1, B1, D1, H140x met — `docs/STAGE_140_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_287_STAGE140_FREEZE.md`. Fidelity: `docs/STAGE_140_FIDELITY.md`.
 
+**Stage 141 open (2026-08-12):** Tenant MVP Outstanding Bills CSV, Supplier Payment Schedule CSV & Party Statement CSV Export Fidelity — `docs/ADR_288_STAGE141_OPEN.md` + `docs/STAGE_141_PLAN.md` (Outstanding → Schedule → Statement → Fidelity; O1 next).
+
+**Stage 141 O1 (2026-08-12):** Outstanding bills CSV (`test_stage141_outstanding_export_o1.py`).
+
+**Stage 141 P1 (2026-08-12):** Supplier payment schedule CSV (`test_stage141_payment_schedule_p1.py`).
+
+**Stage 141 T1 (2026-08-12):** Party statement CSV (`test_stage141_statement_export_t1.py`).
+
+**Stage 141 D1 (2026-08-12):** Outstanding / schedule / statement export fidelity sync — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`).
+
+**Stage 141 exit (2026-08-12):** O1, P1, T1, D1, H141x met — `docs/STAGE_141_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_289_STAGE141_FREEZE.md`. Fidelity: `docs/STAGE_141_FIDELITY.md`.
+
 
 
 

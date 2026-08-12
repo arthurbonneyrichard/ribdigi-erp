@@ -344,6 +344,9 @@ Authoritative MVP docs:
 - `docs/STAGE_140_EXIT_CRITERIA.md` / `docs/ADR_287_STAGE140_FREEZE.md` (`backend/tests/test_stage140_exit_h140x.py`) — Stage 140 H140x
 - `docs/STAGE_140_FIDELITY.md` (`backend/tests/test_stage140_fidelity_d1.py`) — Stage 140 D1
 - `docs/STAGE_140_PLAN.md` (`backend/tests/test_stage140_open.py`) — Stage 140 open (ADR-286)
+- `docs/STAGE_141_EXIT_CRITERIA.md` / `docs/ADR_289_STAGE141_FREEZE.md` (`backend/tests/test_stage141_exit_h141x.py`) — Stage 141 H141x
+- `docs/STAGE_141_FIDELITY.md` (`backend/tests/test_stage141_fidelity_d1.py`) — Stage 141 D1
+- `docs/STAGE_141_PLAN.md` (`backend/tests/test_stage141_open.py`) — Stage 141 open (ADR-288)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1561,6 +1564,18 @@ H140x met — `docs/STAGE_140_EXIT_CRITERIA.md`, ADR-287. Stages 1–140 frozen 
 ## Stage 140 open
 
 ADR-286 + `docs/STAGE_140_PLAN.md` — Tenant MVP Storage Settings CSV, Notification Preferences CSV & Backup Settings CSV Export Fidelity.
+
+## Stage 141 exit
+
+H141x met — `docs/STAGE_141_EXIT_CRITERIA.md`, ADR-289. Stages 1–141 frozen for Stage 141 feature scope.
+
+## Stage 141 D1 — Tenant MVP Outstanding Bills CSV, Supplier Payment Schedule CSV & Party Statement CSV Export Fidelity
+
+`docs/STAGE_141_FIDELITY.md` — maps O1–T1 → readiness / launch / deploy / security.
+
+## Stage 141 open
+
+ADR-288 + `docs/STAGE_141_PLAN.md` — Tenant MVP Outstanding Bills CSV, Supplier Payment Schedule CSV & Party Statement CSV Export Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

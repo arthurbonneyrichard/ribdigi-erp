@@ -771,6 +771,31 @@ export default function Page() {
               {outstanding.reduce((s, row) => s + Number(row.amount || 0), 0).toFixed(2)})
             </span>
           </h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Document CSV via{' '}
+            <code>
+              GET /{kind === 'receivable' ? 'customers' : 'suppliers'}/&#123;id&#125;/outstanding/export
+            </code>{' '}
+            (Stage 141 O1).
+          </p>
+          <button
+            type="button"
+            style={{ marginBottom: 8 }}
+            disabled={!partyId}
+            onClick={() =>
+              downloadCreditExport(
+                kind === 'receivable'
+                  ? `/customers/${partyId}/outstanding/export`
+                  : `/suppliers/${partyId}/outstanding/export`,
+                kind === 'receivable'
+                  ? 'customer_outstanding_export.csv'
+                  : 'supplier_outstanding_export.csv',
+                'Outstanding bills CSV downloaded (Stage 141 O1)',
+              )
+            }
+          >
+            Export outstanding CSV
+          </button>
           <table className="table">
             <thead>
               <tr>
@@ -835,9 +860,37 @@ export default function Page() {
       <div className="card" style={{ marginTop: 16 }} id="statement">
         <h3>Statement</h3>
         {statement ? (
-          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
-            {JSON.stringify(statement, null, 2)}
-          </pre>
+          <>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Line CSV via{' '}
+              <code>
+                GET /credit/{kind === 'receivable' ? 'customers' : 'suppliers'}
+                /&#123;id&#125;/statement/export
+              </code>{' '}
+              (Stage 141 T1).
+            </p>
+            <button
+              type="button"
+              style={{ marginBottom: 8 }}
+              disabled={!partyId}
+              onClick={() =>
+                downloadCreditExport(
+                  kind === 'receivable'
+                    ? `/credit/customers/${partyId}/statement/export`
+                    : `/credit/suppliers/${partyId}/statement/export`,
+                  kind === 'receivable'
+                    ? 'customer_statement_export.csv'
+                    : 'supplier_statement_export.csv',
+                  'Statement CSV downloaded (Stage 141 T1)',
+                )
+              }
+            >
+              Export statement CSV
+            </button>
+            <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
+              {JSON.stringify(statement, null, 2)}
+            </pre>
+          </>
         ) : (
           <p className="muted">Select a party and load statement from Party actions.</p>
         )}
@@ -860,7 +913,26 @@ export default function Page() {
         {kind !== 'payable' ? (
           <p className="muted">Switch to Payables to load a supplier payment schedule.</p>
         ) : paymentSchedule ? (
-          <table className="table">
+          <>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Schedule CSV via <code>GET /suppliers/&#123;id&#125;/payment-schedule/export</code>{' '}
+              (Stage 141 P1; optional <code>schedule_bucket=</code>).
+            </p>
+            <button
+              type="button"
+              style={{ marginBottom: 8 }}
+              disabled={!partyId}
+              onClick={() =>
+                downloadCreditExport(
+                  `/suppliers/${partyId}/payment-schedule/export`,
+                  'supplier_payment_schedule_export.csv',
+                  'Payment schedule CSV downloaded (Stage 141 P1)',
+                )
+              }
+            >
+              Export schedule CSV
+            </button>
+            <table className="table">
             <thead>
               <tr>
                 <th>Document</th>
@@ -913,6 +985,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </>
         ) : (
           <p className="muted">Select a supplier and load schedule from Party actions.</p>
         )}

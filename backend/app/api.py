@@ -10874,6 +10874,25 @@ async def customer_credit_statement(
     return env(await credit_svc.customer_statement(db, claims["tenant_id"], customer_id))
 
 
+@api.get("/credit/customers/{customer_id}/statement/export")
+async def export_customer_credit_statement(
+    customer_id: str,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 141 T1 — customer statement lines CSV."""
+    text = await credit_ops_export_svc.export_customer_statement_csv(
+        db, tenant_id=claims["tenant_id"], customer_id=customer_id
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="customer_statement_export.csv"'
+        },
+    )
+
+
 @api.get("/credit/suppliers/{supplier_id}/statement")
 async def supplier_credit_statement(
     supplier_id: str,
@@ -10881,6 +10900,25 @@ async def supplier_credit_statement(
     db: AsyncSession = Depends(get_db),
 ):
     return env(await credit_svc.supplier_statement(db, claims["tenant_id"], supplier_id))
+
+
+@api.get("/credit/suppliers/{supplier_id}/statement/export")
+async def export_supplier_credit_statement(
+    supplier_id: str,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 141 T1 — supplier statement lines CSV."""
+    text = await credit_ops_export_svc.export_supplier_statement_csv(
+        db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="supplier_statement_export.csv"'
+        },
+    )
 
 
 @api.patch("/customers/{customer_id}/credit-limit")
@@ -10918,6 +10956,25 @@ async def customer_outstanding(
     """Stage 8 S2 — open AR bills for Credit UI."""
     return env(
         await credit_svc.customer_outstanding_bills(db, claims["tenant_id"], customer_id)
+    )
+
+
+@api.get("/customers/{customer_id}/outstanding/export")
+async def export_customer_outstanding(
+    customer_id: str,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 141 O1 — customer outstanding bills CSV."""
+    text = await credit_ops_export_svc.export_customer_outstanding_csv(
+        db, tenant_id=claims["tenant_id"], customer_id=customer_id
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="customer_outstanding_export.csv"'
+        },
     )
 
 
@@ -10988,6 +11045,25 @@ async def supplier_outstanding(
     return env(out)
 
 
+@api.get("/suppliers/{supplier_id}/outstanding/export")
+async def export_supplier_outstanding(
+    supplier_id: str,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 141 O1 — supplier outstanding bills CSV."""
+    text = await credit_ops_export_svc.export_supplier_outstanding_csv(
+        db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="supplier_outstanding_export.csv"'
+        },
+    )
+
+
 @api.get("/suppliers/{supplier_id}/payment-schedule")
 async def supplier_payment_schedule(
     supplier_id: str,
@@ -10997,6 +11073,29 @@ async def supplier_payment_schedule(
     """Stage 8 S1 / BR-11.2 — upcoming and overdue AP payment schedule."""
     return env(
         await credit_svc.supplier_payment_schedule(db, claims["tenant_id"], supplier_id)
+    )
+
+
+@api.get("/suppliers/{supplier_id}/payment-schedule/export")
+async def export_supplier_payment_schedule(
+    supplier_id: str,
+    schedule_bucket: str | None = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 141 P1 — supplier payment schedule CSV (optional schedule_bucket)."""
+    text = await credit_ops_export_svc.export_supplier_payment_schedule_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        supplier_id=supplier_id,
+        schedule_bucket=schedule_bucket,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="supplier_payment_schedule_export.csv"'
+        },
     )
 
 

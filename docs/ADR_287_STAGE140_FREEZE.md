@@ -24,3 +24,5 @@ Stage 140 Tenant MVP Storage Settings CSV, Notification Preferences CSV & Backup
 ## Next stage
 
 Stage 141 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 140 feature scope remains frozen.
+
+**Stage 141 opened and closed under ADR-288 / ADR-289** — Tenant MVP Outstanding Bills CSV, Supplier Payment Schedule CSV & Party Statement CSV Export Fidelity (CONTINUE/NEXT approved).

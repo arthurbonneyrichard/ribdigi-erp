@@ -1494,3 +1494,5 @@ Stage 138 D1 early-pay settings, expense approval settings & purchasing approval
 Stage 139 D1 expense budgets, account transactions & fiscal period export fidelity — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 140 D1 storage settings, notification preferences & backup settings export fidelity — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 141 D1 outstanding bills, supplier payment schedule & party statement export fidelity — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

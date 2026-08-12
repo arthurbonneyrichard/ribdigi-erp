@@ -867,6 +867,7 @@ Stage 137 D1 — `docs/STAGE_137_FIDELITY.md` (`test_stage137_fidelity_d1.py`); 
 Stage 138 D1 — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`); Stage 138 C1 / E1 / P1.
 Stage 139 D1 — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); Stage 139 B1 / A1 / F1.
 Stage 140 D1 — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`); Stage 140 S1 / N1 / B1.
+Stage 141 D1 — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`); Stage 141 O1 / P1 / T1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1560,3 +1561,5 @@ Stage 138 D1 early-pay settings, expense approval settings & purchasing approval
 Stage 139 D1 expense budgets, account transactions & fiscal period export fidelity — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); Stage 139 B1 budgets CSV; Stage 139 A1 account transactions CSV; Stage 139 F1 fiscal period CSV.
 
 Stage 140 D1 storage settings, notification preferences & backup settings export fidelity — `docs/STAGE_140_FIDELITY.md` (`test_stage140_fidelity_d1.py`); Stage 140 S1 storage settings CSV (secret-free); Stage 140 N1 notification preferences CSV; Stage 140 B1 backup settings CSV.
+
+Stage 141 D1 outstanding bills, supplier payment schedule & party statement export fidelity — `docs/STAGE_141_FIDELITY.md` (`test_stage141_fidelity_d1.py`); Stage 141 O1 outstanding bills CSV; Stage 141 P1 payment schedule CSV; Stage 141 T1 party statement CSV.

@@ -1,4 +1,4 @@
-"""CSV export for customer/supplier payment registers and credit aging (Stage 136). Header-only."""
+"""CSV export for customer/supplier payment registers, aging (Stage 136), and party ops (Stage 141)."""
 
 from __future__ import annotations
 
@@ -63,7 +63,51 @@ AGING_EXPORT_COLUMNS = [
     "bucket",
 ]
 
+OUTSTANDING_EXPORT_COLUMNS = [
+    "party_id",
+    "party_kind",
+    "document_type",
+    "document_id",
+    "document_number",
+    "amount",
+    "due_date",
+    "status",
+]
+
+PAYMENT_SCHEDULE_EXPORT_COLUMNS = [
+    "supplier_id",
+    "document_type",
+    "document_id",
+    "document_number",
+    "purchase_order_id",
+    "amount",
+    "due_date",
+    "status",
+    "days_until_due",
+    "is_overdue",
+    "schedule_bucket",
+    "early_discount_eligible",
+    "early_discount_amount",
+    "cash_to_settle",
+]
+
+STATEMENT_EXPORT_COLUMNS = [
+    "party_id",
+    "party_name",
+    "party_kind",
+    "credit_limit",
+    "party_balance",
+    "date",
+    "type",
+    "reference",
+    "debit",
+    "credit",
+    "status",
+    "balance_due",
+]
+
 PAYMENT_METHODS = {"cash", "bank_transfer", "card", "cheque", "mobile_money", "other"}
+SCHEDULE_BUCKETS = {"overdue", "due_today", "upcoming", "unscheduled"}
 
 
 def serialize_customer_payment(row: m.CustomerPayment) -> dict:
@@ -236,3 +280,179 @@ async def export_aging_csv(
         row = {**doc, "kind": key}
         writer.writerow({k: _cell(row.get(k)) for k in AGING_EXPORT_COLUMNS})
     return buf.getvalue()
+
+
+async def export_customer_outstanding_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    customer_id: str,
+) -> str:
+    """Stage 141 O1 — open AR bills CSV for one customer."""
+    rows = await credit_svc.customer_outstanding_bills(db, tenant_id, customer_id)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=OUTSTANDING_EXPORT_COLUMNS)
+    writer.writeheader()
+    for item in rows:
+        writer.writerow(
+            {
+                "party_id": _cell(customer_id),
+                "party_kind": "customer",
+                "document_type": _cell(item.get("document_type") or "sales_invoice"),
+                "document_id": _cell(item.get("invoice_id")),
+                "document_number": _cell(item.get("invoice_number")),
+                "amount": _cell(item.get("amount")),
+                "due_date": _cell(item.get("due_date")),
+                "status": _cell(item.get("status")),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_supplier_outstanding_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    supplier_id: str,
+) -> str:
+    """Stage 141 O1 — open AP bills CSV for one supplier (flat outstanding list)."""
+    schedule = await credit_svc.supplier_payment_schedule(db, tenant_id, supplier_id)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=OUTSTANDING_EXPORT_COLUMNS)
+    writer.writeheader()
+    for item in schedule.get("items") or []:
+        doc_type = item.get("document_type") or ""
+        if doc_type == "purchase_invoice":
+            doc_id = item.get("purchase_invoice_id")
+            doc_num = item.get("invoice_number")
+        else:
+            doc_id = item.get("purchase_order_id")
+            doc_num = item.get("po_number")
+        writer.writerow(
+            {
+                "party_id": _cell(supplier_id),
+                "party_kind": "supplier",
+                "document_type": _cell(doc_type),
+                "document_id": _cell(doc_id),
+                "document_number": _cell(doc_num),
+                "amount": _cell(item.get("amount")),
+                "due_date": _cell(item.get("due_date")),
+                "status": _cell(item.get("status")),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_supplier_payment_schedule_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    supplier_id: str,
+    schedule_bucket: str | None = None,
+) -> str:
+    """Stage 141 P1 — supplier AP payment schedule CSV with optional bucket filter."""
+    bucket = (schedule_bucket or "").strip().lower() or None
+    if bucket and bucket not in SCHEDULE_BUCKETS:
+        raise HTTPException(
+            status_code=400,
+            detail="schedule_bucket must be overdue, due_today, upcoming, or unscheduled",
+        )
+    schedule = await credit_svc.supplier_payment_schedule(db, tenant_id, supplier_id)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=PAYMENT_SCHEDULE_EXPORT_COLUMNS)
+    writer.writeheader()
+    for item in schedule.get("items") or []:
+        if bucket and (item.get("schedule_bucket") or "") != bucket:
+            continue
+        doc_type = item.get("document_type") or ""
+        if doc_type == "purchase_invoice":
+            doc_id = item.get("purchase_invoice_id")
+            doc_num = item.get("invoice_number")
+        else:
+            doc_id = item.get("purchase_order_id")
+            doc_num = item.get("po_number")
+        early = item.get("early_discount") or {}
+        writer.writerow(
+            {
+                "supplier_id": _cell(supplier_id),
+                "document_type": _cell(doc_type),
+                "document_id": _cell(doc_id),
+                "document_number": _cell(doc_num),
+                "purchase_order_id": _cell(item.get("purchase_order_id")),
+                "amount": _cell(item.get("amount")),
+                "due_date": _cell(item.get("due_date")),
+                "status": _cell(item.get("status")),
+                "days_until_due": _cell(item.get("days_until_due")),
+                "is_overdue": _cell(item.get("is_overdue")),
+                "schedule_bucket": _cell(item.get("schedule_bucket")),
+                "early_discount_eligible": _cell(bool(early.get("eligible"))),
+                "early_discount_amount": _cell(early.get("discount_amount")),
+                "cash_to_settle": _cell(early.get("cash_to_settle")),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_customer_statement_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    customer_id: str,
+) -> str:
+    """Stage 141 T1 — customer credit statement lines CSV."""
+    data = await credit_svc.customer_statement(db, tenant_id, customer_id)
+    party = data.get("customer") or {}
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=STATEMENT_EXPORT_COLUMNS)
+    writer.writeheader()
+    for line in data.get("lines") or []:
+        writer.writerow(
+            {
+                "party_id": _cell(party.get("id") or customer_id),
+                "party_name": _cell(party.get("name")),
+                "party_kind": "customer",
+                "credit_limit": _cell(party.get("credit_limit")),
+                "party_balance": _cell(party.get("balance")),
+                "date": _cell(line.get("date")),
+                "type": _cell(line.get("type")),
+                "reference": _cell(line.get("reference")),
+                "debit": _cell(line.get("debit")),
+                "credit": _cell(line.get("credit")),
+                "status": _cell(line.get("status")),
+                "balance_due": _cell(line.get("balance_due")),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_supplier_statement_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    supplier_id: str,
+) -> str:
+    """Stage 141 T1 — supplier credit statement lines CSV."""
+    data = await credit_svc.supplier_statement(db, tenant_id, supplier_id)
+    party = data.get("supplier") or {}
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=STATEMENT_EXPORT_COLUMNS)
+    writer.writeheader()
+    for line in data.get("lines") or []:
+        writer.writerow(
+            {
+                "party_id": _cell(party.get("id") or supplier_id),
+                "party_name": _cell(party.get("name")),
+                "party_kind": "supplier",
+                "credit_limit": "",
+                "party_balance": _cell(party.get("balance")),
+                "date": _cell(line.get("date")),
+                "type": _cell(line.get("type")),
+                "reference": _cell(line.get("reference")),
+                "debit": _cell(line.get("debit")),
+                "credit": _cell(line.get("credit")),
+                "status": _cell(line.get("status")),
+                "balance_due": _cell(line.get("balance_due")),
+            }
+        )
+    return buf.getvalue()
+
