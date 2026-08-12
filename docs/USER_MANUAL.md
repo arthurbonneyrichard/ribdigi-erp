@@ -149,6 +149,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Stock In / Out / Opening / Adjustment / Transfer Movements:** Inventory movement type Shell leaves (Stage 111 I1)
 - **Posted Sales Returns:** Sales returns status Shell leaf (Stage 111 S1)
 - **Deposited / Cleared Cheques; Cheques hash:** Accounting cheque deep-links (Stage 111 C1)
+- **Daily / Weekly / Enabled Report Schedules:** Report schedule Shell leaves (Stage 112 R1)
+- **Cash Drawer:** Stores Shell deep-link (Stage 112 S1)
+- **Trial / Starter / Growth / Enterprise Plan Tenants:** Platform plan_code Shell leaves (Stage 112 P1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

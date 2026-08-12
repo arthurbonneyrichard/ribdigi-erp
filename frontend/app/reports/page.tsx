@@ -134,6 +134,38 @@ export default function Page() {
     recipients: '',
     enabled: true,
   });
+  // Stage 112 R1 — shareable schedule frequency / enabled filters (client-side)
+  const [scheduleFrequencyFilter, setScheduleFrequencyFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = new URLSearchParams(window.location.search).get('frequency')?.trim() || '';
+    return v === 'daily' || v === 'weekly' ? v : '';
+  });
+  const [scheduleEnabledFilter, setScheduleEnabledFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = new URLSearchParams(window.location.search).get('enabled')?.trim() || '';
+    return v === 'true' || v === 'false' ? v : '';
+  });
+
+  function writeScheduleFilters(patch: { frequency?: string; enabled?: string }) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'schedules');
+    const freq = patch.frequency !== undefined ? patch.frequency : scheduleFrequencyFilter;
+    const en = patch.enabled !== undefined ? patch.enabled : scheduleEnabledFilter;
+    if (freq) url.searchParams.set('frequency', freq);
+    else url.searchParams.delete('frequency');
+    if (en) url.searchParams.set('enabled', en);
+    else url.searchParams.delete('enabled');
+    const hash = url.hash || '#schedules';
+    window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}${hash.startsWith('#') ? hash : ''}`);
+  }
+
+  const filteredSchedules = schedules.filter((s) => {
+    if (scheduleFrequencyFilter && s.frequency !== scheduleFrequencyFilter) return false;
+    if (scheduleEnabledFilter === 'true' && !s.enabled) return false;
+    if (scheduleEnabledFilter === 'false' && s.enabled) return false;
+    return true;
+  });
 
   function writeReportFilters(patch: {
     from_date?: string;
@@ -313,6 +345,23 @@ export default function Page() {
   useEffect(() => {
     load('summary');
   }, []);
+
+  // Stage 112 R1 — honor Shell #schedules
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (hash !== 'schedules') return;
+    if (tab !== 'schedules') {
+      setTab('schedules');
+      load('schedules');
+      return;
+    }
+    const t = window.setTimeout(() => {
+      const el = document.getElementById('schedules');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [tab]);
 
   function switchTab(t: Tab) {
     setTab(t);
@@ -1376,10 +1425,42 @@ export default function Page() {
       )}
 
       {tab === 'schedules' && (
-        <>
+        <div id="schedules">
           <p className="muted">
             Company admins can schedule CSV, Excel, or PDF reports emailed on a daily or weekly cadence (UTC hour).
           </p>
+          <div
+            className="card"
+            style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
+          >
+            <label className="muted">Filter schedules</label>
+            <select
+              value={scheduleFrequencyFilter}
+              onChange={(e) => {
+                const next = e.target.value;
+                setScheduleFrequencyFilter(next);
+                writeScheduleFilters({ frequency: next });
+              }}
+              aria-label="Filter schedules by frequency"
+            >
+              <option value="">All frequencies</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+            <select
+              value={scheduleEnabledFilter}
+              onChange={(e) => {
+                const next = e.target.value;
+                setScheduleEnabledFilter(next);
+                writeScheduleFilters({ enabled: next });
+              }}
+              aria-label="Filter schedules by enabled"
+            >
+              <option value="">All (enabled &amp; disabled)</option>
+              <option value="true">Enabled only</option>
+              <option value="false">Disabled only</option>
+            </select>
+          </div>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
             <input
               placeholder="Schedule name"
@@ -1463,7 +1544,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {schedules.map((s) => (
+              {filteredSchedules.map((s) => (
                 <tr key={s.id}>
                   <td>
                     {s.name} {!s.enabled && <span className="muted">(off)</span>}
@@ -1491,8 +1572,8 @@ export default function Page() {
               ))}
             </tbody>
           </table>
-          {!schedules.length && !loading && <p className="muted">No schedules yet.</p>}
-        </>
+          {!filteredSchedules.length && !loading && <p className="muted">No schedules yet.</p>}
+        </div>
       )}
     </Shell>
   );

@@ -161,6 +161,7 @@ function PlatformTenantsInner() {
       industry: fromIndustry,
       createdThisMonth: fromMonth,
     });
+    // Stage 112 P1 — PlatformShell At-risk leaf includes #at-risk-queue
     if (fromFocus) {
       const el = document.getElementById('at-risk-queue');
       if (el) {

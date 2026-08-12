@@ -1945,3 +1945,15 @@ Every feature in every phase must meet:
 **Stage 111 D1 (2026-08-12):** Inventory movement types, posted sales returns & cheque hash fidelity sync — `docs/STAGE_111_FIDELITY.md` (`test_stage111_fidelity_d1.py`).
 
 **Stage 111 exit (2026-08-12):** I1, S1, C1, D1, H111x met — `docs/STAGE_111_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_229_STAGE111_FREEZE.md`. Fidelity: `docs/STAGE_111_FIDELITY.md`.
+
+**Stage 112 open (2026-08-12):** Tenant MVP Report Schedule Leaves, Stores Cash Drawer & Platform Plan Ops — `docs/ADR_230_STAGE112_OPEN.md` + `docs/STAGE_112_PLAN.md` (Report schedules → Cash drawer → Platform plans → Report Schedule Leaves, Stores Cash Drawer & Platform Plan Ops; R1 next).
+
+**Stage 112 R1 (2026-08-12):** Report schedule frequency/enabled Shell leaves (`test_stage112_report_schedules_r1.py`).
+
+**Stage 112 S1 (2026-08-12):** Stores Cash Drawer hash leaf (`test_stage112_stores_cash_drawer_s1.py`).
+
+**Stage 112 P1 (2026-08-12):** Platform plan_code leaves + at-risk hash (`test_stage112_platform_plan_p1.py`).
+
+**Stage 112 D1 (2026-08-12):** Report schedule leaves, stores cash drawer & platform plan fidelity sync — `docs/STAGE_112_FIDELITY.md` (`test_stage112_fidelity_d1.py`).
+
+**Stage 112 exit (2026-08-12):** R1, S1, P1, D1, H112x met — `docs/STAGE_112_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_231_STAGE112_FREEZE.md`. Fidelity: `docs/STAGE_112_FIDELITY.md`.

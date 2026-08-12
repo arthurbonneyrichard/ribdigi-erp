@@ -269,6 +269,9 @@ Authoritative MVP docs:
 - `docs/STAGE_109_EXIT_CRITERIA.md` / `docs/ADR_225_STAGE109_FREEZE.md` (`backend/tests/test_stage109_exit_h109x.py`) — Stage 109 H109x
 - `docs/STAGE_110_EXIT_CRITERIA.md` / `docs/ADR_227_STAGE110_FREEZE.md` (`backend/tests/test_stage110_exit_h110x.py`) — Stage 110 H110x
 - `docs/STAGE_111_EXIT_CRITERIA.md` / `docs/ADR_229_STAGE111_FREEZE.md` (`backend/tests/test_stage111_exit_h111x.py`) — Stage 111 H111x
+- `docs/STAGE_112_EXIT_CRITERIA.md` / `docs/ADR_231_STAGE112_FREEZE.md` (`backend/tests/test_stage112_exit_h112x.py`) — Stage 112 H112x
+- `docs/STAGE_112_FIDELITY.md` (`backend/tests/test_stage112_fidelity_d1.py`) — Stage 112 D1
+- `docs/STAGE_112_PLAN.md` (`backend/tests/test_stage112_open.py`) — Stage 112 open (ADR-230)
 - `docs/STAGE_111_FIDELITY.md` (`backend/tests/test_stage111_fidelity_d1.py`) — Stage 111 D1
 - `docs/STAGE_111_PLAN.md` (`backend/tests/test_stage111_open.py`) — Stage 111 open (ADR-228)
 - `docs/STAGE_110_FIDELITY.md` (`backend/tests/test_stage110_fidelity_d1.py`) — Stage 110 D1
@@ -1190,6 +1193,18 @@ H110x met — `docs/STAGE_110_EXIT_CRITERIA.md`, ADR-227. Stages 1–110 frozen 
 ## Stage 111 exit
 
 H111x met — `docs/STAGE_111_EXIT_CRITERIA.md`, ADR-229. Stages 1–111 frozen for Stage 111 feature scope.
+
+## Stage 112 exit
+
+H112x met — `docs/STAGE_112_EXIT_CRITERIA.md`, ADR-231. Stages 1–112 frozen for Stage 112 feature scope.
+
+## Stage 112 D1 — Tenant MVP Report Schedule Leaves, Stores Cash Drawer & Platform Plan Ops
+
+`docs/STAGE_112_FIDELITY.md` — maps R1–P1 → readiness / launch / deploy / security.
+
+## Stage 112 open
+
+ADR-230 + `docs/STAGE_112_PLAN.md` — Tenant MVP Report Schedule Leaves, Stores Cash Drawer & Platform Plan Ops.
 
 ## Stage 111 D1 — Tenant MVP Inventory Movement Type Leaves, Posted Sales Returns & Cheque Hash Ops
 

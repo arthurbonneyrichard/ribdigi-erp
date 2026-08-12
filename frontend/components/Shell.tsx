@@ -571,6 +571,12 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Cash Drawer',
+    href: '/stores#cash-drawer',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
     label: 'Inter-store Transfers',
     href: '/stores#transfers',
     modules: ['stores'],
@@ -627,7 +633,31 @@ const primaryNavSpec: NavEntry[] = [
   {
     kind: 'link',
     label: 'Report Schedules',
-    href: '/reports?tab=schedules',
+    href: '/reports?tab=schedules#schedules',
+    modules: ['reports'],
+  },
+  {
+    kind: 'link',
+    label: 'Daily Report Schedules',
+    href: '/reports?tab=schedules&frequency=daily#schedules',
+    modules: ['reports'],
+  },
+  {
+    kind: 'link',
+    label: 'Weekly Report Schedules',
+    href: '/reports?tab=schedules&frequency=weekly#schedules',
+    modules: ['reports'],
+  },
+  {
+    kind: 'link',
+    label: 'Enabled Report Schedules',
+    href: '/reports?tab=schedules&enabled=true#schedules',
+    modules: ['reports'],
+  },
+  {
+    kind: 'link',
+    label: 'Disabled Report Schedules',
+    href: '/reports?tab=schedules&enabled=false#schedules',
     modules: ['reports'],
   },
   {

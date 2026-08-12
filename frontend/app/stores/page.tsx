@@ -190,7 +190,7 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Stage 102 T1 / Stage 105 S1 — honor Shell #transfers / #warehouses / #fefo / #reorder
+  // Stage 102 T1 / Stage 105 S1 / Stage 112 S1 — honor Shell #transfers / #warehouses / #fefo / #reorder / #cash-drawer
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
@@ -588,7 +588,7 @@ export default function Page() {
             <button onClick={createTransfer}>Create & request</button>
           </div>
         </div>
-        <div className="card">
+        <div className="card" id="cash-drawer">
           <h3>Cash drawer</h3>
           <div style={{ display: 'grid', gap: 8 }}>
             <select

@@ -23,4 +23,4 @@ Stage 111 Tenant MVP Inventory Movement Type Leaves, Posted Sales Returns & Cheq
 
 ## Next stage
 
-Stage 112 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 111 feature scope remains frozen.
+Stage 112 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-230](ADR_230_STAGE112_OPEN.md) + [STAGE_112_PLAN.md](STAGE_112_PLAN.md) (Tenant MVP Report Schedule Leaves, Stores Cash Drawer & Platform Plan Ops). Stage 111 feature scope remains frozen.
