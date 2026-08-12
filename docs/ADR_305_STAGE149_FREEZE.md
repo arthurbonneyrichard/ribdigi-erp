@@ -23,4 +23,4 @@ Stage 149 Tenant MVP AI Document Analyze CSV, Platform Staff Users CSV & Platfor
 
 ## Next stage
 
-Stage 150 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 149 feature scope remains frozen.
+Stage 150 opened via CONTINUE/NEXT as **Tenant MVP Platform Plans Catalog CSV, Platform Subscriptions Roster CSV & Platform House Settings CSV Export Fidelity** ([ADR-306](ADR_306_STAGE150_OPEN.md)) and closed under [ADR-307](ADR_307_STAGE150_FREEZE.md). Stage 149 feature scope remains frozen.

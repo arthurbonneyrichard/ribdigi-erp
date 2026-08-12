@@ -7,6 +7,8 @@ import { api } from '../../../lib/api';
 import { formatDateTime } from '../../../lib/format';
 import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 type RosterItem = {
   tenant_id: string;
   slug: string;
@@ -47,11 +49,39 @@ export default function PlatformBillingPage() {
       .catch((err) => setError(err.message || 'Failed to load'));
   }, []);
 
+  async function downloadSubscriptionsCsv() {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/platform/subscriptions/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Subscriptions export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'platform_subscriptions_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   return (
     <PlatformShell>
       <h1>Billing</h1>
       <p className="muted">
         House subscriptions roster — tenant×plan commercial metadata (ADR-002 billing deferred).
+        Export via <code>GET /platform/subscriptions/export</code> (Stage 150 R1).
       </p>
       {error && <p>{error}</p>}
       {data && (
@@ -76,6 +106,11 @@ export default function PlatformBillingPage() {
         <p className="muted">
           Customer tenants with assigned plan codes. Not checkout, not fabricated MRR.
         </p>
+        <div style={{ marginBottom: 12 }}>
+          <button type="button" onClick={downloadSubscriptionsCsv}>
+            Export subscriptions CSV
+          </button>
+        </div>
         {roster.length === 0 ? (
           <p className="muted">No customer tenants yet</p>
         ) : (

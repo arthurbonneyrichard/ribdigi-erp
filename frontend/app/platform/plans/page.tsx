@@ -5,6 +5,8 @@ import PlatformShell from '../../../components/PlatformShell';
 import { DonutChart } from '../../../components/DashboardCharts';
 import { api } from '../../../lib/api';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 type PlanItem = {
   code: string;
   label?: string;
@@ -36,6 +38,33 @@ export default function PlatformPlansPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function downloadPlansCsv() {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/platform/plans/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Plans export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'platform_plans_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   const catalog: PlanItem[] = data.catalog?.length
     ? data.catalog
     : (data.plan_codes || []).map((code) => ({ code }));
@@ -45,11 +74,17 @@ export default function PlatformPlansPage() {
       <h1>Plans</h1>
       <p className="muted">
         RIBDIGI ERP · Plan codes are commercial metadata only (billing deferred — ADR-002). No
-        prices, checkout, or fabricated MRR.
+        prices, checkout, or fabricated MRR. Export via <code>GET /platform/plans/export</code>{' '}
+        (Stage 150 P1).
       </p>
       {error && <p>{error}</p>}
       {loading && <p className="muted">Loading plans…</p>}
       {data.message && <p className="muted" style={{ marginTop: 12 }}>{data.message}</p>}
+      <div style={{ marginTop: 12 }}>
+        <button type="button" onClick={downloadPlansCsv}>
+          Export plans CSV
+        </button>
+      </div>
       <div className="grid" style={{ marginTop: 20 }}>
         <div className="card">
           <div className="muted">Billing</div>

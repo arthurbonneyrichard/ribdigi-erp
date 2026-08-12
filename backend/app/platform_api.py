@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit, health as health_svc, platform as platform_svc
 from app import models as m
+from app import platform_catalog_export as platform_catalog_export_svc
 from app import platform_staff_export as platform_staff_export_svc
 from app import reports as reports_svc
 from app import tenants as tenants_svc
@@ -773,6 +774,22 @@ async def platform_plans_catalog(
     )
 
 
+@router.get("/plans/export")
+async def platform_plans_catalog_export(
+    claims: dict = Depends(require_platform_permission("platform_plans", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 150 P1 — plan catalog CSV (metadata honesty; no fabricated MRR)."""
+    text = await platform_catalog_export_svc.export_platform_plans_csv(db)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_plans_export.csv"'
+        },
+    )
+
+
 @router.get("/billing")
 async def platform_billing_honesty(
     claims: dict = Depends(require_platform_permission("platform_billing", "read")),
@@ -810,6 +827,22 @@ async def platform_subscriptions_roster(
 ):
     """Stage 85 R1 — customer tenant × plan_code roster (metadata honesty)."""
     return env(await platform_svc.platform_subscriptions_roster(db))
+
+
+@router.get("/subscriptions/export")
+async def platform_subscriptions_roster_export(
+    claims: dict = Depends(require_platform_permission("platform_billing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 150 R1 — subscriptions roster CSV (metadata only; no fabricated MRR)."""
+    text = await platform_catalog_export_svc.export_platform_subscriptions_csv(db)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_subscriptions_export.csv"'
+        },
+    )
 
 
 def _serialize_platform_settings(tenant: m.Tenant) -> dict:
@@ -881,6 +914,22 @@ async def platform_get_settings(
 ):
     tenant = await platform_svc.ensure_platform_tenant(db)
     return env(_serialize_platform_settings(tenant))
+
+
+@router.get("/settings/export")
+async def platform_settings_export(
+    claims: dict = Depends(require_platform_permission("platform_settings", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 150 S1 — Ribdigi House settings CSV (secret-free)."""
+    text = await platform_catalog_export_svc.export_platform_settings_csv(db)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_settings_export.csv"'
+        },
+    )
 
 
 @router.patch("/settings")

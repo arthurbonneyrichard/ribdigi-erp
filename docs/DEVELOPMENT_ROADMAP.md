@@ -2402,6 +2402,18 @@ Every feature in every phase must meet:
 
 **Stage 149 exit (2026-08-12):** A1, U1, S1, D1, H149x met — `docs/STAGE_149_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_305_STAGE149_FREEZE.md`. Fidelity: `docs/STAGE_149_FIDELITY.md`.
 
+**Stage 150 open (2026-08-12):** Tenant MVP Platform Plans Catalog CSV, Platform Subscriptions Roster CSV & Platform House Settings CSV Export Fidelity — `docs/ADR_306_STAGE150_OPEN.md` + `docs/STAGE_150_PLAN.md` (Plans → Subscriptions → Settings → Fidelity; P1 next).
+
+**Stage 150 P1 (2026-08-12):** Plans catalog CSV (`test_stage150_platform_plans_p1.py`).
+
+**Stage 150 R1 (2026-08-12):** Subscriptions roster CSV (`test_stage150_platform_subscriptions_r1.py`).
+
+**Stage 150 S1 (2026-08-12):** House settings CSV (`test_stage150_platform_settings_s1.py`).
+
+**Stage 150 D1 (2026-08-12):** Plans / subscriptions / settings export fidelity sync — `docs/STAGE_150_FIDELITY.md` (`test_stage150_fidelity_d1.py`).
+
+**Stage 150 exit (2026-08-12):** P1, R1, S1, D1, H150x met — `docs/STAGE_150_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_307_STAGE150_FREEZE.md`. Fidelity: `docs/STAGE_150_FIDELITY.md`.
+
 
 
 

@@ -5,6 +5,8 @@ import PlatformShell from '../../../components/PlatformShell';
 import { api } from '../../../lib/api';
 import { downloadPlatformEvidence } from '../../../lib/platformEvidence';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 export default function PlatformSettingsPage() {
   const [companyName, setCompanyName] = useState('');
   const [idle, setIdle] = useState(30);
@@ -77,10 +79,42 @@ export default function PlatformSettingsPage() {
     }
   }
 
+  async function downloadSettingsCsv() {
+    setError('');
+    setMsg('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/platform/settings/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Settings export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'platform_settings_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMsg('House settings CSV downloaded');
+    } catch (err: any) {
+      setError(err.message || 'Settings export failed');
+    }
+  }
+
   return (
     <PlatformShell>
       <h1>Platform settings</h1>
-      <p className="muted">Ribdigi House console settings (platform tenant only).</p>
+      <p className="muted">
+        Ribdigi House console settings (platform tenant only). Export via{' '}
+        <code>GET /platform/settings/export</code> (Stage 150 S1).
+      </p>
       <p className="muted" style={{ maxWidth: 640 }}>
         House settings cover Ribdigi House identity, idle logout, and support contacts — not the
         full tenant Company profile (addresses, tax, document branding). Customer tenants manage
@@ -167,7 +201,10 @@ export default function PlatformSettingsPage() {
           Save
         </button>
       </form>
-      <p style={{ marginTop: 16 }}>
+      <p style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" onClick={downloadSettingsCsv}>
+          Export settings CSV
+        </button>
         <button type="button" onClick={downloadEvidence}>
           Download evidence JSON
         </button>
