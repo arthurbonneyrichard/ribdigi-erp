@@ -80,5 +80,5 @@ async def test_returns_export_csv(client, db_session):
 def test_returns_export_ui_r1():
     page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
     assert "Stage 133" in page
-    assert "/sales/returns/export" in page or "returns/export" in page
+    assert "downloadPipelineExport" in page
     assert "Export returns CSV" in page

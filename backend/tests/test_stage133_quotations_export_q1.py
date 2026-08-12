@@ -64,5 +64,6 @@ async def test_quotations_export_csv(client, db_session):
 def test_quotations_export_ui_q1():
     page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
     assert "Stage 133" in page
-    assert "/sales/quotations/export" in page or "quotations/export" in page
+    assert "downloadPipelineExport" in page
     assert "Export quotations CSV" in page
+    assert "/sales/${kind}/export" in page or "sales/${kind}/export" in page
