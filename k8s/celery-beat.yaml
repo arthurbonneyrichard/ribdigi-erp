@@ -1,0 +1,36 @@
+# Stage 26 K1 — Celery beat (single replica)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ribdigi-celery-beat
+  labels:
+    app: ribdigi-celery-beat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ribdigi-celery-beat
+  template:
+    metadata:
+      labels:
+        app: ribdigi-celery-beat
+    spec:
+      containers:
+        - name: celery-beat
+          image: ribdigi/erp-backend:1.0.0
+          command:
+            - celery
+            - -A
+            - app.celery_app.celery
+            - beat
+            - --loglevel=info
+          envFrom:
+            - secretRef:
+                name: ribdigi-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

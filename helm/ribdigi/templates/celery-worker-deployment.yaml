@@ -1,0 +1,35 @@
+{{- if .Values.celeryWorker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ribdigi-celery-worker
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "ribdigi.celeryWorker.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.celeryWorker.replicaCount }}
+  selector:
+    matchLabels:
+      app: ribdigi-celery-worker
+  template:
+    metadata:
+      labels:
+        {{- include "ribdigi.celeryWorker.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: celery-worker
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command:
+            - celery
+            - -A
+            - app.celery_app.celery
+            - worker
+            - --loglevel=info
+            - --concurrency=2
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secretName }}
+          resources:
+            {{- toYaml .Values.celeryWorker.resources | nindent 12 }}
+{{- end }}

@@ -1,21 +1,19 @@
-# Stage 26 K1 — hardened backend Deployment + Service (kubectl path).
-# Prefer helm/ribdigi for full stack. Probes match live API (Stage 5 H5 / M1).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ribdigi-backend
+  namespace: {{ .Values.namespace }}
   labels:
-    app: ribdigi-backend
-    app.kubernetes.io/part-of: ribdigi
+    {{- include "ribdigi.backend.labels" . | nindent 4 }}
 spec:
-  replicas: 2
+  replicas: {{ .Values.backend.replicaCount }}
   selector:
     matchLabels:
       app: ribdigi-backend
   template:
     metadata:
       labels:
-        app: ribdigi-backend
+        {{- include "ribdigi.backend.labels" . | nindent 8 }}
     spec:
       securityContext:
         runAsNonRoot: true
@@ -23,18 +21,15 @@ spec:
         fsGroup: 1000
       containers:
         - name: backend
-          image: ribdigi/erp-backend:1.0.0
-          imagePullPolicy: IfNotPresent
-          command:
-            - sh
-            - -c
-            - alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: {{- toYaml .Values.backend.command | nindent 12 }}
           ports:
             - name: http
-              containerPort: 8000
+              containerPort: {{ .Values.backend.service.port }}
           envFrom:
             - secretRef:
-                name: ribdigi-secrets
+                name: {{ .Values.secretName }}
           livenessProbe:
             httpGet:
               path: /api/v1/health
@@ -47,13 +42,9 @@ spec:
               port: http
             initialDelaySeconds: 15
             periodSeconds: 10
+            failureThreshold: 3
           resources:
-            requests:
-              cpu: 250m
-              memory: 512Mi
-            limits:
-              cpu: "1"
-              memory: 2Gi
+            {{- toYaml .Values.backend.resources | nindent 12 }}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -65,17 +56,3 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ribdigi-backend
-  labels:
-    app: ribdigi-backend
-spec:
-  selector:
-    app: ribdigi-backend
-  ports:
-    - name: http
-      port: 8000
-      targetPort: http
