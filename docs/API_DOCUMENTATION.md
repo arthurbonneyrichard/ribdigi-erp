@@ -262,6 +262,12 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 **Usage detail:** `GET /tenants/{tenant_ref}/usage`  
 Packages: `trial` | `starter` | `professional` | `enterprise`. Disabled modules return `403 PACKAGE_FEATURE_DISABLED`.
 
+### 3.4c Platform staff & reports (software owner)
+Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `platform_support`, `platform_finance`.
+
+**Staff:** `GET|POST /platform/staff`, `PATCH /platform/staff/{id}`, `GET /platform/roles`  
+**Reports:** `GET /platform/reports` (bundle) or `/platform/reports/summary|subscriptions|packages|trials`
+
 ### 3.5 Company Setup
 **Endpoint:** `POST /tenants/{tenant_id}/setup`
 

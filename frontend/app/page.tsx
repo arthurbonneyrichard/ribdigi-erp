@@ -39,7 +39,11 @@ export default function Login() {
     localStorage.setItem('tenant', data.user.tenant_id);
     if (data.must_enroll_2fa) {
       router.push('/security');
-    } else if (data.user?.role === 'super_admin') {
+    } else if (
+      ['super_admin', 'platform_owner', 'platform_admin', 'platform_support', 'platform_finance'].includes(
+        data.user?.role
+      )
+    ) {
       router.push('/platform');
     } else {
       router.push('/dashboard');

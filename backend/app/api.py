@@ -166,11 +166,15 @@ from app.security import (
     issue_one_time_token,
     issue_refresh_token,
     require_permission,
+    require_platform_permission,
     require_roles,
     validate_password_strength,
     verify_password,
 )
 from app import totp as totp_svc
+from app import platform_staff as platform_staff_svc
+from app import platform_reports as platform_reports_svc
+from app.rbac import PLATFORM_ROLES, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
 
@@ -554,7 +558,7 @@ async def tenant_me_logo_delete(
 @api.get("/tenants")
 async def tenants_list(
     status: str | None = None,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(require_platform_permission("platform_tenants", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     rows = await tenants_svc.list_tenants(db, status=status)
@@ -565,7 +569,7 @@ async def tenants_list(
 async def tenant_suspend_by_ref(
     tenant_ref: str,
     payload: TenantSuspendRequest | None = None,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
@@ -588,7 +592,7 @@ async def tenant_suspend_by_ref(
 @api.post("/tenants/{tenant_ref}/activate")
 async def tenant_activate_by_ref(
     tenant_ref: str,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
@@ -609,7 +613,7 @@ async def tenant_activate_by_ref(
 
 @api.get("/packages")
 async def packages_catalog(
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(require_platform_permission("platform_packages", "read")),
 ):
     """List commercial packages and default module sets for the platform owner."""
     return env(
@@ -625,7 +629,7 @@ async def packages_catalog(
 async def tenant_assign_subscription(
     tenant_ref: str,
     payload: TenantSubscriptionAssign,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(require_platform_permission("platform_packages", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Assign package + term (months/years); calculates usage and renewal window."""
@@ -663,7 +667,7 @@ async def tenant_assign_subscription(
 async def tenant_update_modules(
     tenant_ref: str,
     payload: TenantModulesUpdate,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(require_platform_permission("platform_packages", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Override which modules a tenant may use (package feature control)."""
@@ -700,11 +704,157 @@ async def tenant_update_modules(
 @api.get("/tenants/{tenant_ref}/usage")
 async def tenant_usage(
     tenant_ref: str,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(require_platform_permission("platform_packages", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
     return env(tenants_svc.serialize_tenant(tenant))
+
+
+@api.get("/platform/staff")
+async def platform_staff_list(
+    claims=Depends(require_platform_permission("platform_staff", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await platform_staff_svc.list_platform_staff(db, tenant_id=claims["tenant_id"])
+    return env([platform_staff_svc.serialize_staff(u) for u in rows])
+
+
+@api.get("/platform/roles")
+async def platform_roles_catalog(
+    claims=Depends(require_platform_permission("platform_staff", "read")),
+):
+    from app.rbac import ROLE_LABELS, ROLE_PERMISSIONS
+
+    return env(
+        [
+            {
+                "key": r,
+                "label": ROLE_LABELS.get(r, r),
+                "permissions": ROLE_PERMISSIONS.get(r, {}),
+            }
+            for r in sorted(PLATFORM_ROLES)
+        ]
+    )
+
+
+@api.post("/platform/staff")
+async def platform_staff_create(
+    payload: dict,
+    claims=Depends(require_platform_permission("platform_staff", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await platform_staff_svc.create_platform_staff(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_role=claims.get("role") or "",
+        email=str(payload.get("email") or ""),
+        full_name=str(payload.get("full_name") or ""),
+        password=str(payload.get("password") or ""),
+        role=str(payload.get("role") or "platform_support"),
+        phone=payload.get("phone"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="platform_staff",
+        action="create",
+        entity="user",
+        entity_id=user.id,
+        details={"email": user.email, "role": user.role},
+    )
+    await db.commit()
+    return env(platform_staff_svc.serialize_staff(user), "Platform staff created")
+
+
+@api.patch("/platform/staff/{user_id}")
+async def platform_staff_update(
+    user_id: str,
+    payload: dict,
+    claims=Depends(require_platform_permission("platform_staff", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await platform_staff_svc.update_platform_staff(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_id=claims["sub"],
+        actor_role=claims.get("role") or "",
+        user_id=user_id,
+        full_name=payload.get("full_name"),
+        role=payload.get("role"),
+        phone=payload.get("phone"),
+        is_active=payload.get("is_active"),
+    )
+    if payload.get("is_active") is False:
+        rows = (
+            await db.execute(
+                select(m.AuthSession).where(
+                    m.AuthSession.user_id == user.id,
+                    m.AuthSession.revoked_at.is_(None),
+                )
+            )
+        ).scalars().all()
+        now = datetime.utcnow()
+        for s in rows:
+            s.revoked_at = now
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="platform_staff",
+        action="update",
+        entity="user",
+        entity_id=user.id,
+        details={"role": user.role, "is_active": user.is_active},
+    )
+    await db.commit()
+    return env(platform_staff_svc.serialize_staff(user), "Platform staff updated")
+
+
+@api.get("/platform/reports")
+async def platform_reports_all(
+    claims=Depends(require_platform_permission("platform_reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_reports_svc.build_all_platform_reports(db))
+
+
+@api.get("/platform/reports/summary")
+async def platform_reports_summary(
+    claims=Depends(require_platform_permission("platform_reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_reports_svc.build_platform_summary(db))
+
+
+@api.get("/platform/reports/subscriptions")
+async def platform_reports_subscriptions(
+    claims=Depends(require_platform_permission("platform_reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_reports_svc.build_subscription_usage_report(db))
+
+
+@api.get("/platform/reports/packages")
+async def platform_reports_packages(
+    claims=Depends(require_platform_permission("platform_reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await platform_reports_svc.build_package_distribution_report(db))
+
+
+@api.get("/platform/reports/trials")
+async def platform_reports_trials(
+    within_days: int = 45,
+    claims=Depends(require_platform_permission("platform_reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await platform_reports_svc.build_trial_expirations_report(
+            db, within_days=max(1, min(within_days, 365))
+        )
+    )
 
 
 @api.get("/settings/email")
@@ -1958,8 +2108,16 @@ async def add_user(
     role_key, role_perms = await custom_roles_svc.resolve_role_assignment(
         db, claims["tenant_id"], payload.role
     )
-    if role_key == "super_admin" and claims.get("role") != "super_admin":
-        raise HTTPException(status_code=403, detail="Only super_admin can create super_admin users")
+    if is_platform_role(role_key):
+        raise HTTPException(
+            status_code=400,
+            detail="Create platform staff via POST /platform/staff (not tenant /users)",
+        )
+    if role_key == "super_admin":
+        raise HTTPException(
+            status_code=400,
+            detail="Create platform owners via POST /platform/staff",
+        )
     validate_password_strength(payload.password)
     exists = (
         await db.execute(
@@ -7625,7 +7783,7 @@ async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin")
 async def run_job_now(
     job_name: str,
     enqueue: bool = False,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(require_roles("super_admin", "platform_owner")),
 ):
     """Run a scheduled job immediately (sync) or enqueue to Celery."""
     from app import jobs as jobs_svc
