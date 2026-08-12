@@ -549,15 +549,22 @@ All security-relevant events are captured in an immutable audit log:
 
 The MVP includes AI capabilities across 10 modules. Security controls include:
 
+**Provider gate (implemented packaging):**
+- Chat is fail-closed until `AI_ENABLED` + approved `AI_PROVIDER` + strong `AI_API_KEY`
+- Production rejects `mock` and placeholder keys (see `docs/AI_SECURITY_MVP.md`)
+
 **Input Sanitization:**
 - All user inputs to AI endpoints sanitized for prompt injection attacks
-- Maximum input length enforced (4096 tokens)
+- Maximum input length enforced (`AI_MAX_MESSAGE_CHARS`, default ~4096 tokens)
 - Blocked keywords and patterns for sensitive data exfiltration attempts
 
 **Context Isolation:**
 - AI assistant receives only data the user has permission to access
 - Tenant context strictly enforced; AI cannot access cross-tenant data
 - Session context scoped to current conversation only
+
+**Audit:**
+- Tenant-scoped `ai_queries` + `audit_logs` (`module=ai`) store prompt SHA-256 and redacted preview only — never raw API keys
 
 **Output Filtering:**
 - AI responses scanned for PII leakage

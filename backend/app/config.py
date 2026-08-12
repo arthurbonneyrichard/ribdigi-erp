@@ -96,6 +96,14 @@ class Settings(BaseSettings):
     METRICS_ENABLED: bool = True
     REQUEST_LOG_ENABLED: bool = True
     LOG_LEVEL: str = "INFO"
+    # AI Business Assistant (fail-closed until enabled + approved provider + key)
+    AI_ENABLED: bool = False
+    AI_PROVIDER: str = "none"  # none | openai | mock (mock = non-production only)
+    AI_API_KEY: str = ""
+    AI_API_BASE_URL: str = ""
+    AI_MODEL: str = ""
+    AI_MAX_MESSAGE_CHARS: int = 16000  # ~4096 tokens heuristic
+    AI_CHAT_TIMEOUT_SECONDS: float = 30.0
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 
@@ -159,6 +167,26 @@ class Settings(BaseSettings):
                         "Production SMS_ENABLED requires TWILIO_ACCOUNT_SID, "
                         "TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER"
                     )
+            if self.AI_ENABLED:
+                provider = (self.AI_PROVIDER or "").strip().lower()
+                if provider in {"", "none", "mock"}:
+                    raise ValueError(
+                        "Production AI_ENABLED requires AI_PROVIDER=openai "
+                        "(mock is not allowed in production)"
+                    )
+                if provider not in {"openai"}:
+                    raise ValueError(
+                        f"Production AI_PROVIDER '{provider}' is not an approved provider"
+                    )
+                key = (self.AI_API_KEY or "").strip()
+                weak = {"", "change-me", "changeme", "replace-me", "your-api-key", "sk-test"}
+                if not key or key.lower() in weak or len(key) < 16:
+                    raise ValueError(
+                        "Production AI_ENABLED requires a strong AI_API_KEY "
+                        "(min 16 chars, not a placeholder)"
+                    )
+                if self.AI_MAX_MESSAGE_CHARS < 256:
+                    raise ValueError("AI_MAX_MESSAGE_CHARS must be >= 256 in production")
         return self
 
 
