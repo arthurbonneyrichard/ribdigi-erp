@@ -32,6 +32,7 @@ async def test_recurring_expenses_is_active_paused_only(client, db_session):
             "frequency": "monthly",
             "description": "Stage125 Soon Paused",
             "payment_method": "bank_transfer",
+            "category": "utilities",
         },
     )
     assert created.status_code == 200, created.text

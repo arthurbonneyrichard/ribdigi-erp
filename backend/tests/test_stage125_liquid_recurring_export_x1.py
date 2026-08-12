@@ -62,6 +62,7 @@ async def test_recurring_expenses_export_csv(client, db_session):
             "frequency": "weekly",
             "description": "Export Recurring 125",
             "payment_method": "cash",
+            "category": "utilities",
         },
     )
     assert created.status_code == 200, created.text
