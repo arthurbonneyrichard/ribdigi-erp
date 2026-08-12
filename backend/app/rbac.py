@@ -113,8 +113,8 @@ def is_system_role(role: str | None) -> bool:
     return (role or "") in SYSTEM_ROLES
 
 
-# Record-level scope (BR-3.3). `department` reserved until org units exist.
-RECORD_SCOPES = frozenset({"own", "all"})
+# Record-level scope (BR-3.3). department/branch use peer users in the same org unit.
+RECORD_SCOPES = frozenset({"own", "department", "branch", "all"})
 RECORD_SCOPE_KEY = "_record_scope"
 
 # Default record visibility by role. Approver/admin roles use `all`.
@@ -135,9 +135,6 @@ def permissions_for_role(role: str) -> dict[str, list[str]]:
 
 def normalize_record_scope(value: str | None, *, default: str = "all") -> str:
     scope = (value or default).strip().lower()
-    if scope == "department":
-        # Org units not modeled yet; treat as all until department linkage ships.
-        return "all"
     if scope not in RECORD_SCOPES:
         raise ValueError(f"record_scope must be one of {sorted(RECORD_SCOPES)}")
     return scope
@@ -167,21 +164,30 @@ def record_scope_for_claims(claims: dict) -> str:
 
 
 def assert_record_access(claims: dict, created_by: str | None) -> None:
-    """Enforce own-scope on a single record. Raises 404 to avoid IDOR enumeration."""
+    """Enforce record scope on a single record. Raises 404 to avoid IDOR enumeration."""
     from fastapi import HTTPException
 
-    if record_scope_for_claims(claims) != "own":
+    scope_ids = claims.get("scope_user_ids")
+    if scope_ids is None and record_scope_for_claims(claims) == "all":
         return
-    if created_by and created_by == claims.get("sub"):
+    if scope_ids is None:
+        # Backward compatible: treat missing peer list as own-scope.
+        if created_by and created_by == claims.get("sub"):
+            return
+        raise HTTPException(status_code=404, detail="Record not found")
+    if created_by and created_by in scope_ids:
         return
     raise HTTPException(status_code=404, detail="Record not found")
 
 
 def apply_created_by_scope(stmt, model, claims: dict):
-    """Restrict a SQLAlchemy select to rows created by the current user when scope=own."""
-    if record_scope_for_claims(claims) != "own":
-        return stmt
-    return stmt.where(model.created_by == claims.get("sub"))
+    """Restrict a SQLAlchemy select to rows created by users in the claim scope."""
+    scope_ids = claims.get("scope_user_ids")
+    if scope_ids is None:
+        if record_scope_for_claims(claims) == "all":
+            return stmt
+        return stmt.where(model.created_by == claims.get("sub"))
+    return stmt.where(model.created_by.in_(list(scope_ids)))
 
 
 def list_role_catalog() -> list[dict]:
@@ -210,6 +216,8 @@ def serialize_user(user) -> dict:
         "full_name": user.full_name,
         "phone": user.phone,
         "role": user.role,
+        "branch_id": getattr(user, "branch_id", None),
+        "department_id": getattr(user, "department_id", None),
         "is_active": bool(user.is_active),
         "email_verified": bool(user.email_verified),
         "permissions": perms,

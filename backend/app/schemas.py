@@ -93,6 +93,9 @@ class UserCreate(BaseModel):
     password: str
     role: str = "cashier"
     phone: str | None = None
+    branch_id: str | None = None
+    department_id: str | None = None
+    record_scope: str | None = None
 
 
 class UserUpdate(BaseModel):
@@ -101,8 +104,47 @@ class UserUpdate(BaseModel):
     role: str | None = None
     is_active: bool | None = None
     password: str | None = None
-    # Record visibility override: own | all (department reserved / maps to all for MVP)
+    # Record visibility: own | department | branch | all
     record_scope: str | None = None
+    branch_id: str | None = None
+    department_id: str | None = None
+    clear_branch: bool = False
+    clear_department: bool = False
+
+
+class BranchCreate(BaseModel):
+    code: str
+    name: str
+    address: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    manager_id: str | None = None
+
+
+class BranchUpdate(BaseModel):
+    name: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    manager_id: str | None = None
+    clear_manager: bool = False
+    is_active: bool | None = None
+
+
+class DepartmentCreate(BaseModel):
+    code: str
+    name: str
+    branch_id: str | None = None
+    head_user_id: str | None = None
+
+
+class DepartmentUpdate(BaseModel):
+    name: str | None = None
+    branch_id: str | None = None
+    clear_branch: bool = False
+    head_user_id: str | None = None
+    clear_head: bool = False
+    is_active: bool | None = None
 
 
 class CustomRoleCreate(BaseModel):
@@ -343,6 +385,7 @@ class StoreCreate(BaseModel):
     address: str | None = None
     phone: str | None = None
     manager_id: str | None = None
+    branch_id: str | None = None
 
 
 class StoreDrawerSettingsUpdate(BaseModel):

@@ -73,7 +73,15 @@ async def create_store(
     address: str | None = None,
     phone: str | None = None,
     manager_id: str | None = None,
+    branch_id: str | None = None,
 ) -> m.Store:
+    if branch_id:
+        from app import org_units as org_units_svc
+
+        branch = await org_units_svc.get_branch(db, tenant_id, branch_id)
+        if not branch.is_active:
+            raise HTTPException(status_code=400, detail="Branch is inactive")
+        branch_id = branch.id
     store = m.Store(
         tenant_id=tenant_id,
         name=name,
@@ -81,6 +89,7 @@ async def create_store(
         address=address,
         phone=phone,
         manager_id=manager_id,
+        branch_id=branch_id,
         is_active=True,
     )
     db.add(store)
