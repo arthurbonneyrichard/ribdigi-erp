@@ -492,7 +492,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [x] Create invoice from sales order or directly
-  - [ ] Invoice number auto-generation with configurable prefix and series
+  - [x] Invoice number auto-generation with configurable prefix and series (`GET|PATCH /sales/settings`; `{PREFIX}-{YYYY}-{NNNN}`, year-scoped next counter)
   - [x] Product lines with quantity, unit price, tax, discount, total
   - [x] Customer selection with auto-filled details
   - [x] Multiple print templates (A4, thermal receipt) via `GET /sales/invoices/{id}/print?template=a4|thermal`
@@ -985,7 +985,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Document customization.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Configure invoice numbering prefix and series (e.g., INV-2026-0001)
+  - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
   - [ ] Configure PO, GRN, quotation numbering
   - [ ] Receipt template selection and customization
   - [ ] Invoice template selection and customization

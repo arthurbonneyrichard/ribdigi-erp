@@ -73,9 +73,12 @@ export default function Page() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [invPrefix, setInvPrefix] = useState('INV');
+  const [invNext, setInvNext] = useState('1');
+  const [invPreview, setInvPreview] = useState('');
 
   async function refresh() {
-    const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes] = await Promise.all([
+    const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, settingsRes] = await Promise.all([
       api('/sales/invoices'),
       api('/customers'),
       api('/products'),
@@ -83,6 +86,7 @@ export default function Page() {
       api('/sales/orders'),
       api('/sales/returns'),
       api('/stores'),
+      api('/sales/settings').catch(() => ({ data: null })),
     ]);
     setInvoices(invRes.data || []);
     setCustomers(custRes.data || []);
@@ -91,6 +95,12 @@ export default function Page() {
     setOrders(oRes.data || []);
     setReturns(rRes.data || []);
     setStores(storeRes.data || []);
+    const numbering = settingsRes.data?.invoice_numbering;
+    if (numbering) {
+      setInvPrefix(numbering.prefix || 'INV');
+      setInvNext(String(numbering.next_number ?? 1));
+      setInvPreview(numbering.preview || '');
+    }
   }
 
   useEffect(() => {
@@ -167,6 +177,29 @@ export default function Page() {
       setSelected(r.data);
       setTab('invoices');
       await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveInvoiceNumbering() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/sales/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          prefix: invPrefix.trim(),
+          next_number: Math.max(1, Number(invNext) || 1),
+        }),
+      });
+      const numbering = r.data?.invoice_numbering;
+      if (numbering) {
+        setInvPrefix(numbering.prefix);
+        setInvNext(String(numbering.next_number));
+        setInvPreview(numbering.preview);
+      }
+      setMessage(`Invoice numbering saved — next ${numbering?.preview || ''}`.trim());
     } catch (err: any) {
       setError(err.message);
     }
@@ -271,6 +304,31 @@ export default function Page() {
             {label}
           </button>
         ))}
+      </div>
+
+      <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+        <h3 style={{ margin: 0 }}>Invoice numbering</h3>
+        <p className="muted" style={{ margin: 0 }}>
+          Pattern <code>{'{PREFIX}-{YYYY}-{NNNN}'}</code>
+          {invPreview ? ` — next preview: ${invPreview}` : ''}
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            value={invPrefix}
+            onChange={(e) => setInvPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={invNext}
+            onChange={(e) => setInvNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <button type="button" onClick={saveInvoiceNumbering}>
+            Save numbering
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>

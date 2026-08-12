@@ -639,6 +639,11 @@ class EarlyPaySettingsUpdate(BaseModel):
     early_pay_discount_days: int = Field(ge=0, le=365)
 
 
+class SalesInvoiceNumberingUpdate(BaseModel):
+    prefix: str = Field(min_length=1, max_length=20)
+    next_number: int = Field(default=1, ge=1, le=999999)
+
+
 class ExchangeRateUpsert(BaseModel):
     currency_code: str
     rate_to_base: float = Field(gt=0)

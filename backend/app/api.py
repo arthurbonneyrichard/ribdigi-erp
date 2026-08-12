@@ -53,6 +53,7 @@ from app.schemas import (
     CreditLimitUpdate,
     CustomerPaymentCreate,
     EarlyPaySettingsUpdate,
+    SalesInvoiceNumberingUpdate,
     EmailVerifyConfirm,
     ExchangeRateRefresh,
     ExchangeRateUpsert,
@@ -3070,6 +3071,37 @@ async def list_sales_invoices(
     stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_svc.serialize_invoice(db, inv) for inv in rows])
+
+
+@api.get("/sales/settings")
+async def sales_settings(
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.doc_numbers import invoice_numbering_settings
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env({"invoice_numbering": invoice_numbering_settings(tenant)})
+
+
+@api.patch("/sales/settings")
+async def update_sales_settings(
+    payload: SalesInvoiceNumberingUpdate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.doc_numbers import invoice_numbering_settings, normalize_invoice_prefix
+    from datetime import datetime
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    tenant.sales_invoice_number_prefix = normalize_invoice_prefix(payload.prefix)
+    tenant.sales_invoice_number_next = int(payload.next_number)
+    tenant.sales_invoice_number_year = datetime.utcnow().year
+    await db.commit()
+    return env(
+        {"invoice_numbering": invoice_numbering_settings(tenant)},
+        "Sales invoice numbering updated",
+    )
 
 
 @api.post("/sales/invoices")

@@ -50,6 +50,10 @@ class Tenant(Base):
     # e.g. 2/10 net 30 → pct=2, days=10 (0 disables)
     early_pay_discount_pct: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     early_pay_discount_days: Mapped[int] = mapped_column(Integer, default=0)
+    # Sales invoice numbers: {prefix}-{YYYY}-{NNNN} (series resets each calendar year)
+    sales_invoice_number_prefix: Mapped[str] = mapped_column(String(20), default="INV")
+    sales_invoice_number_next: Mapped[int] = mapped_column(Integer, default=1)
+    sales_invoice_number_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # When true, scheduled FX job refreshes this tenant's exchange rates from the live feed.
     fx_auto_refresh: Mapped[bool] = mapped_column(Boolean, default=True)
     # When true, store/warehouse stock-outs only consume batches tagged to that warehouse (no NULL fallback).
