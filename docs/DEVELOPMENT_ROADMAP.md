@@ -284,7 +284,7 @@ Build the complete inventory management and purchasing system. This includes pro
 - [ ] Stock movement audit trail (who, what, when, why)
 - [ ] Physical stock count module with variance reporting
 - [ ] Supplier balance tracking with aging report
-- [ ] CSV bulk import for products and stock
+- [x] CSV bulk import for products and stock
 
 ### 3.8 AI/Cursor Implementation Prompt
 
