@@ -30,6 +30,8 @@ const items: [string, string, string][] = [
   ['Users', '/platform/users', 'platform_users'],
   ['Active Users', '/platform/users?is_active=true', 'platform_users'],
   ['Inactive Users', '/platform/users?is_active=false', 'platform_users'],
+  ['Platform Admins', '/platform/users?role=platform_admin', 'platform_users'],
+  ['Platform Super Admins', '/platform/users?role=platform_super_admin', 'platform_users'],
   ['Billing', '/platform/billing', 'platform_billing'],
   ['Settings', '/platform/settings', 'platform_settings'],
   ['Health', '/platform/health', 'platform_health'],

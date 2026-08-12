@@ -272,6 +272,9 @@ Authoritative MVP docs:
 - `docs/STAGE_112_EXIT_CRITERIA.md` / `docs/ADR_231_STAGE112_FREEZE.md` (`backend/tests/test_stage112_exit_h112x.py`) — Stage 112 H112x
 - `docs/STAGE_113_EXIT_CRITERIA.md` / `docs/ADR_233_STAGE113_FREEZE.md` (`backend/tests/test_stage113_exit_h113x.py`) — Stage 113 H113x
 - `docs/STAGE_114_EXIT_CRITERIA.md` / `docs/ADR_235_STAGE114_FREEZE.md` (`backend/tests/test_stage114_exit_h114x.py`) — Stage 114 H114x
+- `docs/STAGE_115_EXIT_CRITERIA.md` / `docs/ADR_237_STAGE115_FREEZE.md` (`backend/tests/test_stage115_exit_h115x.py`) — Stage 115 H115x
+- `docs/STAGE_115_FIDELITY.md` (`backend/tests/test_stage115_fidelity_d1.py`) — Stage 115 D1
+- `docs/STAGE_115_PLAN.md` (`backend/tests/test_stage115_open.py`) — Stage 115 open (ADR-236)
 - `docs/STAGE_114_FIDELITY.md` (`backend/tests/test_stage114_fidelity_d1.py`) — Stage 114 D1
 - `docs/STAGE_114_PLAN.md` (`backend/tests/test_stage114_open.py`) — Stage 114 open (ADR-234)
 - `docs/STAGE_113_FIDELITY.md` (`backend/tests/test_stage113_fidelity_d1.py`) — Stage 113 D1
@@ -1211,6 +1214,18 @@ H113x met — `docs/STAGE_113_EXIT_CRITERIA.md`, ADR-233. Stages 1–113 frozen 
 ## Stage 114 exit
 
 H114x met — `docs/STAGE_114_EXIT_CRITERIA.md`, ADR-235. Stages 1–114 frozen for Stage 114 feature scope.
+
+## Stage 115 exit
+
+H115x met — `docs/STAGE_115_EXIT_CRITERIA.md`, ADR-237. Stages 1–115 frozen for Stage 115 feature scope.
+
+## Stage 115 D1 — Tenant MVP Notification History Honesty & Residual Filter Discoverability
+
+`docs/STAGE_115_FIDELITY.md` — maps N1–O1 → readiness / launch / deploy / security.
+
+## Stage 115 open
+
+ADR-236 + `docs/STAGE_115_PLAN.md` — Tenant MVP Notification History Honesty & Residual Filter Discoverability.
 
 ## Stage 114 D1 — Tenant MVP Residual Status & Ops Filter Discoverability
 

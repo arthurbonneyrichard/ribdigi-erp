@@ -1981,3 +1981,15 @@ Every feature in every phase must meet:
 **Stage 114 D1 (2026-08-12):** Residual status & ops filter discoverability fidelity sync — `docs/STAGE_114_FIDELITY.md` (`test_stage114_fidelity_d1.py`).
 
 **Stage 114 exit (2026-08-12):** Q1, P1, O1, D1, H114x met — `docs/STAGE_114_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_235_STAGE114_FREEZE.md`. Fidelity: `docs/STAGE_114_FIDELITY.md`.
+
+**Stage 115 open (2026-08-12):** Tenant MVP Notification History Honesty & Residual Filter Discoverability — `docs/ADR_236_STAGE115_OPEN.md` + `docs/STAGE_115_PLAN.md` (Notification History → Purchase invoice statuses → Draft Orders & platform roles → Notification History Honesty & Residual Filter Discoverability; N1 next).
+
+**Stage 115 N1 (2026-08-12):** Notification History `?status=all` honesty + Shell leaf (`test_stage115_notification_history_n1.py`).
+
+**Stage 115 P1 (2026-08-12):** Purchase invoice unpaid/partial/cancelled Shell leaves (`test_stage115_purchase_invoice_p1.py`).
+
+**Stage 115 O1 (2026-08-12):** Draft Orders + Platform Users role leaves (`test_stage115_draft_orders_platform_roles_o1.py`).
+
+**Stage 115 D1 (2026-08-12):** Notification history honesty & residual filter discoverability fidelity sync — `docs/STAGE_115_FIDELITY.md` (`test_stage115_fidelity_d1.py`).
+
+**Stage 115 exit (2026-08-12):** N1, P1, O1, D1, H115x met — `docs/STAGE_115_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_237_STAGE115_FREEZE.md`. Fidelity: `docs/STAGE_115_FIDELITY.md`.

@@ -303,7 +303,7 @@ export default function Page() {
     refresh({ grnStatus: next }).catch((err) => setError(err.message));
   }
 
-  // Stage 110 P1 / Stage 114 P1 — Shell PR/PO/GRN/returns + purchase invoice status leaves honor URL params
+  // Stage 110 P1 / Stage 114 P1 / Stage 115 P1 — Shell PR/PO/GRN/returns + purchase invoice status leaves honor URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('status')?.trim() || '';

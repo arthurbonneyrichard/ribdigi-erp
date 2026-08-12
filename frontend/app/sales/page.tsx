@@ -138,7 +138,7 @@ export default function Page() {
     refresh({ invoiceStatus: next }).catch((err) => setError(err.message));
   }
 
-  // Stage 109 S1 / Stage 111 S1 / Stage 113 S1 / Stage 114 Q1 — Shell quote/order/invoice status leaves honor URL filters
+  // Stage 109 S1 / Stage 111 S1 / Stage 113 S1 / Stage 114 Q1 / Stage 115 O1 — Shell quote/order/invoice status leaves honor URL filters
   // Stage 109 S1 / Stage 111 S1 — Shell Draft/Posted Sales Returns honor return_status
   function setReturnStatus(next: string) {
     setReturnStatusFilter(next);

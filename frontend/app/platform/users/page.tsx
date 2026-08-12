@@ -51,7 +51,7 @@ function PlatformUsersInner() {
   const [role, setRole] = useState('platform_admin');
   const [busy, setBusy] = useState(false);
   const [formats, setFormats] = useState(HOUSE_FORMAT_DEFAULTS);
-  // Stage 94 / Stage 108 U1 — shareable ?q=&role=&is_active= staff directory filters
+  // Stage 94 / Stage 108 U1 / Stage 115 O1 — shareable ?q=&role=&is_active= staff directory filters
   const [q, setQ] = useState(() => searchParams.get('q') || '');
   const [roleFilter, setRoleFilter] = useState(() => searchParams.get('role') || '');
   const [activeFilter, setActiveFilter] = useState(() => searchParams.get('is_active') || '');

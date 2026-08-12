@@ -23,4 +23,4 @@ Stage 114 Tenant MVP Residual Status & Ops Filter Discoverability delivered sale
 
 ## Next stage
 
-Stage 115 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 114 feature scope remains frozen.
+Stage 115 opened via CONTINUE/NEXT with a distinct product outline — Tenant MVP Notification History Honesty & Residual Filter Discoverability — see `docs/ADR_236_STAGE115_OPEN.md` + `docs/STAGE_115_PLAN.md`. Stage 114 feature scope remains frozen.

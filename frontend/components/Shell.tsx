@@ -411,6 +411,24 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Unpaid Purchases',
+    href: '/purchasing?tab=invoices&status=unpaid',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
+    label: 'Partial Purchases',
+    href: '/purchasing?tab=invoices&status=partial',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
+    label: 'Cancelled Purchases',
+    href: '/purchasing?tab=invoices&status=cancelled',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
     label: 'Purchase Returns',
     href: '/purchasing?tab=returns',
     modules: ['purchasing'],
@@ -715,6 +733,12 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Draft Orders',
+    href: '/sales?tab=orders&order_status=draft',
+    modules: ['sales'],
+  },
+  {
+    kind: 'link',
     label: 'Processing Orders',
     href: '/sales?tab=orders&order_status=processing',
     modules: ['sales'],
@@ -899,6 +923,12 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Read Notifications',
     href: '/notifications?status=read',
+    modules: ['notifications'],
+  },
+  {
+    kind: 'link',
+    label: 'Notification History',
+    href: '/notifications?status=all',
     modules: ['notifications'],
   },
   {

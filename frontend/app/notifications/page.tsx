@@ -29,7 +29,7 @@ function PageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const [rows, setRows] = useState<Note[]>([]);
-  // Stage 113 N1 — Shell Read Notifications leaf honors ?status=read (URL sync EXISTS)
+  // Stage 113 N1 / Stage 115 N1 — Shell Read/History leaves honor ?status= (History uses sentinel status=all)
   const [status, setStatus] = useState(() => {
     const raw = searchParams.get('status');
     if (raw === null) return 'unread';
@@ -57,7 +57,8 @@ function PageInner() {
     const st = overrides?.status !== undefined ? overrides.status : status;
     const gr = overrides?.group !== undefined ? overrides.group : group;
     const params = new URLSearchParams();
-    if (st) params.set('status', st);
+    // Stage 115 N1 — status=all is a UI/deep-link sentinel; omit from API (returns all in window)
+    if (st && st !== 'all') params.set('status', st);
     if (gr) params.set('group', gr);
     const q = params.toString() ? `?${params}` : '';
     const [notes, settings, countRes, me] = await Promise.all([
@@ -200,10 +201,10 @@ function PageInner() {
         </button>
         <button
           onClick={() => {
-            setStatus('');
-            syncUrl({ status: '' });
+            setStatus('all');
+            syncUrl({ status: 'all' });
           }}
-          disabled={status === ''}
+          disabled={status === 'all'}
         >
           History
         </button>

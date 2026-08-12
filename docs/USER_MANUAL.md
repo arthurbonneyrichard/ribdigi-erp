@@ -158,6 +158,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Sent / Rejected / Expired Quotations; Cancelled Orders; Unpaid / Partial / Cancelled Invoices:** Residual sales status Shell leaves (Stage 114 Q1)
 - **Draft / Approved / Rejected / Cancelled / Converted PRs; Draft / Sent / Partially Received / Received / Cancelled POs; Paid Purchases:** Residual purchasing status Shell leaves (Stage 114 P1)
 - **Inter-store / Warehouse Transfer Reports; Retail+ industry Tenants; Cashier+ role Users; Purchasing+ Audit modules:** Ops filter Shell leaves (Stage 114 O1)
+- **Notification History:** Durable `?status=all` deep-link + Shell leaf (Stage 115 N1)
+- **Unpaid / Partial / Cancelled Purchases:** Purchase invoice status Shell leaves (Stage 115 P1)
+- **Draft Orders; Platform Admins / Super Admins:** Draft order + platform role Shell leaves (Stage 115 O1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out
