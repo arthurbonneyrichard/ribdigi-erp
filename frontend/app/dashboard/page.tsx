@@ -43,13 +43,6 @@ const PANEL_ICONS: Record<string, React.ReactNode> = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </>
   ),
-  trend: (
-    <>
-      <line x1="12" y1="20" x2="12" y2="10" />
-      <line x1="18" y1="20" x2="18" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="16" />
-    </>
-  ),
   pie: (
     <>
       <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
@@ -75,16 +68,6 @@ const PANEL_ICONS: Record<string, React.ReactNode> = {
       <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
       <path d="M3.27 6.96 12 12.01l8.73-5.05" />
       <path d="M12 22.08V12" />
-    </>
-  ),
-  recent: (
-    <>
-      <line x1="8" y1="6" x2="21" y2="6" />
-      <line x1="8" y1="12" x2="21" y2="12" />
-      <line x1="8" y1="18" x2="21" y2="18" />
-      <line x1="3" y1="6" x2="3.01" y2="6" />
-      <line x1="3" y1="12" x2="3.01" y2="12" />
-      <line x1="3" y1="18" x2="3.01" y2="18" />
     </>
   ),
 };
@@ -258,14 +241,8 @@ export default function Page() {
   const healthFrac = products ? inStock / products : 0;
   const healthArc = arc(healthFrac, rr);
 
-  const trend = d.monthly_sales || [];
-  const trendMax = Math.max(1, ...trend.map((t) => t.total || 0));
-  const trendEmpty = trend.every((t) => !t.total);
-
   const daily = d.daily_sales || [];
   const dailyEmpty = daily.every((x) => !x.sales && !x.profit);
-
-  const recent = d.recent_sales || [];
 
   const finItems = [
     { label: 'Sales', value: sales, color: '#22c55e' },
@@ -322,6 +299,76 @@ export default function Page() {
         <section className="info-grid">
           <div className="panel">
             <h3>
+              <PanelIcon name="daily" />
+              Daily sales
+            </h3>
+            <p className="hint">Sales for the last 7 days</p>
+            {dailyEmpty ? (
+              <div className="empty">No sales in the last 7 days yet.</div>
+            ) : (
+              <DailyBars data={daily} field="sales" color="#22c55e" />
+            )}
+          </div>
+
+          <div className="panel">
+            <h3>
+              <PanelIcon name="profit" />
+              Daily profit
+            </h3>
+            <p className="hint">Gross profit (revenue − cost) per day</p>
+            {dailyEmpty ? (
+              <div className="empty">No profit data in the last 7 days yet.</div>
+            ) : (
+              <DailyBars data={daily} field="profit" color="#6366f1" />
+            )}
+          </div>
+
+          <div className="panel">
+            <h3>
+              <PanelIcon name="health" />
+              Inventory health
+            </h3>
+            <p className="hint">In-stock vs items at or below reorder level</p>
+            <div className="health">
+              <svg width="130" height="130" viewBox="0 0 130 130" role="img" aria-label="Inventory health">
+                <circle cx="65" cy="65" r={rr} fill="none" stroke="#fee2e2" strokeWidth="14" />
+                <circle
+                  cx="65"
+                  cy="65"
+                  r={rr}
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="14"
+                  strokeDasharray={healthArc.dash}
+                  strokeLinecap="round"
+                  transform="rotate(-90 65 65)"
+                />
+                <text x="65" y="63" textAnchor="middle" className="donut-center">
+                  {products ? `${Math.round(healthFrac * 100)}%` : '—'}
+                </text>
+                <text x="65" y="79" textAnchor="middle" className="donut-sub">
+                  HEALTHY
+                </text>
+              </svg>
+              <div className="nums">
+                <span className="pill">
+                  <span className="dot" style={{ background: '#22c55e', width: 12, height: 12, borderRadius: 4 }} />
+                  In stock&nbsp;<b>{num(inStock)}</b>
+                </span>
+                <span className="pill">
+                  <span className="dot" style={{ background: '#fb7185', width: 12, height: 12, borderRadius: 4 }} />
+                  Low stock&nbsp;<b>{num(low)}</b>
+                </span>
+                <span className="pill">
+                  <span className="dot" style={{ background: '#94a3b8', width: 12, height: 12, borderRadius: 4 }} />
+                  Products&nbsp;<b>{num(products)}</b>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="panel">
+            <h3>
               <PanelIcon name="cashflow" />
               Cash flow
             </h3>
@@ -348,6 +395,41 @@ export default function Page() {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="panel">
+            <h3>
+              <PanelIcon name="pie" />
+              Revenue vs costs
+            </h3>
+            <p className="hint">Share of sales, purchases &amp; expenses</p>
+            <div className="mix">
+              <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Revenue vs costs">
+                {finTotal <= 0 ? (
+                  <circle cx="70" cy="70" r="66" fill="#eef1f7" />
+                ) : finItems.length === 1 ? (
+                  <circle cx="70" cy="70" r="66" fill={finItems[0].color} />
+                ) : (
+                  finSlices.map((s, i) => <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth="1.5" />)
+                )}
+              </svg>
+              <div className="legend">
+                {finTotal <= 0 ? (
+                  <span className="li">No financial activity yet</span>
+                ) : (
+                  [
+                    { label: 'Sales', value: sales, color: '#22c55e' },
+                    { label: 'Purchases', value: purchases, color: '#38bdf8' },
+                    { label: 'Expenses', value: expenses, color: '#fb7185' },
+                  ].map((it) => (
+                    <span className="li" key={it.label}>
+                      <span className="dot" style={{ background: it.color }} /> {it.label} ·{' '}
+                      <b>&nbsp;{num(it.value)}</b>
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="panel">
@@ -404,176 +486,6 @@ export default function Page() {
               </div>
             </div>
           </div>
-
-          <div className="panel">
-            <h3>
-              <PanelIcon name="trend" />
-              Revenue trend
-            </h3>
-            <p className="hint">Sales over the last 6 months</p>
-            {trendEmpty ? (
-              <div className="empty">No sales recorded in this period yet.</div>
-            ) : (
-              <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="Monthly sales trend">
-                <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
-                {trend.map((t, i) => {
-                  const h = ((t.total || 0) / trendMax) * 112;
-                  const x = i * 50 + 12;
-                  const y = 138 - h;
-                  return (
-                    <g key={t.label + i}>
-                      <rect x={x} y={y} width={26} height={h} rx={5} fill="#6366f1" />
-                      <text x={x + 13} y={y - 5} textAnchor="middle" className="vbar-val">
-                        {t.total ? num(t.total) : ''}
-                      </text>
-                      <text x={x + 13} y={156} textAnchor="middle" className="vbar-label">
-                        {t.label}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            )}
-          </div>
-
-          <div className="panel">
-            <h3>
-              <PanelIcon name="pie" />
-              Revenue vs costs
-            </h3>
-            <p className="hint">Share of sales, purchases &amp; expenses</p>
-            <div className="mix">
-              <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Revenue vs costs">
-                {finTotal <= 0 ? (
-                  <circle cx="70" cy="70" r="66" fill="#eef1f7" />
-                ) : finItems.length === 1 ? (
-                  <circle cx="70" cy="70" r="66" fill={finItems[0].color} />
-                ) : (
-                  finSlices.map((s, i) => <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth="1.5" />)
-                )}
-              </svg>
-              <div className="legend">
-                {finTotal <= 0 ? (
-                  <span className="li">No financial activity yet</span>
-                ) : (
-                  [
-                    { label: 'Sales', value: sales, color: '#22c55e' },
-                    { label: 'Purchases', value: purchases, color: '#38bdf8' },
-                    { label: 'Expenses', value: expenses, color: '#fb7185' },
-                  ].map((it) => (
-                    <span className="li" key={it.label}>
-                      <span className="dot" style={{ background: it.color }} /> {it.label} ·{' '}
-                      <b>&nbsp;{num(it.value)}</b>
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="panel">
-            <h3>
-              <PanelIcon name="daily" />
-              Daily sales
-            </h3>
-            <p className="hint">Sales for the last 7 days</p>
-            {dailyEmpty ? (
-              <div className="empty">No sales in the last 7 days yet.</div>
-            ) : (
-              <DailyBars data={daily} field="sales" color="#22c55e" />
-            )}
-          </div>
-
-          <div className="panel">
-            <h3>
-              <PanelIcon name="profit" />
-              Daily profit
-            </h3>
-            <p className="hint">Gross profit (revenue \u2212 cost) per day</p>
-            {dailyEmpty ? (
-              <div className="empty">No profit data in the last 7 days yet.</div>
-            ) : (
-              <DailyBars data={daily} field="profit" color="#6366f1" />
-            )}
-          </div>
-        </section>
-
-        <section className="panel">
-          <h3>
-            <PanelIcon name="health" />
-            Inventory health
-          </h3>
-          <p className="hint">In-stock vs items at or below reorder level</p>
-          <div className="health">
-            <svg width="130" height="130" viewBox="0 0 130 130" role="img" aria-label="Inventory health">
-              <circle cx="65" cy="65" r={rr} fill="none" stroke="#fee2e2" strokeWidth="14" />
-              <circle
-                cx="65"
-                cy="65"
-                r={rr}
-                fill="none"
-                stroke="#22c55e"
-                strokeWidth="14"
-                strokeDasharray={healthArc.dash}
-                strokeLinecap="round"
-                transform="rotate(-90 65 65)"
-              />
-              <text x="65" y="63" textAnchor="middle" className="donut-center">
-                {products ? `${Math.round(healthFrac * 100)}%` : '\u2014'}
-              </text>
-              <text x="65" y="79" textAnchor="middle" className="donut-sub">
-                HEALTHY
-              </text>
-            </svg>
-            <div className="nums">
-              <span className="pill">
-                <span className="dot" style={{ background: '#22c55e', width: 12, height: 12, borderRadius: 4 }} />
-                In stock&nbsp;<b>{num(inStock)}</b>
-              </span>
-              <span className="pill">
-                <span className="dot" style={{ background: '#fb7185', width: 12, height: 12, borderRadius: 4 }} />
-                Low stock&nbsp;<b>{num(low)}</b>
-              </span>
-              <span className="pill">
-                <span className="dot" style={{ background: '#94a3b8', width: 12, height: 12, borderRadius: 4 }} />
-                Products&nbsp;<b>{num(products)}</b>
-              </span>
-            </div>
-          </div>
-        </section>
-
-        <section className="panel">
-          <h3>
-            <PanelIcon name="recent" />
-            Recent sales
-          </h3>
-          <p className="hint">Your latest sales transactions</p>
-          {recent.length === 0 ? (
-            <div className="empty">No sales yet — new sales will show up here.</div>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Reference</th>
-                  <th>Customer</th>
-                  <th>Type</th>
-                  <th>Date</th>
-                  <th style={{ textAlign: 'right' }}>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recent.map((s) => (
-                  <tr key={s.reference}>
-                    <td>{s.reference}</td>
-                    <td>{s.customer}</td>
-                    <td>{s.type === 'pos_sale' ? 'POS' : 'Sale'}</td>
-                    <td>{fmtDate(s.date)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{num(s.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
         </section>
       </div>
     </Shell>
