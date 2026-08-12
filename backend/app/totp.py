@@ -75,9 +75,20 @@ def generate_backup_codes(count: int = BACKUP_CODE_COUNT) -> list[str]:
     return codes
 
 
+def login_2fa_enabled() -> bool:
+    """Whether login challenges + enrollment enforcement are active."""
+    return bool(settings.LOGIN_2FA_ENABLED)
+
+
 def role_requires_2fa(role: str) -> bool:
     configured = {x.strip() for x in settings.TOTP_ENFORCED_ROLES.split(",") if x.strip()}
     return role in (configured or ENFORCED_ROLES)
+
+
+def must_enroll_2fa(role: str, *, has_mfa: bool) -> bool:
+    if not login_2fa_enabled():
+        return False
+    return role_requires_2fa(role) and not has_mfa
 
 
 def otpauth_uri(*, secret: str, email: str, tenant_slug: str | None = None) -> str:
@@ -232,8 +243,9 @@ def status_payload(user: m.User) -> dict:
     return {
         "enabled": bool(user.totp_enabled),
         "confirmed_at": user.totp_confirmed_at,
+        "login_2fa_enabled": login_2fa_enabled(),
         "role_requires_2fa": role_requires_2fa(user.role),
-        "must_enroll_2fa": role_requires_2fa(user.role) and not bool(user.totp_enabled),
+        "must_enroll_2fa": must_enroll_2fa(user.role, has_mfa=bool(user.totp_enabled)),
         "pending_setup": bool(user.totp_pending_secret_enc) and not bool(user.totp_enabled),
     }
 
