@@ -87,6 +87,20 @@ class TenantSuspendRequest(BaseModel):
     reason: str | None = None
 
 
+class TenantSubscriptionAssign(BaseModel):
+    package_code: str
+    term_value: int = Field(..., ge=1, le=120)
+    term_unit: str = "months"  # months | years
+    start_at: datetime | None = None
+    activate: bool = True
+    enabled_modules: list[str] | None = None
+
+
+class TenantModulesUpdate(BaseModel):
+    enabled_modules: list[str] | None = None
+    reset_to_package: bool = False
+
+
 class UserCreate(BaseModel):
     email: EmailStr
     full_name: str

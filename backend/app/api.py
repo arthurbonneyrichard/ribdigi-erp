@@ -52,6 +52,7 @@ from app import notifications as notifications_svc
 from app import audit as audit_svc
 from app import backup as backup_svc
 from app import tenants as tenants_svc
+from app import packages as packages_svc
 from app import storage as storage_svc
 from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
@@ -134,6 +135,8 @@ from app.schemas import (
     TenantCreate,
     TenantProfileUpdate,
     TenantSuspendRequest,
+    TenantSubscriptionAssign,
+    TenantModulesUpdate,
     TransactionCreate,
     EmailTestRequest,
     TwoFactorConfirm,
@@ -307,14 +310,22 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
     if existing:
         raise HTTPException(status_code=409, detail="Tenant slug exists")
 
+    trial_end = tenants_svc.default_trial_ends_at()
+    now = datetime.utcnow()
     tenant = m.Tenant(
         slug=payload.slug,
         company_name=payload.company_name,
         industry=payload.industry,
         currency=payload.currency,
         status="trial",
-        trial_ends_at=tenants_svc.default_trial_ends_at(),
+        trial_ends_at=trial_end,
         trial_notices={},
+        package_code="trial",
+        subscription_term_unit="months",
+        subscription_term_value=max(1, int(settings.TRIAL_DAYS) // 30 or 1),
+        subscription_starts_at=now,
+        subscription_ends_at=trial_end,
+        package_assigned_at=now,
     )
     db.add(tenant)
     await db.flush()
@@ -594,6 +605,106 @@ async def tenant_activate_by_ref(
     )
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant), "Tenant activated")
+
+
+@api.get("/packages")
+async def packages_catalog(
+    claims=Depends(require_roles("super_admin")),
+):
+    """List commercial packages and default module sets for the platform owner."""
+    return env(
+        {
+            "packages": packages_svc.list_packages(),
+            "packageable_modules": list(packages_svc.PACKAGEABLE_MODULES),
+            "always_on_modules": sorted(packages_svc.ALWAYS_ON_MODULES),
+        }
+    )
+
+
+@api.post("/tenants/{tenant_ref}/subscription")
+async def tenant_assign_subscription(
+    tenant_ref: str,
+    payload: TenantSubscriptionAssign,
+    claims=Depends(require_roles("super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Assign package + term (months/years); calculates usage and renewal window."""
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    tenant = await tenants_svc.assign_subscription(
+        db,
+        tenant,
+        package_code=payload.package_code,
+        term_value=payload.term_value,
+        term_unit=payload.term_unit,
+        start_at=payload.start_at,
+        activate=payload.activate,
+        enabled_modules=payload.enabled_modules,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="tenants",
+        action="assign_subscription",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={
+            "target_tenant": tenant.id,
+            "package_code": payload.package_code,
+            "term_value": payload.term_value,
+            "term_unit": payload.term_unit,
+        },
+    )
+    await db.commit()
+    return env(tenants_svc.serialize_tenant(tenant), "Subscription assigned")
+
+
+@api.patch("/tenants/{tenant_ref}/modules")
+async def tenant_update_modules(
+    tenant_ref: str,
+    payload: TenantModulesUpdate,
+    claims=Depends(require_roles("super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Override which modules a tenant may use (package feature control)."""
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    if payload.reset_to_package:
+        tenant = await tenants_svc.clear_module_override(db, tenant)
+    elif payload.enabled_modules is not None:
+        tenant = await tenants_svc.set_enabled_modules(
+            db, tenant, payload.enabled_modules, commit=False
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide enabled_modules or set reset_to_package=true",
+        )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="tenants",
+        action="update_modules",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={
+            "target_tenant": tenant.id,
+            "reset_to_package": payload.reset_to_package,
+            "enabled_modules": tenant.enabled_modules,
+        },
+    )
+    await db.commit()
+    return env(tenants_svc.serialize_tenant(tenant), "Tenant modules updated")
+
+
+@api.get("/tenants/{tenant_ref}/usage")
+async def tenant_usage(
+    tenant_ref: str,
+    claims=Depends(require_roles("super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    return env(tenants_svc.serialize_tenant(tenant))
 
 
 @api.get("/settings/email")
@@ -1378,6 +1489,8 @@ async def verify_email(payload: EmailVerifyConfirm, db: AsyncSession = Depends(g
 async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     user = await db.get(m.User, claims["sub"])
     perms = user.permissions or permissions_for_role(user.role)
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    usage = packages_svc.usage_snapshot(tenant) if tenant else None
     return env(
         {
             "id": user.id,
@@ -1389,6 +1502,10 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "email_verified": user.email_verified,
             "permissions": perms,
             "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
+            "package_code": claims.get("package_code") or (getattr(tenant, "package_code", None) if tenant else "trial"),
+            "enabled_modules": claims.get("enabled_modules")
+            or (packages_svc.resolve_enabled_modules(tenant) if tenant else []),
+            "subscription": usage,
             **totp_svc.status_payload(user),
         }
     )

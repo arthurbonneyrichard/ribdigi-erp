@@ -337,6 +337,8 @@
 .plat-actions button.danger{border-color:#fecaca;color:#b91c1c;background:#fef2f2}
 .plat-actions button.danger:hover{background:#fee2e2}
 .plat-actions button:disabled{opacity:.55;cursor:not-allowed}
+.plat-row-selected td{background:#f0fdfa}
+[data-theme="dark"] .plat-row-selected td{background:#0f2a28}
 [data-theme="dark"] .plat-stat,[data-theme="dark"] .plat-panel{background:#131c2e;border-color:#233047}
 [data-theme="dark"] .plat-stat strong,[data-theme="dark"] .plat-panel h2,[data-theme="dark"] .plat-co{color:#f1f5f9}
 [data-theme="dark"] .plat-actions button{background:#0f1826;border-color:#334155;color:#e2e8f0}
