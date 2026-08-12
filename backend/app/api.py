@@ -31,6 +31,7 @@ from app import ai_security as ai_security_svc
 from app import ai_inventory as ai_inventory_svc
 from app import ai_sales as ai_sales_svc
 from app import ai_expenses as ai_expenses_svc
+from app import ai_reports as ai_reports_svc
 from app import purchasing as purchasing_svc
 from app import purchase_requests as purchase_requests_svc
 from app import purchase_suggestions as purchase_suggestions_svc
@@ -8371,3 +8372,93 @@ async def ai_expenses_analysis(
         actor_user_id=claims.get("sub"),
     )
     return env(data)
+
+
+@api.post("/ai/reports/generate")
+async def ai_reports_generate(
+    payload: dict | None = None,
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-21.7 constrained NL / structured report generation (JSON preview)."""
+    body = payload or {}
+    data = await ai_reports_svc.generate_report(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_user_id=claims.get("sub"),
+        prompt=body.get("prompt"),
+        format=body.get("format"),
+        template_id=body.get("template_id"),
+        report_type=body.get("report_type"),
+        period=body.get("period"),
+        filters=body.get("filters") or body.get("params"),
+    )
+    return env(data, "Report generated")
+
+
+@api.post("/ai/reports/export")
+async def ai_reports_export(
+    payload: dict | None = None,
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Export a generated AI report as csv/pdf/xlsx."""
+    body = payload or {}
+    content, media, filename, _meta = await ai_reports_svc.export_from_intent(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_user_id=claims.get("sub"),
+        prompt=body.get("prompt"),
+        format=body.get("format") or "csv",
+        template_id=body.get("template_id"),
+        report_type=body.get("report_type"),
+        params=body.get("params") or body.get("filters"),
+    )
+    return Response(
+        content=content,
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@api.get("/ai/reports/templates")
+async def ai_report_templates_list(
+    limit: int = 50,
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await ai_reports_svc.list_templates(
+        db, tenant_id=claims["tenant_id"], limit=limit
+    )
+    return env([ai_reports_svc.serialize_template(r) for r in rows])
+
+
+@api.post("/ai/reports/templates")
+async def ai_report_templates_create(
+    payload: dict,
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await ai_reports_svc.create_template(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        name=str(payload.get("name") or ""),
+        prompt=str(payload.get("prompt") or ""),
+        format=payload.get("format"),
+    )
+    await db.commit()
+    return env(ai_reports_svc.serialize_template(row), "Report template saved")
+
+
+@api.delete("/ai/reports/templates/{template_id}")
+async def ai_report_templates_delete(
+    template_id: str,
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    await ai_reports_svc.delete_template(
+        db, tenant_id=claims["tenant_id"], template_id=template_id
+    )
+    await db.commit()
+    return env({"id": template_id}, "Report template deleted")

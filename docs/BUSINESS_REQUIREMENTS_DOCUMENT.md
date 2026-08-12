@@ -1066,9 +1066,12 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Natural language to report.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Generate reports from text prompts ("Show me monthly sales for Q2")
-  - [ ] Export generated reports
-  - [ ] Save report templates for reuse
+  - [x] Generate reports from text prompts ("Show me monthly sales for Q2")
+    - Complete (MVP constrained parser → EXPORTABLE types; `docs/AI_REPORT_GENERATOR_MVP.md`)
+  - [x] Export generated reports
+    - Complete (MVP): csv/pdf/xlsx via `POST /ai/reports/export`
+  - [x] Save report templates for reuse
+    - Complete (MVP): `ai_report_templates` + CRUD
 
 #### BR-21.8 AI Document Assistant
 - **Description:** Intelligent document processing.
