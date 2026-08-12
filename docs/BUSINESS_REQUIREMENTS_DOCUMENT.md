@@ -865,6 +865,7 @@ Stage 135 D1 — `docs/STAGE_135_FIDELITY.md` (`test_stage135_fidelity_d1.py`); 
 Stage 136 D1 — `docs/STAGE_136_FIDELITY.md` (`test_stage136_fidelity_d1.py`); Stage 136 C1 / S1 / A1.
 Stage 137 D1 — `docs/STAGE_137_FIDELITY.md` (`test_stage137_fidelity_d1.py`); Stage 137 M1 / L1 / E1.
 Stage 138 D1 — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`); Stage 138 C1 / E1 / P1.
+Stage 139 D1 — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); Stage 139 B1 / A1 / F1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1554,3 +1555,5 @@ Stage 136 D1 customer payment, supplier payment & credit aging export fidelity �
 Stage 137 D1 stock movements, low-stock alert & expiring batches export fidelity — `docs/STAGE_137_FIDELITY.md` (`test_stage137_fidelity_d1.py`); Stage 137 M1 movements CSV; Stage 137 L1 low-stock filter + CSV; Stage 137 E1 expiring batches CSV.
 
 Stage 138 D1 early-pay settings, expense approval settings & purchasing approval settings export fidelity — `docs/STAGE_138_FIDELITY.md` (`test_stage138_fidelity_d1.py`); Stage 138 C1 early-pay settings CSV; Stage 138 E1 expense approval settings CSV; Stage 138 P1 purchasing approval settings CSV.
+
+Stage 139 D1 expense budgets, account transactions & fiscal period export fidelity — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`); Stage 139 B1 budgets CSV; Stage 139 A1 account transactions CSV; Stage 139 F1 fiscal period CSV.

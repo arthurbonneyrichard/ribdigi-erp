@@ -24,3 +24,5 @@ Stage 138 Tenant MVP Early-Pay Settings CSV, Expense Approval Settings CSV & Pur
 ## Next stage
 
 Stage 139 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 138 feature scope remains frozen.
+
+**Stage 139 opened and closed under ADR-284 / ADR-285** — Tenant MVP Expense Budgets CSV, Account Transactions CSV & Fiscal Period CSV Export Fidelity (CONTINUE/NEXT approved).

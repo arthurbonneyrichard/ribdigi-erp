@@ -671,7 +671,8 @@ export default function Page() {
             : ''}
           . Unmapped categories post to Operating Expenses (6000). Filter via{' '}
           <code>expense_category_active</code> → <code>GET /expenses/categories?is_active=</code>{' '}
-          (Stage 123 F1).
+          (Stage 123 F1). Budget variance CSV via <code>GET /expenses/budgets/export</code>{' '}
+          (Stage 139 B1).
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
           <label className="muted">
@@ -735,6 +736,37 @@ export default function Page() {
             }}
           >
             Export expense categories CSV
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              // Stage 139 B1 — expense budgets variance CSV
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const res = await fetch(`${apiBase}/expenses/budgets/export`, {
+                  headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                  },
+                });
+                if (!res.ok) throw new Error('Expense budgets export failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'expense_budgets_export.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                setMessage('Expense budgets CSV exported (Stage 139 B1)');
+              } catch (err: any) {
+                setError(err.message || 'Expense budgets export failed');
+              }
+            }}
+          >
+            Export budgets CSV
           </button>
         </div>
         <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>

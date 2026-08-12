@@ -1141,9 +1141,52 @@ export default function Page() {
               <input type="date" value={txFrom} onChange={(e) => setTxFrom(e.target.value)} />
               <input type="date" value={txTo} onChange={(e) => setTxTo(e.target.value)} />
               {obAccountId && (
-                <button type="button" onClick={() => loadAccountTransactions(obAccountId)}>
-                  Refresh ledger
-                </button>
+                <>
+                  <button type="button" onClick={() => loadAccountTransactions(obAccountId)}>
+                    Refresh ledger
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      // Stage 139 A1 — account ledger CSV
+                      setError('');
+                      try {
+                        const token = localStorage.getItem('token');
+                        const tenant = localStorage.getItem('tenant');
+                        const apiBase =
+                          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+                        const qs = new URLSearchParams();
+                        if (txFrom) qs.set('from_date', txFrom);
+                        if (txTo) qs.set('to_date', txTo);
+                        const q = qs.toString();
+                        const res = await fetch(
+                          `${apiBase}/accounting/accounts/${obAccountId}/transactions/export${
+                            q ? `?${q}` : ''
+                          }`,
+                          {
+                            headers: {
+                              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                              ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                            },
+                          },
+                        );
+                        if (!res.ok) throw new Error('Account ledger export failed');
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'account_transactions_export.csv';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        setMessage('Account ledger CSV exported (Stage 139 A1)');
+                      } catch (err: any) {
+                        setError(err.message || 'Account ledger export failed');
+                      }
+                    }}
+                  >
+                    Export account ledger CSV
+                  </button>
+                </>
               )}
             </div>
             <table className="table">
@@ -1191,6 +1234,11 @@ export default function Page() {
                     {accountTx.transaction_count} lines)
                   </span>
                 </h4>
+                <p className="muted" style={{ marginBottom: 8 }}>
+                  Line CSV via{' '}
+                  <code>GET /accounting/accounts/&#123;id&#125;/transactions/export</code> (Stage 139
+                  A1).
+                </p>
                 <table className="table">
                   <thead>
                     <tr>

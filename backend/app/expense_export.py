@@ -1,4 +1,4 @@
-"""CSV export for expenses (Stage 120 X1)."""
+"""CSV export for expenses (Stage 120 X1) and category budgets (Stage 139 B1)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import expenses as expenses_svc
 from app import models as m
 from app.rbac import apply_created_by_scope
 
@@ -24,6 +25,21 @@ EXPENSE_EXPORT_COLUMNS = [
     "store_id",
     "department_id",
     "created_by",
+]
+
+BUDGET_EXPORT_COLUMNS = [
+    "from_date",
+    "to_date",
+    "code",
+    "name",
+    "budget_amount",
+    "spent",
+    "pending",
+    "variance",
+    "utilization_pct",
+    "over_budget",
+    "account_id",
+    "is_active",
 ]
 
 
@@ -85,6 +101,42 @@ async def export_expenses_csv(
                 "store_id": _cell(row.store_id),
                 "department_id": _cell(getattr(row, "department_id", None)),
                 "created_by": _cell(row.created_by),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_expense_budgets_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> str:
+    """Stage 139 B1 — category budget variance CSV for a period."""
+    data = await expenses_svc.category_budget_variance(
+        db, tenant_id, from_date=from_date, to_date=to_date
+    )
+    period_from = data.get("from_date")
+    period_to = data.get("to_date")
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=BUDGET_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in data.get("categories") or []:
+        writer.writerow(
+            {
+                "from_date": _cell(period_from),
+                "to_date": _cell(period_to),
+                "code": _cell(row.get("code")),
+                "name": _cell(row.get("name")),
+                "budget_amount": _cell(row.get("budget_amount")),
+                "spent": _cell(row.get("spent")),
+                "pending": _cell(row.get("pending")),
+                "variance": _cell(row.get("variance")),
+                "utilization_pct": _cell(row.get("utilization_pct")),
+                "over_budget": _cell(row.get("over_budget")),
+                "account_id": _cell(row.get("account_id")),
+                "is_active": _cell(row.get("is_active")),
             }
         )
     return buf.getvalue()

@@ -547,9 +547,38 @@ export default function Page() {
                 >
                   Reopen current period
                 </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    // Stage 139 F1 — fiscal period status CSV
+                    setError('');
+                    try {
+                      const token = localStorage.getItem('token') || '';
+                      const res = await fetch(`${apiBase}/accounting/fiscal-period/export`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      if (!res.ok) {
+                        setError(await res.text());
+                        return;
+                      }
+                      const blob = await res.blob();
+                      const a = document.createElement('a');
+                      a.href = URL.createObjectURL(blob);
+                      a.download = 'fiscal_period_export.csv';
+                      a.click();
+                      URL.revokeObjectURL(a.href);
+                      setMessage('Fiscal period CSV downloaded (Stage 139 F1)');
+                    } catch (err: any) {
+                      setError(err.message || 'Fiscal period export failed');
+                    }
+                  }}
+                >
+                  Export fiscal period CSV
+                </button>
               </div>
               <p className="muted">
                 Closing blocks journal post/unpost in this period. Reopen requires company admin.
+                Status CSV via <code>GET /accounting/fiscal-period/export</code> (Stage 139 F1).
               </p>
             </div>
           )}

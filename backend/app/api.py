@@ -8205,6 +8205,31 @@ async def expense_category_budgets(
     return env(data)
 
 
+@api.get("/expenses/budgets/export")
+async def export_expense_budgets(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 139 B1 — category budget variance CSV."""
+    from app import reports as reports_svc
+
+    text = await expense_export_svc.export_expense_budgets_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="expense_budgets_export.csv"'
+        },
+    )
+
+
 @api.get("/expenses/settings")
 async def expense_settings(
     claims=Depends(require_permission("expenses", "read")),
@@ -8799,6 +8824,33 @@ async def account_transactions(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             include_unposted=include_unposted,
         )
+    )
+
+
+@api.get("/accounting/accounts/{account_id}/transactions/export")
+async def export_account_transactions(
+    account_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    include_unposted: bool = False,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 139 A1 — COA account ledger lines CSV."""
+    text = await finance_ops_export_svc.export_account_transactions_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        account_id=account_id,
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        include_unposted=include_unposted,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="account_transactions_export.csv"'
+        },
     )
 
 
@@ -9735,6 +9787,24 @@ async def get_fiscal_period(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
     return env(accounting_svc.serialize_fiscal_period_status(tenant))
+
+
+@api.get("/accounting/fiscal-period/export")
+async def export_fiscal_period(
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 139 F1 — fiscal period status CSV."""
+    text = await finance_ops_export_svc.export_fiscal_period_csv(
+        db, tenant_id=claims["tenant_id"]
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="fiscal_period_export.csv"'
+        },
+    )
 
 
 @api.post("/accounting/fiscal-period/close")

@@ -1,9 +1,11 @@
-"""CSV export for journals, bank statements, email (Stage 131), and SMS settings (Stage 135). Secrets excluded."""
+"""CSV export for journals, bank statements, email (Stage 131), SMS (Stage 135), account ledger & fiscal (Stage 139). Secrets excluded."""
 
 from __future__ import annotations
 
 import csv
 import io
+import json
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,6 +75,29 @@ SMS_SETTINGS_EXPORT_COLUMNS = [
     "mode",
     "from_number",
     "account_sid_set",
+]
+
+ACCOUNT_TX_EXPORT_COLUMNS = [
+    "account_code",
+    "account_name",
+    "entry_date",
+    "entry_number",
+    "reference",
+    "description",
+    "source_type",
+    "source_id",
+    "status",
+    "debit",
+    "credit",
+    "balance",
+]
+
+FISCAL_PERIOD_EXPORT_COLUMNS = [
+    "fiscal_year_start",
+    "open_period_start",
+    "open_period_end_exclusive",
+    "current_period_closed",
+    "closed_period_starts",
 ]
 
 
@@ -169,4 +194,72 @@ def export_sms_settings_csv() -> str:
     writer = csv.DictWriter(buf, fieldnames=SMS_SETTINGS_EXPORT_COLUMNS)
     writer.writeheader()
     writer.writerow({k: _cell(data.get(k)) for k in SMS_SETTINGS_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+async def export_account_transactions_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    account_id: str,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    include_unposted: bool = False,
+) -> str:
+    """Stage 139 A1 — COA account ledger lines CSV."""
+    data = await accounting_svc.account_transactions(
+        db,
+        tenant_id,
+        account_id,
+        from_date=from_date,
+        to_date=to_date,
+        include_unposted=include_unposted,
+    )
+    account = data.get("account") or {}
+    code = account.get("code")
+    name = account.get("name")
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=ACCOUNT_TX_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in data.get("transactions") or []:
+        writer.writerow(
+            {
+                "account_code": _cell(code),
+                "account_name": _cell(name),
+                "entry_date": _cell(row.get("entry_date")),
+                "entry_number": _cell(row.get("entry_number")),
+                "reference": _cell(row.get("reference")),
+                "description": _cell(row.get("description")),
+                "source_type": _cell(row.get("source_type")),
+                "source_id": _cell(row.get("source_id")),
+                "status": _cell(row.get("status")),
+                "debit": _cell(row.get("debit")),
+                "credit": _cell(row.get("credit")),
+                "balance": _cell(row.get("balance")),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_fiscal_period_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+) -> str:
+    """Stage 139 F1 — fiscal period status CSV (singleton row)."""
+    tenant = await tenants_svc.get_tenant(db, tenant_id)
+    data = accounting_svc.serialize_fiscal_period_status(tenant)
+    row = {
+        "fiscal_year_start": data.get("fiscal_year_start"),
+        "open_period_start": data.get("open_period_start"),
+        "open_period_end_exclusive": data.get("open_period_end_exclusive"),
+        "current_period_closed": data.get("current_period_closed"),
+        "closed_period_starts": json.dumps(
+            data.get("closed_period_starts") or [], separators=(",", ":"), default=str
+        ),
+    }
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=FISCAL_PERIOD_EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerow({k: _cell(row.get(k)) for k in FISCAL_PERIOD_EXPORT_COLUMNS})
     return buf.getvalue()

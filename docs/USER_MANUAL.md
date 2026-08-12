@@ -228,6 +228,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Early-Pay Settings CSV:** Credit Export early-pay settings CSV (Stage 138 C1)
 - **Expense Approval Settings CSV:** Expenses Export approval settings CSV (Stage 138 E1)
 - **Purchasing Approval Settings CSV:** Purchasing Export approval settings CSV (Stage 138 P1)
+- **Expense Budgets CSV:** Expenses Export budgets CSV (Stage 139 B1)
+- **Account Ledger CSV:** Accounting Export account ledger CSV (Stage 139 A1)
+- **Fiscal Period CSV:** Company Export fiscal period CSV (Stage 139 F1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

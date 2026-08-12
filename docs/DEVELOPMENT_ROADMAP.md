@@ -2270,6 +2270,18 @@ Every feature in every phase must meet:
 
 **Stage 138 exit (2026-08-12):** C1, E1, P1, D1, H138x met — `docs/STAGE_138_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_283_STAGE138_FREEZE.md`. Fidelity: `docs/STAGE_138_FIDELITY.md`.
 
+**Stage 139 open (2026-08-12):** Tenant MVP Expense Budgets CSV, Account Transactions CSV & Fiscal Period CSV Export Fidelity — `docs/ADR_284_STAGE139_OPEN.md` + `docs/STAGE_139_PLAN.md` (Budgets → Account-tx → Fiscal → Fidelity; B1 next).
+
+**Stage 139 B1 (2026-08-12):** Expense budgets CSV (`test_stage139_budgets_export_b1.py`).
+
+**Stage 139 A1 (2026-08-12):** Account transactions CSV (`test_stage139_account_tx_export_a1.py`).
+
+**Stage 139 F1 (2026-08-12):** Fiscal period CSV (`test_stage139_fiscal_period_f1.py`).
+
+**Stage 139 D1 (2026-08-12):** Budgets / account-tx / fiscal export fidelity sync — `docs/STAGE_139_FIDELITY.md` (`test_stage139_fidelity_d1.py`).
+
+**Stage 139 exit (2026-08-12):** B1, A1, F1, D1, H139x met — `docs/STAGE_139_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_285_STAGE139_FREEZE.md`. Fidelity: `docs/STAGE_139_FIDELITY.md`.
+
 
 
 
