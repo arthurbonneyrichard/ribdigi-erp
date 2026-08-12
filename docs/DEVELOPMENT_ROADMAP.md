@@ -2426,6 +2426,18 @@ Every feature in every phase must meet:
 
 **Stage 151 exit (2026-08-12):** H1, E1, A1, D1, H151x met — `docs/STAGE_151_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_309_STAGE151_FREEZE.md`. Fidelity: `docs/STAGE_151_FIDELITY.md`.
 
+**Stage 152 open (2026-08-12):** Tenant MVP Platform Dashboard Aggregates CSV, Platform Industries Catalog CSV & Admin Permissions Matrix CSV Export Fidelity — `docs/ADR_310_STAGE152_OPEN.md` + `docs/STAGE_152_PLAN.md` (Dashboard → Industries → Permissions matrix → Fidelity; G1 next).
+
+**Stage 152 G1 (2026-08-12):** Dashboard aggregates CSV (`test_stage152_platform_dashboard_g1.py`).
+
+**Stage 152 I1 (2026-08-12):** Industries catalog CSV (`test_stage152_platform_industries_i1.py`).
+
+**Stage 152 M1 (2026-08-12):** Permissions matrix CSV (`test_stage152_permissions_matrix_m1.py`).
+
+**Stage 152 D1 (2026-08-12):** Dashboard / industries / permissions matrix export fidelity sync — `docs/STAGE_152_FIDELITY.md` (`test_stage152_fidelity_d1.py`).
+
+**Stage 152 exit (2026-08-12):** G1, I1, M1, D1, H152x met — `docs/STAGE_152_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_311_STAGE152_FREEZE.md`. Fidelity: `docs/STAGE_152_FIDELITY.md`.
+
 
 
 

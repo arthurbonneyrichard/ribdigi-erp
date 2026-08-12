@@ -38,7 +38,7 @@ Tenant MVP Platform Health Checks CSV, Platform Operator Evidence CSV & Platform
 - Admin remote-revoke-others; API-key un-revoke; FX soft-`is_active`
 - Main `ci.yml` deploy; reopen Stages 1–150
 - External LLM Complete; Stage 149–150 reopen; LAUNCH §§1–3 / §7 / go-live Completes
-- Platform Dashboard Aggregates CSV; Industries Catalog CSV; Admin Permissions Matrix CSV
+- Platform Dashboard Aggregates CSV; Industries Catalog CSV; Admin Permissions Matrix CSV (completed Stage 152)
 
 ## H1 acceptance criteria
 

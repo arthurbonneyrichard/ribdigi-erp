@@ -264,12 +264,45 @@ function PlatformTenantsInner() {
     }
   }
 
+  async function exportIndustriesCsv() {
+    setError('');
+    setMsg('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/platform/industries/export`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('Industries CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'platform_industries_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMsg('Industries catalog CSV downloaded (Stage 152 I1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   return (
     <PlatformShell>
       <h1>Customer tenants</h1>
       <p className="muted">
         Provision, suspend, and activate customer companies. Platform tenant is never listed.
-        Public self-serve registration remains at /register.
+        Public self-serve registration remains at /register. Industry catalog export via{' '}
+        <code>GET /platform/industries/export</code> (Stage 152 I1).
+      </p>
+
+      <p style={{ marginTop: 12 }}>
+        <button type="button" onClick={exportIndustriesCsv}>
+          Export industries CSV
+        </button>
       </p>
 
       <form onSubmit={provisionTenant} className="card" style={{ marginTop: 16, maxWidth: 520 }}>

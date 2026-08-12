@@ -123,6 +123,33 @@ export default function AdminPermissionsPage() {
     }
   }
 
+  async function exportPermissionsMatrixCsv() {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const res = await fetch(`${apiBase}/roles/permissions/export?active_only=false`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('Permissions matrix CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'permissions_matrix_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Permissions matrix CSV downloaded (Stage 152 M1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   function toggleAction(module: string, action: string) {
     setMatrix((prev) => {
       const current = new Set(prev[module] || []);
@@ -147,10 +174,17 @@ export default function AdminPermissionsPage() {
       <p className="muted">
         Module/action matrix for custom tenant roles, plus read-only system role catalog (org
         chart: Manager, Cashier, Accountant, …). Create roles on <Link href="/admin/roles">Roles</Link>
-        ; assign on <Link href="/users">Users</Link>.
+        ; assign on <Link href="/users">Users</Link>. Export via{' '}
+        <code>GET /roles/permissions/export</code> (Stage 152 M1; distinct from Stage 124 custom
+        roles roster CSV).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+      <p style={{ marginTop: 12 }}>
+        <button type="button" onClick={exportPermissionsMatrixCsv}>
+          Export permissions matrix CSV
+        </button>
+      </p>
 
       <div className="card" style={{ marginTop: 16 }} id="system">
         <h2 style={{ fontSize: 18, marginTop: 0 }}>System roles (read-only)</h2>

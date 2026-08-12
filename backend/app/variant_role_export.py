@@ -35,6 +35,17 @@ ROLE_EXPORT_COLUMNS = [
     "is_active",
 ]
 
+PERMISSIONS_MATRIX_EXPORT_COLUMNS = [
+    "role",
+    "label",
+    "system",
+    "record_scope",
+    "is_active",
+    "module",
+    "action",
+    "granted",
+]
+
 
 def _cell(value) -> str:
     if value is None:
@@ -126,4 +137,77 @@ async def export_custom_roles_csv(
                 "is_active": _cell(bool(row.is_active)),
             }
         )
+    return buf.getvalue()
+
+
+async def export_permissions_matrix_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    is_active: bool | None = None,
+    active_only: bool = False,
+) -> str:
+    """Stage 152 M1 — role×module×action permissions matrix CSV (system + custom)."""
+    from app import roles as roles_svc
+
+    catalog = await roles_svc.list_role_catalog(
+        db, tenant_id, active_only=active_only, is_active=is_active
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=PERMISSIONS_MATRIX_EXPORT_COLUMNS)
+    writer.writeheader()
+    for row in catalog:
+        role = row.get("role") or row.get("slug") or ""
+        label = row.get("label") or role
+        system = bool(row.get("system"))
+        record_scope = row.get("record_scope") or "own"
+        active = row.get("is_active")
+        if active is None:
+            active = True
+        perms = row.get("permissions") if isinstance(row.get("permissions"), dict) else {}
+        # Drop record_scope key if present inside permissions map
+        modules = {k: v for k, v in perms.items() if k != "record_scope"}
+        if not modules:
+            writer.writerow(
+                {
+                    "role": _cell(role),
+                    "label": _cell(label),
+                    "system": _cell(system),
+                    "record_scope": _cell(record_scope),
+                    "is_active": _cell(bool(active)),
+                    "module": "",
+                    "action": "",
+                    "granted": "false",
+                }
+            )
+            continue
+        if modules.get("*") == ["*"] or (isinstance(modules.get("*"), list) and "*" in modules["*"]):
+            writer.writerow(
+                {
+                    "role": _cell(role),
+                    "label": _cell(label),
+                    "system": _cell(system),
+                    "record_scope": _cell(record_scope),
+                    "is_active": _cell(bool(active)),
+                    "module": "*",
+                    "action": "*",
+                    "granted": "true",
+                }
+            )
+            continue
+        for module, actions in sorted(modules.items(), key=lambda kv: kv[0]):
+            action_list = actions if isinstance(actions, list) else [actions]
+            for action in action_list:
+                writer.writerow(
+                    {
+                        "role": _cell(role),
+                        "label": _cell(label),
+                        "system": _cell(system),
+                        "record_scope": _cell(record_scope),
+                        "is_active": _cell(bool(active)),
+                        "module": _cell(module),
+                        "action": _cell(action),
+                        "granted": "true",
+                    }
+                )
     return buf.getvalue()

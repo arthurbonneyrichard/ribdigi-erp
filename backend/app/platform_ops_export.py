@@ -311,3 +311,106 @@ def export_platform_at_risk_tenants_csv(*, items: list[Any], within_days: int | 
             ]
         )
     return buf.getvalue().encode("utf-8")
+
+
+def export_platform_dashboard_csv(*, dashboard: dict[str, Any]) -> bytes:
+    """Flatten GET /platform/dashboard JSON into multi-row_type CSV (Stage 152 G1).
+
+    Honesty: KPI aggregates only — billing/MRR stay deferred (ADR-002); no fabricated revenue.
+    """
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        [
+            "row_type",
+            "section",
+            "key",
+            "value",
+            "label",
+            "count",
+            "generated_at",
+        ]
+    )
+    generated = dashboard.get("generated_at")
+    kpi_keys = (
+        "total_tenants",
+        "active_tenants",
+        "trial_tenants",
+        "grace_tenants",
+        "suspended_tenants",
+        "at_risk_count",
+        "at_risk_within_days",
+        "new_tenants_this_month",
+        "platform_users",
+        "customer_users",
+    )
+    for key in kpi_keys:
+        if key in dashboard:
+            writer.writerow(
+                [
+                    "kpi",
+                    "summary",
+                    key,
+                    _cell(dashboard.get(key)),
+                    "",
+                    "",
+                    _cell(generated),
+                ]
+            )
+    billing = dashboard.get("billing") if isinstance(dashboard.get("billing"), dict) else {}
+    for key, value in billing.items():
+        writer.writerow(
+            [
+                "billing",
+                "billing",
+                _cell(key),
+                _cell(value),
+                "",
+                "",
+                _cell(generated),
+            ]
+        )
+    status_breakdown = dashboard.get("status_breakdown")
+    if isinstance(status_breakdown, dict):
+        for status, count in status_breakdown.items():
+            writer.writerow(
+                [
+                    "status_breakdown",
+                    "status",
+                    _cell(status),
+                    _cell(count),
+                    _cell(status),
+                    _cell(count),
+                    _cell(generated),
+                ]
+            )
+
+    def _series(section: str, payload: Any, label_key: str, value_key: str) -> None:
+        if not isinstance(payload, dict):
+            return
+        series = payload.get("series") or payload.get("slices") or []
+        if not isinstance(series, list):
+            return
+        for point in series:
+            if not isinstance(point, dict):
+                continue
+            label = point.get(label_key) or point.get("label") or point.get("month")
+            count = point.get(value_key) or point.get("count") or point.get("value")
+            writer.writerow(
+                [
+                    "series" if payload.get("series") is not None else "slice",
+                    section,
+                    _cell(label),
+                    _cell(count),
+                    _cell(label),
+                    _cell(count),
+                    _cell(generated),
+                ]
+            )
+
+    _series("tenant_growth", dashboard.get("tenant_growth"), "month", "tenants")
+    _series("tenant_status", dashboard.get("tenant_status"), "status", "count")
+    _series("plan_distribution", dashboard.get("plan_distribution"), "plan_code", "count")
+    _series("industry_distribution", dashboard.get("industry_distribution"), "industry", "count")
+    _series("user_growth", dashboard.get("user_growth"), "month", "users")
+    return buf.getvalue().encode("utf-8")

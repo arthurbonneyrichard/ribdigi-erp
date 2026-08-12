@@ -2108,6 +2108,29 @@ async def roles_export(
     )
 
 
+@api.get("/roles/permissions/export")
+async def roles_permissions_matrix_export(
+    active_only: bool = False,
+    is_active: bool | None = None,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 152 M1 — role×module×action permissions matrix CSV (system + custom)."""
+    text = await variant_role_export_svc.export_permissions_matrix_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        active_only=active_only,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="permissions_matrix_export.csv"'
+        },
+    )
+
+
 @api.get("/roles/{role}")
 async def role_detail(
     role: str,

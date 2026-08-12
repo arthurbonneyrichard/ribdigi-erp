@@ -26,9 +26,12 @@ type Dash = {
   generated_at?: string;
 };
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 export default function PlatformDashboardPage() {
   const [d, setD] = useState<Dash>({});
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,12 +42,47 @@ export default function PlatformDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function exportAggregatesCsv() {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/platform/dashboard/export`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('Dashboard CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'platform_dashboard_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Dashboard aggregates CSV downloaded (Stage 152 G1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   return (
     <PlatformShell>
       <h1>Platform Administration</h1>
-      <p className="muted">RIBDIGI ERP · A Ribdigi House Product — customer tenant overview (real aggregates).</p>
+      <p className="muted">
+        RIBDIGI ERP · A Ribdigi House Product — customer tenant overview (real aggregates). Export
+        via <code>GET /platform/dashboard/export</code> (Stage 152 G1; no fabricated MRR).
+      </p>
       {error && <p>{error}</p>}
+      {message && <p style={{ color: '#047857' }}>{message}</p>}
       {loading && <p className="muted">Loading platform metrics…</p>}
+      <p style={{ marginTop: 12 }}>
+        <button type="button" onClick={exportAggregatesCsv}>
+          Export aggregates CSV
+        </button>
+      </p>
       <div className="grid" style={{ marginTop: 20 }}>
         <div className="card">
           <div className="muted">Total tenants</div>

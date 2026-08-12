@@ -193,3 +193,5 @@ Stage 149 D1 Tenant MVP AI Document Analyze CSV, Platform Staff Users CSV & Plat
 Stage 150 D1 Tenant MVP Platform Plans Catalog CSV, Platform Subscriptions Roster CSV & Platform House Settings CSV Export Fidelity — `docs/STAGE_150_FIDELITY.md` (`test_stage150_fidelity_d1.py`); Stage 150 P1 Complete; Stage 150 R1 Complete; Stage 150 S1 Complete (MVP honesty); exit `docs/STAGE_150_EXIT_CRITERIA.md`, ADR-307.
 
 Stage 151 D1 Tenant MVP Platform Health Checks CSV, Platform Operator Evidence CSV & Platform At-Risk Tenants CSV Export Fidelity — `docs/STAGE_151_FIDELITY.md` (`test_stage151_fidelity_d1.py`); Stage 151 H1 Complete; Stage 151 E1 Complete; Stage 151 A1 Complete (MVP honesty); exit `docs/STAGE_151_EXIT_CRITERIA.md`, ADR-309.
+
+Stage 152 D1 Tenant MVP Platform Dashboard Aggregates CSV, Platform Industries Catalog CSV & Admin Permissions Matrix CSV Export Fidelity — `docs/STAGE_152_FIDELITY.md` (`test_stage152_fidelity_d1.py`); Stage 152 G1 Complete; Stage 152 I1 Complete; Stage 152 M1 Complete (MVP honesty); exit `docs/STAGE_152_EXIT_CRITERIA.md`, ADR-311.

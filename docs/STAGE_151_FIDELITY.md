@@ -37,7 +37,7 @@ Stage 151 proves Tenant MVP Platform Health Checks CSV, Platform Operator Eviden
 
 - ADR-002 billing Complete; fabricated MRR; live subscriptions; checkout
 - External LLM Complete; Stage 149–150 reopen
-- Platform Dashboard Aggregates CSV; Industries Catalog CSV; Admin Permissions Matrix CSV
+- Platform Dashboard Aggregates CSV; Industries Catalog CSV; Admin Permissions Matrix CSV (completed Stage 152)
 - POS Hold/Resume; admin remote-revoke-others; API-key un-revoke; FX soft-`is_active`
 - ADR-005 / ADR-003 / impersonation / LAUNCH §§1–3 / §7 / go-live
 - Reopening Stages 1–150; main `ci.yml` deploy jobs

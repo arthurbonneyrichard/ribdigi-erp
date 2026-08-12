@@ -23,4 +23,4 @@ Stage 151 Tenant MVP Platform Health Checks CSV, Platform Operator Evidence CSV 
 
 ## Next stage
 
-Stage 152 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 151 feature scope remains frozen.
+Stage 152 opened via CONTINUE/NEXT as **Tenant MVP Platform Dashboard Aggregates CSV, Platform Industries Catalog CSV & Admin Permissions Matrix CSV Export Fidelity** ([ADR-310](ADR_310_STAGE152_OPEN.md)) and closed under [ADR-311](ADR_311_STAGE152_FREEZE.md). Stage 151 feature scope remains frozen.

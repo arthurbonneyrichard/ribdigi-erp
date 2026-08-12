@@ -118,6 +118,28 @@ async def platform_dashboard(
     return env(data)
 
 
+@router.get("/dashboard/export")
+async def platform_dashboard_export(
+    claims: dict = Depends(require_platform_permission("platform_dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 152 G1 — platform dashboard aggregates CSV (no fabricated MRR)."""
+    data = await platform_svc.platform_dashboard_kpis(db)
+    data["tenant_growth"] = await platform_svc.platform_tenant_growth(db)
+    data["tenant_status"] = await platform_svc.platform_tenant_status_chart(db)
+    data["plan_distribution"] = await platform_svc.platform_plan_distribution(db)
+    data["industry_distribution"] = await platform_svc.platform_industry_distribution(db)
+    data["user_growth"] = await platform_svc.platform_user_growth(db)
+    text = platform_ops_export_svc.export_platform_dashboard_csv(dashboard=data)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_dashboard_export.csv"'
+        },
+    )
+
+
 @router.get("/dashboard/summary")
 async def platform_dashboard_summary(
     claims: dict = Depends(require_platform_permission("platform_dashboard", "read")),
@@ -220,6 +242,22 @@ async def platform_industries_catalog(
             "catalog": tenants_svc.industry_catalog_items(),
             "codes": sorted(tenants_svc.VALID_INDUSTRIES),
         }
+    )
+
+
+@router.get("/industries/export")
+async def platform_industries_catalog_export(
+    claims: dict = Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 152 I1 — industry catalog CSV (House provisioning / filter codes)."""
+    text = await platform_catalog_export_svc.export_platform_industries_csv(db)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform_industries_export.csv"'
+        },
     )
 
 

@@ -66,6 +66,13 @@ SETTINGS_EXPORT_COLUMNS = [
     "plan_code",
 ]
 
+INDUSTRY_EXPORT_COLUMNS = [
+    "row_type",
+    "code",
+    "label",
+    "catalog_total",
+]
+
 
 async def export_platform_plans_csv(db: AsyncSession) -> str:
     """Stage 150 P1 — plan catalog + distribution CSV (metadata honesty)."""
@@ -181,4 +188,32 @@ async def export_platform_settings_csv(db: AsyncSession) -> str:
     writer = csv.DictWriter(buf, fieldnames=SETTINGS_EXPORT_COLUMNS)
     writer.writeheader()
     writer.writerow({k: _cell(payload.get(k)) for k in SETTINGS_EXPORT_COLUMNS})
+    return buf.getvalue()
+
+
+async def export_platform_industries_csv(db: AsyncSession) -> str:
+    """Stage 152 I1 — industry catalog CSV (House provisioning / filter codes)."""
+    await platform_svc.ensure_platform_tenant(db)
+    catalog = tenants_svc.industry_catalog_items()
+    total = len(catalog)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=INDUSTRY_EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerow(
+        {
+            "row_type": "summary",
+            "code": "",
+            "label": "",
+            "catalog_total": _cell(total),
+        }
+    )
+    for item in catalog:
+        writer.writerow(
+            {
+                "row_type": "catalog",
+                "code": _cell(item.get("code")),
+                "label": _cell(item.get("label")),
+                "catalog_total": _cell(total),
+            }
+        )
     return buf.getvalue()
