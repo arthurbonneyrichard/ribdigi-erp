@@ -119,6 +119,7 @@ class ProductCreate(BaseModel):
     reorder_level: float = 0
     tax_rate_id: str | None = None
     tax_exempt: bool = False
+    tax_supply_class: str = "standard"
     tracks_batches: bool = False
 
 
@@ -135,6 +136,7 @@ class ProductUpdate(BaseModel):
     reorder_level: float | None = None
     tax_rate_id: str | None = None
     tax_exempt: bool | None = None
+    tax_supply_class: str | None = None
     tracks_batches: bool | None = None
     is_active: bool | None = None
 

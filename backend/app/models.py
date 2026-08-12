@@ -217,6 +217,8 @@ class Product(Base):
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     tax_rate_id: Mapped[str | None] = mapped_column(ForeignKey("tax_rates.id"), nullable=True)
     tax_exempt: Mapped[bool] = mapped_column(Boolean, default=False)
+    # standard | zero_rated | exempt (tax_exempt kept in sync with exempt)
+    tax_supply_class: Mapped[str] = mapped_column(String(20), default="standard")
     tracks_batches: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -723,7 +725,9 @@ class SalesInvoiceItem(Base):
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    tax_supply_class: Mapped[str] = mapped_column(String(20), default="standard")
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 

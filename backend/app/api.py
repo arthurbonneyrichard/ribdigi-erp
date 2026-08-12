@@ -1839,7 +1839,16 @@ async def add_product(
                 tenant_id=claims["tenant_id"],
                 barcode_value=data["barcode"],
             )
+    from app.tax import normalize_supply_class, sync_product_tax_flags
+
+    supply = normalize_supply_class(
+        data.get("tax_supply_class"),
+        tax_exempt=bool(data.get("tax_exempt")),
+    )
+    data["tax_supply_class"] = supply
+    data["tax_exempt"] = supply == "exempt"
     product = m.Product(tenant_id=claims["tenant_id"], **data)
+    sync_product_tax_flags(product, supply_class=supply)
     db.add(product)
     await db.flush()
     if float(product.stock_qty or 0) > 0:
@@ -2018,8 +2027,14 @@ async def patch_product(
             setattr(product, key, float(value))
         elif key == "tax_rate_id":
             product.tax_rate_id = value
+        elif key == "tax_supply_class" and value is not None:
+            from app.tax import sync_product_tax_flags
+
+            sync_product_tax_flags(product, supply_class=str(value))
         elif key == "tax_exempt" and value is not None:
-            product.tax_exempt = bool(value)
+            from app.tax import sync_product_tax_flags
+
+            sync_product_tax_flags(product, tax_exempt=bool(value))
         elif key == "tracks_batches" and value is not None:
             product.tracks_batches = bool(value)
         elif key == "is_active" and value is not None:
@@ -4017,6 +4032,7 @@ async def pos_sale(
                 "unit_price": unit_price,
                 "discount": line_discount,
                 "tax_rate": spec.rate_pct,
+                "tax_supply_class": spec.supply_class,
                 "line_subtotal": line_sub,
                 "line_tax": 0.0 if spec.is_reverse_charge else line_tax,
                 "line_total": line_gross,
@@ -4214,6 +4230,7 @@ async def pos_search(
             "tax_pricing_mode": (spec.pricing_mode or "exclusive"),
             "tax_reverse_charge": bool(spec.is_reverse_charge),
             "tax_components": list(spec.components) if spec.components else None,
+            "tax_supply_class": spec.supply_class,
         }
         tax_cache[product.id] = payload
         return payload

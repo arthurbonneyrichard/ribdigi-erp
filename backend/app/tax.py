@@ -12,6 +12,53 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 
+SUPPLY_CLASSES = frozenset({"standard", "zero_rated", "exempt"})
+
+
+def normalize_supply_class(
+    value: str | None,
+    *,
+    tax_exempt: bool | None = None,
+) -> str:
+    """Return standard | zero_rated | exempt."""
+    text = (value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "zero": "zero_rated",
+        "zerorated": "zero_rated",
+        "zero_rate": "zero_rated",
+        "exempted": "exempt",
+        "non_taxable": "exempt",
+        "nontaxable": "exempt",
+    }
+    text = aliases.get(text, text)
+    if text in SUPPLY_CLASSES:
+        return text
+    if tax_exempt:
+        return "exempt"
+    return "standard"
+
+
+def product_supply_class(product: m.Product) -> str:
+    raw = getattr(product, "tax_supply_class", None)
+    return normalize_supply_class(raw, tax_exempt=bool(getattr(product, "tax_exempt", False)))
+
+
+def sync_product_tax_flags(product: m.Product, *, supply_class: str | None = None, tax_exempt: bool | None = None) -> str:
+    """Keep tax_supply_class and tax_exempt aligned; return normalized class."""
+    if supply_class is not None:
+        cls = normalize_supply_class(supply_class, tax_exempt=tax_exempt)
+    elif tax_exempt is not None:
+        cls = "exempt" if tax_exempt else normalize_supply_class(
+            getattr(product, "tax_supply_class", None), tax_exempt=False
+        )
+        if not tax_exempt and cls == "exempt":
+            cls = "standard"
+    else:
+        cls = product_supply_class(product)
+    product.tax_supply_class = cls
+    product.tax_exempt = cls == "exempt"
+    return cls
+
 
 def normalize_components(raw: list | None) -> list[dict[str, Any]] | None:
     if not raw:
@@ -192,6 +239,7 @@ class TaxSpec:
     components: tuple[dict, ...] | None = None
     is_reverse_charge: bool = False
     tax_rate_id: str | None = None
+    supply_class: str = "standard"
 
     def compute_amounts(self, amount: float) -> tuple[float, float, float]:
         return compute_tax_amounts(
@@ -245,7 +293,7 @@ async def clear_default_flags(db: AsyncSession, tenant_id: str) -> None:
         row.is_default = False
 
 
-def tax_spec_from_rate(rate: m.TaxRate) -> TaxSpec:
+def tax_spec_from_rate(rate: m.TaxRate, *, supply_class: str = "standard") -> TaxSpec:
     comps = normalize_components(rate.components) if rate.components else None
     return TaxSpec(
         rate_pct=float(rate.rate),
@@ -253,6 +301,7 @@ def tax_spec_from_rate(rate: m.TaxRate) -> TaxSpec:
         components=tuple(comps) if comps else None,
         is_reverse_charge=bool(rate.is_reverse_charge),
         tax_rate_id=rate.id,
+        supply_class=normalize_supply_class(supply_class),
     )
 
 
@@ -263,21 +312,26 @@ async def resolve_product_tax(
     explicit_rate: float | None = None,
 ) -> TaxSpec:
     """Resolve full tax spec for a product line."""
-    if product.tax_exempt:
-        return TaxSpec(rate_pct=0.0, pricing_mode="exclusive")
+    supply = product_supply_class(product)
+    if supply in {"exempt", "zero_rated"}:
+        return TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class=supply)
     if explicit_rate is not None:
         default = await get_default_tax_rate(db, tenant_id)
         mode = default.pricing_mode if default else "exclusive"
         # Explicit override uses single-rate path (no compound legs).
-        return TaxSpec(rate_pct=float(explicit_rate), pricing_mode=mode)
+        return TaxSpec(
+            rate_pct=float(explicit_rate),
+            pricing_mode=mode,
+            supply_class="standard",
+        )
     if product.tax_rate_id:
         rate = await get_tax_rate(db, tenant_id, product.tax_rate_id)
         if rate.is_active:
-            return tax_spec_from_rate(rate)
+            return tax_spec_from_rate(rate, supply_class="standard")
     default = await get_default_tax_rate(db, tenant_id)
     if default:
-        return tax_spec_from_rate(default)
-    return TaxSpec(rate_pct=0.0, pricing_mode="exclusive")
+        return tax_spec_from_rate(default, supply_class="standard")
+    return TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class="standard")
 
 
 async def resolve_product_tax_rate(
@@ -355,14 +409,47 @@ async def tax_filing_pack(
     output_schedule = []
     output_invoices = 0.0
     reverse_charge_tax = 0.0
-    taxable_outputs = 0.0
+    standard_outputs = 0.0
+    zero_rated_outputs = 0.0
+    exempt_outputs = 0.0
+
+    def _bump_supply(cls: str, net: float) -> None:
+        nonlocal standard_outputs, zero_rated_outputs, exempt_outputs
+        kind = normalize_supply_class(cls)
+        if kind == "zero_rated":
+            zero_rated_outputs += net
+        elif kind == "exempt":
+            exempt_outputs += net
+        else:
+            standard_outputs += net
+
     for inv in invoices:
         tax = float(inv.tax_amount or 0)
         rc = float(getattr(inv, "reverse_charge_tax", 0) or 0)
         net = float(inv.subtotal or 0)
         output_invoices += tax
         reverse_charge_tax += rc
-        taxable_outputs += net
+        items = (
+            await db.execute(
+                select(m.SalesInvoiceItem).where(
+                    m.SalesInvoiceItem.tenant_id == tenant_id,
+                    m.SalesInvoiceItem.sales_invoice_id == inv.id,
+                )
+            )
+        ).scalars().all()
+        if items:
+            for item in items:
+                line_net = float(getattr(item, "line_subtotal", None) or 0)
+                if line_net <= 0:
+                    # Legacy rows: approximate net from qty * price - discount
+                    line_net = max(
+                        float(item.quantity or 0) * float(item.unit_price or 0)
+                        - float(item.discount or 0),
+                        0,
+                    )
+                _bump_supply(getattr(item, "tax_supply_class", None) or "standard", line_net)
+        else:
+            _bump_supply("standard", net)
         output_schedule.append(
             {
                 "schedule": "output_sales_invoices",
@@ -392,7 +479,15 @@ async def tax_filing_pack(
         tax = float(tx.tax or 0)
         net = float(tx.subtotal or 0)
         output_pos += tax
-        taxable_outputs += net
+        payload_items = list((tx.payload or {}).get("items") or [])
+        if payload_items:
+            for item in payload_items:
+                if not isinstance(item, dict):
+                    continue
+                line_net = float(item.get("line_subtotal") or 0)
+                _bump_supply(item.get("tax_supply_class") or "standard", line_net)
+        else:
+            _bump_supply("standard", net)
         output_schedule.append(
             {
                 "schedule": "output_pos",
@@ -407,6 +502,7 @@ async def tax_filing_pack(
                 "party_id": tx.party_id,
             }
         )
+    taxable_outputs = standard_outputs
 
     # Prefer approved purchase invoices for input tax; fall back to POs.
     pi_stmt = select(m.PurchaseInvoice).where(
@@ -487,14 +583,28 @@ async def tax_filing_pack(
     input_tax = round(input_tax, 2)
     net = round(output_tax - input_tax, 2)
     taxable_outputs = round(taxable_outputs, 2)
+    zero_rated_outputs = round(zero_rated_outputs, 2)
+    exempt_outputs = round(exempt_outputs, 2)
     taxable_inputs = round(taxable_inputs, 2)
 
     filing_boxes = [
         {
             "box": "1",
             "code": "taxable_outputs_net",
-            "label": "Taxable outputs (net)",
+            "label": "Standard-rated taxable outputs (net)",
             "amount": taxable_outputs,
+        },
+        {
+            "box": "1a",
+            "code": "zero_rated_outputs_net",
+            "label": "Zero-rated outputs (net)",
+            "amount": zero_rated_outputs,
+        },
+        {
+            "box": "1b",
+            "code": "exempt_outputs_net",
+            "label": "Exempt outputs (net)",
+            "amount": exempt_outputs,
         },
         {
             "box": "2",
@@ -551,6 +661,8 @@ async def tax_filing_pack(
         "purchase_order_count": len(input_schedule) if input_source == "purchase_orders" else 0,
         "filing_boxes": {
             "taxable_outputs_net": taxable_outputs,
+            "zero_rated_outputs_net": zero_rated_outputs,
+            "exempt_outputs_net": exempt_outputs,
             "output_tax": output_tax,
             "reverse_charge_tax": reverse_charge_tax,
             "taxable_inputs_net": taxable_inputs,

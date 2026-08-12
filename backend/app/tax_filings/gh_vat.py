@@ -25,7 +25,11 @@ def map_return(pack: dict, tenant: m.Tenant) -> dict:
     input_tax = float(by_code.get("input_tax", fb.get("input_tax") or pack.get("input_tax") or 0))
     net = float(by_code.get("net_tax_payable", fb.get("net_tax_payable") or pack.get("net_tax_payable") or 0))
 
-    # Standard-rated supplies = taxable outputs (zero-rated / exempt not split yet → 0)
+    zero_rated = float(
+        by_code.get("zero_rated_outputs_net", fb.get("zero_rated_outputs_net") or 0)
+    )
+    exempt = float(by_code.get("exempt_outputs_net", fb.get("exempt_outputs_net") or 0))
+
     boxes = [
         {
             "box": "1",
@@ -47,17 +51,15 @@ def map_return(pack: dict, tenant: m.Tenant) -> dict:
             "box": "3",
             "code": "GH3",
             "label": "Value of zero-rated supplies",
-            "amount": 0.0,
-            "source_box": None,
-            "note": "Not separately tracked; enrich product tax classes to populate",
+            "amount": round(zero_rated, 2),
+            "source_box": "1a",
         },
         {
             "box": "4",
             "code": "GH4",
             "label": "Value of exempt supplies",
-            "amount": 0.0,
-            "source_box": None,
-            "note": "Not separately tracked",
+            "amount": round(exempt, 2),
+            "source_box": "1b",
         },
         {
             "box": "5",

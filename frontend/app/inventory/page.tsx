@@ -55,6 +55,8 @@ export default function Page() {
   const [editPrice, setEditPrice] = useState('0');
   const [editBarcode, setEditBarcode] = useState('');
   const [productBarcode, setProductBarcode] = useState('');
+  const [productSupplyClass, setProductSupplyClass] = useState('standard');
+  const [editSupplyClass, setEditSupplyClass] = useState('standard');
   const [labelCopies, setLabelCopies] = useState('1');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importReport, setImportReport] = useState<ImportReport | null>(null);
@@ -120,6 +122,7 @@ export default function Page() {
         setEditReorder(String(p.reorder_level ?? 0));
         setEditPrice(String(p.selling_price ?? 0));
         setEditBarcode(String(p.barcode || ''));
+        setEditSupplyClass(String(p.tax_supply_class || (p.tax_exempt ? 'exempt' : 'standard')));
       }
     }
   }, [selectedId, products]);
@@ -134,6 +137,7 @@ export default function Page() {
           reorder_level: Number(editReorder) || 0,
           selling_price: Number(editPrice) || 0,
           barcode: editBarcode.trim() || null,
+          tax_supply_class: editSupplyClass,
         }),
       });
       setMessage('Product updated');
@@ -275,6 +279,7 @@ export default function Page() {
           category_id: productCategoryId || null,
           brand_id: productBrandId || null,
           unit_id: productUnitId || null,
+          tax_supply_class: productSupplyClass,
         }),
       });
       setMessage(`Product ${r.data.sku} created`);
@@ -282,6 +287,7 @@ export default function Page() {
       setProductSku('');
       setProductBarcode('');
       setProductPrice('0');
+      setProductSupplyClass('standard');
       await refresh();
       setSelectedId(r.data.id);
       setTab('products');
@@ -601,6 +607,12 @@ export default function Page() {
             <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
             <label className="muted">Selling price</label>
             <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
+            <label className="muted">Tax supply class</label>
+            <select value={editSupplyClass} onChange={(e) => setEditSupplyClass(e.target.value)}>
+              <option value="standard">Standard-rated</option>
+              <option value="zero_rated">Zero-rated</option>
+              <option value="exempt">Exempt</option>
+            </select>
             <button type="button" onClick={saveProductEdits}>
               Save product
             </button>
@@ -715,6 +727,11 @@ export default function Page() {
                   {u.code} — {u.name}
                 </option>
               ))}
+            </select>
+            <select value={productSupplyClass} onChange={(e) => setProductSupplyClass(e.target.value)}>
+              <option value="standard">Tax: standard-rated</option>
+              <option value="zero_rated">Tax: zero-rated</option>
+              <option value="exempt">Tax: exempt</option>
             </select>
             <button onClick={createProduct} disabled={!productName || !productSku}>
               Create product

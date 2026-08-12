@@ -97,7 +97,9 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
                 "quantity": float(i.quantity),
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
+                "tax_supply_class": getattr(i, "tax_supply_class", None) or "standard",
                 "discount": float(i.discount),
+                "line_subtotal": float(getattr(i, "line_subtotal", None) or 0),
                 "line_total": float(i.line_total),
             }
             for i in items
@@ -164,6 +166,8 @@ async def create_sales_invoice(
                     "unit_price": unit_price,
                     "discount": discount,
                     "tax_rate": spec.rate_pct,
+                    "tax_supply_class": spec.supply_class,
+                    "line_subtotal": line_sub,
                 },
                 line_total,
             )
@@ -202,7 +206,9 @@ async def create_sales_invoice(
                 quantity=item["quantity"],
                 unit_price=item["unit_price"],
                 tax_rate=item.get("tax_rate", 0),
+                tax_supply_class=item.get("tax_supply_class") or "standard",
                 discount=item.get("discount", 0),
+                line_subtotal=item.get("line_subtotal") or 0,
                 line_total=line_total,
             )
         )

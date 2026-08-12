@@ -73,6 +73,8 @@ def serialize_product(row: m.Product) -> dict:
         "reorder_level": float(row.reorder_level or 0),
         "tax_rate_id": row.tax_rate_id,
         "tax_exempt": bool(row.tax_exempt),
+        "tax_supply_class": getattr(row, "tax_supply_class", None)
+        or ("exempt" if row.tax_exempt else "standard"),
         "tracks_batches": bool(row.tracks_batches),
         "is_active": bool(row.is_active),
     }

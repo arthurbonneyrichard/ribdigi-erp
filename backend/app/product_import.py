@@ -14,6 +14,7 @@ from app import barcodes as barcodes_svc
 from app import catalog_meta as catalog_meta_svc
 from app import models as m
 from app.inventory import apply_stock_change
+from app.tax import normalize_supply_class
 
 TEMPLATE_HEADERS = (
     "name",
@@ -27,6 +28,7 @@ TEMPLATE_HEADERS = (
     "stock_qty",
     "reorder_level",
     "tax_exempt",
+    "tax_supply_class",
     "tracks_batches",
 )
 
@@ -42,6 +44,7 @@ SAMPLE_ROW = {
     "stock_qty": "100",
     "reorder_level": "20",
     "tax_exempt": "false",
+    "tax_supply_class": "standard",
     "tracks_batches": "false",
 }
 
@@ -276,6 +279,10 @@ async def validate_import_rows(
                     "stock_qty": stock_qty,
                     "reorder_level": reorder_level,
                     "tax_exempt": _truthy(raw.get("tax_exempt")),
+                    "tax_supply_class": normalize_supply_class(
+                        raw.get("tax_supply_class"),
+                        tax_exempt=_truthy(raw.get("tax_exempt")),
+                    ),
                     "tracks_batches": _truthy(raw.get("tracks_batches")),
                 }
             )
@@ -314,7 +321,8 @@ async def commit_import(
             selling_price=data.get("selling_price") or 0,
             stock_qty=0,
             reorder_level=data.get("reorder_level") or 0,
-            tax_exempt=bool(data.get("tax_exempt")),
+            tax_exempt=bool(data.get("tax_supply_class") == "exempt" or data.get("tax_exempt")),
+            tax_supply_class=data.get("tax_supply_class") or "standard",
             tracks_batches=bool(data.get("tracks_batches")),
         )
         db.add(product)
