@@ -219,6 +219,19 @@ def export_customer_history_csv(*, history: dict[str, Any]) -> bytes:
         ]
     )
     party_id = _cell(history.get("customer_id"))
+    writer.writerow(
+        [
+            "customer",
+            party_id,
+            "summary",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ]
+    )
     for row_type, key, number_keys in (
         ("invoice", "invoices", ("invoice_number",)),
         ("quotation", "quotations", ("quotation_number",)),
@@ -260,6 +273,19 @@ def export_supplier_history_csv(*, history: dict[str, Any]) -> bytes:
         ]
     )
     party_id = _cell(history.get("supplier_id"))
+    writer.writerow(
+        [
+            "supplier",
+            party_id,
+            "summary",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ]
+    )
     for row_type, key, number_keys in (
         ("order", "orders", ("po_number",)),
         ("invoice", "invoices", ("invoice_number",)),
