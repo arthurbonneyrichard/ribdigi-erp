@@ -559,6 +559,32 @@ export default function Page() {
     }
   }
 
+  async function downloadCustomerHistoryExport(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/customers/${id}/history/export`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('Customer history CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `customer_${id}_history_export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Customer history CSV downloaded (Stage 153 C1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   async function createInvoice() {
     setError('');
     try {
@@ -994,6 +1020,12 @@ export default function Page() {
                     New
                   </button>
                   <button onClick={() => loadCustomerHistory(selectedCustomerId)}>History</button>
+                  <button
+                    type="button"
+                    onClick={() => downloadCustomerHistoryExport(selectedCustomerId)}
+                  >
+                    Export history CSV
+                  </button>
                   <button onClick={() => deactivateCustomer(selectedCustomerId)}>Deactivate</button>
                 </>
               )}
@@ -1005,7 +1037,8 @@ export default function Page() {
               <p className="muted">
                 {customerHistory.invoices?.length || 0} invoices · {customerHistory.quotations?.length || 0}{' '}
                 quotations · {customerHistory.orders?.length || 0} orders · {customerHistory.returns?.length || 0}{' '}
-                returns · {customerHistory.payments?.length || 0} payments
+                returns · {customerHistory.payments?.length || 0} payments. Export via{' '}
+                <code>{'GET /customers/{id}/history/export'}</code> (Stage 153 C1).
               </p>
               <ul>
                 {(customerHistory.invoices || []).slice(0, 8).map((inv: any) => (

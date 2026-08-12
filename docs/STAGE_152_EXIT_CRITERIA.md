@@ -27,7 +27,7 @@ None for planned Stage 152 workstreams.
 - Admin remote-revoke-others; API-key un-revoke; FX soft-`is_active`
 - Main `ci.yml` deploy; reopen Stages 1–151
 - External LLM Complete; LAUNCH §§1–3 / §7 / go-live Completes
-- Stage 124 custom roles roster reopen
+- Stage 124 custom roles roster reopen; tenant dashboard / party history CSVs (completed Stage 153)
 
 ## Freeze
 

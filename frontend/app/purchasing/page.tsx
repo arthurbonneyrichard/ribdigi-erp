@@ -650,6 +650,33 @@ export default function Page() {
     }
   }
 
+  async function downloadSupplierHistoryExport(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const res = await fetch(`${apiBase}/suppliers/${id}/history/export`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('Supplier history CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `supplier_${id}_history_export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Supplier history CSV downloaded (Stage 153 S1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
   async function addContact() {
     if (!selectedSupplierId || !contactName.trim()) return;
     setError('');
@@ -1296,6 +1323,12 @@ export default function Page() {
                     New
                   </button>
                   <button onClick={() => loadHistory(selectedSupplierId)}>History</button>
+                  <button
+                    type="button"
+                    onClick={() => downloadSupplierHistoryExport(selectedSupplierId)}
+                  >
+                    Export history CSV
+                  </button>
                   <button onClick={() => deactivateSupplier(selectedSupplierId)}>Deactivate</button>
                 </>
               )}
@@ -1336,7 +1369,8 @@ export default function Page() {
               <h4>Purchase history</h4>
               <p className="muted">
                 {supplierHistory.orders.length} POs · {supplierHistory.invoices.length} invoices ·{' '}
-                {supplierHistory.returns.length} returns · {supplierHistory.payments.length} payments
+                {supplierHistory.returns.length} returns · {supplierHistory.payments.length} payments.
+                Export via <code>{'GET /suppliers/{id}/history/export'}</code> (Stage 153 S1).
               </p>
               <ul>
                 {supplierHistory.orders.slice(0, 8).map((o) => (

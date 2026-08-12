@@ -2438,6 +2438,18 @@ Every feature in every phase must meet:
 
 **Stage 152 exit (2026-08-12):** G1, I1, M1, D1, H152x met — `docs/STAGE_152_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_311_STAGE152_FREEZE.md`. Fidelity: `docs/STAGE_152_FIDELITY.md`.
 
+**Stage 153 open (2026-08-12):** Tenant MVP Tenant Dashboard Aggregates CSV, Customer History CSV & Supplier History CSV Export Fidelity — `docs/ADR_312_STAGE153_OPEN.md` + `docs/STAGE_153_PLAN.md` (Dashboard → Customer history → Supplier history → Fidelity; B1 next).
+
+**Stage 153 B1 (2026-08-12):** Tenant dashboard aggregates CSV (`test_stage153_tenant_dashboard_b1.py`).
+
+**Stage 153 C1 (2026-08-12):** Customer history CSV (`test_stage153_customer_history_c1.py`).
+
+**Stage 153 S1 (2026-08-12):** Supplier history CSV (`test_stage153_supplier_history_s1.py`).
+
+**Stage 153 D1 (2026-08-12):** Tenant dashboard / customer history / supplier history export fidelity sync — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`).
+
+**Stage 153 exit (2026-08-12):** B1, C1, S1, D1, H153x met — `docs/STAGE_153_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_313_STAGE153_FREEZE.md`. Fidelity: `docs/STAGE_153_FIDELITY.md`.
+
 
 
 

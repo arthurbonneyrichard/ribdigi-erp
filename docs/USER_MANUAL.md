@@ -270,6 +270,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Platform Dashboard Aggregates CSV:** Platform Dashboard Export aggregates CSV (Stage 152 G1)
 - **Platform Industries Catalog CSV:** Platform Tenants Export industries CSV (Stage 152 I1)
 - **Admin Permissions Matrix CSV:** Admin Permissions Export permissions matrix CSV (Stage 152 M1)
+- **Tenant Dashboard Aggregates CSV:** Dashboard Export aggregates CSV (Stage 153 B1)
+- **Customer History CSV:** Sales Export history CSV (Stage 153 C1)
+- **Supplier History CSV:** Purchasing Export history CSV (Stage 153 S1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

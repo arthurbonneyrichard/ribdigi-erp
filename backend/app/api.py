@@ -50,6 +50,7 @@ from app import product_images as product_images_svc
 from app import barcodes as barcode_svc
 from app import product_import as product_import_svc
 from app import party_export as party_export_svc
+from app import tenant_ops_export as tenant_ops_export_svc
 from app import print_preview as print_preview_svc
 from app import user_import as user_import_svc
 from app import expense_export as expense_export_svc
@@ -3227,6 +3228,26 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     return env(payload)
 
 
+@api.get("/dashboard/export")
+async def dashboard_export(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 153 B1 — tenant dashboard aggregates CSV (real KPIs; no fabricated MRR)."""
+    wrapped = await dashboard(claims=claims, db=db)
+    payload = wrapped.get("data") if isinstance(wrapped, dict) else wrapped
+    if not isinstance(payload, dict):
+        payload = {}
+    text = tenant_ops_export_svc.export_tenant_dashboard_csv(dashboard=payload)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="tenant_dashboard_export.csv"'
+        },
+    )
+
+
 @api.get("/dashboard/summary")
 async def dashboard_summary(
     claims=Depends(require_permission("dashboard", "read")),
@@ -5385,6 +5406,26 @@ async def customer_history(
     return env(data)
 
 
+@api.get("/customers/{customer_id}/history/export")
+async def customer_history_export(
+    customer_id: str,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 153 C1 — customer sales history CSV (distinct from Stage 119 roster export)."""
+    data = await customers_svc.customer_history(
+        db, tenant_id=claims["tenant_id"], customer_id=customer_id
+    )
+    text = tenant_ops_export_svc.export_customer_history_csv(history=data)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="customer_{customer_id}_history_export.csv"'
+        },
+    )
+
+
 @api.get("/suppliers")
 async def suppliers(
     active_only: bool = False,
@@ -5544,6 +5585,26 @@ async def supplier_history(
         db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
     )
     return env(data)
+
+
+@api.get("/suppliers/{supplier_id}/history/export")
+async def supplier_history_export(
+    supplier_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 153 S1 — supplier purchase history CSV (distinct from Stage 119 roster export)."""
+    data = await suppliers_svc.supplier_history(
+        db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
+    )
+    text = tenant_ops_export_svc.export_supplier_history_csv(history=data)
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="supplier_{supplier_id}_history_export.csv"'
+        },
+    )
 
 
 async def tx_list(kind: str, claims: dict, db: AsyncSession):

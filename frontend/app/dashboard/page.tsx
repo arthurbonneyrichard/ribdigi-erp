@@ -107,8 +107,37 @@ export default function Page() {
   const [unread, setUnread] = useState(0);
   const [formats, setFormats] = useState<RegionalFormats>({});
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [posShift, setPosShift] = useState<PosShift>(undefined as unknown as PosShift);
   const [posShiftLoaded, setPosShiftLoaded] = useState(false);
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+  async function exportDashboardCsv() {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/dashboard/export`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('Dashboard CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tenant_dashboard_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Dashboard aggregates CSV downloaded (Stage 153 B1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
 
   useEffect(() => {
     api('/me')
@@ -264,10 +293,17 @@ export default function Page() {
       {view !== 'cashier' && (
         <p className="muted" style={{ marginTop: -4 }}>
           Business Overview · Today&apos;s Sales · Purchases · Expenses · Income · Profit · Receivables ·
-          Payables · Stock alerts
+          Payables · Stock alerts. Export via <code>GET /dashboard/export</code> (Stage 153 B1; real
+          KPIs — no fabricated MRR).
         </p>
       )}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      <p style={{ marginTop: 8 }}>
+        <button type="button" onClick={exportDashboardCsv}>
+          Export aggregates CSV
+        </button>
+      </p>
       <div className="grid">
         {cards.map((card) => {
           const body = (

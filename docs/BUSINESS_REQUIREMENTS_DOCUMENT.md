@@ -879,6 +879,7 @@ Stage 149 D1 — `docs/STAGE_149_FIDELITY.md` (`test_stage149_fidelity_d1.py`); 
 Stage 150 D1 — `docs/STAGE_150_FIDELITY.md` (`test_stage150_fidelity_d1.py`); Stage 150 P1 / R1 / S1.
 Stage 151 D1 — `docs/STAGE_151_FIDELITY.md` (`test_stage151_fidelity_d1.py`); Stage 151 H1 / E1 / A1.
 Stage 152 D1 — `docs/STAGE_152_FIDELITY.md` (`test_stage152_fidelity_d1.py`); Stage 152 G1 / I1 / M1.
+Stage 153 D1 — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`); Stage 153 B1 / C1 / S1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1596,3 +1597,5 @@ Stage 150 D1 platform plans catalog, subscriptions roster & house settings expor
 Stage 151 D1 platform health checks, operator evidence & at-risk tenants export fidelity — `docs/STAGE_151_FIDELITY.md` (`test_stage151_fidelity_d1.py`); Stage 151 H1 health checks CSV; Stage 151 E1 operator evidence CSV; Stage 151 A1 at-risk tenants CSV.
 
 Stage 152 D1 platform dashboard aggregates, industries catalog & admin permissions matrix export fidelity — `docs/STAGE_152_FIDELITY.md` (`test_stage152_fidelity_d1.py`); Stage 152 G1 dashboard aggregates CSV; Stage 152 I1 industries catalog CSV; Stage 152 M1 permissions matrix CSV.
+
+Stage 153 D1 tenant dashboard aggregates, customer history & supplier history export fidelity — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`); Stage 153 B1 tenant dashboard aggregates CSV; Stage 153 C1 customer history CSV; Stage 153 S1 supplier history CSV.

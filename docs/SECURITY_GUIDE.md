@@ -924,6 +924,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 152 M1** | Permissions matrix CSV (`test_stage152_permissions_matrix_m1.py`) |
 | **Stage 152 D1** | Dashboard / industries / permissions matrix export — `docs/STAGE_152_FIDELITY.md` (`test_stage152_fidelity_d1.py`) |
 | **Stage 152 H152x** | Exit + freeze — `docs/STAGE_152_EXIT_CRITERIA.md`, ADR-311 (`test_stage152_exit_h152x.py`); Stages 1–152 frozen; Stage 153+ requires CONTINUE/NEXT |
+| **Stage 153 open** | Tenant MVP Tenant Dashboard Aggregates CSV, Customer History CSV & Supplier History CSV Export Fidelity — `docs/STAGE_153_PLAN.md`, ADR-312 (`test_stage153_open.py`); Stages 1–152 remain frozen; B1 next historically |
+| **Stage 153 B1** | Tenant dashboard aggregates CSV (`test_stage153_tenant_dashboard_b1.py`) |
+| **Stage 153 C1** | Customer history CSV (`test_stage153_customer_history_c1.py`) |
+| **Stage 153 S1** | Supplier history CSV (`test_stage153_supplier_history_s1.py`) |
+| **Stage 153 D1** | Tenant dashboard / customer / supplier history export — `docs/STAGE_153_FIDELITY.md` (`test_stage153_fidelity_d1.py`) |
+| **Stage 153 H153x** | Exit + freeze — `docs/STAGE_153_EXIT_CRITERIA.md`, ADR-313 (`test_stage153_exit_h153x.py`); Stages 1–153 frozen; Stage 154+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
