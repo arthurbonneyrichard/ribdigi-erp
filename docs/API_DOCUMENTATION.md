@@ -1599,3 +1599,4 @@ Stage 101 D1 — `docs/STAGE_101_FIDELITY.md` (`test_stage101_fidelity_d1.py`): 
 
 Stage 102 D1 — `docs/STAGE_102_FIDELITY.md` (`test_stage102_fidelity_d1.py`): Stage 102 A1 audit `from_date`/`to_date` URL sync; Stage 102 R1 residual report tab Shell leaves; Stage 102 T1 tax/stores/company deep-links.
 Stage 103 D1 — `docs/STAGE_103_FIDELITY.md` (`test_stage103_fidelity_d1.py`): Stage 103 S1 security `#passkeys`/`#webhooks`/`#api-keys`/`#sessions` Shell leaves; Stage 103 B1 backup `#schedule`/`#restore`; Stage 103 C1 company `#branches`/`#document-numbering`/`#media`.
+Stage 104 D1 — `docs/STAGE_104_FIDELITY.md` (`test_stage104_fidelity_d1.py`): Stage 104 A1 journal `status`/`store_id` + cheque `direction`/`status` URL filters; Stage 104 I1 Products/Purchase Invoices/Draft/Overdue leaves; Stage 104 R1 credit/roles anchors + `kpi_links.custom_roles`.

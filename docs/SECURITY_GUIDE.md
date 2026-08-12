@@ -630,6 +630,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 103 C1** | Company org & numbering discoverability (`test_stage103_company_org_c1.py`) |
 | **Stage 103 D1** | Security, backup & company org — `docs/STAGE_103_FIDELITY.md` (`test_stage103_fidelity_d1.py`) |
 | **Stage 103 H103x** | Exit + freeze — `docs/STAGE_103_EXIT_CRITERIA.md`, ADR-213 (`test_stage103_exit_h103x.py`); Stages 1–103 frozen; Stage 104+ requires CONTINUE/NEXT |
+| **Stage 104 open** | Tenant MVP Ledger Filters, Commerce Leaves & Admin Ops — `docs/STAGE_104_PLAN.md`, ADR-214 (`test_stage104_open.py`); Stages 1–103 remain frozen; A1 next historically |
+| **Stage 104 A1** | Ledger journal & cheque filter honesty (`test_stage104_ledger_filters_a1.py`) |
+| **Stage 104 I1** | Commerce products / purchase invoices / sales status leaves (`test_stage104_commerce_leaves_i1.py`) |
+| **Stage 104 R1** | Credit section & admin roles discoverability (`test_stage104_credit_roles_r1.py`) |
+| **Stage 104 D1** | Ledger filters, commerce leaves & admin — `docs/STAGE_104_FIDELITY.md` (`test_stage104_fidelity_d1.py`) |
+| **Stage 104 H104x** | Exit + freeze — `docs/STAGE_104_EXIT_CRITERIA.md`, ADR-215 (`test_stage104_exit_h104x.py`); Stages 1–104 frozen; Stage 105+ requires CONTINUE/NEXT |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

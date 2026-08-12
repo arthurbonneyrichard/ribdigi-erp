@@ -2852,6 +2852,8 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             "prior_month_revenue": "/reports?tab=sales",
             "mom_change_pct": "/reports?tab=sales",
             "user_stats": "/users",
+            # Stage 104 R1 — Custom Roles KPI → Roles admin (not Users list)
+            "custom_roles": "/admin/roles#custom",
         },
     }
     # Stage 81 S1 — Store Manager aggregates limited to stores.manager_id

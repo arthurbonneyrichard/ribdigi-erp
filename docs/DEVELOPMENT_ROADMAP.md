@@ -1849,3 +1849,15 @@ Every feature in every phase must meet:
 **Stage 103 D1 (2026-08-12):** Security, backup & company org fidelity sync — `docs/STAGE_103_FIDELITY.md` (`test_stage103_fidelity_d1.py`).
 
 **Stage 103 exit (2026-08-12):** S1, B1, C1, D1, H103x met — `docs/STAGE_103_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_213_STAGE103_FREEZE.md`. Fidelity: `docs/STAGE_103_FIDELITY.md`.
+
+**Stage 104 open (2026-08-12):** Tenant MVP Ledger Filters, Commerce Leaves & Admin Ops — `docs/ADR_214_STAGE104_OPEN.md` + `docs/STAGE_104_PLAN.md` (Ledger filters → Commerce leaves → Credit/Roles → Ledger Filters, Commerce Leaves & Admin Ops; A1 next).
+
+**Stage 104 A1 (2026-08-12):** Ledger journal & cheque filter honesty (`test_stage104_ledger_filters_a1.py`).
+
+**Stage 104 I1 (2026-08-12):** Commerce products / purchase invoices / sales status leaves (`test_stage104_commerce_leaves_i1.py`).
+
+**Stage 104 R1 (2026-08-12):** Credit section & admin roles discoverability (`test_stage104_credit_roles_r1.py`).
+
+**Stage 104 D1 (2026-08-12):** Ledger filters, commerce leaves & admin fidelity sync — `docs/STAGE_104_FIDELITY.md` (`test_stage104_fidelity_d1.py`).
+
+**Stage 104 exit (2026-08-12):** A1, I1, R1, D1, H104x met — `docs/STAGE_104_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_215_STAGE104_FREEZE.md`. Fidelity: `docs/STAGE_104_FIDELITY.md`.

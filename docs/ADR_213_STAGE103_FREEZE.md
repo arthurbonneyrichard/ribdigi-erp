@@ -23,4 +23,4 @@ Stage 103 Tenant MVP Security, Backup & Company Org Ops delivered security surfa
 
 ## Next stage
 
-Stage 104 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 103 feature scope remains frozen.
+Stage 104 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-214](ADR_214_STAGE104_OPEN.md) + [STAGE_104_PLAN.md](STAGE_104_PLAN.md) (Tenant MVP Ledger Filters, Commerce Leaves & Admin Ops). Stage 103 feature scope remains frozen.

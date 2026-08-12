@@ -228,7 +228,12 @@ export default function Page() {
       { key: 'user_total', label: 'Tenant Users', value: d.user_stats.total_users ?? 0, href: links.user_stats },
       { key: 'user_active', label: 'Active Users', value: d.user_stats.active_users ?? 0, href: links.user_stats },
       { key: 'user_inactive', label: 'Inactive Users', value: d.user_stats.inactive_users ?? 0, href: links.user_stats },
-      { key: 'user_roles', label: 'Custom Roles', value: d.user_stats.custom_roles ?? 0, href: links.user_stats },
+      {
+        key: 'user_roles',
+        label: 'Custom Roles',
+        value: d.user_stats.custom_roles ?? 0,
+        href: links.custom_roles || '/admin/roles#custom',
+      },
       {
         key: 'user_recent',
         label: 'Logins (7d)',

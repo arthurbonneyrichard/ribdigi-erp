@@ -47,6 +47,18 @@ export default function AdminRolesPage() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
+  // Stage 104 R1 — honor Shell #create / #custom / #system
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
   async function createRole(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -101,7 +113,7 @@ export default function AdminRolesPage() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       {canWrite && (
-        <form onSubmit={createRole} style={{ margin: '20px 0', maxWidth: 520 }}>
+        <form onSubmit={createRole} style={{ margin: '20px 0', maxWidth: 520 }} id="create">
           <h2 style={{ fontSize: 18 }}>Create custom role</h2>
           <input
             value={roleForm.slug}
@@ -144,7 +156,9 @@ export default function AdminRolesPage() {
         </form>
       )}
 
-      <h2 style={{ fontSize: 18 }}>Custom roles</h2>
+      <h2 style={{ fontSize: 18 }} id="custom">
+        Custom roles
+      </h2>
       {customRoles.length === 0 ? (
         <p className="muted">No custom roles yet.</p>
       ) : (
@@ -179,7 +193,9 @@ export default function AdminRolesPage() {
         </table>
       )}
 
-      <h2 style={{ fontSize: 18, marginTop: 24 }}>System roles (org chart)</h2>
+      <h2 style={{ fontSize: 18, marginTop: 24 }} id="system">
+        System roles (org chart)
+      </h2>
       <p className="muted">
         Tenant Admin · Manager · Cashier · Accountant · Inventory Officer · Sales Officer (+ Super
         Admin). View permission matrices on{' '}

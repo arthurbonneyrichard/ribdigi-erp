@@ -88,7 +88,14 @@ def filter_dashboard_payload(payload: dict, claims: dict) -> dict:
     # Prune kpi_links to visible keys
     links = payload.get("kpi_links") or {}
     if isinstance(links, dict):
-        filtered["kpi_links"] = {k: v for k, v in links.items() if k in filtered or k in keep_fields}
+        # Stage 104 R1 — custom_roles link is for users section (not a top-level KPI field)
+        filtered["kpi_links"] = {
+            k: v
+            for k, v in links.items()
+            if k in filtered
+            or k in keep_fields
+            or (k == "custom_roles" and "user_stats" in keep_fields)
+        }
     filtered["view"] = dashboard_view_for_role(claims.get("role") or "")
     filtered["sections"] = sections
     return filtered

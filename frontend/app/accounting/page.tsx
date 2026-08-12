@@ -16,6 +16,8 @@ export default function Page() {
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
   const [journalStatusFilter, setJournalStatusFilter] = useState('all');
+  const [chequeDirectionFilter, setChequeDirectionFilter] = useState('');
+  const [chequeStatusFilter, setChequeStatusFilter] = useState('');
   const [trial, setTrial] = useState<any>(null);
   const [pnl, setPnl] = useState<any>(null);
   const [statements, setStatements] = useState<any[]>([]);
@@ -79,7 +81,27 @@ export default function Page() {
     return depth;
   }
 
-  async function refresh() {
+  function writeAccountingQuery(patch: Record<string, string | null>) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    for (const [key, value] of Object.entries(patch)) {
+      if (!value) url.searchParams.delete(key);
+      else url.searchParams.set(key, value);
+    }
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`);
+  }
+
+  async function refresh(opts?: {
+    journalStatus?: string;
+    journalStoreId?: string;
+    chequeDirection?: string;
+    chequeStatus?: string;
+  }) {
+    const jStatus = opts?.journalStatus !== undefined ? opts.journalStatus : journalStatusFilter;
+    const jStore = opts?.journalStoreId !== undefined ? opts.journalStoreId : journalStoreId;
+    const cDir = opts?.chequeDirection !== undefined ? opts.chequeDirection : chequeDirectionFilter;
+    const cStatus = opts?.chequeStatus !== undefined ? opts.chequeStatus : chequeStatusFilter;
     const pnlQs = new URLSearchParams();
     if (pnlFrom) pnlQs.set('from_date', pnlFrom);
     if (pnlTo) pnlQs.set('to_date', pnlTo);
@@ -88,15 +110,21 @@ export default function Page() {
       ? `/accounting/profit-loss?${pnlQs}`
       : '/accounting/profit-loss';
     const journalParams = new URLSearchParams();
-    if (journalStoreId) journalParams.set('store_id', journalStoreId);
-    if (journalStatusFilter && journalStatusFilter !== 'all') {
-      journalParams.set('status', journalStatusFilter);
-    } else if (journalStatusFilter === 'all') {
+    if (jStore) journalParams.set('store_id', jStore);
+    if (jStatus && jStatus !== 'all') {
+      journalParams.set('status', jStatus);
+    } else if (jStatus === 'all') {
       journalParams.set('status', 'all');
     }
     const journalQs = journalParams.toString()
       ? `/accounting/journal-entries?${journalParams}`
       : '/accounting/journal-entries';
+    const chequeParams = new URLSearchParams();
+    if (cDir) chequeParams.set('direction', cDir);
+    if (cStatus) chequeParams.set('status', cStatus);
+    const chequeQs = chequeParams.toString()
+      ? `/accounting/cheques?${chequeParams}`
+      : '/accounting/cheques';
     const tbPath = tbAsOf
       ? `/accounting/trial-balance?as_of_date=${encodeURIComponent(tbAsOf)}`
       : '/accounting/trial-balance';
@@ -107,7 +135,7 @@ export default function Page() {
       api(pnlPath),
       api('/accounting/liquid-accounts'),
       api('/accounting/bank-statements'),
-      api('/accounting/cheques'),
+      api(chequeQs),
       api('/accounting/bank-connections').catch(() => ({ data: [] })),
       api('/stores').catch(() => ({ data: [] })),
     ]);
@@ -129,8 +157,36 @@ export default function Page() {
     }
   }
 
+  // Stage 104 A1 — honor journal status/store_id + cheque_direction/cheque_status URL filters
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    const params = new URLSearchParams(window.location.search);
+    let jStatus = 'all';
+    const st = params.get('status')?.trim() || '';
+    if (['all', 'posted', 'unposted'].includes(st)) {
+      jStatus = st;
+      setJournalStatusFilter(st);
+    }
+    const store = params.get('store_id')?.trim() || '';
+    if (store) setJournalStoreId(store);
+    let cDir = '';
+    const cd = params.get('cheque_direction')?.trim() || '';
+    if (['received', 'issued'].includes(cd)) {
+      cDir = cd;
+      setChequeDirectionFilter(cd);
+    }
+    let cStatus = '';
+    const cs = params.get('cheque_status')?.trim() || '';
+    if (['pending', 'deposited', 'cleared', 'bounced', 'cancelled'].includes(cs)) {
+      cStatus = cs;
+      setChequeStatusFilter(cs);
+    }
+    refresh({
+      journalStatus: jStatus,
+      journalStoreId: store,
+      chequeDirection: cDir,
+      chequeStatus: cStatus,
+    }).catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Stage 100 G1 — honor Shell #coa / #journals / #trial-balance (and prior ledger anchors)
@@ -989,7 +1045,16 @@ export default function Page() {
               <option value="posted">Posted</option>
               <option value="unposted">Unposted</option>
             </select>
-            <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
+            <button
+              type="button"
+              onClick={() => {
+                writeAccountingQuery({
+                  status: journalStatusFilter === 'all' ? null : journalStatusFilter,
+                  store_id: journalStoreId || null,
+                });
+                refresh().catch((err) => setError(err.message));
+              }}
+            >
               Apply filter
             </button>
           </div>
@@ -1361,6 +1426,41 @@ export default function Page() {
             Received cheques post to 1020 then deposit/clear to Bank. Issued cheques post to 2015 until
             cleared against Bank.
           </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+            <select
+              value={chequeDirectionFilter}
+              onChange={(e) => setChequeDirectionFilter(e.target.value)}
+              aria-label="Cheque direction filter"
+            >
+              <option value="">All directions</option>
+              <option value="received">Received</option>
+              <option value="issued">Issued</option>
+            </select>
+            <select
+              value={chequeStatusFilter}
+              onChange={(e) => setChequeStatusFilter(e.target.value)}
+              aria-label="Cheque status filter"
+            >
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="deposited">Deposited</option>
+              <option value="cleared">Cleared</option>
+              <option value="bounced">Bounced</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                writeAccountingQuery({
+                  cheque_direction: chequeDirectionFilter || null,
+                  cheque_status: chequeStatusFilter || null,
+                });
+                refresh().catch((err) => setError(err.message));
+              }}
+            >
+              Apply filter
+            </button>
+          </div>
           <table className="table">
             <thead>
               <tr>

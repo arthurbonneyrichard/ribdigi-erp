@@ -125,6 +125,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Passkeys / TOTP / Webhooks / API keys / Active sessions:** Security Shell deep-links (Stage 103 S1)
 - **Backup Schedule / Backup & Restore:** Distinct Admin backup leaves (Stage 103 B1)
 - **Branches / Document numbering / Media storage:** Company Settings Shell deep-links (Stage 103 C1)
+- **Unposted / Posted Journals; Pending / Received / Issued Cheques:** Accounting filter deep-links (Stage 104 A1)
+- **Products / Purchase Invoices / Draft & Overdue Sales Invoices:** Commerce Shell leaves (Stage 104 I1)
+- **Credit Aging / Early Pay / FX / Payment Schedule; Custom & System Roles:** Credit and Admin Roles deep-links (Stage 104 R1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Security / 2FA and log out

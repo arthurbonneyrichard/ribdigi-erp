@@ -73,6 +73,18 @@ export default function Page() {
     if (raw === 'payable' || raw === 'receivable') setKind(raw);
   }, []);
 
+  // Stage 104 R1 — honor Shell #aging / #early-pay / #exchange-rates / #payment-schedule
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     setStatement(null);
     setPaymentSchedule(null);
@@ -345,7 +357,7 @@ export default function Page() {
       </div>
 
       <div className="grid">
-        <div className="card">
+        <div className="card" id="aging">
           <h3>Totals · {kind}</h3>
           <p>Current: {totals.current ?? 0}</p>
           <p>1–30: {totals['1_30'] ?? 0}</p>
@@ -354,7 +366,7 @@ export default function Page() {
           <p>90+: {totals['90_plus'] ?? 0}</p>
           <div className="kpi">{report?.total_due ?? 0}</div>
         </div>
-        <div className="card">
+        <div className="card" id="early-pay">
           <h3>Early payment terms</h3>
           <p className="muted">e.g. 2% if paid within 10 days (AR give / AP take)</p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -376,7 +388,7 @@ export default function Page() {
             Status: {epEnabled ? 'enabled' : 'disabled'}
           </p>
         </div>
-        <div className="card">
+        <div className="card" id="exchange-rates">
           <h3>Exchange rates</h3>
           <p className="muted">
             Base: {baseCurrency} — 1 foreign unit = rate × {baseCurrency}
@@ -419,7 +431,7 @@ export default function Page() {
             {!fxRates.length && <li className="muted">No foreign rates yet</li>}
           </ul>
         </div>
-        <div className="card">
+        <div className="card" id="party-actions">
           <h3>Party actions</h3>
           <select value={partyId} onChange={(e) => setPartyId(e.target.value)}>
             {parties.map((p: any) => (
@@ -517,7 +529,9 @@ export default function Page() {
         </div>
       </div>
 
-      <h3 style={{ marginTop: 16 }}>By party</h3>
+      <h3 style={{ marginTop: 16 }} id="by-party">
+        By party
+      </h3>
       <table className="table">
         <thead>
           <tr>
@@ -615,24 +629,34 @@ export default function Page() {
         </div>
       )}
 
-      {statement && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h3>Statement</h3>
+      <div className="card" style={{ marginTop: 16 }} id="statement">
+        <h3>Statement</h3>
+        {statement ? (
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
             {JSON.stringify(statement, null, 2)}
           </pre>
-        </div>
-      )}
+        ) : (
+          <p className="muted">Select a party and load statement from Party actions.</p>
+        )}
+      </div>
 
-      {kind === 'payable' && paymentSchedule && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h3>
-            Payment schedule — {paymentSchedule.supplier_name}{' '}
-            <span className="muted">
-              (as of {paymentSchedule.as_of} · due {paymentSchedule.total_due} · overdue{' '}
-              {paymentSchedule.overdue_total})
-            </span>
-          </h3>
+      <div className="card" style={{ marginTop: 16 }} id="payment-schedule">
+        <h3>
+          Payment schedule
+          {kind === 'payable' && paymentSchedule ? (
+            <>
+              {' '}
+              — {paymentSchedule.supplier_name}{' '}
+              <span className="muted">
+                (as of {paymentSchedule.as_of} · due {paymentSchedule.total_due} · overdue{' '}
+                {paymentSchedule.overdue_total})
+              </span>
+            </>
+          ) : null}
+        </h3>
+        {kind !== 'payable' ? (
+          <p className="muted">Switch to Payables to load a supplier payment schedule.</p>
+        ) : paymentSchedule ? (
           <table className="table">
             <thead>
               <tr>
@@ -686,8 +710,10 @@ export default function Page() {
               )}
             </tbody>
           </table>
-        </div>
-      )}
+        ) : (
+          <p className="muted">Select a supplier and load schedule from Party actions.</p>
+        )}
+      </div>
     </Shell>
   );
 }

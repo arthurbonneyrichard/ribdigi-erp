@@ -26,6 +26,12 @@ const primaryNavSpec: NavEntry[] = [
   { kind: 'link', label: 'Dashboard', href: '/dashboard', modules: ['dashboard'] },
   { kind: 'section', label: 'Commerce' },
   { kind: 'link', label: 'Inventory', href: '/inventory', modules: ['inventory'] },
+  {
+    kind: 'link',
+    label: 'Products',
+    href: '/inventory?tab=products',
+    modules: ['inventory'],
+  },
   { kind: 'link', label: 'Stock', href: '/inventory?tab=stock', modules: ['inventory'] },
   { kind: 'link', label: 'Low stock', href: '/inventory?tab=lowstock', modules: ['inventory'] },
   {
@@ -119,6 +125,18 @@ const primaryNavSpec: NavEntry[] = [
     href: '/sales?tab=invoices',
     modules: ['sales'],
   },
+  {
+    kind: 'link',
+    label: 'Draft Invoices',
+    href: '/sales?tab=invoices&status=draft',
+    modules: ['sales'],
+  },
+  {
+    kind: 'link',
+    label: 'Overdue Invoices',
+    href: '/sales?tab=invoices&status=overdue',
+    modules: ['sales'],
+  },
   { kind: 'link', label: 'POS', href: '/pos', modules: ['pos'] },
   {
     kind: 'link',
@@ -155,6 +173,12 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'GRN',
     href: '/purchasing?tab=grn',
+    modules: ['purchasing'],
+  },
+  {
+    kind: 'link',
+    label: 'Purchase Invoices',
+    href: '/purchasing?tab=invoices',
     modules: ['purchasing'],
   },
   {
@@ -248,6 +272,18 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Unposted Journals',
+    href: '/accounting?tab=ledger&status=unposted#journals',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Posted Journals',
+    href: '/accounting?tab=ledger&status=posted#journals',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
     label: 'Trial Balance',
     href: '/accounting?tab=ledger#trial-balance',
     modules: ['accounting'],
@@ -270,6 +306,24 @@ const primaryNavSpec: NavEntry[] = [
     href: '/accounting?tab=cheques',
     modules: ['accounting'],
   },
+  {
+    kind: 'link',
+    label: 'Pending Cheques',
+    href: '/accounting?tab=cheques&cheque_status=pending',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Received Cheques',
+    href: '/accounting?tab=cheques&cheque_direction=received',
+    modules: ['accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Issued Cheques',
+    href: '/accounting?tab=cheques&cheque_direction=issued',
+    modules: ['accounting'],
+  },
   { kind: 'link', label: 'Credit', href: '/credit', modules: ['credit'] },
   {
     kind: 'link',
@@ -281,6 +335,30 @@ const primaryNavSpec: NavEntry[] = [
     kind: 'link',
     label: 'Outstanding Payables',
     href: '/credit?kind=payable',
+    modules: ['credit'],
+  },
+  {
+    kind: 'link',
+    label: 'Credit Aging',
+    href: '/credit#aging',
+    modules: ['credit'],
+  },
+  {
+    kind: 'link',
+    label: 'Early Pay Terms',
+    href: '/credit#early-pay',
+    modules: ['credit'],
+  },
+  {
+    kind: 'link',
+    label: 'Exchange Rates',
+    href: '/credit#exchange-rates',
+    modules: ['credit'],
+  },
+  {
+    kind: 'link',
+    label: 'Payment Schedule',
+    href: '/credit?kind=payable#payment-schedule',
     modules: ['credit'],
   },
   { kind: 'link', label: 'Tax', href: '/tax', modules: ['tax'] },
@@ -494,6 +572,18 @@ const primaryNavSpec: NavEntry[] = [
 const userMgmtLinks: NavLink[] = [
   { kind: 'link', label: 'Users', href: '/users', modules: ['users'] },
   { kind: 'link', label: 'Roles', href: '/admin/roles', modules: ['users'] },
+  {
+    kind: 'link',
+    label: 'Custom Roles',
+    href: '/admin/roles#custom',
+    modules: ['users'],
+  },
+  {
+    kind: 'link',
+    label: 'System Roles',
+    href: '/admin/roles#system',
+    modules: ['users'],
+  },
   { kind: 'link', label: 'Permissions', href: '/admin/permissions', modules: ['users'] },
   { kind: 'link', label: 'Audit', href: '/audit', modules: ['audit'] },
   { kind: 'link', label: 'Activity', href: '/activity', modules: ['audit'] },
