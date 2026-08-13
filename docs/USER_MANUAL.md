@@ -142,6 +142,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Hard-delete remaining-gate index (Stage 183):** Status index is `docs/HARD_DELETE_REMAINING_GATE_MVP.md` → blockers `docs/HARD_DELETE_BLOCKERS_MVP.md` → ADR-003/erasure pointers `docs/HARD_DELETE_PACK_POINTERS_MVP.md`. Hard-delete Complete remains MISSING (not claimed).
 
+**Language/i18n remaining-gate index (Stage 184):** Status index is `docs/I18N_REMAINING_GATE_MVP.md` → blockers `docs/I18N_BLOCKERS_MVP.md` → ADR-006/scaffold pointers `docs/I18N_PACK_POINTERS_MVP.md`. Multi-language / i18n packs Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

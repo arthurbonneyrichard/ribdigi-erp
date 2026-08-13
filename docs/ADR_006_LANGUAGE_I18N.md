@@ -27,3 +27,5 @@ For Stage 1 / Commercial MVP:
 - BR-2.7 is PARTIAL for MVP: English + framework yes; multi-language switching deferred.
 - Admin/user docs must not claim additional language packs are available.
 - Regional formatting (date/number/time/timezone) remains separate from UI language (E13).
+
+See also Stage 184 language/i18n remaining-gate index: [`I18N_REMAINING_GATE_MVP.md`](I18N_REMAINING_GATE_MVP.md) (multi-language remains deferred; not Complete).

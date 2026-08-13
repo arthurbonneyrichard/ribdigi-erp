@@ -1,0 +1,58 @@
+{
+  "id": "i18n-blockers",
+  "stage": 184,
+  "pack": "B1",
+  "doc": "docs/I18N_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/I18N_REMAINING_GATE_MVP.md",
+    "adr006": "docs/ADR_006_LANGUAGE_I18N.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "i18n_scaffold": "frontend/lib/i18n.ts"
+  },
+  "packaging_complete": true,
+  "i18n_packs_claimed": false,
+  "multi_language_claimed": false,
+  "non_english_switcher_claimed": false,
+  "english_as_i18n_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "adr006_non_english_packs": "DEFERRED",
+    "multi_language_ui_switching": "REMAINING",
+    "fake_translation_packs": "BANNED",
+    "english_scaffold_as_i18n_complete": "NON_CLAIM",
+    "i18n_packs_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ib-adr006",
+      "title": "Mark ADR-006 non-English packs Deferred / post-MVP",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ib-multi-language",
+      "title": "Mark multi-language UI switching Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ib-fake-packs",
+      "title": "Mark incomplete / fake translation packs Banned",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ib-scaffold-nonclaim",
+      "title": "Mark English scaffold as non-claim for i18n packs",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ib-i18n-remaining",
+      "title": "i18n packs Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 184 B1 i18n blocker matrix packaging only. i18n packs Complete remains MISSING."
+}

@@ -33,3 +33,5 @@ Single index of hard-delete remaining gates. Packaging only — **hard-delete Co
 - Data archival Completes
 - Soft-delete as hard-delete Completes
 - Membership / go-live Completes
+
+See also Stage 184 language/i18n remaining-gate index: [`I18N_REMAINING_GATE_MVP.md`](I18N_REMAINING_GATE_MVP.md).
