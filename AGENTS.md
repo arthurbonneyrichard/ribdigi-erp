@@ -9,6 +9,8 @@
 - Standard lint/test/run commands: see root README / `backend` and `frontend` package scripts. Reliability packaging: `docs/CELERY_RELIABILITY_RUNBOOK.md`, `docs/DR_WAL_PITR_RUNBOOK.md`.
 
 ### Non-obvious gotchas
+- **Cloud VM infra:** Docker is often unavailable here. Use host **Postgres / Redis / RabbitMQ** with `.env` URLs pointed at `localhost` (not compose hostnames). Start API with `cd backend && PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`, frontend with `cd frontend && npm run dev`, Celery worker/beat from `backend` against the same `.env`.
+- **Migrate after pull:** live Postgres can lag feature migrations. From `backend`: `PYTHONPATH=. .venv/bin/alembic upgrade head` (export `DATABASE_URL` from `.env` carefully — quote values with spaces like `WEBAUTHN_RP_NAME="RIBDIGI ERP"` before `source .env`).
 - **Login 2FA:** `LOGIN_2FA_ENABLED` (default `false`) controls whether enrolled TOTP/passkeys are challenged at `/auth/login` and whether `must_enroll_2fa` blocks APIs. Set `true` in production (see `.env.production.example`). Setup endpoints under `/auth/2fa` and `/auth/webauthn` remain available either way.
 - **Celery does not auto-reload.** After changing `backend/app/jobs.py`, `tasks.py`, or beat schedule, restart `celery_worker` and `celery_beat` or workers keep stale handler maps / crash on unknown jobs.
 - **`run_async` uses one event loop per worker process** so sequential Celery tasks do not hit async SQLAlchemy “Future attached to a different loop” errors. Do not switch back to bare `asyncio.run()` per task without disposing the engine.
