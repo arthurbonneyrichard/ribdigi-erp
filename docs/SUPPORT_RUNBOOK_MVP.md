@@ -40,6 +40,10 @@ This is the **MVP support & Admin runbook fidelity surface**: map `ADMIN_MANUAL`
 
 Tenant MVP support readiness consolidates this pack with Stage 169 offline/sync ops: [SUPPORT_READINESS_MVP.md](SUPPORT_READINESS_MVP.md) (`ops/mvp/support-readiness.json`, `test_stage170_support_s1.py`). Live support SLA remains not claimed.
 
+## Stage 171 K1 amendment
+
+Tenant MVP knowledge base hub indexes FAQ / troubleshooting for support intake: [KNOWLEDGE_BASE_MVP.md](KNOWLEDGE_BASE_MVP.md) (`ops/mvp/knowledge-base.json`, `test_stage171_knowledge_k1.py`). Hosted FAQ SaaS remains not claimed.
+
 ## Sign-off
 
 Stage 30 S1 is met when this doc + admin-ops map + evidence JSON exist, `test_support_runbook_s1.py` passes, and ADMIN_MANUAL / launch / roadmap cite Stage 30 S1 without inventing live ops success.

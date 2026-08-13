@@ -442,6 +442,12 @@ Authoritative MVP docs:
 - `docs/SUPPORT_READINESS_MVP.md` / `ops/mvp/support-readiness.json` — Stage 170 S1
 - `docs/INCIDENT_SEVERITY_MATRIX_MVP.md` / `ops/mvp/incident-severity-matrix.json` — Stage 170 V1
 - `docs/OFFLINE_SYNC_ESCALATION_MVP.md` / `ops/mvp/offline-sync-escalation.json` — Stage 170 E1
+- `docs/STAGE_171_EXIT_CRITERIA.md` / `docs/ADR_349_STAGE171_FREEZE.md` (`backend/tests/test_stage171_exit_h171x.py`) — Stage 171 H171x
+- `docs/STAGE_171_FIDELITY.md` (`backend/tests/test_stage171_fidelity_d1.py`) — Stage 171 D1
+- `docs/STAGE_171_PLAN.md` (`backend/tests/test_stage171_open.py`) — Stage 171 open (ADR-348)
+- `docs/KNOWLEDGE_BASE_MVP.md` / `ops/mvp/knowledge-base.json` — Stage 171 K1
+- `docs/FAQ_OFFLINE_POS_MVP.md` / `ops/mvp/faq-offline-pos.json` — Stage 171 F1
+- `docs/TROUBLESHOOTING_INDEX_MVP.md` / `ops/mvp/troubleshooting-index.json` — Stage 171 T1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -2015,6 +2021,18 @@ H170x met — `docs/STAGE_170_EXIT_CRITERIA.md`, ADR-347. Stages 1–170 frozen 
 ## Stage 170 open
 
 ADR-346 + `docs/STAGE_170_PLAN.md` — Support Readiness Fidelity (closed under ADR-347).
+
+## Stage 171 exit
+
+H171x met — `docs/STAGE_171_EXIT_CRITERIA.md`, ADR-349. Stages 1–171 frozen for Stage 171 feature scope.
+
+## Stage 171 D1 — Tenant MVP Knowledge Base Fidelity
+
+`docs/STAGE_171_FIDELITY.md` — maps K1–T1 → readiness / launch / deploy / security. Hosted FAQ SaaS / Offline Complete remain MISSING.
+
+## Stage 171 open
+
+ADR-348 + `docs/STAGE_171_PLAN.md` — Knowledge Base Fidelity (closed under ADR-349).
 
 ## Stage 165 open
 

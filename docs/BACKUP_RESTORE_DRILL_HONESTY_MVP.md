@@ -36,3 +36,7 @@ Every register step keeps `done: false` until a human operator marks execution o
 - Demo tenants / fake restore success
 - Live PITR drill execution Complete
 - `attestation_claimed` / go-live Complete
+
+## Stage 171 T1 amendment
+
+Troubleshooting index links this pack for backup/restore drill symptoms: [TROUBLESHOOTING_INDEX_MVP.md](TROUBLESHOOTING_INDEX_MVP.md) (`ops/mvp/troubleshooting-index.json`, `test_stage171_troubleshoot_t1.py`). Live DR Completes remain false.

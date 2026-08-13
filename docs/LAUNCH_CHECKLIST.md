@@ -803,6 +803,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Offline/sync escalation (Stage 170 E1: `test_stage170_escalation_e1.py`, `docs/OFFLINE_SYNC_ESCALATION_MVP.md`)
 - [x] Stage 170 fidelity sync (D1: `test_stage170_fidelity_d1.py`, `docs/STAGE_170_FIDELITY.md`)
 - [x] Stage 170 exit + freeze (H170x: `test_stage170_exit_h170x.py`, `docs/STAGE_170_EXIT_CRITERIA.md`, ADR-347)
+- [x] Stage 171 track opened (ADR-348: `test_stage171_open.py`, `docs/STAGE_171_PLAN.md`) — Knowledge Base; closed under ADR-349
+- [x] Knowledge base hub (Stage 171 K1: `test_stage171_knowledge_k1.py`, `docs/KNOWLEDGE_BASE_MVP.md`)
+- [x] FAQ offline/POS/Hold (Stage 171 F1: `test_stage171_faq_f1.py`, `docs/FAQ_OFFLINE_POS_MVP.md`)
+- [x] Troubleshooting index (Stage 171 T1: `test_stage171_troubleshoot_t1.py`, `docs/TROUBLESHOOTING_INDEX_MVP.md`)
+- [x] Stage 171 fidelity sync (D1: `test_stage171_fidelity_d1.py`, `docs/STAGE_171_FIDELITY.md`)
+- [x] Stage 171 exit + freeze (H171x: `test_stage171_exit_h171x.py`, `docs/STAGE_171_EXIT_CRITERIA.md`, ADR-349)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

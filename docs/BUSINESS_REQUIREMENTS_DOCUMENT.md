@@ -897,6 +897,7 @@ Stage 167 D1 — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`); 
 Stage 168 D1 — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`); Stage 168 W1 / F1 / R1.
 Stage 169 D1 — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`); Stage 169 B1 / M1 / R1.
 Stage 170 D1 — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`); Stage 170 S1 / V1 / E1.
+Stage 171 D1 — `docs/STAGE_171_FIDELITY.md` (`test_stage171_fidelity_d1.py`); Stage 171 K1 / F1 / T1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1650,3 +1651,4 @@ Stage 168 D1 Offline Complete Attestation fidelity — `docs/STAGE_168_FIDELITY.
 Stage 169 D1 Production Ops Hardening fidelity — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`); Stage 169 B1 backup drill honesty; Stage 169 M1 migration gate; Stage 169 R1 offline/sync runbook; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 
 Stage 170 D1 Support Readiness fidelity — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`); Stage 170 S1 support readiness; Stage 170 V1 severity matrix; Stage 170 E1 offline/sync escalation; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 171 D1 Knowledge Base fidelity — `docs/STAGE_171_FIDELITY.md` (`test_stage171_fidelity_d1.py`); Stage 171 K1 knowledge base hub; Stage 171 F1 FAQ offline/POS/Hold; Stage 171 T1 troubleshooting index; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

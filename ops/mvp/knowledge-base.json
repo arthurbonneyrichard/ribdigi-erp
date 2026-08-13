@@ -1,0 +1,55 @@
+{
+  "id": "knowledge-base",
+  "stage": 171,
+  "pack": "K1",
+  "doc": "docs/KNOWLEDGE_BASE_MVP.md",
+  "related": {
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "troubleshooting_index": "docs/TROUBLESHOOTING_INDEX_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+    "user_manual": "docs/USER_MANUAL.md"
+  },
+  "packaging_complete": true,
+  "hosted_kb_saas_claimed": false,
+  "live_training_claimed": false,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage33_knowledge_transfer": true,
+  "steps": [
+    {
+      "id": "kb-hub-index",
+      "title": "Index FAQ, troubleshooting, support, backup packs",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-offline-faq",
+      "title": "Link Stage 171 F1 offline/POS/Hold FAQ",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-troubleshoot",
+      "title": "Link Stage 171 T1 troubleshooting index",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-backup-drill",
+      "title": "Link backup restore drill honesty (live claims false)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-hosted-remaining",
+      "title": "Hosted FAQ SaaS / live training Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 171 K1 knowledge base packaging only. Do not claim hosted KB SaaS or Offline Complete."
+}

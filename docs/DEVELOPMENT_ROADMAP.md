@@ -2664,6 +2664,18 @@ Every feature in every phase must meet:
 
 **Stage 170 exit (2026-08-13):** S1, V1, E1, D1, H170x met — `docs/STAGE_170_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_347_STAGE170_FREEZE.md`. Fidelity: `docs/STAGE_170_FIDELITY.md`.
 
+**Stage 171 open (2026-08-13):** Tenant MVP Knowledge Base Fidelity — `docs/ADR_348_STAGE171_OPEN.md` + `docs/STAGE_171_PLAN.md` (K1 next).
+
+**Stage 171 K1 (2026-08-13):** Knowledge base hub (`test_stage171_knowledge_k1.py`).
+
+**Stage 171 F1 (2026-08-13):** FAQ offline/POS/Hold (`test_stage171_faq_f1.py`).
+
+**Stage 171 T1 (2026-08-13):** Troubleshooting index (`test_stage171_troubleshoot_t1.py`).
+
+**Stage 171 D1 (2026-08-13):** Knowledge Base fidelity sync — `docs/STAGE_171_FIDELITY.md` (`test_stage171_fidelity_d1.py`).
+
+**Stage 171 exit (2026-08-13):** K1, F1, T1, D1, H171x met — `docs/STAGE_171_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_349_STAGE171_FREEZE.md`. Fidelity: `docs/STAGE_171_FIDELITY.md`.
+
 
 
 

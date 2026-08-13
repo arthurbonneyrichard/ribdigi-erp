@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 170 froze Support Readiness (ADR-347) — support readiness, severity matrix, offline/sync escalation. Live support SLA / Offline Complete / go-live remain MISSING. Next recommended distinct outline: Tenant MVP knowledge base fidelity (FAQ/troubleshooting for POS offline/sync + Hold/reserve + backup drill links) — Stage 171+. Do not claim Offline Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 171 froze Knowledge Base Fidelity (ADR-349) — KB hub, offline/POS/Hold FAQ, troubleshooting index. Hosted FAQ SaaS / live training / Offline Complete / go-live remain MISSING. Next recommended distinct outline: Tenant MVP cashier quickstart fidelity (day-one POS checklist: bind, catalog refresh, Hold, sync flush, accept-client) — Stage 172+. Do not claim Offline Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

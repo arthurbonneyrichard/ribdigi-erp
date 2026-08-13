@@ -66,3 +66,7 @@ Operator runbook for tenant offline/sync surfaces. Indexes proven contracts from
 ## Stage 170 E1 amendment
 
 Escalation paths for offline/sync incidents: [OFFLINE_SYNC_ESCALATION_MVP.md](OFFLINE_SYNC_ESCALATION_MVP.md) (`ops/mvp/offline-sync-escalation.json`, `test_stage170_escalation_e1.py`).
+
+## Stage 171 F1 / T1 amendment
+
+Cashier/admin FAQ and symptom index: [FAQ_OFFLINE_POS_MVP.md](FAQ_OFFLINE_POS_MVP.md) · [TROUBLESHOOTING_INDEX_MVP.md](TROUBLESHOOTING_INDEX_MVP.md) (`ops/mvp/faq-offline-pos.json`, `ops/mvp/troubleshooting-index.json`). Offline Complete remains not claimed.

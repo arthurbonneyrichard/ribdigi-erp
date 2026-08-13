@@ -33,3 +33,7 @@ Tenant MVP support desk readiness packaging: indexes Stage 30/36/74 support surf
 - Hosted helpdesk / ticketing SaaS Complete
 - Fabricated ticket resolution times
 - Offline Complete or go-live Complete
+
+## Stage 171 K1 amendment
+
+Knowledge base hub for support intake FAQs / troubleshooting: [KNOWLEDGE_BASE_MVP.md](KNOWLEDGE_BASE_MVP.md) (`ops/mvp/knowledge-base.json`, `test_stage171_knowledge_k1.py`).

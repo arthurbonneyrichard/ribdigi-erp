@@ -1722,3 +1722,4 @@ Stage 168 D1 — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`): 
 Stage 169 D1 — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`): ops packaging only — backup drill honesty / migration gate / offline-sync runbook; no new public API Completes; live DR and production migrate remain deferred.
 
 Stage 170 D1 — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`): support readiness packaging only — support runbook / severity matrix / offline-sync escalation; no new public API Completes; live support SLA remains deferred.
+Stage 171 D1 — `docs/STAGE_171_FIDELITY.md` (`test_stage171_fidelity_d1.py`): knowledge base packaging only — KB hub / offline-POS FAQ / troubleshooting index; no new public API Completes; Offline Complete remains deferred.

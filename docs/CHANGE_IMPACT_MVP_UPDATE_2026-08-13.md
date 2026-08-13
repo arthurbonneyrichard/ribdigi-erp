@@ -121,3 +121,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 170 decision (opened after Stage 169 freeze)
 
 **Tenant MVP Support Readiness Fidelity** — support readiness runbook (S1), incident severity matrix (V1), offline/sync escalation paths (E1). Live support SLA / PagerDuty / Offline Complete / go-live remain deferred (Stage 171+).
+
+## Stage 171 decision (opened after Stage 170 freeze)
+
+**Tenant MVP Knowledge Base Fidelity** — knowledge base hub (K1), FAQ offline/POS/Hold (F1), troubleshooting index with backup drill links (T1). Hosted FAQ SaaS / live training / Offline Complete / go-live remain deferred (Stage 172+).

@@ -116,6 +116,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Support readiness (Stage 170):** Support intake uses `docs/SUPPORT_READINESS_MVP.md`, severity via `docs/INCIDENT_SEVERITY_MATRIX_MVP.md`, and offline/sync escalations via `docs/OFFLINE_SYNC_ESCALATION_MVP.md`. Live support SLA remains deferred.
 
+**Knowledge base (Stage 171):** Offline/POS/Hold FAQs and symptom troubleshooting live in `docs/KNOWLEDGE_BASE_MVP.md`, `docs/FAQ_OFFLINE_POS_MVP.md`, and `docs/TROUBLESHOOTING_INDEX_MVP.md` (links backup drill honesty). Hosted FAQ SaaS and Offline Complete remain deferred.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health
@@ -1391,6 +1393,8 @@ Foreign-tenant archives cannot be restored into your company. Infrastructure WAL
 ---
 
 ## 16. Troubleshooting & FAQs
+
+**MVP knowledge base (Stage 171):** For POS offline/sync, Hold/soft-reserve, conflicts, device revoke, and backup-drill links, use `docs/KNOWLEDGE_BASE_MVP.md` → `docs/FAQ_OFFLINE_POS_MVP.md` + `docs/TROUBLESHOOTING_INDEX_MVP.md`. Generic issues below remain valid; Offline Complete stays deferred.
 
 ### 16.1 Common Issues
 
