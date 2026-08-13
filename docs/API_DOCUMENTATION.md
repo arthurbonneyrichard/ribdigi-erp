@@ -402,9 +402,13 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 Optional `tax_rate_id` on create/update (BR-12.1 / BR-2.8). Clear with `"tax_rate_id": null`. Resolve order for product lines: product `tax_rate_id` → category (walk `parent_id`, nearest wins) → tenant default tax rate → 0%.
 
 ### 5.2 Brands
-**List:** `GET /inventory/brands`  
-**Create:** `POST /inventory/brands`  
-**Update:** `PATCH /inventory/brands/{brand_id}`
+**List:** `GET /catalog/brands`  
+**Create:** `POST /catalog/brands` `{ "code", "name", "description"? }`  
+**Update:** `PATCH /catalog/brands/{brand_id}`  
+**Deactivate:** `DELETE /catalog/brands/{brand_id}`  
+**Logo:** `POST|GET|DELETE /catalog/brands/{brand_id}/logo` (multipart `file` on POST; image types same as company logo)
+
+Responses include `description`, `logo_url`, and `has_logo` (BR-5.1).
 
 ### 5.3 Units
 **List:** `GET /catalog/units`  
