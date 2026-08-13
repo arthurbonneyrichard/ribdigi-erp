@@ -464,6 +464,151 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
     }
 
 
+async def unit_cost_for_line(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+    variant_id: str | None = None,
+) -> float:
+    """Standard unit cost: variant.cost_price if set, else product.cost_price."""
+    if variant_id:
+        variant = (
+            await db.execute(
+                select(m.ProductVariant).where(
+                    m.ProductVariant.id == variant_id,
+                    m.ProductVariant.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if variant is not None:
+            v_cost = float(variant.cost_price or 0)
+            if v_cost > 0:
+                return v_cost
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        return 0.0
+    return float(product.cost_price or 0)
+
+
+async def stock_qty_for_cogs(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+    quantity: float,
+    unit_id: str | None = None,
+) -> float:
+    """Convert line qty to stockkeeping units for COGS (matches stock_out)."""
+    from app.uom import to_stock_qty
+
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        return float(quantity or 0)
+    qty_base, _, _ = await to_stock_qty(
+        db,
+        tenant_id=tenant_id,
+        quantity=float(quantity),
+        from_unit_id=unit_id,
+        product=product,
+    )
+    return float(qty_base)
+
+
+async def compute_standard_cogs(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    lines: list[dict],
+) -> float:
+    """Sum qty×standard cost for COGS lines.
+
+    Each line: product_id, quantity, optional unit_id / variant_id.
+    """
+    total = 0.0
+    for line in lines:
+        product_id = line.get("product_id")
+        if not product_id:
+            continue
+        qty = float(line.get("quantity") or 0)
+        if qty <= 0:
+            continue
+        unit_id = line.get("unit_id")
+        try:
+            stock_qty = await stock_qty_for_cogs(
+                db,
+                tenant_id=tenant_id,
+                product_id=product_id,
+                quantity=qty,
+                unit_id=unit_id,
+            )
+        except HTTPException:
+            stock_qty = qty
+        cost = await unit_cost_for_line(
+            db,
+            tenant_id=tenant_id,
+            product_id=product_id,
+            variant_id=line.get("variant_id"),
+        )
+        total += stock_qty * cost
+    return round(total, 2)
+
+
+def append_cogs_lines(lines: list[dict], cogs: float, *, reverse: bool = False) -> None:
+    """Append Dr 5000 / Cr 1200 (or reverse) when cogs > 0."""
+    cogs = round(float(cogs or 0), 2)
+    if cogs <= 0:
+        return
+    if reverse:
+        lines.append(
+            {
+                "account_code": "1200",
+                "debit": cogs,
+                "credit": 0,
+                "description": "Inventory restock (COGS reverse)",
+            }
+        )
+        lines.append(
+            {
+                "account_code": "5000",
+                "debit": 0,
+                "credit": cogs,
+                "description": "COGS reverse",
+            }
+        )
+    else:
+        lines.append(
+            {
+                "account_code": "5000",
+                "debit": cogs,
+                "credit": 0,
+                "description": "Cost of goods sold",
+            }
+        )
+        lines.append(
+            {
+                "account_code": "1200",
+                "debit": 0,
+                "credit": cogs,
+                "description": "Inventory relief",
+            }
+        )
+
+
 async def post_sales_invoice_journal(
     db: AsyncSession,
     *,
@@ -473,6 +618,7 @@ async def post_sales_invoice_journal(
 ) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, to_base
+    from app.sales import list_invoice_items
 
     rate = doc_rate(invoice)
     revenue = to_base(float(invoice.subtotal) - float(invoice.discount_amount or 0), rate)
@@ -486,6 +632,24 @@ async def post_sales_invoice_journal(
         lines.append({"account_code": "2100", "debit": 0, "credit": tax, "description": "Tax"})
     if revenue < 0:
         raise HTTPException(status_code=400, detail="Invoice revenue after discount cannot be negative")
+
+    items = await list_invoice_items(db, tenant_id, invoice.id)
+    cogs = await compute_standard_cogs(
+        db,
+        tenant_id=tenant_id,
+        lines=[
+            {
+                "product_id": it.product_id,
+                "quantity": float(it.quantity),
+                "unit_id": it.unit_id,
+                "variant_id": it.variant_id,
+            }
+            for it in items
+        ],
+    )
+    # COGS is in base currency terms (cost_price is tenant base)
+    append_cogs_lines(lines, cogs, reverse=False)
+
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -506,6 +670,8 @@ async def post_sales_return_journal(
     sales_return: m.SalesReturn,
 ) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
+    from app.sales_docs import list_return_items
+
     revenue = float(sales_return.subtotal or 0)
     tax = float(sales_return.tax_amount or 0)
     total = float(sales_return.total_amount)
@@ -516,6 +682,25 @@ async def post_sales_return_journal(
     ]
     if tax > 0:
         lines.append({"account_code": "2100", "debit": tax, "credit": 0, "description": "Tax reverse"})
+
+    # Reverse COGS only for restocked sellable lines (matches stock_in path)
+    if sales_return.restock:
+        items = await list_return_items(db, tenant_id, sales_return.id)
+        cogs = await compute_standard_cogs(
+            db,
+            tenant_id=tenant_id,
+            lines=[
+                {
+                    "product_id": it.product_id,
+                    "quantity": float(it.quantity),
+                    "variant_id": it.variant_id,
+                }
+                for it in items
+                if (it.condition or "sellable") == "sellable"
+            ],
+        )
+        append_cogs_lines(lines, cogs, reverse=True)
+
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1006,6 +1191,25 @@ async def post_pos_sale_journal(
         lines.append(
             {"account_code": "2100", "debit": 0, "credit": tax, "description": "Tax payable"}
         )
+
+    payload = tx.payload if isinstance(tx.payload, dict) else {}
+    pos_items = list(payload.get("items") or [])
+    cogs = await compute_standard_cogs(
+        db,
+        tenant_id=tenant_id,
+        lines=[
+            {
+                "product_id": it.get("product_id"),
+                "quantity": float(it.get("quantity") or 0),
+                "unit_id": it.get("unit_id"),
+                "variant_id": it.get("variant_id"),
+            }
+            for it in pos_items
+            if it.get("product_id")
+        ],
+    )
+    append_cogs_lines(lines, cogs, reverse=False)
+
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1055,15 +1259,28 @@ async def trial_balance(db: AsyncSession, tenant_id: str) -> dict:
 
 
 async def profit_and_loss(db: AsyncSession, tenant_id: str) -> dict:
+    """P&L with revenue, COGS (5000), gross profit, and operating expenses (BR-10.6)."""
     accounts = (
         await db.execute(select(m.Account).where(m.Account.tenant_id == tenant_id))
     ).scalars().all()
-    income = sum(float(a.balance or 0) for a in accounts if a.account_type == "income")
-    expense = sum(float(a.balance or 0) for a in accounts if a.account_type == "expense")
+    revenue = sum(float(a.balance or 0) for a in accounts if a.account_type == "income")
+    cogs = sum(float(a.balance or 0) for a in accounts if a.code == "5000")
+    operating_expenses = sum(
+        float(a.balance or 0)
+        for a in accounts
+        if a.account_type == "expense" and a.code != "5000"
+    )
+    expense = cogs + operating_expenses
+    gross_profit = revenue - cogs
+    net_profit = revenue - expense
     return {
-        "income": income,
-        "expense": expense,
-        "net_profit": income - expense,
+        "income": revenue,  # back-compat alias
+        "revenue": revenue,
+        "cogs": cogs,
+        "gross_profit": gross_profit,
+        "operating_expenses": operating_expenses,
+        "expense": expense,  # back-compat: total expenses incl. COGS
+        "net_profit": net_profit,
         "accounts": [
             {
                 "code": a.code,
