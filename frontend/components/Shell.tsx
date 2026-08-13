@@ -443,8 +443,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             className="brand-logo"
             src="/brand/logo-sidebar.png"
             alt="RIBDIGI ERP — Run your business smarter"
-            width={180}
-            height={47}
+            width={140}
+            height={36}
           />
         </div>
         {isPlatformOwner ? <div className="brand-sub">Platform owner console</div> : null}
