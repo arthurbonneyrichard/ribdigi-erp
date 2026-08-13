@@ -661,12 +661,12 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Manage customer credit sales and collections.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Set per-customer credit limit
-  - [ ] Block sales that exceed credit limit (with override permission)
-  - [ ] Display outstanding balance on customer profile
-  - [ ] Record payment collections with date, amount, method, reference
-  - [ ] Allocate payments to specific invoices or auto-allocate (oldest first)
-  - [ ] Customer statement generation (all transactions + balance)
+  - [x] Set per-customer credit limit
+  - [x] Block sales that exceed credit limit (with override permission)
+  - [x] Display outstanding balance on customer profile
+  - [x] Record payment collections with date, amount, method, reference
+  - [x] Allocate payments to specific invoices or auto-allocate (oldest first)
+  - [x] Customer statement generation (all transactions + balance)
 
 #### BR-11.2 Supplier Credit
 - **Description:** Manage supplier payable tracking.

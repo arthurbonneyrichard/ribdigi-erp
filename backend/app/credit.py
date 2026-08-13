@@ -3,15 +3,88 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.rbac import has_permission
 
 DEFAULT_PAYMENT_TERMS_DAYS = 30
 AGING_BUCKETS = ("current", "1_30", "31_60", "61_90", "90_plus")
+
+
+def claims_may_override_credit(claims: dict) -> bool:
+    role = claims.get("role", "") or ""
+    perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    return has_permission(role, "credit", "approve", overrides=perms)
+
+
+def enforce_customer_credit_limit(
+    customer: m.Party,
+    *,
+    amount: float,
+    override: bool = False,
+    override_allowed: bool = False,
+    override_reason: str | None = None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Block sales that would exceed credit limit unless an authorized override is supplied.
+
+    Returns override audit payload when an override was applied; otherwise None.
+    ``credit_limit <= 0`` means unlimited (no enforcement).
+    """
+    credit_limit = float(customer.credit_limit or 0)
+    if credit_limit <= 0:
+        return None
+    amount = float(amount or 0)
+    if amount <= 0:
+        return None
+    current = float(customer.balance or 0)
+    projected = current + amount
+    if projected <= credit_limit + 1e-9:
+        return None
+
+    detail: dict[str, Any] = {
+        "code": "CREDIT_LIMIT_EXCEEDED",
+        "message": "This sale would exceed the customer credit limit",
+        "credit_limit": credit_limit,
+        "current_balance": current,
+        "amount": amount,
+        "projected_balance": round(projected, 2),
+        "over_by": round(projected - credit_limit, 2),
+        "customer_id": customer.id,
+        "customer_name": customer.name,
+    }
+    if extra:
+        detail.update(extra)
+
+    if not override:
+        raise HTTPException(status_code=409, detail=detail)
+
+    if not override_allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                **detail,
+                "code": "CREDIT_OVERRIDE_FORBIDDEN",
+                "message": "Credit limit override requires credit:approve permission",
+            },
+        )
+
+    reason = (override_reason or "").strip() or None
+    return {
+        "customer_id": customer.id,
+        "customer_name": customer.name,
+        "credit_limit": credit_limit,
+        "current_balance": current,
+        "amount": amount,
+        "projected_balance": round(projected, 2),
+        "over_by": round(projected - credit_limit, 2),
+        "reason": reason,
+    }
 
 
 def early_pay_settings(tenant: m.Tenant) -> dict:

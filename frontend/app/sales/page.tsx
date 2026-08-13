@@ -359,6 +359,59 @@ export default function Page() {
     }
   }
 
+  async function postInvoice(inv: any) {
+    setError('');
+    try {
+      const r = await api(`/sales/invoices/${inv.id}/post`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      setMessage(r.message || 'Posted');
+      setSelected(r.data);
+      await refresh();
+    } catch (err: any) {
+      const detail = err?.detail;
+      if (
+        err?.status === 409 &&
+        detail &&
+        typeof detail === 'object' &&
+        detail.code === 'CREDIT_LIMIT_EXCEEDED'
+      ) {
+        const over = detail.over_by != null ? ` (over by ${detail.over_by})` : '';
+        const ok = window.confirm(
+          `Credit limit exceeded${over}. Post anyway with manager override?\n` +
+            `Limit ${detail.credit_limit} · balance ${detail.current_balance} · invoice ${detail.invoice_total_base ?? detail.amount}`,
+        );
+        if (!ok) {
+          setError(detail.message || err.message);
+          return;
+        }
+        const reason =
+          window.prompt('Override reason (optional)', 'Approved over-limit credit sale') || undefined;
+        try {
+          const r = await api(`/sales/invoices/${inv.id}/post`, {
+            method: 'POST',
+            body: JSON.stringify({
+              override_credit_limit: true,
+              override_reason: reason,
+            }),
+          });
+          setMessage(
+            r.data?.credit_limit_overridden
+              ? `${r.message || 'Posted'} (credit limit overridden)`
+              : r.message || 'Posted',
+          );
+          setSelected(r.data);
+          await refresh();
+        } catch (err2: any) {
+          setError(err2.message);
+        }
+        return;
+      }
+      setError(err.message);
+    }
+  }
+
   async function pay() {
     if (!selected?.id || !selected.customer_id) return;
     setError('');
@@ -766,7 +819,7 @@ export default function Page() {
                   <button onClick={() => setSelected(inv)}>View</button>
                   {inv.status === 'draft' && (
                     <>
-                      <button onClick={() => act(`/sales/invoices/${inv.id}/post`, 'Posted')}>Post</button>
+                      <button onClick={() => postInvoice(inv)}>Post</button>
                       <button onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
                     </>
                   )}

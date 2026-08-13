@@ -215,7 +215,11 @@ export default function Page() {
   return (
     <Shell>
       <h1>Credit & Aging</h1>
-      <p className="muted">AR/AP aging, statements, payments, and early-payment discounts</p>
+      <p className="muted">
+        AR/AP aging, statements, payments, and early-payment discounts. Over-limit credit sales are
+        blocked unless a user with <code>credit:approve</code> (store manager / accountant / admin)
+        confirms an override on Sales invoice post or POS checkout.
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 

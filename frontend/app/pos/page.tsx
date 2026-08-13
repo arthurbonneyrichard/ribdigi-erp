@@ -613,6 +613,26 @@ export default function Page() {
             method: 'POST',
             body: JSON.stringify(body),
           });
+        } else if (
+          err?.status === 409 &&
+          detail &&
+          typeof detail === 'object' &&
+          detail.code === 'CREDIT_LIMIT_EXCEEDED'
+        ) {
+          const over = detail.over_by != null ? ` (over by ${detail.over_by})` : '';
+          const ok = window.confirm(
+            `Credit limit exceeded${over}. Complete sale with manager override?\n` +
+              `Limit ${detail.credit_limit} · balance ${detail.current_balance}`,
+          );
+          if (!ok) throw err;
+          const reason =
+            window.prompt('Override reason (optional)', 'Approved over-limit POS credit') || undefined;
+          body.override_credit_limit = true;
+          body.override_reason = reason;
+          r = await api('/pos/sales', {
+            method: 'POST',
+            body: JSON.stringify(body),
+          });
         } else {
           throw err;
         }
@@ -626,7 +646,9 @@ export default function Page() {
       setLastSale({ id: r.data.id, reference: r.data.reference });
       await refreshSession();
       await browse(q);
-      setMessage('Sale successful');
+      setMessage(
+        r.data?.credit_limit_overridden ? 'Sale successful (credit limit overridden)' : 'Sale successful',
+      );
     } catch (err: any) {
       setMessage('');
       setLastSale(null);

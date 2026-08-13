@@ -84,6 +84,7 @@ from app.schemas import (
     ExpenseUpdate,
     GrnCreate,
     JournalCreate,
+    CreditLimitOverrideBody,
     Login,
     NotificationPreferencesUpdate,
     PartyCreate,
@@ -3798,7 +3799,10 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
             detail="items are required for sale/purchase/pos so stock can be updated correctly",
         )
 
+    tx_override_info = None
     if kind in {"sale", "pos_sale"} and payload.party_id:
+        from app.credit import claims_may_override_credit, enforce_customer_credit_limit
+
         party = (
             await db.execute(
                 select(m.Party).where(
@@ -3808,14 +3812,21 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
                 )
             )
         ).scalar_one_or_none()
-        if party and float(party.credit_limit or 0) > 0:
-            projected = float(party.balance or 0) + float(payload.total or 0)
-            if projected > float(party.credit_limit):
-                raise HTTPException(status_code=409, detail="CREDIT_LIMIT_EXCEEDED")
+        if party:
+            tx_override_info = enforce_customer_credit_limit(
+                party,
+                amount=float(payload.total or 0),
+                override=bool(payload.override_credit_limit),
+                override_allowed=claims_may_override_credit(claims),
+                override_reason=payload.override_reason,
+                extra={"source": kind},
+            )
 
     ref = f"{kind.upper()}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
     body = payload.model_dump()
     body.pop("items", None)
+    body.pop("override_credit_limit", None)
+    body.pop("override_reason", None)
     body["payload"] = {**(body.get("payload") or {}), "items": items}
     tx = m.Transaction(tenant_id=claims["tenant_id"], tx_type=kind, reference=ref, **body)
     db.add(tx)
@@ -3842,8 +3853,26 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
         if party and party.tenant_id == claims["tenant_id"]:
             party.balance = float(party.balance or 0) + float(payload.total or 0)
 
+    if tx_override_info:
+        db.add(
+            m.AuditLog(
+                tenant_id=claims["tenant_id"],
+                user_id=claims["sub"],
+                action="credit_limit_override",
+                entity="customer",
+                entity_id=tx_override_info["customer_id"],
+                details={**tx_override_info, "source": kind, "transaction_id": tx.id, "reference": ref},
+            )
+        )
+
     await db.commit()
-    return env({"id": tx.id, "reference": ref})
+    return env(
+        {
+            "id": tx.id,
+            "reference": ref,
+            "credit_limit_overridden": bool(tx_override_info),
+        }
+    )
 
 
 @api.get("/sales")
@@ -4081,13 +4110,23 @@ async def print_sales_invoice(
 @api.post("/sales/invoices/{invoice_id}/post")
 async def post_sales_invoice(
     invoice_id: str,
+    payload: CreditLimitOverrideBody | None = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.credit import claims_may_override_credit
+
+    ov = payload or CreditLimitOverrideBody()
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     invoice = await sales_svc.post_sales_invoice(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        invoice_id=invoice_id,
+        override_credit_limit=bool(ov.override_credit_limit),
+        override_reason=ov.override_reason,
+        credit_override_allowed=claims_may_override_credit(claims),
     )
     await webhooks_svc.emit_event(
         db,
@@ -4102,7 +4141,9 @@ async def post_sales_invoice(
         },
     )
     await db.commit()
-    return env(await sales_svc.serialize_invoice(db, invoice), "Invoice posted; stock and AR updated")
+    data = await sales_svc.serialize_invoice(db, invoice)
+    data["credit_limit_overridden"] = bool(getattr(invoice, "credit_limit_overridden", False))
+    return env(data, "Invoice posted; stock and AR updated")
 
 
 @api.post("/sales/invoices/{invoice_id}/send")
@@ -5469,10 +5510,19 @@ async def pos_sale(
             raise HTTPException(status_code=404, detail="Customer not found")
         if not customer_name:
             customer_name = party.name
-        if credit_amount > 0 and float(party.credit_limit or 0) > 0:
-            projected = float(party.balance or 0) + float(credit_amount)
-            if projected > float(party.credit_limit):
-                raise HTTPException(status_code=409, detail="CREDIT_LIMIT_EXCEEDED")
+
+    pos_override_info = None
+    if party is not None and credit_amount > 0:
+        from app.credit import claims_may_override_credit, enforce_customer_credit_limit
+
+        pos_override_info = enforce_customer_credit_limit(
+            party,
+            amount=float(credit_amount),
+            override=bool(payload.override_credit_limit),
+            override_allowed=claims_may_override_credit(claims),
+            override_reason=payload.override_reason,
+            extra={"source": "pos_sale"},
+        )
 
     ref = await pos_svc.next_pos_sale_number(db, claims["tenant_id"])
     body = payload.model_dump()
@@ -5482,6 +5532,8 @@ async def pos_sale(
     body.pop("payments", None)
     body.pop("customer_name", None)
     body.pop("discount_amount", None)
+    body.pop("override_credit_limit", None)
+    body.pop("override_reason", None)
     body["payload"] = {
         **(body.get("payload") or {}),
         "items": priced_items,
@@ -5559,6 +5611,22 @@ async def pos_sale(
         sale_id=tx.id,
         user_id=claims.get("sub"),
     )
+    if pos_override_info:
+        db.add(
+            m.AuditLog(
+                tenant_id=claims["tenant_id"],
+                user_id=claims["sub"],
+                action="credit_limit_override",
+                entity="customer",
+                entity_id=pos_override_info["customer_id"],
+                details={
+                    **pos_override_info,
+                    "source": "pos_sale",
+                    "transaction_id": tx.id,
+                    "reference": ref,
+                },
+            )
+        )
     await db.commit()
     payload_out = {
         "id": tx.id,
@@ -5573,6 +5641,7 @@ async def pos_sale(
         "payments": [pos_svc.serialize_payment(p) for p in payment_rows],
         "customer_name": customer_name,
         "party_id": payload.party_id,
+        "credit_limit_overridden": bool(pos_override_info),
     }
     if drawer is not None:
         payload_out["drawer"] = drawer

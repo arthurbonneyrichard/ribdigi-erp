@@ -946,6 +946,12 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 ### 11.1 Customer Credit
 **Get Credit Info:** `GET /customers/{customer_id}/credit`
 
+**Credit limit enforcement / override (BR-11.1):** posting a sales invoice, POS credit checkout, or legacy `POST /sales` that would push `balance + amount` above `credit_limit` returns `409` with `detail.code = CREDIT_LIMIT_EXCEEDED` (includes `over_by`, balances). Retry with body:
+```json
+{ "override_credit_limit": true, "override_reason": "Approved by store manager" }
+```
+Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Otherwise `403` `CREDIT_OVERRIDE_FORBIDDEN`. Successful overrides set `credit_limit_overridden: true` and write audit `credit_limit_override`.
+
 **Response:**
 ```json
 {
@@ -1322,7 +1328,8 @@ X-RateLimit-Reset: 1691415060
 | `TENANT_SUSPENDED` | Tenant account is suspended |
 | `RESOURCE_NOT_FOUND` | Requested resource not found |
 | `INSUFFICIENT_STOCK` | Not enough stock for operation |
-| `CREDIT_LIMIT_EXCEEDED` | Customer credit limit reached |
+| `CREDIT_LIMIT_EXCEEDED` | Customer credit limit reached (override via `override_credit_limit` + `credit:approve`) |
+| `CREDIT_OVERRIDE_FORBIDDEN` | Credit limit override attempted without `credit:approve` |
 | `DUPLICATE_ENTRY` | Resource already exists |
 | `RATE_LIMIT_EXCEEDED` | Too many requests |
 

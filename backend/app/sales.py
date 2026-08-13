@@ -336,6 +336,9 @@ async def post_sales_invoice(
     tenant_id: str,
     user_id: str,
     invoice_id: str,
+    override_credit_limit: bool = False,
+    override_reason: str | None = None,
+    credit_override_allowed: bool = False,
 ) -> m.SalesInvoice:
     invoice = await get_invoice(db, tenant_id, invoice_id)
     if invoice.status != "draft":
@@ -347,24 +350,25 @@ async def post_sales_invoice(
 
     customer = await get_customer(db, tenant_id, invoice.customer_id)
     from app.fx import doc_rate, to_base
+    from app.credit import enforce_customer_credit_limit
 
     inv_base = to_base(float(invoice.total_amount), doc_rate(invoice))
     credit_limit = float(customer.credit_limit or 0)
-    if credit_limit > 0:
-        projected = float(customer.balance or 0) + inv_base
-        if projected > credit_limit + 1e-9:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "CREDIT_LIMIT_EXCEEDED",
-                    "message": "Posting this invoice would exceed the customer credit limit",
-                    "credit_limit": credit_limit,
-                    "current_balance": float(customer.balance or 0),
-                    "invoice_total": float(invoice.total_amount),
-                    "invoice_total_base": inv_base,
-                    "currency": getattr(invoice, "currency", None) or "",
-                },
-            )
+    override_info = enforce_customer_credit_limit(
+        customer,
+        amount=inv_base,
+        override=override_credit_limit,
+        override_allowed=credit_override_allowed,
+        override_reason=override_reason,
+        extra={
+            "message": "Posting this invoice would exceed the customer credit limit",
+            "invoice_id": invoice.id,
+            "invoice_number": invoice.invoice_number,
+            "invoice_total": float(invoice.total_amount),
+            "invoice_total_base": inv_base,
+            "currency": getattr(invoice, "currency", None) or "",
+        },
+    )
 
     warehouse_id = None
     if invoice.store_id:
@@ -417,17 +421,23 @@ async def post_sales_invoice(
 
     if credit_limit > 0:
         utilization = float(customer.balance or 0) / credit_limit
-        if utilization >= 0.8:
+        if utilization >= 0.8 or override_info:
             from app.notifications import create_notification
 
+            title = "Credit Limit Exceeded" if override_info else "Credit Limit Warning"
             await create_notification(
                 db,
                 tenant_id=tenant_id,
                 category="credit_limit",
-                title="Credit Limit Warning",
+                title=title,
                 message=(
                     f"{customer.name} credit utilization is {utilization:.0%} "
                     f"({float(customer.balance or 0):.2f} / {credit_limit:.2f})."
+                    + (
+                        f" Overridden by user on invoice {invoice.invoice_number}."
+                        if override_info
+                        else ""
+                    )
                 ),
                 entity_type="customer",
                 entity_id=customer.id,
@@ -444,6 +454,22 @@ async def post_sales_invoice(
         entity_type="sales_invoice",
         entity_id=invoice.id,
     )
+    if override_info:
+        db.add(
+            m.AuditLog(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                action="credit_limit_override",
+                entity="customer",
+                entity_id=customer.id,
+                details={
+                    **override_info,
+                    "source": "sales_invoice",
+                    "invoice_id": invoice.id,
+                    "invoice_number": invoice.invoice_number,
+                },
+            )
+        )
     db.add(
         m.AuditLog(
             tenant_id=tenant_id,
@@ -451,9 +477,15 @@ async def post_sales_invoice(
             action="invoice_posted",
             entity="sales_invoice",
             entity_id=invoice.id,
-            details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
+            details={
+                "invoice_number": invoice.invoice_number,
+                "total": float(invoice.total_amount),
+                "credit_limit_overridden": bool(override_info),
+            },
         )
     )
+    # Transient flag for API response (not persisted)
+    invoice.credit_limit_overridden = bool(override_info)  # type: ignore[attr-defined]
     return invoice
 
 

@@ -399,6 +399,15 @@ class TransactionCreate(BaseModel):
     status: str = "completed"
     payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(default_factory=list)
+    override_credit_limit: bool = False
+    override_reason: str | None = Field(default=None, max_length=500)
+
+
+class CreditLimitOverrideBody(BaseModel):
+    """Optional body for posting sales that may exceed credit limit (BR-11.1)."""
+
+    override_credit_limit: bool = False
+    override_reason: str | None = Field(default=None, max_length=500)
 
 
 class StockAdjust(BaseModel):
@@ -945,3 +954,5 @@ class PosSaleCreate(BaseModel):
     payments: list[PosPaymentLine] | None = None
     payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(min_length=1)
+    override_credit_limit: bool = False
+    override_reason: str | None = Field(default=None, max_length=500)
