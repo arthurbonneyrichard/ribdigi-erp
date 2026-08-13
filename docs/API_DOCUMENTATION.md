@@ -906,14 +906,22 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 ### 10.2 Journal Entries
 **List:** `GET /accounting/journal-entries`  
 **Create:** `POST /accounting/journal-entries`  
-**Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost` — manual journals only; reverses account balances; allowed only when `entry_date` is in the tenant’s current fiscal period (`tenants.fiscal_year_start` MM-DD). Auto-posted sources (`sales_invoice`, `coa_opening`, `cash_transfer`, …) are rejected.  
+**Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost` — manual journals only; reverses account balances; allowed only when `entry_date` is in the tenant’s current fiscal period (`tenants.fiscal_year_start` MM-DD) **and** not on/before `books_closed_through`. Auto-posted sources (`sales_invoice`, `coa_opening`, `cash_transfer`, …) are rejected.  
 **Attachment:** `POST|GET|DELETE /accounting/journal-entries/{entry_id}/attachment` — multipart `file` upload (PDF/image); tenant-scoped media key on `journal_entries.attachment_url`.
+
+**Period close (BR-10.2):**
+- `GET /accounting/period` — `fiscal_year_start`, current fiscal bounds, `books_closed_through`
+- `POST /accounting/period/close` `{ "through_date": "YYYY-MM-DD" }` — inclusive close; cannot be future; cannot move earlier (use reopen)
+- `POST /accounting/period/reopen` `{ "through_date": null | "YYYY-MM-DD" }` — clear or set an earlier closed-through date
+
+Posting a journal (`POST /accounting/journal-entries`) rejects `entry_date` (default: now) on or before `books_closed_through` with **400**.
 
 **Create Journal Entry:**
 ```json
 {
   "reference": "JE-001",
   "description": "Adjusting entry for depreciation",
+  "entry_date": "2026-08-01",
   "lines": [
     { "account_code": "6000", "debit": 100.00, "credit": 0.00 },
     { "account_code": "1000", "debit": 0.00, "credit": 100.00 }

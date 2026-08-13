@@ -63,6 +63,8 @@ export default function Page() {
   const [pnlBranchId, setPnlBranchId] = useState('');
   const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const [period, setPeriod] = useState<any>(null);
+  const [closeThrough, setCloseThrough] = useState('');
 
   function pnlQuery() {
     const params = new URLSearchParams();
@@ -80,7 +82,7 @@ export default function Page() {
   }
 
   async function refresh() {
-    const [a, j, t, p, liq, stmts, chq, conns, xfers, openSt, st, br] = await Promise.all([
+    const [a, j, t, p, liq, stmts, chq, conns, xfers, openSt, st, br, per] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
       api('/accounting/trial-balance'),
@@ -93,6 +95,7 @@ export default function Page() {
       api('/accounting/opening-balances').catch(() => ({ data: null })),
       api('/stores').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
+      api('/accounting/period').catch(() => ({ data: null })),
     ]);
     setAccounts(a.data || []);
     setJournals(j.data || []);
@@ -106,10 +109,45 @@ export default function Page() {
     setCoaOpenStatus(openSt.data || null);
     setStores(st.data || []);
     setBranches(br.data || []);
+    setPeriod(per.data || null);
+    if (!closeThrough && per.data?.books_closed_through) {
+      setCloseThrough(per.data.books_closed_through);
+    }
     if (!reconAccountId && liq.data?.length) setReconAccountId(liq.data[0].id);
     if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
     if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
     else if (!xferTo && liq.data?.length) setXferTo(liq.data[0].id);
+  }
+
+  async function closeBooks() {
+    setError('');
+    setMessage('');
+    try {
+      if (!closeThrough) throw new Error('Choose a close-through date');
+      await api('/accounting/period/close', {
+        method: 'POST',
+        body: JSON.stringify({ through_date: closeThrough }),
+      });
+      setMessage(`Books closed through ${closeThrough}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function reopenBooks() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/accounting/period/reopen', {
+        method: 'POST',
+        body: JSON.stringify({ through_date: null }),
+      });
+      setMessage('Books reopened (closed date cleared)');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
   }
 
   useEffect(() => {
@@ -602,6 +640,36 @@ export default function Page() {
 
       {tab === 'ledger' && (
         <>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+            <h3>Period close (BR-10.2)</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Closing books through a date blocks posting and unposting journals on or before that
+              date. Fiscal year start: {period?.fiscal_year_start || '01-01'}
+              {period?.current_fiscal_start
+                ? ` · current period ${period.current_fiscal_start} → ${period.current_fiscal_end_exclusive}`
+                : ''}
+            </p>
+            <p style={{ margin: 0 }}>
+              Closed through:{' '}
+              <strong>{period?.books_closed_through || 'not closed'}</strong>
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input
+                type="date"
+                value={closeThrough}
+                onChange={(e) => setCloseThrough(e.target.value)}
+              />
+              <button type="button" onClick={closeBooks}>
+                Close books
+              </button>
+              {period?.books_closed_through && (
+                <button type="button" onClick={reopenBooks}>
+                  Reopen (clear)
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Manual journal</h3>
             <div style={{ display: 'grid', gap: 8 }}>
@@ -799,7 +867,8 @@ export default function Page() {
 
           <h3 style={{ marginTop: 16 }}>Recent journals</h3>
           <p className="muted">
-            Manual journals can be unposted within the current fiscal period. Attach supporting
+            Manual journals can be unposted within the current fiscal period when books are open for
+            that date. Attach supporting
             documents on any entry (BR-10.2).
           </p>
           <table className="table">
