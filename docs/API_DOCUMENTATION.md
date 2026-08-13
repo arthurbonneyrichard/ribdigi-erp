@@ -620,6 +620,8 @@ Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.
 }
 ```
 
+Omit `tax_rate` on a line to auto-resolve **product → category (parents) → tenant default** (same as sales; BR-12.2). Explicit `tax_rate` (including `0`) wins. Resolved `%` is snapshotted on the PO/PI line.
+
 **Status Flow:** `draft` → `sent` → `partially_received` → `received` → `cancelled`
 
 ### 6.4 Goods Received Note (GRN)
@@ -651,6 +653,8 @@ Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.
 **Create:** `POST /purchases/invoices`  
 **Get:** `GET /purchases/invoices/{invoice_id}`  
 **Pay:** `POST /purchases/invoices/{invoice_id}/payments`
+
+Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced invoices copy the PO line snapshot.
 
 ### 6.6 Purchase Return
 **List:** `GET /purchases/returns`  
