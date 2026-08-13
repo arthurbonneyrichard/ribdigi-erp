@@ -5003,6 +5003,7 @@ async def create_purchase_order(
         supplier_id=payload.supplier_id,
         warehouse_id=payload.warehouse_id,
         notes=payload.notes,
+        delivery_address=payload.delivery_address,
         items=[i.model_dump() for i in payload.items],
     )
     await db.commit()
@@ -5065,6 +5066,7 @@ async def amend_purchase_order(
         po_id=po_id,
         items=items,
         notes=payload.notes,
+        delivery_address=payload.delivery_address,
         due_date=payload.due_date,
         clear_due_date=payload.clear_due_date,
         reason=payload.reason,

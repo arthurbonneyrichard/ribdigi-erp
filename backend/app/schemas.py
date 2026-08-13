@@ -631,12 +631,14 @@ class PurchaseOrderCreate(BaseModel):
     supplier_id: str
     warehouse_id: str | None = None
     notes: str | None = None
+    delivery_address: str | None = None
     items: list[PurchaseOrderItemCreate] = Field(min_length=1)
 
 
 class PurchaseOrderAmend(BaseModel):
     items: list[PurchaseOrderItemCreate] | None = None
     notes: str | None = None
+    delivery_address: str | None = None
     due_date: datetime | None = None
     clear_due_date: bool = False
     reason: str | None = None

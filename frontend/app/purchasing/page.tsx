@@ -55,6 +55,7 @@ type PurchaseOrder = {
   status: string;
   total_amount: number;
   notes?: string | null;
+  delivery_address?: string | null;
   revision_no?: number;
   can_amend?: boolean;
   amendments?: PoAmendment[];
@@ -130,10 +131,12 @@ export default function Page() {
   const [unitId, setUnitId] = useState('');
   const [qty, setQty] = useState('10');
   const [unitPrice, setUnitPrice] = useState('0');
+  const [poDeliveryAddress, setPoDeliveryAddress] = useState('');
   const [amendQty, setAmendQty] = useState('');
   const [amendPrice, setAmendPrice] = useState('');
   const [amendUnitId, setAmendUnitId] = useState('');
   const [amendNotes, setAmendNotes] = useState('');
+  const [amendDeliveryAddress, setAmendDeliveryAddress] = useState('');
   const [amendReason, setAmendReason] = useState('');
   const [amendNotify, setAmendNotify] = useState(false);
   const [prSupplierId, setPrSupplierId] = useState('');
@@ -281,6 +284,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           supplier_id: supplierId,
+          delivery_address: poDeliveryAddress.trim() || null,
           items: [
             {
               product_id: productId,
@@ -293,6 +297,7 @@ export default function Page() {
         }),
       });
       setMessage(`Created ${r.data.po_number}`);
+      setPoDeliveryAddress('');
       await refresh();
       setSelected(r.data);
       setTab('orders');
@@ -326,6 +331,7 @@ export default function Page() {
     setAmendPrice(String(line?.unit_price ?? ''));
     setAmendUnitId(line?.unit_id || '');
     setAmendNotes(po.notes || '');
+    setAmendDeliveryAddress(po.delivery_address || '');
     setAmendReason('');
     setAmendNotify(po.status === 'sent');
   }
@@ -341,6 +347,7 @@ export default function Page() {
         body: JSON.stringify({
           reason: amendReason.trim() || null,
           notes: amendNotes,
+          delivery_address: amendDeliveryAddress,
           notify_supplier: amendNotify,
           items: [
             {
@@ -1046,6 +1053,11 @@ export default function Page() {
           </select>
           <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Quantity" />
           <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit price" />
+          <input
+            value={poDeliveryAddress}
+            onChange={(e) => setPoDeliveryAddress(e.target.value)}
+            placeholder="Delivery address (optional)"
+          />
           <button onClick={createPo} disabled={!supplierId || !productId}>
             Create draft PO
           </button>
@@ -1196,6 +1208,7 @@ export default function Page() {
             <div className="card" style={{ marginTop: 16 }}>
               <h3>
                 {selected.po_number} — {selected.status}
+                {selected.delivery_address ? ` · Ship to: ${selected.delivery_address}` : ''}
                 {selected.revision_no ? ` · rev.${selected.revision_no}` : ''}
               </h3>
               {selected.emailed_to && (
@@ -1251,6 +1264,11 @@ export default function Page() {
                     value={amendNotes}
                     onChange={(e) => setAmendNotes(e.target.value)}
                     placeholder="Notes"
+                  />
+                  <input
+                    value={amendDeliveryAddress}
+                    onChange={(e) => setAmendDeliveryAddress(e.target.value)}
+                    placeholder="Delivery address"
                   />
                   <input
                     value={amendReason}

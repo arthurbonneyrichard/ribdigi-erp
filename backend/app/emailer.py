@@ -348,14 +348,21 @@ def render_purchase_order_bodies(
     number = purchase_order.get("po_number") or ""
     due = purchase_order.get("due_date")
     due_s = str(due)[:10] if due else "—"
+    delivery_address = (purchase_order.get("delivery_address") or "").strip()
     lines = [
         f"Purchase Order {number}",
         f"From: {company_name}",
         f"To: {supplier_name}",
         f"Due date: {due_s}",
-        "",
-        "Items:",
     ]
+    if delivery_address:
+        lines.append(f"Delivery address: {delivery_address}")
+    lines.extend(
+        [
+            "",
+            "Items:",
+        ]
+    )
     html_rows = []
     for item in purchase_order.get("items") or []:
         desc = item.get("product_id") or "Item"
@@ -382,9 +389,13 @@ def render_purchase_order_bodies(
         lines.extend(["", f"Notes: {purchase_order['notes']}"])
     lines.append("\nPlease confirm this purchase order.")
     text = "\n".join(lines)
+    delivery_html = (
+        f"<br/>Delivery address: {delivery_address}" if delivery_address else ""
+    )
     html = (
         f"<h2>Purchase Order {number}</h2>"
-        f"<p>From <strong>{company_name}</strong><br/>To {supplier_name}<br/>Due {due_s}</p>"
+        f"<p>From <strong>{company_name}</strong><br/>To {supplier_name}<br/>Due {due_s}"
+        f"{delivery_html}</p>"
         "<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\">"
         "<thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Tax</th><th>Line</th></tr></thead>"
         f"<tbody>{''.join(html_rows)}</tbody></table>"
