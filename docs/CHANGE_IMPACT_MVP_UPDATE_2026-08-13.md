@@ -273,3 +273,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Support Runbook Remaining-Gate Index Fidelity** — support runbook remaining-gate hub (I1), blocker matrix (B1), Stage 30 S1 / Stage 213 / Stage 188 pointers with explicit non-claim (P1). Live support-SLA Completes remain deferred (Stage 215+). Distinct from Stage 213 attestation pack remaining-gate and Stage 188 support-SLA remaining-gate.
 
+## Stage 215 decision (opened after Stage 214 freeze)
+
+**Tenant MVP Knowledge Base Remaining-Gate Index Fidelity** — knowledge base remaining-gate hub (I1), blocker matrix (B1), Stage 171 / Stage 214 / Stage 191 pointers with explicit non-claim (P1). Hosted FAQ SaaS Completes remain deferred (Stage 216+). Distinct from Stage 214 support runbook remaining-gate and Stage 191 hosted FAQ SaaS remaining-gate.
+

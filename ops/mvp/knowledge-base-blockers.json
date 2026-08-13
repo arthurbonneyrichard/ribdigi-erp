@@ -1,0 +1,54 @@
+{
+  "id": "knowledge-base-blockers",
+  "stage": 215,
+  "pack": "B1",
+  "doc": "docs/KNOWLEDGE_BASE_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/KNOWLEDGE_BASE_REMAINING_GATE_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "faq_offline": "docs/FAQ_OFFLINE_POS_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_knowledge_base_claimed": false,
+  "hosted_kb_saas_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "hosted_faq_helpdesk_portal_saas": "REMAINING",
+    "public_knowledge_base_portal": "REMAINING",
+    "stage171_k1_as_hosted_faq_saas": "NON_CLAIM",
+    "hosted_kb_saas_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "kbb-saas",
+      "title": "Mark hosted FAQ / helpdesk portal SaaS Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbb-portal",
+      "title": "Mark public knowledge-base portal Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbb-stage171-nonclaim",
+      "title": "Mark Stage 171 K1 knowledge base as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbb-saas-false",
+      "title": "Mark hosted_kb_saas_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbb-saas-remaining",
+      "title": "Hosted FAQ SaaS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 215 B1 knowledge base blocker matrix packaging only. Hosted FAQ SaaS Complete remains MISSING."
+}

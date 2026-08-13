@@ -3192,6 +3192,18 @@ Every feature in every phase must meet:
 
 **Stage 214 exit (2026-08-13):** I1, B1, P1, D1, H214x met — `docs/STAGE_214_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_435_STAGE214_FREEZE.md`. Fidelity: `docs/STAGE_214_FIDELITY.md`.
 
+**Stage 215 open (2026-08-13):** Tenant MVP Knowledge Base Remaining-Gate Index Fidelity — `docs/ADR_436_STAGE215_OPEN.md` + `docs/STAGE_215_PLAN.md` (I1 next).
+
+**Stage 215 I1 (2026-08-13):** Knowledge base remaining-gate index hub (`test_stage215_index_i1.py`).
+
+**Stage 215 B1 (2026-08-13):** Knowledge base blocker matrix (`test_stage215_blockers_b1.py`).
+
+**Stage 215 P1 (2026-08-13):** Stage 171 / Stage 214 / Stage 191 pointers (`test_stage215_pointers_p1.py`).
+
+**Stage 215 D1 (2026-08-13):** Knowledge Base Remaining-Gate Index fidelity sync — `docs/STAGE_215_FIDELITY.md` (`test_stage215_fidelity_d1.py`).
+
+**Stage 215 exit (2026-08-13):** I1, B1, P1, D1, H215x met — `docs/STAGE_215_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_437_STAGE215_FREEZE.md`. Fidelity: `docs/STAGE_215_FIDELITY.md`.
+
 
 
 

@@ -24,6 +24,6 @@ Stage 214 Tenant MVP Support Runbook Remaining-Gate Index Fidelity delivered sup
 
 ## Next stage
 
-Stage 215 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 214 feature scope remains frozen.
+Stage 215 opened under **ADR-436** after CONTINUE/NEXT (Knowledge Base Remaining-Gate Index Fidelity) and is frozen under **ADR-437**. Stage 214 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Knowledge Base Remaining-Gate Index Fidelity — single index of knowledge-base blockers (packaged knowledge-base/FAQ materials non-claim as hosted FAQ SaaS Complete) with explicit non-claim (no hosted FAQ SaaS Complete). Distinct from Stage 214 support runbook remaining-gate.
+**Amendment (2026-08-13):** Stage 215 runner-up outline was approved and opened (ADR-436); freeze ADR-437. Do not reopen Stage 214 scope.

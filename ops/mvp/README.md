@@ -716,6 +716,12 @@ Authoritative MVP docs:
 - `docs/SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md` / `ops/mvp/support-runbook-remaining-gate.json` — Stage 214 I1
 - `docs/SUPPORT_RUNBOOK_BLOCKERS_MVP.md` / `ops/mvp/support-runbook-blockers.json` — Stage 214 B1
 - `docs/SUPPORT_RUNBOOK_RG_POINTERS_MVP.md` / `ops/mvp/support-runbook-rg-pointers.json` — Stage 214 P1
+- `docs/STAGE_215_EXIT_CRITERIA.md` / `docs/ADR_437_STAGE215_FREEZE.md` (`backend/tests/test_stage215_exit_h215x.py`) — Stage 215 H215x
+- `docs/STAGE_215_FIDELITY.md` (`backend/tests/test_stage215_fidelity_d1.py`) — Stage 215 D1
+- `docs/STAGE_215_PLAN.md` (`backend/tests/test_stage215_open.py`) — Stage 215 open (ADR-436)
+- `docs/KNOWLEDGE_BASE_REMAINING_GATE_MVP.md` / `ops/mvp/knowledge-base-remaining-gate.json` — Stage 215 I1
+- `docs/KNOWLEDGE_BASE_BLOCKERS_MVP.md` / `ops/mvp/knowledge-base-blockers.json` — Stage 215 B1
+- `docs/KNOWLEDGE_BASE_RG_POINTERS_MVP.md` / `ops/mvp/knowledge-base-rg-pointers.json` — Stage 215 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2715,6 +2721,18 @@ See `docs/STAGE_214_FIDELITY.md`.
 ## Stage 214 open
 
 ADR-434 / `docs/STAGE_214_PLAN.md`.
+
+## Stage 215 exit
+
+H215x met — `docs/STAGE_215_EXIT_CRITERIA.md`, ADR-437. Stages 1–215 frozen for Stage 215 feature scope.
+
+## Stage 215 D1 — Tenant MVP Knowledge Base Remaining-Gate Index Fidelity
+
+See `docs/STAGE_215_FIDELITY.md`.
+
+## Stage 215 open
+
+ADR-436 / `docs/STAGE_215_PLAN.md`.
 
 ## Stage 213 exit
 

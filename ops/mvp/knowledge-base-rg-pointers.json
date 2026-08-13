@@ -1,0 +1,62 @@
+{
+  "id": "knowledge-base-rg-pointers",
+  "stage": 215,
+  "pack": "P1",
+  "doc": "docs/KNOWLEDGE_BASE_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/KNOWLEDGE_BASE_REMAINING_GATE_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "knowledge_base_register": "ops/mvp/knowledge-base.json",
+    "faq_offline": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "troubleshooting": "docs/TROUBLESHOOTING_INDEX_MVP.md",
+    "support_runbook_remaining_gate": "docs/SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md",
+    "hosted_faq_saas_remaining_gate_stage191": "docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_knowledge_base_claimed": false,
+  "hosted_kb_saas_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "knowledge_base_stage171_k1",
+    "faq_offline_pos",
+    "troubleshooting_index",
+    "support_runbook_remaining_gate_stage214",
+    "hosted_faq_saas_remaining_gate_stage191",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "kbp-kb",
+      "title": "Point to Stage 171 K1 knowledge base",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbp-faq",
+      "title": "Point to offline/POS FAQ",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbp-ts",
+      "title": "Point to troubleshooting index",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbp-sr-gate",
+      "title": "Point to Stage 214 support runbook remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbp-saas-remaining",
+      "title": "Hosted FAQ SaaS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 215 P1 knowledge base RG pointers packaging only. Do not claim hosted FAQ SaaS Complete."
+}

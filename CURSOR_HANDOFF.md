@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 214 froze Tenant MVP Support Runbook Remaining-Gate Index Fidelity (ADR-435) — support runbook remaining-gate hub, blocker matrix, Stage 30 S1/213/188 pointers, explicit live support-SLA non-claim. Live support-SLA Complete remains MISSING. Next recommended distinct outline: Tenant MVP Knowledge Base Remaining-Gate Index Fidelity (packaged knowledge-base/FAQ materials non-claim as hosted FAQ SaaS Complete — explicit non-claim) — Stage 215+. Do not claim live support-SLA Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 215 froze Tenant MVP Knowledge Base Remaining-Gate Index Fidelity (ADR-437) — knowledge base remaining-gate hub, blocker matrix, Stage 171/214/191 pointers, explicit hosted FAQ SaaS non-claim. Hosted FAQ SaaS Complete remains MISSING. Next recommended distinct outline: Tenant MVP Knowledge Transfer Remaining-Gate Index Fidelity (packaged Stage 33/knowledge-transfer materials non-claim as live training Complete — explicit non-claim) — Stage 216+. Do not claim hosted FAQ SaaS Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

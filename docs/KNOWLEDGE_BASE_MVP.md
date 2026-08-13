@@ -3,7 +3,7 @@
 **Status:** Complete (MVP packaging) — Stage 171 K1  
 **Evidence:** `backend/tests/test_stage171_knowledge_k1.py`  
 **Register:** `ops/mvp/knowledge-base.json`  
-**Related:** [FAQ_OFFLINE_POS_MVP.md](FAQ_OFFLINE_POS_MVP.md) · [TROUBLESHOOTING_INDEX_MVP.md](TROUBLESHOOTING_INDEX_MVP.md) · [SUPPORT_READINESS_MVP.md](SUPPORT_READINESS_MVP.md) · [BACKUP_RESTORE_DRILL_HONESTY_MVP.md](BACKUP_RESTORE_DRILL_HONESTY_MVP.md) · [STAGE_171_PLAN.md](STAGE_171_PLAN.md)
+**Related:** [FAQ_OFFLINE_POS_MVP.md](FAQ_OFFLINE_POS_MVP.md) · [TROUBLESHOOTING_INDEX_MVP.md](TROUBLESHOOTING_INDEX_MVP.md) · [SUPPORT_READINESS_MVP.md](SUPPORT_READINESS_MVP.md) · [BACKUP_RESTORE_DRILL_HONESTY_MVP.md](BACKUP_RESTORE_DRILL_HONESTY_MVP.md) · [KNOWLEDGE_BASE_REMAINING_GATE_MVP.md](KNOWLEDGE_BASE_REMAINING_GATE_MVP.md) · [STAGE_171_PLAN.md](STAGE_171_PLAN.md)
 
 Tenant MVP knowledge-base hub: indexes FAQ, troubleshooting, support readiness, offline/sync escalation, and backup drill honesty. Distinct from Stage 33 knowledge-transfer (training honesty). Does **not** claim hosted FAQ SaaS, live training, Offline Complete, or go-live.
 
@@ -38,6 +38,7 @@ Tenant MVP knowledge-base hub: indexes FAQ, troubleshooting, support readiness, 
 - Fabricated resolution articles as proof of live SLA
 
 See also Stage 191 hosted FAQ SaaS remaining-gate index: [`HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md`](HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md).
+See also Stage 215 knowledge base remaining-gate index: [`KNOWLEDGE_BASE_REMAINING_GATE_MVP.md`](KNOWLEDGE_BASE_REMAINING_GATE_MVP.md).
 
 ## Stage 172 Q1 amendment
 
