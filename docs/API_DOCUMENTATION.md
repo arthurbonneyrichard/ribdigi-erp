@@ -937,7 +937,7 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 `deposit` credits Owner's Equity `3000` into a liquid account; `withdrawal` is the reverse.
 
 ### 10.4 Financial Reports
-**Profit & Loss:** `GET /accounting/profit-loss` (also `/reports/profit-loss`) — returns `revenue`, `cogs` (account 5000), `gross_profit`, `operating_expenses`, `expense` (total), `net_profit`. COGS is posted automatically on sales invoice post / POS sale (Dr 5000 / Cr 1200 at standard `cost_price` × stock qty); restocked sales returns reverse COGS. Date/branch filters deferred.  
+**Profit & Loss:** `GET /accounting/profit-loss` (also `/reports/profit-loss`) — returns `revenue`, `cogs` (account 5000), `gross_profit`, `operating_expenses`, `expense` (total), `net_profit`. COGS is posted automatically on sales invoice post / POS sale (Dr 5000 / Cr 1200 at standard `cost_price` × stock qty); restocked sales returns reverse COGS. Optional query params: `from_date`, `to_date`, `store_id`, `branch_id`. With no filters, response uses lifetime income/expense account balances (`mode=balances`). With any filter, aggregates posted journal lines (`mode=journals`); store/branch keep only attributable `sales_invoice` / `pos_sale` / `expense` / `sales_return` journals.  
 **Cash Flow:** `GET /reports/cash-flow?from_date=&to_date=`  
 **Trial Balance:** `GET /accounting/trial-balance` (also `/reports/trial-balance`)
 
