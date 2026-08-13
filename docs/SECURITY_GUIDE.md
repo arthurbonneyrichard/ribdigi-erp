@@ -1234,6 +1234,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 203 P1** | Stage 29 / Stage 27 / Stage 202 pointers (`test_stage203_pointers_p1.py`) |
 | **Stage 203 D1** | Cutover remaining-gate fidelity — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`) |
 | **Stage 203 H203x** | Exit + freeze — `docs/STAGE_203_EXIT_CRITERIA.md`, ADR-413 (`test_stage203_exit_h203x.py`); Stages 1–203 frozen |
+| **Stage 205 open** | Staging GHA Remaining-Gate Index — `docs/STAGE_205_PLAN.md`, ADR-416 (`test_stage205_open.py`) |
+| **Stage 205 I1** | Staging GHA remaining-gate index hub (`test_stage205_index_i1.py`) |
+| **Stage 205 B1** | Staging GHA blocker matrix (`test_stage205_blockers_b1.py`) |
+| **Stage 205 P1** | Stage 28 / Stage 18 / Stage 204 pointers (`test_stage205_pointers_p1.py`) |
+| **Stage 205 D1** | Staging GHA remaining-gate fidelity — `docs/STAGE_205_FIDELITY.md` (`test_stage205_fidelity_d1.py`) |
+| **Stage 205 H205x** | Exit + freeze — `docs/STAGE_205_EXIT_CRITERIA.md`, ADR-417 (`test_stage205_exit_h205x.py`); Stages 1–205 frozen |
 | **Stage 204 open** | Launch Cert Remaining-Gate Index — `docs/STAGE_204_PLAN.md`, ADR-414 (`test_stage204_open.py`) |
 | **Stage 204 I1** | Launch cert remaining-gate index hub (`test_stage204_index_i1.py`) |
 | **Stage 204 B1** | Launch cert blocker matrix (`test_stage204_blockers_b1.py`) |

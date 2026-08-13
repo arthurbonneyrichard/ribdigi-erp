@@ -232,3 +232,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 204 decision (opened after Stage 203 freeze)
 
 **Tenant MVP Launch Cert Remaining-Gate Index Fidelity** — launch cert remaining-gate hub (I1), blocker matrix (B1), Stage 27 / Stage 28 / Stage 203 pointers with explicit non-claim (P1). LAUNCH certification Completes remain deferred (Stage 205+). Distinct from Stage 201 preflight remaining-gate.
+
+## Stage 205 decision (opened after Stage 204 freeze)
+
+**Tenant MVP Staging GHA Remaining-Gate Index Fidelity** — staging GHA remaining-gate hub (I1), blocker matrix (B1), Stage 28 / Stage 18 / Stage 204 pointers with explicit non-claim (P1). Live staging GHA apply Completes remain deferred (Stage 206+). Distinct from Stage 18 C1 deploy-free main CI and Stage 28 G1 packaging.
+

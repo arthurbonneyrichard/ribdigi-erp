@@ -3072,6 +3072,18 @@ Every feature in every phase must meet:
 
 **Stage 204 exit (2026-08-13):** I1, B1, P1, D1, H204x met — `docs/STAGE_204_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_415_STAGE204_FREEZE.md`. Fidelity: `docs/STAGE_204_FIDELITY.md`.
 
+**Stage 205 open (2026-08-13):** Tenant MVP Staging GHA Remaining-Gate Index Fidelity — `docs/ADR_416_STAGE205_OPEN.md` + `docs/STAGE_205_PLAN.md` (I1 next).
+
+**Stage 205 I1 (2026-08-13):** Staging GHA remaining-gate index hub (`test_stage205_index_i1.py`).
+
+**Stage 205 B1 (2026-08-13):** Staging GHA blocker matrix (`test_stage205_blockers_b1.py`).
+
+**Stage 205 P1 (2026-08-13):** Stage 28 / Stage 18 / Stage 204 pointers (`test_stage205_pointers_p1.py`).
+
+**Stage 205 D1 (2026-08-13):** Staging GHA Remaining-Gate Index fidelity sync — `docs/STAGE_205_FIDELITY.md` (`test_stage205_fidelity_d1.py`).
+
+**Stage 205 exit (2026-08-13):** I1, B1, P1, D1, H205x met — `docs/STAGE_205_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_417_STAGE205_FREEZE.md`. Fidelity: `docs/STAGE_205_FIDELITY.md`.
+
 
 
 

@@ -182,6 +182,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Cutover remaining-gate index (Stage 203):** Status index is `docs/CUTOVER_REMAINING_GATE_MVP.md` → blockers `docs/CUTOVER_BLOCKERS_MVP.md` → Stage 29/27 pointers `docs/CUTOVER_PACK_POINTERS_MVP.md`. Live production cutover Complete remains MISSING (not claimed).
 
+**Staging GHA remaining-gate index (Stage 205):** Status index is `docs/STAGING_GHA_REMAINING_GATE_MVP.md` → blockers `docs/STAGING_GHA_BLOCKERS_MVP.md` → Stage 28/18/204 pointers `docs/STAGING_GHA_PACK_POINTERS_MVP.md`. Live staging GHA apply Complete remains MISSING (not claimed).
+
 **Launch cert remaining-gate index (Stage 204):** Status index is `docs/LAUNCH_CERT_REMAINING_GATE_MVP.md` → blockers `docs/LAUNCH_CERT_BLOCKERS_MVP.md` → Stage 27/28 pointers `docs/LAUNCH_CERT_PACK_POINTERS_MVP.md`. LAUNCH certification Complete remains MISSING (not claimed).
 
 #### Top Bar

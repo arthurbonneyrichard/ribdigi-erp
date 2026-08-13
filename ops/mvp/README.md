@@ -646,6 +646,13 @@ Authoritative MVP docs:
 - `docs/LAUNCH_CERT_REMAINING_GATE_MVP.md` / `ops/mvp/launch-cert-remaining-gate.json` — Stage 204 I1
 - `docs/LAUNCH_CERT_BLOCKERS_MVP.md` / `ops/mvp/launch-cert-blockers.json` — Stage 204 B1
 - `docs/LAUNCH_CERT_PACK_POINTERS_MVP.md` / `ops/mvp/launch-cert-pack-pointers.json` — Stage 204 P1
+
+- `docs/STAGE_205_EXIT_CRITERIA.md` / `docs/ADR_417_STAGE205_FREEZE.md` (`backend/tests/test_stage205_exit_h205x.py`) — Stage 205 H205x
+- `docs/STAGE_205_FIDELITY.md` (`backend/tests/test_stage205_fidelity_d1.py`) — Stage 205 D1
+- `docs/STAGE_205_PLAN.md` (`backend/tests/test_stage205_open.py`) — Stage 205 open (ADR-416)
+- `docs/STAGING_GHA_REMAINING_GATE_MVP.md` / `ops/mvp/staging-gha-remaining-gate.json` — Stage 205 I1
+- `docs/STAGING_GHA_BLOCKERS_MVP.md` / `ops/mvp/staging-gha-blockers.json` — Stage 205 B1
+- `docs/STAGING_GHA_PACK_POINTERS_MVP.md` / `ops/mvp/staging-gha-pack-pointers.json` — Stage 205 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2623,6 +2630,19 @@ H203x met — `docs/STAGE_203_EXIT_CRITERIA.md`, ADR-413. Stages 1–203 frozen 
 ## Stage 203 open
 
 ADR-412 + `docs/STAGE_203_PLAN.md` — Cutover Remaining-Gate Index Fidelity (closed under ADR-413).
+
+
+## Stage 205 exit
+
+H205x met — `docs/STAGE_205_EXIT_CRITERIA.md`, ADR-417. Stages 1–205 frozen for Stage 205 feature scope.
+
+## Stage 205 D1 — Tenant MVP Staging GHA Remaining-Gate Index Fidelity
+
+See `docs/STAGE_205_FIDELITY.md`.
+
+## Stage 205 open
+
+ADR-416 / `docs/STAGE_205_PLAN.md`.
 
 ## Stage 204 exit
 

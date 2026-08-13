@@ -1,0 +1,56 @@
+{
+  "id": "staging-gha-blockers",
+  "stage": 205,
+  "pack": "B1",
+  "doc": "docs/STAGING_GHA_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STAGING_GHA_REMAINING_GATE_MVP.md",
+    "staging_gha": "docs/STAGING_GHA_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_staging_apply_claimed": false,
+  "gha_staging_wired_into_main_ci": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_staging_gha_apply_execution": "REMAINING",
+    "staging_secrets_cluster_provision": "REMAINING",
+    "stage28_g1_as_live_staging_apply": "NON_CLAIM",
+    "main_ci_staging_deploy_wiring": "NON_CLAIM",
+    "live_staging_apply_claimed": "false",
+    "gha_staging_wired_into_main_ci": "false"
+  },
+  "steps": [
+    {
+      "id": "sb-apply",
+      "title": "Mark live staging GHA apply execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-secrets",
+      "title": "Mark staging secrets / cluster provision Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-stage28-nonclaim",
+      "title": "Mark Stage 28 G1 staging GHA as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-ci-nonclaim",
+      "title": "Mark main ci.yml staging deploy wiring as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-apply-remaining",
+      "title": "Live staging GHA apply Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 205 B1 staging GHA blocker matrix packaging only. Live staging GHA apply Complete remains MISSING."
+}

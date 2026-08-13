@@ -1,0 +1,54 @@
+{
+  "id": "staging-gha-remaining-gate",
+  "stage": 205,
+  "pack": "I1",
+  "doc": "docs/STAGING_GHA_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/STAGING_GHA_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/STAGING_GHA_PACK_POINTERS_MVP.md",
+    "staging_gha": "docs/STAGING_GHA_MVP.md",
+    "launch_cert_remaining_gate": "docs/LAUNCH_CERT_REMAINING_GATE_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_staging_apply_claimed": false,
+  "gha_staging_wired_into_main_ci": false,
+  "go_live_claimed": false,
+  "production_signoff_claimed": false,
+  "distinct_from_stage28_g1_staging_gha": true,
+  "distinct_from_stage18_c1_deploy_free_ci": true,
+  "distinct_from_stage204_launch_cert_remaining_gate": true,
+  "steps": [
+    {
+      "id": "sg-read-blockers",
+      "title": "Read B1 staging GHA blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sg-follow-pointers",
+      "title": "Follow P1 Stage 28 / Stage 18 / Stage 204 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sg-apply-missing",
+      "title": "Reaffirm live staging GHA apply MISSING until executed apply ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sg-no-packaging-as-apply",
+      "title": "Do not treat Stage 28 G1 as live staging GHA apply Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sg-apply-remaining",
+      "title": "Live staging GHA apply / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 205 I1 staging GHA remaining-gate index packaging only. Do not claim live staging GHA apply Complete."
+}

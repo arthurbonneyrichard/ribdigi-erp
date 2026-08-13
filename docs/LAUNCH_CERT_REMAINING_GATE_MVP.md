@@ -3,7 +3,7 @@
 **Status:** Complete (MVP packaging) — Stage 204 I1  
 **Evidence:** `backend/tests/test_stage204_index_i1.py`  
 **Register:** `ops/mvp/launch-cert-remaining-gate.json`  
-**Related:** [LAUNCH_CERT_BLOCKERS_MVP.md](LAUNCH_CERT_BLOCKERS_MVP.md) · [LAUNCH_CERT_PACK_POINTERS_MVP.md](LAUNCH_CERT_PACK_POINTERS_MVP.md) · [LAUNCH_CERT_MVP.md](LAUNCH_CERT_MVP.md) · [STAGING_GHA_MVP.md](STAGING_GHA_MVP.md) · [STAGE_204_PLAN.md](STAGE_204_PLAN.md)
+**Related:** [LAUNCH_CERT_BLOCKERS_MVP.md](LAUNCH_CERT_BLOCKERS_MVP.md) · [LAUNCH_CERT_PACK_POINTERS_MVP.md](LAUNCH_CERT_PACK_POINTERS_MVP.md) · [LAUNCH_CERT_MVP.md](LAUNCH_CERT_MVP.md) · [STAGING_GHA_MVP.md](STAGING_GHA_MVP.md) · [STAGE_204_PLAN.md](STAGE_204_PLAN.md) · [STAGING_GHA_REMAINING_GATE_MVP.md](STAGING_GHA_REMAINING_GATE_MVP.md) (Stage 205)
 
 Single index of launch certification remaining gates. Packaging only — **LAUNCH certification Complete remains MISSING.** Distinct from Stage 27 L1 launch-cert packaging, Stage 28 G1 staging GHA packaging, and Stage 201 preflight remaining-gate.
 
