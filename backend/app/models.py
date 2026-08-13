@@ -1600,6 +1600,25 @@ class ApiKeyUsageDaily(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class OfflineDevice(Base):
+    """Tenant offline/PWA device registration (Stage 163 V1). Soft-revoke only."""
+
+    __tablename__ = "offline_devices"
+    __table_args__ = (UniqueConstraint("tenant_id", "device_code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    device_code: Mapped[str] = mapped_column(String(64), index=True)
+    platform: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    registered_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class WebhookEndpoint(Base):
     """Outbound webhook subscription (Stage 6 W1)."""
 

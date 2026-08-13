@@ -44,10 +44,10 @@ Most core tenant ERP engines (inventory, stock, sales, POS online, purchasing, a
 | Billers CRUD | Alias to salesperson report | PARTIAL | Shell link | Yes if CRUD | Yes | People | — | Defer (honesty) |
 | Parallel Income module | P&L alias | PARTIAL | Accounting | — | — | — | — | Defer |
 | Finance reports path CSVs | Stages 160–161 | COMPLETE | `finance_ops_export.py` | — | — | Reports/Accounting | RBAC | Keep |
-| Offline / PWA / Sync | None | MISSING | — | Yes | Yes | PWA+POS | Device/tenant checks | **Stage 163+** foundation |
-| Device registration | None | MISSING | — | Yes | Yes | Settings | Revoke must block sync | After offline ADR |
-| Sync APIs `/sync/*` | None | MISSING | — | Yes | Yes | — | Idempotency | After devices |
-| Connectivity status UI | None | MISSING | Shell/POS | No | No | Chrome | — | Early pack with offline foundation |
+| Offline / PWA / Sync | Stage 163 foundation | PARTIAL | PWA+devices+status | Yes | Yes | PWA+POS | Device/tenant checks | **Stage 163** foundation Complete; sync engine **164+** |
+| Device registration | Stage 163 V1 | COMPLETE (MVP) | `offline_devices` | Yes | — | Settings | Soft revoke | Keep; wire into sync later |
+| Sync APIs `/sync/*` | `/sync/status` only | PARTIAL | honesty ADR | Yes | Yes | — | Idempotency | **Stage 164+** push/pull |
+| Connectivity status UI | Stage 163 C1 | COMPLETE (MVP) | Shell | No | No | Chrome | — | Keep |
 | Idempotency offline txs | None | MISSING | POS schemas | Unique constraints | Yes | Queue | Critical | With sync push |
 | Backup / VPS | Complete packaging | COMPLETE | backup, helm/compose | — | — | — | Secrets | Keep |
 | Paid billing | Deferred ADR-002 | MISSING (honest) | platform billing | — | — | — | — | Keep deferred; flags false |
@@ -88,3 +88,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 162 decision (opened from this audit)
 
 **Tenant MVP Approved Navigation Hierarchy Fidelity** — expand/collapse parents matching §37; no new duplicate modules; all existing hrefs preserved; Offline remains MISSING until Stage 163+.
+
+## Stage 163 decision (opened after Stage 162 freeze)
+
+**Tenant MVP Offline Foundation Fidelity** — PWA shell + connectivity chrome + device registration + `/sync/status` honesty. Sync push/pull/conflicts and offline sales remain Stage 164+. Do not claim Offline Complete.

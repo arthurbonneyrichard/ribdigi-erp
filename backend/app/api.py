@@ -84,6 +84,7 @@ from app import customers as customers_svc
 from app import ai_chat as ai_chat_svc
 from app import ai_guard as ai_guard_svc
 from app import api_keys as api_keys_svc
+from app import offline_devices as offline_devices_svc
 from app import webhooks as webhooks_svc
 from app import onboarding as onboarding_svc
 from app import cache as cache_svc
@@ -13176,6 +13177,100 @@ async def audit_logs_patch_blocked(
     claims=Depends(require_permission("audit", "read")),
 ):
     audit_svc.reject_mutation()
+
+
+@api.get("/sync/status")
+async def sync_status(claims=Depends(current_claims)):
+    """Stage 163 S1 — honest deferred sync status (no fake offline sales)."""
+    return env(offline_devices_svc.sync_status_payload())
+
+
+@api.get("/offline/devices")
+async def offline_devices_list(
+    status: str | None = None,
+    active_only: bool = False,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 163 V1 — tenant offline device list (soft-revoke status)."""
+    rows = await offline_devices_svc.list_devices(
+        db, claims["tenant_id"], status=status, active_only=active_only
+    )
+    return env([offline_devices_svc.serialize_device(r) for r in rows])
+
+
+@api.post("/offline/devices")
+async def offline_devices_create(
+    request: Request,
+    payload: dict | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 163 V1 — register an offline/PWA device for this tenant."""
+    tenants_svc.assert_writable(claims)
+    body = payload or {}
+    row = await offline_devices_svc.create_device(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        name=str(body.get("name") or ""),
+        platform=body.get("platform"),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="company",
+        action="offline_device_register",
+        entity="offline_device",
+        entity_id=row.id,
+        details={
+            "name": row.name,
+            "device_code": row.device_code,
+            "platform": row.platform,
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(offline_devices_svc.serialize_device(row), "Offline device registered")
+
+
+@api.get("/offline/devices/{device_id}")
+async def offline_devices_get(
+    device_id: str,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await offline_devices_svc.get_device(db, claims["tenant_id"], device_id)
+    return env(offline_devices_svc.serialize_device(row))
+
+
+@api.delete("/offline/devices/{device_id}")
+async def offline_devices_revoke(
+    device_id: str,
+    request: Request,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 163 V1 — soft-revoke offline device (no hard delete)."""
+    tenants_svc.assert_writable(claims)
+    row = await offline_devices_svc.revoke_device(db, claims["tenant_id"], device_id)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="company",
+        action="offline_device_revoke",
+        entity="offline_device",
+        entity_id=row.id,
+        details={"name": row.name, "device_code": row.device_code},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(offline_devices_svc.serialize_device(row), "Offline device revoked")
 
 
 @api.get("/api-keys")

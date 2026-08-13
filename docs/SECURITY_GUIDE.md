@@ -984,6 +984,13 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 162 M1** | Manual + Stage 95 shell IA amendment (`test_stage162_manual_m1.py`) |
 | **Stage 162 D1** | Navigation hierarchy — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`) |
 | **Stage 162 H162x** | Exit + freeze — `docs/STAGE_162_EXIT_CRITERIA.md`, ADR-331 (`test_stage162_exit_h162x.py`); Stages 1–162 frozen; Stage 163+ Offline foundation recommended |
+| **Stage 163 open** | Tenant MVP Offline Foundation Fidelity — `docs/STAGE_163_PLAN.md`, ADR-332 (`test_stage163_open.py`) |
+| **Stage 163 P1** | PWA manifest + static-only SW (`test_stage163_pwa_p1.py`) — never caches `/api/v1/*` / tokens |
+| **Stage 163 C1** | Shell ONLINE/OFFLINE connectivity chrome (`test_stage163_connectivity_c1.py`) |
+| **Stage 163 V1** | Offline devices register/list/soft-revoke — company_admin/super_admin + tenant isolation (`test_stage163_devices_v1.py`) |
+| **Stage 163 S1** | `/sync/status` honesty — `sync_enabled: false` (`test_stage163_sync_s1.py`) |
+| **Stage 163 D1** | Offline foundation — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`) |
+| **Stage 163 H163x** | Exit + freeze — `docs/STAGE_163_EXIT_CRITERIA.md`, ADR-333 (`test_stage163_exit_h163x.py`); Stages 1–163 frozen; Stage 164+ sync queue recommended |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

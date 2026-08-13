@@ -23,6 +23,4 @@ Stage 162 Tenant MVP Approved Navigation Hierarchy Fidelity delivered expandable
 
 ## Next stage
 
-Stage 163 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 162 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Offline-first foundation — PWA shell + connectivity chrome + device model + `/sync` honesty ADR (no fake offline sales).
+Stage 163 opened under [ADR-332](ADR_332_STAGE163_OPEN.md) (Tenant MVP Offline Foundation Fidelity) and froze under [ADR-333](ADR_333_STAGE163_FREEZE.md). Stage 162 feature scope remains frozen.

@@ -1538,3 +1538,5 @@ Stage 160 D1 accounting profit-loss, reports cash-flow & balance-sheet path expo
 Stage 161 D1 reports profit-loss, trial-balance & tax path export fidelity — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 162 D1 approved navigation hierarchy fidelity — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 163 D1 offline foundation fidelity — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`); Alembic `20260813_0091` adds `offline_devices`; PWA static assets under `frontend/public/`; main `ci.yml` remains deploy-free (Stage 18 C1).

@@ -2560,6 +2560,20 @@ Every feature in every phase must meet:
 
 **Stage 162 exit (2026-08-13):** N1, S1, M1, D1, H162x met — `docs/STAGE_162_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_331_STAGE162_FREEZE.md`. Fidelity: `docs/STAGE_162_FIDELITY.md`.
 
+**Stage 163 open (2026-08-13):** Tenant MVP Offline Foundation Fidelity — `docs/ADR_332_STAGE163_OPEN.md` + `docs/STAGE_163_PLAN.md` (P1 next).
+
+**Stage 163 P1 (2026-08-13):** PWA manifest + static-only service worker (`test_stage163_pwa_p1.py`).
+
+**Stage 163 C1 (2026-08-13):** Shell ONLINE/OFFLINE connectivity chrome (`test_stage163_connectivity_c1.py`).
+
+**Stage 163 V1 (2026-08-13):** Offline devices model/API/Settings UI (`test_stage163_devices_v1.py`).
+
+**Stage 163 S1 (2026-08-13):** `/sync/status` honesty (`test_stage163_sync_s1.py`).
+
+**Stage 163 D1 (2026-08-13):** Offline foundation fidelity sync — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`).
+
+**Stage 163 exit (2026-08-13):** P1, C1, V1, S1, D1, H163x met — `docs/STAGE_163_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_333_STAGE163_FREEZE.md`. Fidelity: `docs/STAGE_163_FIDELITY.md`.
+
 
 
 

@@ -1794,6 +1794,10 @@ Optional audit columns:
 | Statistics Update | Daily | ANALYZE | Low |
 | Connection Pool Tuning | Monthly | PgBouncer config | Low |
 
+### Stage 163 — `offline_devices` (Alembic `20260813_0091`)
+
+Tenant-scoped device registration for Offline foundation (shared-schema + `tenant_id`). Soft-revoke via `revoked_at` (no hard delete). Unique `(tenant_id, device_code)`. Sync queue tables remain deferred (Stage 164+).
+
 ---
 
 **Document Version:** 1.0.0  

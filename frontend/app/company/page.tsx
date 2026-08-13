@@ -68,8 +68,26 @@ export default function Page() {
   const [message, setMessage] = useState('');
   // Stage 118 F1 — fiscal period close console status
   const [fiscalPeriod, setFiscalPeriod] = useState<any>(null);
+  // Stage 163 V1 / S1 — offline devices + sync honesty
+  const [offlineDevices, setOfflineDevices] = useState<any[]>([]);
+  const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [deviceForm, setDeviceForm] = useState({ name: '', platform: 'web' });
+  const [deviceBusy, setDeviceBusy] = useState(false);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+  async function refreshOfflineSync() {
+    try {
+      const [devicesRes, syncRes] = await Promise.all([
+        api('/offline/devices').catch(() => null),
+        api('/sync/status').catch(() => null),
+      ]);
+      if (devicesRes?.data) setOfflineDevices(devicesRes.data || []);
+      if (syncRes?.data) setSyncStatus(syncRes.data);
+    } catch {
+      // Company admins only for devices; sync status is authenticated.
+    }
+  }
 
   async function loadLogoPreview(hasLogo: boolean) {
     if (!hasLogo) {
@@ -150,6 +168,7 @@ export default function Page() {
     } catch {
       setFiscalPeriod(null);
     }
+    await refreshOfflineSync();
   }
 
   useEffect(() => {
@@ -902,6 +921,119 @@ export default function Page() {
             Export document settings CSV
           </button>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="offline-sync">
+        <h2>Offline sync</h2>
+        <p className="muted">
+          Stage 163 foundation: register devices and see honest sync status. Offline sales and sync
+          push/pull remain deferred (Stage 164+) — this panel never pretends queues are live.
+        </p>
+        {syncStatus ? (
+          <p className="muted">
+            Sync enabled: {String(syncStatus.sync_enabled)} · Queue depth:{' '}
+            {syncStatus.queue_depth ?? 0} · Conflicts: {syncStatus.conflict_count ?? 0}
+            {syncStatus.message ? ` · ${syncStatus.message}` : ''}
+          </p>
+        ) : (
+          <p className="muted">Loading sync status…</p>
+        )}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <input
+            placeholder="Device name"
+            value={deviceForm.name}
+            onChange={(e) => setDeviceForm({ ...deviceForm, name: e.target.value })}
+            style={{ flex: 1, minWidth: 160, padding: 8 }}
+          />
+          <select
+            value={deviceForm.platform}
+            onChange={(e) => setDeviceForm({ ...deviceForm, platform: e.target.value })}
+            aria-label="Device platform"
+            style={{ padding: 8 }}
+          >
+            <option value="web">web</option>
+            <option value="android">android</option>
+            <option value="ios">ios</option>
+            <option value="desktop">desktop</option>
+            <option value="other">other</option>
+          </select>
+          <button
+            type="button"
+            disabled={deviceBusy}
+            onClick={async () => {
+              setError('');
+              setDeviceBusy(true);
+              try {
+                await api('/offline/devices', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    name: deviceForm.name,
+                    platform: deviceForm.platform,
+                  }),
+                });
+                setDeviceForm({ name: '', platform: 'web' });
+                setMessage('Offline device registered (Stage 163 V1)');
+                await refreshOfflineSync();
+              } catch (err: any) {
+                setError(err.message || 'Device registration failed');
+              } finally {
+                setDeviceBusy(false);
+              }
+            }}
+          >
+            Register device
+          </button>
+        </div>
+        {offlineDevices.length === 0 ? (
+          <p className="muted">No devices registered for this tenant.</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Code</th>
+                <th>Platform</th>
+                <th>Status</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {offlineDevices.map((d) => (
+                <tr key={d.id}>
+                  <td>{d.name}</td>
+                  <td>
+                    <code>{d.device_code}</code>
+                  </td>
+                  <td>{d.platform || '—'}</td>
+                  <td>{d.status}</td>
+                  <td>
+                    {d.status !== 'revoked' && (
+                      <button
+                        type="button"
+                        disabled={deviceBusy}
+                        onClick={async () => {
+                          setError('');
+                          setDeviceBusy(true);
+                          try {
+                            await api(`/offline/devices/${d.id}`, { method: 'DELETE' });
+                            setMessage('Offline device revoked (soft revoke)');
+                            await refreshOfflineSync();
+                          } catch (err: any) {
+                            setError(err.message || 'Revoke failed');
+                          } finally {
+                            setDeviceBusy(false);
+                          }
+                        }}
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="media">

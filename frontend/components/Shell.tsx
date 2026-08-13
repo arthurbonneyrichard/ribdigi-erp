@@ -1541,6 +1541,12 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Offline sync',
+    href: '/company#offline-sync',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
     label: 'Notification settings',
     href: '/notifications#preferences',
     modules: ['notifications'],
@@ -1943,11 +1949,25 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     { kind: string; id?: string; label: string; meta?: string; href: string }[]
   >([]);
   const [searchOpen, setSearchOpen] = useState(false);
+  /** Stage 163 C1 — browser connectivity chrome (not sync queue health). */
+  const [online, setOnline] = useState(true);
   const canManageOnboarding = role === 'company_admin' || role === 'super_admin';
 
   useEffect(() => {
     setStoreId(getSelectedStoreId());
     return subscribeStoreContext((id) => setStoreId(id));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sync = () => setOnline(navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
   }, []);
 
   useEffect(() => {
@@ -2320,6 +2340,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </label>
           )}
           <div className="topbar-spacer" />
+          {principal !== 'platform' && (
+            <span
+              className={`connectivity-badge ${online ? 'online' : 'offline'}`}
+              data-stage163-connectivity="1"
+              title="Browser network status (Stage 163 C1). Sync engine remains deferred."
+              aria-live="polite"
+            >
+              {online ? 'ONLINE' : 'OFFLINE'}
+            </span>
+          )}
           {canReadModule(permissions, 'notifications') && (
             <Link href="/notifications" className="bell">
               Alerts{unread > 0 ? ` · ${unread}` : ''}

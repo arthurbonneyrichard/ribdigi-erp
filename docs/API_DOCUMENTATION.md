@@ -1706,3 +1706,5 @@ Stage 160 D1 — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`): 
 Stage 161 D1 — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`): Stage 161 L1 `GET /reports/profit-loss/export`; Stage 161 B1 `GET /reports/trial-balance/export`; Stage 161 X1 `GET /reports/tax/export`.
 
 Stage 162 D1 — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`): Stage 162 N1/S1/M1 Shell approved navigation hierarchy (no new tenant business APIs); impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+
+Stage 163 D1 — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`): Offline foundation APIs — `GET/POST/DELETE /api/v1/offline/devices` (company_admin/super_admin; soft revoke); `GET /api/v1/sync/status` returns `sync_enabled: false` with empty queue fields (no fake push/pull). Sync engine remains Stage 164+.

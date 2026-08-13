@@ -411,6 +411,9 @@ Authoritative MVP docs:
 - `docs/STAGE_162_EXIT_CRITERIA.md` / `docs/ADR_331_STAGE162_FREEZE.md` (`backend/tests/test_stage162_exit_h162x.py`) — Stage 162 H162x
 - `docs/STAGE_162_FIDELITY.md` (`backend/tests/test_stage162_fidelity_d1.py`) — Stage 162 D1
 - `docs/STAGE_162_PLAN.md` (`backend/tests/test_stage162_open.py`) — Stage 162 open (ADR-330)
+- `docs/STAGE_163_EXIT_CRITERIA.md` / `docs/ADR_333_STAGE163_FREEZE.md` (`backend/tests/test_stage163_exit_h163x.py`) — Stage 163 H163x
+- `docs/STAGE_163_FIDELITY.md` (`backend/tests/test_stage163_fidelity_d1.py`) — Stage 163 D1
+- `docs/STAGE_163_PLAN.md` (`backend/tests/test_stage163_open.py`) — Stage 163 open (ADR-332)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1892,6 +1895,18 @@ H162x met — `docs/STAGE_162_EXIT_CRITERIA.md`, ADR-331. Stages 1–162 frozen 
 ## Stage 162 open
 
 ADR-330 + `docs/STAGE_162_PLAN.md` — Tenant MVP Approved Navigation Hierarchy Fidelity.
+
+## Stage 163 exit
+
+H163x met — `docs/STAGE_163_EXIT_CRITERIA.md`, ADR-333. Stages 1–163 frozen for Stage 163 feature scope.
+
+## Stage 163 D1 — Tenant MVP Offline Foundation Fidelity
+
+`docs/STAGE_163_FIDELITY.md` — maps P1–S1 → readiness / launch / deploy / security. Sync push/pull remains Stage 164+.
+
+## Stage 163 open
+
+ADR-332 + `docs/STAGE_163_PLAN.md` — Tenant MVP Offline Foundation Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

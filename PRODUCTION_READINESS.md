@@ -214,4 +214,6 @@ Stage 160 D1 Tenant MVP Accounting Profit-Loss CSV, Reports Cash-Flow Path CSV &
 
 Stage 161 D1 Tenant MVP Reports Profit-Loss Path CSV, Reports Trial-Balance Path CSV & Reports Tax Path CSV Export Fidelity — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`); Stage 161 L1 Complete; Stage 161 B1 Complete; Stage 161 X1 Complete (MVP honesty); exit `docs/STAGE_161_EXIT_CRITERIA.md`, ADR-329.
 
-Stage 162 D1 Tenant MVP Approved Navigation Hierarchy Fidelity — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); Stage 162 N1 Complete; Stage 162 S1 Complete; Stage 162 M1 Complete (MVP honesty); impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`; exit `docs/STAGE_162_EXIT_CRITERIA.md`, ADR-331. Offline/PWA/Sync remains MISSING.
+Stage 162 D1 Tenant MVP Approved Navigation Hierarchy Fidelity — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); Stage 162 N1 Complete; Stage 162 S1 Complete; Stage 162 M1 Complete (MVP honesty); impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`; exit `docs/STAGE_162_EXIT_CRITERIA.md`, ADR-331.
+
+Stage 163 D1 Tenant MVP Offline Foundation Fidelity — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`); Stage 163 P1 Complete; Stage 163 C1 Complete; Stage 163 V1 Complete; Stage 163 S1 Complete (MVP honesty); exit `docs/STAGE_163_EXIT_CRITERIA.md`, ADR-333. Sync push/pull/conflicts and offline sales remain MISSING (Stage 164+); do not claim Offline Complete.

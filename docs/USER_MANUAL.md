@@ -98,8 +98,11 @@ Stage 162 N1 aligns the tenant Shell with the approved expandable parent hierarc
 
 Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/stores#warehouses`). Customers/Suppliers/Stock open existing Sales / Purchasing / Inventory tabs. Parents expand/collapse; menu visibility remains RBAC-gated.
 
+**Offline sync (Stage 163):** Settings → Offline sync (`/company#offline-sync`) registers/revokes tenant devices. The top bar shows browser **ONLINE/OFFLINE** status. Sync push/pull and offline sales remain deferred — the sync status panel reports `sync_enabled: false` honestly (no fake queues).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
+- **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health
 - **Global Search:** Products and customers (`GET /search`) — RBAC-gated; navigates to Inventory / Sales deep-links (Stage 96 G1)
 - **Invoice status filters:** Sales invoices filter by status including unpaid (posted/sent); quotation → Invoice creates draft — Post required (Stage 97 S1)
 - **Outstanding Purchases / Purchase Settings:** Purchasing deep-links + Settings tab; Opening Balances / Fiscal Period anchors (Stage 97 P1)
