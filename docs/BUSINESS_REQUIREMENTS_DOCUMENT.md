@@ -648,10 +648,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Standard financial statements.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit; filterable by date range, branch
-  - [ ] **Cash Flow:** Operating, investing, financing activities
-  - [ ] **Trial Balance:** All accounts with debit/credit balances; validation that total debits = total credits
-  - [ ] Export to PDF and Excel
+  - [x] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit (standard-cost COGS via Dr 5000 / Cr 1200 on invoice/POS; restock returns reverse); date-range/branch filters deferred
+  - [x] **Cash Flow:** Operating, investing, financing activities
+  - [x] **Trial Balance:** All accounts with debit/credit balances; validation that total debits = total credits
+  - [x] Export to PDF and Excel
 
 ---
 

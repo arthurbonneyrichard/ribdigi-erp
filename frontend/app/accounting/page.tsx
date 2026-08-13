@@ -726,9 +726,14 @@ export default function Page() {
             </div>
             <div className="card">
               <h3>Profit &amp; Loss</h3>
-              <p>Income: {pnl?.income}</p>
-              <p>Expense: {pnl?.expense}</p>
+              <p>Revenue: {pnl?.revenue ?? pnl?.income}</p>
+              <p>COGS: {pnl?.cogs ?? 0}</p>
+              <p>Gross profit: {pnl?.gross_profit ?? (pnl?.income ?? 0) - (pnl?.cogs ?? 0)}</p>
+              <p>Operating expenses: {pnl?.operating_expenses ?? pnl?.expense}</p>
               <div className="kpi">{pnl?.net_profit}</div>
+              <p className="muted" style={{ margin: 0 }}>
+                Net profit
+              </p>
             </div>
           </div>
 
