@@ -62,6 +62,11 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "email": tenant.email,
         "website": tenant.website,
         "address": tenant.address,
+        "legal_name": getattr(tenant, "legal_name", None),
+        "registration_number": getattr(tenant, "registration_number", None),
+        "contact_person": getattr(tenant, "contact_person", None),
+        "billing_address": getattr(tenant, "billing_address", None),
+        "shipping_address": getattr(tenant, "shipping_address", None),
         "timezone": tenant.timezone or "Africa/Accra",
         "fiscal_year_start": tenant.fiscal_year_start or "01-01",
         "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
@@ -376,6 +381,11 @@ async def update_profile(
     email: str | None = None,
     website: str | None = None,
     address: str | None = None,
+    legal_name: str | None = None,
+    registration_number: str | None = None,
+    contact_person: str | None = None,
+    billing_address: str | None = None,
+    shipping_address: str | None = None,
     timezone: str | None = None,
     fiscal_year_start: str | None = None,
     tax_jurisdiction: str | None = None,
@@ -408,6 +418,27 @@ async def update_profile(
         tenant.website = website.strip() or None
     if address is not None:
         tenant.address = address.strip() or None
+    if legal_name is not None:
+        ln = legal_name.strip()
+        if ln and len(ln) < 2:
+            raise HTTPException(status_code=400, detail="legal_name must be at least 2 characters")
+        if len(ln) > 200:
+            raise HTTPException(status_code=400, detail="legal_name must be at most 200 characters")
+        tenant.legal_name = ln or None
+    if registration_number is not None:
+        reg = registration_number.strip()
+        if len(reg) > 80:
+            raise HTTPException(status_code=400, detail="registration_number must be at most 80 characters")
+        tenant.registration_number = reg or None
+    if contact_person is not None:
+        cp = contact_person.strip()
+        if len(cp) > 150:
+            raise HTTPException(status_code=400, detail="contact_person must be at most 150 characters")
+        tenant.contact_person = cp or None
+    if billing_address is not None:
+        tenant.billing_address = billing_address.strip() or None
+    if shipping_address is not None:
+        tenant.shipping_address = shipping_address.strip() or None
     if timezone is not None:
         tz = timezone.strip()
         if not tz:

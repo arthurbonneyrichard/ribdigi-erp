@@ -40,6 +40,12 @@ class Tenant(Base):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     website: Mapped[str | None] = mapped_column(String(255), nullable=True)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # BR-2.1 / BR-20.1 company legal + contact + address book
+    legal_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    registration_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    contact_person: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    billing_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    shipping_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     timezone: Mapped[str] = mapped_column(String(64), default="Africa/Accra")
     fiscal_year_start: Mapped[str] = mapped_column(String(5), default="01-01")
     # Inclusive calendar date through which books are closed (BR-10.2 period close)

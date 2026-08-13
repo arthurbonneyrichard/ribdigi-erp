@@ -234,7 +234,22 @@ export default function Page() {
         <input
           value={tenant.company_name || ''}
           onChange={(e) => setTenant({ ...tenant, company_name: e.target.value })}
-          placeholder="Company name"
+          placeholder="Company name (trading)"
+        />
+        <input
+          value={tenant.legal_name || ''}
+          onChange={(e) => setTenant({ ...tenant, legal_name: e.target.value })}
+          placeholder="Legal name"
+        />
+        <input
+          value={tenant.registration_number || ''}
+          onChange={(e) => setTenant({ ...tenant, registration_number: e.target.value })}
+          placeholder="Company registration number"
+        />
+        <input
+          value={tenant.contact_person || ''}
+          onChange={(e) => setTenant({ ...tenant, contact_person: e.target.value })}
+          placeholder="Primary contact person"
         />
         <select
           value={tenant.industry || 'retail'}
@@ -269,7 +284,17 @@ export default function Page() {
         <textarea
           value={tenant.address || ''}
           onChange={(e) => setTenant({ ...tenant, address: e.target.value })}
-          placeholder="Address"
+          placeholder="Headquarters address"
+        />
+        <textarea
+          value={tenant.billing_address || ''}
+          onChange={(e) => setTenant({ ...tenant, billing_address: e.target.value })}
+          placeholder="Billing address"
+        />
+        <textarea
+          value={tenant.shipping_address || ''}
+          onChange={(e) => setTenant({ ...tenant, shipping_address: e.target.value })}
+          placeholder="Shipping address"
         />
         <input
           value={tenant.timezone || ''}
@@ -289,7 +314,7 @@ export default function Page() {
         <input
           value={tenant.tax_registration_number || ''}
           onChange={(e) => setTenant({ ...tenant, tax_registration_number: e.target.value })}
-          placeholder="TIN / VAT registration number"
+          placeholder="TIN / VAT registration number (tax ID)"
         />
         <select
           value={tenant.tax_filing_period || 'monthly'}

@@ -196,9 +196,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Centralized company details editable by Company Admin.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] CRUD operations on company legal name, registration number, tax ID
-  - [ ] Multiple address support (billing, shipping, warehouse)
-  - [ ] Contact person designation
+  - [x] CRUD operations on company legal name, registration number, tax ID (`legal_name`, `registration_number`, `tax_registration_number` via `GET|PATCH /tenants/me`; Company UI)
+  - [x] Multiple address support (billing, shipping, warehouse) — HQ `address` + `billing_address` / `shipping_address` on tenant; warehouse addresses on warehouse records (BR-2.4)
+  - [x] Contact person designation (`contact_person` on tenant profile)
 
 #### BR-2.2 Branch Management
 - **Description:** Manage multiple business branches under one tenant.
@@ -968,7 +968,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Global company settings.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Edit legal name, address, contact, tax ID
+  - [x] Edit legal name, address, contact, tax ID (`legal_name`, HQ/billing/shipping addresses, `contact_person`, `tax_registration_number` via Company profile)
   - [x] Upload company logo (used on invoices, receipts)
 
 #### BR-20.2 Formatting
