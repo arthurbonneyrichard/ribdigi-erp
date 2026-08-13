@@ -133,3 +133,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 173 decision (opened after Stage 172 freeze)
 
 **Tenant MVP Store-Open Checklist Fidelity** — store-open hub (S1), store select + low-stock glance (L1), Hold expiry + device health + conflict queue (H1). Offline Complete / live training / go-live remain deferred (Stage 174+).
+
+## Stage 174 decision (opened after Stage 173 freeze)
+
+**Tenant MVP Store-Close Checklist Fidelity** — store-close hub (C1), Hold clear/expiry + sync queue drain (E1), conflict triage + catalog age + backup drill pointer (T1). Offline Complete / live DR / go-live remain deferred (Stage 175+).

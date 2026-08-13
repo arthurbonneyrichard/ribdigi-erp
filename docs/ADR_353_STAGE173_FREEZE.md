@@ -24,6 +24,4 @@ Stage 173 Tenant MVP Store-Open Checklist Fidelity delivered store-open hub (S1)
 
 ## Next stage
 
-Stage 174 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 173 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP store-close checklist fidelity — end-of-day checklist linking held-cart clear/expiry, sync queue drain, conflict triage, offline catalog age, and backup drill pointer (no Offline Complete / live DR claims).
+Stage 174 opened under [ADR-354](ADR_354_STAGE174_OPEN.md) (Tenant MVP Store-Close Checklist Fidelity) and froze under [ADR-355](ADR_355_STAGE174_FREEZE.md). Stage 173 feature scope remains frozen.

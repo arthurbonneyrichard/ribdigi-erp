@@ -40,3 +40,7 @@ Every register step keeps `done: false` until a human operator marks execution o
 ## Stage 171 T1 amendment
 
 Troubleshooting index links this pack for backup/restore drill symptoms: [TROUBLESHOOTING_INDEX_MVP.md](TROUBLESHOOTING_INDEX_MVP.md) (`ops/mvp/troubleshooting-index.json`, `test_stage171_troubleshoot_t1.py`). Live DR Completes remain false.
+
+## Stage 174 T1 amendment
+
+Store-close triage points here for end-of-day backup drill honesty (not live DR): [STORE_CLOSE_TRIAGE_MVP.md](STORE_CLOSE_TRIAGE_MVP.md) (`ops/mvp/store-close-triage.json`, `test_stage174_triage_t1.py`). Live DR Completes remain false.

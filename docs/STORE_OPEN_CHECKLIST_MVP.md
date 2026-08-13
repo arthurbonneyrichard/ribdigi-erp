@@ -30,3 +30,7 @@ Recurring open-of-day checklist hub for manager/cashier. Distinct from Stage 172
 - Offline Complete product acceptance
 - Fabricated “store opened green” Completes
 - Live training / go-live Completes
+
+## Stage 174 C1 amendment
+
+Recurring end-of-day (not open-of-day): [STORE_CLOSE_CHECKLIST_MVP.md](STORE_CLOSE_CHECKLIST_MVP.md) (`ops/mvp/store-close-checklist.json`, `test_stage174_storeclose_c1.py`).

@@ -460,7 +460,14 @@ Authoritative MVP docs:
 - `docs/STORE_OPEN_CHECKLIST_MVP.md` / `ops/mvp/store-open-checklist.json` — Stage 173 S1
 - `docs/STORE_OPEN_LOWSTOCK_MVP.md` / `ops/mvp/store-open-lowstock.json` — Stage 173 L1
 - `docs/STORE_OPEN_HEALTH_MVP.md` / `ops/mvp/store-open-health.json` — Stage 173 H1
+- `docs/STAGE_174_EXIT_CRITERIA.md` / `docs/ADR_355_STAGE174_FREEZE.md` (`backend/tests/test_stage174_exit_h174x.py`) — Stage 174 H174x
+- `docs/STAGE_174_FIDELITY.md` (`backend/tests/test_stage174_fidelity_d1.py`) — Stage 174 D1
+- `docs/STAGE_174_PLAN.md` (`backend/tests/test_stage174_open.py`) — Stage 174 open (ADR-354)
+- `docs/STORE_CLOSE_CHECKLIST_MVP.md` / `ops/mvp/store-close-checklist.json` — Stage 174 C1
+- `docs/STORE_CLOSE_DRAIN_MVP.md` / `ops/mvp/store-close-drain.json` — Stage 174 E1
+- `docs/STORE_CLOSE_TRIAGE_MVP.md` / `ops/mvp/store-close-triage.json` — Stage 174 T1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
+
 
 
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
@@ -2071,6 +2078,18 @@ H173x met — `docs/STAGE_173_EXIT_CRITERIA.md`, ADR-353. Stages 1–173 frozen 
 ## Stage 173 open
 
 ADR-352 + `docs/STAGE_173_PLAN.md` — Store-Open Checklist Fidelity (closed under ADR-353).
+
+## Stage 174 exit
+
+H174x met — `docs/STAGE_174_EXIT_CRITERIA.md`, ADR-355. Stages 1–174 frozen for Stage 174 feature scope.
+
+## Stage 174 D1 — Tenant MVP Store-Close Checklist Fidelity
+
+`docs/STAGE_174_FIDELITY.md` — maps C1–T1 → readiness / launch / deploy / security. Offline Complete / live DR remain MISSING.
+
+## Stage 174 open
+
+ADR-354 + `docs/STAGE_174_PLAN.md` — Store-Close Checklist Fidelity (closed under ADR-355).
 
 ## Stage 165 open
 

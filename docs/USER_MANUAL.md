@@ -122,6 +122,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Store-open checklist (Stage 173):** Recurring open-of-day order is `docs/STORE_OPEN_CHECKLIST_MVP.md` → store/low-stock `docs/STORE_OPEN_LOWSTOCK_MVP.md` → Hold/device/conflict health `docs/STORE_OPEN_HEALTH_MVP.md`. Offline Complete remains deferred.
 
+**Store-close checklist (Stage 174):** Recurring end-of-day order is `docs/STORE_CLOSE_CHECKLIST_MVP.md` → Hold/queue drain `docs/STORE_CLOSE_DRAIN_MVP.md` → conflict/catalog/backup triage `docs/STORE_CLOSE_TRIAGE_MVP.md`. Offline Complete and live DR remain deferred.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

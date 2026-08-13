@@ -1,0 +1,57 @@
+{
+  "id": "store-close-triage",
+  "stage": 174,
+  "pack": "T1",
+  "doc": "docs/STORE_CLOSE_TRIAGE_MVP.md",
+  "related": {
+    "store_close_checklist": "docs/STORE_CLOSE_CHECKLIST_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "cashier_bind_catalog": "docs/CASHIER_BIND_CATALOG_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "catalog_ttl_hours": 4,
+  "topics": [
+    "conflict_triage",
+    "offline_catalog_age",
+    "backup_drill_pointer"
+  ],
+  "steps": [
+    {
+      "id": "st-conflict-triage",
+      "title": "Triage conflicts; Accept client honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "st-catalog-age",
+      "title": "Note offline catalog age vs 4h TTL",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "st-backup-pointer",
+      "title": "Point to backup restore drill honesty (live DR false)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "st-escalate",
+      "title": "Escalate stuck conflicts via Stage 170 E1",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "st-offline-dr-remaining",
+      "title": "Offline Complete / live DR Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 174 T1 closeout triage packaging only. Do not claim Offline Complete or live DR."
+}

@@ -41,3 +41,7 @@ Open-of-day health checks: stale Hold soft-reserves, offline device status, sync
 - Offline Complete product claim
 - Zero-conflict SLA Completes
 - Live support SLA Completes
+
+## Stage 174 E1 / T1 amendment
+
+End-of-day Hold/queue drain and conflict/catalog/backup triage: [STORE_CLOSE_DRAIN_MVP.md](STORE_CLOSE_DRAIN_MVP.md) · [STORE_CLOSE_TRIAGE_MVP.md](STORE_CLOSE_TRIAGE_MVP.md) (`test_stage174_drain_e1.py`, `test_stage174_triage_t1.py`).

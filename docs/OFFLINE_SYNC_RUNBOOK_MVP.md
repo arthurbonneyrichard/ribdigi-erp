@@ -78,3 +78,7 @@ Cashier day-one quickstart: [CASHIER_QUICKSTART_MVP.md](CASHIER_QUICKSTART_MVP.m
 ## Stage 173 H1 amendment
 
 Store-open device/conflict health: [STORE_OPEN_HEALTH_MVP.md](STORE_OPEN_HEALTH_MVP.md) (`ops/mvp/store-open-health.json`, `test_stage173_health_h1.py`). Offline Complete remains not claimed.
+
+## Stage 174 C1 / E1 amendment
+
+Store-close Hold/queue drain: [STORE_CLOSE_CHECKLIST_MVP.md](STORE_CLOSE_CHECKLIST_MVP.md) · [STORE_CLOSE_DRAIN_MVP.md](STORE_CLOSE_DRAIN_MVP.md) (`test_stage174_storeclose_c1.py`, `test_stage174_drain_e1.py`). Offline Complete remains not claimed.

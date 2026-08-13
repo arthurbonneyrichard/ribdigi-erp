@@ -2700,6 +2700,18 @@ Every feature in every phase must meet:
 
 **Stage 173 exit (2026-08-13):** S1, L1, H1, D1, H173x met — `docs/STAGE_173_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_353_STAGE173_FREEZE.md`. Fidelity: `docs/STAGE_173_FIDELITY.md`.
 
+**Stage 174 open (2026-08-13):** Tenant MVP Store-Close Checklist Fidelity — `docs/ADR_354_STAGE174_OPEN.md` + `docs/STAGE_174_PLAN.md` (C1 next).
+
+**Stage 174 C1 (2026-08-13):** Store-close checklist hub (`test_stage174_storeclose_c1.py`).
+
+**Stage 174 E1 (2026-08-13):** Hold clear/expiry + sync queue drain (`test_stage174_drain_e1.py`).
+
+**Stage 174 T1 (2026-08-13):** Conflict triage + catalog age + backup pointer (`test_stage174_triage_t1.py`).
+
+**Stage 174 D1 (2026-08-13):** Store-Close Checklist fidelity sync — `docs/STAGE_174_FIDELITY.md` (`test_stage174_fidelity_d1.py`).
+
+**Stage 174 exit (2026-08-13):** C1, E1, T1, D1, H174x met — `docs/STAGE_174_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_355_STAGE174_FREEZE.md`. Fidelity: `docs/STAGE_174_FIDELITY.md`.
+
 
 
 
