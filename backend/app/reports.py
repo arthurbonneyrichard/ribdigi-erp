@@ -239,6 +239,122 @@ async def sales_by_product(
     }
 
 
+async def sales_by_customer(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    limit: int | None = None,
+) -> dict:
+    """Aggregate posted invoices + POS sales by customer (BR-14.1).
+
+    Ranked by revenue (top customers). Frequency = sale_count.
+    Walk-in / missing party buckets as ``customer_id=null`` / name Walk-in.
+    """
+
+    def _bucket(agg: dict[str, dict], customer_id: str | None) -> dict:
+        key = customer_id or "walk_in"
+        return agg.setdefault(
+            key,
+            {
+                "customer_id": None if key == "walk_in" else key,
+                "name": "Walk-in",
+                "email": None,
+                "phone": None,
+                "invoice_count": 0,
+                "invoice_revenue": 0.0,
+                "invoice_tax": 0.0,
+                "pos_count": 0,
+                "pos_revenue": 0.0,
+                "pos_tax": 0.0,
+                "sale_count": 0,
+                "revenue": 0.0,
+                "tax": 0.0,
+                "avg_ticket": 0.0,
+            },
+        )
+
+    agg: dict[str, dict] = {}
+
+    inv_stmt = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
+    )
+    if from_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
+    if to_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    for inv in (await db.execute(inv_stmt)).scalars().all():
+        row = _bucket(agg, inv.customer_id)
+        total = float(inv.total_amount or 0)
+        tax = float(inv.tax_amount or 0)
+        row["invoice_count"] += 1
+        row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
+        row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
+        row["sale_count"] += 1
+        row["revenue"] = round(row["revenue"] + total, 2)
+        row["tax"] = round(row["tax"] + tax, 2)
+
+    pos_stmt = select(m.Transaction).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.tx_type == "pos_sale",
+    )
+    if from_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
+    if to_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    for tx in (await db.execute(pos_stmt)).scalars().all():
+        row = _bucket(agg, tx.party_id)
+        total = float(tx.total or 0)
+        tax = float(tx.tax or 0)
+        row["pos_count"] += 1
+        row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
+        row["pos_tax"] = round(row["pos_tax"] + tax, 2)
+        row["sale_count"] += 1
+        row["revenue"] = round(row["revenue"] + total, 2)
+        row["tax"] = round(row["tax"] + tax, 2)
+
+    party_ids = [k for k in agg.keys() if k != "walk_in"]
+    if party_ids:
+        parties = (
+            await db.execute(
+                select(m.Party).where(
+                    m.Party.tenant_id == tenant_id,
+                    m.Party.id.in_(party_ids),
+                )
+            )
+        ).scalars().all()
+        by_id = {p.id: p for p in parties}
+        for key, row in agg.items():
+            if key == "walk_in":
+                continue
+            party = by_id.get(key)
+            if party:
+                row["name"] = party.name
+                row["email"] = party.email
+                row["phone"] = party.phone
+
+    for row in agg.values():
+        row["avg_ticket"] = (
+            round(row["revenue"] / row["sale_count"], 2) if row["sale_count"] else 0.0
+        )
+
+    customers = sorted(agg.values(), key=lambda x: x["revenue"], reverse=True)
+    if limit is not None and limit > 0:
+        customers = customers[:limit]
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "customers": customers,
+        "total_revenue": round(sum(c["revenue"] for c in customers), 2),
+        "total_sales": sum(c["sale_count"] for c in customers),
+        "invoice_revenue": round(sum(c["invoice_revenue"] for c in customers), 2),
+        "pos_revenue": round(sum(c["pos_revenue"] for c in customers), 2),
+        "customer_count": len(customers),
+    }
+
+
 async def sales_by_salesperson(
     db: AsyncSession,
     tenant_id: str,
