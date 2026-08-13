@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.tax import resolve_product_tax
-from app.credit import default_due_date
+from app.credit import default_due_date, party_terms_days
 from app.catalog import resolve_sale_line, stock_out_with_batch
 from app.doc_numbers import next_sales_invoice_number
 
@@ -409,7 +409,9 @@ async def post_sales_invoice(
 
     customer.balance = float(customer.balance or 0) + inv_base
     invoice.posted_at = datetime.utcnow()
-    invoice.due_date = invoice.due_date or default_due_date(invoice.posted_at)
+    invoice.due_date = invoice.due_date or default_due_date(
+        invoice.posted_at, party_terms_days(customer)
+    )
     apply_invoice_status(invoice, leave_draft=True)
     invoice.updated_at = datetime.utcnow()
 

@@ -109,6 +109,7 @@ export default function Page() {
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
   const [supplierId, setSupplierId] = useState('');
   const [supplierName, setSupplierName] = useState('');
+  const [supplierTermsDays, setSupplierTermsDays] = useState('30');
   const [productId, setProductId] = useState('');
   const [unitId, setUnitId] = useState('');
   const [qty, setQty] = useState('10');
@@ -223,10 +224,14 @@ export default function Page() {
     try {
       const r = await api('/suppliers', {
         method: 'POST',
-        body: JSON.stringify({ name: supplierName }),
+        body: JSON.stringify({
+          name: supplierName,
+          payment_terms_days: Number(supplierTermsDays) || 0,
+        }),
       });
       setSupplierId(r.data.id);
       setSupplierName('');
+      setSupplierTermsDays('30');
       await refresh();
       setMessage('Supplier created');
     } catch (err: any) {
@@ -901,8 +906,15 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Quick add supplier</h3>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Supplier name" />
+          <input
+            value={supplierTermsDays}
+            onChange={(e) => setSupplierTermsDays(e.target.value)}
+            placeholder="Net days"
+            style={{ width: 90 }}
+            title="Payment terms (days)"
+          />
           <button onClick={createSupplier} disabled={!supplierName.trim()}>
             Add
           </button>

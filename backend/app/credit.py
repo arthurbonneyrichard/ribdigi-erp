@@ -663,5 +663,19 @@ async def supplier_payment_schedule(
     }
 
 
+def party_terms_days(party: m.Party | None) -> int:
+    """Net payment terms in days for a customer/supplier (0 = due on receipt)."""
+    if party is None:
+        return DEFAULT_PAYMENT_TERMS_DAYS
+    raw = getattr(party, "payment_terms_days", None)
+    if raw is None:
+        return DEFAULT_PAYMENT_TERMS_DAYS
+    try:
+        days = int(raw)
+    except (TypeError, ValueError):
+        return DEFAULT_PAYMENT_TERMS_DAYS
+    return max(0, days)
+
+
 def default_due_date(from_dt: datetime | None = None, terms_days: int = DEFAULT_PAYMENT_TERMS_DAYS) -> datetime:
-    return (from_dt or datetime.utcnow()) + timedelta(days=terms_days)
+    return (from_dt or datetime.utcnow()) + timedelta(days=max(0, int(terms_days)))

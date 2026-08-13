@@ -401,6 +401,7 @@ class Party(Base):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     credit_limit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    payment_terms_days: Mapped[int] = mapped_column(Integer, default=30)
     balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     customer_group_id: Mapped[str | None] = mapped_column(
         ForeignKey("customer_groups.id"), nullable=True, index=True

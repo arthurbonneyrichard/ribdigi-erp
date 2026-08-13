@@ -361,6 +361,7 @@ class PartyCreate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
     credit_limit: float = 0
+    payment_terms_days: int = Field(default=30, ge=0, le=3650)
     customer_group_id: str | None = None
 
 
@@ -369,6 +370,7 @@ class PartyUpdate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
     credit_limit: float | None = None
+    payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
     customer_group_id: str | None = None
 
 
@@ -903,6 +905,7 @@ class SupplierPaymentCreate(BaseModel):
 
 class CreditLimitUpdate(BaseModel):
     credit_limit: float = Field(ge=0)
+    payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
 
 
 class NotificationPreferencesUpdate(BaseModel):
