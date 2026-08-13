@@ -67,6 +67,8 @@ export default function Page() {
   const [useGroupPrice, setUseGroupPrice] = useState(true);
   const [productId, setProductId] = useState('');
   const [variantId, setVariantId] = useState('');
+  const [unitId, setUnitId] = useState('');
+  const [units, setUnits] = useState<any[]>([]);
   const [qty, setQty] = useState('1');
   const [unitPrice, setUnitPrice] = useState('0');
   const [taxRate, setTaxRate] = useState('');
@@ -86,11 +88,12 @@ export default function Page() {
   const [qtPreview, setQtPreview] = useState('');
 
   async function refresh() {
-    const [invRes, custRes, prodRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes] =
+    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes] =
       await Promise.all([
         api('/sales/invoices'),
         api('/customers'),
         api('/products'),
+        api('/catalog/units').catch(() => ({ data: [] })),
         api('/sales/quotations'),
         api('/sales/orders'),
         api('/sales/returns'),
@@ -101,6 +104,7 @@ export default function Page() {
     setInvoices(invRes.data || []);
     setCustomers(custRes.data || []);
     setProducts(prodRes.data || []);
+    setUnits((unitRes.data || []).filter((u: any) => u.is_active !== false));
     setQuotations(qRes.data || []);
     setOrders(oRes.data || []);
     setReturns(rRes.data || []);
@@ -163,6 +167,7 @@ export default function Page() {
     {
       product_id: productId,
       variant_id: variantId || null,
+      unit_id: unitId || null,
       quantity: Number(qty),
       ...(useGroupPrice ? {} : { unit_price: Number(unitPrice) }),
       tax_rate: taxRate === '' ? null : Number(taxRate),
@@ -545,6 +550,14 @@ export default function Page() {
               ))}
             </select>
           )}
+          <select value={unitId} onChange={(e) => setUnitId(e.target.value)}>
+            <option value="">Unit (default)</option>
+            {units.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.code}
+              </option>
+            ))}
+          </select>
           <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Qty" style={{ width: 80 }} />
           <input
             value={unitPrice}

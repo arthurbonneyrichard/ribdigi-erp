@@ -87,6 +87,7 @@ def _po_items_snapshot(items: list[m.PurchaseOrderItem]) -> list[dict]:
         {
             "product_id": i.product_id,
             "quantity": float(i.quantity),
+            "unit_id": i.unit_id,
             "unit_price": float(i.unit_price),
             "tax_rate": float(i.tax_rate),
             "line_total": float(i.line_total),
@@ -170,6 +171,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
                 "product_id": i.product_id,
                 "quantity": float(i.quantity),
                 "received_qty": float(i.received_qty),
+                "unit_id": i.unit_id,
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
                 "line_total": float(i.line_total),
@@ -194,6 +196,8 @@ async def create_purchase_order(
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
     await get_supplier(db, tenant_id, supplier_id)
 
+    from app.uom import resolve_line_unit
+
     subtotal = 0.0
     tax_total = 0.0
     prepared: list[tuple[dict, float]] = []
@@ -208,12 +212,29 @@ async def create_purchase_order(
         ).scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+        unit_id, qty, _qty_base = await resolve_line_unit(
+            db,
+            tenant_id=tenant_id,
+            product=product,
+            unit_id=item.get("unit_id"),
+            quantity=float(item["quantity"]),
+        )
         line_sub, line_tax, line_total = compute_line_total(
-            item["quantity"], item.get("unit_price", 0), item.get("tax_rate", 0)
+            qty, item.get("unit_price", 0), item.get("tax_rate", 0)
         )
         subtotal += line_sub
         tax_total += line_tax
-        prepared.append((item, line_total))
+        prepared.append(
+            (
+                {
+                    **item,
+                    "product_id": product.id,
+                    "quantity": qty,
+                    "unit_id": unit_id,
+                },
+                line_total,
+            )
+        )
 
     po = m.PurchaseOrder(
         tenant_id=tenant_id,
@@ -238,6 +259,7 @@ async def create_purchase_order(
                 product_id=item["product_id"],
                 quantity=item["quantity"],
                 received_qty=0,
+                unit_id=item.get("unit_id"),
                 unit_price=item.get("unit_price", 0),
                 tax_rate=item.get("tax_rate", 0),
                 line_total=line_total,
@@ -382,6 +404,8 @@ async def amend_purchase_order(
     if items_touched:
         if not items:
             raise HTTPException(status_code=400, detail="Amended purchase order requires at least one line")
+        from app.uom import resolve_line_unit
+
         subtotal = 0.0
         tax_total = 0.0
         prepared: list[tuple[dict, float]] = []
@@ -396,9 +420,13 @@ async def amend_purchase_order(
             ).scalar_one_or_none()
             if not product:
                 raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
-            qty = float(item["quantity"])
-            if qty <= 0:
-                raise HTTPException(status_code=400, detail="Line quantity must be > 0")
+            unit_id, qty, _qty_base = await resolve_line_unit(
+                db,
+                tenant_id=tenant_id,
+                product=product,
+                unit_id=item.get("unit_id"),
+                quantity=float(item["quantity"]),
+            )
             line_sub, line_tax, line_total = compute_line_total(
                 qty, item.get("unit_price", 0), item.get("tax_rate", 0)
             )
@@ -409,6 +437,7 @@ async def amend_purchase_order(
                     {
                         "product_id": product.id,
                         "quantity": qty,
+                        "unit_id": unit_id,
                         "unit_price": float(item.get("unit_price") or 0),
                         "tax_rate": float(item.get("tax_rate") or 0),
                     },
@@ -425,6 +454,7 @@ async def amend_purchase_order(
                     purchase_order_id=po.id,
                     product_id=item["product_id"],
                     quantity=item["quantity"],
+                    unit_id=item.get("unit_id"),
                     received_qty=0,
                     unit_price=item["unit_price"],
                     tax_rate=item["tax_rate"],
@@ -595,12 +625,14 @@ async def create_grn(
                 },
             )
 
+        line_unit_id = po_item.unit_id
         db.add(
             m.GoodsReceiptItem(
                 tenant_id=tenant_id,
                 goods_receipt_id=grn.id,
                 po_item_id=po_item.id,
                 product_id=po_item.product_id,
+                unit_id=line_unit_id,
                 received_qty=received_qty,
                 accepted_qty=accepted_qty,
                 rejected_qty=rejected_qty,
@@ -609,11 +641,23 @@ async def create_grn(
         )
 
         if accepted_qty > 0:
+            from app.uom import to_stock_qty
+
+            product = await db.get(m.Product, po_item.product_id)
+            if not product or product.tenant_id != tenant_id:
+                raise HTTPException(status_code=404, detail="Product not found for GRN line")
+            stock_qty, _entered_unit, _entered = await to_stock_qty(
+                db,
+                tenant_id=tenant_id,
+                quantity=accepted_qty,
+                from_unit_id=line_unit_id,
+                product=product,
+            )
             await apply_stock_change(
                 db,
                 tenant_id=tenant_id,
                 product_id=po_item.product_id,
-                quantity_delta=accepted_qty,
+                quantity_delta=stock_qty,
                 movement_type="stock_in",
                 user_id=user_id,
                 reference_type="grn",
@@ -621,6 +665,7 @@ async def create_grn(
                 warehouse_id=grn.warehouse_id,
                 notes=f"GRN {grn.grn_number}",
             )
+            # received_qty stays in the PO line's entered UoM
             po_item.received_qty = float(po_item.received_qty or 0) + accepted_qty
             accepted_value += accepted_qty * float(po_item.unit_price) * (1 + float(po_item.tax_rate or 0) / 100.0)
 
@@ -694,6 +739,7 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
                 "id": i.id,
                 "po_item_id": i.po_item_id,
                 "product_id": i.product_id,
+                "unit_id": i.unit_id,
                 "received_qty": float(i.received_qty),
                 "accepted_qty": float(i.accepted_qty),
                 "rejected_qty": float(i.rejected_qty),
@@ -1250,11 +1296,24 @@ async def post_purchase_return(
             raise HTTPException(status_code=409, detail="Return quantity no longer available")
         already[grn_item.id] = already.get(grn_item.id, 0.0) + float(item.quantity)
 
+        from app.uom import to_stock_qty
+
+        product = await db.get(m.Product, item.product_id)
+        if not product or product.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Product not found for return line")
+        line_unit_id = grn_item.unit_id or (po_items.get(grn_item.po_item_id).unit_id if po_items.get(grn_item.po_item_id) else None)
+        stock_qty, _u, _e = await to_stock_qty(
+            db,
+            tenant_id=tenant_id,
+            quantity=float(item.quantity),
+            from_unit_id=line_unit_id,
+            product=product,
+        )
         await apply_stock_change(
             db,
             tenant_id=tenant_id,
             product_id=item.product_id,
-            quantity_delta=-float(item.quantity),
+            quantity_delta=-stock_qty,
             movement_type="stock_out",
             user_id=user_id,
             reference_type="purchase_return",
@@ -1265,6 +1324,7 @@ async def post_purchase_return(
 
         po_item = po_items.get(grn_item.po_item_id)
         if po_item:
+            # received_qty tracked in entered UoM
             po_item.received_qty = max(float(po_item.received_qty or 0) - float(item.quantity), 0)
 
     updated_items = await list_po_items(db, tenant_id, po.id)

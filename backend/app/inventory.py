@@ -301,7 +301,7 @@ async def apply_line_items_stock(
     outbound: bool,
     warehouse_id: str | None = None,
 ) -> None:
-    """Apply stock for transaction payload items: [{product_id, quantity, variant_id?}]."""
+    """Apply stock for transaction payload items: [{product_id, quantity, unit_id?, variant_id?}]."""
     if not items:
         return
     from app.catalog import get_variant, stock_out_with_batch
@@ -310,6 +310,7 @@ async def apply_line_items_stock(
         product_id = item.get("product_id")
         qty = float(item.get("quantity") or 0)
         variant_id = item.get("variant_id")
+        unit_id = item.get("unit_id")
         if not product_id or qty <= 0:
             raise HTTPException(status_code=400, detail="Each line item needs product_id and positive quantity")
         if outbound:
@@ -326,6 +327,7 @@ async def apply_line_items_stock(
                 user_id=user_id or "",
                 product_id=product_id,
                 quantity=qty,
+                unit_id=unit_id,
                 variant_id=variant_id,
                 warehouse_id=warehouse_id,
                 notes=f"{reference_type} {reference_id}",
@@ -333,11 +335,22 @@ async def apply_line_items_stock(
                 reference_id=reference_id,
             )
         else:
+            from app.uom import to_stock_qty
+            from app.catalog import get_product
+
+            product = await get_product(db, tenant_id, product_id)
+            stock_qty, _u, _e = await to_stock_qty(
+                db,
+                tenant_id=tenant_id,
+                quantity=qty,
+                from_unit_id=unit_id,
+                product=product,
+            )
             await apply_stock_change(
                 db,
                 tenant_id=tenant_id,
                 product_id=product_id,
-                quantity_delta=qty,
+                quantity_delta=stock_qty,
                 movement_type=movement_type,
                 user_id=user_id,
                 reference_type=reference_type,
@@ -347,4 +360,4 @@ async def apply_line_items_stock(
             )
             if variant_id:
                 variant = await get_variant(db, tenant_id, variant_id)
-                variant.stock_qty = float(variant.stock_qty or 0) + qty
+                variant.stock_qty = float(variant.stock_qty or 0) + stock_qty

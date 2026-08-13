@@ -366,6 +366,7 @@ class CustomerGroupUpdate(BaseModel):
 class LineItem(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
+    unit_id: str | None = None  # entered UoM; stock converted at checkout
     variant_id: str | None = None
     unit_price: float | None = None
     discount: float = Field(default=0, ge=0)
@@ -548,6 +549,7 @@ class EmailVerifyConfirm(BaseModel):
 class PurchaseOrderItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
+    unit_id: str | None = None  # entered UoM; GRN converts to product stock unit
     unit_price: float = Field(ge=0)
     tax_rate: float = Field(default=0, ge=0)
 
@@ -678,6 +680,7 @@ class PurchaseInvoiceUpdate(BaseModel):
 class SalesInvoiceItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
+    unit_id: str | None = None  # entered UoM; post/reserve convert to stock unit
     unit_price: float | None = None
     tax_rate: float | None = None
     discount: float = Field(default=0, ge=0)

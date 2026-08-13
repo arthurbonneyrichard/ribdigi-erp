@@ -25,6 +25,8 @@ async def _prepare_lines(
     *,
     customer_id: str | None = None,
 ) -> tuple[float, float, list[tuple[dict, float]]]:
+    from app.uom import resolve_line_unit
+
     if not items:
         raise HTTPException(status_code=400, detail="At least one line item is required")
     subtotal = 0.0
@@ -34,9 +36,13 @@ async def _prepare_lines(
         product, variant, unit = await resolve_sale_line(
             db, tenant_id, item, customer_id=customer_id
         )
-        qty = float(item["quantity"])
-        if qty <= 0:
-            raise HTTPException(status_code=400, detail="Quantity must be positive")
+        unit_id, qty, _qty_base = await resolve_line_unit(
+            db,
+            tenant_id=tenant_id,
+            product=product,
+            unit_id=item.get("unit_id"),
+            quantity=float(item["quantity"]),
+        )
         discount = float(item.get("discount") or 0)
         explicit = item.get("tax_rate")
         if explicit is not None:
@@ -56,6 +62,7 @@ async def _prepare_lines(
                     "product_id": product.id,
                     "variant_id": variant.id if variant else None,
                     "quantity": qty,
+                    "unit_id": unit_id,
                     "unit_price": unit,
                     "tax_rate": spec.rate_pct,
                     "discount": discount,
@@ -123,6 +130,7 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": float(i.quantity),
+                "unit_id": i.unit_id,
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
                 "discount": float(i.discount),
@@ -324,6 +332,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": float(i.quantity),
+                "unit_id": i.unit_id,
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
                 "discount": float(i.discount),
@@ -414,6 +423,7 @@ async def convert_quotation_to_order(
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": float(i.quantity),
+                "unit_id": i.unit_id,
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
                 "discount": float(i.discount),
@@ -599,6 +609,7 @@ async def convert_order_to_invoice(
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": float(i.quantity),
+                "unit_id": i.unit_id,
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
                 "discount": float(i.discount),
