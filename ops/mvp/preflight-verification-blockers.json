@@ -1,0 +1,55 @@
+{
+  "id": "preflight-verification-blockers",
+  "stage": 201,
+  "pack": "B1",
+  "doc": "docs/PREFLIGHT_VERIFICATION_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md",
+    "preflight_verification": "docs/PREFLIGHT_VERIFICATION_MVP.md",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md"
+  },
+  "packaging_complete": true,
+  "sections_1_3_verified": false,
+  "preflight_verified_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "sections_1_3_verified_execution": "REMAINING",
+    "attestation_section_7_signed": "REMAINING",
+    "stage69_v1_as_sections_1_3_verified": "NON_CLAIM",
+    "stage69_a1_as_sections_1_3_verified": "NON_CLAIM",
+    "sections_1_3_verified": "false"
+  },
+  "steps": [
+    {
+      "id": "pb-verified",
+      "title": "Mark sections 1-3 verified execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-attestation",
+      "title": "Mark attestation / section 7 signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-stage69v1-nonclaim",
+      "title": "Mark Stage 69 V1 preflight verification as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-stage69a1-nonclaim",
+      "title": "Mark Stage 69 A1 go-live attestation as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-verified-remaining",
+      "title": "Sections 1-3 verified Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 201 B1 preflight verification blocker matrix packaging only. LAUNCH sections 1-3 verified Complete remains MISSING."
+}

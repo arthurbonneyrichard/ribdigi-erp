@@ -622,6 +622,12 @@ Authoritative MVP docs:
 - `docs/COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-golive-closeout-remaining-gate.json` — Stage 200 I1
 - `docs/COMMERCIAL_GOLIVE_CLOSEOUT_BLOCKERS_MVP.md` / `ops/mvp/commercial-golive-closeout-blockers.json` — Stage 200 B1
 - `docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_POINTERS_MVP.md` / `ops/mvp/commercial-golive-closeout-pack-pointers.json` — Stage 200 P1
+- `docs/STAGE_201_EXIT_CRITERIA.md` / `docs/ADR_409_STAGE201_FREEZE.md` (`backend/tests/test_stage201_exit_h201x.py`) — Stage 201 H201x
+- `docs/STAGE_201_FIDELITY.md` (`backend/tests/test_stage201_fidelity_d1.py`) — Stage 201 D1
+- `docs/STAGE_201_PLAN.md` (`backend/tests/test_stage201_open.py`) — Stage 201 open (ADR-408)
+- `docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md` / `ops/mvp/preflight-verification-remaining-gate.json` — Stage 201 I1
+- `docs/PREFLIGHT_VERIFICATION_BLOCKERS_MVP.md` / `ops/mvp/preflight-verification-blockers.json` — Stage 201 B1
+- `docs/PREFLIGHT_VERIFICATION_PACK_POINTERS_MVP.md` / `ops/mvp/preflight-verification-pack-pointers.json` — Stage 201 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2563,6 +2569,18 @@ H200x met — `docs/STAGE_200_EXIT_CRITERIA.md`, ADR-407. Stages 1–200 frozen 
 ## Stage 200 open
 
 ADR-406 + `docs/STAGE_200_PLAN.md` — Commercial Go-Live Closeout Remaining-Gate Index Fidelity (closed under ADR-407).
+
+## Stage 201 exit
+
+H201x met — `docs/STAGE_201_EXIT_CRITERIA.md`, ADR-409. Stages 1–201 frozen for Stage 201 feature scope.
+
+## Stage 201 D1 — Tenant MVP Preflight Verification Remaining-Gate Index Fidelity
+
+`docs/STAGE_201_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. LAUNCH §§1–3 verified Complete remains MISSING.
+
+## Stage 201 open
+
+ADR-408 + `docs/STAGE_201_PLAN.md` — Preflight Verification Remaining-Gate Index Fidelity (closed under ADR-409).
 
 ## Stage 165 open
 

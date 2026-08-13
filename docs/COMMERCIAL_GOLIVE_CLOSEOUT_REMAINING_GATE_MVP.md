@@ -30,3 +30,5 @@ Single index of commercial go-live closeout remaining gates. Packaging only — 
 - Commercial go-live closeout Complete
 - Attestation / §7 signed Completes
 - First commercial day live / go-live Completes
+
+See also Stage 201 preflight verification remaining-gate index: [`PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md`](PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md).

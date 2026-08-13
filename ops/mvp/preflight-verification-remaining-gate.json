@@ -1,0 +1,54 @@
+{
+  "id": "preflight-verification-remaining-gate",
+  "stage": 201,
+  "pack": "I1",
+  "doc": "docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PREFLIGHT_VERIFICATION_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PREFLIGHT_VERIFICATION_PACK_POINTERS_MVP.md",
+    "preflight_verification": "docs/PREFLIGHT_VERIFICATION_MVP.md",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md",
+    "commercial_golive_closeout_remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "sections_1_3_verified": false,
+  "preflight_verified_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage69_v1_preflight_verification": true,
+  "distinct_from_stage69_a1_golive_attestation": true,
+  "distinct_from_stage187_attestation_remaining_gate": true,
+  "steps": [
+    {
+      "id": "pv-read-blockers",
+      "title": "Read B1 preflight verification blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pv-follow-pointers",
+      "title": "Follow P1 Stage 69 / Stage 200 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pv-verified-missing",
+      "title": "Reaffirm sections 1-3 verified MISSING until executed preflight ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pv-no-packaging-as-verified",
+      "title": "Do not treat Stage 69 V1 / Stage 69 A1 as sections 1-3 verified Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pv-verified-remaining",
+      "title": "Sections 1-3 verified / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 201 I1 preflight verification remaining-gate index packaging only. Do not claim LAUNCH sections 1-3 verified Complete."
+}

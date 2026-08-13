@@ -3024,6 +3024,18 @@ Every feature in every phase must meet:
 
 **Stage 200 exit (2026-08-13):** I1, B1, P1, D1, H200x met — `docs/STAGE_200_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_407_STAGE200_FREEZE.md`. Fidelity: `docs/STAGE_200_FIDELITY.md`.
 
+**Stage 201 open (2026-08-13):** Tenant MVP Preflight Verification Remaining-Gate Index Fidelity — `docs/ADR_408_STAGE201_OPEN.md` + `docs/STAGE_201_PLAN.md` (I1 next).
+
+**Stage 201 I1 (2026-08-13):** Preflight verification remaining-gate index hub (`test_stage201_index_i1.py`).
+
+**Stage 201 B1 (2026-08-13):** Preflight verification blocker matrix (`test_stage201_blockers_b1.py`).
+
+**Stage 201 P1 (2026-08-13):** Stage 69 / Stage 200 pointers (`test_stage201_pointers_p1.py`).
+
+**Stage 201 D1 (2026-08-13):** Preflight Verification Remaining-Gate Index fidelity sync — `docs/STAGE_201_FIDELITY.md` (`test_stage201_fidelity_d1.py`).
+
+**Stage 201 exit (2026-08-13):** I1, B1, P1, D1, H201x met — `docs/STAGE_201_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_409_STAGE201_FREEZE.md`. Fidelity: `docs/STAGE_201_FIDELITY.md`.
+
 
 
 

@@ -983,6 +983,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 70 / Stage 69 / Stage 199 pointers (Stage 200 P1: `test_stage200_pointers_p1.py`, `docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_POINTERS_MVP.md`)
 - [x] Stage 200 fidelity sync (D1: `test_stage200_fidelity_d1.py`, `docs/STAGE_200_FIDELITY.md`)
 - [x] Stage 200 exit + freeze (H200x: `test_stage200_exit_h200x.py`, `docs/STAGE_200_EXIT_CRITERIA.md`, ADR-407)
+- [x] Stage 201 track opened (ADR-408: `test_stage201_open.py`, `docs/STAGE_201_PLAN.md`) — Preflight Verification Remaining-Gate Index; closed under ADR-409
+- [x] Preflight verification remaining-gate hub (Stage 201 I1: `test_stage201_index_i1.py`, `docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md`)
+- [x] Preflight verification blocker matrix (Stage 201 B1: `test_stage201_blockers_b1.py`, `docs/PREFLIGHT_VERIFICATION_BLOCKERS_MVP.md`)
+- [x] Stage 69 / Stage 200 pointers (Stage 201 P1: `test_stage201_pointers_p1.py`, `docs/PREFLIGHT_VERIFICATION_PACK_POINTERS_MVP.md`)
+- [x] Stage 201 fidelity sync (D1: `test_stage201_fidelity_d1.py`, `docs/STAGE_201_FIDELITY.md`)
+- [x] Stage 201 exit + freeze (H201x: `test_stage201_exit_h201x.py`, `docs/STAGE_201_EXIT_CRITERIA.md`, ADR-409)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

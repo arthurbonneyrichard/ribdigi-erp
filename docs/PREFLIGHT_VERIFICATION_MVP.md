@@ -45,3 +45,5 @@ Every step keeps `done: false`. Top-level `sections_1_3_verified: false` / `go_l
 ## Sign-off
 
 Stage 69 V1 is met when this doc + register JSON + evidence JSON exist, `test_preflight_verification_v1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / plan / roadmap cite Stage 69 V1 without inventing §§1–3 verified Complete.
+
+See also Stage 201 Tenant MVP Preflight Verification remaining-gate index fidelity (`docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md`, ADR-408 / ADR-409).

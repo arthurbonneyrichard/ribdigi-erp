@@ -176,6 +176,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Commercial go-live closeout remaining-gate index (Stage 200):** Status index is `docs/COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md` → blockers `docs/COMMERCIAL_GOLIVE_CLOSEOUT_BLOCKERS_MVP.md` → Stage 70/69 pointers `docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_POINTERS_MVP.md`. Commercial go-live closeout Complete remains MISSING (not claimed).
 
+**Preflight verification remaining-gate index (Stage 201):** Status index is `docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md` → blockers `docs/PREFLIGHT_VERIFICATION_BLOCKERS_MVP.md` → Stage 69 pointers `docs/PREFLIGHT_VERIFICATION_PACK_POINTERS_MVP.md`. LAUNCH §§1–3 verified Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health
