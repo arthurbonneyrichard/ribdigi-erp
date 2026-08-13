@@ -47,3 +47,5 @@ Every step keeps `done: false`. Top-level `steady_state_ops_claimed: false` / `c
 ## Sign-off
 
 Stage 71 S1 is met when this doc + register JSON + evidence JSON exist, `test_steady_state_ops_s1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / plan / roadmap cite Stage 71 S1 without inventing steady-state ops live Complete.
+
+See also Stage 197 Tenant MVP Commercial Acceptance remaining-gate index fidelity (`docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md`, ADR-400 / ADR-401).

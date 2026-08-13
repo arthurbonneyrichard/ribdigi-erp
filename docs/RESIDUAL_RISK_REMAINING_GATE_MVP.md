@@ -30,3 +30,5 @@ Single index of residual risk remaining gates. Packaging only — **residual ris
 - Residual risks closed Complete
 - Commercial acceptance Completes
 - Customer assurance / go-live Completes
+
+See also Stage 197 commercial acceptance remaining-gate index: [`COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md`](COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md).

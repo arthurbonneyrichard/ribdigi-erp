@@ -168,6 +168,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Residual risk remaining-gate index (Stage 196):** Status index is `docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md` → blockers `docs/RESIDUAL_RISK_BLOCKERS_MVP.md` → Stage 33/72 pointers `docs/RESIDUAL_RISK_PACK_POINTERS_MVP.md`. Residual risks closed Complete remains MISSING (not claimed).
 
+**Commercial acceptance remaining-gate index (Stage 197):** Status index is `docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md` → blockers `docs/COMMERCIAL_ACCEPTANCE_BLOCKERS_MVP.md` → Stage 71 pointers `docs/COMMERCIAL_ACCEPTANCE_PACK_POINTERS_MVP.md`. Commercial acceptance Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

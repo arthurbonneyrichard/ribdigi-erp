@@ -1,0 +1,53 @@
+{
+  "id": "commercial-acceptance-remaining-gate",
+  "stage": 197,
+  "pack": "I1",
+  "doc": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/COMMERCIAL_ACCEPTANCE_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/COMMERCIAL_ACCEPTANCE_PACK_POINTERS_MVP.md",
+    "commercial_acceptance": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+    "steady_state_ops": "docs/STEADY_STATE_OPS_MVP.md",
+    "residual_risk_remaining_gate": "docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "commercial_acceptance_claimed": false,
+  "steady_state_ops_claimed": false,
+  "go_live_claimed": false,
+  "first_commercial_day_claimed": false,
+  "distinct_from_stage71_a1_commercial_acceptance": true,
+  "distinct_from_stage71_s1_steady_state": true,
+  "steps": [
+    {
+      "id": "ca-read-blockers",
+      "title": "Read B1 commercial acceptance blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ca-follow-pointers",
+      "title": "Follow P1 Stage 71 / Stage 196 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ca-acceptance-missing",
+      "title": "Reaffirm commercial acceptance MISSING until executed acceptance ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ca-no-packaging-as-acceptance",
+      "title": "Do not treat Stage 71 A1 / Stage 71 S1 as commercial acceptance Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ca-acceptance-remaining",
+      "title": "Commercial acceptance / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 197 I1 commercial acceptance remaining-gate index packaging only. Do not claim commercial acceptance Complete."
+}

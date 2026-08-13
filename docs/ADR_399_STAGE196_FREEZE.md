@@ -24,6 +24,4 @@ Stage 196 Tenant MVP Residual Risk Remaining-Gate Index Fidelity delivered resid
 
 ## Next stage
 
-Stage 197 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 196 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Commercial Acceptance Remaining-Gate Index Fidelity — single index of commercial-acceptance blockers (packaged acceptance/steady-state materials non-claim as commercial acceptance Complete) with explicit non-claim (no commercial acceptance Complete).
+Stage **197** opened under **ADR-400** / frozen under **ADR-401** — Tenant MVP Commercial Acceptance remaining-gate index fidelity (packaged acceptance/steady-state materials non-claim as commercial acceptance Complete) with explicit non-claim of commercial acceptance Complete. Stage 196 feature scope remains frozen. Do not reopen Stages **1–196** scopes.
