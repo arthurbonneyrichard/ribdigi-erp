@@ -30,3 +30,5 @@ For Stage 1 / Commercial MVP:
 - BR-17.2 retention is COMPLETE for MVP policy + cold copy; long-term hot-table pruning remains post-MVP.
 - Storage growth is expected; cold copies use the same `STORAGE_BACKEND` as media (local or S3).
 - HTTP mutation middleware (ADR companion G19) continues to append to the same chain.
+
+See also Stage 186 audit-retention remaining-gate index: [`AUDIT_RETENTION_REMAINING_GATE_MVP.md`](AUDIT_RETENTION_REMAINING_GATE_MVP.md) (hot audit purge remains deferred; not Complete).

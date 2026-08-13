@@ -175,3 +175,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 185 decision (opened after Stage 184 freeze)
 
 **Tenant MVP Schema-Per-Tenant Remaining-Gate Index Fidelity** — schema-per-tenant remaining-gate hub (I1), blocker matrix (B1), ADR-001 / deferred ADR / readiness pointers with explicit non-claim (P1). Schema-per-tenant / database-per-tenant Completes remain deferred (Stage 186+).
+## Stage 186 decision (opened after Stage 185 freeze)
+
+**Tenant MVP Audit-Retention Remaining-Gate Index Fidelity** — audit-retention remaining-gate hub (I1), blocker matrix (B1), ADR-007 / retention pointers with explicit non-claim (P1). Hot audit purge / physical delete Completes remain deferred (Stage 187+).

@@ -912,6 +912,7 @@ Stage 182 D1 — `docs/STAGE_182_FIDELITY.md` (`test_stage182_fidelity_d1.py`); 
 Stage 183 D1 — `docs/STAGE_183_FIDELITY.md` (`test_stage183_fidelity_d1.py`); Stage 183 I1 / B1 / P1.
 Stage 184 D1 — `docs/STAGE_184_FIDELITY.md` (`test_stage184_fidelity_d1.py`); Stage 184 I1 / B1 / P1.
 Stage 185 D1 — `docs/STAGE_185_FIDELITY.md` (`test_stage185_fidelity_d1.py`); Stage 185 I1 / B1 / P1.
+Stage 186 D1 — `docs/STAGE_186_FIDELITY.md` (`test_stage186_fidelity_d1.py`); Stage 186 I1 / B1 / P1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1681,4 +1682,5 @@ Stage 182 D1 Membership Remaining-Gate Index fidelity — `docs/STAGE_182_FIDELI
 Stage 183 D1 Hard-Delete Remaining-Gate Index fidelity — `docs/STAGE_183_FIDELITY.md` (`test_stage183_fidelity_d1.py`); Stage 183 I1 hard-delete remaining-gate hub; Stage 183 B1 blocker matrix; Stage 183 P1 ADR-003/erasure/deferred ADR pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 184 D1 Language/i18n Remaining-Gate Index fidelity — `docs/STAGE_184_FIDELITY.md` (`test_stage184_fidelity_d1.py`); Stage 184 I1 i18n remaining-gate hub; Stage 184 B1 blocker matrix; Stage 184 P1 ADR-006/deferred ADR/scaffold pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 185 D1 Schema-Per-Tenant Remaining-Gate Index fidelity — `docs/STAGE_185_FIDELITY.md` (`test_stage185_fidelity_d1.py`); Stage 185 I1 schema-per-tenant remaining-gate hub; Stage 185 B1 blocker matrix; Stage 185 P1 ADR-001/deferred ADR/readiness pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 186 D1 Audit-Retention Remaining-Gate Index fidelity — `docs/STAGE_186_FIDELITY.md` (`test_stage186_fidelity_d1.py`); Stage 186 I1 audit-retention remaining-gate hub; Stage 186 B1 blocker matrix; Stage 186 P1 ADR-007/retention pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 

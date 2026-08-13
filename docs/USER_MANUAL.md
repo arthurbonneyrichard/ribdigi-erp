@@ -146,6 +146,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Schema-per-tenant remaining-gate index (Stage 185):** Status index is `docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md` → blockers `docs/SCHEMA_PER_TENANT_BLOCKERS_MVP.md` → ADR-001/readiness pointers `docs/SCHEMA_PER_TENANT_PACK_POINTERS_MVP.md`. Schema-per-tenant Complete remains MISSING (not claimed).
 
+**Audit-retention remaining-gate index (Stage 186):** Status index is `docs/AUDIT_RETENTION_REMAINING_GATE_MVP.md` → blockers `docs/AUDIT_RETENTION_BLOCKERS_MVP.md` → ADR-007/retention pointers `docs/AUDIT_RETENTION_PACK_POINTERS_MVP.md`. Hot audit purge Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

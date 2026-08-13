@@ -1,0 +1,59 @@
+{
+  "id": "audit-retention-pack-pointers",
+  "stage": 186,
+  "pack": "P1",
+  "doc": "docs/AUDIT_RETENTION_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/AUDIT_RETENTION_REMAINING_GATE_MVP.md",
+    "adr007": "docs/ADR_007_AUDIT_RETENTION.md",
+    "data_retention_return": "docs/DATA_RETENTION_RETURN_MVP.md",
+    "commercial_data_retention": "docs/COMMERCIAL_DATA_RETENTION_MVP.md",
+    "schema_per_tenant_remaining_gate": "docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "hot_audit_purge_claimed": false,
+  "hot_row_physical_delete_claimed": false,
+  "cold_archive_as_purge_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "adr007_audit_retention",
+    "data_retention_return",
+    "commercial_data_retention",
+    "schema_per_tenant_remaining_gate_stage185",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ap-adr007",
+      "title": "Point to ADR-007 audit retention",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-retention-return",
+      "title": "Point to Stage 45 data retention / return honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-commercial",
+      "title": "Point to commercial data retention honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-schema-gate",
+      "title": "Point to Stage 185 schema-per-tenant remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-purge-remaining",
+      "title": "Hot audit purge Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 186 P1 audit-retention pack pointers packaging only. Do not claim hot audit purge Complete."
+}

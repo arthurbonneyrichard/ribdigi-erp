@@ -24,6 +24,4 @@ Stage 185 Tenant MVP Schema-Per-Tenant Remaining-Gate Index Fidelity delivered s
 
 ## Next stage
 
-Stage 186 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 185 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP audit-retention remaining-gate index fidelity — single index of ADR-007 / audit-retention blockers (long-term retention Completes non-claim; MVP retention packaging ≠ infinite retention) with explicit non-claim (no audit-retention Complete beyond MVP policy).
+Stage **186** opened under **ADR-378** / frozen under **ADR-379** — Tenant MVP audit-retention remaining-gate index fidelity (ADR-007 / hot-table pruning blockers; MVP cold-archive Completes non-claim as hot purge Complete) with explicit non-claim of hot audit purge Complete. Stage 185 feature scope remains frozen. Do not reopen Stages **1–185** scopes.

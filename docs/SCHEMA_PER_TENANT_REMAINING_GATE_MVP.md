@@ -31,3 +31,5 @@ Single index of schema-per-tenant remaining gates. Packaging only — **schema-p
 - Schema-per-tenant Complete / database-per-tenant Completes
 - Shared-schema Completes as schema-per-tenant
 - i18n / go-live Completes
+
+See also Stage 186 audit-retention remaining-gate index: [`AUDIT_RETENTION_REMAINING_GATE_MVP.md`](AUDIT_RETENTION_REMAINING_GATE_MVP.md).

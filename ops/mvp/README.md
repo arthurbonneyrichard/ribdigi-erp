@@ -532,6 +532,12 @@ Authoritative MVP docs:
 - `docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md` / `ops/mvp/schema-per-tenant-remaining-gate.json` — Stage 185 I1
 - `docs/SCHEMA_PER_TENANT_BLOCKERS_MVP.md` / `ops/mvp/schema-per-tenant-blockers.json` — Stage 185 B1
 - `docs/SCHEMA_PER_TENANT_PACK_POINTERS_MVP.md` / `ops/mvp/schema-per-tenant-pack-pointers.json` — Stage 185 P1
+- `docs/STAGE_186_EXIT_CRITERIA.md` / `docs/ADR_379_STAGE186_FREEZE.md` (`backend/tests/test_stage186_exit_h186x.py`) — Stage 186 H186x
+- `docs/STAGE_186_FIDELITY.md` (`backend/tests/test_stage186_fidelity_d1.py`) — Stage 186 D1
+- `docs/STAGE_186_PLAN.md` (`backend/tests/test_stage186_open.py`) — Stage 186 open (ADR-378)
+- `docs/AUDIT_RETENTION_REMAINING_GATE_MVP.md` / `ops/mvp/audit-retention-remaining-gate.json` — Stage 186 I1
+- `docs/AUDIT_RETENTION_BLOCKERS_MVP.md` / `ops/mvp/audit-retention-blockers.json` — Stage 186 B1
+- `docs/AUDIT_RETENTION_PACK_POINTERS_MVP.md` / `ops/mvp/audit-retention-pack-pointers.json` — Stage 186 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2293,6 +2299,18 @@ H185x met — `docs/STAGE_185_EXIT_CRITERIA.md`, ADR-377. Stages 1–185 frozen 
 ## Stage 185 open
 
 ADR-376 + `docs/STAGE_185_PLAN.md` — Schema-Per-Tenant Remaining-Gate Index Fidelity (closed under ADR-377).
+
+## Stage 186 exit
+
+H186x met — `docs/STAGE_186_EXIT_CRITERIA.md`, ADR-379. Stages 1–186 frozen for Stage 186 feature scope.
+
+## Stage 186 D1 — Tenant MVP Audit-Retention Remaining-Gate Index Fidelity
+
+`docs/STAGE_186_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Hot audit purge Complete remains MISSING.
+
+## Stage 186 open
+
+ADR-378 + `docs/STAGE_186_PLAN.md` — Audit-Retention Remaining-Gate Index Fidelity (closed under ADR-379).
 
 ## Stage 165 open
 
