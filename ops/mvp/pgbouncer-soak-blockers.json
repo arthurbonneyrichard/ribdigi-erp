@@ -1,0 +1,55 @@
+{
+  "id": "pgbouncer-soak-blockers",
+  "stage": 208,
+  "pack": "B1",
+  "doc": "docs/PGBOUNCER_SOAK_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md",
+    "soak_pack": "docs/PGBOUNCER_SOAK_PACK_MVP.md",
+    "deployment_snippet": "ops/postgres/pgbouncer-deployment.example.yaml"
+  },
+  "packaging_complete": true,
+  "live_soak_executed": false,
+  "helm_pooler_default_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_pgbouncer_soak_execution": "REMAINING",
+    "pooler_deploy_database_url_show_pools": "REMAINING",
+    "stage29_b2_as_live_soak": "NON_CLAIM",
+    "live_soak_executed": "false",
+    "helm_pooler_default_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "pb-soak",
+      "title": "Mark live PgBouncer soak execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-pooler",
+      "title": "Mark pooler deploy / DATABASE_URL / SHOW POOLS Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-stage29-nonclaim",
+      "title": "Mark Stage 29 B2 soak pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-helm-false",
+      "title": "Mark helm_pooler_default_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-soak-remaining",
+      "title": "Live PgBouncer soak Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 208 B1 PgBouncer soak blocker matrix packaging only. Live PgBouncer soak Complete remains MISSING."
+}

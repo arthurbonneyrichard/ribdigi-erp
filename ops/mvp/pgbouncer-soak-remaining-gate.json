@@ -1,0 +1,53 @@
+{
+  "id": "pgbouncer-soak-remaining-gate",
+  "stage": 208,
+  "pack": "I1",
+  "doc": "docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PGBOUNCER_SOAK_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PGBOUNCER_SOAK_PACK_POINTERS_MVP.md",
+    "soak_pack": "docs/PGBOUNCER_SOAK_PACK_MVP.md",
+    "tls_ingress_remaining_gate": "docs/TLS_INGRESS_REMAINING_GATE_MVP.md",
+    "soak_checklist": "ops/postgres/pgbouncer-soak-checklist.json"
+  },
+  "packaging_complete": true,
+  "live_soak_executed": false,
+  "helm_pooler_default_claimed": false,
+  "go_live_claimed": false,
+  "live_tls_ingress_claimed": false,
+  "distinct_from_stage29_b2_pgbouncer_soak": true,
+  "distinct_from_stage207_tls_ingress_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ps-read-blockers",
+      "title": "Read B1 PgBouncer soak blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ps-follow-pointers",
+      "title": "Follow P1 Stage 29 / Stage 207 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ps-soak-missing",
+      "title": "Reaffirm live soak MISSING until executed soak evidence ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ps-no-packaging-as-soak",
+      "title": "Do not treat Stage 29 B2 as live PgBouncer soak Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ps-soak-remaining",
+      "title": "Live PgBouncer soak / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 208 I1 PgBouncer soak remaining-gate index packaging only. Do not claim live PgBouncer soak Complete."
+}

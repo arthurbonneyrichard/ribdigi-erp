@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 207 froze Tenant MVP TLS Ingress Remaining-Gate Index Fidelity (ADR-421) — TLS ingress remaining-gate hub, blocker matrix, Stage 29/206 pointers, explicit live TLS ingress non-claim. Live TLS ingress Complete remains MISSING. Next recommended distinct outline: Tenant MVP PgBouncer Soak Remaining-Gate Index Fidelity (packaged Stage 29 soak pack materials non-claim as live PgBouncer soak Complete — explicit non-claim) — Stage 208+. Do not claim live TLS ingress Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 208 froze Tenant MVP PgBouncer Soak Remaining-Gate Index Fidelity (ADR-423) — PgBouncer soak remaining-gate hub, blocker matrix, Stage 29/207 pointers, explicit live soak non-claim. Live PgBouncer soak Complete remains MISSING. Next recommended distinct outline: Tenant MVP Pentest Remaining-Gate Index Fidelity (packaged Stage 29 V1 pentest pack materials non-claim as live pentest Complete — explicit non-claim) — Stage 209+. Do not claim live PgBouncer soak Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

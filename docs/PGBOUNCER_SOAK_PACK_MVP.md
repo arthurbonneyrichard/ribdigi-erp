@@ -33,3 +33,5 @@ This is the **MVP PgBouncer soak / Helm-pooler packaging surface**: soak checkli
 ## Sign-off
 
 Stage 29 B2 is met when this doc + checklist + soak schema + optional Deployment snippet + evidence JSON exist, `test_pgbouncer_soak_b2.py` passes, and PRODUCTION_READINESS / launch / roadmap cite Stage 29 B2 without inventing live soak success.
+
+See also Stage 208 Tenant MVP PgBouncer Soak remaining-gate index fidelity (`docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md`, ADR-422 / ADR-423) — packaging non-claim as live PgBouncer soak Complete.

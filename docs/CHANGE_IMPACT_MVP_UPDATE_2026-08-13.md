@@ -245,3 +245,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP TLS Ingress Remaining-Gate Index Fidelity** — TLS ingress remaining-gate hub (I1), blocker matrix (B1), Stage 29 / Stage 206 pointers with explicit non-claim (P1). Live TLS ingress Completes remain deferred (Stage 208+). Distinct from Stage 206 k8s deploy remaining-gate and Stage 29 T1 packaging.
 
+## Stage 208 decision (opened after Stage 207 freeze)
+
+**Tenant MVP PgBouncer Soak Remaining-Gate Index Fidelity** — PgBouncer soak remaining-gate hub (I1), blocker matrix (B1), Stage 29 / Stage 207 pointers with explicit non-claim (P1). Live PgBouncer soak Completes remain deferred (Stage 209+). Distinct from Stage 207 TLS ingress remaining-gate and Stage 29 B2 packaging.
+

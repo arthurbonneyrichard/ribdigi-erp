@@ -1234,6 +1234,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 203 P1** | Stage 29 / Stage 27 / Stage 202 pointers (`test_stage203_pointers_p1.py`) |
 | **Stage 203 D1** | Cutover remaining-gate fidelity — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`) |
 | **Stage 203 H203x** | Exit + freeze — `docs/STAGE_203_EXIT_CRITERIA.md`, ADR-413 (`test_stage203_exit_h203x.py`); Stages 1–203 frozen |
+| **Stage 208 open** | PgBouncer Soak Remaining-Gate Index — `docs/STAGE_208_PLAN.md`, ADR-422 (`test_stage208_open.py`) |
+| **Stage 208 I1** | PgBouncer soak remaining-gate index hub (`test_stage208_index_i1.py`) |
+| **Stage 208 B1** | PgBouncer soak blocker matrix (`test_stage208_blockers_b1.py`) |
+| **Stage 208 P1** | Stage 29 / Stage 207 pointers (`test_stage208_pointers_p1.py`) |
+| **Stage 208 D1** | PgBouncer soak remaining-gate fidelity — `docs/STAGE_208_FIDELITY.md` (`test_stage208_fidelity_d1.py`) |
+| **Stage 208 H208x** | Exit + freeze — `docs/STAGE_208_EXIT_CRITERIA.md`, ADR-423 (`test_stage208_exit_h208x.py`); Stages 1–208 frozen |
 | **Stage 207 open** | TLS Ingress Remaining-Gate Index — `docs/STAGE_207_PLAN.md`, ADR-420 (`test_stage207_open.py`) |
 | **Stage 207 I1** | TLS ingress remaining-gate index hub (`test_stage207_index_i1.py`) |
 | **Stage 207 B1** | TLS ingress blocker matrix (`test_stage207_blockers_b1.py`) |

@@ -182,6 +182,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Cutover remaining-gate index (Stage 203):** Status index is `docs/CUTOVER_REMAINING_GATE_MVP.md` → blockers `docs/CUTOVER_BLOCKERS_MVP.md` → Stage 29/27 pointers `docs/CUTOVER_PACK_POINTERS_MVP.md`. Live production cutover Complete remains MISSING (not claimed).
 
+**PgBouncer soak remaining-gate index (Stage 208):** Status index is `docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md` → blockers `docs/PGBOUNCER_SOAK_BLOCKERS_MVP.md` → Stage 29/207 pointers `docs/PGBOUNCER_SOAK_PACK_POINTERS_MVP.md`. Live PgBouncer soak Complete remains MISSING (not claimed).
+
 **TLS ingress remaining-gate index (Stage 207):** Status index is `docs/TLS_INGRESS_REMAINING_GATE_MVP.md` → blockers `docs/TLS_INGRESS_BLOCKERS_MVP.md` → Stage 29/206 pointers `docs/TLS_INGRESS_PACK_POINTERS_MVP.md`. Live TLS ingress Complete remains MISSING (not claimed).
 
 **K8s deploy remaining-gate index (Stage 206):** Status index is `docs/K8S_DEPLOY_REMAINING_GATE_MVP.md` → blockers `docs/K8S_DEPLOY_BLOCKERS_MVP.md` → Stage 26/205/18 pointers `docs/K8S_DEPLOY_PACK_POINTERS_MVP.md`. Live cluster deploy Complete remains MISSING (not claimed).

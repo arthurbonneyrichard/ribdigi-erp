@@ -24,6 +24,4 @@ Stage 207 Tenant MVP TLS Ingress Remaining-Gate Index Fidelity delivered TLS ing
 
 ## Next stage
 
-Stage 208 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 207 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP PgBouncer Soak Remaining-Gate Index Fidelity — single index of PgBouncer/soak blockers (packaged Stage 29 soak pack materials non-claim as live PgBouncer soak Complete) with explicit non-claim (no live soak Complete). Distinct from Stage 207 TLS ingress remaining-gate.
+Stage **208** opened under **ADR-422** / frozen under **ADR-423** — Tenant MVP PgBouncer Soak remaining-gate index fidelity (packaged Stage 29 B2 soak pack materials non-claim as live PgBouncer soak Complete) with explicit non-claim of live soak Complete. Stage 207 feature scope remains frozen. Do not reopen Stages **1–207** scopes.

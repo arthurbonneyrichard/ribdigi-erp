@@ -667,6 +667,13 @@ Authoritative MVP docs:
 - `docs/TLS_INGRESS_REMAINING_GATE_MVP.md` / `ops/mvp/tls-ingress-remaining-gate.json` — Stage 207 I1
 - `docs/TLS_INGRESS_BLOCKERS_MVP.md` / `ops/mvp/tls-ingress-blockers.json` — Stage 207 B1
 - `docs/TLS_INGRESS_PACK_POINTERS_MVP.md` / `ops/mvp/tls-ingress-pack-pointers.json` — Stage 207 P1
+
+- `docs/STAGE_208_EXIT_CRITERIA.md` / `docs/ADR_423_STAGE208_FREEZE.md` (`backend/tests/test_stage208_exit_h208x.py`) — Stage 208 H208x
+- `docs/STAGE_208_FIDELITY.md` (`backend/tests/test_stage208_fidelity_d1.py`) — Stage 208 D1
+- `docs/STAGE_208_PLAN.md` (`backend/tests/test_stage208_open.py`) — Stage 208 open (ADR-422)
+- `docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md` / `ops/mvp/pgbouncer-soak-remaining-gate.json` — Stage 208 I1
+- `docs/PGBOUNCER_SOAK_BLOCKERS_MVP.md` / `ops/mvp/pgbouncer-soak-blockers.json` — Stage 208 B1
+- `docs/PGBOUNCER_SOAK_PACK_POINTERS_MVP.md` / `ops/mvp/pgbouncer-soak-pack-pointers.json` — Stage 208 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2647,6 +2654,19 @@ ADR-412 + `docs/STAGE_203_PLAN.md` — Cutover Remaining-Gate Index Fidelity (cl
 
 
 
+
+
+## Stage 208 exit
+
+H208x met — `docs/STAGE_208_EXIT_CRITERIA.md`, ADR-423. Stages 1–208 frozen for Stage 208 feature scope.
+
+## Stage 208 D1 — Tenant MVP PgBouncer Soak Remaining-Gate Index Fidelity
+
+See `docs/STAGE_208_FIDELITY.md`.
+
+## Stage 208 open
+
+ADR-422 / `docs/STAGE_208_PLAN.md`.
 
 ## Stage 207 exit
 

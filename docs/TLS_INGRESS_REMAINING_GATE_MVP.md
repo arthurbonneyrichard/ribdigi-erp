@@ -3,7 +3,7 @@
 **Status:** Complete (MVP packaging) — Stage 207 I1  
 **Evidence:** `backend/tests/test_stage207_index_i1.py`  
 **Register:** `ops/mvp/tls-ingress-remaining-gate.json`  
-**Related:** [TLS_INGRESS_BLOCKERS_MVP.md](TLS_INGRESS_BLOCKERS_MVP.md) · [TLS_INGRESS_PACK_POINTERS_MVP.md](TLS_INGRESS_PACK_POINTERS_MVP.md) · [TLS_INGRESS_PACK_MVP.md](TLS_INGRESS_PACK_MVP.md) · [K8S_DEPLOY_REMAINING_GATE_MVP.md](K8S_DEPLOY_REMAINING_GATE_MVP.md) · [STAGE_207_PLAN.md](STAGE_207_PLAN.md)
+**Related:** [TLS_INGRESS_BLOCKERS_MVP.md](TLS_INGRESS_BLOCKERS_MVP.md) · [TLS_INGRESS_PACK_POINTERS_MVP.md](TLS_INGRESS_PACK_POINTERS_MVP.md) · [TLS_INGRESS_PACK_MVP.md](TLS_INGRESS_PACK_MVP.md) · [K8S_DEPLOY_REMAINING_GATE_MVP.md](K8S_DEPLOY_REMAINING_GATE_MVP.md) · [STAGE_207_PLAN.md](STAGE_207_PLAN.md) · [PGBOUNCER_SOAK_REMAINING_GATE_MVP.md](PGBOUNCER_SOAK_REMAINING_GATE_MVP.md) (Stage 208)
 
 Single index of TLS / Ingress remaining gates. Packaging only — **live TLS ingress Complete remains MISSING.** Distinct from Stage 29 T1 TLS ingress packaging and Stage 206 k8s deploy remaining-gate.
 
