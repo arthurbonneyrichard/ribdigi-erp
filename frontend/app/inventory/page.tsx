@@ -4,7 +4,15 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'products' | 'import' | 'catalog' | 'variants' | 'batches' | 'expiry' | 'counts';
+type Tab =
+  | 'products'
+  | 'import'
+  | 'catalog'
+  | 'variants'
+  | 'batches'
+  | 'opening'
+  | 'expiry'
+  | 'counts';
 
 type ImportReportRow = {
   line: number;
@@ -79,9 +87,19 @@ export default function Page() {
   const [batchNumber, setBatchNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [stockQty, setStockQty] = useState('10');
+  const [openingQty, setOpeningQty] = useState('10');
+  const [openingWarehouseId, setOpeningWarehouseId] = useState('');
+  const [openingUnitId, setOpeningUnitId] = useState('');
+  const [openingUnitCost, setOpeningUnitCost] = useState('');
+  const [openingBatch, setOpeningBatch] = useState('');
+  const [openingExpiry, setOpeningExpiry] = useState('');
+  const [openingReference, setOpeningReference] = useState('');
+  const [openingNotes, setOpeningNotes] = useState('');
+  const [openingPostJournal, setOpeningPostJournal] = useState(true);
+  const [openingHistory, setOpeningHistory] = useState<any[]>([]);
 
   async function refresh() {
-    const [p, e, c, b, u, w, sc] = await Promise.all([
+    const [p, e, c, b, u, w, sc, os] = await Promise.all([
       api('/products'),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
@@ -89,6 +107,7 @@ export default function Page() {
       api('/catalog/units'),
       api('/warehouses'),
       api('/inventory/stock-counts'),
+      api('/inventory/opening-stock').catch(() => ({ data: [] })),
     ]);
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
@@ -97,8 +116,10 @@ export default function Page() {
     setUnits(u.data || []);
     setWarehouses(w.data || []);
     setCounts(sc.data || []);
+    setOpeningHistory(os.data || []);
     if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
+    if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
   }
 
   async function refreshSelected(id: string) {
@@ -519,6 +540,46 @@ export default function Page() {
     }
   }
 
+  async function postOpeningStock() {
+    setError('');
+    setMessage('');
+    if (!selectedId) {
+      setError('Select a product');
+      return;
+    }
+    try {
+      const line: Record<string, unknown> = {
+        product_id: selectedId,
+        quantity: Number(openingQty),
+        unit_id: openingUnitId || null,
+        warehouse_id: openingWarehouseId || null,
+        batch_number: openingBatch || null,
+        expiry_date: openingExpiry ? new Date(openingExpiry).toISOString() : null,
+      };
+      if (openingUnitCost !== '') line.unit_cost = Number(openingUnitCost);
+      const r = await api('/inventory/opening-stock', {
+        method: 'POST',
+        body: JSON.stringify({
+          reference: openingReference || null,
+          notes: openingNotes || null,
+          post_journal: openingPostJournal,
+          lines: [line],
+        }),
+      });
+      const je = r.data.journal_number ? ` · JE ${r.data.journal_number}` : '';
+      setMessage(
+        `Opening stock ${r.data.reference}: ${r.data.line_count} line(s), value ${r.data.inventory_value}${je}`,
+      );
+      setOpeningBatch('');
+      setOpeningNotes('');
+      await refresh();
+      await refreshSelected(selectedId);
+      setTab('opening');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   const selected = products.find((p) => p.id === selectedId);
 
   return (
@@ -536,6 +597,7 @@ export default function Page() {
             ['catalog', 'Catalog'],
             ['variants', 'Variants'],
             ['batches', 'Batches'],
+            ['opening', 'Opening stock'],
             ['expiry', 'Expiring'],
             ['counts', 'Stock counts'],
           ] as const
@@ -1084,6 +1146,113 @@ export default function Page() {
                   <td>{b.variant_id || '—'}</td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'opening' && (
+        <>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+            <h3>Opening stock (BR-5.2)</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Initialize on-hand quantity for go-live or fiscal year. Optionally posts Dr Inventory /
+              Cr Owner&apos;s Equity at cost.
+            </p>
+            <select
+              value={openingWarehouseId}
+              onChange={(e) => setOpeningWarehouseId(e.target.value)}
+            >
+              <option value="">Warehouse (optional)</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name || w.code || w.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            <input
+              value={openingQty}
+              onChange={(e) => setOpeningQty(e.target.value)}
+              placeholder="Quantity"
+            />
+            <select value={openingUnitId} onChange={(e) => setOpeningUnitId(e.target.value)}>
+              <option value="">Unit (product default)</option>
+              {units
+                .filter((u) => u.is_active !== false)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.code}
+                  </option>
+                ))}
+            </select>
+            <input
+              value={openingUnitCost}
+              onChange={(e) => setOpeningUnitCost(e.target.value)}
+              placeholder={`Unit cost (default ${selected?.cost_price ?? 0})`}
+            />
+            <input
+              value={openingBatch}
+              onChange={(e) => setOpeningBatch(e.target.value)}
+              placeholder="Batch number (if tracked)"
+            />
+            <input
+              type="date"
+              value={openingExpiry}
+              onChange={(e) => setOpeningExpiry(e.target.value)}
+            />
+            <input
+              value={openingReference}
+              onChange={(e) => setOpeningReference(e.target.value)}
+              placeholder="Reference (e.g. FY2026-OPEN)"
+            />
+            <input
+              value={openingNotes}
+              onChange={(e) => setOpeningNotes(e.target.value)}
+              placeholder="Notes"
+            />
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={openingPostJournal}
+                onChange={(e) => setOpeningPostJournal(e.target.checked)}
+              />
+              Post inventory / equity journal
+            </label>
+            <button type="button" onClick={postOpeningStock} disabled={!selectedId}>
+              Post opening stock
+            </button>
+          </div>
+          <h3>Recent opening movements</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>After</th>
+                <th>Entry</th>
+              </tr>
+            </thead>
+            <tbody>
+              {openingHistory.map((m) => {
+                const p = products.find((x) => x.id === m.product_id);
+                return (
+                  <tr key={m.id}>
+                    <td>{m.created_at ? String(m.created_at).slice(0, 19) : '—'}</td>
+                    <td>{p ? `${p.sku}` : m.product_id.slice(0, 8)}</td>
+                    <td>{m.quantity}</td>
+                    <td>{m.quantity_after}</td>
+                    <td>{m.reference_id ? String(m.reference_id).slice(0, 8) : '—'}</td>
+                  </tr>
+                );
+              })}
+              {!openingHistory.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No opening stock posted yet
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </>

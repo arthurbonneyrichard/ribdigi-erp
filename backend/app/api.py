@@ -131,6 +131,7 @@ from app.schemas import (
     SmsTestRequest,
     StockAdjust,
     StockMove,
+    OpeningStockCreate,
     StockTransferCreate,
     StockTransferReject,
     StoreCreate,
@@ -3370,6 +3371,42 @@ async def stock_in(
     )
     await db.commit()
     return env(result, "Stock in recorded")
+
+
+@api.post("/inventory/opening-stock")
+async def opening_stock_post(
+    payload: OpeningStockCreate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-5.2 — initialize on-hand stock (go-live / fiscal year) with optional equity journal."""
+    from app import opening_stock as opening_stock_svc
+
+    result = await opening_stock_svc.post_opening_stock(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        lines=[line.model_dump() for line in payload.lines],
+        post_journal=payload.post_journal,
+        reference=payload.reference,
+        notes=payload.notes,
+    )
+    await db.commit()
+    return env(result, "Opening stock recorded")
+
+
+@api.get("/inventory/opening-stock")
+async def opening_stock_list(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+    limit: int = 100,
+):
+    from app import opening_stock as opening_stock_svc
+
+    rows = await opening_stock_svc.list_opening_stock_movements(
+        db, claims["tenant_id"], limit=min(max(limit, 1), 500)
+    )
+    return env(rows)
 
 
 @api.post("/inventory/stock-out")

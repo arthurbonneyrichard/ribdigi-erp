@@ -347,6 +347,9 @@ async def stock_in_with_batch(
     batch_number: str | None = None,
     manufacturing_date: datetime | None = None,
     expiry_date: datetime | None = None,
+    movement_type: str = "stock_in",
+    reference_type: str | None = None,
+    reference_id: str | None = None,
 ) -> dict:
     from app.uom import to_stock_qty
 
@@ -413,12 +416,14 @@ async def stock_in_with_batch(
         tenant_id=tenant_id,
         product_id=product.id,
         quantity_delta=quantity_base,
-        movement_type="stock_in",
+        movement_type=movement_type,
         user_id=user_id,
         notes=note_text,
         warehouse_id=warehouse_id,
         variant_id=variant.id if variant else None,
         batch_id=batch.id if batch else None,
+        reference_type=reference_type,
+        reference_id=reference_id,
     )
     if variant:
         variant.stock_qty = float(variant.stock_qty or 0) + quantity_base
@@ -430,6 +435,7 @@ async def stock_in_with_batch(
         "quantity_base": quantity_base,
         "unit_id": entered_unit_id,
         "stock_unit_id": product.unit_id,
+        "cost_price": float(product.cost_price or 0),
         "variant": serialize_variant(variant) if variant else None,
         "batch": serialize_batch(batch) if batch else None,
     }

@@ -610,6 +610,35 @@ async def post_grn_journal(
     )
 
 
+async def post_opening_stock_journal(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    entry_id: str,
+    reference: str,
+    inventory_value: float,
+    description: str | None = None,
+) -> m.JournalEntry | None:
+    """Dr Inventory 1200 / Cr Owner's Equity 3000 for opening stock at cost."""
+    if inventory_value <= 0:
+        return None
+    await ensure_default_accounts(db, tenant_id)
+    return await post_journal_entry(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=description or f"Opening stock {reference}",
+        reference=reference,
+        source_type="opening_stock",
+        source_id=entry_id,
+        lines=[
+            {"account_code": "1200", "debit": inventory_value, "credit": 0, "description": "Opening inventory"},
+            {"account_code": "3000", "debit": 0, "credit": inventory_value, "description": "Opening equity"},
+        ],
+    )
+
+
 async def post_purchase_return_journal(
     db: AsyncSession,
     *,
