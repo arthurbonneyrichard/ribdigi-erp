@@ -986,6 +986,143 @@ async def purchases_pending_orders(
     }
 
 
+async def purchases_returns_summary(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    supplier_id: str | None = None,
+    reason: str | None = None,
+    status: str | None = None,
+) -> dict:
+    """Purchase return summary by period / reason / supplier (BR-14.3)."""
+    from app.purchasing import PURCHASE_RETURN_REASONS
+
+    if reason:
+        key = reason.strip().lower()
+        if key not in PURCHASE_RETURN_REASONS:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=400,
+                detail=f"reason must be one of {sorted(PURCHASE_RETURN_REASONS)}",
+            )
+        reason = key
+    if status:
+        status = status.strip().lower()
+        if status not in {"draft", "posted", "cancelled"}:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=400,
+                detail="status must be draft, posted, or cancelled",
+            )
+
+    stmt = (
+        select(m.PurchaseReturn, m.Party)
+        .join(m.Party, m.Party.id == m.PurchaseReturn.supplier_id)
+        .where(m.PurchaseReturn.tenant_id == tenant_id)
+        .order_by(m.PurchaseReturn.created_at.desc())
+    )
+    if supplier_id:
+        stmt = stmt.where(m.PurchaseReturn.supplier_id == supplier_id)
+    if reason:
+        stmt = stmt.where(m.PurchaseReturn.reason == reason)
+    if status:
+        stmt = stmt.where(m.PurchaseReturn.status == status)
+    if from_date:
+        stmt = stmt.where(m.PurchaseReturn.created_at >= from_date)
+    if to_date:
+        stmt = stmt.where(m.PurchaseReturn.created_at <= to_date)
+
+    rows = (await db.execute(stmt)).all()
+    by_reason: dict[str, dict] = {}
+    by_status: dict[str, int] = defaultdict(int)
+    by_supplier: dict[str, dict] = {}
+    returns: list[dict] = []
+    total_amount = 0.0
+    posted_amount = 0.0
+    total_qty = 0.0
+
+    for ret, party in rows:
+        items = (
+            await db.execute(
+                select(m.PurchaseReturnItem).where(
+                    m.PurchaseReturnItem.tenant_id == tenant_id,
+                    m.PurchaseReturnItem.purchase_return_id == ret.id,
+                )
+            )
+        ).scalars().all()
+        qty = round(sum(float(i.quantity or 0) for i in items), 3)
+        amount = float(ret.total_amount or 0)
+        total_amount += amount
+        total_qty += qty
+        by_status[ret.status] += 1
+        if ret.status == "posted":
+            posted_amount += amount
+
+        reason_row = by_reason.setdefault(
+            ret.reason or "other",
+            {"reason": ret.reason or "other", "return_count": 0, "total_amount": 0.0, "quantity": 0.0},
+        )
+        reason_row["return_count"] += 1
+        reason_row["total_amount"] = round(reason_row["total_amount"] + amount, 2)
+        reason_row["quantity"] = round(reason_row["quantity"] + qty, 3)
+
+        sup = by_supplier.setdefault(
+            party.id,
+            {
+                "supplier_id": party.id,
+                "name": party.name,
+                "return_count": 0,
+                "total_amount": 0.0,
+                "quantity": 0.0,
+            },
+        )
+        sup["return_count"] += 1
+        sup["total_amount"] = round(sup["total_amount"] + amount, 2)
+        sup["quantity"] = round(sup["quantity"] + qty, 3)
+
+        returns.append(
+            {
+                "id": ret.id,
+                "return_number": ret.return_number,
+                "debit_note_number": ret.debit_note_number,
+                "supplier_id": party.id,
+                "supplier_name": party.name,
+                "status": ret.status,
+                "reason": ret.reason,
+                "quantity": qty,
+                "subtotal": float(ret.subtotal or 0),
+                "tax_amount": float(ret.tax_amount or 0),
+                "total_amount": amount,
+                "goods_receipt_id": ret.goods_receipt_id,
+                "purchase_order_id": ret.purchase_order_id,
+                "posted_at": ret.posted_at,
+                "created_at": ret.created_at,
+            }
+        )
+
+    reasons = sorted(by_reason.values(), key=lambda x: x["total_amount"], reverse=True)
+    suppliers = sorted(by_supplier.values(), key=lambda x: x["total_amount"], reverse=True)
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "supplier_id": supplier_id,
+        "reason": reason,
+        "status": status,
+        "return_count": len(returns),
+        "total_amount": round(total_amount, 2),
+        "posted_amount": round(posted_amount, 2),
+        "total_quantity": round(total_qty, 3),
+        "by_status": dict(by_status),
+        "by_reason": reasons,
+        "by_supplier": suppliers,
+        "returns": returns,
+    }
+
+
 async def purchases_by_supplier(
     db: AsyncSession,
     tenant_id: str,

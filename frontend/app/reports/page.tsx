@@ -49,6 +49,7 @@ const REPORT_TYPES = [
   'inventory_low_stock',
   'purchases_summary',
   'purchases_pending_orders',
+  'purchases_returns',
   'expenses_summary',
   'expenses_budget_vs_actual',
   'cash_flow',
@@ -163,14 +164,16 @@ export default function Page() {
         });
         setSuggestSelected({});
       } else if (nextTab === 'purchases') {
-        const [suppliers, pending] = await Promise.all([
+        const [suppliers, pending, returns] = await Promise.all([
           api(`/reports/purchases/suppliers${qs()}`),
           api(`/reports/purchases/pending-orders${qs()}`),
+          api(`/reports/purchases/returns${qs()}`),
         ]);
         setData({
           summary: r.data,
           suppliers: suppliers.data,
           pending: pending.data,
+          returns: returns.data,
         });
       } else {
         setData(r.data);
@@ -863,7 +866,61 @@ export default function Page() {
             <button onClick={() => download('csv', 'purchases_pending_orders')}>
               Pending orders CSV
             </button>
+            <button onClick={() => download('xlsx', 'purchases_returns')}>
+              Returns Excel
+            </button>
+            <button onClick={() => download('csv', 'purchases_returns')}>
+              Returns CSV
+            </button>
           </div>
+          <h3 style={{ marginTop: 16 }}>Purchase returns</h3>
+          <p className="muted">
+            {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
+            posted {data.returns?.posted_amount ?? 0} · qty {data.returns?.total_quantity ?? 0}
+          </p>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Return</th>
+                <th>Supplier</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Qty</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.returns?.returns || []).map((ret: any) => (
+                <tr key={ret.id}>
+                  <td>{ret.return_number}</td>
+                  <td>{ret.supplier_name}</td>
+                  <td>{ret.reason}</td>
+                  <td>{ret.status}</td>
+                  <td>{ret.quantity}</td>
+                  <td>{ret.total_amount}</td>
+                </tr>
+              ))}
+              {!data.returns?.returns?.length && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No purchase returns
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {(data.returns?.by_reason || []).length > 0 && (
+            <>
+              <h4 style={{ marginTop: 12 }}>Returns by reason</h4>
+              <ul>
+                {data.returns.by_reason.map((x: any) => (
+                  <li key={x.reason}>
+                    {x.reason}: {x.return_count} · {x.total_amount} (qty {x.quantity})
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <h3 style={{ marginTop: 16 }}>Pending orders (not fully received)</h3>
           <table className="table">
             <thead>

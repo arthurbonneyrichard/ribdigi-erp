@@ -33,6 +33,7 @@ EXPORTABLE = frozenset(
         "purchases_summary",
         "purchases_suppliers",
         "purchases_pending_orders",
+        "purchases_returns",
         "expenses_summary",
         "expenses_budget_vs_actual",
         "cash_flow",
@@ -299,6 +300,16 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         ]
         return rows or [{"note": "no rows"}], lines, "Pending Purchase Orders"
 
+    if report_type == "purchases_returns":
+        items = payload.get("returns") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload) + [
+            f"{r.get('return_number')} {r.get('supplier_name')}: {r.get('reason')} "
+            f"{r.get('status')} amt={r.get('total_amount')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Purchase Returns Summary"
+
     if report_type == "expenses_summary":
         cats = payload.get("by_category") or []
         rows = cats if cats else [dict(payload)]
@@ -501,6 +512,10 @@ async def build_report_payload(
         return await reports_svc.purchases_by_supplier(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "purchases_pending_orders":
         return await reports_svc.purchases_pending_orders(
+            db, tenant_id, from_date=fd, to_date=td
+        )
+    if report_type == "purchases_returns":
+        return await reports_svc.purchases_returns_summary(
             db, tenant_id, from_date=fd, to_date=td
         )
     if report_type == "expenses_summary":
