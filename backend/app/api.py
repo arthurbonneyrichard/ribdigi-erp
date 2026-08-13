@@ -7400,6 +7400,7 @@ async def reports_export(
     jurisdiction: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    category_id: str | None = None,
     as_of: str | None = None,
     compare: str | None = None,
     claims=Depends(require_permission("reports", "read")),
@@ -7419,6 +7420,7 @@ async def reports_export(
         jurisdiction=jurisdiction,
         store_id=store_id or None,
         branch_id=branch_id or None,
+        category_id=category_id or None,
         as_of=as_of or None,
         compare=compare or None,
     )
@@ -7564,15 +7566,20 @@ async def report_sales_monthly(
 async def report_sales_products(
     from_date: str | None = None,
     to_date: str | None = None,
+    store_id: str | None = None,
+    category_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """BR-14.1 — product sales with optional store / category filters."""
     return env(
         await reports_svc.sales_by_product(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=store_id or None,
+            category_id=category_id or None,
         )
     )
 

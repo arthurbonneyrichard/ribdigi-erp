@@ -74,6 +74,8 @@ export default function Page() {
   const [compare, setCompare] = useState('');
   const [warehouseId, setWarehouseId] = useState('');
   const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [categoryId, setCategoryId] = useState('');
+  const [categories, setCategories] = useState<any[]>([]);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -131,7 +133,9 @@ export default function Page() {
         return;
       }
       let path = '/reports/summary';
-      if (nextTab === 'sales') path = `/reports/sales/products${qs()}`;
+      if (nextTab === 'sales') {
+        path = `/reports/sales/products${qs(categoryId ? { category_id: categoryId } : {})}`;
+      }
       if (nextTab === 'salesperson') path = `/reports/sales/salesperson${qs()}`;
       if (nextTab === 'customers') path = `/reports/sales/customers${qs()}`;
       if (nextTab === 'stores') path = `/reports/sales/by-store${qs()}`;
@@ -201,11 +205,13 @@ export default function Page() {
       api('/stores').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
       api('/warehouses').catch(() => ({ data: [] })),
+      api('/catalog/categories').catch(() => ({ data: [] })),
     ])
-      .then(([st, br, wh]) => {
+      .then(([st, br, wh, cats]) => {
         setStores(st.data || []);
         setBranches(br.data || []);
         setWarehouses(wh.data || []);
+        setCategories(cats.data || []);
       })
       .catch(() => undefined);
   }, []);
@@ -272,6 +278,12 @@ export default function Page() {
       if (toDate) params.set('to_date', toDate);
       if (storeId) params.set('store_id', storeId);
       if (branchId) params.set('branch_id', branchId);
+      if (
+        (reportType || TAB_EXPORT[tab]) === 'sales_products' ||
+        (!reportType && tab === 'sales')
+      ) {
+        if (categoryId) params.set('category_id', categoryId);
+      }
       if (
         (reportType || TAB_EXPORT[tab]) === 'balance_sheet' ||
         (reportType || TAB_EXPORT[tab]) === 'trial_balance'
@@ -437,16 +449,18 @@ export default function Page() {
             ))}
           </select>
         )}
-        {(tab === 'pnl' || tab === 'stores') && (
+        {(tab === 'pnl' || tab === 'stores' || tab === 'sales') && (
           <>
-            <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-              <option value="">All branches</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.code} — {b.name}
-                </option>
-              ))}
-            </select>
+            {(tab === 'pnl' || tab === 'stores') && (
+              <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+                <option value="">All branches</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.code} — {b.name}
+                  </option>
+                ))}
+              </select>
+            )}
             <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
               <option value="">All stores</option>
               {stores
@@ -458,6 +472,16 @@ export default function Page() {
                 ))}
             </select>
           </>
+        )}
+        {tab === 'sales' && (
+          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code} — {c.name}
+              </option>
+            ))}
+          </select>
         )}
         <button onClick={() => load()} disabled={loading}>
           {loading ? 'Loading…' : 'Apply filters'}
@@ -523,11 +547,17 @@ export default function Page() {
             </div>
           </div>
           <h3 style={{ marginTop: 16 }}>Products</h3>
+          <p className="muted">
+            Qty {data.products?.total_quantity ?? 0} · revenue {data.products?.total_revenue ?? 0}
+            {data.products?.store_id ? ' · store filtered' : ''}
+            {data.products?.category_name ? ` · ${data.products.category_name}` : ''}
+          </p>
           <table className="table">
             <thead>
               <tr>
                 <th>SKU</th>
                 <th>Name</th>
+                <th>Category</th>
                 <th>Qty</th>
                 <th>Revenue</th>
               </tr>
@@ -537,6 +567,7 @@ export default function Page() {
                 <tr key={p.product_id}>
                   <td>{p.sku}</td>
                   <td>{p.name}</td>
+                  <td>{p.category_name || '—'}</td>
                   <td>{p.quantity}</td>
                   <td>{p.revenue}</td>
                 </tr>

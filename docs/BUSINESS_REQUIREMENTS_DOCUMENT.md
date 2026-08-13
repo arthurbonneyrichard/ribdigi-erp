@@ -744,9 +744,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Comprehensive sales analysis.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Daily Sales:** Date, invoice count, total revenue, tax, discounts, net sales
-  - [ ] **Monthly Sales:** Monthly aggregation with trend comparison
-  - [ ] **Product Sales:** Product-wise quantity and revenue; filter by date, store, category
+  - [x] **Daily Sales:** Date, invoice count, total revenue, tax, discounts, net sales (`GET /reports/sales/daily`)
+  - [x] **Monthly Sales:** Monthly aggregation with trend comparison (`GET /reports/sales/monthly`)
+  - [x] **Product Sales:** Product-wise quantity and revenue; filter by date, store, category (`GET /reports/sales/products?store_id=&category_id=`; Reports Sales tab + export `sales_products`)
   - [x] **Customer Sales:** Top customers by revenue and frequency (`GET /reports/sales/customers`; invoices + POS; Reports Customers tab + export `sales_customers`)
   - [x] **Sales Return Summary:** Returns by reason/customer (`GET /reports/sales/returns`; Reports Sales tab + export `sales_returns`)
   - [x] **Salesperson Performance:** Sales by user/role (`GET /reports/sales/salesperson`)
