@@ -767,7 +767,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Purchase Summary:** Total purchases by period (`GET /reports/purchases/summary`)
   - [x] **Supplier Purchases:** Purchase volume and value per supplier (`GET /reports/purchases/suppliers`)
   - [x] **Pending Orders:** POs not yet received (`GET /reports/purchases/pending-orders`; draft/sent/partially_received; Reports Purchases tab + export)
-  - [ ] **Purchase Return Summary**
+  - [x] **Purchase Return Summary** (`GET /reports/purchases/returns`; by reason/supplier; Reports Purchases tab + export `purchases_returns`)
 
 #### BR-14.4 Expense Reports
 - **Description:** Expenditure analysis.
