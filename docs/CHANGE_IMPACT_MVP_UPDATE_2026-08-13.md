@@ -163,3 +163,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 181 decision (opened after Stage 180 freeze)
 
 **Tenant MVP Billing Remaining-Gate Index Fidelity** — billing remaining-gate hub (I1), blocker matrix (B1), ADR-002 / deferred honesty / commercial billing pointers with explicit non-claim (P1). Billing / payment provider / checkout Completes remain deferred (Stage 182+).
+## Stage 182 decision (opened after Stage 181 freeze)
+
+**Tenant MVP User↔Store Membership Remaining-Gate Index Fidelity** — membership remaining-gate hub (I1), blocker matrix (B1), ADR-005 / E2E users-RBAC / deferred ADR pointers with explicit non-claim (P1). Membership / `users.store_id` Completes remain deferred (Stage 183+).

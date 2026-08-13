@@ -33,3 +33,5 @@ Single index of paid-billing remaining gates. Packaging only — **billing Compl
 - Payment provider or checkout Completes
 - Fabricated MRR Completes
 - Go-live or Offline Complete
+
+See also Stage 182 membership remaining-gate index: [`MEMBERSHIP_REMAINING_GATE_MVP.md`](MEMBERSHIP_REMAINING_GATE_MVP.md).

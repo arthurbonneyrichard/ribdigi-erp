@@ -508,6 +508,12 @@ Authoritative MVP docs:
 - `docs/BILLING_REMAINING_GATE_MVP.md` / `ops/mvp/billing-remaining-gate.json` — Stage 181 I1
 - `docs/BILLING_BLOCKERS_MVP.md` / `ops/mvp/billing-blockers.json` — Stage 181 B1
 - `docs/BILLING_PACK_POINTERS_MVP.md` / `ops/mvp/billing-pack-pointers.json` — Stage 181 P1
+- `docs/STAGE_182_EXIT_CRITERIA.md` / `docs/ADR_371_STAGE182_FREEZE.md` (`backend/tests/test_stage182_exit_h182x.py`) — Stage 182 H182x
+- `docs/STAGE_182_FIDELITY.md` (`backend/tests/test_stage182_fidelity_d1.py`) — Stage 182 D1
+- `docs/STAGE_182_PLAN.md` (`backend/tests/test_stage182_open.py`) — Stage 182 open (ADR-370)
+- `docs/MEMBERSHIP_REMAINING_GATE_MVP.md` / `ops/mvp/membership-remaining-gate.json` — Stage 182 I1
+- `docs/MEMBERSHIP_BLOCKERS_MVP.md` / `ops/mvp/membership-blockers.json` — Stage 182 B1
+- `docs/MEMBERSHIP_PACK_POINTERS_MVP.md` / `ops/mvp/membership-pack-pointers.json` — Stage 182 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2221,6 +2227,18 @@ H181x met — `docs/STAGE_181_EXIT_CRITERIA.md`, ADR-369. Stages 1–181 frozen 
 ## Stage 181 open
 
 ADR-368 + `docs/STAGE_181_PLAN.md` — Billing Remaining-Gate Index Fidelity (closed under ADR-369).
+
+## Stage 182 exit
+
+H182x met — `docs/STAGE_182_EXIT_CRITERIA.md`, ADR-371. Stages 1–182 frozen for Stage 182 feature scope.
+
+## Stage 182 D1 — Tenant MVP User↔Store Membership Remaining-Gate Index Fidelity
+
+`docs/STAGE_182_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Membership Complete remains MISSING.
+
+## Stage 182 open
+
+ADR-370 + `docs/STAGE_182_PLAN.md` — Membership Remaining-Gate Index Fidelity (closed under ADR-371).
 
 ## Stage 165 open
 

@@ -24,6 +24,4 @@ Stage 181 Tenant MVP Billing Remaining-Gate Index Fidelity delivered billing rem
 
 ## Next stage
 
-Stage 182 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 181 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP user↔store membership remaining-gate index fidelity — single index of ADR-005 / membership blockers (`user_store_membership_claimed` false, store-scoped RBAC Completes non-claim) with explicit non-claim (no membership Complete).
+Stage **182** opened under **ADR-370** / frozen under **ADR-371** — Tenant MVP user↔store membership remaining-gate index fidelity (ADR-005 / membership blockers; `user_store_membership_claimed` false; store-scoped RBAC Completes non-claim) with explicit non-claim of membership Complete. Stage 181 feature scope remains frozen. Do not reopen Stages **1–181** scopes.

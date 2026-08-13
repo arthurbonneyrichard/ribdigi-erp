@@ -869,6 +869,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] ADR-002 / deferred honesty / commercial pointers (Stage 181 P1: `test_stage181_pointers_p1.py`, `docs/BILLING_PACK_POINTERS_MVP.md`)
 - [x] Stage 181 fidelity sync (D1: `test_stage181_fidelity_d1.py`, `docs/STAGE_181_FIDELITY.md`)
 - [x] Stage 181 exit + freeze (H181x: `test_stage181_exit_h181x.py`, `docs/STAGE_181_EXIT_CRITERIA.md`, ADR-369)
+- [x] Stage 182 track opened (ADR-370: `test_stage182_open.py`, `docs/STAGE_182_PLAN.md`) — Membership Remaining-Gate Index; closed under ADR-371
+- [x] Membership remaining-gate hub (Stage 182 I1: `test_stage182_index_i1.py`, `docs/MEMBERSHIP_REMAINING_GATE_MVP.md`)
+- [x] Membership blocker matrix (Stage 182 B1: `test_stage182_blockers_b1.py`, `docs/MEMBERSHIP_BLOCKERS_MVP.md`)
+- [x] ADR-005 / E2E users-RBAC / deferred ADR pointers (Stage 182 P1: `test_stage182_pointers_p1.py`, `docs/MEMBERSHIP_PACK_POINTERS_MVP.md`)
+- [x] Stage 182 fidelity sync (D1: `test_stage182_fidelity_d1.py`, `docs/STAGE_182_FIDELITY.md`)
+- [x] Stage 182 exit + freeze (H182x: `test_stage182_exit_h182x.py`, `docs/STAGE_182_EXIT_CRITERIA.md`, ADR-371)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

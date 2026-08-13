@@ -138,6 +138,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Billing remaining-gate index (Stage 181):** Status index is `docs/BILLING_REMAINING_GATE_MVP.md` → blockers `docs/BILLING_BLOCKERS_MVP.md` → ADR-002/honesty pointers `docs/BILLING_PACK_POINTERS_MVP.md`. Billing Complete remains MISSING (not claimed).
 
+**User↔store membership remaining-gate index (Stage 182):** Status index is `docs/MEMBERSHIP_REMAINING_GATE_MVP.md` → blockers `docs/MEMBERSHIP_BLOCKERS_MVP.md` → ADR-005/E2E pointers `docs/MEMBERSHIP_PACK_POINTERS_MVP.md`. Membership Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

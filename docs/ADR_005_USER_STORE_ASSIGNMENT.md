@@ -28,3 +28,5 @@ For Stage 1 / Commercial MVP:
 - BR-3.1 “branch/store assignment” is PARTIAL: branch (and department) yes; dedicated store assignment deferred.
 - Avoids parallel permission stacks and FK complexity during Stage 1 freeze.
 - Store managers remain editable on Multi-Store (Stage 1 C8).
+
+See also Stage 182 membership remaining-gate index: [`MEMBERSHIP_REMAINING_GATE_MVP.md`](MEMBERSHIP_REMAINING_GATE_MVP.md) (membership remains deferred; not Complete).

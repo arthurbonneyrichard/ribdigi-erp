@@ -47,3 +47,5 @@ Every step keeps `done: false`. Top-level `live_users_provisioned_claimed: false
 ## Sign-off
 
 Stage 35 U1 is met when this doc + register JSON + evidence JSON exist, `test_e2e_users_rbac_u1.py` passes, and SECURITY_GUIDE / LAUNCH_CHECKLIST / plan / roadmap cite Stage 35 U1 without inventing live user provisioning Complete.
+
+See also Stage 182 membership remaining-gate index: [`MEMBERSHIP_REMAINING_GATE_MVP.md`](MEMBERSHIP_REMAINING_GATE_MVP.md).

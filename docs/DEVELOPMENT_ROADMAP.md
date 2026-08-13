@@ -2796,6 +2796,18 @@ Every feature in every phase must meet:
 
 **Stage 181 exit (2026-08-13):** I1, B1, P1, D1, H181x met — `docs/STAGE_181_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_369_STAGE181_FREEZE.md`. Fidelity: `docs/STAGE_181_FIDELITY.md`.
 
+**Stage 182 open (2026-08-13):** Tenant MVP User↔Store Membership Remaining-Gate Index Fidelity — `docs/ADR_370_STAGE182_OPEN.md` + `docs/STAGE_182_PLAN.md` (I1 next).
+
+**Stage 182 I1 (2026-08-13):** Membership remaining-gate index hub (`test_stage182_index_i1.py`).
+
+**Stage 182 B1 (2026-08-13):** Membership blocker matrix (`test_stage182_blockers_b1.py`).
+
+**Stage 182 P1 (2026-08-13):** ADR-005 / E2E users-RBAC / deferred ADR pointers (`test_stage182_pointers_p1.py`).
+
+**Stage 182 D1 (2026-08-13):** Membership Remaining-Gate Index fidelity sync — `docs/STAGE_182_FIDELITY.md` (`test_stage182_fidelity_d1.py`).
+
+**Stage 182 exit (2026-08-13):** I1, B1, P1, D1, H182x met — `docs/STAGE_182_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_371_STAGE182_FREEZE.md`. Fidelity: `docs/STAGE_182_FIDELITY.md`.
+
 
 
 
