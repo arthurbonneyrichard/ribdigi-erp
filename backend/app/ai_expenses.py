@@ -117,12 +117,14 @@ async def expense_analysis(
             by_cat_id_amount[e.category or "Uncategorized"] += float(e.amount or 0)
 
     # Budget variance (scale monthly budget to period length)
+    from app.expenses import scale_monthly_budget
+
     budget_alerts: list[dict[str, Any]] = []
     for cat in categories:
         budget = float(cat.budget_amount or 0)
         if budget <= 0:
             continue
-        scaled = budget * (period_days / 30.0)
+        scaled = scale_monthly_budget(budget, period_days)
         spent = float(by_cat_id_amount.get(cat.id, 0) or by_cat_id_amount.get(cat.name, 0) or 0)
         variance_pct = round((spent - scaled) / scaled * 100.0, 1) if scaled else 0.0
         if spent > scaled * 1.0:

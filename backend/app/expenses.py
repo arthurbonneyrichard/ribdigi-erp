@@ -174,6 +174,61 @@ async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
     await db.flush()
 
 
+def scale_monthly_budget(budget_monthly: float, period_days: int) -> float:
+    """Scale a monthly category budget to an arbitrary reporting window (AI + reports)."""
+    days = max(1, int(period_days))
+    return float(budget_monthly or 0) * (days / 30.0)
+
+
+def serialize_category(cat: m.ExpenseCategory) -> dict:
+    return {
+        "id": cat.id,
+        "code": cat.code,
+        "name": cat.name,
+        "budget_amount": float(cat.budget_amount or 0),
+        "is_active": bool(cat.is_active),
+    }
+
+
+async def get_category(
+    db: AsyncSession, tenant_id: str, category_id: str
+) -> m.ExpenseCategory:
+    cat = (
+        await db.execute(
+            select(m.ExpenseCategory).where(
+                m.ExpenseCategory.id == category_id,
+                m.ExpenseCategory.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Expense category not found")
+    return cat
+
+
+async def update_category(
+    db: AsyncSession,
+    tenant_id: str,
+    category_id: str,
+    *,
+    name: str | None = None,
+    budget_amount: float | None = None,
+    is_active: bool | None = None,
+) -> m.ExpenseCategory:
+    cat = await get_category(db, tenant_id, category_id)
+    if name is not None:
+        cleaned = name.strip()
+        if not cleaned:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        cat.name = cleaned
+    if budget_amount is not None:
+        cat.budget_amount = float(budget_amount)
+    if is_active is not None:
+        cat.is_active = bool(is_active)
+    await db.flush()
+    return cat
+
+
 def resolve_tenant_levels(tenant: m.Tenant) -> list[dict]:
     raw = getattr(tenant, "expense_approval_matrix", None)
     if raw:

@@ -551,9 +551,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Classify business expenditures.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Predefined categories (Rent, Utilities, Salaries, Transportation, Marketing, etc.)
-  - [ ] Custom category creation
-  - [ ] Category-based budget allocation
+  - [x] Predefined categories (Rent, Utilities, Salaries, Transportation, Marketing, etc.)
+  - [x] Custom category creation
+  - [x] Category-based budget allocation (`budget_amount` monthly; `PATCH /expenses/categories/{id}`; Expenses UI)
 
 #### BR-9.2 Expense Entry
 - **Description:** Record business expenses.
@@ -772,9 +772,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Expenditure analysis.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Expense summary by category and period
-  - [ ] Budget vs actual comparison
-  - [ ] Top expense categories
+  - [x] Expense summary by category and period (`GET /reports/expenses/summary`)
+  - [x] Budget vs actual comparison (`GET /reports/expenses/budget-vs-actual`; monthly budget scaled by period days / 30)
+  - [x] Top expense categories (top 5 by actual on budget-vs-actual)
 
 #### BR-14.5 Financial Reports
 - **Description:** Business financial health.

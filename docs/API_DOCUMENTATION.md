@@ -850,7 +850,8 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 
 ### 9.1 Expense Categories
 **List:** `GET /expenses/categories`  
-**Create:** `POST /expenses/categories`
+**Create:** `POST /expenses/categories` — body `{ code, name, budget_amount? }`; response includes `budget_amount` / `is_active`  
+**Update:** `PATCH /expenses/categories/{category_id}` — partial `{ name?, budget_amount?, is_active? }` (monthly budget; BR-9.1)
 
 ### 9.2 Expenses
 **List:** `GET /expenses`  
@@ -1091,7 +1092,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Supplier Purchases:** `GET /reports/purchases/suppliers?supplier_id=&from_date=&to_date=`
 
 ### 14.4 Expense Reports
-**Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=`
+**Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=`  
+**Budget vs Actual:** `GET /reports/expenses/budget-vs-actual?from_date=&to_date=&category_id=` — scales each category's monthly `budget_amount` by `period_days/30` against approved spend; returns `rows`, `top_categories`, totals, and status `over_budget|under_budget|on_budget|no_budget`. Export type `expenses_budget_vs_actual`.
 
 ---
 

@@ -52,6 +52,10 @@ export default function Page() {
   const [ocrMeta, setOcrMeta] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [newCatCode, setNewCatCode] = useState('');
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatBudget, setNewCatBudget] = useState('0');
+  const [budgetDrafts, setBudgetDrafts] = useState<Record<string, string>>({});
 
   async function refresh() {
     const [exp, cats, settings, liquid] = await Promise.all([
@@ -66,12 +70,55 @@ export default function Page() {
     setThreshold(settings.data?.expense_approval_threshold ?? 100);
     setL2Threshold(settings.data?.expense_l2_threshold ?? 1000);
     setLevels(settings.data?.levels || []);
+    const drafts: Record<string, string> = {};
+    for (const c of cats.data || []) {
+      drafts[c.id] = String(c.budget_amount ?? 0);
+    }
+    setBudgetDrafts(drafts);
     if (!categoryId && cats.data?.length) setCategoryId(cats.data[0].id);
   }
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  async function createCategory() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/expenses/categories', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: newCatCode.trim(),
+          name: newCatName.trim(),
+          budget_amount: Number(newCatBudget) || 0,
+        }),
+      });
+      setNewCatCode('');
+      setNewCatName('');
+      setNewCatBudget('0');
+      setCategoryId(r.data.id);
+      await refresh();
+      setMessage(`Category ${r.data.code} created (budget ${r.data.budget_amount})`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveCategoryBudget(cat: Category) {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/expenses/categories/${cat.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ budget_amount: Number(budgetDrafts[cat.id]) || 0 }),
+      });
+      setMessage(`Budget for ${r.data.name} set to ${r.data.budget_amount}/mo`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
 
   async function createExpense() {
     setError('');
@@ -347,12 +394,77 @@ export default function Page() {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Category budgets</h3>
+        <p className="muted">Monthly budgets scale to the report period (Net 30 days = 1×).</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <input
+            value={newCatCode}
+            onChange={(e) => setNewCatCode(e.target.value)}
+            placeholder="Code"
+            style={{ width: 90 }}
+          />
+          <input
+            value={newCatName}
+            onChange={(e) => setNewCatName(e.target.value)}
+            placeholder="Name"
+            style={{ minWidth: 140 }}
+          />
+          <input
+            value={newCatBudget}
+            onChange={(e) => setNewCatBudget(e.target.value)}
+            placeholder="Monthly budget"
+            style={{ width: 120 }}
+          />
+          <button
+            type="button"
+            onClick={createCategory}
+            disabled={!newCatCode.trim() || !newCatName.trim()}
+          >
+            Add category
+          </button>
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Monthly budget</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((c) => (
+              <tr key={c.id}>
+                <td>{c.code}</td>
+                <td>{c.name}</td>
+                <td>
+                  <input
+                    value={budgetDrafts[c.id] ?? String(c.budget_amount ?? 0)}
+                    onChange={(e) =>
+                      setBudgetDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
+                    }
+                    style={{ width: 110 }}
+                  />
+                </td>
+                <td>
+                  <button type="button" onClick={() => saveCategoryBudget(c)}>
+                    Save
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
         <h3>New expense</h3>
         <div style={{ display: 'grid', gap: 8 }}>
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
+                {c.budget_amount ? ` · budget ${c.budget_amount}` : ''}
               </option>
             ))}
           </select>

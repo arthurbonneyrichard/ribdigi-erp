@@ -78,6 +78,7 @@ from app.schemas import (
     BankConnectionCreate,
     BankConnectionUpdate,
     ExpenseCategoryCreate,
+    ExpenseCategoryUpdate,
     ExpenseCreate,
     ExpenseDecision,
     ExpenseThresholdUpdate,
@@ -5986,7 +5987,31 @@ async def create_expense_category(
     except Exception as exc:
         await db.rollback()
         raise HTTPException(status_code=409, detail="Category code already exists") from exc
-    return env({"id": cat.id, "code": cat.code, "name": cat.name})
+    await db.refresh(cat)
+    return env(expenses_svc.serialize_category(cat))
+
+
+@api.patch("/expenses/categories/{category_id}")
+async def patch_expense_category(
+    category_id: str,
+    payload: ExpenseCategoryUpdate,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    cat = await expenses_svc.update_category(
+        db,
+        claims["tenant_id"],
+        category_id,
+        name=data.get("name"),
+        budget_amount=data.get("budget_amount"),
+        is_active=data.get("is_active"),
+    )
+    await db.commit()
+    await db.refresh(cat)
+    return env(expenses_svc.serialize_category(cat))
 
 
 @api.get("/expenses/settings")
@@ -7594,6 +7619,25 @@ async def report_expenses_summary(
 ):
     return env(
         await reports_svc.expenses_summary(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            category_id=category_id,
+        )
+    )
+
+
+@api.get("/reports/expenses/budget-vs-actual")
+async def report_expenses_budget_vs_actual(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    category_id: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await reports_svc.budget_vs_actual(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
