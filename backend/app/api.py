@@ -2722,6 +2722,7 @@ async def catalog_create_category(
         code=payload.code,
         name=payload.name,
         parent_id=payload.parent_id,
+        tax_rate_id=payload.tax_rate_id,
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_category(row), "Category created")
@@ -2736,6 +2737,7 @@ async def catalog_patch_category(
 ):
     data = payload.model_dump(exclude_unset=True)
     clear_parent = "parent_id" in data and data["parent_id"] is None
+    clear_tax_rate = "tax_rate_id" in data and data["tax_rate_id"] is None
     row = await catalog_meta_svc.update_category(
         db,
         tenant_id=claims["tenant_id"],
@@ -2743,8 +2745,10 @@ async def catalog_patch_category(
         code=data.get("code"),
         name=data.get("name"),
         parent_id=data.get("parent_id"),
+        tax_rate_id=data.get("tax_rate_id"),
         is_active=data.get("is_active"),
         clear_parent=clear_parent,
+        clear_tax_rate=clear_tax_rate,
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_category(row), "Category updated")

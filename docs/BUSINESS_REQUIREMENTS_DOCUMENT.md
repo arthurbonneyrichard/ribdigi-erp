@@ -255,10 +255,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Configure tax rules applicable to the business.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Add multiple tax rates (VAT, GST, etc.)
-  - [ ] Set default tax rate
-  - [ ] Tax applicability by product category
-  - [ ] Compound tax support
+  - [x] Add multiple tax rates (VAT, GST, etc.)
+  - [x] Set default tax rate
+  - [x] Tax applicability by product category
+  - [x] Compound tax support
 
 ---
 
@@ -685,11 +685,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Define and apply tax rules.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Add tax types (VAT, GST, Sales Tax, etc.)
-  - [ ] Configure tax rates (percentage)
-  - [ ] Set tax applicability (inclusive/exclusive pricing)
-  - [ ] Product-category-specific tax rules
-  - [ ] Compound tax (tax on tax) support
+  - [x] Add tax types (VAT, GST, Sales Tax, etc.)
+  - [x] Configure tax rates (percentage)
+  - [x] Set tax applicability (inclusive/exclusive pricing)
+  - [x] Product-category-specific tax rules
+  - [x] Compound tax (tax on tax) support
 
 #### BR-12.2 Automatic Tax Calculation
 - **Description:** Real-time tax computation on transactions.

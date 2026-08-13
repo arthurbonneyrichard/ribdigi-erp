@@ -305,13 +305,54 @@ def tax_spec_from_rate(rate: m.TaxRate, *, supply_class: str = "standard") -> Ta
     )
 
 
+async def resolve_category_tax_rate(
+    db: AsyncSession,
+    tenant_id: str,
+    category_id: str | None,
+    *,
+    max_depth: int = 16,
+) -> m.TaxRate | None:
+    """Walk category → parent until an active tax_rate_id is found (nearest wins)."""
+    seen: set[str] = set()
+    current_id = category_id
+    depth = 0
+    while current_id and depth < max_depth:
+        if current_id in seen:
+            break
+        seen.add(current_id)
+        cat = (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.id == current_id,
+                    m.ProductCategory.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not cat:
+            break
+        if cat.tax_rate_id:
+            try:
+                rate = await get_tax_rate(db, tenant_id, cat.tax_rate_id)
+            except HTTPException:
+                rate = None
+            if rate is not None and rate.is_active:
+                return rate
+        current_id = cat.parent_id
+        depth += 1
+    return None
+
+
 async def resolve_product_tax(
     db: AsyncSession,
     tenant_id: str,
     product: m.Product,
     explicit_rate: float | None = None,
 ) -> TaxSpec:
-    """Resolve full tax spec for a product line."""
+    """Resolve full tax spec for a product line.
+
+    Order: supply class exempt/zero → explicit line rate → product.tax_rate_id →
+    category (walk parents) → tenant default → 0%.
+    """
     supply = product_supply_class(product)
     if supply in {"exempt", "zero_rated"}:
         return TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class=supply)
@@ -328,6 +369,11 @@ async def resolve_product_tax(
         rate = await get_tax_rate(db, tenant_id, product.tax_rate_id)
         if rate.is_active:
             return tax_spec_from_rate(rate, supply_class="standard")
+    category_rate = await resolve_category_tax_rate(
+        db, tenant_id, getattr(product, "category_id", None)
+    )
+    if category_rate:
+        return tax_spec_from_rate(category_rate, supply_class="standard")
     default = await get_default_tax_rate(db, tenant_id)
     if default:
         return tax_spec_from_rate(default, supply_class="standard")

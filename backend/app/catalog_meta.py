@@ -29,6 +29,7 @@ def serialize_category(row: m.ProductCategory) -> dict:
         "parent_id": row.parent_id,
         "code": row.code,
         "name": row.name,
+        "tax_rate_id": getattr(row, "tax_rate_id", None),
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
@@ -124,6 +125,19 @@ async def list_categories(db: AsyncSession, tenant_id: str) -> list[m.ProductCat
     )
 
 
+async def _validate_category_tax_rate(
+    db: AsyncSession, *, tenant_id: str, tax_rate_id: str | None
+) -> str | None:
+    if tax_rate_id is None:
+        return None
+    rate = await db.get(m.TaxRate, tax_rate_id)
+    if rate is None or rate.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Tax rate not found")
+    if not rate.is_active:
+        raise HTTPException(status_code=400, detail="Tax rate is inactive")
+    return rate.id
+
+
 async def create_category(
     db: AsyncSession,
     *,
@@ -131,6 +145,7 @@ async def create_category(
     code: str,
     name: str,
     parent_id: str | None = None,
+    tax_rate_id: str | None = None,
 ) -> m.ProductCategory:
     code = code.strip().upper()
     name = name.strip()
@@ -140,6 +155,7 @@ async def create_category(
         parent = await db.get(m.ProductCategory, parent_id)
         if not parent or parent.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Parent category not found")
+    tax_rate_id = await _validate_category_tax_rate(db, tenant_id=tenant_id, tax_rate_id=tax_rate_id)
     dup = (
         await db.execute(
             select(m.ProductCategory).where(
@@ -155,6 +171,7 @@ async def create_category(
         code=code,
         name=name,
         parent_id=parent_id,
+        tax_rate_id=tax_rate_id,
         is_active=True,
     )
     db.add(row)
@@ -170,8 +187,10 @@ async def update_category(
     code: str | None = None,
     name: str | None = None,
     parent_id: str | None = None,
+    tax_rate_id: str | None = None,
     is_active: bool | None = None,
     clear_parent: bool = False,
+    clear_tax_rate: bool = False,
 ) -> m.ProductCategory:
     row = await db.get(m.ProductCategory, category_id)
     if row is None or row.tenant_id != tenant_id:
@@ -206,6 +225,12 @@ async def update_category(
         if not parent or parent.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Parent category not found")
         row.parent_id = parent_id
+    if clear_tax_rate:
+        row.tax_rate_id = None
+    elif tax_rate_id is not None:
+        row.tax_rate_id = await _validate_category_tax_rate(
+            db, tenant_id=tenant_id, tax_rate_id=tax_rate_id
+        )
     if is_active is not None:
         row.is_active = bool(is_active)
     await db.flush()
