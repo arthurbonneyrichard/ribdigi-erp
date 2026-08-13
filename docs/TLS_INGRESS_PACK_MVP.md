@@ -40,3 +40,5 @@ After TLS is Ready on staging:
 ## Sign-off
 
 Stage 29 T1 is met when this doc + checklist + ClusterIssuer/Ingress examples + evidence JSON exist, `test_tls_ingress_t1.py` passes, and DEPLOYMENT_GUIDE / K8S_DEPLOY_MVP / launch / roadmap cite Stage 29 T1 without inventing live issuance success.
+
+See also Stage 207 Tenant MVP TLS Ingress remaining-gate index fidelity (`docs/TLS_INGRESS_REMAINING_GATE_MVP.md`, ADR-420 / ADR-421) — packaging non-claim as live TLS ingress Complete.

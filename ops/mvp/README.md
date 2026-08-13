@@ -660,6 +660,13 @@ Authoritative MVP docs:
 - `docs/K8S_DEPLOY_REMAINING_GATE_MVP.md` / `ops/mvp/k8s-deploy-remaining-gate.json` — Stage 206 I1
 - `docs/K8S_DEPLOY_BLOCKERS_MVP.md` / `ops/mvp/k8s-deploy-blockers.json` — Stage 206 B1
 - `docs/K8S_DEPLOY_PACK_POINTERS_MVP.md` / `ops/mvp/k8s-deploy-pack-pointers.json` — Stage 206 P1
+
+- `docs/STAGE_207_EXIT_CRITERIA.md` / `docs/ADR_421_STAGE207_FREEZE.md` (`backend/tests/test_stage207_exit_h207x.py`) — Stage 207 H207x
+- `docs/STAGE_207_FIDELITY.md` (`backend/tests/test_stage207_fidelity_d1.py`) — Stage 207 D1
+- `docs/STAGE_207_PLAN.md` (`backend/tests/test_stage207_open.py`) — Stage 207 open (ADR-420)
+- `docs/TLS_INGRESS_REMAINING_GATE_MVP.md` / `ops/mvp/tls-ingress-remaining-gate.json` — Stage 207 I1
+- `docs/TLS_INGRESS_BLOCKERS_MVP.md` / `ops/mvp/tls-ingress-blockers.json` — Stage 207 B1
+- `docs/TLS_INGRESS_PACK_POINTERS_MVP.md` / `ops/mvp/tls-ingress-pack-pointers.json` — Stage 207 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2639,6 +2646,19 @@ H203x met — `docs/STAGE_203_EXIT_CRITERIA.md`, ADR-413. Stages 1–203 frozen 
 ADR-412 + `docs/STAGE_203_PLAN.md` — Cutover Remaining-Gate Index Fidelity (closed under ADR-413).
 
 
+
+
+## Stage 207 exit
+
+H207x met — `docs/STAGE_207_EXIT_CRITERIA.md`, ADR-421. Stages 1–207 frozen for Stage 207 feature scope.
+
+## Stage 207 D1 — Tenant MVP TLS Ingress Remaining-Gate Index Fidelity
+
+See `docs/STAGE_207_FIDELITY.md`.
+
+## Stage 207 open
+
+ADR-420 / `docs/STAGE_207_PLAN.md`.
 
 ## Stage 206 exit
 

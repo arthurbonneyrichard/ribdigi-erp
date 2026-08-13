@@ -1234,6 +1234,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 203 P1** | Stage 29 / Stage 27 / Stage 202 pointers (`test_stage203_pointers_p1.py`) |
 | **Stage 203 D1** | Cutover remaining-gate fidelity — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`) |
 | **Stage 203 H203x** | Exit + freeze — `docs/STAGE_203_EXIT_CRITERIA.md`, ADR-413 (`test_stage203_exit_h203x.py`); Stages 1–203 frozen |
+| **Stage 207 open** | TLS Ingress Remaining-Gate Index — `docs/STAGE_207_PLAN.md`, ADR-420 (`test_stage207_open.py`) |
+| **Stage 207 I1** | TLS ingress remaining-gate index hub (`test_stage207_index_i1.py`) |
+| **Stage 207 B1** | TLS ingress blocker matrix (`test_stage207_blockers_b1.py`) |
+| **Stage 207 P1** | Stage 29 / Stage 206 pointers (`test_stage207_pointers_p1.py`) |
+| **Stage 207 D1** | TLS ingress remaining-gate fidelity — `docs/STAGE_207_FIDELITY.md` (`test_stage207_fidelity_d1.py`) |
+| **Stage 207 H207x** | Exit + freeze — `docs/STAGE_207_EXIT_CRITERIA.md`, ADR-421 (`test_stage207_exit_h207x.py`); Stages 1–207 frozen |
 | **Stage 206 open** | K8s Deploy Remaining-Gate Index — `docs/STAGE_206_PLAN.md`, ADR-418 (`test_stage206_open.py`) |
 | **Stage 206 I1** | K8s deploy remaining-gate index hub (`test_stage206_index_i1.py`) |
 | **Stage 206 B1** | K8s deploy blocker matrix (`test_stage206_blockers_b1.py`) |

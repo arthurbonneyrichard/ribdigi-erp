@@ -3096,6 +3096,18 @@ Every feature in every phase must meet:
 
 **Stage 206 exit (2026-08-13):** I1, B1, P1, D1, H206x met — `docs/STAGE_206_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_419_STAGE206_FREEZE.md`. Fidelity: `docs/STAGE_206_FIDELITY.md`.
 
+**Stage 207 open (2026-08-13):** Tenant MVP TLS Ingress Remaining-Gate Index Fidelity — `docs/ADR_420_STAGE207_OPEN.md` + `docs/STAGE_207_PLAN.md` (I1 next).
+
+**Stage 207 I1 (2026-08-13):** TLS ingress remaining-gate index hub (`test_stage207_index_i1.py`).
+
+**Stage 207 B1 (2026-08-13):** TLS ingress blocker matrix (`test_stage207_blockers_b1.py`).
+
+**Stage 207 P1 (2026-08-13):** Stage 29 / Stage 206 pointers (`test_stage207_pointers_p1.py`).
+
+**Stage 207 D1 (2026-08-13):** TLS Ingress Remaining-Gate Index fidelity sync — `docs/STAGE_207_FIDELITY.md` (`test_stage207_fidelity_d1.py`).
+
+**Stage 207 exit (2026-08-13):** I1, B1, P1, D1, H207x met — `docs/STAGE_207_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_421_STAGE207_FREEZE.md`. Fidelity: `docs/STAGE_207_FIDELITY.md`.
+
 
 
 

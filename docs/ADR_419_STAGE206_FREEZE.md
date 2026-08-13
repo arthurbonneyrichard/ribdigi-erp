@@ -24,6 +24,4 @@ Stage 206 Tenant MVP K8s Deploy Remaining-Gate Index Fidelity delivered k8s depl
 
 ## Next stage
 
-Stage 207 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 206 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP TLS Ingress Remaining-Gate Index Fidelity — single index of TLS/ingress blockers (packaged Stage 29 T1 cert-manager/ingress materials non-claim as live TLS ingress Complete) with explicit non-claim (no live TLS ingress Complete). Distinct from Stage 206 k8s deploy remaining-gate.
+Stage **207** opened under **ADR-420** / frozen under **ADR-421** — Tenant MVP TLS Ingress remaining-gate index fidelity (packaged Stage 29 T1 cert-manager/ingress materials non-claim as live TLS ingress Complete) with explicit non-claim of live TLS ingress Complete. Stage 206 feature scope remains frozen. Do not reopen Stages **1–206** scopes.

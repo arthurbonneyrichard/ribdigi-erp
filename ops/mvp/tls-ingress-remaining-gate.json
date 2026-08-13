@@ -1,0 +1,53 @@
+{
+  "id": "tls-ingress-remaining-gate",
+  "stage": 207,
+  "pack": "I1",
+  "doc": "docs/TLS_INGRESS_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/TLS_INGRESS_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/TLS_INGRESS_PACK_POINTERS_MVP.md",
+    "tls_ingress_pack": "docs/TLS_INGRESS_PACK_MVP.md",
+    "k8s_deploy_remaining_gate": "docs/K8S_DEPLOY_REMAINING_GATE_MVP.md",
+    "tls_checklist": "ops/k8s/tls-checklist.json"
+  },
+  "packaging_complete": true,
+  "live_tls_ingress_claimed": false,
+  "letsencrypt_issued": false,
+  "go_live_claimed": false,
+  "live_cluster_deploy_claimed": false,
+  "distinct_from_stage29_t1_tls_ingress": true,
+  "distinct_from_stage206_k8s_deploy_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ti-read-blockers",
+      "title": "Read B1 TLS ingress blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ti-follow-pointers",
+      "title": "Follow P1 Stage 29 / Stage 206 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ti-tls-missing",
+      "title": "Reaffirm live TLS ingress MISSING until executed ACME issuance ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ti-no-packaging-as-tls",
+      "title": "Do not treat Stage 29 T1 as live TLS ingress Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ti-tls-remaining",
+      "title": "Live TLS ingress / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 207 I1 TLS ingress remaining-gate index packaging only. Do not claim live TLS ingress Complete."
+}
