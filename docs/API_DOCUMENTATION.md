@@ -1137,6 +1137,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Endpoint:** `GET /notifications/settings`  
 **Update:** `PATCH /notifications/settings`
 
+Categories include `low_stock`, `payment_due`, `purchase_received`, `expense_approval`, `credit_limit`, `shift_variance`, `new_order` (BR-15.1 — emitted on sales order create/confirm), `transfer`, `billing`, `security`, `system`. Each maps to dashboard/email/sms preference channels.
+
 ```json
 {
   "low_stock": { "dashboard": true, "email": true, "sms": false },

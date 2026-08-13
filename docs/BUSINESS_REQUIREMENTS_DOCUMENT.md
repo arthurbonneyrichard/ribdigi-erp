@@ -796,13 +796,13 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Automated alerts for business events.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Low Stock:** When product reaches reorder level
-  - [ ] **New Orders:** When sales order is created
-  - [ ] **Purchase Received:** When GRN is approved
-  - [ ] **Payment Due:** When invoice/bill approaches due date
+  - [x] **Low Stock:** When product reaches reorder level (`low_stock` scan / alerts)
+  - [x] **New Orders:** When sales order is created (`new_order` on create + confirm; preferences channel)
+  - [x] **Purchase Received:** When GRN is approved (`purchase_received` on GRN post)
+  - [x] **Payment Due:** When invoice/bill approaches due date (`payment_due` scan)
   - [x] **Credit Limit Reached:** When customer exceeds credit threshold (`credit_limit` notification at ≥80% utilization / override on invoice post)
   - [x] **Shift Variance:** When cash reconciliation shows discrepancy (`shift_variance` on close)
-  - [ ] **Expense Approval Required:** When expense exceeds threshold
+  - [x] **Expense Approval Required:** When expense exceeds threshold (`expense_approval`)
 
 #### BR-15.2 Notification Channels
 - **Description:** Multi-channel alert delivery.
