@@ -10,9 +10,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.inventory import apply_stock_change
-from app.tax import compute_line_total
+from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
 from app.doc_numbers import next_grn_number, next_purchase_order_number
+
+
+async def _purchase_line_tax(
+    db: AsyncSession,
+    tenant_id: str,
+    product: m.Product,
+    item: dict,
+) -> tuple[float, float, float, float]:
+    """Resolve purchase line tax (BR-12.2).
+
+    Returns (line_subtotal, line_tax, line_total, rate_pct).
+    ``tax_rate`` omitted/None → product → category → tenant default;
+    explicit value (including 0) wins.
+    """
+    explicit = item.get("tax_rate")
+    if explicit is not None:
+        spec = await resolve_product_tax(
+            db, tenant_id, product, explicit_rate=float(explicit)
+        )
+    else:
+        spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
+    qty = float(item.get("quantity") or 0)
+    unit = float(item.get("unit_price") or 0)
+    line_sub, line_tax, line_total = spec.compute_amounts(qty * unit)
+    return line_sub, line_tax, line_total, float(spec.rate_pct)
 
 PO_EDITABLE = {"draft"}
 PO_AMENDABLE = frozenset({"draft", "sent"})
@@ -256,8 +281,9 @@ async def create_purchase_order(
             unit_id=item.get("unit_id"),
             quantity=float(item["quantity"]),
         )
-        line_sub, line_tax, line_total = compute_line_total(
-            qty, item.get("unit_price", 0), item.get("tax_rate", 0)
+        line_item = {**item, "quantity": qty, "unit_price": item.get("unit_price", 0)}
+        line_sub, line_tax, line_total, rate_pct = await _purchase_line_tax(
+            db, tenant_id, product, line_item
         )
         subtotal += line_sub
         tax_total += line_tax
@@ -268,6 +294,7 @@ async def create_purchase_order(
                     "product_id": product.id,
                     "quantity": qty,
                     "unit_id": unit_id,
+                    "tax_rate": rate_pct,
                 },
                 line_total,
             )
@@ -464,8 +491,13 @@ async def amend_purchase_order(
                 unit_id=item.get("unit_id"),
                 quantity=float(item["quantity"]),
             )
-            line_sub, line_tax, line_total = compute_line_total(
-                qty, item.get("unit_price", 0), item.get("tax_rate", 0)
+            line_item = {
+                **item,
+                "quantity": qty,
+                "unit_price": float(item.get("unit_price") or 0),
+            }
+            line_sub, line_tax, line_total, rate_pct = await _purchase_line_tax(
+                db, tenant_id, product, line_item
             )
             subtotal += line_sub
             tax_total += line_tax
@@ -476,7 +508,7 @@ async def amend_purchase_order(
                         "quantity": qty,
                         "unit_id": unit_id,
                         "unit_price": float(item.get("unit_price") or 0),
-                        "tax_rate": float(item.get("tax_rate") or 0),
+                        "tax_rate": rate_pct,
                     },
                     line_total,
                 )
@@ -1519,9 +1551,11 @@ async def _prepare_invoice_lines(
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be positive")
         unit = float(item.get("unit_price") if item.get("unit_price") is not None else product.cost_price or 0)
-        rate = float(item.get("tax_rate") or 0)
         discount = float(item.get("discount") or 0)
-        line_sub, line_tax, line_total = compute_line_total(qty, unit, rate)
+        line_item = {**item, "quantity": qty, "unit_price": unit}
+        line_sub, line_tax, line_total, rate_pct = await _purchase_line_tax(
+            db, tenant_id, product, line_item
+        )
         line_total = max(line_total - discount, 0)
         subtotal += line_sub
         tax_total += line_tax
@@ -1530,7 +1564,7 @@ async def _prepare_invoice_lines(
                 "product_id": product.id,
                 "quantity": qty,
                 "unit_price": unit,
-                "tax_rate": rate,
+                "tax_rate": rate_pct,
                 "discount": discount,
                 "line_total": line_total,
             }

@@ -697,7 +697,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Real-time tax computation on transactions.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Auto-calculate tax on sales invoices, purchase invoices, POS transactions
+  - [x] Auto-calculate tax on sales invoices, purchase invoices, POS transactions (PO/PI omit `tax_rate` → product → category → tenant default via `resolve_product_tax`; explicit rate incl. 0 wins)
   - [ ] Display tax breakdown per line item and total
   - [x] Handle tax exemptions (zero-rated, exempt products)
   - [ ] Reverse charge mechanism support

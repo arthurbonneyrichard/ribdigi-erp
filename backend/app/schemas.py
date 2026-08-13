@@ -609,7 +609,8 @@ class PurchaseOrderItemCreate(BaseModel):
     quantity: float = Field(gt=0)
     unit_id: str | None = None  # entered UoM; GRN converts to product stock unit
     unit_price: float = Field(ge=0)
-    tax_rate: float = Field(default=0, ge=0)
+    # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
+    tax_rate: float | None = Field(default=None, ge=0)
 
 
 class PurchaseOrderCreate(BaseModel):
@@ -709,7 +710,8 @@ class PurchaseInvoiceItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
     unit_price: float | None = None
-    tax_rate: float = Field(default=0, ge=0)
+    # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
+    tax_rate: float | None = Field(default=None, ge=0)
     discount: float = Field(default=0, ge=0)
 
 
