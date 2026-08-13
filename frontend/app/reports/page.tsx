@@ -785,11 +785,30 @@ export default function Page() {
               <div className="kpi">{data.net}</div>
             </div>
           </div>
+          <div className="grid" style={{ marginTop: 12 }}>
+            {(
+              [
+                ['operating', 'Operating'],
+                ['investing', 'Investing'],
+                ['financing', 'Financing'],
+                ['transfers', 'Transfers'],
+              ] as const
+            ).map(([key, label]) => (
+              <div className="card" key={key}>
+                <div className="muted">{label}</div>
+                <div className="kpi">{data[key]?.net ?? 0}</div>
+                <p className="muted" style={{ margin: 0 }}>
+                  In {data[key]?.inflows ?? 0} · Out {data[key]?.outflows ?? 0}
+                </p>
+              </div>
+            ))}
+          </div>
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Entry</th>
+                <th>Activity</th>
                 <th>In</th>
                 <th>Out</th>
               </tr>
@@ -799,6 +818,7 @@ export default function Page() {
                 <tr key={`${l.entry_number}-${idx}`}>
                   <td>{String(l.date)}</td>
                   <td>{l.entry_number}</td>
+                  <td>{l.activity || '—'}</td>
                   <td>{l.inflow}</td>
                   <td>{l.outflow}</td>
                 </tr>

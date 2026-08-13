@@ -892,6 +892,42 @@ async def budget_vs_actual(
     }
 
 
+_CF_FINANCING_TYPES = frozenset({"coa_opening"})
+_CF_INVESTING_TYPES = frozenset()  # reserved for CapEx / fixed-asset sources
+
+
+def _empty_cf_bucket() -> dict:
+    return {"inflows": 0.0, "outflows": 0.0, "net": 0.0}
+
+
+def _round_cf_bucket(bucket: dict) -> dict:
+    return {
+        "inflows": round(float(bucket["inflows"]), 2),
+        "outflows": round(float(bucket["outflows"]), 2),
+        "net": round(float(bucket["inflows"]) - float(bucket["outflows"]), 2),
+    }
+
+
+def cash_flow_activity(
+    source_type: str | None,
+    *,
+    transfer_kind: str | None = None,
+) -> str:
+    """Classify a liquid-GL journal into operating|investing|financing|transfers (BR-10.6)."""
+    st = (source_type or "").strip().lower()
+    if st == "cash_transfer":
+        kind = (transfer_kind or "transfer").strip().lower()
+        if kind in {"deposit", "withdrawal"}:
+            return "financing"
+        return "transfers"
+    if st in _CF_FINANCING_TYPES:
+        return "financing"
+    if st in _CF_INVESTING_TYPES:
+        return "investing"
+    # Default unknown/blank to operating (conservative for working-capital cash)
+    return "operating"
+
+
 async def cash_flow(
     db: AsyncSession,
     tenant_id: str,
@@ -899,9 +935,15 @@ async def cash_flow(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
 ) -> dict:
-    """Cash flow from cash + bank GL accounts (is_cash_account / is_bank_account)."""
+    """Cash flow from cash + bank GL accounts with O/I/F sections (BR-10.6 / BR-14.5)."""
     from app.accounting import ensure_default_accounts
 
+    empty_sections = {
+        "operating": _round_cf_bucket(_empty_cf_bucket()),
+        "investing": _round_cf_bucket(_empty_cf_bucket()),
+        "financing": _round_cf_bucket(_empty_cf_bucket()),
+        "transfers": _round_cf_bucket(_empty_cf_bucket()),
+    }
     await ensure_default_accounts(db, tenant_id)
     liquid = (
         await db.execute(
@@ -920,7 +962,14 @@ async def cash_flow(
         ).scalar_one_or_none()
         liquid = [cash] if cash else []
     if not liquid:
-        return {"inflows": 0, "outflows": 0, "net": 0, "lines": [], "accounts": []}
+        return {
+            "inflows": 0,
+            "outflows": 0,
+            "net": 0,
+            **empty_sections,
+            "lines": [],
+            "accounts": [],
+        }
 
     account_ids = [a.id for a in liquid]
     by_id = {a.id: a for a in liquid}
@@ -929,6 +978,8 @@ async def cash_flow(
         .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
         .where(
             m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntry.status == "posted",
             m.JournalEntryLine.account_id.in_(account_ids),
         )
     )
@@ -937,6 +988,30 @@ async def cash_flow(
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
     rows = (await db.execute(stmt.order_by(m.JournalEntry.entry_date.asc()))).all()
+
+    transfer_ids = {
+        entry.source_id
+        for _line, entry in rows
+        if (entry.source_type or "").strip().lower() == "cash_transfer" and entry.source_id
+    }
+    transfer_kinds: dict[str, str] = {}
+    if transfer_ids:
+        for tid, kind in (
+            await db.execute(
+                select(m.CashTransfer.id, m.CashTransfer.kind).where(
+                    m.CashTransfer.tenant_id == tenant_id,
+                    m.CashTransfer.id.in_(transfer_ids),
+                )
+            )
+        ).all():
+            transfer_kinds[tid] = kind
+
+    buckets = {
+        "operating": _empty_cf_bucket(),
+        "investing": _empty_cf_bucket(),
+        "financing": _empty_cf_bucket(),
+        "transfers": _empty_cf_bucket(),
+    }
     inflows = 0.0
     outflows = 0.0
     lines = []
@@ -945,6 +1020,12 @@ async def cash_flow(
         credit = float(line.credit or 0)
         inflows += debit
         outflows += credit
+        activity = cash_flow_activity(
+            entry.source_type,
+            transfer_kind=transfer_kinds.get(entry.source_id or ""),
+        )
+        buckets[activity]["inflows"] += debit
+        buckets[activity]["outflows"] += credit
         acct = by_id.get(line.account_id)
         lines.append(
             {
@@ -956,12 +1037,17 @@ async def cash_flow(
                 "inflow": debit,
                 "outflow": credit,
                 "source_type": entry.source_type,
+                "activity": activity,
             }
         )
     return {
         "inflows": round(inflows, 2),
         "outflows": round(outflows, 2),
         "net": round(inflows - outflows, 2),
+        "operating": _round_cf_bucket(buckets["operating"]),
+        "investing": _round_cf_bucket(buckets["investing"]),
+        "financing": _round_cf_bucket(buckets["financing"]),
+        "transfers": _round_cf_bucket(buckets["transfers"]),
         "lines": lines,
         "accounts": [{"id": a.id, "code": a.code, "name": a.name} for a in liquid],
     }
