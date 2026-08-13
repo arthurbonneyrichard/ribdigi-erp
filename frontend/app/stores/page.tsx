@@ -15,6 +15,17 @@ type Store = {
   drawer_port?: number;
   drawer_open_on_cash?: boolean;
 };
+type Warehouse = {
+  id: string;
+  code: string;
+  name: string;
+  warehouse_type?: string;
+  manager_id?: string | null;
+  address?: string | null;
+  capacity?: number | null;
+  store_id?: string | null;
+};
+type UserRow = { id: string; email?: string; full_name?: string; name?: string };
 type Product = { id: string; name: string; sku: string; stock_qty: number };
 type Transfer = {
   id: string;
@@ -30,12 +41,22 @@ type Transfer = {
 
 export default function Page() {
   const [stores, setStores] = useState<Store[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [whCode, setWhCode] = useState('');
+  const [whName, setWhName] = useState('');
+  const [whType, setWhType] = useState('retail');
+  const [whAddress, setWhAddress] = useState('');
+  const [whCapacity, setWhCapacity] = useState('');
+  const [whManagerId, setWhManagerId] = useState('');
+  const [whStoreId, setWhStoreId] = useState('');
+  const [editWhId, setEditWhId] = useState('');
   const [fromStore, setFromStore] = useState('');
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
@@ -54,15 +75,19 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [s, p, t, settings] = await Promise.all([
+    const [s, p, t, settings, wh, u] = await Promise.all([
       api('/stores'),
       api('/products'),
       api('/stores/transfers'),
       api('/inventory/settings').catch(() => ({ data: { fefo_strict_warehouse: false } })),
+      api('/warehouses').catch(() => ({ data: [] })),
+      api('/users').catch(() => ({ data: [] })),
     ]);
     setStores(s.data || []);
     setProducts(p.data || []);
     setTransfers(t.data || []);
+    setWarehouses(wh.data || []);
+    setUsers(u.data || []);
     setFefoStrict(!!settings.data?.fefo_strict_warehouse);
     if (!fromStore && s.data?.length) setFromStore(s.data[0].id);
     if (!toStore && s.data?.length > 1) setToStore(s.data[1].id);
@@ -97,6 +122,86 @@ export default function Page() {
       setError(err.message);
     }
   }
+
+  async function createWarehouse() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/warehouses', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: whCode.trim(),
+          name: whName.trim(),
+          warehouse_type: whType,
+          address: whAddress.trim() || null,
+          capacity: whCapacity === '' ? null : Number(whCapacity),
+          manager_id: whManagerId || null,
+          store_id: whStoreId || null,
+        }),
+      });
+      setWhCode('');
+      setWhName('');
+      setWhType('retail');
+      setWhAddress('');
+      setWhCapacity('');
+      setWhManagerId('');
+      setWhStoreId('');
+      setMessage('Warehouse created');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveWarehouseEdit() {
+    if (!editWhId) return;
+    setError('');
+    setMessage('');
+    try {
+      await api(`/warehouses/${editWhId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: whName.trim() || undefined,
+          warehouse_type: whType,
+          address: whAddress,
+          capacity: whCapacity === '' ? null : Number(whCapacity),
+          clear_capacity: whCapacity === '',
+          manager_id: whManagerId || null,
+          clear_manager: !whManagerId,
+          store_id: whStoreId || null,
+          clear_store: !whStoreId,
+        }),
+      });
+      setEditWhId('');
+      setWhCode('');
+      setWhName('');
+      setWhType('retail');
+      setWhAddress('');
+      setWhCapacity('');
+      setWhManagerId('');
+      setWhStoreId('');
+      setMessage('Warehouse updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function startEditWarehouse(w: Warehouse) {
+    setEditWhId(w.id);
+    setWhCode(w.code);
+    setWhName(w.name);
+    setWhType(w.warehouse_type || 'retail');
+    setWhAddress(w.address || '');
+    setWhCapacity(w.capacity != null ? String(w.capacity) : '');
+    setWhManagerId(w.manager_id || '');
+    setWhStoreId(w.store_id || '');
+  }
+
+  const userLabel = (id: string) => {
+    const u = users.find((x) => x.id === id);
+    return u?.full_name || u?.name || u?.email || id.slice(0, 8);
+  };
 
   async function saveDrawerSettings() {
     if (!drawerStoreId) return;
@@ -224,6 +329,80 @@ export default function Page() {
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
             <button onClick={createStore}>Create store</button>
+          </div>
+        </div>
+        <div className="card">
+          <h3>{editWhId ? 'Edit warehouse' : 'New warehouse'}</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <input
+              value={whCode}
+              onChange={(e) => setWhCode(e.target.value)}
+              placeholder="Code"
+              disabled={!!editWhId}
+            />
+            <input value={whName} onChange={(e) => setWhName(e.target.value)} placeholder="Name" />
+            <select value={whType} onChange={(e) => setWhType(e.target.value)} title="Warehouse type">
+              <option value="retail">Retail</option>
+              <option value="bulk">Bulk</option>
+              <option value="cold_storage">Cold storage</option>
+              <option value="other">Other</option>
+            </select>
+            <input
+              value={whAddress}
+              onChange={(e) => setWhAddress(e.target.value)}
+              placeholder="Address"
+            />
+            <input
+              value={whCapacity}
+              onChange={(e) => setWhCapacity(e.target.value)}
+              placeholder="Capacity (optional)"
+            />
+            <select value={whManagerId} onChange={(e) => setWhManagerId(e.target.value)}>
+              <option value="">Manager (optional)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            <select value={whStoreId} onChange={(e) => setWhStoreId(e.target.value)}>
+              <option value="">Linked store (optional)</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
+                </option>
+              ))}
+            </select>
+            {editWhId ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" onClick={saveWarehouseEdit} disabled={!whName.trim()}>
+                  Save warehouse
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditWhId('');
+                    setWhCode('');
+                    setWhName('');
+                    setWhType('retail');
+                    setWhAddress('');
+                    setWhCapacity('');
+                    setWhManagerId('');
+                    setWhStoreId('');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={createWarehouse}
+                disabled={!whCode.trim() || !whName.trim()}
+              >
+                Create warehouse
+              </button>
+            )}
           </div>
         </div>
         <div className="card">
@@ -390,6 +569,46 @@ export default function Page() {
           </table>
         </div>
       )}
+
+      <h3 style={{ marginTop: 16 }}>Warehouses</h3>
+      <p className="muted">Type, manager, address, and capacity (BR-2.4).</p>
+      <table className="table" style={{ marginBottom: 24 }}>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Manager</th>
+            <th>Address</th>
+            <th>Capacity</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {warehouses.map((w) => (
+            <tr key={w.id}>
+              <td>{w.code}</td>
+              <td>{w.name}</td>
+              <td>{w.warehouse_type || 'retail'}</td>
+              <td>{w.manager_id ? userLabel(w.manager_id) : '—'}</td>
+              <td>{w.address || '—'}</td>
+              <td>{w.capacity != null ? w.capacity : '—'}</td>
+              <td>
+                <button type="button" onClick={() => startEditWarehouse(w)}>
+                  Edit
+                </button>
+              </td>
+            </tr>
+          ))}
+          {warehouses.length === 0 && (
+            <tr>
+              <td colSpan={7} className="muted">
+                No warehouses yet
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
 
       <h3 style={{ marginTop: 16 }}>Transfers</h3>
       <p className="muted">

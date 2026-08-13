@@ -172,6 +172,7 @@ from app.schemas import (
     StockCountCreate,
     StockCountItemsUpdate,
     WarehouseCreate,
+    WarehouseUpdate,
 )
 from app.security import (
     create_access_token,
@@ -8958,10 +8959,24 @@ async def cancel_transfer(
 
 @api.get("/warehouses")
 async def warehouses(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
+    from app import warehouses as warehouses_svc
+
     rows = (
         await db.execute(select(m.Warehouse).where(m.Warehouse.tenant_id == claims["tenant_id"]))
     ).scalars().all()
-    return env(rows)
+    return env([warehouses_svc.serialize_warehouse(r) for r in rows])
+
+
+@api.get("/warehouses/{warehouse_id}")
+async def get_warehouse(
+    warehouse_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import warehouses as warehouses_svc
+
+    row = await warehouses_svc.get_warehouse(db, claims["tenant_id"], warehouse_id)
+    return env(warehouses_svc.serialize_warehouse(row))
 
 
 @api.post("/warehouses")
@@ -8970,10 +8985,50 @@ async def add_warehouse(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    warehouse = m.Warehouse(tenant_id=claims["tenant_id"], **payload.model_dump())
-    db.add(warehouse)
+    from app import warehouses as warehouses_svc
+
+    warehouse = await warehouses_svc.create_warehouse(
+        db,
+        tenant_id=claims["tenant_id"],
+        name=payload.name,
+        code=payload.code,
+        store_id=payload.store_id,
+        warehouse_type=payload.warehouse_type,
+        manager_id=payload.manager_id,
+        address=payload.address,
+        capacity=payload.capacity,
+    )
     await db.commit()
-    return env({"id": warehouse.id})
+    await db.refresh(warehouse)
+    return env(warehouses_svc.serialize_warehouse(warehouse), "Warehouse created")
+
+
+@api.patch("/warehouses/{warehouse_id}")
+async def patch_warehouse(
+    warehouse_id: str,
+    payload: WarehouseUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import warehouses as warehouses_svc
+
+    warehouse = await warehouses_svc.update_warehouse(
+        db,
+        tenant_id=claims["tenant_id"],
+        warehouse_id=warehouse_id,
+        name=payload.name,
+        store_id=payload.store_id,
+        clear_store=payload.clear_store,
+        warehouse_type=payload.warehouse_type,
+        manager_id=payload.manager_id,
+        clear_manager=payload.clear_manager,
+        address=payload.address,
+        capacity=payload.capacity,
+        clear_capacity=payload.clear_capacity,
+    )
+    await db.commit()
+    await db.refresh(warehouse)
+    return env(warehouses_svc.serialize_warehouse(warehouse), "Warehouse updated")
 
 
 @api.get("/reports/summary")

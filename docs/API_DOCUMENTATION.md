@@ -298,6 +298,26 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 }
 ```
 
+### 3.5b Warehouses (BR-2.4)
+**List:** `GET /warehouses`  
+**Get:** `GET /warehouses/{warehouse_id}`  
+**Create:** `POST /warehouses`  
+**Update:** `PATCH /warehouses/{warehouse_id}`
+
+```json
+{
+  "name": "Cold Room A",
+  "code": "WH-COLD-A",
+  "warehouse_type": "cold_storage",
+  "manager_id": "user_uuid",
+  "address": "Zone 3, Industrial Area",
+  "capacity": 1200.5,
+  "store_id": null
+}
+```
+
+`warehouse_type`: `retail` | `bulk` | `cold_storage` | `other`. PATCH supports `clear_manager`, `clear_store`, `clear_capacity`.
+
 ---
 
 ## 4. User Management

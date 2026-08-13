@@ -219,6 +219,11 @@ class Warehouse(Base):
     store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
     name: Mapped[str] = mapped_column(String(150))
     code: Mapped[str] = mapped_column(String(50))
+    # retail | bulk | cold_storage | other
+    warehouse_type: Mapped[str] = mapped_column(String(32), default="retail", server_default="retail")
+    manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    capacity: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
 
 
 class WarehouseStock(Base):
