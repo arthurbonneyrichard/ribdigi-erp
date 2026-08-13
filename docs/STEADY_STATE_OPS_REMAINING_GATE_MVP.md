@@ -30,3 +30,5 @@ Single index of steady-state ops remaining gates. Packaging only — **steady-st
 - Steady-state ops live Complete
 - First commercial day live Completes
 - Commercial acceptance / go-live Completes
+
+See also Stage 199 first commercial day remaining-gate index: [`FIRST_COMMERCIAL_DAY_REMAINING_GATE_MVP.md`](FIRST_COMMERCIAL_DAY_REMAINING_GATE_MVP.md).

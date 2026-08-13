@@ -1,0 +1,53 @@
+{
+  "id": "first-commercial-day-remaining-gate",
+  "stage": 199,
+  "pack": "I1",
+  "doc": "docs/FIRST_COMMERCIAL_DAY_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/FIRST_COMMERCIAL_DAY_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/FIRST_COMMERCIAL_DAY_PACK_POINTERS_MVP.md",
+    "first_commercial_day": "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+    "commercial_golive_closeout": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+    "steady_state_ops_remaining_gate": "docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "first_commercial_day_claimed": false,
+  "commercial_day_ops_live_claimed": false,
+  "go_live_claimed": false,
+  "steady_state_ops_claimed": false,
+  "distinct_from_stage70_f1_first_commercial_day": true,
+  "distinct_from_stage70_g1_commercial_golive_closeout": true,
+  "steps": [
+    {
+      "id": "fd-read-blockers",
+      "title": "Read B1 first commercial day blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fd-follow-pointers",
+      "title": "Follow P1 Stage 70 / Stage 198 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fd-day-missing",
+      "title": "Reaffirm first commercial day live MISSING until executed first-day ops ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fd-no-packaging-as-live",
+      "title": "Do not treat Stage 70 F1 / Stage 70 G1 as first commercial day live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fd-day-remaining",
+      "title": "First commercial day live / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 199 I1 first commercial day remaining-gate index packaging only. Do not claim first commercial day live Complete."
+}

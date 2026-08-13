@@ -214,3 +214,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 198 decision (opened after Stage 197 freeze)
 
 **Tenant MVP Steady-State Ops Remaining-Gate Index Fidelity** — steady-state ops remaining-gate hub (I1), blocker matrix (B1), Stage 71 / Stage 70 / Stage 197 pointers with explicit non-claim (P1). Steady-state ops live Completes remain deferred (Stage 199+).
+## Stage 199 decision (opened after Stage 198 freeze)
+
+**Tenant MVP First Commercial Day Remaining-Gate Index Fidelity** — first commercial day remaining-gate hub (I1), blocker matrix (B1), Stage 70 / Stage 198 pointers with explicit non-claim (P1). First commercial day live Completes remain deferred (Stage 200+).

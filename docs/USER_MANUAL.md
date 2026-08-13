@@ -172,6 +172,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Steady-state ops remaining-gate index (Stage 198):** Status index is `docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md` → blockers `docs/STEADY_STATE_OPS_BLOCKERS_MVP.md` → Stage 71/70 pointers `docs/STEADY_STATE_OPS_PACK_POINTERS_MVP.md`. Steady-state ops live Complete remains MISSING (not claimed).
 
+**First commercial day remaining-gate index (Stage 199):** Status index is `docs/FIRST_COMMERCIAL_DAY_REMAINING_GATE_MVP.md` → blockers `docs/FIRST_COMMERCIAL_DAY_BLOCKERS_MVP.md` → Stage 70 pointers `docs/FIRST_COMMERCIAL_DAY_PACK_POINTERS_MVP.md`. First commercial day live Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health
