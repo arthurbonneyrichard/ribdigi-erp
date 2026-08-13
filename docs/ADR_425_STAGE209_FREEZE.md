@@ -24,6 +24,4 @@ Stage 209 Tenant MVP Pentest Remaining-Gate Index Fidelity delivered pentest rem
 
 ## Next stage
 
-Stage 210 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 209 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Security Scan Remaining-Gate Index Fidelity — single index of security-scan blockers (packaged Stage 27 S1 OWASP/security-scan materials non-claim as live security-scan Complete) with explicit non-claim (no live security-scan Complete). Distinct from Stage 209 pentest remaining-gate.
+Stage **210** opened under **ADR-426** / frozen under **ADR-427** — Tenant MVP Security Scan remaining-gate index fidelity (packaged Stage 27 S1 OWASP/security-scan materials non-claim as live security-scan Complete) with explicit non-claim of live security-scan Complete. Stage 209 feature scope remains frozen. Do not reopen Stages **1–209** scopes.

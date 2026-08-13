@@ -182,6 +182,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Cutover remaining-gate index (Stage 203):** Status index is `docs/CUTOVER_REMAINING_GATE_MVP.md` → blockers `docs/CUTOVER_BLOCKERS_MVP.md` → Stage 29/27 pointers `docs/CUTOVER_PACK_POINTERS_MVP.md`. Live production cutover Complete remains MISSING (not claimed).
 
+**Security scan remaining-gate index (Stage 210):** Status index is `docs/SECURITY_SCAN_REMAINING_GATE_MVP.md` → blockers `docs/SECURITY_SCAN_BLOCKERS_MVP.md` → Stage 27/209 pointers `docs/SECURITY_SCAN_PACK_POINTERS_MVP.md`. Live security-scan Complete remains MISSING (not claimed).
+
 **Pentest remaining-gate index (Stage 209):** Status index is `docs/PENTEST_REMAINING_GATE_MVP.md` → blockers `docs/PENTEST_BLOCKERS_MVP.md` → Stage 29/208 pointers `docs/PENTEST_PACK_POINTERS_MVP.md`. Live pentest Complete remains MISSING (not claimed).
 
 **PgBouncer soak remaining-gate index (Stage 208):** Status index is `docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md` → blockers `docs/PGBOUNCER_SOAK_BLOCKERS_MVP.md` → Stage 29/207 pointers `docs/PGBOUNCER_SOAK_PACK_POINTERS_MVP.md`. Live PgBouncer soak Complete remains MISSING (not claimed).

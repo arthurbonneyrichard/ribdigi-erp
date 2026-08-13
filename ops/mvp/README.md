@@ -681,6 +681,13 @@ Authoritative MVP docs:
 - `docs/PENTEST_REMAINING_GATE_MVP.md` / `ops/mvp/pentest-remaining-gate.json` — Stage 209 I1
 - `docs/PENTEST_BLOCKERS_MVP.md` / `ops/mvp/pentest-blockers.json` — Stage 209 B1
 - `docs/PENTEST_PACK_POINTERS_MVP.md` / `ops/mvp/pentest-pack-pointers.json` — Stage 209 P1
+
+- `docs/STAGE_210_EXIT_CRITERIA.md` / `docs/ADR_427_STAGE210_FREEZE.md` (`backend/tests/test_stage210_exit_h210x.py`) — Stage 210 H210x
+- `docs/STAGE_210_FIDELITY.md` (`backend/tests/test_stage210_fidelity_d1.py`) — Stage 210 D1
+- `docs/STAGE_210_PLAN.md` (`backend/tests/test_stage210_open.py`) — Stage 210 open (ADR-426)
+- `docs/SECURITY_SCAN_REMAINING_GATE_MVP.md` / `ops/mvp/security-scan-remaining-gate.json` — Stage 210 I1
+- `docs/SECURITY_SCAN_BLOCKERS_MVP.md` / `ops/mvp/security-scan-blockers.json` — Stage 210 B1
+- `docs/SECURITY_SCAN_PACK_POINTERS_MVP.md` / `ops/mvp/security-scan-pack-pointers.json` — Stage 210 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2663,6 +2670,19 @@ ADR-412 + `docs/STAGE_203_PLAN.md` — Cutover Remaining-Gate Index Fidelity (cl
 
 
 
+
+
+## Stage 210 exit
+
+H210x met — `docs/STAGE_210_EXIT_CRITERIA.md`, ADR-427. Stages 1–210 frozen for Stage 210 feature scope.
+
+## Stage 210 D1 — Tenant MVP Security Scan Remaining-Gate Index Fidelity
+
+See `docs/STAGE_210_FIDELITY.md`.
+
+## Stage 210 open
+
+ADR-426 / `docs/STAGE_210_PLAN.md`.
 
 ## Stage 209 exit
 

@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 209 froze Tenant MVP Pentest Remaining-Gate Index Fidelity (ADR-425) — pentest remaining-gate hub, blocker matrix, Stage 29/208 pointers, explicit live pentest non-claim. Live pentest Complete remains MISSING. Next recommended distinct outline: Tenant MVP Security Scan Remaining-Gate Index Fidelity (packaged Stage 27 S1 OWASP/security-scan materials non-claim as live security-scan Complete — explicit non-claim) — Stage 210+. Do not claim live pentest Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 210 froze Tenant MVP Security Scan Remaining-Gate Index Fidelity (ADR-427) — security scan remaining-gate hub, blocker matrix, Stage 27/209 pointers, explicit live security-scan non-claim. Live security-scan Complete remains MISSING. Next recommended distinct outline: Tenant MVP Incident Pack Remaining-Gate Index Fidelity (packaged incident/runbook materials non-claim as live incident-response Complete — explicit non-claim) — Stage 211+. Do not claim live security-scan Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

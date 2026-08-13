@@ -40,3 +40,5 @@ Packaging covers engagement checklist + OWASP scope matrix + evidence schema. Ev
 ## Sign-off
 
 Stage 27 S1 is met when this doc + evidence JSON exist, `test_security_scan_s1.py` passes, SECURITY_GUIDE / PRODUCTION_READINESS cite Stage 27 S1 with vendor pen test / live ZAP Remaining, and main `ci.yml` stays deploy-free. Stage 29 V1 is met when `docs/PENTEST_PACK_MVP.md` + checklist + `test_pentest_pack_v1.py` pass without inventing a purchased cert.
+
+See also Stage 210 Tenant MVP Security Scan remaining-gate index fidelity (`docs/SECURITY_SCAN_REMAINING_GATE_MVP.md`, ADR-426 / ADR-427) — packaging non-claim as live security-scan Complete.
