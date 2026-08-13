@@ -24,6 +24,6 @@ Stage 215 Tenant MVP Knowledge Base Remaining-Gate Index Fidelity delivered know
 
 ## Next stage
 
-Stage 216 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 215 feature scope remains frozen.
+Stage 216 opened under **ADR-438** after CONTINUE/NEXT (Knowledge Transfer Remaining-Gate Index Fidelity) and is frozen under **ADR-439**. Stage 215 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Knowledge Transfer Remaining-Gate Index Fidelity — single index of knowledge-transfer blockers (packaged Stage 33/knowledge-transfer materials non-claim as live training Complete) with explicit non-claim (no live training Complete). Distinct from Stage 215 knowledge base remaining-gate and Stage 189 live-training remaining-gate.
+**Amendment (2026-08-13):** Stage 216 runner-up outline was approved and opened (ADR-438); freeze ADR-439. Do not reopen Stage 215 scope.

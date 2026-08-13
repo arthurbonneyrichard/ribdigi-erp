@@ -277,3 +277,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Knowledge Base Remaining-Gate Index Fidelity** — knowledge base remaining-gate hub (I1), blocker matrix (B1), Stage 171 / Stage 214 / Stage 191 pointers with explicit non-claim (P1). Hosted FAQ SaaS Completes remain deferred (Stage 216+). Distinct from Stage 214 support runbook remaining-gate and Stage 191 hosted FAQ SaaS remaining-gate.
 
+## Stage 216 decision (opened after Stage 215 freeze)
+
+**Tenant MVP Knowledge Transfer Remaining-Gate Index Fidelity** — knowledge transfer remaining-gate hub (I1), blocker matrix (B1), Stage 33 / Stage 215 / Stage 189 pointers with explicit non-claim (P1). Live training Completes remain deferred (Stage 217+). Distinct from Stage 215 knowledge base remaining-gate and Stage 189 live-training remaining-gate.
+

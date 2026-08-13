@@ -1,0 +1,54 @@
+{
+  "id": "knowledge-transfer-blockers",
+  "stage": 216,
+  "pack": "B1",
+  "doc": "docs/KNOWLEDGE_TRANSFER_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md",
+    "knowledge_transfer": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_knowledge_transfer_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_operator_admin_training_delivery": "REMAINING",
+    "training_attendance_certification": "REMAINING",
+    "stage33_t1_as_live_training": "NON_CLAIM",
+    "live_training_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ktb-delivery",
+      "title": "Mark live operator/admin training delivery Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktb-attendance",
+      "title": "Mark training attendance / certification Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktb-stage33-nonclaim",
+      "title": "Mark Stage 33 T1 knowledge transfer as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktb-training-false",
+      "title": "Mark live_training_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktb-training-remaining",
+      "title": "Live training Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 216 B1 knowledge transfer blocker matrix packaging only. Live training Complete remains MISSING."
+}

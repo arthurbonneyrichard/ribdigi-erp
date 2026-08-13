@@ -1083,6 +1083,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 171 / Stage 214 / Stage 191 pointers (Stage 215 P1: `test_stage215_pointers_p1.py`, `docs/KNOWLEDGE_BASE_RG_POINTERS_MVP.md`)
 - [x] Stage 215 fidelity sync (D1: `test_stage215_fidelity_d1.py`, `docs/STAGE_215_FIDELITY.md`)
 - [x] Stage 215 exit + freeze (H215x: `test_stage215_exit_h215x.py`, `docs/STAGE_215_EXIT_CRITERIA.md`, ADR-437)
+- [x] Stage 216 track opened (ADR-438: `test_stage216_open.py`, `docs/STAGE_216_PLAN.md`) — Knowledge Transfer Remaining-Gate Index; closed under ADR-439
+- [x] Knowledge transfer remaining-gate hub (Stage 216 I1: `test_stage216_index_i1.py`, `docs/KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md`)
+- [x] Knowledge transfer blocker matrix (Stage 216 B1: `test_stage216_blockers_b1.py`, `docs/KNOWLEDGE_TRANSFER_BLOCKERS_MVP.md`)
+- [x] Stage 33 / Stage 215 / Stage 189 pointers (Stage 216 P1: `test_stage216_pointers_p1.py`, `docs/KNOWLEDGE_TRANSFER_RG_POINTERS_MVP.md`)
+- [x] Stage 216 fidelity sync (D1: `test_stage216_fidelity_d1.py`, `docs/STAGE_216_FIDELITY.md`)
+- [x] Stage 216 exit + freeze (H216x: `test_stage216_exit_h216x.py`, `docs/STAGE_216_EXIT_CRITERIA.md`, ADR-439)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
