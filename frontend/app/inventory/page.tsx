@@ -87,6 +87,8 @@ export default function Page() {
   const [taxRates, setTaxRates] = useState<any[]>([]);
   const [brandCode, setBrandCode] = useState('');
   const [brandName, setBrandName] = useState('');
+  const [brandDescription, setBrandDescription] = useState('');
+  const [brandLogoPreview, setBrandLogoPreview] = useState<Record<string, string>>({});
   const [unitCode, setUnitCode] = useState('');
   const [unitName, setUnitName] = useState('');
   const [unitBaseId, setUnitBaseId] = useState('');
@@ -151,6 +153,15 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  useEffect(() => {
+    brands
+      .filter((b) => b.has_logo)
+      .forEach((b) => {
+        if (!brandLogoPreview[b.id]) loadBrandLogoPreview(b.id);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brands]);
 
   useEffect(() => {
     if (selectedId) {
@@ -436,6 +447,70 @@ export default function Page() {
       setError(err.message);
     } finally {
       setImportBusy(false);
+    }
+  }
+
+  async function loadBrandLogoPreview(brandId: string) {
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/catalog/brands/${brandId}/logo`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setBrandLogoPreview((prev) => {
+        if (prev[brandId]) URL.revokeObjectURL(prev[brandId]);
+        return { ...prev, [brandId]: url };
+      });
+    } catch {
+      /* ignore preview failures */
+    }
+  }
+
+  async function uploadBrandLogo(brandId: string, file: File) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${apiBase}/catalog/brands/${brandId}/logo`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+        body: form,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || body.message || 'Upload failed');
+      setMessage('Brand logo uploaded');
+      await refresh();
+      await loadBrandLogoPreview(brandId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function removeBrandLogo(brandId: string) {
+    setError('');
+    try {
+      await api(`/catalog/brands/${brandId}/logo`, { method: 'DELETE' });
+      setBrandLogoPreview((prev) => {
+        if (prev[brandId]) URL.revokeObjectURL(prev[brandId]);
+        const next = { ...prev };
+        delete next[brandId];
+        return next;
+      });
+      setMessage('Brand logo removed');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
     }
   }
 
@@ -1069,18 +1144,32 @@ export default function Page() {
           </div>
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Brand</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Name, description, and logo (BR-5.1).
+            </p>
             <input value={brandCode} onChange={(e) => setBrandCode(e.target.value)} placeholder="Code" />
             <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Name" />
+            <textarea
+              value={brandDescription}
+              onChange={(e) => setBrandDescription(e.target.value)}
+              placeholder="Description (optional)"
+              rows={2}
+            />
             <button
               onClick={async () => {
                 setError('');
                 try {
                   await api('/catalog/brands', {
                     method: 'POST',
-                    body: JSON.stringify({ code: brandCode, name: brandName }),
+                    body: JSON.stringify({
+                      code: brandCode,
+                      name: brandName,
+                      description: brandDescription.trim() || null,
+                    }),
                   });
                   setBrandCode('');
                   setBrandName('');
+                  setBrandDescription('');
                   setMessage('Brand created');
                   await refresh();
                 } catch (err: any) {
@@ -1093,27 +1182,61 @@ export default function Page() {
             </button>
             <ul className="muted">
               {brands.map((b) => (
-                <li key={b.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <li
+                  key={b.id}
+                  style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}
+                >
+                  {brandLogoPreview[b.id] && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={brandLogoPreview[b.id]}
+                      alt={`${b.name} logo`}
+                      width={32}
+                      height={32}
+                      style={{ objectFit: 'contain', border: '1px solid #e2e8f0' }}
+                    />
+                  )}
                   <span>
                     {b.code} — {b.name}
+                    {b.description ? ` · ${b.description}` : ''}
+                    {b.has_logo ? ' · logo' : ''}
                     {!b.is_active ? ' [inactive]' : ''}
                   </span>
                   {b.is_active && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setError('');
-                        try {
-                          await api(`/catalog/brands/${b.id}`, { method: 'DELETE' });
-                          setMessage('Brand deactivated');
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message);
-                        }
-                      }}
-                    >
-                      Deactivate
-                    </button>
+                    <>
+                      <label className="muted" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        Logo
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadBrandLogo(b.id, file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      {b.has_logo && (
+                        <button type="button" onClick={() => removeBrandLogo(b.id)}>
+                          Remove logo
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setError('');
+                          try {
+                            await api(`/catalog/brands/${b.id}`, { method: 'DELETE' });
+                            setMessage('Brand deactivated');
+                            await refresh();
+                          } catch (err: any) {
+                            setError(err.message);
+                          }
+                        }}
+                      >
+                        Deactivate
+                      </button>
+                    </>
                   )}
                 </li>
               ))}

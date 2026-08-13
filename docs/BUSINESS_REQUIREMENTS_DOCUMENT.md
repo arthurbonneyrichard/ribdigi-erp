@@ -341,7 +341,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [ ] **Categories:** Hierarchical category tree (parent/child), category code
-  - [ ] **Brands:** Brand name, logo, description
+  - [x] **Brands:** Brand name, logo, description (`brands.logo_url` + description; `POST|GET|DELETE /catalog/brands/{id}/logo`; Inventory Catalog UI)
   - [x] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios
   - [ ] **Product Variants:** Size, color, flavor, dosage (pharmacy) variants with unique SKUs
   - [ ] **SKU:** Auto-generated or manual SKU assignment
