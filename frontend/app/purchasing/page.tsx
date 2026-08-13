@@ -5,7 +5,14 @@ import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
-type Supplier = { id: string; name: string };
+type Supplier = {
+  id: string;
+  name: string;
+  code?: string | null;
+  profile_type?: string | null;
+  category?: string | null;
+  status?: string | null;
+};
 type Product = { id: string; name: string; sku: string; cost_price: number };
 type PurchaseRequest = {
   id: string;
@@ -109,6 +116,15 @@ export default function Page() {
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
   const [supplierId, setSupplierId] = useState('');
   const [supplierName, setSupplierName] = useState('');
+  const [supplierCode, setSupplierCode] = useState('');
+  const [supplierEmail, setSupplierEmail] = useState('');
+  const [supplierPhone, setSupplierPhone] = useState('');
+  const [supplierAddress, setSupplierAddress] = useState('');
+  const [supplierProfileType, setSupplierProfileType] = useState('registered');
+  const [supplierCategory, setSupplierCategory] = useState('');
+  const [supplierStatus, setSupplierStatus] = useState('active');
+  const [supplierLat, setSupplierLat] = useState('');
+  const [supplierLng, setSupplierLng] = useState('');
   const [supplierTermsDays, setSupplierTermsDays] = useState('30');
   const [productId, setProductId] = useState('');
   const [unitId, setUnitId] = useState('');
@@ -226,11 +242,29 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           name: supplierName,
+          code: supplierCode.trim() || null,
+          profile_type: supplierProfileType || 'registered',
+          category: supplierCategory.trim() || null,
+          status: supplierStatus || 'active',
+          email: supplierEmail.trim() || null,
+          phone: supplierPhone.trim() || null,
+          address: supplierAddress.trim() || null,
+          latitude: supplierLat === '' ? null : Number(supplierLat),
+          longitude: supplierLng === '' ? null : Number(supplierLng),
           payment_terms_days: Number(supplierTermsDays) || 0,
         }),
       });
       setSupplierId(r.data.id);
       setSupplierName('');
+      setSupplierCode('');
+      setSupplierEmail('');
+      setSupplierPhone('');
+      setSupplierAddress('');
+      setSupplierProfileType('registered');
+      setSupplierCategory('');
+      setSupplierStatus('active');
+      setSupplierLat('');
+      setSupplierLng('');
       setSupplierTermsDays('30');
       await refresh();
       setMessage('Supplier created');
@@ -911,6 +945,64 @@ export default function Page() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Supplier name" />
           <input
+            value={supplierCode}
+            onChange={(e) => setSupplierCode(e.target.value)}
+            placeholder="Code"
+            style={{ width: 100 }}
+          />
+          <select
+            value={supplierProfileType}
+            onChange={(e) => setSupplierProfileType(e.target.value)}
+            title="Supplier type"
+          >
+            <option value="registered">Registered</option>
+            <option value="trade">Trade</option>
+            <option value="manufacturer">Manufacturer</option>
+            <option value="service">Service</option>
+            <option value="other">Other</option>
+          </select>
+          <input
+            value={supplierCategory}
+            onChange={(e) => setSupplierCategory(e.target.value)}
+            placeholder="Category"
+            style={{ width: 120 }}
+          />
+          <select value={supplierStatus} onChange={(e) => setSupplierStatus(e.target.value)} title="Status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <input
+            value={supplierEmail}
+            onChange={(e) => setSupplierEmail(e.target.value)}
+            placeholder="Email"
+          />
+          <input
+            value={supplierPhone}
+            onChange={(e) => setSupplierPhone(e.target.value)}
+            placeholder="Phone"
+            style={{ width: 120 }}
+          />
+          <input
+            value={supplierAddress}
+            onChange={(e) => setSupplierAddress(e.target.value)}
+            placeholder="Address"
+            style={{ minWidth: 160 }}
+          />
+          <input
+            value={supplierLat}
+            onChange={(e) => setSupplierLat(e.target.value)}
+            placeholder="Lat"
+            style={{ width: 90 }}
+            title="GPS latitude"
+          />
+          <input
+            value={supplierLng}
+            onChange={(e) => setSupplierLng(e.target.value)}
+            placeholder="Lng"
+            style={{ width: 90 }}
+            title="GPS longitude"
+          />
+          <input
             value={supplierTermsDays}
             onChange={(e) => setSupplierTermsDays(e.target.value)}
             placeholder="Net days"
@@ -930,7 +1022,9 @@ export default function Page() {
             <option value="">Select supplier</option>
             {suppliers.map((s) => (
               <option key={s.id} value={s.id}>
+                {s.code ? `${s.code} — ` : ''}
                 {s.name}
+                {s.status === 'inactive' ? ' [inactive]' : ''}
               </option>
             ))}
           </select>
