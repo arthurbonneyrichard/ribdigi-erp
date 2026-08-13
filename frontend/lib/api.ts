@@ -3,7 +3,8 @@ const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 // Shared in-flight refresh so concurrent 401s trigger a single token refresh.
 let refreshPromise: Promise<boolean> | null = null;
 
-function clearSessionAndRedirect() {
+/** Clear local auth and send the user to login (used on 401 and idle timeout). */
+export function clearSessionAndRedirect() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
   localStorage.removeItem('refresh_token');
@@ -12,6 +13,9 @@ function clearSessionAndRedirect() {
     window.location.href = '/';
   }
 }
+
+/** Client idle auto-logout (BR-19.3). Fixed MVP default; tenant-configurable timeout later. */
+export const IDLE_LOGOUT_MS = 30 * 60 * 1000;
 
 async function refreshSession(): Promise<boolean> {
   if (typeof window === 'undefined') return false;

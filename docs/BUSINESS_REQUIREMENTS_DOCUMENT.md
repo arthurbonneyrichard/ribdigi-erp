@@ -954,11 +954,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Control active user sessions.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] JWT token with configurable expiry (default: 24 hours)
-  - [ ] Refresh token rotation
-  - [ ] View active sessions per user
-  - [ ] Remote session termination
-  - [ ] Auto-logout on inactivity (configurable timeout)
+  - [x] JWT token with configurable expiry (`ACCESS_TOKEN_EXPIRE_MINUTES`, default 15 minutes; refresh via `REFRESH_TOKEN_EXPIRE_DAYS`)
+  - [x] Refresh token rotation (`POST /auth/refresh` revokes prior refresh and issues a new session)
+  - [x] View active sessions per user (`GET /auth/sessions` self-scoped; Security UI)
+  - [x] Remote session termination (`DELETE /auth/sessions/{id}`; Security UI)
+  - [x] Auto-logout on inactivity (client idle logout 30 minutes; tenant-configurable timeout remaining)
 
 ---
 
