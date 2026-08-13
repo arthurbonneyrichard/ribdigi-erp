@@ -480,6 +480,7 @@ async def build_report_payload(
     jurisdiction: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    category_id: str | None = None,
     as_of: str | None = None,
     compare: str | None = None,
 ) -> Any:
@@ -511,7 +512,14 @@ async def build_report_payload(
             db, tenant_id, year or now.year, month or now.month
         )
     if report_type == "sales_products":
-        return await reports_svc.sales_by_product(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.sales_by_product(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
+            category_id=category_id or None,
+        )
     if report_type == "sales_salesperson":
         return await reports_svc.sales_by_salesperson(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "sales_customers":

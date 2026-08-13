@@ -169,34 +169,60 @@ async def sales_by_product(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    store_id: str | None = None,
+    category_id: str | None = None,
 ) -> dict:
-    stmt = select(m.SalesInvoiceItem, m.SalesInvoice, m.Product).join(
-        m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id
-    ).join(m.Product, m.Product.id == m.SalesInvoiceItem.product_id).where(
-        m.SalesInvoiceItem.tenant_id == tenant_id,
-        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
+    """Product-wise quantity and revenue; optional store / category filters (BR-14.1)."""
+    category_name: str | None = None
+    if category_id:
+        cat = (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.id == category_id,
+                    m.ProductCategory.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not cat:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail="Category not found")
+        category_name = cat.name
+
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.id == store_id,
+                    m.Store.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not store:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail="Store not found")
+
+    stmt = (
+        select(m.SalesInvoiceItem, m.SalesInvoice, m.Product)
+        .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
+        .join(m.Product, m.Product.id == m.SalesInvoiceItem.product_id)
+        .where(
+            m.SalesInvoiceItem.tenant_id == tenant_id,
+            m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
+        )
     )
     if from_date:
         stmt = stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         stmt = stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_id:
+        stmt = stmt.where(m.SalesInvoice.store_id == store_id)
+    if category_id:
+        stmt = stmt.where(m.Product.category_id == category_id)
     rows = (await db.execute(stmt)).all()
 
-    agg: dict[str, dict] = {}
-    for item, _inv, product in rows:
-        row = agg.setdefault(
-            product.id,
-            {
-                "product_id": product.id,
-                "sku": product.sku,
-                "name": product.name,
-                "quantity": 0.0,
-                "revenue": 0.0,
-            },
-        )
-        row["quantity"] = round(row["quantity"] + float(item.quantity or 0), 3)
-        row["revenue"] = round(row["revenue"] + float(item.line_total or 0), 2)
-
+    cat_ids = {p.category_id for _, _, p in rows if p.category_id}
     # Include POS payload items where possible
     pos_stmt = select(m.Transaction).where(
         m.Transaction.tenant_id == tenant_id,
@@ -206,26 +232,75 @@ async def sales_by_product(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
-    for tx in (await db.execute(pos_stmt)).scalars().all():
+    if store_id:
+        pos_stmt = (
+            pos_stmt.join(m.PosSession, m.PosSession.id == m.Transaction.session_id).where(
+                m.PosSession.tenant_id == tenant_id,
+                m.PosSession.store_id == store_id,
+            )
+        )
+    pos_txs = (await db.execute(pos_stmt)).scalars().all()
+
+    product_cache: dict[str, m.Product] = {}
+    for tx in pos_txs:
+        for line in (tx.payload or {}).get("items") or []:
+            pid = line.get("product_id")
+            if not pid or pid in product_cache:
+                continue
+            product = await db.get(m.Product, pid)
+            if product and product.tenant_id == tenant_id:
+                product_cache[pid] = product
+                if product.category_id:
+                    cat_ids.add(product.category_id)
+
+    cat_names: dict[str, str] = {}
+    if cat_ids:
+        for c in (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.tenant_id == tenant_id,
+                    m.ProductCategory.id.in_(list(cat_ids)),
+                )
+            )
+        ).scalars().all():
+            cat_names[c.id] = c.name
+
+    def _bucket(agg: dict[str, dict], product: m.Product) -> dict:
+        return agg.setdefault(
+            product.id,
+            {
+                "product_id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "category_id": product.category_id,
+                "category_name": cat_names.get(product.category_id or "", None),
+                "quantity": 0.0,
+                "revenue": 0.0,
+            },
+        )
+
+    agg: dict[str, dict] = {}
+    for item, _inv, product in rows:
+        row = _bucket(agg, product)
+        row["quantity"] = round(row["quantity"] + float(item.quantity or 0), 3)
+        row["revenue"] = round(row["revenue"] + float(item.line_total or 0), 2)
+
+    for tx in pos_txs:
         for line in (tx.payload or {}).get("items") or []:
             pid = line.get("product_id")
             if not pid:
                 continue
-            product = await db.get(m.Product, pid)
-            if not product or product.tenant_id != tenant_id:
+            product = product_cache.get(pid)
+            if not product:
                 continue
-            row = agg.setdefault(
-                product.id,
-                {
-                    "product_id": product.id,
-                    "sku": product.sku,
-                    "name": product.name,
-                    "quantity": 0.0,
-                    "revenue": 0.0,
-                },
-            )
+            if category_id and product.category_id != category_id:
+                continue
+            row = _bucket(agg, product)
             qty = float(line.get("quantity") or 0)
-            revenue = float(line.get("line_total") or (float(line.get("unit_price") or product.selling_price or 0) * qty))
+            revenue = float(
+                line.get("line_total")
+                or (float(line.get("unit_price") or product.selling_price or 0) * qty)
+            )
             row["quantity"] = round(row["quantity"] + qty, 3)
             row["revenue"] = round(row["revenue"] + revenue, 2)
 
@@ -233,6 +308,9 @@ async def sales_by_product(
     return {
         "from_date": from_date,
         "to_date": to_date,
+        "store_id": store_id,
+        "category_id": category_id,
+        "category_name": category_name,
         "products": products,
         "total_revenue": round(sum(p["revenue"] for p in products), 2),
         "total_quantity": round(sum(p["quantity"] for p in products), 3),
