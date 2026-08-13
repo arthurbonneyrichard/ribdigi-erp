@@ -56,12 +56,22 @@ export default function Page() {
   const [productName, setProductName] = useState('');
   const [productSku, setProductSku] = useState('');
   const [productPrice, setProductPrice] = useState('0');
+  const [productDescription, setProductDescription] = useState('');
+  const [productWeight, setProductWeight] = useState('');
+  const [productLength, setProductLength] = useState('');
+  const [productWidth, setProductWidth] = useState('');
+  const [productHeight, setProductHeight] = useState('');
   const [productCategoryId, setProductCategoryId] = useState('');
   const [productBrandId, setProductBrandId] = useState('');
   const [productUnitId, setProductUnitId] = useState('');
   const [editReorder, setEditReorder] = useState('0');
   const [editPrice, setEditPrice] = useState('0');
   const [editBarcode, setEditBarcode] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editWeight, setEditWeight] = useState('');
+  const [editLength, setEditLength] = useState('');
+  const [editWidth, setEditWidth] = useState('');
+  const [editHeight, setEditHeight] = useState('');
   const [productBarcode, setProductBarcode] = useState('');
   const [productSupplyClass, setProductSupplyClass] = useState('standard');
   const [editSupplyClass, setEditSupplyClass] = useState('standard');
@@ -150,6 +160,11 @@ export default function Page() {
         setEditReorder(String(p.reorder_level ?? 0));
         setEditPrice(String(p.selling_price ?? 0));
         setEditBarcode(String(p.barcode || ''));
+        setEditDescription(String(p.description || ''));
+        setEditWeight(p.weight != null ? String(p.weight) : '');
+        setEditLength(p.length != null ? String(p.length) : '');
+        setEditWidth(p.width != null ? String(p.width) : '');
+        setEditHeight(p.height != null ? String(p.height) : '');
         setEditSupplyClass(String(p.tax_supply_class || (p.tax_exempt ? 'exempt' : 'standard')));
       }
     }
@@ -165,6 +180,11 @@ export default function Page() {
           reorder_level: Number(editReorder) || 0,
           selling_price: Number(editPrice) || 0,
           barcode: editBarcode.trim() || null,
+          description: editDescription.trim() || null,
+          weight: editWeight === '' ? null : Number(editWeight),
+          length: editLength === '' ? null : Number(editLength),
+          width: editWidth === '' ? null : Number(editWidth),
+          height: editHeight === '' ? null : Number(editHeight),
           tax_supply_class: editSupplyClass,
         }),
       });
@@ -303,7 +323,12 @@ export default function Page() {
           name: productName,
           sku: productSku,
           barcode: productBarcode.trim() || null,
+          description: productDescription.trim() || null,
           selling_price: Number(productPrice) || 0,
+          weight: productWeight === '' ? null : Number(productWeight),
+          length: productLength === '' ? null : Number(productLength),
+          width: productWidth === '' ? null : Number(productWidth),
+          height: productHeight === '' ? null : Number(productHeight),
           category_id: productCategoryId || null,
           brand_id: productBrandId || null,
           unit_id: productUnitId || null,
@@ -314,6 +339,11 @@ export default function Page() {
       setProductName('');
       setProductSku('');
       setProductBarcode('');
+      setProductDescription('');
+      setProductWeight('');
+      setProductLength('');
+      setProductWidth('');
+      setProductHeight('');
       setProductPrice('0');
       setProductSupplyClass('standard');
       await refresh();
@@ -677,6 +707,40 @@ export default function Page() {
                 Print barcode label
               </button>
             </div>
+            <label className="muted">Description</label>
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Product description"
+              rows={2}
+            />
+            <label className="muted">Weight (kg) / dimensions (cm)</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <input
+                value={editWeight}
+                onChange={(e) => setEditWeight(e.target.value)}
+                placeholder="Weight"
+                style={{ width: 100 }}
+              />
+              <input
+                value={editLength}
+                onChange={(e) => setEditLength(e.target.value)}
+                placeholder="Length"
+                style={{ width: 80 }}
+              />
+              <input
+                value={editWidth}
+                onChange={(e) => setEditWidth(e.target.value)}
+                placeholder="Width"
+                style={{ width: 80 }}
+              />
+              <input
+                value={editHeight}
+                onChange={(e) => setEditHeight(e.target.value)}
+                placeholder="Height"
+                style={{ width: 80 }}
+              />
+            </div>
             <label className="muted">Reorder level</label>
             <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
             <label className="muted">Selling price</label>
@@ -777,7 +841,39 @@ export default function Page() {
               onChange={(e) => setProductBarcode(e.target.value)}
               placeholder="Barcode (optional)"
             />
+            <textarea
+              value={productDescription}
+              onChange={(e) => setProductDescription(e.target.value)}
+              placeholder="Description (optional)"
+              rows={2}
+            />
             <input value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="Selling price" />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <input
+                value={productWeight}
+                onChange={(e) => setProductWeight(e.target.value)}
+                placeholder="Weight kg"
+                style={{ width: 100 }}
+              />
+              <input
+                value={productLength}
+                onChange={(e) => setProductLength(e.target.value)}
+                placeholder="L cm"
+                style={{ width: 80 }}
+              />
+              <input
+                value={productWidth}
+                onChange={(e) => setProductWidth(e.target.value)}
+                placeholder="W cm"
+                style={{ width: 80 }}
+              />
+              <input
+                value={productHeight}
+                onChange={(e) => setProductHeight(e.target.value)}
+                placeholder="H cm"
+                style={{ width: 80 }}
+              />
+            </div>
             <select value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}>
               <option value="">Category</option>
               {categories.map((c) => (

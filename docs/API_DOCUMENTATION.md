@@ -429,24 +429,22 @@ Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.
   "name": "Organic Wheat Flour",
   "sku": "WF-ORG-5KG",
   "barcode": "8901234567890",
+  "description": "Premium organic wheat flour",
   "category_id": "cat_001",
   "brand_id": "brand_001",
   "unit_id": "unit_001",
-  "variants": [
-    {
-      "name": "5kg Pack",
-      "sku": "WF-ORG-5KG",
-      "price": 12.99,
-      "cost": 8.50,
-      "barcode": "8901234567890"
-    }
-  ],
-  "description": "Premium organic wheat flour",
-  "images": ["https://cdn.ribdigi.com/products/wf1.jpg"],
-  "track_inventory": true,
-  "is_active": true
+  "cost_price": 8.50,
+  "selling_price": 12.99,
+  "weight": 5.0,
+  "length": 30,
+  "width": 20,
+  "height": 10,
+  "tax_supply_class": "standard",
+  "tracks_batches": false
 }
 ```
+
+Optional physical fields: `weight` (kg), `length` / `width` / `height` (cm). Also accepted on `PATCH /products/{id}` and CSV import columns.
 
 ### 5.5 Stock Operations
 

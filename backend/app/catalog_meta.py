@@ -60,11 +60,15 @@ def serialize_unit(row: m.UnitOfMeasure, *, base: m.UnitOfMeasure | None = None)
 
 
 def serialize_product(row: m.Product) -> dict:
+    def _opt_float(value) -> float | None:
+        return float(value) if value is not None else None
+
     return {
         "id": row.id,
         "name": row.name,
         "sku": row.sku,
         "barcode": row.barcode,
+        "description": getattr(row, "description", None),
         "category": row.category,
         "category_id": row.category_id,
         "brand_id": row.brand_id,
@@ -73,6 +77,10 @@ def serialize_product(row: m.Product) -> dict:
         "has_image": bool(row.image_url),
         "cost_price": float(row.cost_price or 0),
         "selling_price": float(row.selling_price or 0),
+        "weight": _opt_float(getattr(row, "weight", None)),
+        "length": _opt_float(getattr(row, "length", None)),
+        "width": _opt_float(getattr(row, "width", None)),
+        "height": _opt_float(getattr(row, "height", None)),
         "stock_qty": float(row.stock_qty or 0),
         "reorder_level": float(row.reorder_level or 0),
         "tax_rate_id": row.tax_rate_id,

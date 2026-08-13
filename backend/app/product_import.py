@@ -20,11 +20,16 @@ TEMPLATE_HEADERS = (
     "name",
     "sku",
     "barcode",
+    "description",
     "category",
     "brand",
     "unit",
     "cost_price",
     "selling_price",
+    "weight",
+    "length",
+    "width",
+    "height",
     "stock_qty",
     "reorder_level",
     "tax_exempt",
@@ -36,11 +41,16 @@ SAMPLE_ROW = {
     "name": "Bottled Water 500ml",
     "sku": "WATER-500",
     "barcode": "WATER-500",
+    "description": "Still water 500ml PET",
     "category": "Beverages",
     "brand": "",
     "unit": "PCS",
     "cost_price": "2.00",
     "selling_price": "5.00",
+    "weight": "0.520",
+    "length": "6.5",
+    "width": "6.5",
+    "height": "22",
     "stock_qty": "100",
     "reorder_level": "20",
     "tax_exempt": "false",
@@ -226,15 +236,28 @@ async def validate_import_rows(
             seen_barcodes.add(barcode)
 
         cost_price = selling_price = stock_qty = reorder_level = 0.0
+        weight = length = width = height = None
         try:
             cost_price = _parse_float(raw.get("cost_price"), field="cost_price")
             selling_price = _parse_float(raw.get("selling_price"), field="selling_price")
             stock_qty = _parse_float(raw.get("stock_qty"), field="stock_qty")
             reorder_level = _parse_float(raw.get("reorder_level"), field="reorder_level")
+            if (raw.get("weight") or "").strip():
+                weight = _parse_float(raw.get("weight"), field="weight")
+            if (raw.get("length") or "").strip():
+                length = _parse_float(raw.get("length"), field="length")
+            if (raw.get("width") or "").strip():
+                width = _parse_float(raw.get("width"), field="width")
+            if (raw.get("height") or "").strip():
+                height = _parse_float(raw.get("height"), field="height")
+            dims = [v for v in (weight, length, width, height) if v is not None]
             if cost_price < 0 or selling_price < 0 or stock_qty < 0 or reorder_level < 0:
                 errors.append("prices and quantities must be >= 0")
+            if any(v < 0 for v in dims):
+                errors.append("weight and dimensions must be >= 0")
         except ValueError as exc:
             errors.append(str(exc))
+        description = (raw.get("description") or "").strip() or None
 
         category_id = None
         category_label = "General"
@@ -270,12 +293,17 @@ async def validate_import_rows(
                     "name": name,
                     "sku": sku,
                     "barcode": barcode,
+                    "description": description,
                     "category": category_label,
                     "category_id": category_id,
                     "brand_id": brand_id,
                     "unit_id": unit_id,
                     "cost_price": cost_price,
                     "selling_price": selling_price,
+                    "weight": weight,
+                    "length": length,
+                    "width": width,
+                    "height": height,
                     "stock_qty": stock_qty,
                     "reorder_level": reorder_level,
                     "tax_exempt": _truthy(raw.get("tax_exempt")),
@@ -313,12 +341,17 @@ async def commit_import(
             name=data["name"],
             sku=data["sku"],
             barcode=data.get("barcode"),
+            description=data.get("description"),
             category=data.get("category") or "General",
             category_id=data.get("category_id"),
             brand_id=data.get("brand_id"),
             unit_id=data.get("unit_id"),
             cost_price=data.get("cost_price") or 0,
             selling_price=data.get("selling_price") or 0,
+            weight=data.get("weight"),
+            length=data.get("length"),
+            width=data.get("width"),
+            height=data.get("height"),
             stock_qty=0,
             reorder_level=data.get("reorder_level") or 0,
             tax_exempt=bool(data.get("tax_supply_class") == "exempt" or data.get("tax_exempt")),

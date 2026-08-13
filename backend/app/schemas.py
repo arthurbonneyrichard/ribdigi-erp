@@ -231,12 +231,17 @@ class ProductCreate(BaseModel):
     name: str
     sku: str
     barcode: str | None = None
+    description: str | None = None
     category: str = "General"
     category_id: str | None = None
     brand_id: str | None = None
     unit_id: str | None = None
     cost_price: float = 0
     selling_price: float = 0
+    weight: float | None = Field(default=None, ge=0)
+    length: float | None = Field(default=None, ge=0)
+    width: float | None = Field(default=None, ge=0)
+    height: float | None = Field(default=None, ge=0)
     stock_qty: float = 0
     reorder_level: float = 0
     tax_rate_id: str | None = None
@@ -249,12 +254,17 @@ class ProductUpdate(BaseModel):
     name: str | None = None
     sku: str | None = None
     barcode: str | None = None
+    description: str | None = None
     category: str | None = None
     category_id: str | None = None
     brand_id: str | None = None
     unit_id: str | None = None
     cost_price: float | None = None
     selling_price: float | None = None
+    weight: float | None = Field(default=None, ge=0)
+    length: float | None = Field(default=None, ge=0)
+    width: float | None = Field(default=None, ge=0)
+    height: float | None = Field(default=None, ge=0)
     reorder_level: float | None = None
     tax_rate_id: str | None = None
     tax_exempt: bool | None = None
