@@ -21,7 +21,16 @@ type Store = {
   drawer_port?: number;
   drawer_open_on_cash?: boolean;
 };
-type Branch = { id: string; code: string; name: string; is_active?: boolean };
+type Branch = {
+  id: string;
+  code: string;
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  manager_id?: string | null;
+  is_active?: boolean;
+};
 
 const WEEKDAYS: { key: keyof OperatingHours; label: string }[] = [
   { key: 'mon', label: 'Mon' },
@@ -109,6 +118,13 @@ export default function Page() {
   const [whManagerId, setWhManagerId] = useState('');
   const [whStoreId, setWhStoreId] = useState('');
   const [editWhId, setEditWhId] = useState('');
+  const [brCode, setBrCode] = useState('');
+  const [brName, setBrName] = useState('');
+  const [brAddress, setBrAddress] = useState('');
+  const [brPhone, setBrPhone] = useState('');
+  const [brEmail, setBrEmail] = useState('');
+  const [brManagerId, setBrManagerId] = useState('');
+  const [editBrId, setEditBrId] = useState('');
   const [fromStore, setFromStore] = useState('');
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
@@ -372,6 +388,88 @@ export default function Page() {
     setWhStoreId(w.store_id || '');
   }
 
+  function resetBranchForm() {
+    setEditBrId('');
+    setBrCode('');
+    setBrName('');
+    setBrAddress('');
+    setBrPhone('');
+    setBrEmail('');
+    setBrManagerId('');
+  }
+
+  async function createBranch() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/branches', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: brCode.trim(),
+          name: brName.trim(),
+          address: brAddress.trim() || null,
+          phone: brPhone.trim() || null,
+          email: brEmail.trim() || null,
+          manager_id: brManagerId || null,
+        }),
+      });
+      resetBranchForm();
+      setMessage('Branch created');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveBranchEdit() {
+    if (!editBrId) return;
+    setError('');
+    setMessage('');
+    try {
+      await api(`/branches/${editBrId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: brName.trim() || undefined,
+          address: brAddress,
+          phone: brPhone,
+          email: brEmail.trim() || null,
+          manager_id: brManagerId || null,
+          clear_manager: !brManagerId,
+        }),
+      });
+      resetBranchForm();
+      setMessage('Branch updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function startEditBranch(b: Branch) {
+    setEditBrId(b.id);
+    setBrCode(b.code);
+    setBrName(b.name);
+    setBrAddress(b.address || '');
+    setBrPhone(b.phone || '');
+    setBrEmail(b.email || '');
+    setBrManagerId(b.manager_id || '');
+  }
+
+  async function setBranchActive(branchId: string, isActive: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/branches/${branchId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      setMessage(isActive ? 'Branch reactivated' : 'Branch deactivated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function saveDrawerSettings() {
     if (!drawerStoreId) return;
     setError('');
@@ -479,7 +577,7 @@ export default function Page() {
   return (
     <Shell>
       <h1>Multi-Store</h1>
-      <p className="muted">Stores, warehouse reorder policies, FEFO mode, and transfers</p>
+      <p className="muted">Branches, stores, warehouses, FEFO mode, and transfers</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -491,6 +589,51 @@ export default function Page() {
       </div>
 
       <div className="grid">
+        <div className="card">
+          <h3>{editBrId ? 'Edit branch' : 'New branch'}</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <input
+              value={brCode}
+              onChange={(e) => setBrCode(e.target.value)}
+              placeholder="Code"
+              disabled={!!editBrId}
+            />
+            <input value={brName} onChange={(e) => setBrName(e.target.value)} placeholder="Name" />
+            <input
+              value={brAddress}
+              onChange={(e) => setBrAddress(e.target.value)}
+              placeholder="Address"
+            />
+            <input value={brPhone} onChange={(e) => setBrPhone(e.target.value)} placeholder="Phone" />
+            <input value={brEmail} onChange={(e) => setBrEmail(e.target.value)} placeholder="Email" />
+            <select value={brManagerId} onChange={(e) => setBrManagerId(e.target.value)}>
+              <option value="">Manager (optional)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            {editBrId ? (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" onClick={saveBranchEdit} disabled={!brName.trim()}>
+                  Save branch
+                </button>
+                <button type="button" onClick={resetBranchForm}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={createBranch}
+                disabled={!brCode.trim() || !brName.trim()}
+              >
+                Create branch
+              </button>
+            )}
+          </div>
+        </div>
         <div className="card">
           <h3>New store</h3>
           <div style={{ display: 'grid', gap: 8 }}>
@@ -681,6 +824,50 @@ export default function Page() {
           </div>
         </div>
       </div>
+
+      <h3 style={{ marginTop: 16 }}>Branches</h3>
+      <p className="muted">Code, manager, address, and contact; deactivate without data loss (BR-2.2).</p>
+      <table className="table" style={{ marginBottom: 24 }}>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Manager</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Address</th>
+            <th>Active</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {branches.map((b) => (
+            <tr key={b.id}>
+              <td>{b.code}</td>
+              <td>{b.name}</td>
+              <td>{b.manager_id ? userLabel(b.manager_id) : '—'}</td>
+              <td>{b.phone || '—'}</td>
+              <td>{b.email || '—'}</td>
+              <td>{b.address || '—'}</td>
+              <td>{b.is_active === false ? 'no' : 'yes'}</td>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => startEditBranch(b)}>
+                  Edit
+                </button>
+                {b.is_active === false ? (
+                  <button type="button" onClick={() => setBranchActive(b.id, true)}>
+                    Reactivate
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setBranchActive(b.id, false)}>
+                    Deactivate
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <h3 style={{ marginTop: 16 }}>Stores</h3>
       <p className="muted">Manager, branch, hours, and warehouse link (BR-2.3).</p>

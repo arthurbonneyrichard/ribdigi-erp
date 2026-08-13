@@ -204,10 +204,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Manage multiple business branches under one tenant.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create/edit/delete branches
-  - [ ] Assign branch code and manager
-  - [ ] Branch-specific address and contact
-  - [ ] Deactivate branch without data loss
+  - [x] Create/edit/delete branches (`GET|POST /branches`, `PATCH /branches/{id}`; soft-deactivate via `is_active`; Multi-Store Branches UI)
+  - [x] Assign branch code and manager (`code` unique per tenant; `manager_id`)
+  - [x] Branch-specific address and contact (`address`, `phone`, `email`)
+  - [x] Deactivate branch without data loss (`is_active=false`; row retained for store/org links)
 
 #### BR-2.3 Store Management
 - **Description:** Configure retail/service outlets.
