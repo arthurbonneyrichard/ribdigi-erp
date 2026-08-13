@@ -149,3 +149,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 177 decision (opened after Stage 176 freeze)
 
 **Tenant MVP Monthly POS Ops Fidelity** — monthly rollup hub (M1), weekly outcomes + Hold trends (T1), device revoke/rebind + backup drill schedule + residual risk honesty pointers (P1). Offline Complete / live DR / go-live remain deferred (Stage 178+).
+
+## Stage 178 decision (opened after Stage 177 freeze)
+
+**Tenant MVP Quarterly POS Ops Fidelity** — quarterly hub (Q1), monthly outcomes rollup (R1), Offline Complete remaining + migration gate + support residual + go-live non-claim (G1). Offline Complete / live migration / go-live remain deferred (Stage 179+).

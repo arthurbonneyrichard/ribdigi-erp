@@ -28,3 +28,7 @@ Pre-deploy Alembic honesty gate for Tenant MVP. Proves a **single head** and a v
 - Main `ci.yml` deploy pipeline Complete
 - Schema drift auto-heal Complete
 - `go_live_claimed` / `attestation_claimed`
+
+## Stage 178 G1 amendment
+
+Quarterly POS ops gate honesty points here for migration schedule (live migrate false): [QUARTERLY_POS_OPS_GATES_MVP.md](QUARTERLY_POS_OPS_GATES_MVP.md) (`ops/mvp/quarterly-pos-ops-gates.json`, `test_stage178_gates_g1.py`).

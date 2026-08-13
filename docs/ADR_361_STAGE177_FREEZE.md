@@ -24,6 +24,4 @@ Stage 177 Tenant MVP Monthly POS Ops Fidelity delivered monthly rollup hub (M1),
 
 ## Next stage
 
-Stage 178 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 177 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP quarterly POS ops fidelity — quarterly manager rollup linking monthly outcomes, Offline Complete remaining gate honesty, migration gate schedule pointer, support readiness residual, and go-live non-claim (no fabricated Completes).
+Stage 178 opened under [ADR-362](ADR_362_STAGE178_OPEN.md) (Tenant MVP Quarterly POS Ops Fidelity) and froze under [ADR-363](ADR_363_STAGE178_FREEZE.md). Stage 177 feature scope remains frozen.

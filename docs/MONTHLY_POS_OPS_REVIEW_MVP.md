@@ -31,3 +31,7 @@ Monthly manager POS ops rollup hub. Distinct from Stage 176 weekly review. Does 
 - Live DR / PITR Completes
 - Fabricated “monthly green” Completes
 - Go-live Complete
+
+## Stage 178 Q1 / R1 amendment
+
+Quarterly rollup consumes these monthly outcomes: [QUARTERLY_POS_OPS_REVIEW_MVP.md](QUARTERLY_POS_OPS_REVIEW_MVP.md) · [QUARTERLY_POS_OPS_ROLLUP_MVP.md](QUARTERLY_POS_OPS_ROLLUP_MVP.md) (`test_stage178_quarterly_q1.py`, `test_stage178_rollup_r1.py`).

@@ -26,3 +26,7 @@
 - Headless/browser Playwright offline → online sale E2E in CI
 - Full Offline Complete product acceptance
 - Fabricated sync success or demo offline MRR
+
+## Stage 178 G1 amendment
+
+Quarterly POS ops gate honesty re-reads this attestation with `offline_complete_claimed` false: [QUARTERLY_POS_OPS_GATES_MVP.md](QUARTERLY_POS_OPS_GATES_MVP.md) (`ops/mvp/quarterly-pos-ops-gates.json`, `test_stage178_gates_g1.py`).
