@@ -652,7 +652,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit (standard-cost COGS via Dr 5000 / Cr 1200 on invoice/POS; restock returns reverse); `from_date`/`to_date`/`store_id`/`branch_id` filters on journal activity
   - [x] **Cash Flow:** Operating, investing, financing activities
-  - [x] **Trial Balance:** All accounts with debit/credit balances; validation that total debits = total credits
+  - [x] **Trial Balance:** All accounts with debit/credit balances; validation that total debits = total credits; `as_of` reconstructs from posted journals (`GET /accounting/trial-balance` / `/reports/trial-balance`)
   - [x] Export to PDF and Excel
 
 ---
@@ -784,7 +784,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Profit & Loss Statement (`GET /accounting/profit-loss` + `/reports/profit-loss` with date/store/branch filters)
   - [x] Cash Flow Statement (O/I/F + internal transfers; date range; liquid GL direct method)
   - [x] Balance Sheet (Assets = Liabilities + Equity; `as_of` reconstructs from posted journals; computed retained earnings)
-  - [ ] All reports filterable by date range, branch, store (P&L supports date/store/branch; BS supports `as_of`; others partial)
+  - [ ] All reports filterable by date range, branch, store (P&L supports date/store/branch; BS + TB support `as_of`; others partial)
   - [x] Comparative reports (current period vs previous period) — BS `compare=prior_period|prior_year`
 
 ---

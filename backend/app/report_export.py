@@ -489,7 +489,12 @@ async def build_report_payload(
     if report_type == "cash_flow":
         return await reports_svc.cash_flow(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "trial_balance":
-        return await accounting_svc.trial_balance(db, tenant_id)
+        as_of_raw = as_of or to_date or date
+        return await accounting_svc.trial_balance(
+            db,
+            tenant_id,
+            as_of=reports_svc.parse_date(as_of_raw, end_of_day=True),
+        )
     if report_type == "profit_loss":
         return await accounting_svc.profit_and_loss(
             db,

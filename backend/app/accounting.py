@@ -1393,17 +1393,59 @@ async def post_pos_sale_journal(
     )
 
 
-async def trial_balance(db: AsyncSession, tenant_id: str) -> dict:
+async def trial_balance(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    as_of: datetime | None = None,
+) -> dict:
+    """Trial balance (BR-10.6 / BR-14.5).
+
+    - No ``as_of``: live ``Account.balance`` (``mode=balances``).
+    - With ``as_of``: reconstruct signed balances from posted journal lines
+      through that timestamp (``mode=journals``), matching balance-sheet as-of.
+    """
+    await ensure_default_accounts(db, tenant_id)
     accounts = (
         await db.execute(
             select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
         )
     ).scalars().all()
+
+    if as_of is None:
+        bal_by_id = {a.id: float(a.balance or 0) for a in accounts}
+        as_of_day = datetime.utcnow().date()
+        mode = "balances"
+    else:
+        bal_by_id = {a.id: 0.0 for a in accounts}
+        stmt = (
+            select(m.JournalEntryLine, m.Account)
+            .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+            .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+            .where(
+                m.JournalEntryLine.tenant_id == tenant_id,
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.status == "posted",
+                m.JournalEntry.entry_date <= as_of,
+                m.Account.tenant_id == tenant_id,
+            )
+        )
+        for line, account in (await db.execute(stmt)).all():
+            bal_by_id[account.id] = float(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
+                account.account_type,
+                float(line.debit or 0),
+                float(line.credit or 0),
+            )
+        as_of_day = as_of.date()
+        mode = "journals"
+
     rows = []
     debit_total = 0.0
     credit_total = 0.0
     for account in accounts:
-        bal = float(account.balance or 0)
+        bal = round(float(bal_by_id.get(account.id, 0)), 2)
+        if mode == "journals" and abs(bal) < 0.0001:
+            continue
         if account.account_type in {"asset", "expense"}:
             d, c = (bal, 0.0) if bal >= 0 else (0.0, abs(bal))
         else:
@@ -1422,9 +1464,11 @@ async def trial_balance(db: AsyncSession, tenant_id: str) -> dict:
             }
         )
     return {
+        "as_of": as_of_day.isoformat(),
+        "mode": mode,
         "rows": rows,
-        "total_debit": debit_total,
-        "total_credit": credit_total,
+        "total_debit": round(debit_total, 2),
+        "total_credit": round(credit_total, 2),
         "balanced": abs(debit_total - credit_total) < 0.01,
     }
 

@@ -950,7 +950,7 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 
 **Balance Sheet:** `GET /reports/balance-sheet` (also `/accounting/balance-sheet`) — assets / liabilities / equity + computed retained earnings; `balanced` when Assets = Liabilities + Equity. Optional `as_of=YYYY-MM-DD` reconstructs from posted journal lines through that date (`mode=journals`); omit for live `Account.balance` (`mode=balances`). Optional `compare=prior_period|prior_year` adds prior balances and deltas on each row plus summary `compare.deltas`.  
 **Cash Flow:** `GET /reports/cash-flow?from_date=&to_date=` — liquid cash/bank GL movements with back-compat `inflows`/`outflows`/`net` plus sections `operating` / `investing` / `financing` / `transfers` (each `{inflows,outflows,net}`). Lines include `activity`. Classification by journal `source_type` (`cash_transfer` deposit/withdrawal → financing; liquid↔liquid transfer → `transfers`; payments/POS/expenses → operating; `coa_opening` → financing). Investing reserved for future CapEx sources.  
-**Trial Balance:** `GET /accounting/trial-balance` (also `/reports/trial-balance`)
+**Trial Balance:** `GET /accounting/trial-balance` (also `/reports/trial-balance`) — optional `as_of=YYYY-MM-DD` reconstructs debit/credit columns from posted journal lines through that date (`mode=journals`); omit for live `Account.balance` (`mode=balances`). Response includes `as_of`, `mode`, `rows`, `total_debit`, `total_credit`, `balanced`. Export: `report_type=trial_balance` with the same `as_of` (or `to_date`/`date`).
 
 ---
 

@@ -7260,6 +7260,7 @@ async def delete_journal_attachment(
 
 @api.get("/accounting/trial-balance")
 async def get_trial_balance(
+    as_of: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7267,7 +7268,13 @@ async def get_trial_balance(
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
-    return env(await trial_balance(db, claims["tenant_id"]))
+    return env(
+        await trial_balance(
+            db,
+            claims["tenant_id"],
+            as_of=reports_svc.parse_date(as_of, end_of_day=True),
+        )
+    )
 
 
 @api.get("/accounting/profit-loss")
@@ -7322,10 +7329,11 @@ async def report_profit_loss(
 
 @api.get("/reports/trial-balance")
 async def report_trial_balance(
+    as_of: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_trial_balance(claims, db)
+    return await get_trial_balance(as_of=as_of, claims=claims, db=db)
 
 
 @api.get("/reports/cash-flow")
