@@ -770,6 +770,12 @@ Authoritative MVP docs:
 - `docs/LOAD_CERT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/load-cert-pack-remaining-gate.json` — Stage 223 I1
 - `docs/LOAD_CERT_PACK_BLOCKERS_MVP.md` / `ops/mvp/load-cert-pack-blockers.json` — Stage 223 B1
 - `docs/LOAD_CERT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/load-cert-pack-rg-pointers.json` — Stage 223 P1
+- `docs/STAGE_224_EXIT_CRITERIA.md` / `docs/ADR_455_STAGE224_FREEZE.md` (`backend/tests/test_stage224_exit_h224x.py`) — Stage 224 H224x
+- `docs/STAGE_224_FIDELITY.md` (`backend/tests/test_stage224_fidelity_d1.py`) — Stage 224 D1
+- `docs/STAGE_224_PLAN.md` (`backend/tests/test_stage224_open.py`) — Stage 224 open (ADR-454)
+- `docs/LOAD_CAPACITY_REMAINING_GATE_MVP.md` / `ops/mvp/load-capacity-remaining-gate.json` — Stage 224 I1
+- `docs/LOAD_CAPACITY_BLOCKERS_MVP.md` / `ops/mvp/load-capacity-blockers.json` — Stage 224 B1
+- `docs/LOAD_CAPACITY_RG_POINTERS_MVP.md` / `ops/mvp/load-capacity-rg-pointers.json` — Stage 224 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2877,6 +2883,18 @@ See `docs/STAGE_223_FIDELITY.md`.
 ## Stage 223 open
 
 ADR-452 / `docs/STAGE_223_PLAN.md`.
+
+## Stage 224 exit
+
+H224x met — `docs/STAGE_224_EXIT_CRITERIA.md`, ADR-455. Stages 1–224 frozen for Stage 224 feature scope.
+
+## Stage 224 D1 — Tenant MVP Load Capacity Remaining-Gate Index Fidelity
+
+See `docs/STAGE_224_FIDELITY.md`.
+
+## Stage 224 open
+
+ADR-454 / `docs/STAGE_224_PLAN.md`.
 
 ## Stage 213 exit
 

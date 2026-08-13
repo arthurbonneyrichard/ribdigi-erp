@@ -3300,6 +3300,18 @@ Every feature in every phase must meet:
 
 **Stage 223 exit (2026-08-13):** I1, B1, P1, D1, H223x met — `docs/STAGE_223_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_453_STAGE223_FREEZE.md`. Fidelity: `docs/STAGE_223_FIDELITY.md`.
 
+**Stage 224 open (2026-08-13):** Tenant MVP Load Capacity Remaining-Gate Index Fidelity — `docs/ADR_454_STAGE224_OPEN.md` + `docs/STAGE_224_PLAN.md` (I1 next).
+
+**Stage 224 I1 (2026-08-13):** Load capacity remaining-gate index hub (`test_stage224_index_i1.py`).
+
+**Stage 224 B1 (2026-08-13):** Load capacity blocker matrix (`test_stage224_blockers_b1.py`).
+
+**Stage 224 P1 (2026-08-13):** Stage 26 / Stage 223 / Stage 222 pointers (`test_stage224_pointers_p1.py`).
+
+**Stage 224 D1 (2026-08-13):** Load Capacity Remaining-Gate Index fidelity sync — `docs/STAGE_224_FIDELITY.md` (`test_stage224_fidelity_d1.py`).
+
+**Stage 224 exit (2026-08-13):** I1, B1, P1, D1, H224x met — `docs/STAGE_224_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_455_STAGE224_FREEZE.md`. Fidelity: `docs/STAGE_224_FIDELITY.md`.
+
 
 
 

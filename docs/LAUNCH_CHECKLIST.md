@@ -1131,6 +1131,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 / Stage 222 / Stage 221 pointers (Stage 223 P1: `test_stage223_pointers_p1.py`, `docs/LOAD_CERT_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 223 fidelity sync (D1: `test_stage223_fidelity_d1.py`, `docs/STAGE_223_FIDELITY.md`)
 - [x] Stage 223 exit + freeze (H223x: `test_stage223_exit_h223x.py`, `docs/STAGE_223_EXIT_CRITERIA.md`, ADR-453)
+- [x] Stage 224 track opened (ADR-454: `test_stage224_open.py`, `docs/STAGE_224_PLAN.md`) — Load Capacity Remaining-Gate Index; closed under ADR-455
+- [x] Load capacity remaining-gate hub (Stage 224 I1: `test_stage224_index_i1.py`, `docs/LOAD_CAPACITY_REMAINING_GATE_MVP.md`)
+- [x] Load capacity blocker matrix (Stage 224 B1: `test_stage224_blockers_b1.py`, `docs/LOAD_CAPACITY_BLOCKERS_MVP.md`)
+- [x] Stage 26 / Stage 223 / Stage 222 pointers (Stage 224 P1: `test_stage224_pointers_p1.py`, `docs/LOAD_CAPACITY_RG_POINTERS_MVP.md`)
+- [x] Stage 224 fidelity sync (D1: `test_stage224_fidelity_d1.py`, `docs/STAGE_224_FIDELITY.md`)
+- [x] Stage 224 exit + freeze (H224x: `test_stage224_exit_h224x.py`, `docs/STAGE_224_EXIT_CRITERIA.md`, ADR-455)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

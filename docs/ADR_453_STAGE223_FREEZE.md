@@ -24,6 +24,6 @@ Stage 223 Tenant MVP Load Cert Pack Remaining-Gate Index Fidelity delivered load
 
 ## Next stage
 
-Stage 224 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 223 feature scope remains frozen.
+Stage 224 opened under **ADR-454** after CONTINUE/NEXT (Load Capacity Remaining-Gate Index Fidelity) and is frozen under **ADR-455**. Stage 223 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Load Capacity Remaining-Gate Index Fidelity — single index of load-capacity blockers (packaged Stage 26 C1 load-capacity materials non-claim as live capacity Complete) with explicit non-claim (no live capacity Complete). Distinct from Stage 223 load cert pack remaining-gate and Stage 222 Grafana pack remaining-gate.
+**Amendment (2026-08-13):** Stage 224 runner-up outline was approved and opened (ADR-454); freeze ADR-455. Do not reopen Stage 223 scope.

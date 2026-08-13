@@ -1,0 +1,54 @@
+{
+  "id": "load-capacity-blockers",
+  "stage": 224,
+  "pack": "B1",
+  "doc": "docs/LOAD_CAPACITY_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LOAD_CAPACITY_REMAINING_GATE_MVP.md",
+    "load_capacity": "docs/LOAD_CAPACITY_MVP.md",
+    "load_cert_pack": "docs/LOAD_CERT_PACK_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_load_capacity_claimed": false,
+  "operator_1000vu_executed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_sized_staging_capacity": "REMAINING",
+    "operator_staging_1000vu_execution": "REMAINING",
+    "stage26_c1_as_live_capacity": "NON_CLAIM",
+    "live_load_capacity_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "lcapb-live",
+      "title": "Mark live / sized-staging capacity Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcapb-1000vu",
+      "title": "Mark operator staging ~1000-VU execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcapb-stage26-nonclaim",
+      "title": "Mark Stage 26 C1 load capacity as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcapb-claimed-false",
+      "title": "Mark live_load_capacity_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcapb-live-remaining",
+      "title": "Live capacity Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 224 B1 load capacity blocker matrix packaging only. Live capacity Complete remains MISSING."
+}
