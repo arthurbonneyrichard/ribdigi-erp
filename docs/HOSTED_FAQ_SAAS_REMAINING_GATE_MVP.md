@@ -30,3 +30,5 @@ Single index of hosted FAQ SaaS remaining gates. Packaging only — **hosted FAQ
 - Hosted FAQ SaaS / public FAQ portal Completes
 - Helpdesk SaaS Completes
 - Offline Complete / live training / go-live Completes
+
+See also Stage 192 live DR remaining-gate index: [`LIVE_DR_REMAINING_GATE_MVP.md`](LIVE_DR_REMAINING_GATE_MVP.md).

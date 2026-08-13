@@ -1,0 +1,54 @@
+{
+  "id": "live-dr-remaining-gate",
+  "stage": 192,
+  "pack": "I1",
+  "doc": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LIVE_DR_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LIVE_DR_PACK_POINTERS_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+    "e2e_backup_restore": "docs/E2E_BACKUP_RESTORE_MVP.md",
+    "pitr_drill_pack": "docs/PITR_DRILL_PACK_MVP.md",
+    "hosted_faq_saas_remaining_gate": "docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_dr_claimed": false,
+  "live_backup_restore_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage169_b1_backup_drill": true,
+  "distinct_from_stage35_r1_e2e_backup": true,
+  "steps": [
+    {
+      "id": "ld-read-blockers",
+      "title": "Read B1 live DR blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ld-follow-pointers",
+      "title": "Follow P1 Stage 169 / Stage 35 / Stage 191 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ld-dr-missing",
+      "title": "Reaffirm live DR MISSING until staging restore + PITR execute",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ld-no-packaging-as-dr",
+      "title": "Do not treat Stage 169 B1 / Stage 35 R1 as live DR Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ld-dr-remaining",
+      "title": "Live DR / live PITR Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 192 I1 live DR remaining-gate index packaging only. Do not claim live DR Complete."
+}

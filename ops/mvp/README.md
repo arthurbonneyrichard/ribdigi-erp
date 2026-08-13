@@ -568,6 +568,12 @@ Authoritative MVP docs:
 - `docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md` / `ops/mvp/hosted-faq-saas-remaining-gate.json` — Stage 191 I1
 - `docs/HOSTED_FAQ_SAAS_BLOCKERS_MVP.md` / `ops/mvp/hosted-faq-saas-blockers.json` — Stage 191 B1
 - `docs/HOSTED_FAQ_SAAS_PACK_POINTERS_MVP.md` / `ops/mvp/hosted-faq-saas-pack-pointers.json` — Stage 191 P1
+- `docs/STAGE_192_EXIT_CRITERIA.md` / `docs/ADR_391_STAGE192_FREEZE.md` (`backend/tests/test_stage192_exit_h192x.py`) — Stage 192 H192x
+- `docs/STAGE_192_FIDELITY.md` (`backend/tests/test_stage192_fidelity_d1.py`) — Stage 192 D1
+- `docs/STAGE_192_PLAN.md` (`backend/tests/test_stage192_open.py`) — Stage 192 open (ADR-390)
+- `docs/LIVE_DR_REMAINING_GATE_MVP.md` / `ops/mvp/live-dr-remaining-gate.json` — Stage 192 I1
+- `docs/LIVE_DR_BLOCKERS_MVP.md` / `ops/mvp/live-dr-blockers.json` — Stage 192 B1
+- `docs/LIVE_DR_PACK_POINTERS_MVP.md` / `ops/mvp/live-dr-pack-pointers.json` — Stage 192 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2401,6 +2407,18 @@ H191x met — `docs/STAGE_191_EXIT_CRITERIA.md`, ADR-389. Stages 1–191 frozen 
 ## Stage 191 open
 
 ADR-388 + `docs/STAGE_191_PLAN.md` — Hosted FAQ SaaS Remaining-Gate Index Fidelity (closed under ADR-389).
+
+## Stage 192 exit
+
+H192x met — `docs/STAGE_192_EXIT_CRITERIA.md`, ADR-391. Stages 1–192 frozen for Stage 192 feature scope.
+
+## Stage 192 D1 — Tenant MVP Live DR Remaining-Gate Index Fidelity
+
+`docs/STAGE_192_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Live DR Complete remains MISSING.
+
+## Stage 192 open
+
+ADR-390 + `docs/STAGE_192_PLAN.md` — Live DR Remaining-Gate Index Fidelity (closed under ADR-391).
 
 ## Stage 165 open
 

@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 191 froze Tenant MVP Hosted FAQ SaaS Remaining-Gate Index Fidelity (ADR-389) — hosted FAQ SaaS remaining-gate hub, blocker matrix, Stage 171 KB/FAQ pointers, explicit hosted FAQ SaaS non-claim. Hosted FAQ SaaS Complete remains MISSING. Next recommended distinct outline: Tenant MVP Live DR Remaining-Gate Index Fidelity (Stage 169 backup/drill packaging non-claim as live DR Complete — explicit non-claim) — Stage 192+. Do not claim hosted FAQ SaaS Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 192 froze Tenant MVP Live DR Remaining-Gate Index Fidelity (ADR-391) — live DR remaining-gate hub, blocker matrix, Stage 169/35 pointers, explicit live DR non-claim. Live DR Complete remains MISSING. Next recommended distinct outline: Tenant MVP Live Migration Remaining-Gate Index Fidelity (Stage 169 migration-gate packaging non-claim as live/production migrate Complete — explicit non-claim) — Stage 193+. Do not claim live DR Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

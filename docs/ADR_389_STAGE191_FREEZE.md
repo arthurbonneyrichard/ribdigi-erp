@@ -24,6 +24,4 @@ Stage 191 Tenant MVP Hosted FAQ SaaS Remaining-Gate Index Fidelity delivered hos
 
 ## Next stage
 
-Stage 192 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 191 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Live DR Remaining-Gate Index Fidelity — single index of live DR blockers (Stage 169 backup/drill packaging non-claim as live DR Complete) with explicit non-claim (no live DR Complete).
+Stage **192** opened under **ADR-390** / frozen under **ADR-391** — Tenant MVP Live DR remaining-gate index fidelity (Stage 169 backup/drill packaging non-claim as live DR Complete) with explicit non-claim of live DR Complete. Stage 191 feature scope remains frozen. Do not reopen Stages **1–191** scopes.

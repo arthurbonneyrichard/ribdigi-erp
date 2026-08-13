@@ -158,6 +158,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Hosted FAQ SaaS remaining-gate index (Stage 191):** Status index is `docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md` → blockers `docs/HOSTED_FAQ_SAAS_BLOCKERS_MVP.md` → Stage 171 KB/FAQ pointers `docs/HOSTED_FAQ_SAAS_PACK_POINTERS_MVP.md`. Hosted FAQ SaaS Complete remains MISSING (not claimed).
 
+**Live DR remaining-gate index (Stage 192):** Status index is `docs/LIVE_DR_REMAINING_GATE_MVP.md` → blockers `docs/LIVE_DR_BLOCKERS_MVP.md` → Stage 169/35 pointers `docs/LIVE_DR_PACK_POINTERS_MVP.md`. Live DR Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

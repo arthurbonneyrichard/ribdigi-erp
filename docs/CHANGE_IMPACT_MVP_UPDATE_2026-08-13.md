@@ -193,3 +193,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 191 decision (opened after Stage 190 freeze)
 
 **Tenant MVP Hosted FAQ SaaS Remaining-Gate Index Fidelity** — hosted FAQ SaaS remaining-gate hub (I1), blocker matrix (B1), Stage 171 KB/FAQ / Stage 190 pointers with explicit non-claim (P1). Hosted FAQ SaaS Completes remain deferred (Stage 192+).
+## Stage 192 decision (opened after Stage 191 freeze)
+
+**Tenant MVP Live DR Remaining-Gate Index Fidelity** — live DR remaining-gate hub (I1), blocker matrix (B1), Stage 169 / Stage 35 / Stage 191 pointers with explicit non-claim (P1). Live DR / live PITR Completes remain deferred (Stage 193+).
