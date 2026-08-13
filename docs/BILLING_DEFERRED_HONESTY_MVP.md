@@ -47,3 +47,5 @@ Every step keeps `done: false`. Top-level `billing_complete_claimed: false` / `p
 ## Sign-off
 
 Stage 36 B1 is met when this doc + register JSON + evidence JSON exist, `test_billing_deferred_honesty_b1.py` passes, and LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan cite Stage 36 B1 without inventing paid billing Complete.
+
+See also Stage 180 go-live remaining-gate index (billing ADR-002 deferred): [`GOLIVE_REMAINING_GATE_MVP.md`](GOLIVE_REMAINING_GATE_MVP.md).

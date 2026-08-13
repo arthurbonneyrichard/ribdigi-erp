@@ -24,3 +24,5 @@ For Stage 1 / Commercial MVP:
 - Product honesty: UI and API state that billing is deferred.
 - Entitlement enforcement by plan can be added later without rewriting trial lifecycle.
 - BR-1.3 “upgrade/downgrade” is PARTIAL until a billing provider ships; metadata change is the Stage 1 closeout.
+
+See also Stage 180 go-live remaining-gate index: [`GOLIVE_REMAINING_GATE_MVP.md`](GOLIVE_REMAINING_GATE_MVP.md) (billing remains deferred).

@@ -31,3 +31,5 @@ Single index of Offline Complete remaining gates. Packaging only — **Offline C
 - Playwright offline → online E2E Complete
 - Fabricated attestation Completes
 - Go-live Complete
+
+See also Stage 180 go-live remaining-gate index: [`GOLIVE_REMAINING_GATE_MVP.md`](GOLIVE_REMAINING_GATE_MVP.md).

@@ -1090,6 +1090,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 179 P1** | Stages 166–169 pack pointers (`test_stage179_pointers_p1.py`) |
 | **Stage 179 D1** | Offline Complete remaining-gate fidelity — `docs/STAGE_179_FIDELITY.md` (`test_stage179_fidelity_d1.py`) |
 | **Stage 179 H179x** | Exit + freeze — `docs/STAGE_179_EXIT_CRITERIA.md`, ADR-365 (`test_stage179_exit_h179x.py`); Stages 1–179 frozen |
+| **Stage 180 open** | Go-Live Remaining-Gate Index — `docs/STAGE_180_PLAN.md`, ADR-366 (`test_stage180_open.py`) |
+| **Stage 180 G1** | Go-live remaining-gate index hub (`test_stage180_golive_g1.py`) |
+| **Stage 180 B1** | Go-live blocker matrix (`test_stage180_blockers_b1.py`) |
+| **Stage 180 P1** | LAUNCH / Offline Complete / ADR-002 pointers (`test_stage180_pointers_p1.py`) |
+| **Stage 180 D1** | Go-live remaining-gate fidelity — `docs/STAGE_180_FIDELITY.md` (`test_stage180_fidelity_d1.py`) |
+| **Stage 180 H180x** | Exit + freeze — `docs/STAGE_180_EXIT_CRITERIA.md`, ADR-367 (`test_stage180_exit_h180x.py`); Stages 1–180 frozen |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

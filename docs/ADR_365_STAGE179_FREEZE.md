@@ -24,6 +24,4 @@ Stage 179 Tenant MVP Offline Complete Remaining-Gate Index Fidelity delivered re
 
 ## Next stage
 
-Stage 180 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 179 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP go-live remaining-gate index fidelity — single index of go-live blockers (LAUNCH §§1–3, §7 unsigned, attestation_claimed false, Offline Complete remaining, billing ADR-002 deferred) with explicit non-claim (no go-live claim).
+Stage **180** opened under **ADR-366** / frozen under **ADR-367** — Tenant MVP go-live remaining-gate index fidelity (LAUNCH §§1–3, §7 unsigned, Offline Complete remaining, billing ADR-002 deferred) with explicit non-claim of go-live Complete. Stage 179 feature scope remains frozen. Do not reopen Stages **1–179** scopes.

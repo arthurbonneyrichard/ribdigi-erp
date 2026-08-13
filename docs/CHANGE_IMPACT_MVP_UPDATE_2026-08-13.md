@@ -157,3 +157,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 179 decision (opened after Stage 178 freeze)
 
 **Tenant MVP Offline Complete Remaining-Gate Index Fidelity** — remaining-gate index hub (I1), blocker matrix (B1), Stages 166–169 pack pointers with explicit non-claim (P1). Offline Complete / go-live remain deferred (Stage 180+).
+## Stage 180 decision (opened after Stage 179 freeze)
+
+**Tenant MVP Go-Live Remaining-Gate Index Fidelity** — go-live remaining-gate hub (G1), blocker matrix (B1), LAUNCH / Offline Complete / ADR-002 pointers with explicit non-claim (P1). Go-live / Offline Complete / billing Completes remain deferred (Stage 181+).
