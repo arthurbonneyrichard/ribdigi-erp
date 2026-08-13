@@ -695,6 +695,13 @@ Authoritative MVP docs:
 - `docs/INCIDENT_REMAINING_GATE_MVP.md` / `ops/mvp/incident-remaining-gate.json` — Stage 211 I1
 - `docs/INCIDENT_BLOCKERS_MVP.md` / `ops/mvp/incident-blockers.json` — Stage 211 B1
 - `docs/INCIDENT_PACK_POINTERS_MVP.md` / `ops/mvp/incident-pack-pointers.json` — Stage 211 P1
+
+- `docs/STAGE_212_EXIT_CRITERIA.md` / `docs/ADR_431_STAGE212_FREEZE.md` (`backend/tests/test_stage212_exit_h212x.py`) — Stage 212 H212x
+- `docs/STAGE_212_FIDELITY.md` (`backend/tests/test_stage212_fidelity_d1.py`) — Stage 212 D1
+- `docs/STAGE_212_PLAN.md` (`backend/tests/test_stage212_open.py`) — Stage 212 open (ADR-430)
+- `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` / `ops/mvp/evidence-ledger-remaining-gate.json` — Stage 212 I1
+- `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` / `ops/mvp/evidence-ledger-blockers.json` — Stage 212 B1
+- `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md` / `ops/mvp/evidence-ledger-pack-pointers.json` — Stage 212 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2679,6 +2686,19 @@ ADR-412 + `docs/STAGE_203_PLAN.md` — Cutover Remaining-Gate Index Fidelity (cl
 
 
 
+
+
+## Stage 212 exit
+
+H212x met — `docs/STAGE_212_EXIT_CRITERIA.md`, ADR-431. Stages 1–212 frozen for Stage 212 feature scope.
+
+## Stage 212 D1 — Tenant MVP Evidence Ledger Remaining-Gate Index Fidelity
+
+See `docs/STAGE_212_FIDELITY.md`.
+
+## Stage 212 open
+
+ADR-430 / `docs/STAGE_212_PLAN.md`.
 
 ## Stage 211 exit
 

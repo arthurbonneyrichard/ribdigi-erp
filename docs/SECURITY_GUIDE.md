@@ -1234,6 +1234,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 203 P1** | Stage 29 / Stage 27 / Stage 202 pointers (`test_stage203_pointers_p1.py`) |
 | **Stage 203 D1** | Cutover remaining-gate fidelity — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`) |
 | **Stage 203 H203x** | Exit + freeze — `docs/STAGE_203_EXIT_CRITERIA.md`, ADR-413 (`test_stage203_exit_h203x.py`); Stages 1–203 frozen |
+| **Stage 212 open** | Evidence Ledger Remaining-Gate Index — `docs/STAGE_212_PLAN.md`, ADR-430 (`test_stage212_open.py`) |
+| **Stage 212 I1** | Evidence ledger remaining-gate index hub (`test_stage212_index_i1.py`) |
+| **Stage 212 B1** | Evidence ledger blocker matrix (`test_stage212_blockers_b1.py`) |
+| **Stage 212 P1** | Stage 30 / Stage 211 pointers (`test_stage212_pointers_p1.py`) |
+| **Stage 212 D1** | Evidence ledger remaining-gate fidelity — `docs/STAGE_212_FIDELITY.md` (`test_stage212_fidelity_d1.py`) |
+| **Stage 212 H212x** | Exit + freeze — `docs/STAGE_212_EXIT_CRITERIA.md`, ADR-431 (`test_stage212_exit_h212x.py`); Stages 1–212 frozen |
 | **Stage 211 open** | Incident Pack Remaining-Gate Index — `docs/STAGE_211_PLAN.md`, ADR-428 (`test_stage211_open.py`) |
 | **Stage 211 I1** | Incident remaining-gate index hub (`test_stage211_index_i1.py`) |
 | **Stage 211 B1** | Incident blocker matrix (`test_stage211_blockers_b1.py`) |

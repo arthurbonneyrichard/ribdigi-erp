@@ -46,3 +46,5 @@ Operators walk Remaining honesty flags via [ATTESTATION_PACK_MVP.md](ATTESTATION
 ## Sign-off
 
 Stage 30 L1 is met when this doc + ledger JSON + evidence JSON exist, `test_evidence_ledger_l1.py` passes, and PRODUCTION_READINESS / launch / roadmap cite Stage 30 L1 without inventing live-run success. Stage 30 A1 extends this ledger into an attestation matrix without claiming go-live Complete.
+
+See also Stage 212 Tenant MVP Evidence Ledger remaining-gate index fidelity (`docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md`, ADR-430 / ADR-431) — packaging non-claim as live evidence-ledger Complete.

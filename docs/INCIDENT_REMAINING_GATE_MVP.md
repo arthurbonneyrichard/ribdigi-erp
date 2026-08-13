@@ -3,7 +3,7 @@
 **Status:** Complete (MVP packaging) — Stage 211 I1  
 **Evidence:** `backend/tests/test_stage211_index_i1.py`  
 **Register:** `ops/mvp/incident-remaining-gate.json`  
-**Related:** [INCIDENT_BLOCKERS_MVP.md](INCIDENT_BLOCKERS_MVP.md) · [INCIDENT_PACK_POINTERS_MVP.md](INCIDENT_PACK_POINTERS_MVP.md) · [INCIDENT_PACK_MVP.md](INCIDENT_PACK_MVP.md) · [SECURITY_SCAN_REMAINING_GATE_MVP.md](SECURITY_SCAN_REMAINING_GATE_MVP.md) · [STAGE_211_PLAN.md](STAGE_211_PLAN.md)
+**Related:** [INCIDENT_BLOCKERS_MVP.md](INCIDENT_BLOCKERS_MVP.md) · [INCIDENT_PACK_POINTERS_MVP.md](INCIDENT_PACK_POINTERS_MVP.md) · [INCIDENT_PACK_MVP.md](INCIDENT_PACK_MVP.md) · [SECURITY_SCAN_REMAINING_GATE_MVP.md](SECURITY_SCAN_REMAINING_GATE_MVP.md) · [STAGE_211_PLAN.md](STAGE_211_PLAN.md) · [EVIDENCE_LEDGER_REMAINING_GATE_MVP.md](EVIDENCE_LEDGER_REMAINING_GATE_MVP.md) (Stage 212)
 
 Single index of incident-response remaining gates. Packaging only — **live incident-response Complete remains MISSING.** Distinct from Stage 30 I1 incident pack packaging and Stage 210 security scan remaining-gate.
 

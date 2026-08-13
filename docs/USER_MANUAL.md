@@ -182,6 +182,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Cutover remaining-gate index (Stage 203):** Status index is `docs/CUTOVER_REMAINING_GATE_MVP.md` → blockers `docs/CUTOVER_BLOCKERS_MVP.md` → Stage 29/27 pointers `docs/CUTOVER_PACK_POINTERS_MVP.md`. Live production cutover Complete remains MISSING (not claimed).
 
+**Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
+
 **Incident remaining-gate index (Stage 211):** Status index is `docs/INCIDENT_REMAINING_GATE_MVP.md` → blockers `docs/INCIDENT_BLOCKERS_MVP.md` → Stage 30/210 pointers `docs/INCIDENT_PACK_POINTERS_MVP.md`. Live incident-response Complete remains MISSING (not claimed).
 
 **Security scan remaining-gate index (Stage 210):** Status index is `docs/SECURITY_SCAN_REMAINING_GATE_MVP.md` → blockers `docs/SECURITY_SCAN_BLOCKERS_MVP.md` → Stage 27/209 pointers `docs/SECURITY_SCAN_PACK_POINTERS_MVP.md`. Live security-scan Complete remains MISSING (not claimed).

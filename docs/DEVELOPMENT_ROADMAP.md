@@ -3156,6 +3156,18 @@ Every feature in every phase must meet:
 
 **Stage 211 exit (2026-08-13):** I1, B1, P1, D1, H211x met — `docs/STAGE_211_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_429_STAGE211_FREEZE.md`. Fidelity: `docs/STAGE_211_FIDELITY.md`.
 
+**Stage 212 open (2026-08-13):** Tenant MVP Evidence Ledger Remaining-Gate Index Fidelity — `docs/ADR_430_STAGE212_OPEN.md` + `docs/STAGE_212_PLAN.md` (I1 next).
+
+**Stage 212 I1 (2026-08-13):** Evidence ledger remaining-gate index hub (`test_stage212_index_i1.py`).
+
+**Stage 212 B1 (2026-08-13):** Evidence ledger blocker matrix (`test_stage212_blockers_b1.py`).
+
+**Stage 212 P1 (2026-08-13):** Stage 30 / Stage 211 pointers (`test_stage212_pointers_p1.py`).
+
+**Stage 212 D1 (2026-08-13):** Evidence Ledger Remaining-Gate Index fidelity sync — `docs/STAGE_212_FIDELITY.md` (`test_stage212_fidelity_d1.py`).
+
+**Stage 212 exit (2026-08-13):** I1, B1, P1, D1, H212x met — `docs/STAGE_212_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_431_STAGE212_FREEZE.md`. Fidelity: `docs/STAGE_212_FIDELITY.md`.
+
 
 
 
