@@ -129,3 +129,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 172 decision (opened after Stage 171 freeze)
 
 **Tenant MVP Cashier Quickstart Fidelity** — quickstart hub (Q1), bind + catalog refresh (B1), Hold/flush/accept-client day-one ops (O1). Offline Complete / live training / go-live remain deferred (Stage 173+).
+
+## Stage 173 decision (opened after Stage 172 freeze)
+
+**Tenant MVP Store-Open Checklist Fidelity** — store-open hub (S1), store select + low-stock glance (L1), Hold expiry + device health + conflict queue (H1). Offline Complete / live training / go-live remain deferred (Stage 174+).

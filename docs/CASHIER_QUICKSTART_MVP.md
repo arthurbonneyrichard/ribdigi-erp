@@ -31,3 +31,7 @@ Ordered day-one cashier quickstart hub for Tenant MVP POS. Indexes bind/catalog 
 - Live classroom / certification training Complete
 - Fabricated “cashier certified” Completes
 - Go-live Complete
+
+## Stage 173 S1 amendment
+
+Recurring open-of-day (not day-one onboarding): [STORE_OPEN_CHECKLIST_MVP.md](STORE_OPEN_CHECKLIST_MVP.md) (`ops/mvp/store-open-checklist.json`, `test_stage173_storeopen_s1.py`).

@@ -454,7 +454,14 @@ Authoritative MVP docs:
 - `docs/CASHIER_QUICKSTART_MVP.md` / `ops/mvp/cashier-quickstart.json` — Stage 172 Q1
 - `docs/CASHIER_BIND_CATALOG_MVP.md` / `ops/mvp/cashier-bind-catalog.json` — Stage 172 B1
 - `docs/CASHIER_POS_DAYONE_MVP.md` / `ops/mvp/cashier-pos-dayone.json` — Stage 172 O1
+- `docs/STAGE_173_EXIT_CRITERIA.md` / `docs/ADR_353_STAGE173_FREEZE.md` (`backend/tests/test_stage173_exit_h173x.py`) — Stage 173 H173x
+- `docs/STAGE_173_FIDELITY.md` (`backend/tests/test_stage173_fidelity_d1.py`) — Stage 173 D1
+- `docs/STAGE_173_PLAN.md` (`backend/tests/test_stage173_open.py`) — Stage 173 open (ADR-352)
+- `docs/STORE_OPEN_CHECKLIST_MVP.md` / `ops/mvp/store-open-checklist.json` — Stage 173 S1
+- `docs/STORE_OPEN_LOWSTOCK_MVP.md` / `ops/mvp/store-open-lowstock.json` — Stage 173 L1
+- `docs/STORE_OPEN_HEALTH_MVP.md` / `ops/mvp/store-open-health.json` — Stage 173 H1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
+
 
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -2052,6 +2059,18 @@ H172x met — `docs/STAGE_172_EXIT_CRITERIA.md`, ADR-351. Stages 1–172 frozen 
 ## Stage 172 open
 
 ADR-350 + `docs/STAGE_172_PLAN.md` — Cashier Quickstart Fidelity (closed under ADR-351).
+
+## Stage 173 exit
+
+H173x met — `docs/STAGE_173_EXIT_CRITERIA.md`, ADR-353. Stages 1–173 frozen for Stage 173 feature scope.
+
+## Stage 173 D1 — Tenant MVP Store-Open Checklist Fidelity
+
+`docs/STAGE_173_FIDELITY.md` — maps S1–H1 → readiness / launch / deploy / security. Offline Complete / live training remain MISSING.
+
+## Stage 173 open
+
+ADR-352 + `docs/STAGE_173_PLAN.md` — Store-Open Checklist Fidelity (closed under ADR-353).
 
 ## Stage 165 open
 

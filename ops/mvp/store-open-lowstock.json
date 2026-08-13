@@ -1,0 +1,50 @@
+{
+  "id": "store-open-lowstock",
+  "stage": 173,
+  "pack": "L1",
+  "doc": "docs/STORE_OPEN_LOWSTOCK_MVP.md",
+  "related": {
+    "store_open_checklist": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "user_manual": "docs/USER_MANUAL.md",
+    "cashier_bind_catalog": "docs/CASHIER_BIND_CATALOG_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "offline_stock_authoritative": false,
+  "auto_po_claimed": false,
+  "steps": [
+    {
+      "id": "ls-select-store",
+      "title": "Confirm active store/warehouse before POS",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ls-lowstock-glance",
+      "title": "Glance Inventory → Low stock / reorder signals",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ls-no-auto-po",
+      "title": "Draft PO not auto-placed from glance",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ls-offline-stock",
+      "title": "Do not treat offline catalog stock as authoritative",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ls-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 173 L1 store/low-stock packaging only. Offline Complete remains MISSING."
+}

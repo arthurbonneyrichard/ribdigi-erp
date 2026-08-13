@@ -899,6 +899,7 @@ Stage 169 D1 — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`); 
 Stage 170 D1 — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`); Stage 170 S1 / V1 / E1.
 Stage 171 D1 — `docs/STAGE_171_FIDELITY.md` (`test_stage171_fidelity_d1.py`); Stage 171 K1 / F1 / T1.
 Stage 172 D1 — `docs/STAGE_172_FIDELITY.md` (`test_stage172_fidelity_d1.py`); Stage 172 Q1 / B1 / O1.
+Stage 173 D1 — `docs/STAGE_173_FIDELITY.md` (`test_stage173_fidelity_d1.py`); Stage 173 S1 / L1 / H1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1654,3 +1655,4 @@ Stage 169 D1 Production Ops Hardening fidelity — `docs/STAGE_169_FIDELITY.md` 
 Stage 170 D1 Support Readiness fidelity — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`); Stage 170 S1 support readiness; Stage 170 V1 severity matrix; Stage 170 E1 offline/sync escalation; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 171 D1 Knowledge Base fidelity — `docs/STAGE_171_FIDELITY.md` (`test_stage171_fidelity_d1.py`); Stage 171 K1 knowledge base hub; Stage 171 F1 FAQ offline/POS/Hold; Stage 171 T1 troubleshooting index; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 172 D1 Cashier Quickstart fidelity — `docs/STAGE_172_FIDELITY.md` (`test_stage172_fidelity_d1.py`); Stage 172 Q1 quickstart hub; Stage 172 B1 bind/catalog; Stage 172 O1 Hold/flush/accept-client; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 173 D1 Store-Open Checklist fidelity — `docs/STAGE_173_FIDELITY.md` (`test_stage173_fidelity_d1.py`); Stage 173 S1 store-open hub; Stage 173 L1 store/low-stock; Stage 173 H1 Hold/device/conflict health; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

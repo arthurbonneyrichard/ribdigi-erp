@@ -2688,6 +2688,18 @@ Every feature in every phase must meet:
 
 **Stage 172 exit (2026-08-13):** Q1, B1, O1, D1, H172x met — `docs/STAGE_172_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_351_STAGE172_FREEZE.md`. Fidelity: `docs/STAGE_172_FIDELITY.md`.
 
+**Stage 173 open (2026-08-13):** Tenant MVP Store-Open Checklist Fidelity — `docs/ADR_352_STAGE173_OPEN.md` + `docs/STAGE_173_PLAN.md` (S1 next).
+
+**Stage 173 S1 (2026-08-13):** Store-open checklist hub (`test_stage173_storeopen_s1.py`).
+
+**Stage 173 L1 (2026-08-13):** Store select + low-stock glance (`test_stage173_lowstock_l1.py`).
+
+**Stage 173 H1 (2026-08-13):** Hold expiry + device health + conflicts (`test_stage173_health_h1.py`).
+
+**Stage 173 D1 (2026-08-13):** Store-Open Checklist fidelity sync — `docs/STAGE_173_FIDELITY.md` (`test_stage173_fidelity_d1.py`).
+
+**Stage 173 exit (2026-08-13):** S1, L1, H1, D1, H173x met — `docs/STAGE_173_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_353_STAGE173_FREEZE.md`. Fidelity: `docs/STAGE_173_FIDELITY.md`.
+
 
 
 

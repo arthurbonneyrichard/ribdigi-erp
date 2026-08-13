@@ -44,3 +44,7 @@ Day-one cashier ops for Hold/soft-reserve, offline sale sync flush, and conflict
 - Offline Complete product claim
 - Fabricated conflict-free sync SLAs
 - Live support SLA Completes
+
+## Stage 173 H1 amendment
+
+Open-of-day Hold/device/conflict health: [STORE_OPEN_HEALTH_MVP.md](STORE_OPEN_HEALTH_MVP.md) (`ops/mvp/store-open-health.json`, `test_stage173_health_h1.py`).

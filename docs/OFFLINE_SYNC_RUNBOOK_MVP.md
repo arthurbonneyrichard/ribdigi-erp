@@ -74,3 +74,7 @@ Cashier/admin FAQ and symptom index: [FAQ_OFFLINE_POS_MVP.md](FAQ_OFFLINE_POS_MV
 ## Stage 172 Q1 amendment
 
 Cashier day-one quickstart: [CASHIER_QUICKSTART_MVP.md](CASHIER_QUICKSTART_MVP.md) (`ops/mvp/cashier-quickstart.json`, `test_stage172_quickstart_q1.py`). Offline Complete remains not claimed.
+
+## Stage 173 H1 amendment
+
+Store-open device/conflict health: [STORE_OPEN_HEALTH_MVP.md](STORE_OPEN_HEALTH_MVP.md) (`ops/mvp/store-open-health.json`, `test_stage173_health_h1.py`). Offline Complete remains not claimed.

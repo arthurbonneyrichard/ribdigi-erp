@@ -24,6 +24,4 @@ Stage 172 Tenant MVP Cashier Quickstart Fidelity delivered quickstart hub (Q1), 
 
 ## Next stage
 
-Stage 173 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 172 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP store-open checklist fidelity — manager/cashier open-of-day checklist linking store select, low-stock glance, Hold expiry, offline device health, and sync conflict queue (no Offline Complete claim).
+Stage 173 opened under [ADR-352](ADR_352_STAGE173_OPEN.md) (Tenant MVP Store-Open Checklist Fidelity) and froze under [ADR-353](ADR_353_STAGE173_FREEZE.md). Stage 172 feature scope remains frozen.

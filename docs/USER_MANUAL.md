@@ -120,6 +120,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Cashier quickstart (Stage 172):** Day-one POS order is `docs/CASHIER_QUICKSTART_MVP.md` → bind/catalog `docs/CASHIER_BIND_CATALOG_MVP.md` → Hold/flush/accept-client `docs/CASHIER_POS_DAYONE_MVP.md`. Offline Complete remains deferred.
 
+**Store-open checklist (Stage 173):** Recurring open-of-day order is `docs/STORE_OPEN_CHECKLIST_MVP.md` → store/low-stock `docs/STORE_OPEN_LOWSTOCK_MVP.md` → Hold/device/conflict health `docs/STORE_OPEN_HEALTH_MVP.md`. Offline Complete remains deferred.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health
