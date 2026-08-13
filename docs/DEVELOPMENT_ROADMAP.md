@@ -2964,6 +2964,18 @@ Every feature in every phase must meet:
 
 **Stage 195 exit (2026-08-13):** I1, B1, P1, D1, H195x met — `docs/STAGE_195_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_397_STAGE195_FREEZE.md`. Fidelity: `docs/STAGE_195_FIDELITY.md`.
 
+**Stage 196 open (2026-08-13):** Tenant MVP Residual Risk Remaining-Gate Index Fidelity — `docs/ADR_398_STAGE196_OPEN.md` + `docs/STAGE_196_PLAN.md` (I1 next).
+
+**Stage 196 I1 (2026-08-13):** Residual risk remaining-gate index hub (`test_stage196_index_i1.py`).
+
+**Stage 196 B1 (2026-08-13):** Residual risk blocker matrix (`test_stage196_blockers_b1.py`).
+
+**Stage 196 P1 (2026-08-13):** Stage 33 / Stage 72 / Stage 195 pointers (`test_stage196_pointers_p1.py`).
+
+**Stage 196 D1 (2026-08-13):** Residual Risk Remaining-Gate Index fidelity sync — `docs/STAGE_196_FIDELITY.md` (`test_stage196_fidelity_d1.py`).
+
+**Stage 196 exit (2026-08-13):** I1, B1, P1, D1, H196x met — `docs/STAGE_196_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_399_STAGE196_FREEZE.md`. Fidelity: `docs/STAGE_196_FIDELITY.md`.
+
 
 
 

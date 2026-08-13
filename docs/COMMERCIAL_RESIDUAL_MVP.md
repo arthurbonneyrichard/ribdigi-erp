@@ -47,3 +47,5 @@ Every step keeps `done: false`. Top-level `residual_closed_claimed: false` / `pa
 ## Sign-off
 
 Stage 72 R1 is met when this doc + register JSON + evidence JSON exist, `test_commercial_residual_r1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / plan / roadmap cite Stage 72 R1 without inventing residual closed Complete.
+
+See also Stage 196 Tenant MVP Residual Risk remaining-gate index fidelity (`docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md`, ADR-398 / ADR-399).

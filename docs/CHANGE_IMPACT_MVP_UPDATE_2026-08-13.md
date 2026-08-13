@@ -205,3 +205,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 195 decision (opened after Stage 194 freeze)
 
 **Tenant MVP Customer Assurance Remaining-Gate Index Fidelity** — customer assurance remaining-gate hub (I1), blocker matrix (B1), Stage 73 / Stage 34 / Stage 194 pointers with explicit non-claim (P1). Customer assurance Completes remain deferred (Stage 196+).
+## Stage 196 decision (opened after Stage 195 freeze)
+
+**Tenant MVP Residual Risk Remaining-Gate Index Fidelity** — residual risk remaining-gate hub (I1), blocker matrix (B1), Stage 33 / Stage 72 / Stage 195 pointers with explicit non-claim (P1). Residual risks closed Completes remain deferred (Stage 197+).

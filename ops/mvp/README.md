@@ -592,6 +592,12 @@ Authoritative MVP docs:
 - `docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md` / `ops/mvp/customer-assurance-remaining-gate.json` — Stage 195 I1
 - `docs/CUSTOMER_ASSURANCE_BLOCKERS_MVP.md` / `ops/mvp/customer-assurance-blockers.json` — Stage 195 B1
 - `docs/CUSTOMER_ASSURANCE_PACK_POINTERS_MVP.md` / `ops/mvp/customer-assurance-pack-pointers.json` — Stage 195 P1
+- `docs/STAGE_196_EXIT_CRITERIA.md` / `docs/ADR_399_STAGE196_FREEZE.md` (`backend/tests/test_stage196_exit_h196x.py`) — Stage 196 H196x
+- `docs/STAGE_196_FIDELITY.md` (`backend/tests/test_stage196_fidelity_d1.py`) — Stage 196 D1
+- `docs/STAGE_196_PLAN.md` (`backend/tests/test_stage196_open.py`) — Stage 196 open (ADR-398)
+- `docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md` / `ops/mvp/residual-risk-remaining-gate.json` — Stage 196 I1
+- `docs/RESIDUAL_RISK_BLOCKERS_MVP.md` / `ops/mvp/residual-risk-blockers.json` — Stage 196 B1
+- `docs/RESIDUAL_RISK_PACK_POINTERS_MVP.md` / `ops/mvp/residual-risk-pack-pointers.json` — Stage 196 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2473,6 +2479,18 @@ H195x met — `docs/STAGE_195_EXIT_CRITERIA.md`, ADR-397. Stages 1–195 frozen 
 ## Stage 195 open
 
 ADR-396 + `docs/STAGE_195_PLAN.md` — Customer Assurance Remaining-Gate Index Fidelity (closed under ADR-397).
+
+## Stage 196 exit
+
+H196x met — `docs/STAGE_196_EXIT_CRITERIA.md`, ADR-399. Stages 1–196 frozen for Stage 196 feature scope.
+
+## Stage 196 D1 — Tenant MVP Residual Risk Remaining-Gate Index Fidelity
+
+`docs/STAGE_196_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Residual risks closed Complete remains MISSING.
+
+## Stage 196 open
+
+ADR-398 + `docs/STAGE_196_PLAN.md` — Residual Risk Remaining-Gate Index Fidelity (closed under ADR-399).
 
 ## Stage 165 open
 

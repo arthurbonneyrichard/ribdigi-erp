@@ -45,3 +45,5 @@ Monthly POS ops re-reads this register for residual risk honesty: [MONTHLY_POS_O
 ## Sign-off
 
 Stage 33 K1 is met when this doc + register JSON + evidence JSON exist, `test_residual_risk_k1.py` passes, and PRODUCTION_READINESS / launch / roadmap cite Stage 33 K1 without inventing risks closed or go-live Complete.
+
+See also Stage 196 Tenant MVP Residual Risk remaining-gate index fidelity (`docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md`, ADR-398 / ADR-399).

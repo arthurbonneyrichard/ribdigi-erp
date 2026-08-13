@@ -24,6 +24,4 @@ Stage 195 Tenant MVP Customer Assurance Remaining-Gate Index Fidelity delivered 
 
 ## Next stage
 
-Stage 196 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 195 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Residual Risk Remaining-Gate Index Fidelity — single index of residual-risk blockers (packaged residual/commercial residual materials non-claim as residual risks closed Complete) with explicit non-claim (no residual risks closed Complete).
+Stage **196** opened under **ADR-398** / frozen under **ADR-399** — Tenant MVP Residual Risk remaining-gate index fidelity (packaged residual/commercial residual materials non-claim as residual risks closed Complete) with explicit non-claim of residual risks closed Complete. Stage 195 feature scope remains frozen. Do not reopen Stages **1–195** scopes.

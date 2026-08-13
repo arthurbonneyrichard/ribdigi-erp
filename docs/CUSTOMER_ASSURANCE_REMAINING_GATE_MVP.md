@@ -30,3 +30,5 @@ Single index of customer assurance remaining gates. Packaging only — **custome
 - Customer assurance Complete
 - Evidence chain live Completes
 - Residual risks closed / go-live Completes
+
+See also Stage 196 residual risk remaining-gate index: [`RESIDUAL_RISK_REMAINING_GATE_MVP.md`](RESIDUAL_RISK_REMAINING_GATE_MVP.md).

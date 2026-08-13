@@ -1,0 +1,53 @@
+{
+  "id": "residual-risk-remaining-gate",
+  "stage": 196,
+  "pack": "I1",
+  "doc": "docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/RESIDUAL_RISK_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/RESIDUAL_RISK_PACK_POINTERS_MVP.md",
+    "residual_risk": "docs/RESIDUAL_RISK_MVP.md",
+    "commercial_residual": "docs/COMMERCIAL_RESIDUAL_MVP.md",
+    "customer_assurance_remaining_gate": "docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "risks_closed_claimed": false,
+  "residual_closed_claimed": false,
+  "go_live_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "distinct_from_stage33_k1_residual_risk": true,
+  "distinct_from_stage72_r1_commercial_residual": true,
+  "steps": [
+    {
+      "id": "rr-read-blockers",
+      "title": "Read B1 residual risk blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rr-follow-pointers",
+      "title": "Follow P1 Stage 33 / Stage 72 / Stage 195 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rr-risks-missing",
+      "title": "Reaffirm residual risks closed MISSING until executed closure ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rr-no-packaging-as-closed",
+      "title": "Do not treat Stage 33 K1 / Stage 72 R1 as residual risks closed Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rr-risks-remaining",
+      "title": "Residual risks closed / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 196 I1 residual risk remaining-gate index packaging only. Do not claim residual risks closed Complete."
+}
