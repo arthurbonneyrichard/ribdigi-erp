@@ -15,6 +15,7 @@ type Tab =
   | 'purchases'
   | 'expenses'
   | 'cashflow'
+  | 'pnl'
   | 'balancesheet'
   | 'schedules';
 
@@ -27,6 +28,7 @@ const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   purchases: 'purchases_summary',
   expenses: 'expenses_summary',
   cashflow: 'cash_flow',
+  pnl: 'profit_loss',
   balancesheet: 'balance_sheet',
 };
 
@@ -52,6 +54,10 @@ export default function Page() {
   const [tab, setTab] = useState<Tab>('summary');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [storeId, setStoreId] = useState('');
+  const [branchId, setBranchId] = useState('');
+  const [stores, setStores] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -74,6 +80,8 @@ export default function Page() {
     const params = new URLSearchParams();
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
+    if (storeId) params.set('store_id', storeId);
+    if (branchId) params.set('branch_id', branchId);
     Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
     const s = params.toString();
     return s ? `?${s}` : '';
@@ -97,6 +105,7 @@ export default function Page() {
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
       if (nextTab === 'expenses') path = `/reports/expenses/summary${qs()}`;
       if (nextTab === 'cashflow') path = `/reports/cash-flow${qs()}`;
+      if (nextTab === 'pnl') path = `/reports/profit-loss${qs()}`;
       if (nextTab === 'balancesheet') path = '/reports/balance-sheet';
       const r = await api(path);
       if (nextTab === 'sales') {
@@ -133,6 +142,15 @@ export default function Page() {
 
   useEffect(() => {
     load('summary');
+    Promise.all([
+      api('/stores').catch(() => ({ data: [] })),
+      api('/branches').catch(() => ({ data: [] })),
+    ])
+      .then(([st, br]) => {
+        setStores(st.data || []);
+        setBranches(br.data || []);
+      })
+      .catch(() => undefined);
   }, []);
 
   function switchTab(t: Tab) {
@@ -195,6 +213,8 @@ export default function Page() {
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
+      if (storeId) params.set('store_id', storeId);
+      if (branchId) params.set('branch_id', branchId);
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -300,6 +320,7 @@ export default function Page() {
             ['purchases', 'Purchases'],
             ['expenses', 'Expenses'],
             ['cashflow', 'Cash flow'],
+            ['pnl', 'P&L'],
             ['balancesheet', 'Balance sheet'],
             ['schedules', 'Email schedules'],
           ] as [Tab, string][]
@@ -314,6 +335,28 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        {(tab === 'pnl' || tab === 'stores') && (
+          <>
+            <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+              <option value="">All branches</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.code} — {b.name}
+                </option>
+              ))}
+            </select>
+            <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+              <option value="">All stores</option>
+              {stores
+                .filter((s) => !branchId || s.branch_id === branchId)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+            </select>
+          </>
+        )}
         <button onClick={() => load()} disabled={loading}>
           {loading ? 'Loading…' : 'Apply filters'}
         </button>
@@ -692,6 +735,67 @@ export default function Page() {
                   <td>{l.outflow}</td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'pnl' && data && (
+        <>
+          <p className="muted">
+            {data.mode === 'journals'
+              ? 'Period / location from posted journals'
+              : 'Lifetime account balances'}
+            {data.store_id ? ` · store ${data.store_id.slice(0, 8)}…` : ''}
+            {data.branch_id ? ` · branch ${data.branch_id.slice(0, 8)}…` : ''}
+          </p>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Revenue</div>
+              <div className="kpi">{data.revenue ?? data.income ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">COGS</div>
+              <div className="kpi">{data.cogs ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Gross profit</div>
+              <div className="kpi">{data.gross_profit ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Operating expenses</div>
+              <div className="kpi">{data.operating_expenses ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Net profit</div>
+              <div className="kpi">{data.net_profit ?? 0}</div>
+            </div>
+          </div>
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.accounts || []).map((a: any) => (
+                <tr key={a.code}>
+                  <td>{a.code}</td>
+                  <td>{a.name}</td>
+                  <td>{a.account_type}</td>
+                  <td>{a.balance}</td>
+                </tr>
+              ))}
+              {!data.accounts?.length && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No income/expense activity for this filter
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </>

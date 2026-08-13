@@ -649,7 +649,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Standard financial statements.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [x] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit (standard-cost COGS via Dr 5000 / Cr 1200 on invoice/POS; restock returns reverse); date-range/branch filters deferred
+  - [x] **Profit & Loss:** Revenue, COGS, gross profit, operating expenses, net profit (standard-cost COGS via Dr 5000 / Cr 1200 on invoice/POS; restock returns reverse); `from_date`/`to_date`/`store_id`/`branch_id` filters on journal activity
   - [x] **Cash Flow:** Operating, investing, financing activities
   - [x] **Trial Balance:** All accounts with debit/credit balances; validation that total debits = total credits
   - [x] Export to PDF and Excel
@@ -780,10 +780,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Business financial health.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Profit & Loss Statement
+  - [x] Profit & Loss Statement (`GET /accounting/profit-loss` + `/reports/profit-loss` with date/store/branch filters)
   - [ ] Cash Flow Statement
   - [ ] Balance Sheet (Assets = Liabilities + Equity)
-  - [ ] All reports filterable by date range, branch, store
+  - [ ] All reports filterable by date range, branch, store (P&L supports date/store/branch; others partial)
   - [ ] Comparative reports (current period vs previous period)
 
 ---

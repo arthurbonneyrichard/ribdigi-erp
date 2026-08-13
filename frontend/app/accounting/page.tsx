@@ -57,19 +57,42 @@ export default function Page() {
   const [coaOpenStatus, setCoaOpenStatus] = useState<any>(null);
   const [editAcctId, setEditAcctId] = useState('');
   const [editAcctName, setEditAcctName] = useState('');
+  const [pnlFrom, setPnlFrom] = useState('');
+  const [pnlTo, setPnlTo] = useState('');
+  const [pnlStoreId, setPnlStoreId] = useState('');
+  const [pnlBranchId, setPnlBranchId] = useState('');
+  const [stores, setStores] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+
+  function pnlQuery() {
+    const params = new URLSearchParams();
+    if (pnlFrom) params.set('from_date', pnlFrom);
+    if (pnlTo) params.set('to_date', pnlTo);
+    if (pnlStoreId) params.set('store_id', pnlStoreId);
+    if (pnlBranchId) params.set('branch_id', pnlBranchId);
+    const s = params.toString();
+    return s ? `?${s}` : '';
+  }
+
+  async function loadPnl() {
+    const p = await api(`/accounting/profit-loss${pnlQuery()}`);
+    setPnl(p.data);
+  }
 
   async function refresh() {
-    const [a, j, t, p, liq, stmts, chq, conns, xfers, openSt] = await Promise.all([
+    const [a, j, t, p, liq, stmts, chq, conns, xfers, openSt, st, br] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
       api('/accounting/trial-balance'),
-      api('/accounting/profit-loss'),
+      api(`/accounting/profit-loss${pnlQuery()}`),
       api('/accounting/liquid-accounts'),
       api('/accounting/bank-statements'),
       api('/accounting/cheques'),
       api('/accounting/bank-connections').catch(() => ({ data: [] })),
       api('/accounting/transfers').catch(() => ({ data: [] })),
       api('/accounting/opening-balances').catch(() => ({ data: null })),
+      api('/stores').catch(() => ({ data: [] })),
+      api('/branches').catch(() => ({ data: [] })),
     ]);
     setAccounts(a.data || []);
     setJournals(j.data || []);
@@ -81,6 +104,8 @@ export default function Page() {
     setConnections(conns.data || []);
     setTransfers(xfers.data || []);
     setCoaOpenStatus(openSt.data || null);
+    setStores(st.data || []);
+    setBranches(br.data || []);
     if (!reconAccountId && liq.data?.length) setReconAccountId(liq.data[0].id);
     if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
     if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
@@ -726,6 +751,41 @@ export default function Page() {
             </div>
             <div className="card">
               <h3>Profit &amp; Loss</h3>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                <input type="date" value={pnlFrom} onChange={(e) => setPnlFrom(e.target.value)} />
+                <input type="date" value={pnlTo} onChange={(e) => setPnlTo(e.target.value)} />
+                <select value={pnlBranchId} onChange={(e) => setPnlBranchId(e.target.value)}>
+                  <option value="">All branches</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.code} — {b.name}
+                    </option>
+                  ))}
+                </select>
+                <select value={pnlStoreId} onChange={(e) => setPnlStoreId(e.target.value)}>
+                  <option value="">All stores</option>
+                  {stores
+                    .filter((s) => !pnlBranchId || s.branch_id === pnlBranchId)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.code} — {s.name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() =>
+                    loadPnl().catch((err: any) => setError(err.message || String(err)))
+                  }
+                >
+                  Apply
+                </button>
+              </div>
+              <p className="muted" style={{ marginTop: 0 }}>
+                {pnl?.mode === 'journals'
+                  ? 'Period / location from posted journals'
+                  : 'Lifetime account balances'}
+              </p>
               <p>Revenue: {pnl?.revenue ?? pnl?.income}</p>
               <p>COGS: {pnl?.cogs ?? 0}</p>
               <p>Gross profit: {pnl?.gross_profit ?? (pnl?.income ?? 0) - (pnl?.cogs ?? 0)}</p>

@@ -390,6 +390,8 @@ async def build_report_payload(
     month: int | None = None,
     warehouse_id: str | None = None,
     jurisdiction: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -441,7 +443,14 @@ async def build_report_payload(
     if report_type == "trial_balance":
         return await accounting_svc.trial_balance(db, tenant_id)
     if report_type == "profit_loss":
-        return await accounting_svc.profit_and_loss(db, tenant_id)
+        return await accounting_svc.profit_and_loss(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
+            branch_id=branch_id or None,
+        )
     if report_type == "balance_sheet":
         return await reports_svc.balance_sheet(db, tenant_id)
     if report_type == "tax":

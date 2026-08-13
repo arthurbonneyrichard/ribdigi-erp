@@ -1258,37 +1258,302 @@ async def trial_balance(db: AsyncSession, tenant_id: str) -> dict:
     }
 
 
-async def profit_and_loss(db: AsyncSession, tenant_id: str) -> dict:
-    """P&L with revenue, COGS (5000), gross profit, and operating expenses (BR-10.6)."""
-    accounts = (
-        await db.execute(select(m.Account).where(m.Account.tenant_id == tenant_id))
-    ).scalars().all()
-    revenue = sum(float(a.balance or 0) for a in accounts if a.account_type == "income")
-    cogs = sum(float(a.balance or 0) for a in accounts if a.code == "5000")
-    operating_expenses = sum(
-        float(a.balance or 0)
-        for a in accounts
-        if a.account_type == "expense" and a.code != "5000"
+async def _pnl_store_ids(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    store_id: str | None,
+    branch_id: str | None,
+) -> list[str] | None:
+    """Resolve store ids for location-filtered P&L; None means no location filter."""
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.id == store_id,
+                    m.Store.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        if branch_id and store.branch_id != branch_id:
+            raise HTTPException(
+                status_code=400,
+                detail="store_id is not in the requested branch",
+            )
+        return [store.id]
+    if branch_id:
+        branch = (
+            await db.execute(
+                select(m.Branch).where(
+                    m.Branch.id == branch_id,
+                    m.Branch.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not branch:
+            raise HTTPException(status_code=404, detail="Branch not found")
+        rows = (
+            await db.execute(
+                select(m.Store.id).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.branch_id == branch_id,
+                )
+            )
+        ).scalars().all()
+        return list(rows)
+    return None
+
+
+async def _pnl_journal_ids_for_stores(
+    db: AsyncSession,
+    tenant_id: str,
+    store_ids: list[str],
+) -> set[str]:
+    """Journal entries attributable to the given stores (sales/POS/expense/returns)."""
+    if not store_ids:
+        return set()
+
+    inv_ids = set(
+        (
+            await db.execute(
+                select(m.SalesInvoice.id).where(
+                    m.SalesInvoice.tenant_id == tenant_id,
+                    m.SalesInvoice.store_id.in_(store_ids),
+                )
+            )
+        ).scalars().all()
     )
+    exp_ids = set(
+        (
+            await db.execute(
+                select(m.Expense.id).where(
+                    m.Expense.tenant_id == tenant_id,
+                    m.Expense.store_id.in_(store_ids),
+                )
+            )
+        ).scalars().all()
+    )
+    tx_ids = set(
+        (
+            await db.execute(
+                select(m.Transaction.id)
+                .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+                .where(
+                    m.Transaction.tenant_id == tenant_id,
+                    m.PosSession.tenant_id == tenant_id,
+                    m.PosSession.store_id.in_(store_ids),
+                )
+            )
+        ).scalars().all()
+    )
+    return_ids = set(
+        (
+            await db.execute(
+                select(m.SalesReturn.id)
+                .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id)
+                .where(
+                    m.SalesReturn.tenant_id == tenant_id,
+                    m.SalesInvoice.tenant_id == tenant_id,
+                    m.SalesInvoice.store_id.in_(store_ids),
+                )
+            )
+        ).scalars().all()
+    )
+
+    from sqlalchemy import or_
+
+    clauses = []
+    if inv_ids:
+        clauses.append(
+            (m.JournalEntry.source_type == "sales_invoice")
+            & (m.JournalEntry.source_id.in_(inv_ids))
+        )
+    if tx_ids:
+        clauses.append(
+            (m.JournalEntry.source_type == "pos_sale")
+            & (m.JournalEntry.source_id.in_(tx_ids))
+        )
+    if exp_ids:
+        clauses.append(
+            (m.JournalEntry.source_type == "expense")
+            & (m.JournalEntry.source_id.in_(exp_ids))
+        )
+    if return_ids:
+        clauses.append(
+            (m.JournalEntry.source_type.in_(("sales_return", "sales_return_refund")))
+            & (m.JournalEntry.source_id.in_(return_ids))
+        )
+    if not clauses:
+        return set()
+
+    rows = (
+        await db.execute(
+            select(m.JournalEntry.id).where(
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.status == "posted",
+                or_(*clauses),
+            )
+        )
+    ).scalars().all()
+    return set(rows)
+
+
+def _pnl_pack(
+    *,
+    revenue: float,
+    cogs: float,
+    operating_expenses: float,
+    accounts: list[dict],
+    from_date: datetime | None,
+    to_date: datetime | None,
+    store_id: str | None,
+    branch_id: str | None,
+    mode: str,
+) -> dict:
     expense = cogs + operating_expenses
     gross_profit = revenue - cogs
     net_profit = revenue - expense
     return {
-        "income": revenue,  # back-compat alias
-        "revenue": revenue,
-        "cogs": cogs,
-        "gross_profit": gross_profit,
-        "operating_expenses": operating_expenses,
-        "expense": expense,  # back-compat: total expenses incl. COGS
-        "net_profit": net_profit,
-        "accounts": [
-            {
-                "code": a.code,
-                "name": a.name,
-                "account_type": a.account_type,
-                "balance": float(a.balance or 0),
-            }
-            for a in accounts
-            if a.account_type in {"income", "expense"}
-        ],
+        "income": round(revenue, 2),  # back-compat alias
+        "revenue": round(revenue, 2),
+        "cogs": round(cogs, 2),
+        "gross_profit": round(gross_profit, 2),
+        "operating_expenses": round(operating_expenses, 2),
+        "expense": round(expense, 2),  # back-compat: total expenses incl. COGS
+        "net_profit": round(net_profit, 2),
+        "accounts": accounts,
+        "from_date": from_date.isoformat() if from_date else None,
+        "to_date": to_date.isoformat() if to_date else None,
+        "store_id": store_id,
+        "branch_id": branch_id,
+        "mode": mode,
     }
+
+
+async def profit_and_loss(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+) -> dict:
+    """P&L with revenue, COGS (5000), gross profit, and operating expenses (BR-10.6 / BR-14.5).
+
+    Without filters: lifetime income/expense account balances (back-compat).
+    With date and/or store/branch filters: posted journal-line activity. Location
+    filters keep only sales_invoice / pos_sale / expense / sales_return journals
+    attributable to the store(s); unattributable journals are excluded.
+    """
+    store_ids = await _pnl_store_ids(
+        db, tenant_id, store_id=store_id, branch_id=branch_id
+    )
+    use_journals = bool(from_date or to_date or store_ids is not None)
+
+    if not use_journals:
+        accounts = (
+            await db.execute(select(m.Account).where(m.Account.tenant_id == tenant_id))
+        ).scalars().all()
+        revenue = sum(float(a.balance or 0) for a in accounts if a.account_type == "income")
+        cogs = sum(float(a.balance or 0) for a in accounts if a.code == "5000")
+        operating_expenses = sum(
+            float(a.balance or 0)
+            for a in accounts
+            if a.account_type == "expense" and a.code != "5000"
+        )
+        return _pnl_pack(
+            revenue=revenue,
+            cogs=cogs,
+            operating_expenses=operating_expenses,
+            accounts=[
+                {
+                    "code": a.code,
+                    "name": a.name,
+                    "account_type": a.account_type,
+                    "balance": float(a.balance or 0),
+                }
+                for a in accounts
+                if a.account_type in {"income", "expense"}
+            ],
+            from_date=None,
+            to_date=None,
+            store_id=None,
+            branch_id=None,
+            mode="balances",
+        )
+
+    stmt = (
+        select(m.JournalEntryLine, m.JournalEntry, m.Account)
+        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+        .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntry.status == "posted",
+            m.Account.tenant_id == tenant_id,
+            m.Account.account_type.in_(("income", "expense")),
+        )
+    )
+    if from_date:
+        stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
+    if to_date:
+        stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
+    if store_ids is not None:
+        je_ids = await _pnl_journal_ids_for_stores(db, tenant_id, store_ids)
+        if not je_ids:
+            return _pnl_pack(
+                revenue=0,
+                cogs=0,
+                operating_expenses=0,
+                accounts=[],
+                from_date=from_date,
+                to_date=to_date,
+                store_id=store_id,
+                branch_id=branch_id,
+                mode="journals",
+            )
+        stmt = stmt.where(m.JournalEntry.id.in_(je_ids))
+
+    rows = (await db.execute(stmt)).all()
+    by_account: dict[str, dict] = {}
+    revenue = 0.0
+    cogs = 0.0
+    operating_expenses = 0.0
+    for line, _entry, account in rows:
+        debit = float(line.debit or 0)
+        credit = float(line.credit or 0)
+        if account.account_type == "income":
+            net = credit - debit
+            revenue += net
+        else:
+            net = debit - credit
+            if account.code == "5000":
+                cogs += net
+            else:
+                operating_expenses += net
+        bucket = by_account.setdefault(
+            account.id,
+            {
+                "code": account.code,
+                "name": account.name,
+                "account_type": account.account_type,
+                "balance": 0.0,
+            },
+        )
+        bucket["balance"] = round(float(bucket["balance"]) + net, 2)
+
+    accounts_out = sorted(by_account.values(), key=lambda r: r["code"] or "")
+    return _pnl_pack(
+        revenue=revenue,
+        cogs=cogs,
+        operating_expenses=operating_expenses,
+        accounts=accounts_out,
+        from_date=from_date,
+        to_date=to_date,
+        store_id=store_id,
+        branch_id=branch_id,
+        mode="journals",
+    )

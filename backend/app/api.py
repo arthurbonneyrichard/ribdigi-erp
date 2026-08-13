@@ -7196,6 +7196,10 @@ async def get_trial_balance(
 
 @api.get("/accounting/profit-loss")
 async def get_profit_loss(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7203,15 +7207,41 @@ async def get_profit_loss(
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
-    return env(await profit_and_loss(db, claims["tenant_id"]))
+    return env(
+        await profit_and_loss(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=store_id or None,
+            branch_id=branch_id or None,
+        )
+    )
 
 
 @api.get("/reports/profit-loss")
 async def report_profit_loss(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_profit_loss(claims, db)
+    from app.accounting import ensure_default_accounts, profit_and_loss
+
+    await ensure_default_accounts(db, claims["tenant_id"])
+    await db.commit()
+    return env(
+        await profit_and_loss(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=store_id or None,
+            branch_id=branch_id or None,
+        )
+    )
 
 
 @api.get("/reports/trial-balance")
@@ -7258,6 +7288,8 @@ async def reports_export(
     month: int | None = None,
     warehouse_id: str | None = None,
     jurisdiction: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7273,6 +7305,8 @@ async def reports_export(
         month=month,
         warehouse_id=warehouse_id,
         jurisdiction=jurisdiction,
+        store_id=store_id or None,
+        branch_id=branch_id or None,
     )
     return Response(
         content=content,
