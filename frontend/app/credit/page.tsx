@@ -12,6 +12,7 @@ export default function Page() {
   const [partyId, setPartyId] = useState('');
   const [statement, setStatement] = useState<any>(null);
   const [history, setHistory] = useState<any>(null);
+  const [creditInfo, setCreditInfo] = useState<any>(null);
   const [schedule, setSchedule] = useState<any>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
@@ -61,6 +62,7 @@ export default function Page() {
     setSchedule(null);
     setHistory(null);
     setStatement(null);
+    setCreditInfo(null);
     refresh().catch((err) => setError(err.message));
   }, [kind]);
 
@@ -103,6 +105,32 @@ export default function Page() {
       setMessage(
         `History: ${s?.purchase_count ?? 0} purchases · ${s?.return_count ?? 0} returns · ${s?.payment_count ?? 0} payments`,
       );
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadCreditInfo() {
+    if (!partyId) return;
+    setError('');
+    try {
+      const path =
+        kind === 'receivable'
+          ? `/customers/${partyId}/credit`
+          : `/suppliers/${partyId}/credit`;
+      const r = await api(path);
+      setCreditInfo(r.data);
+      if (kind === 'receivable') {
+        setMessage(
+          `Credit: balance ${r.data?.outstanding_balance ?? 0} · limit ${
+            r.data?.credit_unlimited ? 'unlimited' : r.data?.credit_limit ?? 0
+          } · available ${r.data?.available_credit ?? '—'}`,
+        );
+      } else {
+        setMessage(
+          `Payable balance ${r.data?.outstanding_balance ?? 0} · open bills ${r.data?.open_bill_count ?? 0}`,
+        );
+      }
     } catch (err: any) {
       setError(err.message);
     }
@@ -386,6 +414,9 @@ export default function Page() {
           </select>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
             <button onClick={loadStatement}>Statement</button>
+            <button type="button" onClick={loadCreditInfo}>
+              Balance
+            </button>
             <button type="button" onClick={loadHistory}>
               History
             </button>
@@ -506,6 +537,71 @@ export default function Page() {
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
             {JSON.stringify(statement, null, 2)}
           </pre>
+        </div>
+      )}
+
+      {creditInfo && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3>
+            Balance · {creditInfo.customer?.name || creditInfo.supplier?.name}
+          </h3>
+          <div className="grid">
+            <div>
+              <div className="muted">Outstanding</div>
+              <div className="kpi">{creditInfo.outstanding_balance ?? 0}</div>
+            </div>
+            {creditInfo.customer && (
+              <>
+                <div>
+                  <div className="muted">Credit limit</div>
+                  <div className="kpi">
+                    {creditInfo.credit_unlimited ? 'Unlimited' : creditInfo.credit_limit ?? 0}
+                  </div>
+                </div>
+                <div>
+                  <div className="muted">Available</div>
+                  <div className="kpi">{creditInfo.available_credit ?? '—'}</div>
+                  {creditInfo.is_over_limit && (
+                    <p style={{ color: '#b91c1c' }}>Over limit</p>
+                  )}
+                </div>
+              </>
+            )}
+            {creditInfo.supplier && (
+              <div>
+                <div className="muted">Open bills</div>
+                <div className="kpi">{creditInfo.open_bill_count ?? 0}</div>
+                <p className="muted">Total {creditInfo.open_bill_total ?? 0}</p>
+              </div>
+            )}
+          </div>
+          {(creditInfo.credit_sales || creditInfo.open_bills || []).length > 0 && (
+            <table className="table" style={{ marginTop: 12 }}>
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(creditInfo.credit_sales || []).map((row: any) => (
+                  <tr key={row.invoice_id}>
+                    <td>{row.invoice_number}</td>
+                    <td>{row.status}</td>
+                    <td>{row.amount}</td>
+                  </tr>
+                ))}
+                {(creditInfo.open_bills || []).map((row: any) => (
+                  <tr key={row.purchase_invoice_id || row.purchase_order_id}>
+                    <td>{row.invoice_number || row.po_number}</td>
+                    <td>{row.status}</td>
+                    <td>{row.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 

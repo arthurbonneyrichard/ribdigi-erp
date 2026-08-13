@@ -8133,6 +8133,16 @@ async def update_customer_credit_limit(
     )
 
 
+@api.get("/customers/{customer_id}/credit")
+async def customer_credit(
+    customer_id: str,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-7.1 — customer balance + credit limit + open credit sales."""
+    return env(await credit_svc.customer_credit_info(db, claims["tenant_id"], customer_id))
+
+
 @api.get("/customers/{customer_id}/outstanding")
 async def customer_outstanding(
     customer_id: str,
@@ -8201,6 +8211,16 @@ async def customer_payment_alias(
         },
         "Payment recorded",
     )
+
+
+@api.get("/suppliers/{supplier_id}/credit")
+async def supplier_credit(
+    supplier_id: str,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-6.1 — supplier outstanding payable balance + open bills."""
+    return env(await credit_svc.supplier_credit_info(db, claims["tenant_id"], supplier_id))
 
 
 @api.get("/suppliers/{supplier_id}/outstanding")

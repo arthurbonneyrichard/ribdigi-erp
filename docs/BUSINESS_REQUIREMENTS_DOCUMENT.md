@@ -399,7 +399,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] **Supplier Profile:** Name, code, type, category, status
   - [ ] **Contact Details:** Multiple contacts with name, phone, email, designation
-  - [ ] **Supplier Balance:** Real-time outstanding payable balance
+  - [x] **Supplier Balance:** Real-time outstanding payable balance (`GET /suppliers/{id}/credit`; Credit UI Balance)
   - [x] **Payment Terms:** Credit period (`payment_terms_days` / Net N) drives PO and purchase-invoice due dates; early-pay discount remains tenant-level
   - [x] **Supplier History:** Purchase history, return history, payment history (`GET /suppliers/{id}/history`; Credit UI)
 
@@ -467,8 +467,8 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] **Customer Profile:** Name, code, type (walk-in/registered), status
   - [ ] **Contact Details:** Phone, email, address, GPS coordinates
   - [x] **Customer Groups:** Wholesale, Retail, VIP, etc. with group-based pricing
-  - [ ] **Customer Balance:** Real-time outstanding receivable balance
-  - [ ] **Credit Limit:** Per-customer credit limit with enforcement
+  - [x] **Customer Balance:** Real-time outstanding receivable balance (`GET /customers/{id}/credit`; Credit UI Balance)
+  - [x] **Credit Limit:** Per-customer credit limit with enforcement (`GET /customers/{id}/credit` + post/POS override; see BR-11.1)
   - [x] **Payment Terms:** Per-customer Net N (`payment_terms_days`) sets sales-invoice due date on post
   - [x] **Customer History:** Purchase history, return history, payment history (`GET /customers/{id}/history`; invoices+POS, returns, payments; Credit UI)
 
