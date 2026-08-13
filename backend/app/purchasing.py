@@ -21,13 +21,50 @@ PURCHASE_RETURN_REASONS = frozenset({"damaged", "wrong_item", "expiry", "quality
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
 
 
-def purchase_invoice_status(total: float, paid: float, due_date: datetime | None = None) -> str:
+def purchase_invoice_status(
+    total: float,
+    paid: float,
+    due_date: datetime | None = None,
+    *,
+    as_of: datetime | None = None,
+) -> str:
     if paid + 1e-9 >= total:
         return "paid"
     base = "partial" if paid > 0 else "unpaid"
-    if due_date and datetime.utcnow().date() > due_date.date():
+    now = as_of or datetime.utcnow()
+    if due_date and now.date() > due_date.date():
         return "overdue"
     return base
+
+
+async def refresh_overdue_purchase_invoices(
+    db: AsyncSession, tenant_id: str, *, as_of: datetime | None = None
+) -> int:
+    """Flip open purchase invoices to overdue (and refresh unpaid/partial) when past due."""
+    rows = (
+        await db.execute(
+            select(m.PurchaseInvoice).where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
+            )
+        )
+    ).scalars().all()
+    changed = 0
+    for inv in rows:
+        before = inv.status
+        new_status = purchase_invoice_status(
+            float(inv.total_amount),
+            float(inv.paid_amount or 0),
+            inv.due_date,
+            as_of=as_of,
+        )
+        if new_status != before:
+            inv.status = new_status
+            inv.updated_at = datetime.utcnow()
+            changed += 1
+    if changed:
+        await db.flush()
+    return changed
 
 
 def derive_po_status(items: list[m.PurchaseOrderItem]) -> str:
