@@ -537,11 +537,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Cashier accountability and reconciliation.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Shift Opening:** Record opening cash float, timestamp, cashier
-  - [ ] **Shift Closing:** Record closing cash, card total, other payments
-  - [ ] **Cash Reconciliation:** System sales vs actual cash; variance reporting
-  - [ ] **Shift Report:** Sales summary, returns, discounts, payment breakdown
-  - [ ] Prevent new transactions until shift is opened
+  - [x] **Shift Opening:** Record opening cash float, timestamp, cashier (`POST /pos/sessions/open`)
+  - [x] **Shift Closing:** Record closing cash, card total, other payments (`POST /pos/sessions/{id}/close`; card/other from session tender totals)
+  - [x] **Cash Reconciliation:** System sales vs actual cash; variance reporting (expected vs actual + `shift_variance` notification)
+  - [x] **Shift Report:** Sales summary, returns, discounts, payment breakdown (`GET /pos/sessions/{id}/report` with `summary` / `returns`)
+  - [x] Prevent new transactions until shift is opened
 
 ---
 
@@ -800,8 +800,8 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] **New Orders:** When sales order is created
   - [ ] **Purchase Received:** When GRN is approved
   - [ ] **Payment Due:** When invoice/bill approaches due date
-  - [ ] **Credit Limit Reached:** When customer exceeds credit threshold
-  - [ ] **Shift Variance:** When cash reconciliation shows discrepancy
+  - [x] **Credit Limit Reached:** When customer exceeds credit threshold (`credit_limit` notification at ≥80% utilization / override on invoice post)
+  - [x] **Shift Variance:** When cash reconciliation shows discrepancy (`shift_variance` on close)
   - [ ] **Expense Approval Required:** When expense exceeds threshold
 
 #### BR-15.2 Notification Channels
