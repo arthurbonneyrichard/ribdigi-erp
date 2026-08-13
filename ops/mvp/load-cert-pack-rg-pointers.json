@@ -1,0 +1,60 @@
+{
+  "id": "load-cert-pack-rg-pointers",
+  "stage": 223,
+  "pack": "P1",
+  "doc": "docs/LOAD_CERT_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LOAD_CERT_PACK_REMAINING_GATE_MVP.md",
+    "load_cert_pack": "docs/LOAD_CERT_PACK_MVP.md",
+    "load_cert_checklist": "ops/loadtest/1000vu-cert-checklist.json",
+    "load_capacity": "docs/LOAD_CAPACITY_MVP.md",
+    "grafana_pack_remaining_gate": "docs/GRAFANA_PACK_REMAINING_GATE_MVP.md",
+    "ops_monitoring_remaining_gate": "docs/OPS_MONITORING_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_load_cert_pack_claimed": false,
+  "operator_1000vu_executed": false,
+  "ci_1000vu_certificate_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "load_cert_pack_stage28_c1",
+    "load_capacity_stage26_c1",
+    "grafana_pack_remaining_gate_stage222",
+    "ops_monitoring_remaining_gate_stage221",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "lcp-lc",
+      "title": "Point to Stage 28 C1 load cert pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcp-capacity",
+      "title": "Point to Stage 26 C1 load capacity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcp-gp-gate",
+      "title": "Point to Stage 222 Grafana pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcp-om-gate",
+      "title": "Point to Stage 221 ops monitoring remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcp-1000vu-remaining",
+      "title": "1000-VU certificate Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 223 P1 load cert pack RG pointers packaging only. Do not claim 1000-VU certificate Complete."
+}

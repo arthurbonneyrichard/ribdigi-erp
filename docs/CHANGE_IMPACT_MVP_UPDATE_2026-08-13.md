@@ -305,3 +305,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Grafana Pack Remaining-Gate Index Fidelity** — Grafana pack remaining-gate hub (I1), blocker matrix (B1), Stage 28 / Stage 221 / Stage 220 pointers with explicit non-claim (P1). Hosted Grafana Completes remain deferred (Stage 223+). Distinct from Stage 221 ops monitoring remaining-gate and Stage 220 support SLA boundary remaining-gate.
 
+## Stage 223 decision (opened after Stage 222 freeze)
+
+**Tenant MVP Load Cert Pack Remaining-Gate Index Fidelity** — load cert pack remaining-gate hub (I1), blocker matrix (B1), Stage 28 / Stage 222 / Stage 221 pointers with explicit non-claim (P1). 1000-VU execution Completes remain deferred (Stage 224+). Distinct from Stage 222 Grafana pack remaining-gate and Stage 221 ops monitoring remaining-gate.
+

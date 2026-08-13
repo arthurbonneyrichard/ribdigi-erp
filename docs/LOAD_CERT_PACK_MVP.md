@@ -42,3 +42,5 @@ CI capacity remains ASGI-honest at modest concurrency (`--ci-capacity`) — see 
 ## Sign-off
 
 Stage 28 C1 is met when this doc + checklist + run schema example + evidence JSON exist, `test_load_cert_pack_c1.py` passes, and PRODUCTION_READINESS / launch / roadmap cite Stage 28 C1 without inventing a live 1000-VU certificate.
+
+See also Stage 223 load cert pack remaining-gate index: [`LOAD_CERT_PACK_REMAINING_GATE_MVP.md`](LOAD_CERT_PACK_REMAINING_GATE_MVP.md).

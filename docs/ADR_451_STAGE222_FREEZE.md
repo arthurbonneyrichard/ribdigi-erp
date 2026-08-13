@@ -24,6 +24,6 @@ Stage 222 Tenant MVP Grafana Pack Remaining-Gate Index Fidelity delivered Grafan
 
 ## Next stage
 
-Stage 223 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 222 feature scope remains frozen.
+Stage 223 opened under **ADR-452** after CONTINUE/NEXT (Load Cert Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-453**. Stage 222 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Load Cert Pack Remaining-Gate Index Fidelity — single index of load-cert-pack blockers (packaged Stage 28 C1 load-cert materials non-claim as operator 1000-VU execution Complete) with explicit non-claim (no 1000-VU certificate Complete). Distinct from Stage 222 Grafana pack remaining-gate and Stage 221 ops monitoring remaining-gate.
+**Amendment (2026-08-13):** Stage 223 runner-up outline was approved and opened (ADR-452); freeze ADR-453. Do not reopen Stage 222 scope.

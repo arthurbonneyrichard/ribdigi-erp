@@ -764,6 +764,12 @@ Authoritative MVP docs:
 - `docs/GRAFANA_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/grafana-pack-remaining-gate.json` — Stage 222 I1
 - `docs/GRAFANA_PACK_BLOCKERS_MVP.md` / `ops/mvp/grafana-pack-blockers.json` — Stage 222 B1
 - `docs/GRAFANA_PACK_RG_POINTERS_MVP.md` / `ops/mvp/grafana-pack-rg-pointers.json` — Stage 222 P1
+- `docs/STAGE_223_EXIT_CRITERIA.md` / `docs/ADR_453_STAGE223_FREEZE.md` (`backend/tests/test_stage223_exit_h223x.py`) — Stage 223 H223x
+- `docs/STAGE_223_FIDELITY.md` (`backend/tests/test_stage223_fidelity_d1.py`) — Stage 223 D1
+- `docs/STAGE_223_PLAN.md` (`backend/tests/test_stage223_open.py`) — Stage 223 open (ADR-452)
+- `docs/LOAD_CERT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/load-cert-pack-remaining-gate.json` — Stage 223 I1
+- `docs/LOAD_CERT_PACK_BLOCKERS_MVP.md` / `ops/mvp/load-cert-pack-blockers.json` — Stage 223 B1
+- `docs/LOAD_CERT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/load-cert-pack-rg-pointers.json` — Stage 223 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2859,6 +2865,18 @@ See `docs/STAGE_222_FIDELITY.md`.
 ## Stage 222 open
 
 ADR-450 / `docs/STAGE_222_PLAN.md`.
+
+## Stage 223 exit
+
+H223x met — `docs/STAGE_223_EXIT_CRITERIA.md`, ADR-453. Stages 1–223 frozen for Stage 223 feature scope.
+
+## Stage 223 D1 — Tenant MVP Load Cert Pack Remaining-Gate Index Fidelity
+
+See `docs/STAGE_223_FIDELITY.md`.
+
+## Stage 223 open
+
+ADR-452 / `docs/STAGE_223_PLAN.md`.
 
 ## Stage 213 exit
 
