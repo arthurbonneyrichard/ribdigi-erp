@@ -140,7 +140,7 @@ export default function Page() {
   const [manualInvProductId, setManualInvProductId] = useState('');
   const [manualInvQty, setManualInvQty] = useState('1');
   const [manualInvPrice, setManualInvPrice] = useState('0');
-  const [manualInvTaxRate, setManualInvTaxRate] = useState('15');
+  const [manualInvTaxRate, setManualInvTaxRate] = useState('');
   const [manualInvRc, setManualInvRc] = useState(false);
   const [ocrFor, setOcrFor] = useState<string | null>(null);
   const [ocrDraft, setOcrDraft] = useState<{
@@ -253,7 +253,7 @@ export default function Page() {
               quantity: Number(qty),
               unit_id: unitId || null,
               unit_price: Number(unitPrice),
-              tax_rate: 0,
+              // omit tax_rate → backend resolves product/category/default (BR-12.2)
             },
           ],
         }),
@@ -314,7 +314,7 @@ export default function Page() {
               quantity: Number(amendQty) || line.quantity,
               unit_id: amendUnitId || line.unit_id || null,
               unit_price: Number(amendPrice) || line.unit_price,
-              tax_rate: line.tax_rate || 0,
+              ...(line.tax_rate != null ? { tax_rate: Number(line.tax_rate) } : {}),
             },
           ],
         }),
@@ -409,7 +409,9 @@ export default function Page() {
               product_id: manualInvProductId,
               quantity: Number(manualInvQty),
               unit_price: Number(manualInvPrice),
-              tax_rate: Number(manualInvTaxRate),
+              ...(manualInvTaxRate.trim() !== ''
+                ? { tax_rate: Number(manualInvTaxRate) }
+                : {}),
             },
           ],
         }),
@@ -1002,7 +1004,7 @@ export default function Page() {
           <input
             value={manualInvTaxRate}
             onChange={(e) => setManualInvTaxRate(e.target.value)}
-            placeholder="Tax rate %"
+            placeholder="Tax rate % (blank = auto)"
           />
           <input
             value={supplierInvoiceNo}
