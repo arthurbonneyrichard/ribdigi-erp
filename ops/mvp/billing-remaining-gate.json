@@ -1,0 +1,56 @@
+{
+  "id": "billing-remaining-gate",
+  "stage": 181,
+  "pack": "I1",
+  "doc": "docs/BILLING_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/BILLING_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/BILLING_PACK_POINTERS_MVP.md",
+    "adr002": "docs/ADR_002_BILLING_DEFERRED.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "commercial_billing_deferred": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md",
+    "golive_remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "checkout_success_claimed": false,
+  "mrr_fabricated_claimed": false,
+  "subscriptions_live_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage36_76_honesty": true,
+  "distinct_from_stage180_golive_gate": true,
+  "steps": [
+    {
+      "id": "br-read-blockers",
+      "title": "Read B1 billing blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "br-follow-pointers",
+      "title": "Follow P1 ADR-002 / honesty / commercial pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "br-billing-missing",
+      "title": "Reaffirm billing MISSING until real payment provider",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "br-no-fidelity-as-billing",
+      "title": "Do not treat Stages 36/76/180 packaging as billing Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "br-billing-remaining",
+      "title": "Billing / payment provider / checkout / MRR / subscriptions Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 181 I1 billing remaining-gate index packaging only. Do not claim billing Complete."
+}

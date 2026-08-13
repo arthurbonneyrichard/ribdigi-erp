@@ -33,3 +33,5 @@ Single index of go-live remaining gates. Packaging only — **go-live remains MI
 - LAUNCH §§1–3 verified / §7 signed Completes
 - Offline Complete or billing Completes
 - Fabricated attestation Completes
+
+See also Stage 181 billing remaining-gate index: [`BILLING_REMAINING_GATE_MVP.md`](BILLING_REMAINING_GATE_MVP.md).

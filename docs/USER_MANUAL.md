@@ -136,6 +136,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Go-live remaining-gate index (Stage 180):** Status index is `docs/GOLIVE_REMAINING_GATE_MVP.md` → blockers `docs/GOLIVE_BLOCKERS_MVP.md` → LAUNCH/Offline Complete/ADR-002 pointers `docs/GOLIVE_PACK_POINTERS_MVP.md`. Go-live remains MISSING (not claimed).
 
+**Billing remaining-gate index (Stage 181):** Status index is `docs/BILLING_REMAINING_GATE_MVP.md` → blockers `docs/BILLING_BLOCKERS_MVP.md` → ADR-002/honesty pointers `docs/BILLING_PACK_POINTERS_MVP.md`. Billing Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

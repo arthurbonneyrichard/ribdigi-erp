@@ -242,4 +242,5 @@ Stage 178 D1 Tenant MVP Quarterly POS Ops Fidelity — `docs/STAGE_178_FIDELITY.
 Stage 179 D1 Tenant MVP Offline Complete Remaining-Gate Index Fidelity — `docs/STAGE_179_FIDELITY.md` (`test_stage179_fidelity_d1.py`); Stage 179 I1/B1/P1 Complete (MVP honesty; remaining-gate index + blocker matrix + Stages 166–169 pointers; Offline Complete / go-live still MISSING); exit `docs/STAGE_179_EXIT_CRITERIA.md`, ADR-365.
 
 Stage 180 D1 Tenant MVP Go-Live Remaining-Gate Index Fidelity — `docs/STAGE_180_FIDELITY.md` (`test_stage180_fidelity_d1.py`); Stage 180 G1/B1/P1 Complete (MVP honesty; go-live remaining-gate index + blocker matrix + LAUNCH/Offline Complete/ADR-002 pointers; go-live / Offline Complete / billing still MISSING); exit `docs/STAGE_180_EXIT_CRITERIA.md`, ADR-367.
+Stage 181 D1 Tenant MVP Billing Remaining-Gate Index Fidelity — `docs/STAGE_181_FIDELITY.md` (`test_stage181_fidelity_d1.py`); Stage 181 I1/B1/P1 Complete (MVP honesty; billing remaining-gate index + blocker matrix + ADR-002/honesty/commercial pointers; billing / payment provider / checkout still MISSING); exit `docs/STAGE_181_EXIT_CRITERIA.md`, ADR-369.
 

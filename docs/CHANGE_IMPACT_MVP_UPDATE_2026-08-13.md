@@ -160,3 +160,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 180 decision (opened after Stage 179 freeze)
 
 **Tenant MVP Go-Live Remaining-Gate Index Fidelity** — go-live remaining-gate hub (G1), blocker matrix (B1), LAUNCH / Offline Complete / ADR-002 pointers with explicit non-claim (P1). Go-live / Offline Complete / billing Completes remain deferred (Stage 181+).
+## Stage 181 decision (opened after Stage 180 freeze)
+
+**Tenant MVP Billing Remaining-Gate Index Fidelity** — billing remaining-gate hub (I1), blocker matrix (B1), ADR-002 / deferred honesty / commercial billing pointers with explicit non-claim (P1). Billing / payment provider / checkout Completes remain deferred (Stage 182+).

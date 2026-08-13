@@ -24,6 +24,4 @@ Stage 180 Tenant MVP Go-Live Remaining-Gate Index Fidelity delivered go-live rem
 
 ## Next stage
 
-Stage 181 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 180 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP billing remaining-gate index fidelity — single index of ADR-002 / paid billing blockers (billing_complete_claimed false, payment provider deferred, checkout success non-claim, MRR fabrication ban) with explicit non-claim (no billing Complete).
+Stage **181** opened under **ADR-368** / frozen under **ADR-369** — Tenant MVP billing remaining-gate index fidelity (ADR-002 / paid billing blockers; payment provider deferred; checkout success non-claim; MRR fabrication ban) with explicit non-claim of billing Complete. Stage 180 feature scope remains frozen. Do not reopen Stages **1–180** scopes.

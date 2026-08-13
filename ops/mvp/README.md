@@ -502,6 +502,12 @@ Authoritative MVP docs:
 - `docs/GOLIVE_REMAINING_GATE_MVP.md` / `ops/mvp/golive-remaining-gate.json` — Stage 180 G1
 - `docs/GOLIVE_BLOCKERS_MVP.md` / `ops/mvp/golive-blockers.json` — Stage 180 B1
 - `docs/GOLIVE_PACK_POINTERS_MVP.md` / `ops/mvp/golive-pack-pointers.json` — Stage 180 P1
+- `docs/STAGE_181_EXIT_CRITERIA.md` / `docs/ADR_369_STAGE181_FREEZE.md` (`backend/tests/test_stage181_exit_h181x.py`) — Stage 181 H181x
+- `docs/STAGE_181_FIDELITY.md` (`backend/tests/test_stage181_fidelity_d1.py`) — Stage 181 D1
+- `docs/STAGE_181_PLAN.md` (`backend/tests/test_stage181_open.py`) — Stage 181 open (ADR-368)
+- `docs/BILLING_REMAINING_GATE_MVP.md` / `ops/mvp/billing-remaining-gate.json` — Stage 181 I1
+- `docs/BILLING_BLOCKERS_MVP.md` / `ops/mvp/billing-blockers.json` — Stage 181 B1
+- `docs/BILLING_PACK_POINTERS_MVP.md` / `ops/mvp/billing-pack-pointers.json` — Stage 181 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2203,6 +2209,18 @@ H180x met — `docs/STAGE_180_EXIT_CRITERIA.md`, ADR-367. Stages 1–180 frozen 
 ## Stage 180 open
 
 ADR-366 + `docs/STAGE_180_PLAN.md` — Go-Live Remaining-Gate Index Fidelity (closed under ADR-367).
+
+## Stage 181 exit
+
+H181x met — `docs/STAGE_181_EXIT_CRITERIA.md`, ADR-369. Stages 1–181 frozen for Stage 181 feature scope.
+
+## Stage 181 D1 — Tenant MVP Billing Remaining-Gate Index Fidelity
+
+`docs/STAGE_181_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Billing Complete remains MISSING.
+
+## Stage 181 open
+
+ADR-368 + `docs/STAGE_181_PLAN.md` — Billing Remaining-Gate Index Fidelity (closed under ADR-369).
 
 ## Stage 165 open
 

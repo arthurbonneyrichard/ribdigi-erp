@@ -2784,6 +2784,18 @@ Every feature in every phase must meet:
 
 **Stage 180 exit (2026-08-13):** G1, B1, P1, D1, H180x met — `docs/STAGE_180_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_367_STAGE180_FREEZE.md`. Fidelity: `docs/STAGE_180_FIDELITY.md`.
 
+**Stage 181 open (2026-08-13):** Tenant MVP Billing Remaining-Gate Index Fidelity — `docs/ADR_368_STAGE181_OPEN.md` + `docs/STAGE_181_PLAN.md` (I1 next).
+
+**Stage 181 I1 (2026-08-13):** Billing remaining-gate index hub (`test_stage181_index_i1.py`).
+
+**Stage 181 B1 (2026-08-13):** Billing blocker matrix (`test_stage181_blockers_b1.py`).
+
+**Stage 181 P1 (2026-08-13):** ADR-002 / deferred honesty / commercial billing pointers (`test_stage181_pointers_p1.py`).
+
+**Stage 181 D1 (2026-08-13):** Billing Remaining-Gate Index fidelity sync — `docs/STAGE_181_FIDELITY.md` (`test_stage181_fidelity_d1.py`).
+
+**Stage 181 exit (2026-08-13):** I1, B1, P1, D1, H181x met — `docs/STAGE_181_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_369_STAGE181_FREEZE.md`. Fidelity: `docs/STAGE_181_FIDELITY.md`.
+
 
 
 
