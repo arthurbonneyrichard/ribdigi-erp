@@ -6965,6 +6965,113 @@ async def create_journal(
     return env(await accounting_svc.serialize_journal(db, entry), "Journal entry posted")
 
 
+@api.post("/accounting/journal-entries/{entry_id}/unpost")
+async def unpost_journal(
+    entry_id: str,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    entry = await accounting_svc.unpost_journal_entry(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        entry_id=entry_id,
+    )
+    await db.commit()
+    return env(await accounting_svc.serialize_journal(db, entry), "Journal entry unposted")
+
+
+@api.post("/accounting/journal-entries/{entry_id}/attachment")
+async def upload_journal_attachment(
+    entry_id: str,
+    file: UploadFile = File(...),
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    entry = await accounting_svc.get_journal_entry(db, claims["tenant_id"], entry_id)
+    stored = await storage_svc.save_upload(
+        tenant_id=claims["tenant_id"],
+        category="journals",
+        upload=file,
+        allowed_types=storage_svc.ATTACHMENT_CONTENT_TYPES,
+        max_bytes=int(settings.MEDIA_MAX_ATTACHMENT_BYTES),
+    )
+    if entry.attachment_url and "://" not in entry.attachment_url:
+        storage_svc.delete_key(entry.attachment_url, tenant_id=claims["tenant_id"])
+    entry.attachment_url = stored.key
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="accounting",
+        action="journal_attachment_upload",
+        entity="journal_entry",
+        entity_id=entry.id,
+        details={"key": stored.key, "size": stored.size, "content_type": stored.content_type},
+    )
+    await db.commit()
+    data = await accounting_svc.serialize_journal(db, entry)
+    data["uploaded"] = {
+        "key": stored.key,
+        "size": stored.size,
+        "content_type": stored.content_type,
+        "filename": stored.original_filename,
+    }
+    return env(data, "Attachment uploaded")
+
+
+@api.get("/accounting/journal-entries/{entry_id}/attachment")
+async def download_journal_attachment(
+    entry_id: str,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    entry = await accounting_svc.get_journal_entry(db, claims["tenant_id"], entry_id)
+    if not entry.attachment_url:
+        raise HTTPException(status_code=404, detail="No attachment uploaded")
+    if "://" in entry.attachment_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Attachment is an external URL; open attachment_url directly",
+        )
+    return storage_svc.media_response(
+        entry.attachment_url, tenant_id=claims["tenant_id"], as_attachment=True
+    )
+
+
+@api.delete("/accounting/journal-entries/{entry_id}/attachment")
+async def delete_journal_attachment(
+    entry_id: str,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    entry = await accounting_svc.get_journal_entry(db, claims["tenant_id"], entry_id)
+    if not entry.attachment_url:
+        raise HTTPException(status_code=404, detail="No attachment uploaded")
+    if "://" not in entry.attachment_url:
+        storage_svc.delete_key(entry.attachment_url, tenant_id=claims["tenant_id"])
+    entry.attachment_url = None
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="accounting",
+        action="journal_attachment_delete",
+        entity="journal_entry",
+        entity_id=entry.id,
+    )
+    await db.commit()
+    return env(await accounting_svc.serialize_journal(db, entry), "Attachment removed")
+
+
 @api.get("/accounting/trial-balance")
 async def get_trial_balance(
     claims=Depends(require_permission("accounting", "read")),

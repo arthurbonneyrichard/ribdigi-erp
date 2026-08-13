@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 type Tab = 'ledger' | 'cash' | 'reconcile' | 'cheques';
 
 export default function Page() {
@@ -105,6 +107,82 @@ export default function Page() {
         }),
       });
       setMessage('Journal posted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function unpostJournal(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/journal-entries/${id}/unpost`, { method: 'POST', body: '{}' });
+      setMessage('Journal unposted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function uploadJournalAttachment(id: string, file: File) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+        body: form,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
+      setMessage('Supporting document uploaded');
+      await refresh();
+    } catch (err: any) {
+      setError(typeof err.message === 'string' ? err.message : 'Upload failed');
+    }
+  }
+
+  async function downloadJournalAttachment(id: string) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Download failed');
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="?([^"]+)"?/);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = match?.[1] || 'journal-attachment';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function removeJournalAttachment(id: string) {
+    setError('');
+    try {
+      await api(`/accounting/journal-entries/${id}/attachment`, { method: 'DELETE' });
+      setMessage('Attachment removed');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -655,14 +733,20 @@ export default function Page() {
           </div>
 
           <h3 style={{ marginTop: 16 }}>Recent journals</h3>
+          <p className="muted">
+            Manual journals can be unposted within the current fiscal period. Attach supporting
+            documents on any entry (BR-10.2).
+          </p>
           <table className="table">
             <thead>
               <tr>
                 <th>Entry</th>
                 <th>Description</th>
                 <th>Source</th>
+                <th>Status</th>
                 <th>Debit</th>
                 <th>Credit</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -671,8 +755,42 @@ export default function Page() {
                   <td>{j.entry_number}</td>
                   <td>{j.description}</td>
                   <td>{j.source_type || 'manual'}</td>
+                  <td>{j.status}</td>
                   <td>{j.total_debit}</td>
                   <td>{j.total_credit}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {j.can_unpost && j.status === 'posted' && (
+                        <button type="button" onClick={() => unpostJournal(j.id)}>
+                          Unpost
+                        </button>
+                      )}
+                      <label style={{ cursor: 'pointer' }}>
+                        <span className="muted" style={{ textDecoration: 'underline' }}>
+                          Attach
+                        </span>
+                        <input
+                          type="file"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadJournalAttachment(j.id, f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      {j.has_attachment && (
+                        <>
+                          <button type="button" onClick={() => downloadJournalAttachment(j.id)}>
+                            Download
+                          </button>
+                          <button type="button" onClick={() => removeJournalAttachment(j.id)}>
+                            Remove file
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

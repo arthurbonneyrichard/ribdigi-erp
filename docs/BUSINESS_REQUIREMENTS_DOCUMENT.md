@@ -608,11 +608,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Manual accounting transactions.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Double-entry journal with debit and credit lines
-  - [ ] Auto-balancing validation
-  - [ ] Journal number auto-generation
-  - [ ] Attach supporting documents
-  - [ ] Post/unpost capability (unpost only within same fiscal period)
+  - [x] Double-entry journal with debit and credit lines
+  - [x] Auto-balancing validation
+  - [x] Journal number auto-generation
+  - [x] Attach supporting documents
+  - [x] Post/unpost capability (unpost only within same fiscal period)
 
 #### BR-10.3 Cash & Bank Accounts
 - **Description:** Track liquid assets.
