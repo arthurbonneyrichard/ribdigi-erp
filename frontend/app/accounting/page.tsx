@@ -798,9 +798,33 @@ export default function Page() {
   return (
     <Shell>
       <h1>Accounting</h1>
-      <p className="muted">Chart of accounts, journals, trial balance, P&amp;L, bank reconciliation, and cheques</p>
+      <p className="muted">
+        Chart of accounts, journals, trial balance, P&amp;L, bank reconciliation, cheques, and
+        Accounts Receivable / Accounts Payable
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      <div
+        className="card"
+        id="ar-ap-surface"
+        style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}
+      >
+        <div>
+          <h3 style={{ marginTop: 0 }}>Accounts Receivable</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Customer aging, outstanding invoices, and collections (Credit engine).
+          </p>
+          <a href="/accounting/receivables">Open Accounts Receivable</a>
+        </div>
+        <div>
+          <h3 style={{ marginTop: 0 }}>Accounts Payable</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Supplier aging, outstanding bills, and payment schedule (Credit engine).
+          </p>
+          <a href="/accounting/payables">Open Accounts Payable</a>
+        </div>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button onClick={() => setTab('ledger')} disabled={tab === 'ledger'}>

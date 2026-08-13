@@ -3396,6 +3396,18 @@ Every feature in every phase must meet:
 
 **Stage 231 exit (2026-08-13):** I1, B1, P1, D1, H231x met — `docs/STAGE_231_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_469_STAGE231_FREEZE.md`. Fidelity: `docs/STAGE_231_FIDELITY.md`.
 
+**Stage 232 open (2026-08-13):** Tenant MVP Accounts Receivable & Payable Accounting Surface Discoverability — `docs/ADR_470_STAGE232_OPEN.md` + `docs/STAGE_232_PLAN.md` (S1 next).
+
+**Stage 232 S1 (2026-08-13):** Shell Accounts Receivable / Payable (`test_stage232_shell_s1.py`).
+
+**Stage 232 R1 (2026-08-13):** Accounting receivables / payables routes (`test_stage232_routes_r1.py`).
+
+**Stage 232 U1 (2026-08-13):** Credit titles + Accounting cross-links (`test_stage232_ui_u1.py`).
+
+**Stage 232 D1 (2026-08-13):** AR/AP Accounting Surface fidelity sync — `docs/STAGE_232_FIDELITY.md` (`test_stage232_fidelity_d1.py`).
+
+**Stage 232 exit (2026-08-13):** S1, R1, U1, D1, H232x met — `docs/STAGE_232_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_471_STAGE232_FREEZE.md`. Fidelity: `docs/STAGE_232_FIDELITY.md`.
+
 
 
 

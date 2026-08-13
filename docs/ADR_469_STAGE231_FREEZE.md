@@ -24,6 +24,6 @@ Stage 231 Tenant MVP PITR Drill Pack Remaining-Gate Index Fidelity delivered PIT
 
 ## Next stage
 
-Stage 232 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 231 feature scope remains frozen.
+Stage 232 opened under **ADR-470** after CONTINUE/NEXT (Accounts Receivable & Payable Accounting Surface Discoverability) and is frozen under **ADR-471**. Stage 231 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP WAL Offsite Remaining-Gate Index Fidelity — single index of WAL/offsite blockers (packaged Stage 26 W1 / Stage 27 B1 auto-`.ribbak` materials non-claim as live offsite backup Complete) with explicit non-claim (no live offsite Complete). Distinct from Stage 231 PITR drill pack remaining-gate and Stage 230 launch cert pack remaining-gate.
+**Amendment (2026-08-13):** Stage 232 outline was approved and opened (ADR-470); freeze ADR-471. Do not reopen Stage 231 scope. WAL Offsite Remaining-Gate Index Fidelity remains a runner-up for a later stage.

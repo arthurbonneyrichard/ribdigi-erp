@@ -1,0 +1,25 @@
+{
+  "id": "ar-ap-accounting-surface",
+  "stage": 232,
+  "packs": [
+    "S1",
+    "R1",
+    "U1"
+  ],
+  "doc": "docs/AR_AP_ACCOUNTING_SURFACE_MVP.md",
+  "related": {
+    "credit_page": "frontend/app/credit/page.tsx",
+    "accounting_page": "frontend/app/accounting/page.tsx",
+    "shell": "frontend/components/Shell.tsx",
+    "receivables_route": "frontend/app/accounting/receivables/page.tsx",
+    "payables_route": "frontend/app/accounting/payables/page.tsx",
+    "stage22_fidelity": "docs/STAGE_22_FIDELITY.md"
+  },
+  "packaging_complete": true,
+  "new_ar_ap_engine_claimed": false,
+  "go_live_claimed": false,
+  "open_banking_claimed": false,
+  "distinct_from_stage22_ar_ap_engine": true,
+  "distinct_from_stage98_o1_outstanding_leaves": true,
+  "message": "Stage 232 AR/AP Accounting surface discoverability only. Stage 22 Credit remains AR/AP authority."
+}

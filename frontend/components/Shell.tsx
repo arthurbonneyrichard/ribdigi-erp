@@ -71,7 +71,13 @@ function classifyNavLink(link: NavLink): NavGroupId | 'dashboard' {
     if (tab === 'suppliers' || qs.includes('tab=suppliers')) return 'people';
     return 'purchase';
   }
-  if (path === '/expenses' || path === '/accounting' || path === '/credit' || path === '/tax') {
+  if (
+    path === '/expenses' ||
+    path === '/accounting' ||
+    path.startsWith('/accounting/') ||
+    path === '/credit' ||
+    path === '/tax'
+  ) {
     return 'finance';
   }
   if (link.label === 'Billers') return 'people';
@@ -823,6 +829,18 @@ const primaryNavSpec: NavEntry[] = [
     modules: ['accounting'],
   },
   { kind: 'link', label: 'Accounting', href: '/accounting', modules: ['accounting'] },
+  {
+    kind: 'link',
+    label: 'Accounts Receivable',
+    href: '/accounting/receivables',
+    modules: ['credit', 'accounting'],
+  },
+  {
+    kind: 'link',
+    label: 'Accounts Payable',
+    href: '/accounting/payables',
+    modules: ['credit', 'accounting'],
+  },
   {
     kind: 'link',
     label: 'Chart of Accounts',

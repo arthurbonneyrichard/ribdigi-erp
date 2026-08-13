@@ -218,6 +218,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **PITR drill pack remaining-gate index (Stage 231):** Status index is `docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md` → blockers `docs/PITR_DRILL_PACK_RG_BLOCKERS_MVP.md` → Stage 28/230/192 pointers `docs/PITR_DRILL_PACK_RG_POINTERS_MVP.md`. Live PITR drill Complete remains MISSING (not claimed). Distinct from Stage 192 live DR remaining-gate.
 
+**Accounts Receivable / Payable accounting surface (Stage 232):** Shell **Accounts Receivable** / **Accounts Payable** and Accounting page links open `/accounting/receivables` and `/accounting/payables` (route into Credit `?kind=`). Index `docs/AR_AP_ACCOUNTING_SURFACE_MVP.md`. Stage 22 Credit remains the AR/AP engine (not a new ledger).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
@@ -1081,7 +1083,7 @@ For adjustments, accruals, and corrections:
 
 ### 8.4 Accounts Receivable (AR)
 
-1. Go to **Accounting → Accounts Receivable**
+1. Go to **Accounting → Accounts Receivable** (Shell leaf or `/accounting/receivables` → Credit receivables; Stage 232)
 2. See all outstanding customer invoices
 3. **Aging Report:** View how long invoices have been unpaid
    - 0–30 days (Current)
@@ -1095,7 +1097,7 @@ For adjustments, accruals, and corrections:
 
 ### 8.5 Accounts Payable (AP)
 
-1. Go to **Accounting → Accounts Payable**
+1. Go to **Accounting → Accounts Payable** (Shell leaf or `/accounting/payables` → Credit payables; Stage 232)
 2. See all outstanding supplier bills
 3. **Aging Report:** View upcoming and overdue payments
 4. Click **Record Payment** to:

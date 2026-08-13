@@ -818,6 +818,10 @@ Authoritative MVP docs:
 - `docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/pitr-drill-pack-remaining-gate.json` — Stage 231 I1
 - `docs/PITR_DRILL_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/pitr-drill-pack-rg-blockers.json` — Stage 231 B1
 - `docs/PITR_DRILL_PACK_RG_POINTERS_MVP.md` / `ops/mvp/pitr-drill-pack-rg-pointers.json` — Stage 231 P1
+- `docs/STAGE_232_EXIT_CRITERIA.md` / `docs/ADR_471_STAGE232_FREEZE.md` (`backend/tests/test_stage232_exit_h232x.py`) — Stage 232 H232x
+- `docs/STAGE_232_FIDELITY.md` (`backend/tests/test_stage232_fidelity_d1.py`) — Stage 232 D1
+- `docs/STAGE_232_PLAN.md` (`backend/tests/test_stage232_open.py`) — Stage 232 open (ADR-470)
+- `docs/AR_AP_ACCOUNTING_SURFACE_MVP.md` / `ops/mvp/ar-ap-accounting-surface.json` — Stage 232 S1/R1/U1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4055,3 +4059,16 @@ H64x met — `docs/STAGE_64_EXIT_CRITERIA.md`, ADR-134. Stages 1–64 frozen for
 ## Stage 64 open (historical)
 
 Commercial Analytics & Franchise Fidelity — `docs/STAGE_64_PLAN.md`, ADR-133; Open — B1 next.
+
+## Stage 232 exit
+
+H232x met — `docs/STAGE_232_EXIT_CRITERIA.md`, ADR-471. Stages 1–232 frozen for Stage 232 feature scope.
+
+## Stage 232 D1 — Tenant MVP Accounts Receivable & Payable Accounting Surface Discoverability
+
+`docs/STAGE_232_FIDELITY.md` (`test_stage232_fidelity_d1.py`). Shell Accounts Receivable / Payable + Accounting routes; Stage 22 Credit remains AR/AP authority.
+
+## Stage 232 open
+
+`docs/ADR_470_STAGE232_OPEN.md` + `docs/STAGE_232_PLAN.md` (`test_stage232_open.py`).
+

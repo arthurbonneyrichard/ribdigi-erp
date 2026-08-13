@@ -389,20 +389,22 @@ export default function Page() {
 
   return (
     <Shell>
-      <h1>Credit & Aging</h1>
+      <h1>
+        {kind === 'receivable' ? 'Accounts Receivable' : 'Accounts Payable'}
+      </h1>
       <p className="muted">
-        AR/AP aging, outstanding bills, statements, supplier payment schedule, payments, and
-        early-payment discounts
+        Credit &amp; aging — outstanding bills, statements, supplier payment schedule, payments, and
+        early-payment discounts (Stage 22 engine; Stage 232 Accounting surface)
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         <button onClick={() => setKindAndUrl('receivable')} disabled={kind === 'receivable'}>
-          Receivables
+          Accounts Receivable
         </button>
         <button onClick={() => setKindAndUrl('payable')} disabled={kind === 'payable'}>
-          Payables
+          Accounts Payable
         </button>
       </div>
 

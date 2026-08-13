@@ -341,3 +341,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP PITR Drill Pack Remaining-Gate Index Fidelity** — PITR drill pack remaining-gate hub (I1), blocker matrix (B1), Stage 28 / Stage 230 / Stage 192 pointers with explicit non-claim (P1). Prefixed `PITR_DRILL_PACK_*` (orthogonal to Stage 192 `LIVE_DR_*`). Live PITR drill Completes remain deferred (Stage 232+). Distinct from Stage 192 live DR remaining-gate and Stage 230 launch cert pack remaining-gate.
 
+## Stage 232 decision (opened after Stage 231 freeze)
+
+**Tenant MVP Accounts Receivable & Payable Accounting Surface Discoverability** — Shell Accounts Receivable / Accounts Payable leaves (S1), `/accounting/receivables` + `/accounting/payables` routes (R1), Credit titles + Accounting cross-links (U1). Prefixed `AR_AP_SURFACE_*`. Extends Stage 22 Credit engine (no new AR/AP engine claim). Distinct from Stage 98 O1 Outstanding Receivables/Payables leaves and Stage 231 PITR drill pack remaining-gate.
+

@@ -1179,6 +1179,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 / Stage 230 / Stage 192 pointers (Stage 231 P1: `test_stage231_pointers_p1.py`, `docs/PITR_DRILL_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 231 fidelity sync (D1: `test_stage231_fidelity_d1.py`, `docs/STAGE_231_FIDELITY.md`)
 - [x] Stage 231 exit + freeze (H231x: `test_stage231_exit_h231x.py`, `docs/STAGE_231_EXIT_CRITERIA.md`, ADR-469)
+- [x] Stage 232 track opened (ADR-470: `test_stage232_open.py`, `docs/STAGE_232_PLAN.md`) — AR/AP Accounting Surface; closed under ADR-471
+- [x] Shell Accounts Receivable / Payable (Stage 232 S1: `test_stage232_shell_s1.py`, `docs/AR_AP_ACCOUNTING_SURFACE_MVP.md`)
+- [x] Accounting receivables / payables routes (Stage 232 R1: `test_stage232_routes_r1.py`)
+- [x] Credit titles + Accounting cross-links (Stage 232 U1: `test_stage232_ui_u1.py`)
+- [x] Stage 232 fidelity sync (D1: `test_stage232_fidelity_d1.py`, `docs/STAGE_232_FIDELITY.md`)
+- [x] Stage 232 exit + freeze (H232x: `test_stage232_exit_h232x.py`, `docs/STAGE_232_EXIT_CRITERIA.md`, ADR-471)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
