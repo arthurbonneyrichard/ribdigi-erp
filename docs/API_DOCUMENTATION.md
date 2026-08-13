@@ -179,6 +179,8 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 
 **Endpoint:** `DELETE /auth/sessions/{session_id}`
 
+Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, range `5`–`480`). Configure via `PATCH /tenants/me`; current value is also returned on `GET /me` and `GET /tenants/me`.
+
 ---
 
 ## 3. Tenant Management
@@ -239,7 +241,12 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
   "fiscal_year_start": "01-01",
   "tax_jurisdiction": "GH",
   "tax_registration_number": "C0001234567",
-  "tax_filing_period": "monthly"
+  "tax_filing_period": "monthly",
+  "date_format": "DD/MM/YYYY",
+  "decimal_separator": ".",
+  "thousand_separator": ",",
+  "time_format": "24h",
+  "inactivity_timeout_minutes": 30
 }
 ```
 

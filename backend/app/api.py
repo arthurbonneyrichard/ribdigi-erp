@@ -441,6 +441,7 @@ async def tenant_me_update(
         decimal_separator=payload.decimal_separator,
         thousand_separator=payload.thousand_separator,
         time_format=payload.time_format,
+        inactivity_timeout_minutes=payload.inactivity_timeout_minutes,
     )
     await audit_svc.record_event(
         db,
@@ -1780,6 +1781,11 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "enabled_modules": claims.get("enabled_modules")
             or (packages_svc.resolve_enabled_modules(tenant) if tenant else []),
             "subscription": usage,
+            "inactivity_timeout_minutes": int(
+                getattr(tenant, "inactivity_timeout_minutes", None) or 30
+            )
+            if tenant
+            else 30,
             **totp_svc.status_payload(user),
         }
     )

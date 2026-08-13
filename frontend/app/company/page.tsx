@@ -100,6 +100,7 @@ export default function Page() {
           decimal_separator: tenant.decimal_separator,
           thousand_separator: tenant.thousand_separator,
           time_format: tenant.time_format,
+          inactivity_timeout_minutes: Number(tenant.inactivity_timeout_minutes) || 30,
         }),
       });
       setTenant(r.data);
@@ -387,6 +388,24 @@ export default function Page() {
         <p className="muted" style={{ margin: 0 }}>
           Preview: {formatNumber(1234.56, tenant)} · {formatDateTime(new Date(), tenant)}
         </p>
+
+        <h3 style={{ marginTop: 8, marginBottom: 0 }}>Session timeout</h3>
+        <p className="muted" style={{ margin: 0 }}>
+          Minutes of inactivity before auto-logout (BR-19.3). Default 30; allowed 5–480.
+        </p>
+        <label className="muted">Inactivity timeout (minutes)</label>
+        <input
+          type="number"
+          min={5}
+          max={480}
+          value={tenant.inactivity_timeout_minutes ?? 30}
+          onChange={(e) =>
+            setTenant({
+              ...tenant,
+              inactivity_timeout_minutes: Number(e.target.value) || 30,
+            })
+          }
+        />
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={save} disabled={!!tenant.read_only}>

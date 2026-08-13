@@ -958,7 +958,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Refresh token rotation (`POST /auth/refresh` revokes prior refresh and issues a new session)
   - [x] View active sessions per user (`GET /auth/sessions` self-scoped; Security UI)
   - [x] Remote session termination (`DELETE /auth/sessions/{id}`; Security UI)
-  - [x] Auto-logout on inactivity (client idle logout 30 minutes; tenant-configurable timeout remaining)
+  - [x] Auto-logout on inactivity (client idle logout; tenant `inactivity_timeout_minutes` via Company / `PATCH /tenants/me`, default 30, range 5–480; exposed on `GET /me`; Alembic `20260813_0089`)
 
 ---
 

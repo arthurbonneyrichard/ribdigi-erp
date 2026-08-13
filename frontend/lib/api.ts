@@ -14,8 +14,16 @@ export function clearSessionAndRedirect() {
   }
 }
 
-/** Client idle auto-logout (BR-19.3). Fixed MVP default; tenant-configurable timeout later. */
-export const IDLE_LOGOUT_MS = 30 * 60 * 1000;
+/** Default client idle auto-logout (BR-19.3). Prefer tenant `inactivity_timeout_minutes` from `/me`. */
+export const DEFAULT_IDLE_TIMEOUT_MINUTES = 30;
+export const IDLE_LOGOUT_MS = DEFAULT_IDLE_TIMEOUT_MINUTES * 60 * 1000;
+
+export function idleTimeoutMs(minutes?: number | null): number {
+  const n = Number(minutes);
+  if (!Number.isFinite(n)) return IDLE_LOGOUT_MS;
+  const clamped = Math.min(480, Math.max(5, Math.round(n)));
+  return clamped * 60 * 1000;
+}
 
 async function refreshSession(): Promise<boolean> {
   if (typeof window === 'undefined') return false;

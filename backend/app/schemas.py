@@ -90,6 +90,7 @@ class TenantProfileUpdate(BaseModel):
     decimal_separator: str | None = None
     thousand_separator: str | None = None
     time_format: str | None = None
+    inactivity_timeout_minutes: int | None = Field(default=None, ge=5, le=480)
 
 
 class TenantSuspendRequest(BaseModel):

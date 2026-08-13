@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { api, clearSessionAndRedirect, IDLE_LOGOUT_MS } from '../lib/api';
+import { api, clearSessionAndRedirect, idleTimeoutMs } from '../lib/api';
 
 type NavItem = [label: string, href: string, module: string];
 
@@ -325,6 +325,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [idleMinutes, setIdleMinutes] = useState(30);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const pathname = usePathname();
   const isPlatformOwner = PLATFORM_ROLES.has(role);
@@ -380,6 +381,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         );
         setRole(meRes.data?.role || '');
         setFullName(meRes.data?.full_name || '');
+        const mins = Number(meRes.data?.inactivity_timeout_minutes);
+        if (Number.isFinite(mins)) setIdleMinutes(mins);
       } catch {
         if (active) {
           setUnread(0);
@@ -397,9 +400,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // BR-19.3: auto-logout after fixed idle period (30 minutes).
+  // BR-19.3: auto-logout after tenant-configured idle period (default 30 minutes).
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const limitMs = idleTimeoutMs(idleMinutes);
     let last = Date.now();
     const bump = () => {
       last = Date.now();
@@ -418,7 +422,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
     document.addEventListener('visibilitychange', onVis);
     const id = window.setInterval(() => {
-      if (Date.now() - last >= IDLE_LOGOUT_MS) {
+      if (Date.now() - last >= limitMs) {
         clearSessionAndRedirect();
       }
     }, 15000);
@@ -427,7 +431,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       document.removeEventListener('visibilitychange', onVis);
       window.clearInterval(id);
     };
-  }, []);
+  }, [idleMinutes]);
 
   const visible = useMemo(
     () => navItemsForRole(role, permissions, enabledModules),
