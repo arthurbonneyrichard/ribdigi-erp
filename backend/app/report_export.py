@@ -285,10 +285,18 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
     if report_type == "cash_flow":
         lines_data = payload.get("lines") or []
         rows = [dict(x) for x in lines_data] if lines_data else [dict(payload)]
-        pdf = _kv_lines(payload) + [
-            f"{r.get('date')}: +{r.get('inflow')} -{r.get('outflow')} {r.get('description')}"
-            for r in lines_data[:40]
-        ]
+        pdf = _kv_lines(payload)
+        for section in ("operating", "investing", "financing", "transfers"):
+            bucket = payload.get(section) or {}
+            pdf.append(
+                f"{section}: in {bucket.get('inflows')} out {bucket.get('outflows')} net {bucket.get('net')}"
+            )
+        pdf.extend(
+            [
+                f"{r.get('date')}: +{r.get('inflow')} -{r.get('outflow')} [{r.get('activity')}] {r.get('description')}"
+                for r in lines_data[:40]
+            ]
+        )
         return rows, pdf, "Cash Flow"
 
     if report_type == "trial_balance":
