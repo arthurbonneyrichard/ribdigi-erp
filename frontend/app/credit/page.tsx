@@ -17,6 +17,7 @@ export default function Page() {
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
   const [creditLimit, setCreditLimit] = useState('');
+  const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [applyEarly, setApplyEarly] = useState(true);
   const [epPct, setEpPct] = useState('2');
   const [epDays, setEpDays] = useState('10');
@@ -59,6 +60,16 @@ export default function Page() {
     setSchedule(null);
     refresh().catch((err) => setError(err.message));
   }, [kind]);
+
+  useEffect(() => {
+    const list = kind === 'receivable' ? customers : suppliers;
+    const p = list.find((x) => x.id === partyId);
+    if (!p) return;
+    setPaymentTermsDays(String(p.payment_terms_days ?? 30));
+    if (kind === 'receivable') {
+      setCreditLimit(String(p.credit_limit ?? 0));
+    }
+  }, [partyId, customers, suppliers, kind]);
 
   async function loadStatement() {
     if (!partyId) return;
@@ -137,9 +148,27 @@ export default function Page() {
     try {
       await api(`/customers/${partyId}/credit-limit`, {
         method: 'PATCH',
-        body: JSON.stringify({ credit_limit: Number(creditLimit) || 0 }),
+        body: JSON.stringify({
+          credit_limit: Number(creditLimit) || 0,
+          payment_terms_days: Number(paymentTermsDays) || 0,
+        }),
       });
-      setMessage('Credit limit updated');
+      setMessage('Credit limit and payment terms updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function updateSupplierTerms() {
+    if (!partyId || kind !== 'payable') return;
+    setError('');
+    try {
+      await api(`/suppliers/${partyId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ payment_terms_days: Number(paymentTermsDays) || 0 }),
+      });
+      setMessage('Supplier payment terms updated');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -328,7 +357,8 @@ export default function Page() {
           <select value={partyId} onChange={(e) => setPartyId(e.target.value)}>
             {parties.map((p: any) => (
               <option key={p.id} value={p.id}>
-                {p.name} (bal {p.balance ?? 0})
+                {p.name} (bal {p.balance ?? 0}
+                {p.payment_terms_days != null ? ` · Net ${p.payment_terms_days}` : ''})
               </option>
             ))}
           </select>
@@ -383,14 +413,35 @@ export default function Page() {
             </label>
           )}
           {kind === 'receivable' && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
               <input
                 value={creditLimit}
                 onChange={(e) => setCreditLimit(e.target.value)}
                 placeholder="New credit limit"
                 style={{ width: 140 }}
               />
-              <button onClick={updateLimit}>Set limit</button>
+              <input
+                value={paymentTermsDays}
+                onChange={(e) => setPaymentTermsDays(e.target.value)}
+                placeholder="Net days"
+                style={{ width: 90 }}
+                title="Payment terms (days)"
+              />
+              <button onClick={updateLimit}>Set limit / terms</button>
+            </div>
+          )}
+          {kind === 'payable' && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <input
+                value={paymentTermsDays}
+                onChange={(e) => setPaymentTermsDays(e.target.value)}
+                placeholder="Net days"
+                style={{ width: 90 }}
+                title="Supplier payment terms (days)"
+              />
+              <button type="button" onClick={updateSupplierTerms}>
+                Set terms
+              </button>
             </div>
           )}
         </div>

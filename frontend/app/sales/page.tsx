@@ -62,6 +62,7 @@ export default function Page() {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerGroupId, setCustomerGroupId] = useState('');
   const [creditLimit, setCreditLimit] = useState('0');
+  const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
   const [useGroupPrice, setUseGroupPrice] = useState(true);
@@ -199,6 +200,7 @@ export default function Page() {
           name: customerName,
           email: customerEmail || null,
           credit_limit: Number(creditLimit) || 0,
+          payment_terms_days: Number(paymentTermsDays) || 0,
           customer_group_id: customerGroupId || null,
         }),
       });
@@ -206,6 +208,7 @@ export default function Page() {
       setCustomerName('');
       setCustomerEmail('');
       setCustomerGroupId('');
+      setPaymentTermsDays('30');
       await refresh();
       setMessage('Customer created');
     } catch (err: any) {
@@ -579,6 +582,13 @@ export default function Page() {
               ))}
           </select>
           <input value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="Credit limit" />
+          <input
+            value={paymentTermsDays}
+            onChange={(e) => setPaymentTermsDays(e.target.value)}
+            placeholder="Net days"
+            style={{ width: 90 }}
+            title="Payment terms (days)"
+          />
           <button onClick={createCustomer}>Add customer</button>
           <button type="button" onClick={assignCustomerGroup}>
             Assign group

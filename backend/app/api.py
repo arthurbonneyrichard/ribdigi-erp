@@ -3561,6 +3561,7 @@ def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict
         "email": row.email,
         "phone": row.phone,
         "credit_limit": float(row.credit_limit or 0),
+        "payment_terms_days": int(getattr(row, "payment_terms_days", None) or 30),
         "balance": float(row.balance or 0),
         "customer_group_id": getattr(row, "customer_group_id", None),
     }
@@ -3767,7 +3768,15 @@ async def product_price_for_customer(
 
 @api.get("/suppliers")
 async def suppliers(claims=Depends(require_permission("purchasing", "read")), db: AsyncSession = Depends(get_db)):
-    return await party_list("supplier", claims, db)
+    rows = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "supplier"
+            )
+        )
+    ).scalars().all()
+    await db.commit()
+    return env([_serialize_party(r) for r in rows])
 
 
 @api.post("/suppliers")
@@ -3781,7 +3790,35 @@ async def add_supplier(
     party = m.Party(tenant_id=claims["tenant_id"], kind="supplier", **data)
     db.add(party)
     await db.commit()
-    return env({"id": party.id})
+    await db.refresh(party)
+    return env(_serialize_party(party))
+
+
+@api.patch("/suppliers/{supplier_id}")
+async def patch_supplier(
+    supplier_id: str,
+    payload: PartyUpdate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    party = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == supplier_id,
+                m.Party.tenant_id == claims["tenant_id"],
+                m.Party.kind == "supplier",
+            )
+        )
+    ).scalar_one_or_none()
+    if not party:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    data = payload.model_dump(exclude_unset=True)
+    data.pop("customer_group_id", None)
+    for key, value in data.items():
+        setattr(party, key, value)
+    await db.commit()
+    await db.refresh(party)
+    return env(_serialize_party(party))
 
 
 async def tx_list(kind: str, claims: dict, db: AsyncSession):
@@ -7726,12 +7763,15 @@ async def update_customer_credit_limit(
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
     customer.credit_limit = payload.credit_limit
+    if payload.payment_terms_days is not None:
+        customer.payment_terms_days = payload.payment_terms_days
     await db.commit()
     return env(
         {
             "id": customer.id,
             "name": customer.name,
             "credit_limit": float(customer.credit_limit),
+            "payment_terms_days": int(customer.payment_terms_days or 30),
             "balance": float(customer.balance or 0),
         }
     )

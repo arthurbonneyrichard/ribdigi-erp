@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.inventory import apply_stock_change
 from app.tax import compute_line_total
-from app.credit import default_due_date
+from app.credit import default_due_date, party_terms_days
 from app.doc_numbers import next_grn_number, next_purchase_order_number
 
 PO_EDITABLE = {"draft"}
@@ -361,7 +361,7 @@ async def send_purchase_order(
 
     now = datetime.utcnow()
     po.status = "sent"
-    po.due_date = po.due_date or default_due_date()
+    po.due_date = po.due_date or default_due_date(terms_days=party_terms_days(supplier))
     po.emailed_at = now
     po.emailed_to = recipient
     po.updated_at = now
@@ -1601,7 +1601,7 @@ async def create_purchase_invoice(
 
     if not supplier_id:
         raise HTTPException(status_code=400, detail="supplier_id is required")
-    await get_supplier(db, tenant_id, supplier_id)
+    supplier = await get_supplier(db, tenant_id, supplier_id)
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires line items")
 
@@ -1619,7 +1619,10 @@ async def create_purchase_invoice(
         rc_tax = 0.0
     inv_date = invoice_date or datetime.utcnow()
     if due_date is None:
-        due_date = default_due_date(inv_date)
+        if po is not None and po.due_date is not None:
+            due_date = po.due_date
+        else:
+            due_date = default_due_date(inv_date, party_terms_days(supplier))
 
     inv = m.PurchaseInvoice(
         tenant_id=tenant_id,
