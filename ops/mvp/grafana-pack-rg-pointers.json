@@ -1,0 +1,60 @@
+{
+  "id": "grafana-pack-rg-pointers",
+  "stage": 222,
+  "pack": "P1",
+  "doc": "docs/GRAFANA_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/GRAFANA_PACK_REMAINING_GATE_MVP.md",
+    "grafana_pack": "docs/GRAFANA_PACK_MVP.md",
+    "grafana_dashboard_example": "ops/grafana/dashboard-ribdigi-mvp.json.example",
+    "alertmanager_example": "ops/grafana/alertmanager.yml.example",
+    "ops_monitoring_remaining_gate": "docs/OPS_MONITORING_REMAINING_GATE_MVP.md",
+    "support_sla_boundary_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_grafana_pack_claimed": false,
+  "hosted_grafana_claimed": false,
+  "pagerduty_wired": false,
+  "go_live_claimed": false,
+  "topics": [
+    "grafana_pack_stage28_a1",
+    "alertmanager_example_stage28_a1",
+    "ops_monitoring_remaining_gate_stage221",
+    "support_sla_boundary_remaining_gate_stage220",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "gpp-gp",
+      "title": "Point to Stage 28 A1 Grafana pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gpp-am",
+      "title": "Point to Stage 28 A1 Alertmanager example",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gpp-om-gate",
+      "title": "Point to Stage 221 ops monitoring remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gpp-ssb-gate",
+      "title": "Point to Stage 220 support SLA boundary remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gpp-grafana-remaining",
+      "title": "Hosted Grafana Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 222 P1 Grafana pack RG pointers packaging only. Do not claim hosted Grafana Complete."
+}

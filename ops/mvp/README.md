@@ -758,6 +758,12 @@ Authoritative MVP docs:
 - `docs/OPS_MONITORING_REMAINING_GATE_MVP.md` / `ops/mvp/ops-monitoring-remaining-gate.json` — Stage 221 I1
 - `docs/OPS_MONITORING_BLOCKERS_MVP.md` / `ops/mvp/ops-monitoring-blockers.json` — Stage 221 B1
 - `docs/OPS_MONITORING_RG_POINTERS_MVP.md` / `ops/mvp/ops-monitoring-rg-pointers.json` — Stage 221 P1
+- `docs/STAGE_222_EXIT_CRITERIA.md` / `docs/ADR_451_STAGE222_FREEZE.md` (`backend/tests/test_stage222_exit_h222x.py`) — Stage 222 H222x
+- `docs/STAGE_222_FIDELITY.md` (`backend/tests/test_stage222_fidelity_d1.py`) — Stage 222 D1
+- `docs/STAGE_222_PLAN.md` (`backend/tests/test_stage222_open.py`) — Stage 222 open (ADR-450)
+- `docs/GRAFANA_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/grafana-pack-remaining-gate.json` — Stage 222 I1
+- `docs/GRAFANA_PACK_BLOCKERS_MVP.md` / `ops/mvp/grafana-pack-blockers.json` — Stage 222 B1
+- `docs/GRAFANA_PACK_RG_POINTERS_MVP.md` / `ops/mvp/grafana-pack-rg-pointers.json` — Stage 222 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2841,6 +2847,18 @@ See `docs/STAGE_221_FIDELITY.md`.
 ## Stage 221 open
 
 ADR-448 / `docs/STAGE_221_PLAN.md`.
+
+## Stage 222 exit
+
+H222x met — `docs/STAGE_222_EXIT_CRITERIA.md`, ADR-451. Stages 1–222 frozen for Stage 222 feature scope.
+
+## Stage 222 D1 — Tenant MVP Grafana Pack Remaining-Gate Index Fidelity
+
+See `docs/STAGE_222_FIDELITY.md`.
+
+## Stage 222 open
+
+ADR-450 / `docs/STAGE_222_PLAN.md`.
 
 ## Stage 213 exit
 

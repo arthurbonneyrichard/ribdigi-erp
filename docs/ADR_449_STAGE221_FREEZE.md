@@ -24,6 +24,6 @@ Stage 221 Tenant MVP Ops Monitoring Remaining-Gate Index Fidelity delivered ops 
 
 ## Next stage
 
-Stage 222 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 221 feature scope remains frozen.
+Stage 222 opened under **ADR-450** after CONTINUE/NEXT (Grafana Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-451**. Stage 221 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Grafana Pack Remaining-Gate Index Fidelity — single index of Grafana-pack blockers (packaged Stage 28 A1 Grafana/Alertmanager materials non-claim as hosted Grafana Complete) with explicit non-claim (no hosted Grafana Complete). Distinct from Stage 221 ops monitoring remaining-gate and Stage 220 support SLA boundary remaining-gate.
+**Amendment (2026-08-13):** Stage 222 runner-up outline was approved and opened (ADR-450); freeze ADR-451. Do not reopen Stage 221 scope.

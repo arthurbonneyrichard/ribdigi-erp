@@ -301,3 +301,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Ops Monitoring Remaining-Gate Index Fidelity** — ops monitoring remaining-gate hub (I1), blocker matrix (B1), Stage 26 / Stage 220 / Stage 219 pointers with explicit non-claim (P1). Live monitoring Completes remain deferred (Stage 222+). Distinct from Stage 220 support SLA boundary remaining-gate and Stage 219 production hypercare remaining-gate.
 
+## Stage 222 decision (opened after Stage 221 freeze)
+
+**Tenant MVP Grafana Pack Remaining-Gate Index Fidelity** — Grafana pack remaining-gate hub (I1), blocker matrix (B1), Stage 28 / Stage 221 / Stage 220 pointers with explicit non-claim (P1). Hosted Grafana Completes remain deferred (Stage 223+). Distinct from Stage 221 ops monitoring remaining-gate and Stage 220 support SLA boundary remaining-gate.
+

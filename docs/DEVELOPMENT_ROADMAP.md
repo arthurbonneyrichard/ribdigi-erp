@@ -3276,6 +3276,19 @@ Every feature in every phase must meet:
 
 **Stage 221 exit (2026-08-13):** I1, B1, P1, D1, H221x met — `docs/STAGE_221_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_449_STAGE221_FREEZE.md`. Fidelity: `docs/STAGE_221_FIDELITY.md`.
 
+**Stage 222 open (2026-08-13):** Tenant MVP Grafana Pack Remaining-Gate Index Fidelity — `docs/ADR_450_STAGE222_OPEN.md` + `docs/STAGE_222_PLAN.md` (I1 next).
+
+**Stage 222 I1 (2026-08-13):** Grafana pack remaining-gate index hub (`test_stage222_index_i1.py`).
+
+**Stage 222 B1 (2026-08-13):** Grafana pack blocker matrix (`test_stage222_blockers_b1.py`).
+
+**Stage 222 P1 (2026-08-13):** Stage 28 / Stage 221 / Stage 220 pointers (`test_stage222_pointers_p1.py`).
+
+**Stage 222 D1 (2026-08-13):** Grafana Pack Remaining-Gate Index fidelity sync — `docs/STAGE_222_FIDELITY.md` (`test_stage222_fidelity_d1.py`).
+
+**Stage 222 exit (2026-08-13):** I1, B1, P1, D1, H222x met — `docs/STAGE_222_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_451_STAGE222_FREEZE.md`. Fidelity: `docs/STAGE_222_FIDELITY.md`.
+
+
 
 
 

@@ -41,3 +41,5 @@ Operator incident response extends this pack without claiming hosted paging:
 ## Sign-off
 
 Stage 28 A1 is met when this doc + Grafana/Alertmanager examples + evidence JSON exist, `test_grafana_pack_a1.py` passes, and PRODUCTION_READINESS / launch / roadmap cite Stage 28 A1 without inventing hosted SaaS success. Stage 30 I1 is met when the incident pack above passes without inventing hosted PagerDuty.
+
+See also Stage 222 Grafana pack remaining-gate index: [`GRAFANA_PACK_REMAINING_GATE_MVP.md`](GRAFANA_PACK_REMAINING_GATE_MVP.md).

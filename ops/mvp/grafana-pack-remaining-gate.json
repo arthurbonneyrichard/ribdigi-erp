@@ -1,0 +1,55 @@
+{
+  "id": "grafana-pack-remaining-gate",
+  "stage": 222,
+  "pack": "I1",
+  "doc": "docs/GRAFANA_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/GRAFANA_PACK_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/GRAFANA_PACK_RG_POINTERS_MVP.md",
+    "grafana_pack": "docs/GRAFANA_PACK_MVP.md",
+    "ops_monitoring_remaining_gate": "docs/OPS_MONITORING_REMAINING_GATE_MVP.md",
+    "support_sla_boundary_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md",
+    "grafana_dashboard_example": "ops/grafana/dashboard-ribdigi-mvp.json.example"
+  },
+  "packaging_complete": true,
+  "live_grafana_pack_claimed": false,
+  "hosted_grafana_claimed": false,
+  "pagerduty_wired": false,
+  "go_live_claimed": false,
+  "distinct_from_stage28_a1_grafana_pack": true,
+  "distinct_from_stage221_ops_monitoring_remaining_gate": true,
+  "distinct_from_stage220_support_sla_boundary_remaining_gate": true,
+  "steps": [
+    {
+      "id": "gp-read-blockers",
+      "title": "Read B1 Grafana pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gp-follow-pointers",
+      "title": "Follow P1 Stage 28 / Stage 221 / Stage 220 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gp-grafana-missing",
+      "title": "Reaffirm hosted Grafana MISSING until dashboard deploy + paging evidence ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gp-no-packaging-as-hosted",
+      "title": "Do not treat Stage 28 A1 as hosted Grafana Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gp-grafana-remaining",
+      "title": "Hosted Grafana / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 222 I1 Grafana pack remaining-gate index packaging only. Do not claim hosted Grafana Complete."
+}
