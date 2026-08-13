@@ -2843,6 +2843,87 @@ async def catalog_delete_brand(
     return env(catalog_meta_svc.serialize_brand(row), "Brand deactivated")
 
 
+@api.post("/catalog/brands/{brand_id}/logo")
+async def catalog_brand_logo_upload(
+    brand_id: str,
+    file: UploadFile = File(...),
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    brand = await catalog_meta_svc.get_brand(db, claims["tenant_id"], brand_id)
+    stored = await storage_svc.save_upload(
+        tenant_id=claims["tenant_id"],
+        category="brand_logos",
+        upload=file,
+        allowed_types=storage_svc.LOGO_CONTENT_TYPES,
+        max_bytes=int(settings.MEDIA_MAX_LOGO_BYTES),
+    )
+    if brand.logo_url:
+        storage_svc.delete_key(brand.logo_url, tenant_id=claims["tenant_id"])
+    brand.logo_url = stored.key
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="brand_logo_upload",
+        entity="brand",
+        entity_id=brand.id,
+        details={"key": stored.key, "size": stored.size, "content_type": stored.content_type},
+    )
+    await db.commit()
+    await db.refresh(brand)
+    return env(
+        {
+            **catalog_meta_svc.serialize_brand(brand),
+            "uploaded": {
+                "key": stored.key,
+                "size": stored.size,
+                "content_type": stored.content_type,
+                "filename": stored.original_filename,
+            },
+        },
+        "Brand logo uploaded",
+    )
+
+
+@api.get("/catalog/brands/{brand_id}/logo")
+async def catalog_brand_logo_get(
+    brand_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    brand = await catalog_meta_svc.get_brand(db, claims["tenant_id"], brand_id)
+    if not brand.logo_url:
+        raise HTTPException(status_code=404, detail="Brand logo not found")
+    return storage_svc.media_response(brand.logo_url, tenant_id=claims["tenant_id"])
+
+
+@api.delete("/catalog/brands/{brand_id}/logo")
+async def catalog_brand_logo_delete(
+    brand_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    brand = await catalog_meta_svc.get_brand(db, claims["tenant_id"], brand_id)
+    if not brand.logo_url:
+        raise HTTPException(status_code=404, detail="Brand logo not found")
+    storage_svc.delete_key(brand.logo_url, tenant_id=claims["tenant_id"])
+    brand.logo_url = None
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="brand_logo_delete",
+        entity="brand",
+        entity_id=brand.id,
+    )
+    await db.commit()
+    await db.refresh(brand)
+    return env(catalog_meta_svc.serialize_brand(brand), "Brand logo removed")
+
+
 @api.get("/catalog/units")
 async def catalog_units(
     claims=Depends(require_permission("inventory", "read")),

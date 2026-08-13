@@ -36,14 +36,24 @@ def serialize_category(row: m.ProductCategory) -> dict:
 
 
 def serialize_brand(row: m.Brand) -> dict:
+    logo = getattr(row, "logo_url", None)
     return {
         "id": row.id,
         "code": row.code,
         "name": row.name,
         "description": row.description,
+        "logo_url": logo,
+        "has_logo": bool(logo),
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
+
+
+async def get_brand(db: AsyncSession, tenant_id: str, brand_id: str) -> m.Brand:
+    row = await db.get(m.Brand, brand_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    return row
 
 
 def serialize_unit(row: m.UnitOfMeasure, *, base: m.UnitOfMeasure | None = None) -> dict:
