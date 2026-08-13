@@ -142,9 +142,10 @@ async def sync_status(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
         "last_sync_at": last_sync_at,
         "conflict_count": conflict_count,
         "message": (
-            "Stage 164 sync queue APIs are live (push/pull/ack/conflicts). "
+            "Stage 164–165 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
             "Idempotent offline POS path requires client_request_id. "
-            "Hold/Resume and full Offline Complete remain deferred."
+            "POS Hold/Resume is Partial (cart park, no stock reserve). "
+            "Full Offline Complete remains deferred."
         ),
     }
 
@@ -495,3 +496,56 @@ async def list_conflicts(
             q = q.where(m.SyncConflict.status == wanted)
     q = q.order_by(m.SyncConflict.created_at.desc())
     return list((await db.execute(q)).scalars().all())
+
+
+RESOLVE_ACTIONS = {"keep_server", "accept_client", "dismiss"}
+
+
+async def resolve_conflict(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    conflict_id: str,
+    resolution: str,
+) -> m.SyncConflict:
+    """Stage 165 R1 — mark conflict resolved honestly (no silent re-apply / double sale)."""
+    action = (resolution or "").strip().lower()
+    if action not in RESOLVE_ACTIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="resolution must be keep_server, accept_client, or dismiss",
+        )
+    row = (
+        await db.execute(
+            select(m.SyncConflict).where(
+                m.SyncConflict.id == conflict_id,
+                m.SyncConflict.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Sync conflict not found")
+    if row.status == "resolved":
+        return row
+
+    # Honesty: never re-apply client_payload as a new sale here — that could double-post.
+    # accept_client records operator preference only; re-apply remains a future stage.
+    row.status = "resolved"
+    row.resolution = action
+    row.resolved_at = datetime.utcnow()
+    if row.queue_item_id:
+        item = (
+            await db.execute(
+                select(m.SyncQueueItem).where(
+                    m.SyncQueueItem.id == row.queue_item_id,
+                    m.SyncQueueItem.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if item and item.status == "conflict":
+            item.status = "acked" if action == "keep_server" else "acked"
+            item.error = (item.error or "") + f"; conflict resolved via {action}"
+            item.updated_at = datetime.utcnow()
+            item.acked_at = datetime.utcnow()
+    await db.flush()
+    return row

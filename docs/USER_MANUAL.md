@@ -100,6 +100,10 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Offline sync (Stage 163–164):** Settings → Offline sync (`/company#offline-sync`) registers/revokes tenant devices and shows real sync queue depths / open conflicts. The top bar shows browser **ONLINE/OFFLINE** status. Sync APIs (`/sync/push|pull|ack|conflicts`) are live; offline POS ops require `client_request_id` for idempotency. Hold/Resume and Offline Complete remain deferred.
 
+**POS Hold/Resume (Stage 165 H1 Partial):** On POS, **Hold cart** parks the current cart for the cashier (`/pos#holds`). Resume restores lines into the cart — stock is **not** reserved. Discard soft-closes a hold.
+
+**Offline queue (Stage 165 K1):** Bind a device under Settings → Offline sync (**Bind browser**). When the browser is OFFLINE, Complete sale enqueues into IndexedDB and flushes via `/sync/push` when back online.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

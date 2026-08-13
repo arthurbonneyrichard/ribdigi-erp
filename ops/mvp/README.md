@@ -417,6 +417,9 @@ Authoritative MVP docs:
 - `docs/STAGE_164_EXIT_CRITERIA.md` / `docs/ADR_335_STAGE164_FREEZE.md` (`backend/tests/test_stage164_exit_h164x.py`) — Stage 164 H164x
 - `docs/STAGE_164_FIDELITY.md` (`backend/tests/test_stage164_fidelity_d1.py`) — Stage 164 D1
 - `docs/STAGE_164_PLAN.md` (`backend/tests/test_stage164_open.py`) — Stage 164 open (ADR-334)
+- `docs/STAGE_165_EXIT_CRITERIA.md` / `docs/ADR_337_STAGE165_FREEZE.md` (`backend/tests/test_stage165_exit_h165x.py`) — Stage 165 H165x
+- `docs/STAGE_165_FIDELITY.md` (`backend/tests/test_stage165_fidelity_d1.py`) — Stage 165 D1
+- `docs/STAGE_165_PLAN.md` (`backend/tests/test_stage165_open.py`) — Stage 165 open (ADR-336)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1922,6 +1925,18 @@ H164x met — `docs/STAGE_164_EXIT_CRITERIA.md`, ADR-335. Stages 1–164 frozen 
 ## Stage 164 open
 
 ADR-334 + `docs/STAGE_164_PLAN.md` — Tenant MVP Sync Queue + Idempotent Offline POS Fidelity.
+
+## Stage 165 exit
+
+H165x met — `docs/STAGE_165_EXIT_CRITERIA.md`, ADR-337. Stages 1–165 frozen for Stage 165 feature scope.
+
+## Stage 165 D1 — Tenant MVP Offline Client Queue + Hold/Resume + Conflict Resolve Fidelity
+
+`docs/STAGE_165_FIDELITY.md` — maps K1–R1 → readiness / launch / deploy / security. Offline Complete remains Stage 166+.
+
+## Stage 165 open
+
+ADR-336 + `docs/STAGE_165_PLAN.md` — Tenant MVP Offline Client Queue + Hold/Resume + Conflict Resolve Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

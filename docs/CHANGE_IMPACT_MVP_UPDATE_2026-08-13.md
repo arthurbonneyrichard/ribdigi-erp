@@ -40,11 +40,11 @@ Most core tenant ERP engines (inventory, stock, sales, POS online, purchasing, a
 | Tenant nav parents (§37) | Stage 95 Commerce/Ops flat | REQUIRES REFACTOR | `Shell.tsx` | No | No | Shell only | Menu gating unchanged | **Stage 162 N1** |
 | Role-aware dashboards | Implemented | COMPLETE | `dashboard_views.py` | — | — | dashboard | Backend enforced | Keep |
 | Inventory / Stock / Sales / Purchase | Engines + UI | COMPLETE | module pages | — | — | — | OK | Keep; nav regroup only |
-| POS Hold/Resume | Explicitly deferred | MISSING | POS | Maybe | Yes | POS | — | Later offline-adjacent stage |
+| POS Hold/Resume | Stage 165 H1 Partial | PARTIAL | `pos_held_carts` | Yes | — | POS | No stock reserve | Stock-reserving Hold later |
 | Billers CRUD | Alias to salesperson report | PARTIAL | Shell link | Yes if CRUD | Yes | People | — | Defer (honesty) |
 | Parallel Income module | P&L alias | PARTIAL | Accounting | — | — | — | — | Defer |
 | Finance reports path CSVs | Stages 160–161 | COMPLETE | `finance_ops_export.py` | — | — | Reports/Accounting | RBAC | Keep |
-| Offline / PWA / Sync | Stage 163–164 | PARTIAL | PWA+queue+POS idemp | Yes | Yes | PWA+POS | Device/tenant checks | Foundation+queue Complete; Offline Complete **165+** |
+| Offline / PWA / Sync | Stage 163–165 | PARTIAL | PWA+queue+IDB+Hold | Yes | Yes | PWA+POS | Device/tenant checks | Client queue+Partial Hold; Offline Complete **166+** |
 | Device registration | Stage 163 V1 | COMPLETE (MVP) | `offline_devices` | Yes | — | Settings | Soft revoke | Keep |
 | Sync APIs `/sync/*` | Stage 164 Q1–C1 | COMPLETE (MVP) | `sync_engine.py` | Yes | — | — | Idempotency | Keep; conflict resolve UX later |
 | Connectivity status UI | Stage 163 C1 | COMPLETE (MVP) | Shell | No | No | Chrome | — | Keep |
@@ -97,3 +97,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 164 decision (opened after Stage 163 freeze)
 
 **Tenant MVP Sync Queue + Idempotent Offline POS Fidelity** — real queue tables, push/pull/ack/conflicts, `client_request_id` idempotency. Hold/Resume and Offline Complete remain Stage 165+.
+
+## Stage 165 decision (opened after Stage 164 freeze)
+
+**Tenant MVP Offline Client Queue + Hold/Resume + Conflict Resolve Fidelity** — IndexedDB queue, Partial Hold/Resume (no stock reserve), conflict resolve without silent re-apply. Offline Complete remains Stage 166+.

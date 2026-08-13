@@ -509,6 +509,12 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Held carts',
+    href: '/pos#holds',
+    modules: ['pos'],
+  },
+  {
+    kind: 'link',
     label: 'POS Receipt',
     href: '/pos#receipt',
     modules: ['pos'],

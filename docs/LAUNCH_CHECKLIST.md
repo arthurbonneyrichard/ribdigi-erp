@@ -767,6 +767,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Idempotent POS client_request_id (Stage 164 I1: `test_stage164_idempotent_pos_i1.py`)
 - [x] Stage 164 fidelity sync (D1: `test_stage164_fidelity_d1.py`, `docs/STAGE_164_FIDELITY.md`)
 - [x] Stage 164 exit + freeze (H164x: `test_stage164_exit_h164x.py`, `docs/STAGE_164_EXIT_CRITERIA.md`, ADR-335)
+- [x] Stage 165 track opened (ADR-336: `test_stage165_open.py`, `docs/STAGE_165_PLAN.md`) — Offline Client Queue + Hold/Resume + Conflict Resolve; closed under ADR-337
+- [x] IndexedDB offline queue (Stage 165 K1: `test_stage165_queue_k1.py`)
+- [x] POS Hold/Resume Partial (Stage 165 H1: `test_stage165_holds_h1.py`)
+- [x] Conflict resolve (Stage 165 R1: `test_stage165_resolve_r1.py`)
+- [x] Stage 165 fidelity sync (D1: `test_stage165_fidelity_d1.py`, `docs/STAGE_165_FIDELITY.md`)
+- [x] Stage 165 exit + freeze (H165x: `test_stage165_exit_h165x.py`, `docs/STAGE_165_EXIT_CRITERIA.md`, ADR-337)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

@@ -1804,6 +1804,10 @@ Tenant-scoped device registration for Offline foundation (shared-schema + `tenan
 - `sync_conflicts` — open conflicts for payload mismatches (no silent overwrite)
 - `transactions.client_request_id` — nullable unique with `tenant_id` for idempotent POS (online + sync push)
 
+### Stage 165 — `pos_held_carts` (Alembic `20260813_0093`)
+
+Cashier cart park for Hold/Resume Partial. Status held/resumed/discarded. **Does not reserve stock** and is not a sale.
+
 ---
 
 **Document Version:** 1.0.0  

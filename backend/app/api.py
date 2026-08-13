@@ -86,6 +86,7 @@ from app import ai_guard as ai_guard_svc
 from app import api_keys as api_keys_svc
 from app import offline_devices as offline_devices_svc
 from app import sync_engine as sync_engine_svc
+from app import pos_holds as pos_holds_svc
 from app import webhooks as webhooks_svc
 from app import onboarding as onboarding_svc
 from app import cache as cache_svc
@@ -8084,6 +8085,80 @@ async def pos_sale(
     msg = "POS sale recorded (idempotent replay)" if data.get("replayed") else "POS sale recorded"
     return env(data, msg)
 
+
+@api.get("/pos/holds")
+async def pos_holds_list(
+    status: str | None = "held",
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 165 H1 — list held carts for the current cashier (no stock reserved)."""
+    rows = await pos_holds_svc.list_holds(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        status=status,
+    )
+    return env([pos_holds_svc.serialize_hold(r) for r in rows])
+
+
+@api.post("/pos/holds")
+async def pos_holds_create(
+    payload: dict | None = None,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 165 H1 — park cart without stock reservation (not a sale)."""
+    tenants_svc.assert_writable(claims)
+    body = payload or {}
+    row = await pos_holds_svc.create_hold(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        session_id=body.get("session_id"),
+        label=body.get("label"),
+        cart_payload=body.get("cart_payload") or {},
+    )
+    await db.commit()
+    return env(pos_holds_svc.serialize_hold(row), "Cart held (stock not reserved)")
+
+
+@api.post("/pos/holds/{hold_id}/resume")
+async def pos_holds_resume(
+    hold_id: str,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 165 H1 — resume held cart payload into the client."""
+    tenants_svc.assert_writable(claims)
+    row = await pos_holds_svc.resume_hold(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        hold_id=hold_id,
+    )
+    await db.commit()
+    return env(pos_holds_svc.serialize_hold(row), "Held cart resumed")
+
+
+@api.delete("/pos/holds/{hold_id}")
+async def pos_holds_discard(
+    hold_id: str,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 165 H1 — discard a held cart (soft status)."""
+    tenants_svc.assert_writable(claims)
+    row = await pos_holds_svc.discard_hold(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        hold_id=hold_id,
+    )
+    await db.commit()
+    return env(pos_holds_svc.serialize_hold(row), "Held cart discarded")
+
+
 @api.get("/pos/products/search")
 async def pos_search(
     q: str = "",
@@ -13004,6 +13079,44 @@ async def sync_conflicts_list(
         db, claims["tenant_id"], status=status
     )
     return env([sync_engine_svc.serialize_conflict(r) for r in rows])
+
+
+@api.post("/sync/conflicts/{conflict_id}/resolve")
+async def sync_conflicts_resolve(
+    conflict_id: str,
+    request: Request,
+    payload: dict | None = None,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 165 R1 — resolve open conflict (no silent re-apply / double sale)."""
+    tenants_svc.assert_writable(claims)
+    body = payload or {}
+    row = await sync_engine_svc.resolve_conflict(
+        db,
+        tenant_id=claims["tenant_id"],
+        conflict_id=conflict_id,
+        resolution=str(body.get("resolution") or ""),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="pos",
+        action="sync_conflict_resolve",
+        entity="sync_conflict",
+        entity_id=row.id,
+        details={"resolution": row.resolution},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    data = sync_engine_svc.serialize_conflict(row)
+    data["message"] = (
+        "Conflict marked resolved. Client payload was not re-applied "
+        "(Stage 165 R1 honesty — avoids double-posting sales)."
+    )
+    return env(data, "Sync conflict resolved")
 
 
 @api.get("/offline/devices")

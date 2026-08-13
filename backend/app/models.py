@@ -1670,6 +1670,25 @@ class SyncConflict(Base):
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
+class PosHeldCart(Base):
+    """POS held cart park (Stage 165 H1). No stock reservation — not a sale."""
+
+    __tablename__ = "pos_held_carts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(String(36), index=True)
+    session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("pos_sessions.id"), nullable=True, index=True
+    )
+    label: Mapped[str] = mapped_column(String(120), default="Held cart")
+    cart_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="held", index=True)
+    held_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    resumed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    discarded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
 class WebhookEndpoint(Base):
     """Outbound webhook subscription (Stage 6 W1)."""
 

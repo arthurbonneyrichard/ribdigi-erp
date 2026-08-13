@@ -1710,3 +1710,5 @@ Stage 162 D1 — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`): 
 Stage 163 D1 — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`): Offline foundation APIs — `GET/POST/DELETE /api/v1/offline/devices` (company_admin/super_admin; soft revoke); Stage 163 S1 deferred `/sync/status` superseded by Stage 164 Q1.
 
 Stage 164 D1 — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`): Sync queue APIs — `GET /api/v1/sync/status` (real counts, `sync_enabled: true`); `POST /sync/push|pull|ack`; `GET /sync/conflicts`; POS `client_request_id` idempotency on `POST /pos/sales` and push `pos_sale`. Hold/Resume / Offline Complete remain deferred.
+
+Stage 165 D1 — `docs/STAGE_165_FIDELITY.md` (`test_stage165_fidelity_d1.py`): `GET/POST/DELETE /pos/holds` + `POST /pos/holds/{id}/resume` (Partial — `stock_reserved: false`); `POST /sync/conflicts/{id}/resolve` (`keep_server`/`accept_client`/`dismiss`, no silent re-apply); IndexedDB client queue flushes via `/sync/push`. Offline Complete remains deferred.

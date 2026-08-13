@@ -68,12 +68,16 @@ export default function Page() {
   const [message, setMessage] = useState('');
   // Stage 118 F1 — fiscal period close console status
   const [fiscalPeriod, setFiscalPeriod] = useState<any>(null);
-  // Stage 163 V1 / S1 — offline devices + sync honesty
+  // Stage 163 V1 / S1 / Stage 165 R1 — offline devices + sync honesty + conflict resolve
   const [offlineDevices, setOfflineDevices] = useState<any[]>([]);
   const [syncStatus, setSyncStatus] = useState<any>(null);
   const [syncConflicts, setSyncConflicts] = useState<any[]>([]);
   const [deviceForm, setDeviceForm] = useState({ name: '', platform: 'web' });
   const [deviceBusy, setDeviceBusy] = useState(false);
+  const [boundDeviceId, setBoundDeviceId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('offline_device_id') || '';
+  });
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -929,9 +933,13 @@ export default function Page() {
       <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="offline-sync">
         <h2>Offline sync</h2>
         <p className="muted">
-          Stage 164 sync queue: register devices, inspect real queue depths / open conflicts, and use
-          <code> /sync/push|pull|ack</code> with <code>client_request_id</code> for idempotent offline
-          POS. Hold/Resume and full Offline Complete remain deferred — failed ops stay failed.
+          Stage 165: register/bind devices for IndexedDB queue flush, resolve open conflicts
+          honestly (no silent re-apply), and use <code>/sync/push|pull|ack</code>. POS Hold/Resume is
+          Partial (cart park, no stock reserve). Offline Complete remains deferred.
+        </p>
+        <p className="muted">
+          Bound browser device:{' '}
+          {boundDeviceId ? <code>{boundDeviceId}</code> : 'none — bind an active device below'}
         </p>
         {syncStatus ? (
           <p className="muted">
@@ -947,10 +955,56 @@ export default function Page() {
         {syncConflicts.length > 0 && (
           <div style={{ marginBottom: 12 }}>
             <h3 style={{ margin: '8px 0' }}>Open conflicts</h3>
-            <ul className="muted" style={{ margin: 0, paddingLeft: 18 }}>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
               {syncConflicts.map((c) => (
-                <li key={c.id}>
-                  {c.op_type} · {c.client_op_id || c.id}
+                <li key={c.id} style={{ marginBottom: 8 }}>
+                  <span className="muted">
+                    {c.op_type} · {c.client_op_id || c.id}
+                  </span>{' '}
+                  <button
+                    type="button"
+                    disabled={deviceBusy}
+                    onClick={async () => {
+                      setDeviceBusy(true);
+                      setError('');
+                      try {
+                        await api(`/sync/conflicts/${c.id}/resolve`, {
+                          method: 'POST',
+                          body: JSON.stringify({ resolution: 'keep_server' }),
+                        });
+                        setMessage('Conflict resolved (keep_server — no re-apply)');
+                        await refreshOfflineSync();
+                      } catch (err: any) {
+                        setError(err.message || 'Resolve failed');
+                      } finally {
+                        setDeviceBusy(false);
+                      }
+                    }}
+                  >
+                    Keep server
+                  </button>{' '}
+                  <button
+                    type="button"
+                    disabled={deviceBusy}
+                    onClick={async () => {
+                      setDeviceBusy(true);
+                      setError('');
+                      try {
+                        await api(`/sync/conflicts/${c.id}/resolve`, {
+                          method: 'POST',
+                          body: JSON.stringify({ resolution: 'dismiss' }),
+                        });
+                        setMessage('Conflict dismissed (no re-apply)');
+                        await refreshOfflineSync();
+                      } catch (err: any) {
+                        setError(err.message || 'Resolve failed');
+                      } finally {
+                        setDeviceBusy(false);
+                      }
+                    }}
+                  >
+                    Dismiss
+                  </button>
                 </li>
               ))}
             </ul>
@@ -1026,25 +1080,42 @@ export default function Page() {
                   <td>{d.status}</td>
                   <td>
                     {d.status !== 'revoked' && (
-                      <button
-                        type="button"
-                        disabled={deviceBusy}
-                        onClick={async () => {
-                          setError('');
-                          setDeviceBusy(true);
-                          try {
-                            await api(`/offline/devices/${d.id}`, { method: 'DELETE' });
-                            setMessage('Offline device revoked (soft revoke)');
-                            await refreshOfflineSync();
-                          } catch (err: any) {
-                            setError(err.message || 'Revoke failed');
-                          } finally {
-                            setDeviceBusy(false);
-                          }
-                        }}
-                      >
-                        Revoke
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          disabled={deviceBusy}
+                          onClick={() => {
+                            localStorage.setItem('offline_device_id', d.id);
+                            setBoundDeviceId(d.id);
+                            setMessage('Browser bound to this offline device (Stage 165 K1)');
+                          }}
+                        >
+                          Bind browser
+                        </button>{' '}
+                        <button
+                          type="button"
+                          disabled={deviceBusy}
+                          onClick={async () => {
+                            setError('');
+                            setDeviceBusy(true);
+                            try {
+                              await api(`/offline/devices/${d.id}`, { method: 'DELETE' });
+                              if (boundDeviceId === d.id) {
+                                localStorage.removeItem('offline_device_id');
+                                setBoundDeviceId('');
+                              }
+                              setMessage('Offline device revoked (soft revoke)');
+                              await refreshOfflineSync();
+                            } catch (err: any) {
+                              setError(err.message || 'Revoke failed');
+                            } finally {
+                              setDeviceBusy(false);
+                            }
+                          }}
+                        >
+                          Revoke
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>

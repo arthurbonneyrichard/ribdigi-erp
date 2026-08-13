@@ -4,6 +4,13 @@ import { useEffect, useState } from 'react';
 import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import {
+  enqueueOfflineOp,
+  flushOfflineQueue,
+  getBoundOfflineDeviceId,
+  listPendingOfflineOps,
+  newClientOpId,
+} from '../../lib/offlineQueue';
 
 type Product = {
   id: string;
@@ -99,10 +106,33 @@ export default function Page() {
       .toLowerCase();
     return v === 'open' || v === 'closed' ? v : '';
   });
+  // Stage 165 H1 / K1 — held carts + offline IndexedDB queue
+  const [heldCarts, setHeldCarts] = useState<any[]>([]);
+  const [holdLabel, setHoldLabel] = useState('');
+  const [pendingOffline, setPendingOffline] = useState(0);
+  const [online, setOnline] = useState(true);
 
   async function refreshSession() {
     const r = await api('/pos/sessions/current');
     setSession(r.data || null);
+  }
+
+  async function refreshHolds() {
+    try {
+      const r = await api('/pos/holds?status=held');
+      setHeldCarts(r.data || []);
+    } catch {
+      setHeldCarts([]);
+    }
+  }
+
+  async function refreshOfflinePending() {
+    try {
+      const rows = await listPendingOfflineOps();
+      setPendingOffline(rows.length);
+    } catch {
+      setPendingOffline(0);
+    }
   }
 
   async function loadSessionHistory(opts?: { status?: string }) {
@@ -158,6 +188,8 @@ export default function Page() {
     if (initial) setPosSessionStatusFilter(initial);
     refreshSession().catch((err) => setError(err.message));
     loadSessionHistory({ status: initial }).catch((err) => setError(err.message));
+    refreshHolds().catch(() => undefined);
+    refreshOfflinePending().catch(() => undefined);
     api('/customers?active_only=true')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
@@ -170,17 +202,29 @@ export default function Page() {
       .catch(() => undefined);
   }, []);
 
-  // Stage 101 P1 / Stage 107 P1 — honor Shell /pos#sessions / #shift / #cart / #receipt
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sync = () => setOnline(navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
+
+  // Stage 101 P1 / Stage 107 P1 / Stage 165 H1 — honor Shell /pos#sessions / #shift / #cart / #receipt / #holds
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
-    if (!['sessions', 'shift', 'cart', 'receipt'].includes(hash)) return;
+    if (!['sessions', 'shift', 'cart', 'receipt', 'holds'].includes(hash)) return;
     const t = window.setTimeout(() => {
       const el = document.getElementById(hash);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 80);
     return () => window.clearTimeout(t);
-  }, [sessionHistory, receipt]);
+  }, [sessionHistory, receipt, heldCarts]);
 
   async function openShift() {
     setError('');
@@ -329,11 +373,13 @@ export default function Page() {
       discount: c.discount || 0,
     }));
     const discountAmount = Number(cartDiscount) || 0;
+    const clientRequestId = newClientOpId('pos');
     const body: Record<string, unknown> = {
       session_id: session.session_id,
       party_id: customerId || null,
       discount_amount: discountAmount,
       status: 'completed',
+      client_request_id: clientRequestId,
       items,
     };
     if (splitTender) {
@@ -391,6 +437,31 @@ export default function Page() {
       await refreshSession();
     }
 
+    // Stage 165 K1 — when offline, enqueue for /sync/push flush (requires bound device).
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const deviceId = getBoundOfflineDeviceId();
+      if (!deviceId) {
+        setError('Offline: bind a device in Settings → Offline sync before queuing sales');
+        return;
+      }
+      try {
+        await enqueueOfflineOp({
+          client_op_id: clientRequestId,
+          op_type: 'pos_sale',
+          device_id: deviceId,
+          payload: body,
+        });
+        setCart([]);
+        setCartDiscount('0');
+        setSplitTender(false);
+        await refreshOfflinePending();
+        setMessage(`Sale queued offline (${clientRequestId}). Flush when online.`);
+      } catch (err: any) {
+        setError(err.message || 'Failed to queue offline sale');
+      }
+      return;
+    }
+
     try {
       await submitSale(body);
     } catch (err: any) {
@@ -416,10 +487,120 @@ export default function Page() {
     }
   }
 
+  async function holdCart() {
+    setError('');
+    setMessage('');
+    if (!cart.length) {
+      setError('Cart is empty');
+      return;
+    }
+    try {
+      await api('/pos/holds', {
+        method: 'POST',
+        body: JSON.stringify({
+          session_id: session?.session_id || null,
+          label: holdLabel || `Hold ${new Date().toLocaleTimeString()}`,
+          cart_payload: {
+            items: cart.map((c) => ({
+              product_id: c.product_id || c.id,
+              variant_id: c.variant_id || null,
+              quantity: c.quantity,
+              discount: c.discount || 0,
+              name: c.name,
+              sku: c.sku,
+              selling_price: c.selling_price,
+            })),
+            party_id: customerId || null,
+            discount_amount: Number(cartDiscount) || 0,
+            payment_method: paymentMethod,
+          },
+        }),
+      });
+      setCart([]);
+      setCartDiscount('0');
+      setHoldLabel('');
+      await refreshHolds();
+      setMessage('Cart held (stock not reserved — Stage 165 H1 Partial)');
+    } catch (err: any) {
+      setError(err.message || 'Hold failed');
+    }
+  }
+
+  async function resumeHold(holdId: string) {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/pos/holds/${holdId}/resume`, { method: 'POST', body: '{}' });
+      const payload = r.data?.cart_payload || {};
+      const items = (payload.items || []).map((it: any) => ({
+        id: it.variant_id || it.product_id,
+        product_id: it.product_id,
+        variant_id: it.variant_id || null,
+        name: it.name || it.sku || 'Item',
+        sku: it.sku || '',
+        selling_price: Number(it.selling_price || 0),
+        stock_qty: 0,
+        quantity: Number(it.quantity || 1),
+        discount: Number(it.discount || 0),
+      }));
+      setCart(items);
+      setCustomerId(payload.party_id || '');
+      setCartDiscount(String(payload.discount_amount || 0));
+      if (payload.payment_method) setPaymentMethod(payload.payment_method);
+      await refreshHolds();
+      setMessage('Held cart resumed into cart (complete checkout to sell)');
+    } catch (err: any) {
+      setError(err.message || 'Resume failed');
+    }
+  }
+
+  async function discardHold(holdId: string) {
+    setError('');
+    try {
+      await api(`/pos/holds/${holdId}`, { method: 'DELETE' });
+      await refreshHolds();
+      setMessage('Held cart discarded');
+    } catch (err: any) {
+      setError(err.message || 'Discard failed');
+    }
+  }
+
+  async function flushOfflineSales() {
+    setError('');
+    setMessage('');
+    try {
+      const out = await flushOfflineQueue(api);
+      await refreshOfflinePending();
+      setMessage(
+        `Offline queue flush: ${out.flushed} applied/replayed, ${out.failed} failed/conflict`,
+      );
+    } catch (err: any) {
+      setError(err.message || 'Flush failed');
+    }
+  }
+
   return (
     <Shell>
       <h1>Point of Sale</h1>
-      <p className="muted">Open a shift, sell from cart, print thermal receipt</p>
+      <p className="muted">
+        Open a shift, sell from cart, print thermal receipt. Stage 165: Hold/Resume (no stock
+        reserve) · offline IndexedDB queue when OFFLINE.
+      </p>
+      <p className="muted">
+        Network: {online ? 'ONLINE' : 'OFFLINE'}
+        {pendingOffline > 0 ? ` · Pending offline ops: ${pendingOffline}` : ''}
+        {getBoundOfflineDeviceId()
+          ? ` · Device ${getBoundOfflineDeviceId().slice(0, 8)}…`
+          : ' · No offline device bound (Settings → Offline sync)'}
+        {pendingOffline > 0 && online ? (
+          <>
+            {' '}
+            <button type="button" onClick={() => flushOfflineSales()}>
+              Flush offline queue
+            </button>
+          </>
+        ) : null}
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -814,9 +995,49 @@ export default function Page() {
             <option value="58mm">58mm thermal</option>
           </select>
         </label>
-        <button onClick={checkout} disabled={!cart.length || !session}>
-          Complete sale
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={checkout} disabled={!cart.length || !session}>
+            Complete sale
+          </button>
+          <input
+            placeholder="Hold label"
+            value={holdLabel}
+            onChange={(e) => setHoldLabel(e.target.value)}
+            style={{ padding: 8, minWidth: 140 }}
+            disabled={!session}
+          />
+          <button type="button" onClick={holdCart} disabled={!cart.length || !session}>
+            Hold cart
+          </button>
+        </div>
+        <p className="muted" style={{ marginTop: 8 }}>
+          Hold parks the cart only — stock is not reserved (Stage 165 H1 Partial).
+        </p>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }} id="holds">
+        <h3>Held carts</h3>
+        {heldCarts.length === 0 ? (
+          <p className="muted">No held carts for this cashier.</p>
+        ) : (
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {heldCarts.map((h) => (
+              <li key={h.id} style={{ marginBottom: 8 }}>
+                <strong>{h.label}</strong>{' '}
+                <span className="muted">
+                  · {(h.cart_payload?.items || []).length} lines · stock_reserved=
+                  {String(h.stock_reserved)}
+                </span>{' '}
+                <button type="button" onClick={() => resumeHold(h.id)}>
+                  Resume
+                </button>{' '}
+                <button type="button" onClick={() => discardHold(h.id)}>
+                  Discard
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 16 }} id="receipt">

@@ -2592,6 +2592,18 @@ Every feature in every phase must meet:
 
 **Stage 164 exit (2026-08-13):** Q1, P1, L1, A1, C1, I1, D1, H164x met — `docs/STAGE_164_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_335_STAGE164_FREEZE.md`. Fidelity: `docs/STAGE_164_FIDELITY.md`.
 
+**Stage 165 open (2026-08-13):** Tenant MVP Offline Client Queue + Hold/Resume + Conflict Resolve Fidelity — `docs/ADR_336_STAGE165_OPEN.md` + `docs/STAGE_165_PLAN.md` (K1 next).
+
+**Stage 165 K1 (2026-08-13):** IndexedDB offline op queue (`test_stage165_queue_k1.py`).
+
+**Stage 165 H1 (2026-08-13):** POS Hold/Resume Partial (`test_stage165_holds_h1.py`).
+
+**Stage 165 R1 (2026-08-13):** Conflict resolve (`test_stage165_resolve_r1.py`).
+
+**Stage 165 D1 (2026-08-13):** Offline client queue fidelity sync — `docs/STAGE_165_FIDELITY.md` (`test_stage165_fidelity_d1.py`).
+
+**Stage 165 exit (2026-08-13):** K1, H1, R1, D1, H165x met — `docs/STAGE_165_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_337_STAGE165_FREEZE.md`. Fidelity: `docs/STAGE_165_FIDELITY.md`.
+
 
 
 

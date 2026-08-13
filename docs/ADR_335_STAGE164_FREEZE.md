@@ -24,6 +24,4 @@ Stage 164 Tenant MVP Sync Queue + Idempotent Offline POS Fidelity delivered queu
 
 ## Next stage
 
-Stage 165 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 164 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Offline client IndexedDB queue + Hold/Resume + conflict resolve UX (no fake Completes).
+Stage 165 opened under [ADR-336](ADR_336_STAGE165_OPEN.md) (Offline Client Queue + Hold/Resume + Conflict Resolve Fidelity) and froze under [ADR-337](ADR_337_STAGE165_FREEZE.md). Stage 164 feature scope remains frozen.
