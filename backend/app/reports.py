@@ -886,6 +886,106 @@ async def purchases_summary(
     }
 
 
+PENDING_PO_STATUSES = frozenset({"draft", "sent", "partially_received"})
+
+
+async def purchases_pending_orders(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    supplier_id: str | None = None,
+    status: str | None = None,
+) -> dict:
+    """POs not yet fully received (BR-14.3 Pending Orders).
+
+    Includes draft / sent / partially_received. Excludes received and cancelled.
+    """
+    statuses = PENDING_PO_STATUSES
+    if status:
+        key = status.strip().lower()
+        if key not in PENDING_PO_STATUSES:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Invalid pending status '{key}'. "
+                    f"Allowed: {sorted(PENDING_PO_STATUSES)}"
+                ),
+            )
+        statuses = frozenset({key})
+
+    stmt = (
+        select(m.PurchaseOrder, m.Party)
+        .join(m.Party, m.Party.id == m.PurchaseOrder.supplier_id)
+        .where(
+            m.PurchaseOrder.tenant_id == tenant_id,
+            m.PurchaseOrder.status.in_(tuple(statuses)),
+        )
+        .order_by(m.PurchaseOrder.created_at.desc())
+    )
+    if supplier_id:
+        stmt = stmt.where(m.PurchaseOrder.supplier_id == supplier_id)
+    if from_date:
+        stmt = stmt.where(m.PurchaseOrder.created_at >= from_date)
+    if to_date:
+        stmt = stmt.where(m.PurchaseOrder.created_at <= to_date)
+
+    rows = (await db.execute(stmt)).all()
+    orders: list[dict] = []
+    by_status: dict[str, int] = defaultdict(int)
+    total_amount = 0.0
+    total_outstanding_qty = 0.0
+
+    for po, party in rows:
+        items = (
+            await db.execute(
+                select(m.PurchaseOrderItem).where(
+                    m.PurchaseOrderItem.tenant_id == tenant_id,
+                    m.PurchaseOrderItem.purchase_order_id == po.id,
+                )
+            )
+        ).scalars().all()
+        ordered_qty = round(sum(float(i.quantity or 0) for i in items), 3)
+        received_qty = round(sum(float(i.received_qty or 0) for i in items), 3)
+        outstanding_qty = round(max(ordered_qty - received_qty, 0), 3)
+        amount = float(po.total_amount or 0)
+        by_status[po.status] += 1
+        total_amount += amount
+        total_outstanding_qty += outstanding_qty
+        orders.append(
+            {
+                "id": po.id,
+                "po_number": po.po_number,
+                "supplier_id": party.id,
+                "supplier_name": party.name,
+                "status": po.status,
+                "warehouse_id": po.warehouse_id,
+                "total_amount": amount,
+                "ordered_qty": ordered_qty,
+                "received_qty": received_qty,
+                "outstanding_qty": outstanding_qty,
+                "due_date": po.due_date,
+                "created_at": po.created_at,
+                "line_count": len(items),
+            }
+        )
+
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "supplier_id": supplier_id,
+        "status": status,
+        "order_count": len(orders),
+        "total_amount": round(total_amount, 2),
+        "total_outstanding_qty": round(total_outstanding_qty, 3),
+        "by_status": dict(by_status),
+        "orders": orders,
+    }
+
+
 async def purchases_by_supplier(
     db: AsyncSession,
     tenant_id: str,
