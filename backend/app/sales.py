@@ -185,6 +185,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": float(i.quantity),
+                "unit_id": i.unit_id,
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
                 "tax_supply_class": getattr(i, "tax_supply_class", None) or "standard",
@@ -225,6 +226,8 @@ async def create_sales_invoice(
         store = await stores_svc.get_store(db, tenant_id, store_id)
         resolved_store_id = store.id
 
+    from app.uom import resolve_line_unit
+
     subtotal = 0.0
     tax_total = 0.0
     reverse_charge_tax = 0.0
@@ -233,6 +236,13 @@ async def create_sales_invoice(
         product, variant, unit_price = await resolve_sale_line(
             db, tenant_id, item, customer_id=customer_id
         )
+        unit_id, qty, _qty_base = await resolve_line_unit(
+            db,
+            tenant_id=tenant_id,
+            product=product,
+            unit_id=item.get("unit_id"),
+            quantity=float(item["quantity"]),
+        )
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(
@@ -240,7 +250,7 @@ async def create_sales_invoice(
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-        line_amount = float(item["quantity"]) * float(unit_price)
+        line_amount = qty * float(unit_price)
         line_sub, line_tax, line_total = spec.compute_amounts(line_amount)
         discount = float(item.get("discount") or 0)
         line_total = max(line_total - discount, 0)
@@ -254,7 +264,8 @@ async def create_sales_invoice(
                 {
                     "product_id": product.id,
                     "variant_id": variant.id if variant else None,
-                    "quantity": item["quantity"],
+                    "quantity": qty,
+                    "unit_id": unit_id,
                     "unit_price": unit_price,
                     "discount": discount,
                     "tax_rate": spec.rate_pct,
@@ -296,6 +307,7 @@ async def create_sales_invoice(
                 product_id=item["product_id"],
                 variant_id=item.get("variant_id"),
                 quantity=item["quantity"],
+                unit_id=item.get("unit_id"),
                 unit_price=item["unit_price"],
                 tax_rate=item.get("tax_rate", 0),
                 tax_supply_class=item.get("tax_supply_class") or "standard",
@@ -383,6 +395,7 @@ async def post_sales_invoice(
             user_id=user_id,
             product_id=item.product_id,
             quantity=float(item.quantity),
+            unit_id=item.unit_id,
             notes=f"Invoice {invoice.invoice_number}",
             variant_id=item.variant_id,
             warehouse_id=warehouse_id,

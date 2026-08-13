@@ -98,6 +98,25 @@ async def to_stock_qty(
     return quantity_base, from_unit.id, qty
 
 
+async def resolve_line_unit(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product: m.Product,
+    unit_id: str | None,
+    quantity: float,
+) -> tuple[str | None, float, float]:
+    """Validate optional line unit and return (unit_id, entered_qty, quantity_base)."""
+    quantity_base, entered_unit_id, entered_qty = await to_stock_qty(
+        db,
+        tenant_id=tenant_id,
+        quantity=quantity,
+        from_unit_id=unit_id,
+        product=product,
+    )
+    return entered_unit_id, entered_qty, quantity_base
+
+
 async def validate_unit_base(
     db: AsyncSession,
     *,

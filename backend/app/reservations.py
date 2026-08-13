@@ -80,11 +80,25 @@ async def reserve_order(
     if existing:
         return existing
 
+    from app.uom import to_stock_qty
+
     created: list[m.StockReservation] = []
-    # Aggregate demand by product so multi-line same SKU checks once
+    # Convert each line to stockkeeping qty, then aggregate by product
+    stock_by_item: dict[str, float] = {}
     demand: dict[str, float] = {}
     for item in items:
-        demand[item.product_id] = demand.get(item.product_id, 0.0) + float(item.quantity)
+        product = await db.get(m.Product, item.product_id)
+        if not product or product.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Product not found for order line")
+        stock_qty, _u, _e = await to_stock_qty(
+            db,
+            tenant_id=tenant_id,
+            quantity=float(item.quantity),
+            from_unit_id=item.unit_id,
+            product=product,
+        )
+        stock_by_item[item.id] = stock_qty
+        demand[item.product_id] = demand.get(item.product_id, 0.0) + stock_qty
 
     for product_id, qty in demand.items():
         avail = await available_qty(
@@ -115,7 +129,7 @@ async def reserve_order(
             product_id=item.product_id,
             variant_id=item.variant_id,
             warehouse_id=warehouse_id,
-            quantity=float(item.quantity),
+            quantity=stock_by_item[item.id],
             status="active",
         )
         db.add(row)

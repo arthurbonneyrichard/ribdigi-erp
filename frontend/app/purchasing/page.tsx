@@ -27,10 +27,12 @@ type PoItem = {
   product_id: string;
   quantity: number;
   received_qty: number;
+  unit_id?: string | null;
   unit_price: number;
   tax_rate?: number;
   outstanding_qty: number;
 };
+type Unit = { id: string; code: string; name: string; is_active?: boolean };
 type PoAmendment = {
   id: string;
   revision_no: number;
@@ -103,14 +105,17 @@ export default function Page() {
   const [returns, setReturns] = useState<PurchaseReturn[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
   const [supplierId, setSupplierId] = useState('');
   const [supplierName, setSupplierName] = useState('');
   const [productId, setProductId] = useState('');
+  const [unitId, setUnitId] = useState('');
   const [qty, setQty] = useState('10');
   const [unitPrice, setUnitPrice] = useState('0');
   const [amendQty, setAmendQty] = useState('');
   const [amendPrice, setAmendPrice] = useState('');
+  const [amendUnitId, setAmendUnitId] = useState('');
   const [amendNotes, setAmendNotes] = useState('');
   const [amendReason, setAmendReason] = useState('');
   const [amendNotify, setAmendNotify] = useState(false);
@@ -153,13 +158,15 @@ export default function Page() {
   const [grnPreview, setGrnPreview] = useState('');
 
   async function refresh() {
-    const [poRes, prRes, settingsRes, numRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
+    const [poRes, prRes, settingsRes, numRes, supRes, prodRes, unitRes, grnRes, invRes, retRes] =
+      await Promise.all([
       api('/purchasing/orders'),
       api('/purchasing/requests'),
       api('/purchasing/requests/settings'),
       api('/purchasing/settings').catch(() => ({ data: null })),
       api('/suppliers'),
       api('/products'),
+      api('/catalog/units').catch(() => ({ data: [] })),
       api('/purchasing/grn'),
       api('/purchasing/invoices'),
       api('/purchasing/returns'),
@@ -169,6 +176,7 @@ export default function Page() {
     setPrLevels(settingsRes.data?.levels || []);
     setSuppliers(supRes.data || []);
     setProducts(prodRes.data || []);
+    setUnits((unitRes.data || []).filter((u: Unit) => u.is_active !== false));
     setGrns(grnRes.data || []);
     setInvoices(invRes.data || []);
     setReturns(retRes.data || []);
@@ -238,6 +246,7 @@ export default function Page() {
             {
               product_id: productId,
               quantity: Number(qty),
+              unit_id: unitId || null,
               unit_price: Number(unitPrice),
               tax_rate: 0,
             },
@@ -276,6 +285,7 @@ export default function Page() {
     const line = po.items?.[0];
     setAmendQty(String(line?.quantity ?? ''));
     setAmendPrice(String(line?.unit_price ?? ''));
+    setAmendUnitId(line?.unit_id || '');
     setAmendNotes(po.notes || '');
     setAmendReason('');
     setAmendNotify(po.status === 'sent');
@@ -297,6 +307,7 @@ export default function Page() {
             {
               product_id: line.product_id,
               quantity: Number(amendQty) || line.quantity,
+              unit_id: amendUnitId || line.unit_id || null,
               unit_price: Number(amendPrice) || line.unit_price,
               tax_rate: line.tax_rate || 0,
             },
@@ -917,6 +928,14 @@ export default function Page() {
               </option>
             ))}
           </select>
+          <select value={unitId} onChange={(e) => setUnitId(e.target.value)}>
+            <option value="">Unit (product default)</option>
+            {units.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.code} — {u.name}
+              </option>
+            ))}
+          </select>
           <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Quantity" />
           <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit price" />
           <button onClick={createPo} disabled={!supplierId || !productId}>
@@ -1102,6 +1121,14 @@ export default function Page() {
               {selected.can_amend && (
                 <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
                   <h4 style={{ margin: 0 }}>Amend (first line)</h4>
+                  <select value={amendUnitId} onChange={(e) => setAmendUnitId(e.target.value)}>
+                    <option value="">Unit (product default)</option>
+                    {units.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.code}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     value={amendQty}
                     onChange={(e) => setAmendQty(e.target.value)}
