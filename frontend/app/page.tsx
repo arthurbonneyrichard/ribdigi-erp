@@ -145,11 +145,13 @@ export default function Login() {
 
       <div className="login">
         <div className="login-brand">
-          <div className="login-badge" aria-hidden>
-            R
-          </div>
-          <h1>RIBDIGI ERP</h1>
-          <p className="login-tagline">One System. Total Business Control.</p>
+          <img
+            className="login-logo"
+            src="/brand/logo-full.png"
+            alt="RIBDIGI ERP — Run your business smarter"
+            width={280}
+            height={280}
+          />
         </div>
 
         <form className="login-form" onSubmit={go}>

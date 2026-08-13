@@ -438,9 +438,17 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
       <aside className="side">
-        <div className="brand">RIBDIGI ERP</div>
+        <div className="brand">
+          <img
+            className="brand-logo"
+            src="/brand/logo-sidebar.png"
+            alt="RIBDIGI ERP"
+            width={196}
+            height={131}
+          />
+        </div>
         <div className="brand-sub">
-          {isPlatformOwner ? 'Platform owner console' : 'One System. Total Business Control.'}
+          {isPlatformOwner ? 'Platform owner console' : 'Run your business smarter'}
         </div>
         <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
           {visible.map(([n, h, module]) => {
