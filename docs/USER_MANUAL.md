@@ -148,6 +148,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Audit-retention remaining-gate index (Stage 186):** Status index is `docs/AUDIT_RETENTION_REMAINING_GATE_MVP.md` → blockers `docs/AUDIT_RETENTION_BLOCKERS_MVP.md` → ADR-007/retention pointers `docs/AUDIT_RETENTION_PACK_POINTERS_MVP.md`. Hot audit purge Complete remains MISSING (not claimed).
 
+**Attestation remaining-gate index (Stage 187):** Status index is `docs/ATTESTATION_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_BLOCKERS_MVP.md` → Stage 69/LAUNCH pointers `docs/ATTESTATION_PACK_POINTERS_MVP.md`. Attestation Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

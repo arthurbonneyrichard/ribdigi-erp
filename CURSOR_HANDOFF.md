@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 186 froze Tenant MVP Audit-Retention Remaining-Gate Index Fidelity (ADR-379) — audit-retention remaining-gate hub, blocker matrix, ADR-007/retention pointers, explicit hot-purge non-claim. Hot audit purge Complete remains MISSING. Next recommended distinct outline: Tenant MVP attestation remaining-gate index fidelity (attestation_claimed false, §7 unsigned, Stage 69 A1 packaging non-claim as attestation Complete — explicit non-claim) — Stage 187+. Do not claim hot audit purge Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 187 froze Tenant MVP Attestation Remaining-Gate Index Fidelity (ADR-381) — attestation remaining-gate hub, blocker matrix, Stage 69/LAUNCH pointers, explicit attestation non-claim. Attestation Complete / §7 signed remain MISSING. Next recommended distinct outline: Tenant MVP support-SLA remaining-gate index fidelity (packaged support boundaries non-claim as live SLA Complete — explicit non-claim) — Stage 188+. Do not claim attestation Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

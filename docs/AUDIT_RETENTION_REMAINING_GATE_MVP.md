@@ -33,3 +33,5 @@ Single index of post-MVP audit-retention remaining gates (hot-table pruning). Pa
 - Cold-archive Completes as purge Completes
 - Infinite retention Completes
 - Schema-per-tenant / go-live Completes
+
+See also Stage 187 attestation remaining-gate index: [`ATTESTATION_REMAINING_GATE_MVP.md`](ATTESTATION_REMAINING_GATE_MVP.md).

@@ -1,0 +1,60 @@
+{
+  "id": "attestation-pack-pointers",
+  "stage": 187,
+  "pack": "P1",
+  "doc": "docs/ATTESTATION_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ATTESTATION_REMAINING_GATE_MVP.md",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md",
+    "golive_attestation_register": "ops/mvp/golive-attestation.json",
+    "attestation_pack": "docs/ATTESTATION_PACK_MVP.md",
+    "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+    "golive_remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md",
+    "audit_retention_remaining_gate": "docs/AUDIT_RETENTION_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "golive_attestation_walk_claimed": false,
+  "topics": [
+    "golive_attestation_stage69",
+    "attestation_pack",
+    "launch_checklist_section_7",
+    "golive_remaining_gate_stage180",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ap-golive-attestation",
+      "title": "Point to Stage 69 go-live attestation honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-attestation-pack",
+      "title": "Point to attestation pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-launch-section-7",
+      "title": "Point to LAUNCH checklist \u00a77",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-golive-gate",
+      "title": "Point to Stage 180 go-live remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-attestation-remaining",
+      "title": "Attestation Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 187 P1 attestation pack pointers packaging only. Do not claim attestation Complete."
+}

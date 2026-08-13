@@ -39,3 +39,5 @@ This is the **MVP go-live attestation packaging surface**: a matrix of Remaining
 ## Sign-off
 
 Stage 30 A1 is met when this doc + matrix + evidence schema + evidence JSON exist, `test_attestation_pack_a1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / launch / roadmap cite Stage 30 A1 without inventing attestation or forged §7.
+
+See also Stage 187 attestation remaining-gate index: [`ATTESTATION_REMAINING_GATE_MVP.md`](ATTESTATION_REMAINING_GATE_MVP.md).

@@ -24,6 +24,4 @@ Stage 186 Tenant MVP Audit-Retention Remaining-Gate Index Fidelity delivered aud
 
 ## Next stage
 
-Stage 187 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 186 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP attestation remaining-gate index fidelity — single index of attestation blockers (`attestation_claimed` false, §7 unsigned, Stage 69 A1 packaging non-claim as attestation Complete) with explicit non-claim (no attestation Complete).
+Stage **187** opened under **ADR-380** / frozen under **ADR-381** — Tenant MVP attestation remaining-gate index fidelity (`attestation_claimed` false; §7 unsigned; Stage 69 A1 packaging non-claim as attestation Complete) with explicit non-claim of attestation Complete. Stage 186 feature scope remains frozen. Do not reopen Stages **1–186** scopes.

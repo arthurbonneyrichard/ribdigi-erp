@@ -1,0 +1,57 @@
+{
+  "id": "attestation-remaining-gate",
+  "stage": 187,
+  "pack": "I1",
+  "doc": "docs/ATTESTATION_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/ATTESTATION_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/ATTESTATION_PACK_POINTERS_MVP.md",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md",
+    "attestation_pack": "docs/ATTESTATION_PACK_MVP.md",
+    "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+    "golive_remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md",
+    "audit_retention_remaining_gate": "docs/AUDIT_RETENTION_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "golive_attestation_walk_claimed": false,
+  "go_live_claimed": false,
+  "hot_audit_purge_claimed": false,
+  "distinct_from_stage69_a1_packaging": true,
+  "distinct_from_stage180_golive_gate": true,
+  "steps": [
+    {
+      "id": "at-read-blockers",
+      "title": "Read B1 attestation blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "at-follow-pointers",
+      "title": "Follow P1 Stage 69 / LAUNCH / Stage 180 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "at-attestation-missing",
+      "title": "Reaffirm attestation MISSING until human \u00a77 sign-off",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "at-no-packaging-as-attestation",
+      "title": "Do not treat Stage 69 A1 / Stage 180 as attestation Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "at-attestation-remaining",
+      "title": "Attestation / \u00a77 / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 187 I1 attestation remaining-gate index packaging only. Do not claim attestation Complete."
+}
