@@ -102,6 +102,7 @@ export default function Page() {
   const [variantFlavor, setVariantFlavor] = useState('');
   const [variantDosage, setVariantDosage] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
+  const [mfgDate, setMfgDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [stockQty, setStockQty] = useState('10');
   const [openingQty, setOpeningQty] = useState('10');
@@ -109,6 +110,7 @@ export default function Page() {
   const [openingUnitId, setOpeningUnitId] = useState('');
   const [openingUnitCost, setOpeningUnitCost] = useState('');
   const [openingBatch, setOpeningBatch] = useState('');
+  const [openingMfg, setOpeningMfg] = useState('');
   const [openingExpiry, setOpeningExpiry] = useState('');
   const [openingReference, setOpeningReference] = useState('');
   const [openingNotes, setOpeningNotes] = useState('');
@@ -641,6 +643,7 @@ export default function Page() {
           quantity: Number(stockQty),
           unit_id: stockUnitId || null,
           batch_number: batchNumber,
+          manufacturing_date: mfgDate ? new Date(mfgDate).toISOString() : null,
           expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
         }),
       });
@@ -650,6 +653,8 @@ export default function Page() {
           : '';
       setMessage(`Stock in — on-hand ${r.data.stock_qty}${converted}`);
       setBatchNumber('');
+      setMfgDate('');
+      setExpiryDate('');
       await refresh();
       await refreshSelected(selectedId);
       setTab('batches');
@@ -672,6 +677,7 @@ export default function Page() {
         unit_id: openingUnitId || null,
         warehouse_id: openingWarehouseId || null,
         batch_number: openingBatch || null,
+        manufacturing_date: openingMfg ? new Date(openingMfg).toISOString() : null,
         expiry_date: openingExpiry ? new Date(openingExpiry).toISOString() : null,
       };
       if (openingUnitCost !== '') line.unit_cost = Number(openingUnitCost);
@@ -689,6 +695,8 @@ export default function Page() {
         `Opening stock ${r.data.reference}: ${r.data.line_count} line(s), value ${r.data.inventory_value}${je}`,
       );
       setOpeningBatch('');
+      setOpeningMfg('');
+      setOpeningExpiry('');
       setOpeningNotes('');
       await refresh();
       await refreshSelected(selectedId);
@@ -1422,7 +1430,13 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Stock in with batch</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Batch number, manufacturing date, and expiry (BR-5.1).
+            </p>
             <input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Batch number" />
+            <label className="muted">Manufacturing date</label>
+            <input type="date" value={mfgDate} onChange={(e) => setMfgDate(e.target.value)} />
+            <label className="muted">Expiry date</label>
             <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
             <input value={stockQty} onChange={(e) => setStockQty(e.target.value)} placeholder="Quantity" />
             <select value={stockUnitId} onChange={(e) => setStockUnitId(e.target.value)}>
@@ -1445,6 +1459,7 @@ export default function Page() {
               <tr>
                 <th>Batch</th>
                 <th>Qty</th>
+                <th>Mfg</th>
                 <th>Expiry</th>
                 <th>Variant</th>
               </tr>
@@ -1454,6 +1469,9 @@ export default function Page() {
                 <tr key={b.id}>
                   <td>{b.batch_number}</td>
                   <td>{b.quantity}</td>
+                  <td>
+                    {b.manufacturing_date ? String(b.manufacturing_date).slice(0, 10) : '—'}
+                  </td>
                   <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
                   <td>{b.variant_id || '—'}</td>
                 </tr>
@@ -1507,6 +1525,9 @@ export default function Page() {
               onChange={(e) => setOpeningBatch(e.target.value)}
               placeholder="Batch number (if tracked)"
             />
+            <label className="muted">Manufacturing date</label>
+            <input type="date" value={openingMfg} onChange={(e) => setOpeningMfg(e.target.value)} />
+            <label className="muted">Expiry date</label>
             <input
               type="date"
               value={openingExpiry}
