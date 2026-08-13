@@ -1,0 +1,57 @@
+{
+  "id": "customer-assurance-blockers",
+  "stage": 195,
+  "pack": "B1",
+  "doc": "docs/CUSTOMER_ASSURANCE_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md",
+    "commercial_assurance": "docs/COMMERCIAL_ASSURANCE_MVP.md",
+    "assurance_evidence": "docs/ASSURANCE_EVIDENCE_MVP.md",
+    "commercial_evidence_chain": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md"
+  },
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "assurance_claimed": false,
+  "evidence_chain_live_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "customer_assurance_execution": "REMAINING",
+    "evidence_chain_live": "REMAINING",
+    "stage73_a1_as_customer_assurance": "NON_CLAIM",
+    "stage34_a1_as_customer_assurance": "NON_CLAIM",
+    "customer_assurance_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cb-assurance",
+      "title": "Mark customer assurance execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-evidence-chain",
+      "title": "Mark evidence chain live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-stage73-nonclaim",
+      "title": "Mark Stage 73 A1 commercial assurance as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-stage34-nonclaim",
+      "title": "Mark Stage 34 A1 assurance evidence as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-assurance-remaining",
+      "title": "Customer assurance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 195 B1 customer assurance blocker matrix packaging only. Customer assurance Complete remains MISSING."
+}

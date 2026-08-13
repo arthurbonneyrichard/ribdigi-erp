@@ -47,3 +47,5 @@ Every step keeps `done: false`. Top-level `customer_assurance_claimed: false` / 
 ## Sign-off
 
 Stage 73 A1 is met when this doc + register JSON + evidence JSON exist, `test_commercial_assurance_a1.py` passes, and LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan / roadmap cite Stage 73 A1 without inventing customer assurance Complete.
+
+See also Stage 195 Tenant MVP Customer Assurance remaining-gate index fidelity (`docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md`, ADR-396 / ADR-397).

@@ -32,3 +32,5 @@ Single index of first-tenant live onboarding remaining gates. Packaging only —
 - First paying tenant Completes
 - Demo tenants / fake onboarding success
 - Go-live Completes
+
+See also Stage 195 customer assurance remaining-gate index: [`CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md`](CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md).

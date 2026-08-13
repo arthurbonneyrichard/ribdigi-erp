@@ -921,6 +921,7 @@ Stage 191 D1 — `docs/STAGE_191_FIDELITY.md` (`test_stage191_fidelity_d1.py`); 
 Stage 192 D1 — `docs/STAGE_192_FIDELITY.md` (`test_stage192_fidelity_d1.py`); Stage 192 I1 / B1 / P1.
 Stage 193 D1 — `docs/STAGE_193_FIDELITY.md` (`test_stage193_fidelity_d1.py`); Stage 193 I1 / B1 / P1.
 Stage 194 D1 — `docs/STAGE_194_FIDELITY.md` (`test_stage194_fidelity_d1.py`); Stage 194 I1 / B1 / P1.
+Stage 195 D1 — `docs/STAGE_195_FIDELITY.md` (`test_stage195_fidelity_d1.py`); Stage 195 I1 / B1 / P1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1699,4 +1700,5 @@ Stage 191 D1 Hosted FAQ SaaS Remaining-Gate Index fidelity — `docs/STAGE_191_F
 Stage 192 D1 Live DR Remaining-Gate Index fidelity — `docs/STAGE_192_FIDELITY.md` (`test_stage192_fidelity_d1.py`); Stage 192 I1 live DR remaining-gate hub; Stage 192 B1 blocker matrix; Stage 192 P1 Stage 169/35 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 193 D1 Live Migration Remaining-Gate Index fidelity — `docs/STAGE_193_FIDELITY.md` (`test_stage193_fidelity_d1.py`); Stage 193 I1 live migration remaining-gate hub; Stage 193 B1 blocker matrix; Stage 193 P1 Stage 169/178 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 194 D1 First-Tenant Live Onboarding Remaining-Gate Index fidelity — `docs/STAGE_194_FIDELITY.md` (`test_stage194_fidelity_d1.py`); Stage 194 I1 first-tenant live onboarding remaining-gate hub; Stage 194 B1 blocker matrix; Stage 194 P1 Stage 33/66 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 195 D1 Customer Assurance Remaining-Gate Index fidelity — `docs/STAGE_195_FIDELITY.md` (`test_stage195_fidelity_d1.py`); Stage 195 I1 customer assurance remaining-gate hub; Stage 195 B1 blocker matrix; Stage 195 P1 Stage 73/34 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 

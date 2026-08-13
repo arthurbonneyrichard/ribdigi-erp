@@ -586,6 +586,12 @@ Authoritative MVP docs:
 - `docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md` / `ops/mvp/first-tenant-live-onboarding-remaining-gate.json` — Stage 194 I1
 - `docs/FIRST_TENANT_LIVE_ONBOARDING_BLOCKERS_MVP.md` / `ops/mvp/first-tenant-live-onboarding-blockers.json` — Stage 194 B1
 - `docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_POINTERS_MVP.md` / `ops/mvp/first-tenant-live-onboarding-pack-pointers.json` — Stage 194 P1
+- `docs/STAGE_195_EXIT_CRITERIA.md` / `docs/ADR_397_STAGE195_FREEZE.md` (`backend/tests/test_stage195_exit_h195x.py`) — Stage 195 H195x
+- `docs/STAGE_195_FIDELITY.md` (`backend/tests/test_stage195_fidelity_d1.py`) — Stage 195 D1
+- `docs/STAGE_195_PLAN.md` (`backend/tests/test_stage195_open.py`) — Stage 195 open (ADR-396)
+- `docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md` / `ops/mvp/customer-assurance-remaining-gate.json` — Stage 195 I1
+- `docs/CUSTOMER_ASSURANCE_BLOCKERS_MVP.md` / `ops/mvp/customer-assurance-blockers.json` — Stage 195 B1
+- `docs/CUSTOMER_ASSURANCE_PACK_POINTERS_MVP.md` / `ops/mvp/customer-assurance-pack-pointers.json` — Stage 195 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2455,6 +2461,18 @@ H194x met — `docs/STAGE_194_EXIT_CRITERIA.md`, ADR-395. Stages 1–194 frozen 
 ## Stage 194 open
 
 ADR-394 + `docs/STAGE_194_PLAN.md` — First-Tenant Live Onboarding Remaining-Gate Index Fidelity (closed under ADR-395).
+
+## Stage 195 exit
+
+H195x met — `docs/STAGE_195_EXIT_CRITERIA.md`, ADR-397. Stages 1–195 frozen for Stage 195 feature scope.
+
+## Stage 195 D1 — Tenant MVP Customer Assurance Remaining-Gate Index Fidelity
+
+`docs/STAGE_195_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Customer assurance Complete remains MISSING.
+
+## Stage 195 open
+
+ADR-396 + `docs/STAGE_195_PLAN.md` — Customer Assurance Remaining-Gate Index Fidelity (closed under ADR-397).
 
 ## Stage 165 open
 

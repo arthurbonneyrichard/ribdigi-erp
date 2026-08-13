@@ -24,6 +24,4 @@ Stage 194 Tenant MVP First-Tenant Live Onboarding Remaining-Gate Index Fidelity 
 
 ## Next stage
 
-Stage 195 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 194 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Customer Assurance Remaining-Gate Index Fidelity — single index of customer assurance blockers (packaged commercial/assurance materials non-claim as customer assurance Complete) with explicit non-claim (no customer assurance Complete).
+Stage **195** opened under **ADR-396** / frozen under **ADR-397** — Tenant MVP Customer Assurance remaining-gate index fidelity (packaged commercial/assurance materials non-claim as customer assurance Complete) with explicit non-claim of customer assurance Complete. Stage 194 feature scope remains frozen. Do not reopen Stages **1–194** scopes.

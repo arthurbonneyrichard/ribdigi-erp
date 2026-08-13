@@ -164,6 +164,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **First-tenant live onboarding remaining-gate index (Stage 194):** Status index is `docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md` → blockers `docs/FIRST_TENANT_LIVE_ONBOARDING_BLOCKERS_MVP.md` → Stage 33/66 pointers `docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_POINTERS_MVP.md`. First-tenant live onboarding Complete remains MISSING (not claimed).
 
+**Customer assurance remaining-gate index (Stage 195):** Status index is `docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md` → blockers `docs/CUSTOMER_ASSURANCE_BLOCKERS_MVP.md` → Stage 73/34 pointers `docs/CUSTOMER_ASSURANCE_PACK_POINTERS_MVP.md`. Customer assurance Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health
