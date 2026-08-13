@@ -24,6 +24,4 @@ Stage 171 Tenant MVP Knowledge Base Fidelity delivered knowledge base hub (K1), 
 
 ## Next stage
 
-Stage 172 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 171 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP cashier quickstart fidelity — day-one POS checklist linking device bind, offline catalog refresh, Hold/soft-reserve, sync flush, and conflict accept-client (no Offline Complete claim).
+Stage 172 opened under [ADR-350](ADR_350_STAGE172_OPEN.md) (Tenant MVP Cashier Quickstart Fidelity) and froze under [ADR-351](ADR_351_STAGE172_FREEZE.md). Stage 171 feature scope remains frozen.

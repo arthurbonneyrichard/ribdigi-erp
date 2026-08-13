@@ -118,6 +118,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Knowledge base (Stage 171):** Offline/POS/Hold FAQs and symptom troubleshooting live in `docs/KNOWLEDGE_BASE_MVP.md`, `docs/FAQ_OFFLINE_POS_MVP.md`, and `docs/TROUBLESHOOTING_INDEX_MVP.md` (links backup drill honesty). Hosted FAQ SaaS and Offline Complete remain deferred.
 
+**Cashier quickstart (Stage 172):** Day-one POS order is `docs/CASHIER_QUICKSTART_MVP.md` → bind/catalog `docs/CASHIER_BIND_CATALOG_MVP.md` → Hold/flush/accept-client `docs/CASHIER_POS_DAYONE_MVP.md`. Offline Complete remains deferred.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

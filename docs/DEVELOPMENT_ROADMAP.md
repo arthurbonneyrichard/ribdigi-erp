@@ -2676,6 +2676,18 @@ Every feature in every phase must meet:
 
 **Stage 171 exit (2026-08-13):** K1, F1, T1, D1, H171x met — `docs/STAGE_171_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_349_STAGE171_FREEZE.md`. Fidelity: `docs/STAGE_171_FIDELITY.md`.
 
+**Stage 172 open (2026-08-13):** Tenant MVP Cashier Quickstart Fidelity — `docs/ADR_350_STAGE172_OPEN.md` + `docs/STAGE_172_PLAN.md` (Q1 next).
+
+**Stage 172 Q1 (2026-08-13):** Cashier quickstart hub (`test_stage172_quickstart_q1.py`).
+
+**Stage 172 B1 (2026-08-13):** Bind + catalog refresh (`test_stage172_bind_b1.py`).
+
+**Stage 172 O1 (2026-08-13):** Hold / flush / accept-client (`test_stage172_ops_o1.py`).
+
+**Stage 172 D1 (2026-08-13):** Cashier Quickstart fidelity sync — `docs/STAGE_172_FIDELITY.md` (`test_stage172_fidelity_d1.py`).
+
+**Stage 172 exit (2026-08-13):** Q1, B1, O1, D1, H172x met — `docs/STAGE_172_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_351_STAGE172_FREEZE.md`. Fidelity: `docs/STAGE_172_FIDELITY.md`.
+
 
 
 

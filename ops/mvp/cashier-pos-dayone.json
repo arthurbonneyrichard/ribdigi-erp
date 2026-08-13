@@ -1,0 +1,55 @@
+{
+  "id": "cashier-pos-dayone",
+  "stage": 172,
+  "pack": "O1",
+  "doc": "docs/CASHIER_POS_DAYONE_MVP.md",
+  "related": {
+    "cashier_quickstart": "docs/CASHIER_QUICKSTART_MVP.md",
+    "bind_catalog": "docs/CASHIER_BIND_CATALOG_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "hold_soft_reserve",
+    "sync_flush",
+    "accept_client"
+  ],
+  "steps": [
+    {
+      "id": "po-hold-reserve",
+      "title": "Hold cart soft-reserve + 4h expiry awareness",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "po-sync-flush",
+      "title": "Online reconnect flushes IndexedDB via /sync/push",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "po-accept-client",
+      "title": "Accept client only when original op never applied",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "po-escalate",
+      "title": "Escalate unresolved conflicts via Stage 170 E1",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "po-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 172 O1 POS day-one ops packaging only. Offline Complete remains MISSING."
+}

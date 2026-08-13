@@ -51,3 +51,7 @@ Operators use `BACKUP_RESTORE_DRILL_HONESTY_MVP.md` — live DR Completes stay f
 - Offline Complete product claim
 - USB/serial hardware driver Completes
 - Fabricated FAQ resolution SLAs
+
+## Stage 172 B1 / O1 amendment
+
+Day-one ordered checklists: [CASHIER_BIND_CATALOG_MVP.md](CASHIER_BIND_CATALOG_MVP.md) · [CASHIER_POS_DAYONE_MVP.md](CASHIER_POS_DAYONE_MVP.md) (`test_stage172_bind_b1.py`, `test_stage172_ops_o1.py`).

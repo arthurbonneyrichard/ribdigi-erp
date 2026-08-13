@@ -1,0 +1,53 @@
+{
+  "id": "cashier-quickstart",
+  "stage": 172,
+  "pack": "Q1",
+  "doc": "docs/CASHIER_QUICKSTART_MVP.md",
+  "related": {
+    "bind_catalog": "docs/CASHIER_BIND_CATALOG_MVP.md",
+    "pos_dayone": "docs/CASHIER_POS_DAYONE_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "user_manual": "docs/USER_MANUAL.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage171_faq_kb": true,
+  "steps": [
+    {
+      "id": "cq-sign-in-pos",
+      "title": "Sign in; open POS for correct store",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cq-bind-catalog",
+      "title": "Complete B1 bind + catalog refresh while ONLINE",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cq-hold-flush-accept",
+      "title": "Complete O1 Hold / flush / accept-client awareness",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cq-kb-fallback",
+      "title": "Use Stage 171 KB/FAQ for symptoms",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cq-offline-complete-remaining",
+      "title": "Offline Complete / live training Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 172 Q1 cashier quickstart packaging only. Do not claim Offline Complete."
+}

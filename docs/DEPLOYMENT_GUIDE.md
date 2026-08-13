@@ -1555,3 +1555,4 @@ Stage 169 D1 Production Ops Hardening fidelity — `docs/STAGE_169_FIDELITY.md` 
 
 Stage 170 D1 Support Readiness fidelity — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`); `docs/SUPPORT_READINESS_MVP.md` / `docs/INCIDENT_SEVERITY_MATRIX_MVP.md` / `docs/OFFLINE_SYNC_ESCALATION_MVP.md`; main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 171 D1 Knowledge Base fidelity — `docs/STAGE_171_FIDELITY.md` (`test_stage171_fidelity_d1.py`); `docs/KNOWLEDGE_BASE_MVP.md` / `docs/FAQ_OFFLINE_POS_MVP.md` / `docs/TROUBLESHOOTING_INDEX_MVP.md`; main `ci.yml` remains deploy-free (Stage 18 C1).
+Stage 172 D1 Cashier Quickstart fidelity — `docs/STAGE_172_FIDELITY.md` (`test_stage172_fidelity_d1.py`); `docs/CASHIER_QUICKSTART_MVP.md` / `docs/CASHIER_BIND_CATALOG_MVP.md` / `docs/CASHIER_POS_DAYONE_MVP.md`; main `ci.yml` remains deploy-free (Stage 18 C1).

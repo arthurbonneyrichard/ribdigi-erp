@@ -36,3 +36,7 @@ Tenant MVP knowledge-base hub: indexes FAQ, troubleshooting, support readiness, 
 - Live training / certification Complete (see Stage 33 / 48)
 - Offline Complete or go-live Complete
 - Fabricated resolution articles as proof of live SLA
+
+## Stage 172 Q1 amendment
+
+Ordered cashier day-one quickstart (not FAQ reference): [CASHIER_QUICKSTART_MVP.md](CASHIER_QUICKSTART_MVP.md) (`ops/mvp/cashier-quickstart.json`, `test_stage172_quickstart_q1.py`).

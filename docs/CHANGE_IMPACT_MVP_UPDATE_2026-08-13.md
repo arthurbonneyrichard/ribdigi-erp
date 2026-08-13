@@ -125,3 +125,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 171 decision (opened after Stage 170 freeze)
 
 **Tenant MVP Knowledge Base Fidelity** — knowledge base hub (K1), FAQ offline/POS/Hold (F1), troubleshooting index with backup drill links (T1). Hosted FAQ SaaS / live training / Offline Complete / go-live remain deferred (Stage 172+).
+
+## Stage 172 decision (opened after Stage 171 freeze)
+
+**Tenant MVP Cashier Quickstart Fidelity** — quickstart hub (Q1), bind + catalog refresh (B1), Hold/flush/accept-client day-one ops (O1). Offline Complete / live training / go-live remain deferred (Stage 173+).
