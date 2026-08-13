@@ -649,6 +649,16 @@ Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update
 
 List supports optional `?status=active|inactive`. Party `code` is unique per tenant when set.
 
+**Contacts (BR-6.1):**  
+`GET|POST /suppliers/{supplier_id}/contacts`  
+`PATCH|DELETE /suppliers/{supplier_id}/contacts/{contact_id}`  
+
+```json
+{ "name": "Ada Buyer", "phone": "+233200000001", "email": "ada@acme.example.com", "designation": "Purchasing", "is_primary": true }
+```
+
+First contact becomes primary; setting `is_primary` clears other primaries and syncs party `email`/`phone`. `GET /suppliers/{id}` includes `contacts`.
+
 ### 6.2 Purchase Request
 **List:** `GET /purchases/requests`  
 **Create:** `POST /purchases/requests`  
@@ -770,6 +780,8 @@ Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced 
 ```
 
 List supports optional `?status=active|inactive`. Party `code` is unique per tenant when set.
+
+**Contacts (BR-6.1):** same nested `/customers/{customer_id}/contacts` routes as suppliers; `GET /customers/{id}` includes `contacts`.
 
 ### 7.2 Customer Groups
 **List:** `GET /customers/groups` (seeds Retail / Wholesale / VIP defaults)  

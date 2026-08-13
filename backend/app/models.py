@@ -447,6 +447,23 @@ class Party(Base):
     )
 
 
+class PartyContact(Base):
+    """Additional named contacts on a customer/supplier party (BR-6.1)."""
+
+    __tablename__ = "party_contacts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    party_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    name: Mapped[str] = mapped_column(String(150))
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    designation: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Transaction(Base):
     __tablename__ = "transactions"
 

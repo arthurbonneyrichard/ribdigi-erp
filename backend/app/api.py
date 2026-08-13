@@ -58,6 +58,7 @@ from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
 from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
+from app import party_contacts as party_contacts_svc
 from app import barcodes as barcodes_svc
 from app.config import settings
 from app.schemas import (
@@ -92,6 +93,8 @@ from app.schemas import (
     NotificationPreferencesUpdate,
     PartyCreate,
     PartyUpdate,
+    PartyContactCreate,
+    PartyContactUpdate,
     CustomerGroupCreate,
     CustomerGroupUpdate,
     PlatformGrantAccess,
@@ -3708,6 +3711,20 @@ def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict
     return data
 
 
+async def _party_with_contacts(
+    db: AsyncSession,
+    party: m.Party,
+    *,
+    group: m.CustomerGroup | None = None,
+) -> dict:
+    data = _serialize_party(party, group)
+    contacts = await party_contacts_svc.list_contacts(
+        db, tenant_id=party.tenant_id, party_id=party.id, kind=party.kind
+    )
+    data["contacts"] = [party_contacts_svc.serialize_contact(c) for c in contacts]
+    return data
+
+
 def _normalize_party_profile(data: dict, *, kind: str) -> dict:
     if "code" in data:
         code = data["code"]
@@ -3880,8 +3897,9 @@ async def get_customer(
         group = await customer_groups_svc.get_group(
             db, claims["tenant_id"], party.customer_group_id
         )
+    data = await _party_with_contacts(db, party, group=group)
     await db.commit()
-    return env(_serialize_party(party, group))
+    return env(data)
 
 
 @api.post("/customers")
@@ -3955,6 +3973,120 @@ async def patch_customer(
             db, claims["tenant_id"], party.customer_group_id
         )
     return env(_serialize_party(party, group))
+
+
+@api.get("/customers/{customer_id}/contacts")
+async def list_customer_contacts(
+    customer_id: str,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await party_contacts_svc.list_contacts(
+        db, tenant_id=claims["tenant_id"], party_id=customer_id, kind="customer"
+    )
+    return env([party_contacts_svc.serialize_contact(r) for r in rows])
+
+
+@api.post("/customers/{customer_id}/contacts")
+async def create_customer_contact(
+    customer_id: str,
+    payload: PartyContactCreate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    row = await party_contacts_svc.create_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=customer_id,
+        kind="customer",
+        name=payload.name,
+        phone=payload.phone,
+        email=str(payload.email) if payload.email is not None else None,
+        designation=payload.designation,
+        is_primary=payload.is_primary,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="sales",
+        action="party_contact_created",
+        entity="party_contact",
+        entity_id=row.id,
+        details={"party_id": customer_id, "kind": "customer"},
+    )
+    await db.commit()
+    return env(party_contacts_svc.serialize_contact(row), "Contact created")
+
+
+@api.patch("/customers/{customer_id}/contacts/{contact_id}")
+async def patch_customer_contact(
+    customer_id: str,
+    contact_id: str,
+    payload: PartyContactUpdate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    data = payload.model_dump(exclude_unset=True)
+    if "email" in data and data["email"] is not None:
+        data["email"] = str(data["email"])
+    row = await party_contacts_svc.update_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=customer_id,
+        kind="customer",
+        contact_id=contact_id,
+        **data,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="sales",
+        action="party_contact_updated",
+        entity="party_contact",
+        entity_id=row.id,
+        details={"party_id": customer_id, "kind": "customer"},
+    )
+    await db.commit()
+    return env(party_contacts_svc.serialize_contact(row), "Contact updated")
+
+
+@api.delete("/customers/{customer_id}/contacts/{contact_id}")
+async def delete_customer_contact(
+    customer_id: str,
+    contact_id: str,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    await party_contacts_svc.delete_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=customer_id,
+        kind="customer",
+        contact_id=contact_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="sales",
+        action="party_contact_deleted",
+        entity="party_contact",
+        entity_id=contact_id,
+        details={"party_id": customer_id, "kind": "customer"},
+    )
+    await db.commit()
+    return env({"id": contact_id}, "Contact deleted")
 
 
 @api.get("/products/{product_id}/price")
@@ -4033,8 +4165,9 @@ async def get_supplier(
     ).scalar_one_or_none()
     if not party:
         raise HTTPException(status_code=404, detail="Supplier not found")
+    data = await _party_with_contacts(db, party)
     await db.commit()
-    return env(_serialize_party(party))
+    return env(data)
 
 
 @api.post("/suppliers")
@@ -4082,6 +4215,120 @@ async def patch_supplier(
     await db.commit()
     await db.refresh(party)
     return env(_serialize_party(party))
+
+
+@api.get("/suppliers/{supplier_id}/contacts")
+async def list_supplier_contacts(
+    supplier_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await party_contacts_svc.list_contacts(
+        db, tenant_id=claims["tenant_id"], party_id=supplier_id, kind="supplier"
+    )
+    return env([party_contacts_svc.serialize_contact(r) for r in rows])
+
+
+@api.post("/suppliers/{supplier_id}/contacts")
+async def create_supplier_contact(
+    supplier_id: str,
+    payload: PartyContactCreate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    row = await party_contacts_svc.create_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=supplier_id,
+        kind="supplier",
+        name=payload.name,
+        phone=payload.phone,
+        email=str(payload.email) if payload.email is not None else None,
+        designation=payload.designation,
+        is_primary=payload.is_primary,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="party_contact_created",
+        entity="party_contact",
+        entity_id=row.id,
+        details={"party_id": supplier_id, "kind": "supplier"},
+    )
+    await db.commit()
+    return env(party_contacts_svc.serialize_contact(row), "Contact created")
+
+
+@api.patch("/suppliers/{supplier_id}/contacts/{contact_id}")
+async def patch_supplier_contact(
+    supplier_id: str,
+    contact_id: str,
+    payload: PartyContactUpdate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    data = payload.model_dump(exclude_unset=True)
+    if "email" in data and data["email"] is not None:
+        data["email"] = str(data["email"])
+    row = await party_contacts_svc.update_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=supplier_id,
+        kind="supplier",
+        contact_id=contact_id,
+        **data,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="party_contact_updated",
+        entity="party_contact",
+        entity_id=row.id,
+        details={"party_id": supplier_id, "kind": "supplier"},
+    )
+    await db.commit()
+    return env(party_contacts_svc.serialize_contact(row), "Contact updated")
+
+
+@api.delete("/suppliers/{supplier_id}/contacts/{contact_id}")
+async def delete_supplier_contact(
+    supplier_id: str,
+    contact_id: str,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    tenants_svc.assert_writable(claims)
+    await party_contacts_svc.delete_contact(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=supplier_id,
+        kind="supplier",
+        contact_id=contact_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="party_contact_deleted",
+        entity="party_contact",
+        entity_id=contact_id,
+        details={"party_id": supplier_id, "kind": "supplier"},
+    )
+    await db.commit()
+    return env({"id": contact_id}, "Contact deleted")
 
 
 async def tx_list(kind: str, claims: dict, db: AsyncSession):

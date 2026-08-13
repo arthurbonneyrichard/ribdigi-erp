@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
+import PartyContactsPanel from '../../components/PartyContactsPanel';
 import { api } from '../../lib/api';
 
 type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
@@ -1020,6 +1021,13 @@ export default function Page() {
             Add
           </button>
         </div>
+        {supplierId ? (
+          <PartyContactsPanel
+            kind="supplier"
+            partyId={supplierId}
+            partyLabel={suppliers.find((s) => s.id === supplierId)?.name || 'Selected supplier'}
+          />
+        ) : null}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

@@ -410,6 +410,22 @@ class PartyUpdate(BaseModel):
     customer_group_id: str | None = None
 
 
+class PartyContactCreate(BaseModel):
+    name: str
+    phone: str | None = None
+    email: EmailStr | None = None
+    designation: str | None = None
+    is_primary: bool = False
+
+
+class PartyContactUpdate(BaseModel):
+    name: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    designation: str | None = None
+    is_primary: bool | None = None
+
+
 class CustomerGroupCreate(BaseModel):
     name: str
     code: str | None = None

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
+import PartyContactsPanel from '../../components/PartyContactsPanel';
 import { api } from '../../lib/api';
 import { formatNumber, type FormatPrefs } from '../../lib/format';
 
@@ -666,6 +667,13 @@ export default function Page() {
             Assign group
           </button>
         </div>
+        {customerId ? (
+          <PartyContactsPanel
+            kind="customer"
+            partyId={customerId}
+            partyLabel={customers.find((c) => c.id === customerId)?.name || 'Selected customer'}
+          />
+        ) : null}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={productId} onChange={(e) => setProductId(e.target.value)}>
             <option value="">Product</option>

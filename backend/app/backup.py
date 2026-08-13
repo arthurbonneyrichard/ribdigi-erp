@@ -76,6 +76,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("stock_counts", m.StockCount),
     ("stock_count_items", m.StockCountItem),
     ("product_images", m.ProductImage),
+    ("party_contacts", m.PartyContact),
     ("notification_preferences", m.NotificationPreference),
     ("report_schedules", m.ReportSchedule),
 ]
