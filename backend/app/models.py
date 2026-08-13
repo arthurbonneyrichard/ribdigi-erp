@@ -53,6 +53,8 @@ class Tenant(Base):
     decimal_separator: Mapped[str] = mapped_column(String(1), default=".")
     thousand_separator: Mapped[str] = mapped_column(String(1), default=",")
     time_format: Mapped[str] = mapped_column(String(5), default="24h")
+    # BR-19.3 client idle auto-logout (minutes; clamped 5–480 in update_profile)
+    inactivity_timeout_minutes: Mapped[int] = mapped_column(Integer, default=30)
     # Inclusive calendar date through which books are closed (BR-10.2 period close)
     books_closed_through: Mapped[date | None] = mapped_column(Date, nullable=True)
     expense_approval_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=100)

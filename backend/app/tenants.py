@@ -87,6 +87,9 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         if getattr(tenant, "thousand_separator", None) is not None
         else ",",
         "time_format": getattr(tenant, "time_format", None) or "24h",
+        "inactivity_timeout_minutes": int(
+            getattr(tenant, "inactivity_timeout_minutes", None) or 30
+        ),
         "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
         "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
         "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
@@ -413,6 +416,7 @@ async def update_profile(
     decimal_separator: str | None = None,
     thousand_separator: str | None = None,
     time_format: str | None = None,
+    inactivity_timeout_minutes: int | None = None,
 ) -> m.Tenant:
     if company_name is not None:
         name = company_name.strip()
@@ -513,6 +517,14 @@ async def update_profile(
         if tf not in VALID_TIME_FORMATS:
             raise HTTPException(status_code=400, detail="time_format must be 12h or 24h")
         tenant.time_format = tf
+    if inactivity_timeout_minutes is not None:
+        minutes = int(inactivity_timeout_minutes)
+        if minutes < 5 or minutes > 480:
+            raise HTTPException(
+                status_code=400,
+                detail="inactivity_timeout_minutes must be between 5 and 480",
+            )
+        tenant.inactivity_timeout_minutes = minutes
     _validate_separators(
         getattr(tenant, "decimal_separator", None) or ".",
         getattr(tenant, "thousand_separator", None)
