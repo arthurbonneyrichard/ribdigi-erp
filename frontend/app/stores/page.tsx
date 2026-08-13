@@ -4,17 +4,55 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
+type DayHours = { open?: string; close?: string; closed?: boolean };
+type OperatingHours = Partial<Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', DayHours>>;
 type Store = {
   id: string;
   code: string;
   name: string;
   address?: string;
   is_active?: boolean;
+  operating_hours?: OperatingHours | null;
   drawer_mode?: string;
   drawer_host?: string | null;
   drawer_port?: number;
   drawer_open_on_cash?: boolean;
 };
+
+const WEEKDAYS: { key: keyof OperatingHours; label: string }[] = [
+  { key: 'mon', label: 'Mon' },
+  { key: 'tue', label: 'Tue' },
+  { key: 'wed', label: 'Wed' },
+  { key: 'thu', label: 'Thu' },
+  { key: 'fri', label: 'Fri' },
+  { key: 'sat', label: 'Sat' },
+  { key: 'sun', label: 'Sun' },
+];
+
+function defaultHours(): OperatingHours {
+  const openDay = { open: '09:00', close: '18:00', closed: false };
+  return {
+    mon: { ...openDay },
+    tue: { ...openDay },
+    wed: { ...openDay },
+    thu: { ...openDay },
+    fri: { ...openDay },
+    sat: { closed: true },
+    sun: { closed: true },
+  };
+}
+
+function summarizeHours(hours?: OperatingHours | null): string {
+  if (!hours) return '—';
+  const bits = WEEKDAYS.map(({ key, label }) => {
+    const d = hours[key];
+    if (!d) return null;
+    if (d.closed) return `${label} closed`;
+    if (d.open && d.close) return `${label} ${d.open}-${d.close}`;
+    return null;
+  }).filter(Boolean);
+  return bits.length ? bits.join(' · ') : '—';
+}
 type Warehouse = {
   id: string;
   code: string;
@@ -49,6 +87,9 @@ export default function Page() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [hours, setHours] = useState<OperatingHours>(defaultHours());
+  const [editStoreId, setEditStoreId] = useState('');
+  const [editHours, setEditHours] = useState<OperatingHours>(defaultHours());
   const [whCode, setWhCode] = useState('');
   const [whName, setWhName] = useState('');
   const [whType, setWhType] = useState('retail');
@@ -111,16 +152,110 @@ export default function Page() {
     try {
       await api('/stores', {
         method: 'POST',
-        body: JSON.stringify({ code, name, address: address || undefined }),
+        body: JSON.stringify({
+          code,
+          name,
+          address: address || undefined,
+          operating_hours: hours,
+        }),
       });
       setCode('');
       setName('');
       setAddress('');
+      setHours(defaultHours());
       setMessage('Store created');
       await refresh();
     } catch (err: any) {
       setError(err.message);
     }
+  }
+
+  function startEditStoreHours(s: Store) {
+    setEditStoreId(s.id);
+    setEditHours(s.operating_hours ? { ...defaultHours(), ...s.operating_hours } : defaultHours());
+  }
+
+  async function saveStoreHours() {
+    if (!editStoreId) return;
+    setError('');
+    setMessage('');
+    try {
+      await api(`/stores/${editStoreId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ operating_hours: editHours }),
+      });
+      setMessage('Store hours updated');
+      setEditStoreId('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function setDayHours(
+    target: 'create' | 'edit',
+    day: keyof OperatingHours,
+    patch: Partial<DayHours>,
+  ) {
+    const setter = target === 'create' ? setHours : setEditHours;
+    setter((prev) => {
+      const cur = prev[day] || {};
+      const next = { ...cur, ...patch };
+      if (next.closed) return { ...prev, [day]: { closed: true } };
+      return {
+        ...prev,
+        [day]: {
+          open: next.open || '09:00',
+          close: next.close || '18:00',
+          closed: false,
+        },
+      };
+    });
+  }
+
+  function HoursEditor({
+    value,
+    onDay,
+  }: {
+    value: OperatingHours;
+    onDay: (day: keyof OperatingHours, patch: Partial<DayHours>) => void;
+  }) {
+    return (
+      <div style={{ display: 'grid', gap: 6 }}>
+        {WEEKDAYS.map(({ key, label }) => {
+          const d = value[key] || { closed: true };
+          const closed = !!d.closed;
+          return (
+            <div key={key} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ width: 36 }}>{label}</span>
+              <label className="muted" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={closed}
+                  onChange={(e) => onDay(key, { closed: e.target.checked })}
+                />
+                Closed
+              </label>
+              {!closed && (
+                <>
+                  <input
+                    type="time"
+                    value={d.open || '09:00'}
+                    onChange={(e) => onDay(key, { open: e.target.value, closed: false })}
+                  />
+                  <span className="muted">–</span>
+                  <input
+                    type="time"
+                    value={d.close || '18:00'}
+                    onChange={(e) => onDay(key, { close: e.target.value, closed: false })}
+                  />
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   async function createWarehouse() {
@@ -328,7 +463,11 @@ export default function Page() {
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code" />
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
-            <button onClick={createStore}>Create store</button>
+            <label className="muted">Operating hours</label>
+            <HoursEditor value={hours} onDay={(day, patch) => setDayHours('create', day, patch)} />
+            <button onClick={createStore} disabled={!code.trim() || !name.trim()}>
+              Create store
+            </button>
           </div>
         </div>
         <div className="card">
@@ -492,12 +631,14 @@ export default function Page() {
       </div>
 
       <h3 style={{ marginTop: 16 }}>Stores</h3>
+      <p className="muted">Operating hours (BR-2.3).</p>
       <table className="table">
         <thead>
           <tr>
             <th>Code</th>
             <th>Name</th>
             <th>Address</th>
+            <th>Hours</th>
             <th></th>
           </tr>
         </thead>
@@ -507,13 +648,32 @@ export default function Page() {
               <td>{s.code}</td>
               <td>{s.name}</td>
               <td>{s.address || '—'}</td>
-              <td>
+              <td style={{ maxWidth: 280, fontSize: 13 }}>{summarizeHours(s.operating_hours)}</td>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => startEditStoreHours(s)}>
+                  Hours
+                </button>
                 <button onClick={() => loadInventory(s.id)}>Inventory / reorder</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {editStoreId && (
+        <div className="card" style={{ marginTop: 16, marginBottom: 16 }}>
+          <h3>Edit hours · {storeName(editStoreId)}</h3>
+          <HoursEditor value={editHours} onDay={(day, patch) => setDayHours('edit', day, patch)} />
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button type="button" onClick={saveStoreHours}>
+              Save hours
+            </button>
+            <button type="button" onClick={() => setEditStoreId('')}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {viewStore && (
         <div className="card" style={{ marginTop: 16 }}>

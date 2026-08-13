@@ -548,6 +548,19 @@ class StoreCreate(BaseModel):
     phone: str | None = None
     manager_id: str | None = None
     branch_id: str | None = None
+    operating_hours: dict | None = None
+
+
+class StoreUpdate(BaseModel):
+    name: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    manager_id: str | None = None
+    clear_manager: bool = False
+    branch_id: str | None = None
+    clear_branch: bool = False
+    is_active: bool | None = None
+    operating_hours: dict | None = None
 
 
 class StoreDrawerSettingsUpdate(BaseModel):
