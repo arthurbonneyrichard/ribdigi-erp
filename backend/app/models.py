@@ -1,8 +1,9 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -41,6 +42,8 @@ class Tenant(Base):
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     timezone: Mapped[str] = mapped_column(String(64), default="Africa/Accra")
     fiscal_year_start: Mapped[str] = mapped_column(String(5), default="01-01")
+    # Inclusive calendar date through which books are closed (BR-10.2 period close)
+    books_closed_through: Mapped[date | None] = mapped_column(Date, nullable=True)
     expense_approval_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=100)
     expense_l2_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=1000)
     # Optional N-level approval matrix: {"levels": [{step, min_amount, roles, label}, ...]}

@@ -614,6 +614,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Journal number auto-generation
   - [x] Attach supporting documents
   - [x] Post/unpost capability (unpost only within same fiscal period)
+  - [x] **Period close / books lock:** `tenants.books_closed_through`; `GET|POST /accounting/period` close/reopen; blocks post & unpost on/before closed date (Accounting UI)
 
 #### BR-10.3 Cash & Bank Accounts
 - **Description:** Track liquid assets.

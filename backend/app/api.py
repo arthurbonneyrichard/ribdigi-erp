@@ -85,6 +85,8 @@ from app.schemas import (
     ExpenseUpdate,
     GrnCreate,
     JournalCreate,
+    PeriodCloseBody,
+    PeriodReopenBody,
     CreditLimitOverrideBody,
     Login,
     NotificationPreferencesUpdate,
@@ -7094,10 +7096,59 @@ async def create_journal(
         user_id=claims["sub"],
         description=payload.description,
         reference=payload.reference,
+        entry_date=payload.entry_date,
         lines=[ln.model_dump() for ln in payload.lines],
     )
     await db.commit()
     return env(await accounting_svc.serialize_journal(db, entry), "Journal entry posted")
+
+
+@api.get("/accounting/period")
+async def accounting_period_status(
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import accounting as accounting_svc
+
+    return env(await accounting_svc.period_status(db, claims["tenant_id"]))
+
+
+@api.post("/accounting/period/close")
+async def accounting_period_close(
+    payload: PeriodCloseBody,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-10.2 — close books through an inclusive calendar date."""
+    from app import accounting as accounting_svc
+
+    status = await accounting_svc.close_books(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        through_date=payload.through_date,
+    )
+    await db.commit()
+    return env(status, "Books closed")
+
+
+@api.post("/accounting/period/reopen")
+async def accounting_period_reopen(
+    payload: PeriodReopenBody,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-10.2 — reopen books (earlier through_date or clear)."""
+    from app import accounting as accounting_svc
+
+    status = await accounting_svc.reopen_books(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        through_date=payload.through_date,
+    )
+    await db.commit()
+    return env(status, "Books reopened")
 
 
 @api.post("/accounting/journal-entries/{entry_id}/unpost")

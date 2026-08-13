@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -929,7 +929,20 @@ class JournalLineCreate(BaseModel):
 class JournalCreate(BaseModel):
     description: str
     reference: str | None = None
+    entry_date: date | None = None
     lines: list[JournalLineCreate] = Field(min_length=2)
+
+
+class PeriodCloseBody(BaseModel):
+    """Close books through an inclusive calendar date (BR-10.2)."""
+
+    through_date: date
+
+
+class PeriodReopenBody(BaseModel):
+    """Reopen: set an earlier closed-through date, or null to clear."""
+
+    through_date: date | None = None
 
 
 class PosSessionOpen(BaseModel):

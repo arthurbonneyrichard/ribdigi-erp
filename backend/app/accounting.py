@@ -239,9 +239,69 @@ def in_current_fiscal_period(
     return start <= ed < end
 
 
+def as_calendar_date(value: datetime | date | None) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    return value
+
+
+def is_date_closed(entry_date: datetime | date, books_closed_through: date | datetime | None) -> bool:
+    """True when entry_date falls on or before the inclusive books-closed date."""
+    closed = as_calendar_date(books_closed_through)
+    if closed is None:
+        return False
+    ed = as_calendar_date(entry_date)
+    assert ed is not None
+    return ed <= closed
+
+
+async def get_tenant_or_404(db: AsyncSession, tenant_id: str) -> m.Tenant:
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
+    ).scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return tenant
+
+
+async def assert_books_open(
+    db: AsyncSession,
+    tenant_id: str,
+    entry_date: datetime | date,
+    *,
+    action: str = "post",
+    tenant: m.Tenant | None = None,
+) -> None:
+    """Reject mutations dated on or before tenants.books_closed_through (BR-10.2)."""
+    row = tenant or await get_tenant_or_404(db, tenant_id)
+    if is_date_closed(entry_date, row.books_closed_through):
+        closed = as_calendar_date(row.books_closed_through)
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Books are closed through {closed.isoformat()}; "
+                f"cannot {action} journal entries on or before that date"
+            ),
+        )
+
+
 def is_manual_journal(entry: m.JournalEntry) -> bool:
     st = (entry.source_type or "").strip().lower()
     return st in {"", "manual"}
+
+
+def journal_can_unpost(entry: m.JournalEntry, tenant: m.Tenant | None) -> bool:
+    if entry.status != "posted" or not is_manual_journal(entry):
+        return False
+    if tenant is None:
+        return True
+    if not in_current_fiscal_period(entry.entry_date, tenant.fiscal_year_start):
+        return False
+    if is_date_closed(entry.entry_date, tenant.books_closed_through):
+        return False
+    return True
 
 
 async def get_journal_entry(
@@ -277,16 +337,15 @@ async def unpost_journal_entry(
             detail="Only manual journal entries can be unposted; reverse the source document instead",
         )
 
-    tenant = (
-        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
-    ).scalar_one_or_none()
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+    tenant = await get_tenant_or_404(db, tenant_id)
     if not in_current_fiscal_period(entry.entry_date, tenant.fiscal_year_start):
         raise HTTPException(
             status_code=400,
             detail="Unpost is only allowed within the current fiscal period",
         )
+    await assert_books_open(
+        db, tenant_id, entry.entry_date, action="unpost", tenant=tenant
+    )
 
     lines = (
         await db.execute(
@@ -339,9 +398,13 @@ async def post_journal_entry(
     reference: str | None = None,
     source_type: str | None = None,
     source_id: str | None = None,
+    entry_date: datetime | date | None = None,
 ) -> m.JournalEntry:
     if len(lines) < 2:
         raise HTTPException(status_code=400, detail="Journal entry requires at least two lines")
+
+    when = entry_date or datetime.utcnow()
+    await assert_books_open(db, tenant_id, when, action="post")
 
     normalized = []
     for line in lines:
@@ -363,9 +426,15 @@ async def post_journal_entry(
     total_debit = sum(x["debit"] for x in normalized)
     total_credit = sum(x["credit"] for x in normalized)
 
+    if isinstance(when, date) and not isinstance(when, datetime):
+        when_dt = datetime.combine(when, time.min)
+    else:
+        when_dt = when  # type: ignore[assignment]
+
     entry = m.JournalEntry(
         tenant_id=tenant_id,
         entry_number=f"JE-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        entry_date=when_dt,
         reference=reference,
         description=description,
         source_type=source_type,
@@ -435,6 +504,9 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
             )
         )
     ).scalars().all()
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == entry.tenant_id))
+    ).scalar_one_or_none()
     return {
         "id": entry.id,
         "entry_number": entry.entry_number,
@@ -448,7 +520,7 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
         "status": entry.status,
         "attachment_url": entry.attachment_url,
         "has_attachment": bool(entry.attachment_url),
-        "can_unpost": entry.status == "posted" and is_manual_journal(entry),
+        "can_unpost": journal_can_unpost(entry, tenant),
         "created_at": entry.created_at,
         "balanced": abs(float(entry.total_debit) - float(entry.total_credit)) < 0.01,
         "lines": [
@@ -462,6 +534,105 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
             for ln in lines
         ],
     }
+
+
+async def period_status(db: AsyncSession, tenant_id: str) -> dict:
+    """Fiscal year bounds + books-closed-through for Accounting UI (BR-10.2)."""
+    tenant = await get_tenant_or_404(db, tenant_id)
+    start, end = fiscal_period_bounds(tenant.fiscal_year_start)
+    closed = as_calendar_date(tenant.books_closed_through)
+    return {
+        "fiscal_year_start": tenant.fiscal_year_start or "01-01",
+        "current_fiscal_start": start.date().isoformat(),
+        "current_fiscal_end_exclusive": end.date().isoformat(),
+        "books_closed_through": closed.isoformat() if closed else None,
+        "books_are_closed": closed is not None,
+    }
+
+
+async def close_books(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    through_date: date,
+) -> dict:
+    """Advance tenants.books_closed_through (inclusive). Cannot close future dates."""
+    tenant = await get_tenant_or_404(db, tenant_id)
+    today = datetime.utcnow().date()
+    if through_date > today:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot close books through a future date",
+        )
+    current = as_calendar_date(tenant.books_closed_through)
+    if current is not None and through_date < current:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Books are already closed through {current.isoformat()}; "
+                "use reopen to move the closed date earlier"
+            ),
+        )
+    tenant.books_closed_through = through_date
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="period_closed",
+            entity="tenant",
+            entity_id=tenant_id,
+            details={
+                "books_closed_through": through_date.isoformat(),
+                "previous": current.isoformat() if current else None,
+            },
+        )
+    )
+    return await period_status(db, tenant_id)
+
+
+async def reopen_books(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    through_date: date | None,
+) -> dict:
+    """Move books_closed_through earlier, or clear when through_date is null."""
+    tenant = await get_tenant_or_404(db, tenant_id)
+    current = as_calendar_date(tenant.books_closed_through)
+    if current is None:
+        raise HTTPException(status_code=400, detail="Books are not closed")
+    if through_date is not None:
+        if through_date >= current:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Reopen through_date must be before current closed date "
+                    f"({current.isoformat()}), or omit to clear"
+                ),
+            )
+        if through_date > datetime.utcnow().date():
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot set books_closed_through to a future date",
+            )
+    previous = current.isoformat()
+    tenant.books_closed_through = through_date
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="period_reopened",
+            entity="tenant",
+            entity_id=tenant_id,
+            details={
+                "books_closed_through": through_date.isoformat() if through_date else None,
+                "previous": previous,
+            },
+        )
+    )
+    return await period_status(db, tenant_id)
 
 
 async def unit_cost_for_line(
