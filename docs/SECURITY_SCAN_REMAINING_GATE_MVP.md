@@ -3,7 +3,7 @@
 **Status:** Complete (MVP packaging) — Stage 210 I1  
 **Evidence:** `backend/tests/test_stage210_index_i1.py`  
 **Register:** `ops/mvp/security-scan-remaining-gate.json`  
-**Related:** [SECURITY_SCAN_BLOCKERS_MVP.md](SECURITY_SCAN_BLOCKERS_MVP.md) · [SECURITY_SCAN_PACK_POINTERS_MVP.md](SECURITY_SCAN_PACK_POINTERS_MVP.md) · [SECURITY_SCAN_MVP.md](SECURITY_SCAN_MVP.md) · [PENTEST_REMAINING_GATE_MVP.md](PENTEST_REMAINING_GATE_MVP.md) · [STAGE_210_PLAN.md](STAGE_210_PLAN.md)
+**Related:** [SECURITY_SCAN_BLOCKERS_MVP.md](SECURITY_SCAN_BLOCKERS_MVP.md) · [SECURITY_SCAN_PACK_POINTERS_MVP.md](SECURITY_SCAN_PACK_POINTERS_MVP.md) · [SECURITY_SCAN_MVP.md](SECURITY_SCAN_MVP.md) · [PENTEST_REMAINING_GATE_MVP.md](PENTEST_REMAINING_GATE_MVP.md) · [STAGE_210_PLAN.md](STAGE_210_PLAN.md) · [INCIDENT_REMAINING_GATE_MVP.md](INCIDENT_REMAINING_GATE_MVP.md) (Stage 211)
 
 Single index of security-scan remaining gates. Packaging only — **live security-scan Complete remains MISSING.** Distinct from Stage 27 S1 OWASP/security-scan packaging and Stage 209 pentest remaining-gate.
 

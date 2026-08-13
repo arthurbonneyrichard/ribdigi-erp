@@ -1,0 +1,54 @@
+{
+  "id": "incident-remaining-gate",
+  "stage": 211,
+  "pack": "I1",
+  "doc": "docs/INCIDENT_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/INCIDENT_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/INCIDENT_PACK_POINTERS_MVP.md",
+    "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+    "security_scan_remaining_gate": "docs/SECURITY_SCAN_REMAINING_GATE_MVP.md",
+    "incident_checklist": "ops/incident/incident-checklist.json"
+  },
+  "packaging_complete": true,
+  "live_incident_response_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "pagerduty_hosted_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage30_i1_incident_pack": true,
+  "distinct_from_stage210_security_scan_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ir-read-blockers",
+      "title": "Read B1 incident blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ir-follow-pointers",
+      "title": "Follow P1 Stage 30 / Stage 210 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ir-incident-missing",
+      "title": "Reaffirm live incident-response MISSING until live on-call / drill evidence ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ir-no-packaging-as-incident",
+      "title": "Do not treat Stage 30 I1 as live incident-response Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ir-incident-remaining",
+      "title": "Live incident-response / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 211 I1 incident remaining-gate index packaging only. Do not claim live incident-response Complete."
+}

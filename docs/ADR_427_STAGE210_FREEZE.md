@@ -24,6 +24,4 @@ Stage 210 Tenant MVP Security Scan Remaining-Gate Index Fidelity delivered secur
 
 ## Next stage
 
-Stage 211 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 210 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Incident Pack Remaining-Gate Index Fidelity — single index of incident-pack blockers (packaged incident/runbook materials non-claim as live incident-response Complete) with explicit non-claim (no live incident-response Complete). Distinct from Stage 210 security scan remaining-gate.
+Stage **211** opened under **ADR-428** / frozen under **ADR-429** — Tenant MVP Incident Pack remaining-gate index fidelity (packaged Stage 30 I1 incident/runbook materials non-claim as live incident-response Complete) with explicit non-claim of live incident-response Complete. Stage 210 feature scope remains frozen. Do not reopen Stages **1–210** scopes.

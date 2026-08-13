@@ -257,3 +257,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Security Scan Remaining-Gate Index Fidelity** — security scan remaining-gate hub (I1), blocker matrix (B1), Stage 27 / Stage 209 pointers with explicit non-claim (P1). Live security-scan Completes remain deferred (Stage 211+). Distinct from Stage 209 pentest remaining-gate and Stage 27 S1 packaging.
 
+## Stage 211 decision (opened after Stage 210 freeze)
+
+**Tenant MVP Incident Pack Remaining-Gate Index Fidelity** — incident remaining-gate hub (I1), blocker matrix (B1), Stage 30 / Stage 210 pointers with explicit non-claim (P1). Live incident-response Completes remain deferred (Stage 212+). Distinct from Stage 210 security scan remaining-gate and Stage 30 I1 packaging.
+

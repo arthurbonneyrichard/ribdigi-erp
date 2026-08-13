@@ -47,3 +47,5 @@ Tenant/offline/sync severity examples: [INCIDENT_SEVERITY_MATRIX_MVP.md](INCIDEN
 ## Sign-off
 
 Stage 30 I1 is met when this doc + checklist + runbook example + evidence JSON exist, `test_incident_pack_i1.py` passes, and SECURITY_GUIDE / DEPLOYMENT_GUIDE / launch / roadmap cite Stage 30 I1 without inventing hosted paging success.
+
+See also Stage 211 Tenant MVP Incident Pack remaining-gate index fidelity (`docs/INCIDENT_REMAINING_GATE_MVP.md`, ADR-428 / ADR-429) — packaging non-claim as live incident-response Complete.

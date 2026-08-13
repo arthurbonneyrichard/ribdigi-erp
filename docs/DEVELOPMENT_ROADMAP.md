@@ -3144,6 +3144,18 @@ Every feature in every phase must meet:
 
 **Stage 210 exit (2026-08-13):** I1, B1, P1, D1, H210x met — `docs/STAGE_210_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_427_STAGE210_FREEZE.md`. Fidelity: `docs/STAGE_210_FIDELITY.md`.
 
+**Stage 211 open (2026-08-13):** Tenant MVP Incident Pack Remaining-Gate Index Fidelity — `docs/ADR_428_STAGE211_OPEN.md` + `docs/STAGE_211_PLAN.md` (I1 next).
+
+**Stage 211 I1 (2026-08-13):** Incident pack remaining-gate index hub (`test_stage211_index_i1.py`).
+
+**Stage 211 B1 (2026-08-13):** Incident pack blocker matrix (`test_stage211_blockers_b1.py`).
+
+**Stage 211 P1 (2026-08-13):** Stage 30 / Stage 210 pointers (`test_stage211_pointers_p1.py`).
+
+**Stage 211 D1 (2026-08-13):** Incident Pack Remaining-Gate Index fidelity sync — `docs/STAGE_211_FIDELITY.md` (`test_stage211_fidelity_d1.py`).
+
+**Stage 211 exit (2026-08-13):** I1, B1, P1, D1, H211x met — `docs/STAGE_211_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_429_STAGE211_FREEZE.md`. Fidelity: `docs/STAGE_211_FIDELITY.md`.
+
 
 
 

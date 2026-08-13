@@ -1,0 +1,62 @@
+{
+  "id": "incident-pack-pointers",
+  "stage": 211,
+  "pack": "P1",
+  "doc": "docs/INCIDENT_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/INCIDENT_REMAINING_GATE_MVP.md",
+    "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+    "incident_checklist": "ops/incident/incident-checklist.json",
+    "oncall_runbook": "ops/incident/oncall-runbook.md.example",
+    "severity_matrix": "docs/INCIDENT_SEVERITY_MATRIX_MVP.md",
+    "security_scan_remaining_gate": "docs/SECURITY_SCAN_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_incident_response_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "pagerduty_hosted_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "incident_pack_stage30",
+    "incident_checklist",
+    "oncall_runbook_example",
+    "severity_matrix",
+    "security_scan_remaining_gate_stage210",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ip-incident-pack",
+      "title": "Point to Stage 30 I1 incident pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ip-checklist",
+      "title": "Point to incident checklist",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ip-runbook",
+      "title": "Point to on-call runbook example",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ip-scan-gate",
+      "title": "Point to Stage 210 security scan remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ip-incident-remaining",
+      "title": "Live incident-response Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 211 P1 incident pack pointers packaging only. Do not claim live incident-response Complete."
+}
