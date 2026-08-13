@@ -22,6 +22,7 @@ CHECKLIST = ROOT / "ops" / "celery" / "celery-reliability-checklist.json"
 EXPECTED_HANDLERS = {
     "scan_low_stock",
     "scan_payment_due",
+    "scan_quotation_expiry",
     "generate_recurring_expenses",
     "run_due_backups",
     "scan_trial_lifecycle",

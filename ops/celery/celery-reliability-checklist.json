@@ -23,7 +23,7 @@
     },
     {
       "id": "4",
-      "title": "GET /api/v1/jobs lists all 10 handlers and full beat map",
+      "title": "GET /api/v1/jobs lists all registered handlers and full beat map",
       "class": "operator_required"
     },
     {

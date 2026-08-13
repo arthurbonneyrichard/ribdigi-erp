@@ -37,6 +37,12 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_PAYMENT_DUE_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "scan-quotation-expiry": {
+            "task": "app.tasks.scan_quotation_expiry",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
         "generate-recurring-expenses": {
             "task": "app.tasks.generate_recurring_expenses",
             "schedule": schedule(

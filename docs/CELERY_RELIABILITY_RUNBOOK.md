@@ -22,6 +22,7 @@ Compose services: `redis`, `rabbitmq`, `celery_worker`, `celery_beat` in root `d
 |--------------------|------------------|
 | `scan_low_stock` / `scan-low-stock` | `CELERY_LOW_STOCK_INTERVAL_MINUTES` |
 | `scan_payment_due` / `scan-payment-due` | `CELERY_PAYMENT_DUE_INTERVAL_MINUTES` |
+| `scan_quotation_expiry` / `scan-quotation-expiry` | `CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES` |
 | `generate_recurring_expenses` / `generate-recurring-expenses` | `CELERY_RECURRING_INTERVAL_MINUTES` |
 | `run_due_backups` / `run-due-backups` | `CELERY_BACKUP_INTERVAL_MINUTES` |
 | `scan_trial_lifecycle` / `scan-trial-lifecycle` | `CELERY_TRIAL_INTERVAL_MINUTES` |

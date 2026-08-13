@@ -6,6 +6,7 @@ from app.config import settings
 EXPECTED_HANDLERS = {
     "scan_low_stock",
     "scan_payment_due",
+    "scan_quotation_expiry",
     "generate_recurring_expenses",
     "run_due_backups",
     "scan_trial_lifecycle",
@@ -20,6 +21,7 @@ EXPECTED_HANDLERS = {
 EXPECTED_BEAT = {
     "scan-low-stock",
     "scan-payment-due",
+    "scan-quotation-expiry",
     "generate-recurring-expenses",
     "run-due-backups",
     "scan-trial-lifecycle",

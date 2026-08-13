@@ -17,6 +17,7 @@ DEFAULT_PREFERENCES = {
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
     "payment_due": {"dashboard": True, "email": True, "sms": False},
+    "quotation_expiry": {"dashboard": True, "email": False, "sms": False},
     "new_order": {"dashboard": True, "email": False, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
@@ -442,4 +443,57 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
         )
         created += 1
 
+    return created
+
+
+async def scan_quotation_expiry(db: AsyncSession, tenant_id: str, within_days: int = 1) -> int:
+    """Notify for draft/sent quotations expiring within ``within_days`` (BR-7.2).
+
+    Default is 1 day before ``valid_until`` (also covers already-past validity while
+    still open). Dedupes unread notifications per quotation.
+    """
+    now = datetime.utcnow()
+    horizon = now + timedelta(days=max(0, int(within_days)))
+    quotes = (
+        await db.execute(
+            select(m.SalesQuotation).where(
+                m.SalesQuotation.tenant_id == tenant_id,
+                m.SalesQuotation.status.in_(["draft", "sent"]),
+                m.SalesQuotation.valid_until.is_not(None),
+                m.SalesQuotation.valid_until <= horizon,
+            )
+        )
+    ).scalars().all()
+    created = 0
+    for quote in quotes:
+        existing = (
+            await db.execute(
+                select(m.Notification).where(
+                    m.Notification.tenant_id == tenant_id,
+                    m.Notification.category == "quotation_expiry",
+                    m.Notification.entity_id == quote.id,
+                    m.Notification.status == "unread",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            continue
+        until = quote.valid_until
+        until_label = until.date().isoformat() if until else "unknown"
+        past = bool(until and until < now)
+        title = "Quotation expired" if past else "Quotation expiring soon"
+        message = (
+            f"Quotation {quote.quotation_number} "
+            + (f"expired on {until_label}." if past else f"expires on {until_label}.")
+        )
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="quotation_expiry",
+            title=title,
+            message=message,
+            entity_type="sales_quotation",
+            entity_id=quote.id,
+        )
+        created += 1
     return created
