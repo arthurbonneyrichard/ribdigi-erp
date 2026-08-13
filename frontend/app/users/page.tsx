@@ -11,6 +11,14 @@ type RoleRow = {
   base_role?: string | null;
   record_scope?: string;
 };
+type BranchRow = { id: string; code: string; name: string; is_active?: boolean };
+type DepartmentRow = {
+  id: string;
+  code: string;
+  name: string;
+  branch_id?: string | null;
+  is_active?: boolean;
+};
 type UserRow = {
   id: string;
   full_name: string;
@@ -18,6 +26,9 @@ type UserRow = {
   role: string;
   is_active: boolean;
   phone?: string | null;
+  branch_id?: string | null;
+  department_id?: string | null;
+  record_scope?: string | null;
 };
 
 const emptyForm = {
@@ -26,7 +37,18 @@ const emptyForm = {
   password: '',
   role: 'cashier',
   phone: '',
+  branch_id: '',
+  department_id: '',
+  record_scope: '',
 };
+
+const RECORD_SCOPES = [
+  { value: '', label: 'Default for role' },
+  { value: 'own', label: 'Own records' },
+  { value: 'department', label: 'Department' },
+  { value: 'branch', label: 'Branch' },
+  { value: 'all', label: 'All records' },
+];
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -51,6 +73,8 @@ type ImportReport = {
 export default function Page() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [roles, setRoles] = useState<RoleRow[]>([]);
+  const [branches, setBranches] = useState<BranchRow[]>([]);
+  const [departments, setDepartments] = useState<DepartmentRow[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [roleForm, setRoleForm] = useState({
     key: '',
@@ -66,13 +90,17 @@ export default function Page() {
   const [importBusy, setImportBusy] = useState(false);
 
   async function refresh() {
-    const [usersRes, rolesRes, meRes] = await Promise.all([
+    const [usersRes, rolesRes, meRes, branchesRes, deptsRes] = await Promise.all([
       api('/users'),
       api('/roles'),
       api('/me'),
+      api('/branches').catch(() => ({ data: [] })),
+      api('/departments').catch(() => ({ data: [] })),
     ]);
     setRows(usersRes.data || []);
     setRoles(rolesRes.data || []);
+    setBranches(branchesRes.data || []);
+    setDepartments(deptsRes.data || []);
     const perms = meRes.data?.permissions || {};
     const role = meRes.data?.role || '';
     setCanWrite(
@@ -88,6 +116,25 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
+  const branchLabel = (id?: string | null) => {
+    if (!id) return '—';
+    const b = branches.find((x) => x.id === id);
+    return b ? `${b.code} — ${b.name}` : id.slice(0, 8);
+  };
+
+  const deptLabel = (id?: string | null) => {
+    if (!id) return '—';
+    const d = departments.find((x) => x.id === id);
+    return d ? `${d.code} — ${d.name}` : id.slice(0, 8);
+  };
+
+  const activeBranches = branches.filter((b) => b.is_active !== false);
+  const activeDepartments = (branchId?: string) =>
+    departments.filter(
+      (d) =>
+        d.is_active !== false && (!branchId || !d.branch_id || d.branch_id === branchId),
+    );
+
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -102,6 +149,9 @@ export default function Page() {
           password: form.password,
           role: form.role,
           phone: form.phone || null,
+          branch_id: form.branch_id || null,
+          department_id: form.department_id || null,
+          record_scope: form.record_scope || null,
         }),
       });
       setForm(emptyForm);
@@ -150,19 +200,49 @@ export default function Page() {
     }
   }
 
-  async function setRole(userId: string, role: string) {
+  async function patchUser(userId: string, body: Record<string, unknown>, okMsg: string) {
     setError('');
     setMessage('');
     try {
       await api(`/users/${userId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ role }),
+        body: JSON.stringify(body),
       });
-      setMessage('Role updated');
+      setMessage(okMsg);
       await refresh();
     } catch (err: any) {
       setError(err.message);
     }
+  }
+
+  async function setRole(userId: string, role: string) {
+    await patchUser(userId, { role }, 'Role updated');
+  }
+
+  async function setBranch(userId: string, branchId: string) {
+    await patchUser(
+      userId,
+      branchId
+        ? { branch_id: branchId }
+        : { clear_branch: true, clear_department: true },
+      'Branch assignment updated',
+    );
+  }
+
+  async function setDepartment(userId: string, departmentId: string) {
+    await patchUser(
+      userId,
+      departmentId ? { department_id: departmentId } : { clear_department: true },
+      'Department assignment updated',
+    );
+  }
+
+  async function setRecordScope(userId: string, scope: string) {
+    await patchUser(
+      userId,
+      { record_scope: scope || 'own' },
+      'Record scope updated',
+    );
   }
 
   async function setActive(userId: string, is_active: boolean) {
@@ -270,7 +350,8 @@ export default function Page() {
     <Shell>
       <h1>User Management</h1>
       <p className="muted">
-        Create users, assign system or custom roles, and activate or deactivate accounts.
+        Create users, assign roles, branch/department, and record scope; activate or deactivate
+        accounts (BR-3.1).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -402,14 +483,13 @@ export default function Page() {
       )}
 
       {canWrite && (
-        <form onSubmit={createUser} style={{ margin: '20px 0' }}>
-          <h2 style={{ fontSize: 18 }}>Create user</h2>
+        <form onSubmit={createUser} className="card" style={{ margin: '20px 0', display: 'grid', gap: 8 }}>
+          <h2 style={{ fontSize: 18, margin: 0 }}>Create user</h2>
           <input
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
             placeholder="Full name"
             required
-            style={{ width: '100%', padding: 10, marginBottom: 8 }}
           />
           <input
             type="email"
@@ -417,7 +497,6 @@ export default function Page() {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="Email"
             required
-            style={{ width: '100%', padding: 10, marginBottom: 8 }}
           />
           <input
             type="password"
@@ -425,18 +504,15 @@ export default function Page() {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="Temporary password"
             required
-            style={{ width: '100%', padding: 10, marginBottom: 8 }}
           />
           <input
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
             placeholder="Phone (optional)"
-            style={{ width: '100%', padding: 10, marginBottom: 8 }}
           />
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
-            style={{ width: '100%', padding: 10, marginBottom: 8 }}
           >
             {roles
               .filter((r) => r.role !== 'super_admin')
@@ -447,7 +523,41 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <button type="submit" disabled={busy} style={{ padding: '10px 16px' }}>
+          <select
+            value={form.branch_id}
+            onChange={(e) =>
+              setForm({ ...form, branch_id: e.target.value, department_id: '' })
+            }
+          >
+            <option value="">Branch (optional)</option>
+            {activeBranches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.code} — {b.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={form.department_id}
+            onChange={(e) => setForm({ ...form, department_id: e.target.value })}
+          >
+            <option value="">Department (optional)</option>
+            {activeDepartments(form.branch_id).map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.code} — {d.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={form.record_scope}
+            onChange={(e) => setForm({ ...form, record_scope: e.target.value })}
+          >
+            {RECORD_SCOPES.map((s) => (
+              <option key={s.value || 'default'} value={s.value}>
+                Record scope: {s.label}
+              </option>
+            ))}
+          </select>
+          <button type="submit" disabled={busy}>
             {busy ? 'Creating…' : 'Create user'}
           </button>
         </form>
@@ -459,6 +569,9 @@ export default function Page() {
             <th>Full Name</th>
             <th>Email</th>
             <th>Role</th>
+            <th>Branch</th>
+            <th>Department</th>
+            <th>Scope</th>
             <th>Active</th>
             {canWrite && <th>Actions</th>}
           </tr>
@@ -480,6 +593,56 @@ export default function Page() {
                   </select>
                 ) : (
                   r.role
+                )}
+              </td>
+              <td>
+                {canWrite ? (
+                  <select
+                    value={r.branch_id || ''}
+                    onChange={(e) => setBranch(r.id, e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {activeBranches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.code}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  branchLabel(r.branch_id)
+                )}
+              </td>
+              <td>
+                {canWrite ? (
+                  <select
+                    value={r.department_id || ''}
+                    onChange={(e) => setDepartment(r.id, e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {activeDepartments(r.branch_id || undefined).map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.code}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  deptLabel(r.department_id)
+                )}
+              </td>
+              <td>
+                {canWrite ? (
+                  <select
+                    value={r.record_scope || 'own'}
+                    onChange={(e) => setRecordScope(r.id, e.target.value)}
+                  >
+                    {RECORD_SCOPES.filter((s) => s.value).map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  r.record_scope || '—'
                 )}
               </td>
               <td>{r.is_active ? 'Yes' : 'No'}</td>

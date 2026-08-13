@@ -374,18 +374,20 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 ```json
 {
   "email": "manager@acme.com",
-  "first_name": "John",
-  "last_name": "Doe",
+  "full_name": "John Doe",
   "role": "store_manager",
   "branch_id": "br_001",
-  "store_id": "st_001",
+  "department_id": "dept_001",
+  "record_scope": "branch",
   "phone": "+1-555-0199",
   "password": "TempPass123!"
 }
 ```
 
+`record_scope`: `own` | `department` | `branch` | `all` (optional; defaults from role). Response wraps `{ "user": {...}, ... }`.
+
 ### 4.2 List Users
-**Endpoint:** `GET /users?role=store_manager&status=active`
+**Endpoint:** `GET /users`
 
 ### 4.3 Get User
 **Endpoint:** `GET /users/{user_id}`
@@ -393,17 +395,10 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 ### 4.4 Update User
 **Endpoint:** `PATCH /users/{user_id}`
 
+Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `clear_branch`, `department_id`, `clear_department`, `record_scope`.
+
 ### 4.5 Delete / Deactivate User
-**Endpoint:** `DELETE /users/{user_id}`
-
-**Endpoint:** `PATCH /users/{user_id}/status`
-
-**Request:**
-```json
-{
-  "status": "inactive"
-}
-```
+**Endpoint:** `DELETE /users/{user_id}` (soft deactivate)
 
 ### 4.6 Roles & Permissions
 

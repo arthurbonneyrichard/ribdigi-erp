@@ -268,11 +268,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Full lifecycle management of user accounts.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Create user with name, email, phone, role, branch/store assignment
-  - [ ] Edit user details and assignments
-  - [ ] Soft delete (deactivate) user
+  - [x] Create user with name, email, phone, role, branch/store assignment (`branch_id` / `department_id` on `POST /users`; Users UI; store assignment via role/store session, not a user FK)
+  - [x] Edit user details and assignments (`PATCH /users/{id}` role, phone, branch/department, `record_scope`; Users UI)
+  - [x] Soft delete (deactivate) user (`DELETE /users/{id}` or `is_active=false`)
   - [ ] Hard delete with data archival option
-  - [ ] Activate/deactivate toggle
+  - [x] Activate/deactivate toggle (Users UI)
   - [x] Bulk user import via CSV
 
 #### BR-3.2 Role Management
@@ -288,10 +288,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Granular access control across three dimensions.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Module Permissions:** Grant/deny access to entire modules (Inventory, Sales, etc.)
-  - [ ] **Menu Permissions:** Control visibility of specific menu items and submenus
-  - [ ] **Record Permissions:** Control CRUD operations on individual records (own records, department records, all records)
-  - [ ] Permission inheritance from role with user-level override capability
+  - [x] **Module Permissions:** Grant/deny access to entire modules (Inventory, Sales, etc.) — role permission maps + route `require_permission`
+  - [x] **Menu Permissions:** Control visibility of specific menu items and submenus — Shell filters from `/me` permissions
+  - [x] **Record Permissions:** Control CRUD operations on individual records (own records, department records, all records) — `record_scope` own|department|branch|all; Users UI override
+  - [x] Permission inheritance from role with user-level override capability (`record_scope` + custom role permission maps)
 
 ---
 
