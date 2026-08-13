@@ -3336,6 +3336,18 @@ Every feature in every phase must meet:
 
 **Stage 226 exit (2026-08-13):** I1, B1, P1, D1, H226x met — `docs/STAGE_226_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_459_STAGE226_FREEZE.md`. Fidelity: `docs/STAGE_226_FIDELITY.md`.
 
+**Stage 227 open (2026-08-13):** Tenant MVP Cutover Pack Remaining-Gate Index Fidelity — `docs/ADR_460_STAGE227_OPEN.md` + `docs/STAGE_227_PLAN.md` (I1 next).
+
+**Stage 227 I1 (2026-08-13):** Cutover pack remaining-gate index hub (`test_stage227_index_i1.py`).
+
+**Stage 227 B1 (2026-08-13):** Cutover pack blocker matrix (`test_stage227_blockers_b1.py`).
+
+**Stage 227 P1 (2026-08-13):** Stage 29 / Stage 203 / Stage 226 pointers (`test_stage227_pointers_p1.py`).
+
+**Stage 227 D1 (2026-08-13):** Cutover Pack Remaining-Gate Index fidelity sync — `docs/STAGE_227_FIDELITY.md` (`test_stage227_fidelity_d1.py`).
+
+**Stage 227 exit (2026-08-13):** I1, B1, P1, D1, H227x met — `docs/STAGE_227_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_461_STAGE227_FREEZE.md`. Fidelity: `docs/STAGE_227_FIDELITY.md`.
+
 
 
 

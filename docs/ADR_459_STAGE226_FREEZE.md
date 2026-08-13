@@ -24,6 +24,6 @@ Stage 226 Tenant MVP PgBouncer Live Remaining-Gate Index Fidelity delivered PgBo
 
 ## Next stage
 
-Stage 227 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 226 feature scope remains frozen.
+Stage 227 opened under **ADR-460** after CONTINUE/NEXT (Cutover Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-461**. Stage 226 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Cutover Pack Remaining-Gate Index Fidelity — single index of cutover-pack blockers (packaged Stage 29 X1 cutover materials non-claim as live cutover Complete) with explicit non-claim (no live cutover Complete). Distinct from Stage 226 PgBouncer live remaining-gate and Stage 225 loadtest baseline remaining-gate.
+**Amendment (2026-08-13):** Stage 227 runner-up outline was approved and opened (ADR-460); freeze ADR-461. Do not reopen Stage 226 scope.

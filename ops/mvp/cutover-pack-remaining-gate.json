@@ -1,0 +1,55 @@
+{
+  "id": "cutover-pack-remaining-gate",
+  "stage": 227,
+  "pack": "I1",
+  "doc": "docs/CUTOVER_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/CUTOVER_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/CUTOVER_PACK_RG_POINTERS_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md",
+    "cutover_remaining_gate": "docs/CUTOVER_REMAINING_GATE_MVP.md",
+    "pgbouncer_live_remaining_gate": "docs/PGBOUNCER_LIVE_REMAINING_GATE_MVP.md",
+    "cutover_checklist": "ops/launch/cutover-checklist.json"
+  },
+  "packaging_complete": true,
+  "production_cutover_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "live_cutover_pack_claimed": false,
+  "distinct_from_stage29_x1_cutover_pack": true,
+  "distinct_from_stage203_cutover_remaining_gate": true,
+  "distinct_from_stage226_pgbouncer_live_remaining_gate": true,
+  "steps": [
+    {
+      "id": "cpr-read-blockers",
+      "title": "Read B1 cutover pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpr-follow-pointers",
+      "title": "Follow P1 Stage 29 / Stage 203 / Stage 226 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpr-cutover-missing",
+      "title": "Reaffirm live cutover MISSING until an executed production cutover ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpr-no-packaging-as-live",
+      "title": "Do not treat Stage 29 X1 as live cutover Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpr-cutover-remaining",
+      "title": "Live cutover / §7 / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 227 I1 cutover pack remaining-gate index packaging only. Do not claim live cutover Complete."
+}

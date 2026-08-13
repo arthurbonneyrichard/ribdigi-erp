@@ -321,3 +321,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP PgBouncer Live Remaining-Gate Index Fidelity** — PgBouncer live remaining-gate hub (I1), blocker matrix (B1), Stage 27/29 / Stage 208 / Stage 225 pointers with explicit non-claim (P1). Prefixed `PGBOUNCER_LIVE_*` (≠ Stage 208 `PGBOUNCER_SOAK_*`). Live PgBouncer Completes remain deferred (Stage 227+). Distinct from Stage 208 soak remaining-gate and Stage 225 loadtest baseline remaining-gate.
 
+## Stage 227 decision (opened after Stage 226 freeze)
+
+**Tenant MVP Cutover Pack Remaining-Gate Index Fidelity** — cutover pack remaining-gate hub (I1), blocker matrix (B1), Stage 29 / Stage 203 / Stage 226 pointers with explicit non-claim (P1). Prefixed `CUTOVER_PACK_*` (≠ Stage 203 `CUTOVER_*`). Live cutover Completes remain deferred (Stage 228+). Distinct from Stage 203 cutover remaining-gate and Stage 226 PgBouncer live remaining-gate.
+

@@ -788,6 +788,12 @@ Authoritative MVP docs:
 - `docs/PGBOUNCER_LIVE_REMAINING_GATE_MVP.md` / `ops/mvp/pgbouncer-live-remaining-gate.json` — Stage 226 I1
 - `docs/PGBOUNCER_LIVE_BLOCKERS_MVP.md` / `ops/mvp/pgbouncer-live-blockers.json` — Stage 226 B1
 - `docs/PGBOUNCER_LIVE_RG_POINTERS_MVP.md` / `ops/mvp/pgbouncer-live-rg-pointers.json` — Stage 226 P1
+- `docs/STAGE_227_EXIT_CRITERIA.md` / `docs/ADR_461_STAGE227_FREEZE.md` (`backend/tests/test_stage227_exit_h227x.py`) — Stage 227 H227x
+- `docs/STAGE_227_FIDELITY.md` (`backend/tests/test_stage227_fidelity_d1.py`) — Stage 227 D1
+- `docs/STAGE_227_PLAN.md` (`backend/tests/test_stage227_open.py`) — Stage 227 open (ADR-460)
+- `docs/CUTOVER_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/cutover-pack-remaining-gate.json` — Stage 227 I1
+- `docs/CUTOVER_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/cutover-pack-rg-blockers.json` — Stage 227 B1
+- `docs/CUTOVER_PACK_RG_POINTERS_MVP.md` / `ops/mvp/cutover-pack-rg-pointers.json` — Stage 227 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2931,6 +2937,18 @@ See `docs/STAGE_226_FIDELITY.md`.
 ## Stage 226 open
 
 ADR-458 / `docs/STAGE_226_PLAN.md`.
+
+## Stage 227 exit
+
+H227x met — `docs/STAGE_227_EXIT_CRITERIA.md`, ADR-461. Stages 1–227 frozen for Stage 227 feature scope.
+
+## Stage 227 D1 — Tenant MVP Cutover Pack Remaining-Gate Index Fidelity
+
+See `docs/STAGE_227_FIDELITY.md`.
+
+## Stage 227 open
+
+ADR-460 / `docs/STAGE_227_PLAN.md`.
 
 ## Stage 213 exit
 
