@@ -1,0 +1,60 @@
+{
+  "id": "pitr-drill-pack-rg-pointers",
+  "stage": 231,
+  "pack": "P1",
+  "doc": "docs/PITR_DRILL_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md",
+    "pitr_drill_pack": "docs/PITR_DRILL_PACK_MVP.md",
+    "pitr_drill_checklist": "ops/postgres/pitr-drill-checklist.json",
+    "wal_pitr_runbook": "docs/DR_WAL_PITR_RUNBOOK.md",
+    "live_dr_remaining_gate": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+    "launch_cert_pack_remaining_gate": "docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_pitr_drill_claimed": false,
+  "ci_pitr_replay_claimed": false,
+  "go_live_claimed": false,
+  "live_dr_claimed": false,
+  "topics": [
+    "pitr_drill_pack_stage28_r1",
+    "wal_pitr_runbook_stage26_w1",
+    "live_dr_remaining_gate_stage192",
+    "launch_cert_pack_remaining_gate_stage230",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "pdprp-pack",
+      "title": "Point to Stage 28 R1 PITR drill pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdprp-wal",
+      "title": "Point to Stage 26 W1 WAL/PITR runbook",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdprp-live-dr-gate",
+      "title": "Point to Stage 192 live DR remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdprp-lcpr-gate",
+      "title": "Point to Stage 230 launch cert pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdprp-drill-remaining",
+      "title": "Live PITR drill Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 231 P1 PITR drill pack RG pointers packaging only. Do not claim live PITR drill Complete."
+}

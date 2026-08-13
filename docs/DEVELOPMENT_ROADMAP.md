@@ -3384,6 +3384,18 @@ Every feature in every phase must meet:
 
 **Stage 230 exit (2026-08-13):** I1, B1, P1, D1, H230x met — `docs/STAGE_230_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_467_STAGE230_FREEZE.md`. Fidelity: `docs/STAGE_230_FIDELITY.md`.
 
+**Stage 231 open (2026-08-13):** Tenant MVP PITR Drill Pack Remaining-Gate Index Fidelity — `docs/ADR_468_STAGE231_OPEN.md` + `docs/STAGE_231_PLAN.md` (I1 next).
+
+**Stage 231 I1 (2026-08-13):** PITR drill pack remaining-gate index hub (`test_stage231_index_i1.py`).
+
+**Stage 231 B1 (2026-08-13):** PITR drill pack blocker matrix (`test_stage231_blockers_b1.py`).
+
+**Stage 231 P1 (2026-08-13):** Stage 28 / Stage 230 / Stage 192 pointers (`test_stage231_pointers_p1.py`).
+
+**Stage 231 D1 (2026-08-13):** PITR Drill Pack Remaining-Gate Index fidelity sync — `docs/STAGE_231_FIDELITY.md` (`test_stage231_fidelity_d1.py`).
+
+**Stage 231 exit (2026-08-13):** I1, B1, P1, D1, H231x met — `docs/STAGE_231_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_469_STAGE231_FREEZE.md`. Fidelity: `docs/STAGE_231_FIDELITY.md`.
+
 
 
 

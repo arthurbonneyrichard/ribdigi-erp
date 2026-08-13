@@ -812,6 +812,12 @@ Authoritative MVP docs:
 - `docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/launch-cert-pack-remaining-gate.json` — Stage 230 I1
 - `docs/LAUNCH_CERT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/launch-cert-pack-rg-blockers.json` — Stage 230 B1
 - `docs/LAUNCH_CERT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/launch-cert-pack-rg-pointers.json` — Stage 230 P1
+- `docs/STAGE_231_EXIT_CRITERIA.md` / `docs/ADR_469_STAGE231_FREEZE.md` (`backend/tests/test_stage231_exit_h231x.py`) — Stage 231 H231x
+- `docs/STAGE_231_FIDELITY.md` (`backend/tests/test_stage231_fidelity_d1.py`) — Stage 231 D1
+- `docs/STAGE_231_PLAN.md` (`backend/tests/test_stage231_open.py`) — Stage 231 open (ADR-468)
+- `docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/pitr-drill-pack-remaining-gate.json` — Stage 231 I1
+- `docs/PITR_DRILL_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/pitr-drill-pack-rg-blockers.json` — Stage 231 B1
+- `docs/PITR_DRILL_PACK_RG_POINTERS_MVP.md` / `ops/mvp/pitr-drill-pack-rg-pointers.json` — Stage 231 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -3003,6 +3009,18 @@ See `docs/STAGE_230_FIDELITY.md`.
 ## Stage 230 open
 
 ADR-466 / `docs/STAGE_230_PLAN.md`.
+
+## Stage 231 exit
+
+H231x met — `docs/STAGE_231_EXIT_CRITERIA.md`, ADR-469. Stages 1–231 frozen for Stage 231 feature scope.
+
+## Stage 231 D1 — Tenant MVP PITR Drill Pack Remaining-Gate Index Fidelity
+
+See `docs/STAGE_231_FIDELITY.md`.
+
+## Stage 231 open
+
+ADR-468 / `docs/STAGE_231_PLAN.md`.
 
 ## Stage 213 exit
 

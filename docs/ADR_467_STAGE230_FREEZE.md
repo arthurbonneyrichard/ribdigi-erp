@@ -24,6 +24,6 @@ Stage 230 Tenant MVP Launch Cert Pack Remaining-Gate Index Fidelity delivered la
 
 ## Next stage
 
-Stage 231 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 230 feature scope remains frozen.
+Stage 231 opened under **ADR-468** after CONTINUE/NEXT (PITR Drill Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-469**. Stage 230 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP PITR Drill Pack Remaining-Gate Index Fidelity — single index of PITR-drill-pack blockers (packaged Stage 28 R1 PITR drill materials non-claim as live PITR drill Complete) with explicit non-claim (no live PITR drill Complete). Prefixed `PITR_DRILL_PACK_*` if a prior PITR remaining-gate exists. Distinct from Stage 230 launch cert pack remaining-gate and Stage 229 staging GHA pack remaining-gate.
+**Amendment (2026-08-13):** Stage 231 runner-up outline was approved and opened (ADR-468); freeze ADR-469. Do not reopen Stage 230 scope.

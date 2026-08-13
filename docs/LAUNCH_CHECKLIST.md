@@ -1173,6 +1173,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 27 / Stage 204 / Stage 229 pointers (Stage 230 P1: `test_stage230_pointers_p1.py`, `docs/LAUNCH_CERT_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 230 fidelity sync (D1: `test_stage230_fidelity_d1.py`, `docs/STAGE_230_FIDELITY.md`)
 - [x] Stage 230 exit + freeze (H230x: `test_stage230_exit_h230x.py`, `docs/STAGE_230_EXIT_CRITERIA.md`, ADR-467)
+- [x] Stage 231 track opened (ADR-468: `test_stage231_open.py`, `docs/STAGE_231_PLAN.md`) — PITR Drill Pack Remaining-Gate Index; closed under ADR-469
+- [x] PITR drill pack remaining-gate hub (Stage 231 I1: `test_stage231_index_i1.py`, `docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md`)
+- [x] PITR drill pack blocker matrix (Stage 231 B1: `test_stage231_blockers_b1.py`, `docs/PITR_DRILL_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 28 / Stage 230 / Stage 192 pointers (Stage 231 P1: `test_stage231_pointers_p1.py`, `docs/PITR_DRILL_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 231 fidelity sync (D1: `test_stage231_fidelity_d1.py`, `docs/STAGE_231_FIDELITY.md`)
+- [x] Stage 231 exit + freeze (H231x: `test_stage231_exit_h231x.py`, `docs/STAGE_231_EXIT_CRITERIA.md`, ADR-469)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

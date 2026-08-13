@@ -337,3 +337,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Launch Cert Pack Remaining-Gate Index Fidelity** — launch cert pack remaining-gate hub (I1), blocker matrix (B1), Stage 27 / Stage 204 / Stage 229 pointers with explicit non-claim (P1). Prefixed `LAUNCH_CERT_PACK_*` (≠ Stage 204 `LAUNCH_CERT_*`). Production sign-off Completes remain deferred (Stage 231+). Distinct from Stage 204 launch cert remaining-gate and Stage 229 staging GHA pack remaining-gate.
 
+## Stage 231 decision (opened after Stage 230 freeze)
+
+**Tenant MVP PITR Drill Pack Remaining-Gate Index Fidelity** — PITR drill pack remaining-gate hub (I1), blocker matrix (B1), Stage 28 / Stage 230 / Stage 192 pointers with explicit non-claim (P1). Prefixed `PITR_DRILL_PACK_*` (orthogonal to Stage 192 `LIVE_DR_*`). Live PITR drill Completes remain deferred (Stage 232+). Distinct from Stage 192 live DR remaining-gate and Stage 230 launch cert pack remaining-gate.
+
