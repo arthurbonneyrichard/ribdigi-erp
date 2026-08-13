@@ -49,3 +49,5 @@ See also Stage 182 membership remaining-gate index (ADR-005): [`MEMBERSHIP_REMAI
 See also Stage 183 hard-delete remaining-gate index (ADR-003): [`HARD_DELETE_REMAINING_GATE_MVP.md`](HARD_DELETE_REMAINING_GATE_MVP.md).
 
 See also Stage 184 language/i18n remaining-gate index (ADR-006): [`I18N_REMAINING_GATE_MVP.md`](I18N_REMAINING_GATE_MVP.md).
+
+See also Stage 185 schema-per-tenant remaining-gate index (ADR-001): [`SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md`](SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md).

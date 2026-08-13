@@ -526,6 +526,12 @@ Authoritative MVP docs:
 - `docs/I18N_REMAINING_GATE_MVP.md` / `ops/mvp/i18n-remaining-gate.json` — Stage 184 I1
 - `docs/I18N_BLOCKERS_MVP.md` / `ops/mvp/i18n-blockers.json` — Stage 184 B1
 - `docs/I18N_PACK_POINTERS_MVP.md` / `ops/mvp/i18n-pack-pointers.json` — Stage 184 P1
+- `docs/STAGE_185_EXIT_CRITERIA.md` / `docs/ADR_377_STAGE185_FREEZE.md` (`backend/tests/test_stage185_exit_h185x.py`) — Stage 185 H185x
+- `docs/STAGE_185_FIDELITY.md` (`backend/tests/test_stage185_fidelity_d1.py`) — Stage 185 D1
+- `docs/STAGE_185_PLAN.md` (`backend/tests/test_stage185_open.py`) — Stage 185 open (ADR-376)
+- `docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md` / `ops/mvp/schema-per-tenant-remaining-gate.json` — Stage 185 I1
+- `docs/SCHEMA_PER_TENANT_BLOCKERS_MVP.md` / `ops/mvp/schema-per-tenant-blockers.json` — Stage 185 B1
+- `docs/SCHEMA_PER_TENANT_PACK_POINTERS_MVP.md` / `ops/mvp/schema-per-tenant-pack-pointers.json` — Stage 185 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2275,6 +2281,18 @@ H184x met — `docs/STAGE_184_EXIT_CRITERIA.md`, ADR-375. Stages 1–184 frozen 
 ## Stage 184 open
 
 ADR-374 + `docs/STAGE_184_PLAN.md` — Language/i18n Remaining-Gate Index Fidelity (closed under ADR-375).
+
+## Stage 185 exit
+
+H185x met — `docs/STAGE_185_EXIT_CRITERIA.md`, ADR-377. Stages 1–185 frozen for Stage 185 feature scope.
+
+## Stage 185 D1 — Tenant MVP Schema-Per-Tenant Remaining-Gate Index Fidelity
+
+`docs/STAGE_185_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Schema-per-tenant Complete remains MISSING.
+
+## Stage 185 open
+
+ADR-376 + `docs/STAGE_185_PLAN.md` — Schema-Per-Tenant Remaining-Gate Index Fidelity (closed under ADR-377).
 
 ## Stage 165 open
 

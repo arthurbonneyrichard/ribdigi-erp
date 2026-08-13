@@ -22,3 +22,5 @@ For MVP implementation, use **shared-schema multi-tenancy** with:
 - Faster delivery of auth, RBAC, inventory, and financial workflows
 - Isolation bugs are application-layer risks — mitigated by tests and review
 - Backup/restore is database-wide until schema-per-tenant lands
+
+See also Stage 185 schema-per-tenant remaining-gate index: [`SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md`](SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md) (schema-per-tenant remains deferred; not Complete).

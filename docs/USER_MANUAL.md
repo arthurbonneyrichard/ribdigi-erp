@@ -144,6 +144,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Language/i18n remaining-gate index (Stage 184):** Status index is `docs/I18N_REMAINING_GATE_MVP.md` → blockers `docs/I18N_BLOCKERS_MVP.md` → ADR-006/scaffold pointers `docs/I18N_PACK_POINTERS_MVP.md`. Multi-language / i18n packs Complete remains MISSING (not claimed).
 
+**Schema-per-tenant remaining-gate index (Stage 185):** Status index is `docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md` → blockers `docs/SCHEMA_PER_TENANT_BLOCKERS_MVP.md` → ADR-001/readiness pointers `docs/SCHEMA_PER_TENANT_PACK_POINTERS_MVP.md`. Schema-per-tenant Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

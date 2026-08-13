@@ -24,6 +24,4 @@ Stage 184 Tenant MVP Language/i18n Remaining-Gate Index Fidelity delivered i18n 
 
 ## Next stage
 
-Stage 185 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 184 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP schema-per-tenant remaining-gate index fidelity — single index of ADR-001 / schema-per-tenant blockers (`schema_per_tenant_claimed` false, shared-schema Completes non-claim as schema-per-tenant) with explicit non-claim (no schema-per-tenant Complete).
+Stage **185** opened under **ADR-376** / frozen under **ADR-377** — Tenant MVP schema-per-tenant remaining-gate index fidelity (ADR-001 / schema-per-tenant blockers; `schema_per_tenant_claimed` false; shared-schema Completes non-claim as schema-per-tenant) with explicit non-claim of schema-per-tenant Complete. Stage 184 feature scope remains frozen. Do not reopen Stages **1–184** scopes.
