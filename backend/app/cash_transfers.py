@@ -21,12 +21,17 @@ def _is_liquid(account: m.Account) -> bool:
 
 
 def serialize_account(account: m.Account) -> dict:
+    from app.accounting import DEFAULT_ACCOUNTS
+
+    system_codes = {c[0] for c in DEFAULT_ACCOUNTS}
     return {
         "id": account.id,
         "code": account.code,
         "name": account.name,
         "account_type": account.account_type,
         "balance": float(account.balance or 0),
+        "opening_balance": float(getattr(account, "opening_balance", 0) or 0),
+        "is_system": account.code in system_codes,
         "is_cash_account": bool(account.is_cash_account),
         "is_bank_account": bool(account.is_bank_account),
         "bank_name": account.bank_name,
@@ -66,6 +71,34 @@ async def get_account(db: AsyncSession, tenant_id: str, account_id: str) -> m.Ac
     ).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Account not found")
+    return row
+
+
+async def update_account(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    account_id: str,
+    name: str | None = None,
+    bank_name: str | None = None,
+    account_number: str | None = None,
+    bank_branch: str | None = None,
+) -> m.Account:
+    row = await get_account(db, tenant_id, account_id)
+    if name is not None:
+        name_key = name.strip()
+        if not name_key:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        row.name = name_key
+    if bank_name is not None:
+        row.bank_name = bank_name.strip() or None
+    if account_number is not None:
+        row.account_number = account_number.strip() or None
+    if bank_branch is not None:
+        row.bank_branch = bank_branch.strip() or None
+    if row.is_bank_account and not row.bank_name:
+        raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
+    await db.flush()
     return row
 
 

@@ -506,6 +506,7 @@ class Account(Base):
     name: Mapped[str] = mapped_column(String(150))
     account_type: Mapped[str] = mapped_column(String(30))
     balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    opening_balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     is_cash_account: Mapped[bool] = mapped_column(Boolean, default=False)
     is_bank_account: Mapped[bool] = mapped_column(Boolean, default=False)
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)

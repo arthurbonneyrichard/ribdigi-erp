@@ -12,12 +12,17 @@ from app import models as m
 
 
 def serialize_account(account: m.Account) -> dict:
+    from app.accounting import DEFAULT_ACCOUNTS
+
+    system_codes = {c[0] for c in DEFAULT_ACCOUNTS}
     return {
         "id": account.id,
         "code": account.code,
         "name": account.name,
         "account_type": account.account_type,
         "balance": float(account.balance or 0),
+        "opening_balance": float(getattr(account, "opening_balance", 0) or 0),
+        "is_system": account.code in system_codes,
         "is_cash_account": bool(account.is_cash_account),
         "is_bank_account": bool(account.is_bank_account),
         "bank_name": account.bank_name,

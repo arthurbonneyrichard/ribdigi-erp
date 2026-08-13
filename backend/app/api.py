@@ -132,6 +132,8 @@ from app.schemas import (
     StockAdjust,
     StockMove,
     OpeningStockCreate,
+    OpeningBalanceCreate,
+    AccountUpdate,
     StockTransferCreate,
     StockTransferReject,
     StoreCreate,
@@ -6271,6 +6273,43 @@ async def create_account(
     return env(cash_xfer_svc.serialize_account(row), "Account created")
 
 
+@api.patch("/accounting/accounts/{account_id}")
+async def patch_account(
+    account_id: str,
+    payload: AccountUpdate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_transfers as cash_xfer_svc
+    from app import audit as audit_svc
+
+    data = payload.model_dump(exclude_unset=True)
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    row = await cash_xfer_svc.update_account(
+        db,
+        tenant_id=claims["tenant_id"],
+        account_id=account_id,
+        name=data.get("name"),
+        bank_name=data.get("bank_name"),
+        account_number=data.get("account_number"),
+        bank_branch=data.get("bank_branch"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="accounting",
+        action="account_update",
+        entity="account",
+        entity_id=row.id,
+        details=data,
+    )
+    await db.commit()
+    await db.refresh(row)
+    return env(cash_xfer_svc.serialize_account(row), "Account updated")
+
+
 @api.get("/accounting/accounts/{account_id}")
 async def get_account(
     account_id: str,
@@ -6281,6 +6320,39 @@ async def get_account(
 
     row = await cash_xfer_svc.get_account(db, claims["tenant_id"], account_id)
     return env(cash_xfer_svc.serialize_account(row))
+
+
+@api.get("/accounting/opening-balances")
+async def coa_opening_status(
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import opening_balances as opening_bal_svc
+
+    status = await opening_bal_svc.opening_status(db, claims["tenant_id"])
+    await db.commit()
+    return env(status)
+
+
+@api.post("/accounting/opening-balances")
+async def coa_opening_post(
+    payload: OpeningBalanceCreate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-10.1 — post COA opening balances as a balanced journal (equity plug to 3000)."""
+    from app import opening_balances as opening_bal_svc
+
+    result = await opening_bal_svc.post_coa_opening_balances(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        lines=[line.model_dump() for line in payload.lines],
+        reference=payload.reference,
+        notes=payload.notes,
+    )
+    await db.commit()
+    return env(result, "COA opening balances posted")
 
 
 @api.get("/accounting/liquid-accounts")
