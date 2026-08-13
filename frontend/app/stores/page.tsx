@@ -31,6 +31,14 @@ type Branch = {
   manager_id?: string | null;
   is_active?: boolean;
 };
+type Department = {
+  id: string;
+  code: string;
+  name: string;
+  branch_id?: string | null;
+  head_user_id?: string | null;
+  is_active?: boolean;
+};
 
 const WEEKDAYS: { key: keyof OperatingHours; label: string }[] = [
   { key: 'mon', label: 'Mon' },
@@ -93,6 +101,7 @@ type Transfer = {
 export default function Page() {
   const [stores, setStores] = useState<Store[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -125,6 +134,11 @@ export default function Page() {
   const [brEmail, setBrEmail] = useState('');
   const [brManagerId, setBrManagerId] = useState('');
   const [editBrId, setEditBrId] = useState('');
+  const [deptCode, setDeptCode] = useState('');
+  const [deptName, setDeptName] = useState('');
+  const [deptBranchId, setDeptBranchId] = useState('');
+  const [deptHeadId, setDeptHeadId] = useState('');
+  const [editDeptId, setEditDeptId] = useState('');
   const [fromStore, setFromStore] = useState('');
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
@@ -143,7 +157,7 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [s, p, t, settings, wh, u, br] = await Promise.all([
+    const [s, p, t, settings, wh, u, br, dep] = await Promise.all([
       api('/stores'),
       api('/products'),
       api('/stores/transfers'),
@@ -151,6 +165,7 @@ export default function Page() {
       api('/warehouses').catch(() => ({ data: [] })),
       api('/users').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
+      api('/departments').catch(() => ({ data: [] })),
     ]);
     setStores(s.data || []);
     setProducts(p.data || []);
@@ -158,6 +173,7 @@ export default function Page() {
     setWarehouses(wh.data || []);
     setUsers(u.data || []);
     setBranches(br.data || []);
+    setDepartments(dep.data || []);
     setFefoStrict(!!settings.data?.fefo_strict_warehouse);
     if (!fromStore && s.data?.length) setFromStore(s.data[0].id);
     if (!toStore && s.data?.length > 1) setToStore(s.data[1].id);
@@ -470,6 +486,81 @@ export default function Page() {
     }
   }
 
+  function resetDeptForm() {
+    setEditDeptId('');
+    setDeptCode('');
+    setDeptName('');
+    setDeptBranchId('');
+    setDeptHeadId('');
+  }
+
+  async function createDepartment() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/departments', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: deptCode.trim(),
+          name: deptName.trim(),
+          branch_id: deptBranchId || null,
+          head_user_id: deptHeadId || null,
+        }),
+      });
+      resetDeptForm();
+      setMessage('Department created');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveDepartmentEdit() {
+    if (!editDeptId) return;
+    setError('');
+    setMessage('');
+    try {
+      await api(`/departments/${editDeptId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: deptName.trim() || undefined,
+          branch_id: deptBranchId || null,
+          clear_branch: !deptBranchId,
+          head_user_id: deptHeadId || null,
+          clear_head: !deptHeadId,
+        }),
+      });
+      resetDeptForm();
+      setMessage('Department updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function startEditDepartment(d: Department) {
+    setEditDeptId(d.id);
+    setDeptCode(d.code);
+    setDeptName(d.name);
+    setDeptBranchId(d.branch_id || '');
+    setDeptHeadId(d.head_user_id || '');
+  }
+
+  async function setDepartmentActive(departmentId: string, isActive: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/departments/${departmentId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      setMessage(isActive ? 'Department reactivated' : 'Department deactivated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function saveDrawerSettings() {
     if (!drawerStoreId) return;
     setError('');
@@ -577,7 +668,7 @@ export default function Page() {
   return (
     <Shell>
       <h1>Multi-Store</h1>
-      <p className="muted">Branches, stores, warehouses, FEFO mode, and transfers</p>
+      <p className="muted">Branches, departments, stores, warehouses, FEFO mode, and transfers</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -630,6 +721,58 @@ export default function Page() {
                 disabled={!brCode.trim() || !brName.trim()}
               >
                 Create branch
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="card">
+          <h3>{editDeptId ? 'Edit department' : 'New department'}</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <input
+              value={deptCode}
+              onChange={(e) => setDeptCode(e.target.value)}
+              placeholder="Code"
+              disabled={!!editDeptId}
+            />
+            <input
+              value={deptName}
+              onChange={(e) => setDeptName(e.target.value)}
+              placeholder="Name (e.g. Sales)"
+            />
+            <select value={deptBranchId} onChange={(e) => setDeptBranchId(e.target.value)}>
+              <option value="">Branch (optional)</option>
+              {branches
+                .filter((b) => b.is_active !== false)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.code} — {b.name}
+                  </option>
+                ))}
+            </select>
+            <select value={deptHeadId} onChange={(e) => setDeptHeadId(e.target.value)}>
+              <option value="">Department head (optional)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            {editDeptId ? (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" onClick={saveDepartmentEdit} disabled={!deptName.trim()}>
+                  Save department
+                </button>
+                <button type="button" onClick={resetDeptForm}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={createDepartment}
+                disabled={!deptCode.trim() || !deptName.trim()}
+              >
+                Create department
               </button>
             )}
           </div>
@@ -860,6 +1003,46 @@ export default function Page() {
                   </button>
                 ) : (
                   <button type="button" onClick={() => setBranchActive(b.id, false)}>
+                    Deactivate
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 style={{ marginTop: 16 }}>Departments</h3>
+      <p className="muted">Code, optional branch, department head; soft deactivate (BR-2.5).</p>
+      <table className="table" style={{ marginBottom: 24 }}>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Branch</th>
+            <th>Head</th>
+            <th>Active</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {departments.map((d) => (
+            <tr key={d.id}>
+              <td>{d.code}</td>
+              <td>{d.name}</td>
+              <td>{d.branch_id ? branchLabel(d.branch_id) : '—'}</td>
+              <td>{d.head_user_id ? userLabel(d.head_user_id) : '—'}</td>
+              <td>{d.is_active === false ? 'no' : 'yes'}</td>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => startEditDepartment(d)}>
+                  Edit
+                </button>
+                {d.is_active === false ? (
+                  <button type="button" onClick={() => setDepartmentActive(d.id, true)}>
+                    Reactivate
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setDepartmentActive(d.id, false)}>
                     Deactivate
                   </button>
                 )}
