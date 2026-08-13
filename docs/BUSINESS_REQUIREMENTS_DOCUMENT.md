@@ -214,9 +214,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] Create stores with name, code, location
-  - [ ] Assign store manager
+  - [x] Assign store manager (`manager_id` on create/`PATCH /stores/{id}`; Multi-Store UI; dual-approval uses assigned manager)
   - [x] Configure store operating hours (`stores.operating_hours` weekly map; create/`PATCH /stores/{id}`; Multi-Store UI)
-  - [ ] Link store to branch and warehouse
+  - [x] Link store to branch and warehouse (`branch_id` on store; create auto-creates linked warehouse; warehouse `store_id` link in Multi-Store UI)
 
 #### BR-2.4 Warehouse Setup
 - **Description:** Configure storage locations for inventory.
