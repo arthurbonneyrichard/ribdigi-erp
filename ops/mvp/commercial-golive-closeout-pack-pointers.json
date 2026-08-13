@@ -1,0 +1,53 @@
+{
+  "id": "commercial-golive-closeout-pack-pointers",
+  "stage": 200,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+    "commercial_golive_closeout_register": "ops/mvp/commercial-golive-closeout.json",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md",
+    "golive_attestation_register": "ops/mvp/golive-attestation.json",
+    "first_commercial_day_remaining_gate": "docs/FIRST_COMMERCIAL_DAY_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "commercial_golive_closeout_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "topics": [
+    "commercial_golive_closeout_stage70",
+    "golive_attestation_stage69",
+    "first_commercial_day_remaining_gate_stage199",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cp-closeout",
+      "title": "Point to Stage 70 commercial go-live closeout",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-attestation",
+      "title": "Point to Stage 69 go-live attestation",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-first-day-gate",
+      "title": "Point to Stage 199 first commercial day remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-closeout-remaining",
+      "title": "Commercial go-live closeout Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 200 P1 commercial go-live closeout pack pointers packaging only. Do not claim commercial go-live closeout Complete."
+}

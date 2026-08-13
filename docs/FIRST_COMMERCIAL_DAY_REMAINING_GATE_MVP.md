@@ -30,3 +30,5 @@ Single index of first commercial day remaining gates. Packaging only — **first
 - First commercial day live Complete
 - Commercial go-live closeout Completes
 - Steady-state ops live / go-live Completes
+
+See also Stage 200 commercial go-live closeout remaining-gate index: [`COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md`](COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md).
