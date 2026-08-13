@@ -333,3 +333,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Staging GHA Pack Remaining-Gate Index Fidelity** — staging GHA pack remaining-gate hub (I1), blocker matrix (B1), Stage 28 / Stage 205 / Stage 228 pointers with explicit non-claim (P1). Prefixed `STAGING_GHA_PACK_*` (≠ Stage 205 `STAGING_GHA_*`). Live staging apply Completes remain deferred (Stage 230+). Distinct from Stage 205 staging GHA remaining-gate and Stage 228 TLS ingress pack remaining-gate.
 
+## Stage 230 decision (opened after Stage 229 freeze)
+
+**Tenant MVP Launch Cert Pack Remaining-Gate Index Fidelity** — launch cert pack remaining-gate hub (I1), blocker matrix (B1), Stage 27 / Stage 204 / Stage 229 pointers with explicit non-claim (P1). Prefixed `LAUNCH_CERT_PACK_*` (≠ Stage 204 `LAUNCH_CERT_*`). Production sign-off Completes remain deferred (Stage 231+). Distinct from Stage 204 launch cert remaining-gate and Stage 229 staging GHA pack remaining-gate.
+

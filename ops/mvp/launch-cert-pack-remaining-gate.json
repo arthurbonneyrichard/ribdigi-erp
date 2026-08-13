@@ -1,0 +1,55 @@
+{
+  "id": "launch-cert-pack-remaining-gate",
+  "stage": 230,
+  "pack": "I1",
+  "doc": "docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LAUNCH_CERT_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LAUNCH_CERT_PACK_RG_POINTERS_MVP.md",
+    "launch_cert_pack": "docs/LAUNCH_CERT_MVP.md",
+    "launch_cert_remaining_gate": "docs/LAUNCH_CERT_REMAINING_GATE_MVP.md",
+    "staging_gha_pack_remaining_gate": "docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md",
+    "checklist_map": "ops/launch/checklist-map.json"
+  },
+  "packaging_complete": true,
+  "production_signoff_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "sections_1_3_verified": false,
+  "distinct_from_stage27_l1_launch_cert_pack": true,
+  "distinct_from_stage204_launch_cert_remaining_gate": true,
+  "distinct_from_stage229_staging_gha_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "lcpr-read-blockers",
+      "title": "Read B1 launch cert pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcpr-follow-pointers",
+      "title": "Follow P1 Stage 27 / Stage 204 / Stage 229 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcpr-signoff-missing",
+      "title": "Reaffirm production sign-off MISSING until §§1–3 verified and §7 signed",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcpr-no-packaging-as-signoff",
+      "title": "Do not treat Stage 27 L1 as production sign-off Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcpr-signoff-remaining",
+      "title": "Production sign-off / §7 / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 230 I1 launch cert pack remaining-gate index packaging only. Do not claim production sign-off Complete."
+}

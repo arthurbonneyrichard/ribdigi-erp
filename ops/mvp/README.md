@@ -806,6 +806,12 @@ Authoritative MVP docs:
 - `docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/staging-gha-pack-remaining-gate.json` — Stage 229 I1
 - `docs/STAGING_GHA_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/staging-gha-pack-rg-blockers.json` — Stage 229 B1
 - `docs/STAGING_GHA_PACK_RG_POINTERS_MVP.md` / `ops/mvp/staging-gha-pack-rg-pointers.json` — Stage 229 P1
+- `docs/STAGE_230_EXIT_CRITERIA.md` / `docs/ADR_467_STAGE230_FREEZE.md` (`backend/tests/test_stage230_exit_h230x.py`) — Stage 230 H230x
+- `docs/STAGE_230_FIDELITY.md` (`backend/tests/test_stage230_fidelity_d1.py`) — Stage 230 D1
+- `docs/STAGE_230_PLAN.md` (`backend/tests/test_stage230_open.py`) — Stage 230 open (ADR-466)
+- `docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/launch-cert-pack-remaining-gate.json` — Stage 230 I1
+- `docs/LAUNCH_CERT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/launch-cert-pack-rg-blockers.json` — Stage 230 B1
+- `docs/LAUNCH_CERT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/launch-cert-pack-rg-pointers.json` — Stage 230 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2985,6 +2991,18 @@ See `docs/STAGE_229_FIDELITY.md`.
 ## Stage 229 open
 
 ADR-464 / `docs/STAGE_229_PLAN.md`.
+
+## Stage 230 exit
+
+H230x met — `docs/STAGE_230_EXIT_CRITERIA.md`, ADR-467. Stages 1–230 frozen for Stage 230 feature scope.
+
+## Stage 230 D1 — Tenant MVP Launch Cert Pack Remaining-Gate Index Fidelity
+
+See `docs/STAGE_230_FIDELITY.md`.
+
+## Stage 230 open
+
+ADR-466 / `docs/STAGE_230_PLAN.md`.
 
 ## Stage 213 exit
 

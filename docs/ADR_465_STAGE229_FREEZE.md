@@ -24,6 +24,6 @@ Stage 229 Tenant MVP Staging GHA Pack Remaining-Gate Index Fidelity delivered st
 
 ## Next stage
 
-Stage 230 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 229 feature scope remains frozen.
+Stage 230 opened under **ADR-466** after CONTINUE/NEXT (Launch Cert Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-467**. Stage 229 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Launch Cert Pack Remaining-Gate Index Fidelity — single index of launch-cert-pack blockers (packaged Stage 27 L1 launch-cert materials non-claim as production sign-off Complete) with explicit non-claim (no production sign-off Complete). Prefixed `LAUNCH_CERT_PACK_*` if Stage 204 `LAUNCH_CERT_*` remaining-gate exists. Distinct from Stage 229 staging GHA pack remaining-gate and Stage 228 TLS ingress pack remaining-gate.
+**Amendment (2026-08-13):** Stage 230 runner-up outline was approved and opened (ADR-466); freeze ADR-467. Do not reopen Stage 229 scope.
