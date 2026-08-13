@@ -347,7 +347,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] **SKU:** Auto-generated or manual SKU assignment
   - [ ] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes
   - [ ] **Images:** Multiple product images with primary image designation
-  - [ ] **Product Details:** Name, description, cost price, selling price, tax rate, category, brand, unit, weight, dimensions
+  - [x] **Product Details:** Name, description, cost price, selling price, tax rate, category, brand, unit, weight, dimensions (`products.description` / `weight` / `length`/`width`/`height`; create/PATCH + CSV import; Inventory UI)
   - [ ] **Batch/Expiry:** Batch number, manufacturing date, expiry date (critical for pharmacy and food)
 
 #### BR-5.2 Stock Operations
