@@ -24,6 +24,6 @@ Stage 228 Tenant MVP TLS Ingress Pack Remaining-Gate Index Fidelity delivered TL
 
 ## Next stage
 
-Stage 229 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 228 feature scope remains frozen.
+Stage 229 opened under **ADR-464** after CONTINUE/NEXT (Staging GHA Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-465**. Stage 228 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Staging GHA Pack Remaining-Gate Index Fidelity — single index of staging-GHA-pack blockers (packaged Stage 28 G1 staging GHA materials non-claim as live staging apply Complete) with explicit non-claim (no live staging apply Complete). Prefixed `STAGING_GHA_PACK_*` if a prior staging-GHA remaining-gate exists. Distinct from Stage 228 TLS ingress pack remaining-gate and Stage 227 cutover pack remaining-gate.
+**Amendment (2026-08-13):** Stage 229 runner-up outline was approved and opened (ADR-464); freeze ADR-465. Do not reopen Stage 228 scope.

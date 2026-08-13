@@ -800,6 +800,12 @@ Authoritative MVP docs:
 - `docs/TLS_INGRESS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/tls-ingress-pack-remaining-gate.json` — Stage 228 I1
 - `docs/TLS_INGRESS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/tls-ingress-pack-rg-blockers.json` — Stage 228 B1
 - `docs/TLS_INGRESS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/tls-ingress-pack-rg-pointers.json` — Stage 228 P1
+- `docs/STAGE_229_EXIT_CRITERIA.md` / `docs/ADR_465_STAGE229_FREEZE.md` (`backend/tests/test_stage229_exit_h229x.py`) — Stage 229 H229x
+- `docs/STAGE_229_FIDELITY.md` (`backend/tests/test_stage229_fidelity_d1.py`) — Stage 229 D1
+- `docs/STAGE_229_PLAN.md` (`backend/tests/test_stage229_open.py`) — Stage 229 open (ADR-464)
+- `docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/staging-gha-pack-remaining-gate.json` — Stage 229 I1
+- `docs/STAGING_GHA_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/staging-gha-pack-rg-blockers.json` — Stage 229 B1
+- `docs/STAGING_GHA_PACK_RG_POINTERS_MVP.md` / `ops/mvp/staging-gha-pack-rg-pointers.json` — Stage 229 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2967,6 +2973,18 @@ See `docs/STAGE_228_FIDELITY.md`.
 ## Stage 228 open
 
 ADR-462 / `docs/STAGE_228_PLAN.md`.
+
+## Stage 229 exit
+
+H229x met — `docs/STAGE_229_EXIT_CRITERIA.md`, ADR-465. Stages 1–229 frozen for Stage 229 feature scope.
+
+## Stage 229 D1 — Tenant MVP Staging GHA Pack Remaining-Gate Index Fidelity
+
+See `docs/STAGE_229_FIDELITY.md`.
+
+## Stage 229 open
+
+ADR-464 / `docs/STAGE_229_PLAN.md`.
 
 ## Stage 213 exit
 

@@ -3360,6 +3360,18 @@ Every feature in every phase must meet:
 
 **Stage 228 exit (2026-08-13):** I1, B1, P1, D1, H228x met — `docs/STAGE_228_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_463_STAGE228_FREEZE.md`. Fidelity: `docs/STAGE_228_FIDELITY.md`.
 
+**Stage 229 open (2026-08-13):** Tenant MVP Staging GHA Pack Remaining-Gate Index Fidelity — `docs/ADR_464_STAGE229_OPEN.md` + `docs/STAGE_229_PLAN.md` (I1 next).
+
+**Stage 229 I1 (2026-08-13):** Staging GHA pack remaining-gate index hub (`test_stage229_index_i1.py`).
+
+**Stage 229 B1 (2026-08-13):** Staging GHA pack blocker matrix (`test_stage229_blockers_b1.py`).
+
+**Stage 229 P1 (2026-08-13):** Stage 28 / Stage 205 / Stage 228 pointers (`test_stage229_pointers_p1.py`).
+
+**Stage 229 D1 (2026-08-13):** Staging GHA Pack Remaining-Gate Index fidelity sync — `docs/STAGE_229_FIDELITY.md` (`test_stage229_fidelity_d1.py`).
+
+**Stage 229 exit (2026-08-13):** I1, B1, P1, D1, H229x met — `docs/STAGE_229_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_465_STAGE229_FREEZE.md`. Fidelity: `docs/STAGE_229_FIDELITY.md`.
+
 
 
 

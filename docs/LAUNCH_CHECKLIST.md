@@ -1161,6 +1161,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 29 / Stage 207 / Stage 227 pointers (Stage 228 P1: `test_stage228_pointers_p1.py`, `docs/TLS_INGRESS_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 228 fidelity sync (D1: `test_stage228_fidelity_d1.py`, `docs/STAGE_228_FIDELITY.md`)
 - [x] Stage 228 exit + freeze (H228x: `test_stage228_exit_h228x.py`, `docs/STAGE_228_EXIT_CRITERIA.md`, ADR-463)
+- [x] Stage 229 track opened (ADR-464: `test_stage229_open.py`, `docs/STAGE_229_PLAN.md`) — Staging GHA Pack Remaining-Gate Index; closed under ADR-465
+- [x] Staging GHA pack remaining-gate hub (Stage 229 I1: `test_stage229_index_i1.py`, `docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md`)
+- [x] Staging GHA pack blocker matrix (Stage 229 B1: `test_stage229_blockers_b1.py`, `docs/STAGING_GHA_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 28 / Stage 205 / Stage 228 pointers (Stage 229 P1: `test_stage229_pointers_p1.py`, `docs/STAGING_GHA_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 229 fidelity sync (D1: `test_stage229_fidelity_d1.py`, `docs/STAGE_229_FIDELITY.md`)
+- [x] Stage 229 exit + freeze (H229x: `test_stage229_exit_h229x.py`, `docs/STAGE_229_EXIT_CRITERIA.md`, ADR-465)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
