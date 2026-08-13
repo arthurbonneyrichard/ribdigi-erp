@@ -1142,7 +1142,7 @@ Categories include `low_stock`, `payment_due`, `purchase_received`, `expense_app
 ```json
 {
   "low_stock": { "dashboard": true, "email": true, "sms": false },
-  "new_orders": { "dashboard": true, "email": true, "sms": false },
+  "new_order": { "dashboard": true, "email": true, "sms": false },
   "payment_due": { "dashboard": true, "email": true, "sms": true },
   "credit_limit": { "dashboard": true, "email": true, "sms": true }
 }
