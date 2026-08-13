@@ -752,6 +752,12 @@ Authoritative MVP docs:
 - `docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md` / `ops/mvp/support-sla-boundary-remaining-gate.json` — Stage 220 I1
 - `docs/SUPPORT_SLA_BOUNDARY_BLOCKERS_MVP.md` / `ops/mvp/support-sla-boundary-blockers.json` — Stage 220 B1
 - `docs/SUPPORT_SLA_BOUNDARY_RG_POINTERS_MVP.md` / `ops/mvp/support-sla-boundary-rg-pointers.json` — Stage 220 P1
+- `docs/STAGE_221_EXIT_CRITERIA.md` / `docs/ADR_449_STAGE221_FREEZE.md` (`backend/tests/test_stage221_exit_h221x.py`) — Stage 221 H221x
+- `docs/STAGE_221_FIDELITY.md` (`backend/tests/test_stage221_fidelity_d1.py`) — Stage 221 D1
+- `docs/STAGE_221_PLAN.md` (`backend/tests/test_stage221_open.py`) — Stage 221 open (ADR-448)
+- `docs/OPS_MONITORING_REMAINING_GATE_MVP.md` / `ops/mvp/ops-monitoring-remaining-gate.json` — Stage 221 I1
+- `docs/OPS_MONITORING_BLOCKERS_MVP.md` / `ops/mvp/ops-monitoring-blockers.json` — Stage 221 B1
+- `docs/OPS_MONITORING_RG_POINTERS_MVP.md` / `ops/mvp/ops-monitoring-rg-pointers.json` — Stage 221 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2823,6 +2829,18 @@ See `docs/STAGE_220_FIDELITY.md`.
 ## Stage 220 open
 
 ADR-446 / `docs/STAGE_220_PLAN.md`.
+
+## Stage 221 exit
+
+H221x met — `docs/STAGE_221_EXIT_CRITERIA.md`, ADR-449. Stages 1–221 frozen for Stage 221 feature scope.
+
+## Stage 221 D1 — Tenant MVP Ops Monitoring Remaining-Gate Index Fidelity
+
+See `docs/STAGE_221_FIDELITY.md`.
+
+## Stage 221 open
+
+ADR-448 / `docs/STAGE_221_PLAN.md`.
 
 ## Stage 213 exit
 

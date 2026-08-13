@@ -24,6 +24,6 @@ Stage 220 Tenant MVP Support SLA Boundary Remaining-Gate Index Fidelity delivere
 
 ## Next stage
 
-Stage 221 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 220 feature scope remains frozen.
+Stage 221 opened under **ADR-448** after CONTINUE/NEXT (Ops Monitoring Remaining-Gate Index Fidelity) and is frozen under **ADR-449**. Stage 220 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Ops Monitoring Remaining-Gate Index Fidelity — single index of ops-monitoring blockers (packaged Stage 26 M1 ops-monitoring materials non-claim as live monitoring Complete) with explicit non-claim (no live monitoring Complete). Distinct from Stage 220 support SLA boundary remaining-gate and Stage 219 production hypercare remaining-gate.
+**Amendment (2026-08-13):** Stage 221 runner-up outline was approved and opened (ADR-448); freeze ADR-449. Do not reopen Stage 220 scope.

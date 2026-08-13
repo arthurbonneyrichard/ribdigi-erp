@@ -1,0 +1,60 @@
+{
+  "id": "ops-monitoring-rg-pointers",
+  "stage": 221,
+  "pack": "P1",
+  "doc": "docs/OPS_MONITORING_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OPS_MONITORING_REMAINING_GATE_MVP.md",
+    "ops_monitoring": "docs/OPS_MONITORING_MVP.md",
+    "prometheus_scrape": "ops/prometheus/prometheus.yml",
+    "grafana_pack": "docs/GRAFANA_PACK_MVP.md",
+    "support_sla_boundary_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md",
+    "production_hypercare_remaining_gate": "docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_ops_monitoring_claimed": false,
+  "live_monitoring_claimed": false,
+  "hosted_grafana_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "ops_monitoring_stage26_m1",
+    "grafana_pack_stage28_a1",
+    "support_sla_boundary_remaining_gate_stage220",
+    "production_hypercare_remaining_gate_stage219",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "omp-om",
+      "title": "Point to Stage 26 M1 ops monitoring",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omp-grafana",
+      "title": "Point to Stage 28 A1 Grafana pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omp-ssb-gate",
+      "title": "Point to Stage 220 support SLA boundary remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omp-ph-gate",
+      "title": "Point to Stage 219 production hypercare remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omp-monitoring-remaining",
+      "title": "Live monitoring Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 221 P1 ops monitoring RG pointers packaging only. Do not claim live monitoring Complete."
+}

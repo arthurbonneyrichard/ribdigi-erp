@@ -115,3 +115,5 @@ Docker `json-file` / journald drivers also capture process stdout when `REQUEST_
 4. Confirm `ops/prometheus/prometheus.yml` scrapes `/api/v1/metrics` and `ops/prometheus/alerts/ribdigi.yml` names `RibdigiDown` / `RibdigiHighErrorRate`.
 5. Optionally mount `ops/prometheus` into a local Prometheus container per `ops/prometheus/README.md`.
 6. Optionally import `ops/grafana/dashboard-ribdigi-mvp.json.example` and dry-run `ops/grafana/alertmanager.yml.example` (Stage 28 A1) — not hosted SaaS Complete.
+
+See also Stage 221 ops monitoring remaining-gate index: [`OPS_MONITORING_REMAINING_GATE_MVP.md`](OPS_MONITORING_REMAINING_GATE_MVP.md).

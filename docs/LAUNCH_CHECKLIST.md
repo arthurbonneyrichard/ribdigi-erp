@@ -1113,6 +1113,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 36 / Stage 219 / Stage 188 pointers (Stage 220 P1: `test_stage220_pointers_p1.py`, `docs/SUPPORT_SLA_BOUNDARY_RG_POINTERS_MVP.md`)
 - [x] Stage 220 fidelity sync (D1: `test_stage220_fidelity_d1.py`, `docs/STAGE_220_FIDELITY.md`)
 - [x] Stage 220 exit + freeze (H220x: `test_stage220_exit_h220x.py`, `docs/STAGE_220_EXIT_CRITERIA.md`, ADR-447)
+- [x] Stage 221 track opened (ADR-448: `test_stage221_open.py`, `docs/STAGE_221_PLAN.md`) — Ops Monitoring Remaining-Gate Index; closed under ADR-449
+- [x] Ops monitoring remaining-gate hub (Stage 221 I1: `test_stage221_index_i1.py`, `docs/OPS_MONITORING_REMAINING_GATE_MVP.md`)
+- [x] Ops monitoring blocker matrix (Stage 221 B1: `test_stage221_blockers_b1.py`, `docs/OPS_MONITORING_BLOCKERS_MVP.md`)
+- [x] Stage 26 / Stage 220 / Stage 219 pointers (Stage 221 P1: `test_stage221_pointers_p1.py`, `docs/OPS_MONITORING_RG_POINTERS_MVP.md`)
+- [x] Stage 221 fidelity sync (D1: `test_stage221_fidelity_d1.py`, `docs/STAGE_221_FIDELITY.md`)
+- [x] Stage 221 exit + freeze (H221x: `test_stage221_exit_h221x.py`, `docs/STAGE_221_EXIT_CRITERIA.md`, ADR-449)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

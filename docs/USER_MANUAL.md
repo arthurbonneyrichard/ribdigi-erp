@@ -196,6 +196,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Support SLA boundary remaining-gate index (Stage 220):** Status index is `docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md` → blockers `docs/SUPPORT_SLA_BOUNDARY_BLOCKERS_MVP.md` → Stage 36/219/188 pointers `docs/SUPPORT_SLA_BOUNDARY_RG_POINTERS_MVP.md`. Live support-SLA Complete remains MISSING (not claimed).
 
+**Ops monitoring remaining-gate index (Stage 221):** Status index is `docs/OPS_MONITORING_REMAINING_GATE_MVP.md` → blockers `docs/OPS_MONITORING_BLOCKERS_MVP.md` → Stage 26/220/219 pointers `docs/OPS_MONITORING_RG_POINTERS_MVP.md`. Live monitoring Complete remains MISSING (not claimed).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
