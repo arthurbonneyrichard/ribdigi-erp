@@ -213,9 +213,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Configure retail/service outlets.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create stores with name, code, location
+  - [x] Create stores with name, code, location
   - [ ] Assign store manager
-  - [ ] Configure store operating hours
+  - [x] Configure store operating hours (`stores.operating_hours` weekly map; create/`PATCH /stores/{id}`; Multi-Store UI)
   - [ ] Link store to branch and warehouse
 
 #### BR-2.4 Warehouse Setup

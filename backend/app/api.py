@@ -141,6 +141,7 @@ from app.schemas import (
     StockTransferCreate,
     StockTransferReject,
     StoreCreate,
+    StoreUpdate,
     StoreDrawerSettingsUpdate,
     StoreReorderPolicyUpdate,
     InventoryFefoSettingsUpdate,
@@ -8683,17 +8684,10 @@ async def stores(claims=Depends(require_permission("stores", "read")), db: Async
     ).scalars().all()
     return env(
         [
-            {
-                "id": s.id,
-                "name": s.name,
-                "code": s.code,
-                "address": s.address,
-                "phone": s.phone,
-                "manager_id": s.manager_id,
-                "branch_id": getattr(s, "branch_id", None),
-                "is_active": s.is_active,
-                **{k: v for k, v in cash_drawer_svc.serialize_drawer_settings(s).items() if k != "source"},
-            }
+            stores_svc.serialize_store(
+                s,
+                drawer=cash_drawer_svc.serialize_drawer_settings(s),
+            )
             for s in rows
         ]
     )
@@ -8705,6 +8699,8 @@ async def add_store(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import cash_drawer as cash_drawer_svc
+
     store = await stores_svc.create_store(
         db,
         tenant_id=claims["tenant_id"],
@@ -8714,11 +8710,52 @@ async def add_store(
         phone=payload.phone,
         manager_id=payload.manager_id,
         branch_id=payload.branch_id,
+        operating_hours=payload.operating_hours,
     )
     await db.commit()
+    await db.refresh(store)
     return env(
-        {"id": store.id, "code": store.code, "branch_id": store.branch_id},
+        stores_svc.serialize_store(
+            store,
+            drawer=cash_drawer_svc.serialize_drawer_settings(store),
+        ),
         "Store created with warehouse",
+    )
+
+
+@api.patch("/stores/{store_id}")
+async def patch_store(
+    store_id: str,
+    payload: StoreUpdate,
+    claims=Depends(require_permission("stores", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_drawer as cash_drawer_svc
+
+    data = payload.model_dump(exclude_unset=True)
+    store = await stores_svc.update_store(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=store_id,
+        name=data.get("name"),
+        address=data.get("address"),
+        phone=data.get("phone"),
+        manager_id=data.get("manager_id"),
+        clear_manager=bool(data.get("clear_manager")),
+        branch_id=data.get("branch_id"),
+        clear_branch=bool(data.get("clear_branch")),
+        is_active=data.get("is_active"),
+        operating_hours=data.get("operating_hours"),
+        set_operating_hours="operating_hours" in data,
+    )
+    await db.commit()
+    await db.refresh(store)
+    return env(
+        stores_svc.serialize_store(
+            store,
+            drawer=cash_drawer_svc.serialize_drawer_settings(store),
+        ),
+        "Store updated",
     )
 
 
@@ -8964,6 +9001,23 @@ async def cancel_transfer(
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")
+
+
+@api.get("/stores/{store_id}")
+async def get_store(
+    store_id: str,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cash_drawer as cash_drawer_svc
+
+    store = await stores_svc.get_store(db, claims["tenant_id"], store_id)
+    return env(
+        stores_svc.serialize_store(
+            store,
+            drawer=cash_drawer_svc.serialize_drawer_settings(store),
+        )
+    )
 
 
 @api.get("/warehouses")

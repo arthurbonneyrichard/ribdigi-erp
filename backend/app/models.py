@@ -203,6 +203,8 @@ class Store(Base):
     manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     branch_id: Mapped[str | None] = mapped_column(ForeignKey("branches.id"), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Weekly hours: {mon:{open,close,closed}, ... sun:...}
+    operating_hours: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # Cash drawer: none|mock|network|browser_bridge
     drawer_mode: Mapped[str] = mapped_column(String(30), default="none")
     drawer_host: Mapped[str | None] = mapped_column(String(255), nullable=True)

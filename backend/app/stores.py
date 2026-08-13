@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
 from fastapi import HTTPException
@@ -19,6 +20,69 @@ TRANSFER_RECEIVABLE = {"in_transit"}
 TRANSFER_CANCELLABLE = {"draft", "requested", "in_transit"}
 TRANSFER_ADMIN_ROLES = frozenset({"company_admin", "super_admin"})
 TRANSFER_MANAGER_ROLES = frozenset({"store_manager"}) | TRANSFER_ADMIN_ROLES
+
+WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+_TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+
+
+def normalize_operating_hours(value: dict | None) -> dict | None:
+    """Validate weekly hours map; return normalized dict or None."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise HTTPException(status_code=400, detail="operating_hours must be an object")
+    if not value:
+        return None
+    unknown = set(value.keys()) - set(WEEKDAYS)
+    if unknown:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid operating_hours day keys: {sorted(unknown)}",
+        )
+    cleaned: dict[str, dict] = {}
+    for day in WEEKDAYS:
+        if day not in value:
+            continue
+        entry = value[day]
+        if entry is None:
+            continue
+        if not isinstance(entry, dict):
+            raise HTTPException(status_code=400, detail=f"operating_hours.{day} must be an object")
+        closed = bool(entry.get("closed"))
+        if closed:
+            cleaned[day] = {"closed": True}
+            continue
+        open_t = str(entry.get("open") or "").strip()
+        close_t = str(entry.get("close") or "").strip()
+        if not _TIME_RE.fullmatch(open_t) or not _TIME_RE.fullmatch(close_t):
+            raise HTTPException(
+                status_code=400,
+                detail=f"operating_hours.{day} requires open/close as HH:MM (24h)",
+            )
+        if open_t >= close_t:
+            raise HTTPException(
+                status_code=400,
+                detail=f"operating_hours.{day} open must be before close",
+            )
+        cleaned[day] = {"open": open_t, "close": close_t, "closed": False}
+    return cleaned or None
+
+
+def serialize_store(row: m.Store, *, drawer: dict | None = None) -> dict:
+    data = {
+        "id": row.id,
+        "name": row.name,
+        "code": row.code,
+        "address": row.address,
+        "phone": row.phone,
+        "manager_id": row.manager_id,
+        "branch_id": getattr(row, "branch_id", None),
+        "is_active": bool(row.is_active),
+        "operating_hours": getattr(row, "operating_hours", None),
+    }
+    if drawer:
+        data.update({k: v for k, v in drawer.items() if k != "source"})
+    return data
 
 
 async def next_transfer_number(db: AsyncSession, tenant_id: str) -> str:
@@ -74,6 +138,7 @@ async def create_store(
     phone: str | None = None,
     manager_id: str | None = None,
     branch_id: str | None = None,
+    operating_hours: dict | None = None,
 ) -> m.Store:
     if branch_id:
         from app import org_units as org_units_svc
@@ -82,6 +147,14 @@ async def create_store(
         if not branch.is_active:
             raise HTTPException(status_code=400, detail="Branch is inactive")
         branch_id = branch.id
+    if manager_id:
+        user = (
+            await db.execute(
+                select(m.User).where(m.User.id == manager_id, m.User.tenant_id == tenant_id)
+            )
+        ).scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in tenant")
     store = m.Store(
         tenant_id=tenant_id,
         name=name,
@@ -90,6 +163,7 @@ async def create_store(
         phone=phone,
         manager_id=manager_id,
         branch_id=branch_id,
+        operating_hours=normalize_operating_hours(operating_hours),
         is_active=True,
     )
     db.add(store)
@@ -102,6 +176,60 @@ async def create_store(
             code=f"WH-{store.code}",
         )
     )
+    await db.flush()
+    return store
+
+
+async def update_store(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str,
+    name: str | None = None,
+    address: str | None = None,
+    phone: str | None = None,
+    manager_id: str | None = None,
+    clear_manager: bool = False,
+    branch_id: str | None = None,
+    clear_branch: bool = False,
+    is_active: bool | None = None,
+    operating_hours: dict | None = None,
+    set_operating_hours: bool = False,
+) -> m.Store:
+    store = await get_store(db, tenant_id, store_id)
+    if name is not None:
+        cleaned = name.strip()
+        if not cleaned:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        store.name = cleaned
+    if address is not None:
+        store.address = address.strip() or None
+    if phone is not None:
+        store.phone = phone.strip() or None
+    if clear_manager:
+        store.manager_id = None
+    elif manager_id is not None:
+        user = (
+            await db.execute(
+                select(m.User).where(m.User.id == manager_id, m.User.tenant_id == tenant_id)
+            )
+        ).scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in tenant")
+        store.manager_id = manager_id
+    if clear_branch:
+        store.branch_id = None
+    elif branch_id is not None:
+        from app import org_units as org_units_svc
+
+        branch = await org_units_svc.get_branch(db, tenant_id, branch_id)
+        if not branch.is_active:
+            raise HTTPException(status_code=400, detail="Branch is inactive")
+        store.branch_id = branch.id
+    if is_active is not None:
+        store.is_active = bool(is_active)
+    if set_operating_hours:
+        store.operating_hours = normalize_operating_hours(operating_hours)
     await db.flush()
     return store
 
