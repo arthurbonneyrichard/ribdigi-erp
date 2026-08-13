@@ -309,6 +309,24 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 }
 ```
 
+### 3.5a Branches (BR-2.2)
+**List:** `GET /branches` (`active_only=true` optional)  
+**Create:** `POST /branches`  
+**Update:** `PATCH /branches/{branch_id}`
+
+```json
+{
+  "code": "ACC",
+  "name": "Accra Branch",
+  "address": "Ring Road",
+  "phone": "+233201111111",
+  "email": "accra@example.com",
+  "manager_id": "user_uuid"
+}
+```
+
+PATCH supports `name`, `address`, `phone`, `email`, `manager_id`, `clear_manager`, `is_active`. Deactivate with `is_active: false` (soft; row retained). Code is unique per tenant and immutable after create.
+
 ### 3.5b Warehouses (BR-2.4)
 **List:** `GET /warehouses`  
 **Get:** `GET /warehouses/{warehouse_id}`  
