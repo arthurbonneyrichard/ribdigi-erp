@@ -145,3 +145,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 176 decision (opened after Stage 175 freeze)
 
 **Tenant MVP Weekly POS Ops Review Fidelity** — weekly review hub (W1), open/close/handover adherence (A1), conflict backlog age + catalog TTL cadence + support escalation pointers (R1). Offline Complete / live SLA / go-live remain deferred (Stage 177+).
+
+## Stage 177 decision (opened after Stage 176 freeze)
+
+**Tenant MVP Monthly POS Ops Fidelity** — monthly rollup hub (M1), weekly outcomes + Hold trends (T1), device revoke/rebind + backup drill schedule + residual risk honesty pointers (P1). Offline Complete / live DR / go-live remain deferred (Stage 178+).

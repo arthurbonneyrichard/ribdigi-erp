@@ -24,6 +24,4 @@ Stage 176 Tenant MVP Weekly POS Ops Review Fidelity delivered weekly review hub 
 
 ## Next stage
 
-Stage 177 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 176 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP monthly POS ops fidelity — monthly manager rollup linking weekly review outcomes, Hold/soft-reserve trends, offline device revoke/rebind events, backup drill schedule pointer, and residual risk honesty (no Offline Complete / live DR / go-live claims).
+Stage 177 opened under [ADR-360](ADR_360_STAGE177_OPEN.md) (Tenant MVP Monthly POS Ops Fidelity) and froze under [ADR-361](ADR_361_STAGE177_FREEZE.md). Stage 176 feature scope remains frozen.

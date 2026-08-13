@@ -90,3 +90,7 @@ Shift-handover sync/conflict snapshot: [SHIFT_HANDOVER_SNAPSHOT_MVP.md](SHIFT_HA
 ## Stage 176 R1 amendment
 
 Weekly conflict backlog / catalog TTL review: [WEEKLY_POS_OPS_SIGNALS_MVP.md](WEEKLY_POS_OPS_SIGNALS_MVP.md) (`ops/mvp/weekly-pos-ops-signals.json`, `test_stage176_review_r1.py`). Offline Complete / live SLA remain not claimed.
+
+## Stage 177 P1 amendment
+
+Monthly device revoke/rebind review: [MONTHLY_POS_OPS_POINTERS_MVP.md](MONTHLY_POS_OPS_POINTERS_MVP.md) (`ops/mvp/monthly-pos-ops-pointers.json`, `test_stage177_pointers_p1.py`). Offline Complete remains not claimed.

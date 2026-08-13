@@ -2736,6 +2736,18 @@ Every feature in every phase must meet:
 
 **Stage 176 exit (2026-08-13):** W1, A1, R1, D1, H176x met — `docs/STAGE_176_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_359_STAGE176_FREEZE.md`. Fidelity: `docs/STAGE_176_FIDELITY.md`.
 
+**Stage 177 open (2026-08-13):** Tenant MVP Monthly POS Ops Fidelity — `docs/ADR_360_STAGE177_OPEN.md` + `docs/STAGE_177_PLAN.md` (M1 next).
+
+**Stage 177 M1 (2026-08-13):** Monthly POS ops rollup hub (`test_stage177_monthly_m1.py`).
+
+**Stage 177 T1 (2026-08-13):** Weekly outcomes + Hold trends (`test_stage177_trends_t1.py`).
+
+**Stage 177 P1 (2026-08-13):** Device revoke/rebind + backup + residual risk (`test_stage177_pointers_p1.py`).
+
+**Stage 177 D1 (2026-08-13):** Monthly POS Ops fidelity sync — `docs/STAGE_177_FIDELITY.md` (`test_stage177_fidelity_d1.py`).
+
+**Stage 177 exit (2026-08-13):** M1, T1, P1, D1, H177x met — `docs/STAGE_177_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_361_STAGE177_FREEZE.md`. Fidelity: `docs/STAGE_177_FIDELITY.md`.
+
 
 
 

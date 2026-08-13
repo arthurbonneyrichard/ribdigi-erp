@@ -839,6 +839,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Conflict/TTL/escalation signals (Stage 176 R1: `test_stage176_review_r1.py`, `docs/WEEKLY_POS_OPS_SIGNALS_MVP.md`)
 - [x] Stage 176 fidelity sync (D1: `test_stage176_fidelity_d1.py`, `docs/STAGE_176_FIDELITY.md`)
 - [x] Stage 176 exit + freeze (H176x: `test_stage176_exit_h176x.py`, `docs/STAGE_176_EXIT_CRITERIA.md`, ADR-359)
+- [x] Stage 177 track opened (ADR-360: `test_stage177_open.py`, `docs/STAGE_177_PLAN.md`) — Monthly POS Ops; closed under ADR-361
+- [x] Monthly POS ops rollup hub (Stage 177 M1: `test_stage177_monthly_m1.py`, `docs/MONTHLY_POS_OPS_REVIEW_MVP.md`)
+- [x] Weekly outcomes + Hold trends (Stage 177 T1: `test_stage177_trends_t1.py`, `docs/MONTHLY_POS_OPS_TRENDS_MVP.md`)
+- [x] Device/backup/residual pointers (Stage 177 P1: `test_stage177_pointers_p1.py`, `docs/MONTHLY_POS_OPS_POINTERS_MVP.md`)
+- [x] Stage 177 fidelity sync (D1: `test_stage177_fidelity_d1.py`, `docs/STAGE_177_FIDELITY.md`)
+- [x] Stage 177 exit + freeze (H177x: `test_stage177_exit_h177x.py`, `docs/STAGE_177_EXIT_CRITERIA.md`, ADR-361)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

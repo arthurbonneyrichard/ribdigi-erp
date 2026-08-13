@@ -31,3 +31,7 @@ Weekly manager POS ops review hub. Distinct from daily open/close/handover packs
 - Live support SLA / PagerDuty Completes
 - Fabricated “weekly green” Completes
 - Go-live Complete
+
+## Stage 177 M1 / T1 amendment
+
+Monthly rollup consumes these weekly outcomes: [MONTHLY_POS_OPS_REVIEW_MVP.md](MONTHLY_POS_OPS_REVIEW_MVP.md) · [MONTHLY_POS_OPS_TRENDS_MVP.md](MONTHLY_POS_OPS_TRENDS_MVP.md) (`test_stage177_monthly_m1.py`, `test_stage177_trends_t1.py`).

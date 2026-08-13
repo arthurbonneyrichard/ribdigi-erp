@@ -38,6 +38,10 @@ Every risk keeps `closed: false`. Top-level `risks_closed_claimed: false`.
 - Deferred ADR implementations Complete
 - Re-packaging Stage 26–32 packs as new Complete
 
+## Stage 177 P1 amendment
+
+Monthly POS ops re-reads this register for residual risk honesty: [MONTHLY_POS_OPS_POINTERS_MVP.md](MONTHLY_POS_OPS_POINTERS_MVP.md) (`ops/mvp/monthly-pos-ops-pointers.json`, `test_stage177_pointers_p1.py`). `risks_closed_claimed` remains false.
+
 ## Sign-off
 
 Stage 33 K1 is met when this doc + register JSON + evidence JSON exist, `test_residual_risk_k1.py` passes, and PRODUCTION_READINESS / launch / roadmap cite Stage 33 K1 without inventing risks closed or go-live Complete.

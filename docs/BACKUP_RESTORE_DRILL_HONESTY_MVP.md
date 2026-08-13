@@ -44,3 +44,7 @@ Troubleshooting index links this pack for backup/restore drill symptoms: [TROUBL
 ## Stage 174 T1 amendment
 
 Store-close triage points here for end-of-day backup drill honesty (not live DR): [STORE_CLOSE_TRIAGE_MVP.md](STORE_CLOSE_TRIAGE_MVP.md) (`ops/mvp/store-close-triage.json`, `test_stage174_triage_t1.py`). Live DR Completes remain false.
+
+## Stage 177 P1 amendment
+
+Monthly POS ops points here for backup drill schedule honesty (not live DR): [MONTHLY_POS_OPS_POINTERS_MVP.md](MONTHLY_POS_OPS_POINTERS_MVP.md) (`ops/mvp/monthly-pos-ops-pointers.json`, `test_stage177_pointers_p1.py`). Live DR Completes remain false.

@@ -128,6 +128,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Weekly POS ops review (Stage 176):** Manager weekly review is `docs/WEEKLY_POS_OPS_REVIEW_MVP.md` → adherence `docs/WEEKLY_POS_OPS_ADHERENCE_MVP.md` → signals `docs/WEEKLY_POS_OPS_SIGNALS_MVP.md`. Offline Complete and live support SLA remain deferred.
 
+**Monthly POS ops rollup (Stage 177):** Manager monthly rollup is `docs/MONTHLY_POS_OPS_REVIEW_MVP.md` → trends `docs/MONTHLY_POS_OPS_TRENDS_MVP.md` → pointers `docs/MONTHLY_POS_OPS_POINTERS_MVP.md`. Offline Complete, live DR, and go-live remain deferred.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

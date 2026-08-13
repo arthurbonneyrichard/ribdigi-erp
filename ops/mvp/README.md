@@ -478,7 +478,14 @@ Authoritative MVP docs:
 - `docs/WEEKLY_POS_OPS_REVIEW_MVP.md` / `ops/mvp/weekly-pos-ops-review.json` — Stage 176 W1
 - `docs/WEEKLY_POS_OPS_ADHERENCE_MVP.md` / `ops/mvp/weekly-pos-ops-adherence.json` — Stage 176 A1
 - `docs/WEEKLY_POS_OPS_SIGNALS_MVP.md` / `ops/mvp/weekly-pos-ops-signals.json` — Stage 176 R1
+- `docs/STAGE_177_EXIT_CRITERIA.md` / `docs/ADR_361_STAGE177_FREEZE.md` (`backend/tests/test_stage177_exit_h177x.py`) — Stage 177 H177x
+- `docs/STAGE_177_FIDELITY.md` (`backend/tests/test_stage177_fidelity_d1.py`) — Stage 177 D1
+- `docs/STAGE_177_PLAN.md` (`backend/tests/test_stage177_open.py`) — Stage 177 open (ADR-360)
+- `docs/MONTHLY_POS_OPS_REVIEW_MVP.md` / `ops/mvp/monthly-pos-ops-review.json` — Stage 177 M1
+- `docs/MONTHLY_POS_OPS_TRENDS_MVP.md` / `ops/mvp/monthly-pos-ops-trends.json` — Stage 177 T1
+- `docs/MONTHLY_POS_OPS_POINTERS_MVP.md` / `ops/mvp/monthly-pos-ops-pointers.json` — Stage 177 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
+
 
 
 
@@ -2128,6 +2135,18 @@ H176x met — `docs/STAGE_176_EXIT_CRITERIA.md`, ADR-359. Stages 1–176 frozen 
 ## Stage 176 open
 
 ADR-358 + `docs/STAGE_176_PLAN.md` — Weekly POS Ops Review Fidelity (closed under ADR-359).
+
+## Stage 177 exit
+
+H177x met — `docs/STAGE_177_EXIT_CRITERIA.md`, ADR-361. Stages 1–177 frozen for Stage 177 feature scope.
+
+## Stage 177 D1 — Tenant MVP Monthly POS Ops Fidelity
+
+`docs/STAGE_177_FIDELITY.md` — maps M1–P1 → readiness / launch / deploy / security. Offline Complete / live DR / go-live remain MISSING.
+
+## Stage 177 open
+
+ADR-360 + `docs/STAGE_177_PLAN.md` — Monthly POS Ops Fidelity (closed under ADR-361).
 
 ## Stage 165 open
 
