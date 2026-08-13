@@ -989,7 +989,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 }
 ```
 
-**Record Payment:** `POST /customers/{customer_id}/payments`
+**Record Payment:** `POST /customers/{customer_id}/payments`  
+**Customer History:** `GET /customers/{customer_id}/history?from_date=&to_date=` — purchase history (sales invoices + POS), returns, and payments with `summary` totals (BR-7.1).
 
 ```json
 {
@@ -1002,7 +1003,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 ```
 
 ### 11.2 Supplier Credit
-**Get Outstanding Bills:** `GET /suppliers/{supplier_id}/outstanding`
+**Get Outstanding Bills:** `GET /suppliers/{supplier_id}/outstanding`  
+**Supplier History:** `GET /suppliers/{supplier_id}/history?from_date=&to_date=` — purchase history (POs + purchase invoices), returns, and payments with `summary` totals (BR-6.1).
 
 **Payment Schedule:** `GET /suppliers/{supplier_id}/payment-schedule` — open purchase invoices + uninvoiced POs sorted by `due_date` ascending; each row includes `balance_due`, `days_until_due`, `days_overdue`, optional `early_discount` quote when tenant early-pay settings apply. Response also has `total_due`, `upcoming_count`, `overdue_count`. Requires `credit:read`.
 

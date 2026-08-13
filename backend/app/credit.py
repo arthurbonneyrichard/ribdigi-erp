@@ -523,6 +523,307 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
     }
 
 
+async def customer_history(
+    db: AsyncSession,
+    tenant_id: str,
+    customer_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    """Purchase / return / payment history for a customer (BR-7.1)."""
+    customer = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == customer_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "customer",
+            )
+        )
+    ).scalar_one_or_none()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    inv_stmt = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.customer_id == customer_id,
+    )
+    if from_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.created_at >= from_date)
+    if to_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.created_at <= to_date)
+    inv_stmt = inv_stmt.order_by(m.SalesInvoice.created_at.desc())
+    invoices = (await db.execute(inv_stmt)).scalars().all()
+
+    ret_stmt = select(m.SalesReturn).where(
+        m.SalesReturn.tenant_id == tenant_id,
+        m.SalesReturn.customer_id == customer_id,
+    )
+    if from_date:
+        ret_stmt = ret_stmt.where(m.SalesReturn.created_at >= from_date)
+    if to_date:
+        ret_stmt = ret_stmt.where(m.SalesReturn.created_at <= to_date)
+    ret_stmt = ret_stmt.order_by(m.SalesReturn.created_at.desc())
+    returns = (await db.execute(ret_stmt)).scalars().all()
+
+    pay_stmt = select(m.CustomerPayment).where(
+        m.CustomerPayment.tenant_id == tenant_id,
+        m.CustomerPayment.customer_id == customer_id,
+    )
+    if from_date:
+        pay_stmt = pay_stmt.where(m.CustomerPayment.created_at >= from_date)
+    if to_date:
+        pay_stmt = pay_stmt.where(m.CustomerPayment.created_at <= to_date)
+    pay_stmt = pay_stmt.order_by(m.CustomerPayment.created_at.desc())
+    payments = (await db.execute(pay_stmt)).scalars().all()
+
+    pos_stmt = select(m.Transaction).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.tx_type == "pos_sale",
+        m.Transaction.party_id == customer_id,
+    )
+    if from_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
+    if to_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    pos_stmt = pos_stmt.order_by(m.Transaction.created_at.desc())
+    pos_rows = (await db.execute(pos_stmt)).scalars().all()
+
+    purchase_rows: list[dict] = []
+    for inv in invoices:
+        purchase_rows.append(
+            {
+                "id": inv.id,
+                "type": "invoice",
+                "reference": inv.invoice_number,
+                "status": inv.status,
+                "subtotal": float(inv.subtotal or 0),
+                "tax_amount": float(inv.tax_amount or 0),
+                "total_amount": float(inv.total_amount or 0),
+                "paid_amount": float(inv.paid_amount or 0),
+                "posted_at": inv.posted_at,
+                "created_at": inv.created_at,
+            }
+        )
+    for tx in pos_rows:
+        purchase_rows.append(
+            {
+                "id": tx.id,
+                "type": "pos",
+                "reference": tx.reference,
+                "status": tx.status,
+                "subtotal": float(tx.subtotal or 0),
+                "tax_amount": float(tx.tax or 0),
+                "total_amount": float(tx.total or 0),
+                "paid_amount": float(tx.total or 0),
+                "posted_at": tx.created_at,
+                "created_at": tx.created_at,
+            }
+        )
+    purchase_rows.sort(key=lambda x: x["created_at"] or datetime.utcnow(), reverse=True)
+
+    return_rows = [
+        {
+            "id": r.id,
+            "return_number": r.return_number,
+            "credit_note_number": r.credit_note_number,
+            "status": r.status,
+            "reason": r.reason,
+            "total_amount": float(r.total_amount or 0),
+            "refunded_amount": float(r.refunded_amount or 0),
+            "settlement_method": r.settlement_method,
+            "sales_invoice_id": r.sales_invoice_id,
+            "posted_at": r.posted_at,
+            "created_at": r.created_at,
+        }
+        for r in returns
+    ]
+    payment_rows = [
+        {
+            "id": p.id,
+            "payment_number": p.payment_number,
+            "amount": float(p.amount or 0),
+            "payment_method": p.payment_method,
+            "sales_invoice_id": p.sales_invoice_id,
+            "reference": p.reference,
+            "created_at": p.created_at,
+        }
+        for p in payments
+    ]
+
+    purchase_total = round(sum(x["total_amount"] for x in purchase_rows), 2)
+    return_total = round(sum(x["total_amount"] for x in return_rows), 2)
+    payment_total = round(sum(x["amount"] for x in payment_rows), 2)
+    return {
+        "customer": {
+            "id": customer.id,
+            "name": customer.name,
+            "credit_limit": float(customer.credit_limit or 0),
+            "balance": float(customer.balance or 0),
+        },
+        "from_date": from_date,
+        "to_date": to_date,
+        "purchases": purchase_rows,
+        "returns": return_rows,
+        "payments": payment_rows,
+        "summary": {
+            "purchase_count": len(purchase_rows),
+            "purchase_total": purchase_total,
+            "return_count": len(return_rows),
+            "return_total": return_total,
+            "payment_count": len(payment_rows),
+            "payment_total": payment_total,
+        },
+    }
+
+
+async def supplier_history(
+    db: AsyncSession,
+    tenant_id: str,
+    supplier_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    """Purchase / return / payment history for a supplier (BR-6.1)."""
+    supplier = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == supplier_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "supplier",
+            )
+        )
+    ).scalar_one_or_none()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    po_stmt = select(m.PurchaseOrder).where(
+        m.PurchaseOrder.tenant_id == tenant_id,
+        m.PurchaseOrder.supplier_id == supplier_id,
+    )
+    if from_date:
+        po_stmt = po_stmt.where(m.PurchaseOrder.created_at >= from_date)
+    if to_date:
+        po_stmt = po_stmt.where(m.PurchaseOrder.created_at <= to_date)
+    po_stmt = po_stmt.order_by(m.PurchaseOrder.created_at.desc())
+    orders = (await db.execute(po_stmt)).scalars().all()
+
+    pi_stmt = select(m.PurchaseInvoice).where(
+        m.PurchaseInvoice.tenant_id == tenant_id,
+        m.PurchaseInvoice.supplier_id == supplier_id,
+    )
+    if from_date:
+        pi_stmt = pi_stmt.where(m.PurchaseInvoice.created_at >= from_date)
+    if to_date:
+        pi_stmt = pi_stmt.where(m.PurchaseInvoice.created_at <= to_date)
+    pi_stmt = pi_stmt.order_by(m.PurchaseInvoice.created_at.desc())
+    invoices = (await db.execute(pi_stmt)).scalars().all()
+
+    ret_stmt = select(m.PurchaseReturn).where(
+        m.PurchaseReturn.tenant_id == tenant_id,
+        m.PurchaseReturn.supplier_id == supplier_id,
+    )
+    if from_date:
+        ret_stmt = ret_stmt.where(m.PurchaseReturn.created_at >= from_date)
+    if to_date:
+        ret_stmt = ret_stmt.where(m.PurchaseReturn.created_at <= to_date)
+    ret_stmt = ret_stmt.order_by(m.PurchaseReturn.created_at.desc())
+    returns = (await db.execute(ret_stmt)).scalars().all()
+
+    pay_stmt = select(m.SupplierPayment).where(
+        m.SupplierPayment.tenant_id == tenant_id,
+        m.SupplierPayment.supplier_id == supplier_id,
+    )
+    if from_date:
+        pay_stmt = pay_stmt.where(m.SupplierPayment.created_at >= from_date)
+    if to_date:
+        pay_stmt = pay_stmt.where(m.SupplierPayment.created_at <= to_date)
+    pay_stmt = pay_stmt.order_by(m.SupplierPayment.created_at.desc())
+    payments = (await db.execute(pay_stmt)).scalars().all()
+
+    purchase_rows: list[dict] = []
+    for po in orders:
+        purchase_rows.append(
+            {
+                "id": po.id,
+                "type": "purchase_order",
+                "reference": po.po_number,
+                "status": po.status,
+                "total_amount": float(po.total_amount or 0),
+                "paid_amount": float(po.paid_amount or 0),
+                "created_at": po.created_at,
+            }
+        )
+    for inv in invoices:
+        purchase_rows.append(
+            {
+                "id": inv.id,
+                "type": "purchase_invoice",
+                "reference": inv.invoice_number,
+                "status": inv.status,
+                "total_amount": float(inv.total_amount or 0),
+                "paid_amount": float(inv.paid_amount or 0),
+                "created_at": inv.created_at,
+            }
+        )
+    purchase_rows.sort(key=lambda x: x["created_at"] or datetime.utcnow(), reverse=True)
+
+    return_rows = [
+        {
+            "id": r.id,
+            "return_number": r.return_number,
+            "debit_note_number": r.debit_note_number,
+            "status": r.status,
+            "reason": r.reason,
+            "total_amount": float(r.total_amount or 0),
+            "purchase_order_id": r.purchase_order_id,
+            "goods_receipt_id": r.goods_receipt_id,
+            "posted_at": r.posted_at,
+            "created_at": r.created_at,
+        }
+        for r in returns
+    ]
+    payment_rows = [
+        {
+            "id": p.id,
+            "payment_number": p.payment_number,
+            "amount": float(p.amount or 0),
+            "payment_method": p.payment_method,
+            "purchase_order_id": p.purchase_order_id,
+            "purchase_invoice_id": p.purchase_invoice_id,
+            "reference": p.reference,
+            "created_at": p.created_at,
+        }
+        for p in payments
+    ]
+
+    purchase_total = round(sum(x["total_amount"] for x in purchase_rows), 2)
+    return_total = round(sum(x["total_amount"] for x in return_rows), 2)
+    payment_total = round(sum(x["amount"] for x in payment_rows), 2)
+    return {
+        "supplier": {
+            "id": supplier.id,
+            "name": supplier.name,
+            "balance": float(supplier.balance or 0),
+            "payment_terms_days": getattr(supplier, "payment_terms_days", None),
+        },
+        "from_date": from_date,
+        "to_date": to_date,
+        "purchases": purchase_rows,
+        "returns": return_rows,
+        "payments": payment_rows,
+        "summary": {
+            "purchase_count": len(purchase_rows),
+            "purchase_total": purchase_total,
+            "return_count": len(return_rows),
+            "return_total": return_total,
+            "payment_count": len(payment_rows),
+            "payment_total": payment_total,
+        },
+    }
+
+
 async def supplier_payment_schedule(
     db: AsyncSession,
     tenant_id: str,

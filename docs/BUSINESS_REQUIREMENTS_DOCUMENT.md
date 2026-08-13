@@ -401,7 +401,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] **Contact Details:** Multiple contacts with name, phone, email, designation
   - [ ] **Supplier Balance:** Real-time outstanding payable balance
   - [x] **Payment Terms:** Credit period (`payment_terms_days` / Net N) drives PO and purchase-invoice due dates; early-pay discount remains tenant-level
-  - [ ] **Supplier History:** Purchase history, return history, payment history
+  - [x] **Supplier History:** Purchase history, return history, payment history (`GET /suppliers/{id}/history`; Credit UI)
 
 #### BR-6.2 Purchase Request (PR)
 - **Description:** Internal requisition for goods.
@@ -470,7 +470,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] **Customer Balance:** Real-time outstanding receivable balance
   - [ ] **Credit Limit:** Per-customer credit limit with enforcement
   - [x] **Payment Terms:** Per-customer Net N (`payment_terms_days`) sets sales-invoice due date on post
-  - [ ] **Customer History:** Purchase history, return history, payment history
+  - [x] **Customer History:** Purchase history, return history, payment history (`GET /customers/{id}/history`; invoices+POS, returns, payments; Credit UI)
 
 #### BR-7.2 Quotation
 - **Description:** Pre-sales price quotes for customers.

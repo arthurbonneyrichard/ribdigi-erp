@@ -8033,6 +8033,26 @@ async def customer_credit_statement(
     return env(await credit_svc.customer_statement(db, claims["tenant_id"], customer_id))
 
 
+@api.get("/customers/{customer_id}/history")
+async def customer_history(
+    customer_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-7.1 — customer purchase / return / payment history."""
+    return env(
+        await credit_svc.customer_history(
+            db,
+            claims["tenant_id"],
+            customer_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        )
+    )
+
+
 @api.get("/credit/suppliers/{supplier_id}/statement")
 async def supplier_credit_statement(
     supplier_id: str,
@@ -8040,6 +8060,26 @@ async def supplier_credit_statement(
     db: AsyncSession = Depends(get_db),
 ):
     return env(await credit_svc.supplier_statement(db, claims["tenant_id"], supplier_id))
+
+
+@api.get("/suppliers/{supplier_id}/history")
+async def supplier_history(
+    supplier_id: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-6.1 — supplier purchase / return / payment history."""
+    return env(
+        await credit_svc.supplier_history(
+            db,
+            claims["tenant_id"],
+            supplier_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        )
+    )
 
 
 @api.patch("/customers/{customer_id}/credit-limit")

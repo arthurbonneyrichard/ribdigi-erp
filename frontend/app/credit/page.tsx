@@ -11,6 +11,7 @@ export default function Page() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [partyId, setPartyId] = useState('');
   const [statement, setStatement] = useState<any>(null);
+  const [history, setHistory] = useState<any>(null);
   const [schedule, setSchedule] = useState<any>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
@@ -58,6 +59,8 @@ export default function Page() {
 
   useEffect(() => {
     setSchedule(null);
+    setHistory(null);
+    setStatement(null);
     refresh().catch((err) => setError(err.message));
   }, [kind]);
 
@@ -81,6 +84,25 @@ export default function Page() {
           : `/credit/suppliers/${partyId}/statement`;
       const r = await api(path);
       setStatement(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadHistory() {
+    if (!partyId) return;
+    setError('');
+    try {
+      const path =
+        kind === 'receivable'
+          ? `/customers/${partyId}/history`
+          : `/suppliers/${partyId}/history`;
+      const r = await api(path);
+      setHistory(r.data);
+      const s = r.data?.summary;
+      setMessage(
+        `History: ${s?.purchase_count ?? 0} purchases · ${s?.return_count ?? 0} returns · ${s?.payment_count ?? 0} payments`,
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -364,6 +386,9 @@ export default function Page() {
           </select>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
             <button onClick={loadStatement}>Statement</button>
+            <button type="button" onClick={loadHistory}>
+              History
+            </button>
             {kind === 'payable' && (
               <button type="button" onClick={loadPaymentSchedule}>
                 Payment schedule
@@ -481,6 +506,98 @@ export default function Page() {
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
             {JSON.stringify(statement, null, 2)}
           </pre>
+        </div>
+      )}
+
+      {history && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3>
+            History · {history.customer?.name || history.supplier?.name} · purchases{' '}
+            {history.summary?.purchase_total ?? 0} · returns {history.summary?.return_total ?? 0} ·
+            payments {history.summary?.payment_total ?? 0}
+          </h3>
+          <h4 style={{ marginTop: 12 }}>Purchases</h4>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Reference</th>
+                <th>Status</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(history.purchases || []).map((p: any) => (
+                <tr key={`${p.type}-${p.id}`}>
+                  <td>{p.type}</td>
+                  <td>{p.reference}</td>
+                  <td>{p.status}</td>
+                  <td>{p.total_amount}</td>
+                </tr>
+              ))}
+              {!history.purchases?.length && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No purchases
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <h4 style={{ marginTop: 12 }}>Returns</h4>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Return</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(history.returns || []).map((r: any) => (
+                <tr key={r.id}>
+                  <td>{r.return_number}</td>
+                  <td>{r.reason}</td>
+                  <td>{r.status}</td>
+                  <td>{r.total_amount}</td>
+                </tr>
+              ))}
+              {!history.returns?.length && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No returns
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <h4 style={{ marginTop: 12 }}>Payments</h4>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Payment</th>
+                <th>Method</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(history.payments || []).map((p: any) => (
+                <tr key={p.id}>
+                  <td>{p.payment_number}</td>
+                  <td>{p.payment_method}</td>
+                  <td>{p.amount}</td>
+                </tr>
+              ))}
+              {!history.payments?.length && (
+                <tr>
+                  <td colSpan={3} className="muted">
+                    No payments
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 
