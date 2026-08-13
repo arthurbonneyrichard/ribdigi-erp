@@ -930,6 +930,7 @@ Stage 200 D1 — `docs/STAGE_200_FIDELITY.md` (`test_stage200_fidelity_d1.py`); 
 Stage 201 D1 — `docs/STAGE_201_FIDELITY.md` (`test_stage201_fidelity_d1.py`); Stage 201 I1 / B1 / P1.
 Stage 202 D1 — `docs/STAGE_202_FIDELITY.md` (`test_stage202_fidelity_d1.py`); Stage 202 I1 / B1 / P1.
 Stage 203 D1 — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`); Stage 203 I1 / B1 / P1.
+Stage 206 D1 — `docs/STAGE_206_FIDELITY.md` (`test_stage206_fidelity_d1.py`); Stage 206 I1 / B1 / P1.
 Stage 205 D1 — `docs/STAGE_205_FIDELITY.md` (`test_stage205_fidelity_d1.py`); Stage 205 I1 / B1 / P1.
 Stage 204 D1 — `docs/STAGE_204_FIDELITY.md` (`test_stage204_fidelity_d1.py`); Stage 204 I1 / B1 / P1.
 ### 4.17 Audit Logs
@@ -1719,6 +1720,7 @@ Stage 200 D1 Commercial Go-Live Closeout Remaining-Gate Index fidelity — `docs
 Stage 201 D1 Preflight Verification Remaining-Gate Index fidelity — `docs/STAGE_201_FIDELITY.md` (`test_stage201_fidelity_d1.py`); Stage 201 I1 preflight verification remaining-gate hub; Stage 201 B1 blocker matrix; Stage 201 P1 Stage 69 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 202 D1 Production Launch Remaining-Gate Index fidelity — `docs/STAGE_202_FIDELITY.md` (`test_stage202_fidelity_d1.py`); Stage 202 I1 production launch remaining-gate hub; Stage 202 B1 blocker matrix; Stage 202 P1 Stage 66/29 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 203 D1 Cutover Remaining-Gate Index fidelity — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`); Stage 203 I1 cutover remaining-gate hub; Stage 203 B1 blocker matrix; Stage 203 P1 Stage 29/27 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 206 D1 K8s Deploy Remaining-Gate Index fidelity — `docs/STAGE_206_FIDELITY.md` (`test_stage206_fidelity_d1.py`); Stage 206 I1 k8s deploy remaining-gate hub; Stage 206 B1 blocker matrix; Stage 206 P1 Stage 26/205/18 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 205 D1 Staging GHA Remaining-Gate Index fidelity — `docs/STAGE_205_FIDELITY.md` (`test_stage205_fidelity_d1.py`); Stage 205 I1 staging GHA remaining-gate hub; Stage 205 B1 blocker matrix; Stage 205 P1 Stage 28/18/204 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 204 D1 Launch Cert Remaining-Gate Index fidelity — `docs/STAGE_204_FIDELITY.md` (`test_stage204_fidelity_d1.py`); Stage 204 I1 launch cert remaining-gate hub; Stage 204 B1 blocker matrix; Stage 204 P1 Stage 27/28 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 

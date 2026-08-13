@@ -1234,6 +1234,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 203 P1** | Stage 29 / Stage 27 / Stage 202 pointers (`test_stage203_pointers_p1.py`) |
 | **Stage 203 D1** | Cutover remaining-gate fidelity — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`) |
 | **Stage 203 H203x** | Exit + freeze — `docs/STAGE_203_EXIT_CRITERIA.md`, ADR-413 (`test_stage203_exit_h203x.py`); Stages 1–203 frozen |
+| **Stage 206 open** | K8s Deploy Remaining-Gate Index — `docs/STAGE_206_PLAN.md`, ADR-418 (`test_stage206_open.py`) |
+| **Stage 206 I1** | K8s deploy remaining-gate index hub (`test_stage206_index_i1.py`) |
+| **Stage 206 B1** | K8s deploy blocker matrix (`test_stage206_blockers_b1.py`) |
+| **Stage 206 P1** | Stage 26 / Stage 205 / Stage 18 pointers (`test_stage206_pointers_p1.py`) |
+| **Stage 206 D1** | K8s deploy remaining-gate fidelity — `docs/STAGE_206_FIDELITY.md` (`test_stage206_fidelity_d1.py`) |
+| **Stage 206 H206x** | Exit + freeze — `docs/STAGE_206_EXIT_CRITERIA.md`, ADR-419 (`test_stage206_exit_h206x.py`); Stages 1–206 frozen |
 | **Stage 205 open** | Staging GHA Remaining-Gate Index — `docs/STAGE_205_PLAN.md`, ADR-416 (`test_stage205_open.py`) |
 | **Stage 205 I1** | Staging GHA remaining-gate index hub (`test_stage205_index_i1.py`) |
 | **Stage 205 B1** | Staging GHA blocker matrix (`test_stage205_blockers_b1.py`) |

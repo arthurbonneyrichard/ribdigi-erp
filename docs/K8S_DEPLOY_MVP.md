@@ -80,3 +80,5 @@ Single-node production Compose (`docker-compose.prod.yml` + `.env.production.exa
 ## Sign-off
 
 Stage 26 K1 is met when the chart/manifests encode the probe contract, operator smoke scripts exist, the guard test passes, and PRODUCTION_READINESS Kubernetes gate is Complete (MVP) with Remaining limited to live cluster apply. Stage 28 G1 is met when `docs/STAGING_GHA_MVP.md` + `ops/k8s/deploy-staging.example.yml` + `test_staging_gha_g1.py` pass without claiming live apply. Stage 29 T1 is met when `docs/TLS_INGRESS_PACK_MVP.md` + issuer/Ingress examples + `test_tls_ingress_t1.py` pass without inventing live ACME issuance. Stage 29 X1 is met when `docs/CUTOVER_PACK_MVP.md` + cutover checklist + production GHA template + `test_cutover_pack_x1.py` pass without inventing live cutover or forged §7.
+
+See also Stage 206 Tenant MVP K8s Deploy remaining-gate index fidelity (`docs/K8S_DEPLOY_REMAINING_GATE_MVP.md`, ADR-418 / ADR-419) — packaging non-claim as live cluster deploy Complete.

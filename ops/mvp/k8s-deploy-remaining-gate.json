@@ -1,0 +1,54 @@
+{
+  "id": "k8s-deploy-remaining-gate",
+  "stage": 206,
+  "pack": "I1",
+  "doc": "docs/K8S_DEPLOY_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/K8S_DEPLOY_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/K8S_DEPLOY_PACK_POINTERS_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md",
+    "staging_gha_remaining_gate": "docs/STAGING_GHA_REMAINING_GATE_MVP.md",
+    "helm_install": "ops/k8s/helm-install-staging.sh.example"
+  },
+  "packaging_complete": true,
+  "live_cluster_deploy_claimed": false,
+  "ci_deploy_claimed": false,
+  "go_live_claimed": false,
+  "live_staging_apply_claimed": false,
+  "distinct_from_stage26_k1_k8s_deploy": true,
+  "distinct_from_stage28_g1_staging_gha": true,
+  "distinct_from_stage205_staging_gha_remaining_gate": true,
+  "steps": [
+    {
+      "id": "kd-read-blockers",
+      "title": "Read B1 k8s deploy blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kd-follow-pointers",
+      "title": "Follow P1 Stage 26 / Stage 205 / Stage 18 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kd-deploy-missing",
+      "title": "Reaffirm live cluster deploy MISSING until executed apply ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kd-no-packaging-as-deploy",
+      "title": "Do not treat Stage 26 K1 as live cluster deploy Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kd-deploy-remaining",
+      "title": "Live cluster deploy / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 206 I1 k8s deploy remaining-gate index packaging only. Do not claim live cluster deploy Complete."
+}

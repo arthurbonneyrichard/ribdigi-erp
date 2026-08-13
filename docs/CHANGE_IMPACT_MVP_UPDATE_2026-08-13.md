@@ -237,3 +237,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Staging GHA Remaining-Gate Index Fidelity** — staging GHA remaining-gate hub (I1), blocker matrix (B1), Stage 28 / Stage 18 / Stage 204 pointers with explicit non-claim (P1). Live staging GHA apply Completes remain deferred (Stage 206+). Distinct from Stage 18 C1 deploy-free main CI and Stage 28 G1 packaging.
 
+## Stage 206 decision (opened after Stage 205 freeze)
+
+**Tenant MVP K8s Deploy Remaining-Gate Index Fidelity** — k8s deploy remaining-gate hub (I1), blocker matrix (B1), Stage 26 / Stage 205 / Stage 18 pointers with explicit non-claim (P1). Live cluster deploy Completes remain deferred (Stage 207+). Distinct from Stage 205 staging GHA remaining-gate and Stage 26 K1 packaging.
+

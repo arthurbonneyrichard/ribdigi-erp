@@ -1,0 +1,56 @@
+{
+  "id": "k8s-deploy-blockers",
+  "stage": 206,
+  "pack": "B1",
+  "doc": "docs/K8S_DEPLOY_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/K8S_DEPLOY_REMAINING_GATE_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md",
+    "staging_smoke": "ops/k8s/staging-smoke.sh.example"
+  },
+  "packaging_complete": true,
+  "live_cluster_deploy_claimed": false,
+  "ci_deploy_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_cluster_deploy_execution": "REMAINING",
+    "cluster_secrets_data_plane_provision": "REMAINING",
+    "stage26_k1_as_live_cluster_deploy": "NON_CLAIM",
+    "main_ci_deploy_wiring": "NON_CLAIM",
+    "live_cluster_deploy_claimed": "false",
+    "ci_deploy_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "kb-deploy",
+      "title": "Mark live cluster deploy execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-provision",
+      "title": "Mark cluster / secrets / data plane provision Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-stage26-nonclaim",
+      "title": "Mark Stage 26 K1 k8s deploy as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-ci-nonclaim",
+      "title": "Mark main ci.yml deploy wiring as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-deploy-remaining",
+      "title": "Live cluster deploy Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 206 B1 k8s deploy blocker matrix packaging only. Live cluster deploy Complete remains MISSING."
+}

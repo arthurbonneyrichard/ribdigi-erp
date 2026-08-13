@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 205 froze Tenant MVP Staging GHA Remaining-Gate Index Fidelity (ADR-417) — staging GHA remaining-gate hub, blocker matrix, Stage 28/18/204 pointers, explicit live staging apply non-claim. Live staging GHA apply Complete remains MISSING. Next recommended distinct outline: Tenant MVP K8s Deploy Remaining-Gate Index Fidelity (packaged Stage 26 K1 helm/manifest materials non-claim as live cluster deploy Complete — explicit non-claim) — Stage 206+. Do not claim live staging GHA apply Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 206 froze Tenant MVP K8s Deploy Remaining-Gate Index Fidelity (ADR-419) — k8s deploy remaining-gate hub, blocker matrix, Stage 26/205/18 pointers, explicit live cluster deploy non-claim. Live cluster deploy Complete remains MISSING. Next recommended distinct outline: Tenant MVP TLS Ingress Remaining-Gate Index Fidelity (packaged Stage 29 T1 cert-manager/ingress materials non-claim as live TLS ingress Complete — explicit non-claim) — Stage 207+. Do not claim live cluster deploy Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

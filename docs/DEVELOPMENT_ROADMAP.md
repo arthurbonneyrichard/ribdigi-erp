@@ -3084,6 +3084,18 @@ Every feature in every phase must meet:
 
 **Stage 205 exit (2026-08-13):** I1, B1, P1, D1, H205x met — `docs/STAGE_205_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_417_STAGE205_FREEZE.md`. Fidelity: `docs/STAGE_205_FIDELITY.md`.
 
+**Stage 206 open (2026-08-13):** Tenant MVP K8s Deploy Remaining-Gate Index Fidelity — `docs/ADR_418_STAGE206_OPEN.md` + `docs/STAGE_206_PLAN.md` (I1 next).
+
+**Stage 206 I1 (2026-08-13):** K8s deploy remaining-gate index hub (`test_stage206_index_i1.py`).
+
+**Stage 206 B1 (2026-08-13):** K8s deploy blocker matrix (`test_stage206_blockers_b1.py`).
+
+**Stage 206 P1 (2026-08-13):** Stage 26 / Stage 205 / Stage 18 pointers (`test_stage206_pointers_p1.py`).
+
+**Stage 206 D1 (2026-08-13):** K8s Deploy Remaining-Gate Index fidelity sync — `docs/STAGE_206_FIDELITY.md` (`test_stage206_fidelity_d1.py`).
+
+**Stage 206 exit (2026-08-13):** I1, B1, P1, D1, H206x met — `docs/STAGE_206_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_419_STAGE206_FREEZE.md`. Fidelity: `docs/STAGE_206_FIDELITY.md`.
+
 
 
 

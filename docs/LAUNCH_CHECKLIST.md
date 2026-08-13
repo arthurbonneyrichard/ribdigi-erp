@@ -1014,6 +1014,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 28 / Stage 18 / Stage 204 pointers (Stage 205 P1: `test_stage205_pointers_p1.py`, `docs/STAGING_GHA_PACK_POINTERS_MVP.md`)
 - [x] Stage 205 fidelity sync (D1: `test_stage205_fidelity_d1.py`, `docs/STAGE_205_FIDELITY.md`)
 - [x] Stage 205 exit + freeze (H205x: `test_stage205_exit_h205x.py`, `docs/STAGE_205_EXIT_CRITERIA.md`, ADR-417)
+
+- [x] Stage 206 track opened (ADR-418: `test_stage206_open.py`, `docs/STAGE_206_PLAN.md`) — K8s Deploy Remaining-Gate Index; closed under ADR-419
+- [x] K8s deploy remaining-gate hub (Stage 206 I1: `test_stage206_index_i1.py`, `docs/K8S_DEPLOY_REMAINING_GATE_MVP.md`)
+- [x] K8s deploy blocker matrix (Stage 206 B1: `test_stage206_blockers_b1.py`, `docs/K8S_DEPLOY_BLOCKERS_MVP.md`)
+- [x] Stage 26 / Stage 205 / Stage 18 pointers (Stage 206 P1: `test_stage206_pointers_p1.py`, `docs/K8S_DEPLOY_PACK_POINTERS_MVP.md`)
+- [x] Stage 206 fidelity sync (D1: `test_stage206_fidelity_d1.py`, `docs/STAGE_206_FIDELITY.md`)
+- [x] Stage 206 exit + freeze (H206x: `test_stage206_exit_h206x.py`, `docs/STAGE_206_EXIT_CRITERIA.md`, ADR-419)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

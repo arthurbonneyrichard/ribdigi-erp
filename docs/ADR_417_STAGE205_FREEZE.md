@@ -24,6 +24,4 @@ Stage 205 Tenant MVP Staging GHA Remaining-Gate Index Fidelity delivered staging
 
 ## Next stage
 
-Stage 206 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 205 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP K8s Deploy Remaining-Gate Index Fidelity — single index of k8s-deploy blockers (packaged Stage 26 K1 helm/manifest materials non-claim as live cluster deploy Complete) with explicit non-claim (no live cluster deploy Complete). Distinct from Stage 205 staging GHA remaining-gate and Stage 28 G1 packaging.
+Stage **206** opened under **ADR-418** / frozen under **ADR-419** — Tenant MVP K8s Deploy remaining-gate index fidelity (packaged Stage 26 K1 helm/manifest materials non-claim as live cluster deploy Complete) with explicit non-claim of live cluster deploy Complete. Stage 205 feature scope remains frozen. Do not reopen Stages **1–205** scopes.
