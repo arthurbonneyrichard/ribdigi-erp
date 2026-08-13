@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { formatNumber, type FormatPrefs } from '../../lib/format';
 
 type Tab = 'invoices' | 'quotations' | 'orders' | 'returns';
 
@@ -94,9 +95,10 @@ export default function Page() {
   const [qtPrefix, setQtPrefix] = useState('QT');
   const [qtNext, setQtNext] = useState('1');
   const [qtPreview, setQtPreview] = useState('');
+  const [fmt, setFmt] = useState<FormatPrefs | null>(null);
 
   async function refresh() {
-    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes] =
+    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes, tenantRes] =
       await Promise.all([
         api('/sales/invoices'),
         api('/customers'),
@@ -108,6 +110,7 @@ export default function Page() {
         api('/stores'),
         api('/sales/settings').catch(() => ({ data: null })),
         api('/customers/groups').catch(() => ({ data: [] })),
+        api('/tenants/me').catch(() => ({ data: null })),
       ]);
     setInvoices(invRes.data || []);
     setCustomers(custRes.data || []);
@@ -118,6 +121,7 @@ export default function Page() {
     setReturns(rRes.data || []);
     setStores(storeRes.data || []);
     setGroups(groupRes.data || []);
+    if (tenantRes.data) setFmt(tenantRes.data);
     const numbering = settingsRes.data?.invoice_numbering;
     if (numbering) {
       setInvPrefix(numbering.prefix || 'INV');
@@ -755,7 +759,7 @@ export default function Page() {
               <tr key={q.id}>
                 <td>{q.quotation_number}</td>
                 <td>{q.status}</td>
-                <td>{q.total_amount}</td>
+                <td>{formatNumber(q.total_amount, fmt)}</td>
                 <td>{q.valid_until ? String(q.valid_until).slice(0, 10) : '—'}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(q)}>View</button>
@@ -816,7 +820,7 @@ export default function Page() {
                     : '—'}
                   {o.delivery_address ? ` · ${o.delivery_address}` : ''}
                 </td>
-                <td>{o.total_amount}</td>
+                <td>{formatNumber(o.total_amount, fmt)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(o)}>View</button>
                   {o.status === 'draft' && (
@@ -891,8 +895,8 @@ export default function Page() {
                   {stores.find((s) => s.id === inv.store_id)?.name ||
                     (inv.store_id ? inv.store_id.slice(0, 8) : '—')}
                 </td>
-                <td>{inv.total_amount}</td>
-                <td>{inv.paid_amount}</td>
+                <td>{formatNumber(inv.total_amount, fmt)}</td>
+                <td>{formatNumber(inv.paid_amount, fmt)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(inv)}>View</button>
                   {inv.status === 'draft' && (
@@ -985,7 +989,7 @@ export default function Page() {
                   {r.refunded_amount > 0 ? ` (refunded ${r.refunded_amount})` : ''}
                 </td>
                 <td>{r.reason}</td>
-                <td>{r.total_amount}</td>
+                <td>{formatNumber(r.total_amount, fmt)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(r)}>View</button>
                   {r.status === 'draft' && (

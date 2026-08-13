@@ -975,9 +975,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Regional display preferences.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Date format selection (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)
-  - [ ] Number format (decimal separator, thousand separator)
-  - [ ] Time format (12h / 24h)
+  - [x] Date format selection (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD) (`tenants.date_format`; Company UI; Alembic `20260813_0088`)
+  - [x] Number format (decimal separator, thousand separator) (`decimal_separator` / `thousand_separator`; Sales totals use prefs)
+  - [x] Time format (12h / 24h) (`tenants.time_format`; Company preview + `frontend/lib/format.ts`)
 
 #### BR-20.3 Email Settings
 - **Description:** SMTP configuration for outbound emails.

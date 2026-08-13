@@ -437,6 +437,10 @@ async def tenant_me_update(
         tax_jurisdiction=payload.tax_jurisdiction,
         tax_registration_number=payload.tax_registration_number,
         tax_filing_period=payload.tax_filing_period,
+        date_format=payload.date_format,
+        decimal_separator=payload.decimal_separator,
+        thousand_separator=payload.thousand_separator,
+        time_format=payload.time_format,
     )
     await audit_svc.record_event(
         db,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { formatDateTime, formatNumber } from '../../lib/format';
 
 export default function Page() {
   const [tenant, setTenant] = useState<any>(null);
@@ -85,11 +86,20 @@ export default function Page() {
           email: tenant.email,
           website: tenant.website,
           address: tenant.address,
+          legal_name: tenant.legal_name,
+          registration_number: tenant.registration_number,
+          contact_person: tenant.contact_person,
+          billing_address: tenant.billing_address,
+          shipping_address: tenant.shipping_address,
           timezone: tenant.timezone,
           fiscal_year_start: tenant.fiscal_year_start,
           tax_jurisdiction: tenant.tax_jurisdiction,
           tax_registration_number: tenant.tax_registration_number,
           tax_filing_period: tenant.tax_filing_period,
+          date_format: tenant.date_format,
+          decimal_separator: tenant.decimal_separator,
+          thousand_separator: tenant.thousand_separator,
+          time_format: tenant.time_format,
         }),
       });
       setTenant(r.data);
@@ -323,6 +333,61 @@ export default function Page() {
           <option value="monthly">Filing period: monthly</option>
           <option value="quarterly">Filing period: quarterly</option>
         </select>
+
+        <h3 style={{ marginTop: 8, marginBottom: 0 }}>Regional formatting</h3>
+        <p className="muted" style={{ margin: 0 }}>
+          Date, number, and time display for this company (BR-20.2).
+        </p>
+        <label className="muted">Date format</label>
+        <select
+          value={tenant.date_format || 'DD/MM/YYYY'}
+          onChange={(e) => setTenant({ ...tenant, date_format: e.target.value })}
+        >
+          <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+          <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+          <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+        </select>
+        <label className="muted">Decimal separator</label>
+        <select
+          value={tenant.decimal_separator || '.'}
+          onChange={(e) => setTenant({ ...tenant, decimal_separator: e.target.value })}
+        >
+          <option value=".">Dot (1,234.56)</option>
+          <option value=",">Comma (1.234,56)</option>
+        </select>
+        <label className="muted">Thousand separator</label>
+        <select
+          value={
+            tenant.thousand_separator === undefined || tenant.thousand_separator === null
+              ? ','
+              : tenant.thousand_separator === ''
+                ? 'none'
+                : tenant.thousand_separator
+          }
+          onChange={(e) =>
+            setTenant({
+              ...tenant,
+              thousand_separator: e.target.value === 'none' ? '' : e.target.value,
+            })
+          }
+        >
+          <option value=",">Comma</option>
+          <option value=".">Dot</option>
+          <option value=" ">Space</option>
+          <option value="none">None</option>
+        </select>
+        <label className="muted">Time format</label>
+        <select
+          value={tenant.time_format || '24h'}
+          onChange={(e) => setTenant({ ...tenant, time_format: e.target.value })}
+        >
+          <option value="24h">24-hour</option>
+          <option value="12h">12-hour</option>
+        </select>
+        <p className="muted" style={{ margin: 0 }}>
+          Preview: {formatNumber(1234.56, tenant)} · {formatDateTime(new Date(), tenant)}
+        </p>
+
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={save} disabled={!!tenant.read_only}>
             Save profile
