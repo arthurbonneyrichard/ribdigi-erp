@@ -1,0 +1,60 @@
+{
+  "id": "hard-delete-pack-pointers",
+  "stage": 183,
+  "pack": "P1",
+  "doc": "docs/HARD_DELETE_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HARD_DELETE_REMAINING_GATE_MVP.md",
+    "adr003": "docs/ADR_003_USER_DELETE_POLICY.md",
+    "erasure_honesty": "docs/ERASURE_HONESTY_MVP.md",
+    "erasure_honesty_register": "ops/mvp/erasure-honesty.json",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "membership_remaining_gate": "docs/MEMBERSHIP_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "hard_delete_claimed": false,
+  "hard_delete_api_claimed": false,
+  "archival_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "adr003_user_delete_policy",
+    "erasure_honesty",
+    "deferred_adr_register",
+    "membership_remaining_gate_stage182",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "hp-adr003",
+      "title": "Point to ADR-003 user delete policy",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hp-erasure",
+      "title": "Point to Stage 37 erasure / soft-delete honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hp-deferred-adr",
+      "title": "Point to deferred ADR register ADR-003 row",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hp-membership-gate",
+      "title": "Point to Stage 182 membership remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hp-hard-delete-remaining",
+      "title": "Hard-delete Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 183 P1 hard-delete pack pointers packaging only. Do not claim hard-delete Complete."
+}

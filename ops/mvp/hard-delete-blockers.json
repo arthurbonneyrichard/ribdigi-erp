@@ -1,0 +1,58 @@
+{
+  "id": "hard-delete-blockers",
+  "stage": 183,
+  "pack": "B1",
+  "doc": "docs/HARD_DELETE_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HARD_DELETE_REMAINING_GATE_MVP.md",
+    "adr003": "docs/ADR_003_USER_DELETE_POLICY.md",
+    "erasure_honesty": "docs/ERASURE_HONESTY_MVP.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md"
+  },
+  "packaging_complete": true,
+  "hard_delete_claimed": false,
+  "hard_delete_api_claimed": false,
+  "archival_complete_claimed": false,
+  "soft_delete_as_hard_delete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "adr003_hard_delete": "DEFERRED",
+    "hard_delete_api": "REMAINING",
+    "data_archival_anonymize": "REMAINING",
+    "soft_delete_as_hard_delete": "NON_CLAIM",
+    "hard_delete_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "hb-adr003",
+      "title": "Mark ADR-003 hard delete Deferred / post-MVP",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hb-hard-delete-api",
+      "title": "Mark hard-delete API Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hb-archival",
+      "title": "Mark data archival / anonymize Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hb-soft-nonclaim",
+      "title": "Mark soft-delete Completes as non-claim for hard-delete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hb-hard-delete-remaining",
+      "title": "Hard-delete Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 183 B1 hard-delete blocker matrix packaging only. Hard-delete Complete remains MISSING."
+}

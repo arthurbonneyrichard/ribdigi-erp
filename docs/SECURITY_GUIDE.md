@@ -1108,6 +1108,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 182 P1** | ADR-005 / E2E users-RBAC / deferred ADR pointers (`test_stage182_pointers_p1.py`) |
 | **Stage 182 D1** | Membership remaining-gate fidelity — `docs/STAGE_182_FIDELITY.md` (`test_stage182_fidelity_d1.py`) |
 | **Stage 182 H182x** | Exit + freeze — `docs/STAGE_182_EXIT_CRITERIA.md`, ADR-371 (`test_stage182_exit_h182x.py`); Stages 1–182 frozen |
+| **Stage 183 open** | Hard-Delete Remaining-Gate Index — `docs/STAGE_183_PLAN.md`, ADR-372 (`test_stage183_open.py`) |
+| **Stage 183 I1** | Hard-delete remaining-gate index hub (`test_stage183_index_i1.py`) |
+| **Stage 183 B1** | Hard-delete blocker matrix (`test_stage183_blockers_b1.py`) |
+| **Stage 183 P1** | ADR-003 / erasure honesty / deferred ADR pointers (`test_stage183_pointers_p1.py`) |
+| **Stage 183 D1** | Hard-delete remaining-gate fidelity — `docs/STAGE_183_FIDELITY.md` (`test_stage183_fidelity_d1.py`) |
+| **Stage 183 H183x** | Exit + freeze — `docs/STAGE_183_EXIT_CRITERIA.md`, ADR-373 (`test_stage183_exit_h183x.py`); Stages 1–183 frozen |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

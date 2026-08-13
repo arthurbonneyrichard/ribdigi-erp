@@ -514,6 +514,12 @@ Authoritative MVP docs:
 - `docs/MEMBERSHIP_REMAINING_GATE_MVP.md` / `ops/mvp/membership-remaining-gate.json` — Stage 182 I1
 - `docs/MEMBERSHIP_BLOCKERS_MVP.md` / `ops/mvp/membership-blockers.json` — Stage 182 B1
 - `docs/MEMBERSHIP_PACK_POINTERS_MVP.md` / `ops/mvp/membership-pack-pointers.json` — Stage 182 P1
+- `docs/STAGE_183_EXIT_CRITERIA.md` / `docs/ADR_373_STAGE183_FREEZE.md` (`backend/tests/test_stage183_exit_h183x.py`) — Stage 183 H183x
+- `docs/STAGE_183_FIDELITY.md` (`backend/tests/test_stage183_fidelity_d1.py`) — Stage 183 D1
+- `docs/STAGE_183_PLAN.md` (`backend/tests/test_stage183_open.py`) — Stage 183 open (ADR-372)
+- `docs/HARD_DELETE_REMAINING_GATE_MVP.md` / `ops/mvp/hard-delete-remaining-gate.json` — Stage 183 I1
+- `docs/HARD_DELETE_BLOCKERS_MVP.md` / `ops/mvp/hard-delete-blockers.json` — Stage 183 B1
+- `docs/HARD_DELETE_PACK_POINTERS_MVP.md` / `ops/mvp/hard-delete-pack-pointers.json` — Stage 183 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2239,6 +2245,18 @@ H182x met — `docs/STAGE_182_EXIT_CRITERIA.md`, ADR-371. Stages 1–182 frozen 
 ## Stage 182 open
 
 ADR-370 + `docs/STAGE_182_PLAN.md` — Membership Remaining-Gate Index Fidelity (closed under ADR-371).
+
+## Stage 183 exit
+
+H183x met — `docs/STAGE_183_EXIT_CRITERIA.md`, ADR-373. Stages 1–183 frozen for Stage 183 feature scope.
+
+## Stage 183 D1 — Tenant MVP Hard-Delete Remaining-Gate Index Fidelity
+
+`docs/STAGE_183_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Hard-delete Complete remains MISSING.
+
+## Stage 183 open
+
+ADR-372 + `docs/STAGE_183_PLAN.md` — Hard-Delete Remaining-Gate Index Fidelity (closed under ADR-373).
 
 ## Stage 165 open
 

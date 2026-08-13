@@ -33,3 +33,5 @@ Single index of user↔store membership remaining gates. Packaging only — **me
 - `users.store_id` / membership API Completes
 - Multi-store membership tables
 - Billing / go-live Completes
+
+See also Stage 183 hard-delete remaining-gate index: [`HARD_DELETE_REMAINING_GATE_MVP.md`](HARD_DELETE_REMAINING_GATE_MVP.md).

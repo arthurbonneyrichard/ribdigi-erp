@@ -47,3 +47,5 @@ Every step keeps `done: false`. Top-level `hard_delete_claimed: false` / `erasur
 ## Sign-off
 
 Stage 37 E1 is met when this doc + register JSON + evidence JSON exist, `test_erasure_honesty_e1.py` passes, and LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan cite Stage 37 E1 without inventing hard-delete Complete.
+
+See also Stage 183 hard-delete remaining-gate index: [`HARD_DELETE_REMAINING_GATE_MVP.md`](HARD_DELETE_REMAINING_GATE_MVP.md).

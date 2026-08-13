@@ -45,3 +45,5 @@ This is the **MVP deferred ADR register packaging surface**: an index of ADR-001
 Stage 31 R1 is met when this doc + register JSON + evidence JSON exist, `test_deferred_adr_register_r1.py` passes, and SECURITY_GUIDE / BUSINESS_REQUIREMENTS / launch / roadmap cite Stage 31 R1 without inventing deferred ADR Complete.
 
 See also Stage 182 membership remaining-gate index (ADR-005): [`MEMBERSHIP_REMAINING_GATE_MVP.md`](MEMBERSHIP_REMAINING_GATE_MVP.md).
+
+See also Stage 183 hard-delete remaining-gate index (ADR-003): [`HARD_DELETE_REMAINING_GATE_MVP.md`](HARD_DELETE_REMAINING_GATE_MVP.md).

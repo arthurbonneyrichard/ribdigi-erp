@@ -22,3 +22,5 @@ For Stage 1 / Commercial MVP:
 - Audit and POS history retain stable user IDs.
 - Email uniqueness remains `(tenant_id, email)` on inactive users (reuse requires a future archive/anonymize flow).
 - Product docs must not claim permanent delete until post-MVP work ships.
+
+See also Stage 183 hard-delete remaining-gate index: [`HARD_DELETE_REMAINING_GATE_MVP.md`](HARD_DELETE_REMAINING_GATE_MVP.md) (hard-delete remains deferred; not Complete).

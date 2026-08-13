@@ -24,6 +24,4 @@ Stage 182 Tenant MVP User↔Store Membership Remaining-Gate Index Fidelity deliv
 
 ## Next stage
 
-Stage 183 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 182 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP hard-delete remaining-gate index fidelity — single index of ADR-003 / hard-delete blockers (`hard_delete_claimed` false, soft-delete-only Completes non-claim as hard-delete) with explicit non-claim (no hard-delete Complete).
+Stage **183** opened under **ADR-372** / frozen under **ADR-373** — Tenant MVP hard-delete remaining-gate index fidelity (ADR-003 / hard-delete blockers; `hard_delete_claimed` false; soft-delete-only Completes non-claim as hard-delete) with explicit non-claim of hard-delete Complete. Stage 182 feature scope remains frozen. Do not reopen Stages **1–182** scopes.
