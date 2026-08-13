@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime, time
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -186,6 +186,149 @@ def _signed_balance_delta(account_type: str, debit: float, credit: float) -> flo
     return credit - debit
 
 
+def parse_fiscal_mmdd(value: str | None) -> tuple[int, int]:
+    raw = (value or "01-01").strip()
+    parts = raw.split("-")
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
+    try:
+        mm, dd = int(parts[0]), int(parts[1])
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD") from exc
+    if not (1 <= mm <= 12 and 1 <= dd <= 31):
+        raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
+    return mm, dd
+
+
+def _safe_calendar_date(year: int, mm: int, dd: int) -> date:
+    while dd >= 1:
+        try:
+            return date(year, mm, dd)
+        except ValueError:
+            dd -= 1
+    raise HTTPException(status_code=400, detail="Invalid fiscal_year_start")
+
+
+def fiscal_period_bounds(
+    fiscal_year_start: str | None, *, as_of: date | None = None
+) -> tuple[datetime, datetime]:
+    """Return [start, end) datetime bounds for the fiscal period containing as_of."""
+    as_of = as_of or datetime.utcnow().date()
+    mm, dd = parse_fiscal_mmdd(fiscal_year_start)
+    start_this_year = _safe_calendar_date(as_of.year, mm, dd)
+    if as_of >= start_this_year:
+        start = start_this_year
+        end = _safe_calendar_date(as_of.year + 1, mm, dd)
+    else:
+        start = _safe_calendar_date(as_of.year - 1, mm, dd)
+        end = start_this_year
+    return datetime.combine(start, time.min), datetime.combine(end, time.min)
+
+
+def in_current_fiscal_period(
+    entry_date: datetime | date,
+    fiscal_year_start: str | None,
+    *,
+    as_of: date | None = None,
+) -> bool:
+    start, end = fiscal_period_bounds(fiscal_year_start, as_of=as_of)
+    if isinstance(entry_date, datetime):
+        ed = entry_date
+    else:
+        ed = datetime.combine(entry_date, time.min)
+    return start <= ed < end
+
+
+def is_manual_journal(entry: m.JournalEntry) -> bool:
+    st = (entry.source_type or "").strip().lower()
+    return st in {"", "manual"}
+
+
+async def get_journal_entry(
+    db: AsyncSession, tenant_id: str, entry_id: str
+) -> m.JournalEntry:
+    entry = (
+        await db.execute(
+            select(m.JournalEntry).where(
+                m.JournalEntry.id == entry_id,
+                m.JournalEntry.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Journal entry not found")
+    return entry
+
+
+async def unpost_journal_entry(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    entry_id: str,
+) -> m.JournalEntry:
+    """Reverse a posted manual journal within the current fiscal period (BR-10.2)."""
+    entry = await get_journal_entry(db, tenant_id, entry_id)
+    if entry.status != "posted":
+        raise HTTPException(status_code=400, detail="Only posted journal entries can be unposted")
+    if not is_manual_journal(entry):
+        raise HTTPException(
+            status_code=400,
+            detail="Only manual journal entries can be unposted; reverse the source document instead",
+        )
+
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
+    ).scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    if not in_current_fiscal_period(entry.entry_date, tenant.fiscal_year_start):
+        raise HTTPException(
+            status_code=400,
+            detail="Unpost is only allowed within the current fiscal period",
+        )
+
+    lines = (
+        await db.execute(
+            select(m.JournalEntryLine).where(
+                m.JournalEntryLine.tenant_id == tenant_id,
+                m.JournalEntryLine.journal_entry_id == entry.id,
+            )
+        )
+    ).scalars().all()
+    for line in lines:
+        account = (
+            await db.execute(
+                select(m.Account).where(
+                    m.Account.id == line.account_id,
+                    m.Account.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found for journal line")
+        account.balance = float(account.balance or 0) - _signed_balance_delta(
+            account.account_type, float(line.debit or 0), float(line.credit or 0)
+        )
+
+    entry.status = "unposted"
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="journal_unposted",
+            entity="journal_entry",
+            entity_id=entry.id,
+            details={
+                "entry_number": entry.entry_number,
+                "total_debit": float(entry.total_debit or 0),
+                "total_credit": float(entry.total_credit or 0),
+            },
+        )
+    )
+    return entry
+
+
 async def post_journal_entry(
     db: AsyncSession,
     *,
@@ -303,6 +446,9 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
         "total_debit": float(entry.total_debit),
         "total_credit": float(entry.total_credit),
         "status": entry.status,
+        "attachment_url": entry.attachment_url,
+        "has_attachment": bool(entry.attachment_url),
+        "can_unpost": entry.status == "posted" and is_manual_journal(entry),
         "created_at": entry.created_at,
         "balanced": abs(float(entry.total_debit) - float(entry.total_credit)) < 0.01,
         "lines": [

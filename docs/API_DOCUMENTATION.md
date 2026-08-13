@@ -903,25 +903,17 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 ### 10.2 Journal Entries
 **List:** `GET /accounting/journal-entries`  
 **Create:** `POST /accounting/journal-entries`  
-**Get:** `GET /accounting/journal-entries/{entry_id}`
+**Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost` — manual journals only; reverses account balances; allowed only when `entry_date` is in the tenant’s current fiscal period (`tenants.fiscal_year_start` MM-DD). Auto-posted sources (`sales_invoice`, `coa_opening`, `cash_transfer`, …) are rejected.  
+**Attachment:** `POST|GET|DELETE /accounting/journal-entries/{entry_id}/attachment` — multipart `file` upload (PDF/image); tenant-scoped media key on `journal_entries.attachment_url`.
 
 **Create Journal Entry:**
 ```json
 {
-  "date": "2026-08-07",
   "reference": "JE-001",
   "description": "Adjusting entry for depreciation",
-  "entries": [
-    {
-      "account_id": "acc_001",
-      "debit": 100.00,
-      "credit": 0.00
-    },
-    {
-      "account_id": "acc_002",
-      "debit": 0.00,
-      "credit": 100.00
-    }
+  "lines": [
+    { "account_code": "6000", "debit": 100.00, "credit": 0.00 },
+    { "account_code": "1000", "debit": 0.00, "credit": 100.00 }
   ]
 }
 ```
