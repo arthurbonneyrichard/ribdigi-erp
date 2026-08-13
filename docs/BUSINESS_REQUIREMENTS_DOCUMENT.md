@@ -892,6 +892,7 @@ Stage 162 D1 — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); 
 Stage 163 D1 — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`); Stage 163 P1 / C1 / V1 / S1.
 Stage 164 D1 — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`); Stage 164 Q1 / P1 / L1 / A1 / C1 / I1.
 Stage 165 D1 — `docs/STAGE_165_FIDELITY.md` (`test_stage165_fidelity_d1.py`); Stage 165 K1 / H1 / R1.
+Stage 166 D1 — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`); Stage 166 C1 / A1 / S1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1635,3 +1636,5 @@ Stage 163 D1 offline foundation fidelity — `docs/STAGE_163_FIDELITY.md` (`test
 Stage 164 D1 sync queue + idempotent offline POS fidelity — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`); Stage 164 Q1 queue/status; Stage 164 P1/L1/A1/C1 sync APIs; Stage 164 I1 `client_request_id`; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 
 Stage 165 D1 offline client queue + Hold/Resume + conflict resolve fidelity — `docs/STAGE_165_FIDELITY.md` (`test_stage165_fidelity_d1.py`); Stage 165 K1 IndexedDB queue; Stage 165 H1 Partial Hold/Resume; Stage 165 R1 conflict resolve; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+
+Stage 166 D1 Offline Complete Hardening fidelity — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`); Stage 166 C1 offline catalog cache; Stage 166 A1 accept_client safe re-apply; Stage 166 S1 Hold soft reserve; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

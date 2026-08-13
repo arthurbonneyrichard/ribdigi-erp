@@ -420,6 +420,9 @@ Authoritative MVP docs:
 - `docs/STAGE_165_EXIT_CRITERIA.md` / `docs/ADR_337_STAGE165_FREEZE.md` (`backend/tests/test_stage165_exit_h165x.py`) — Stage 165 H165x
 - `docs/STAGE_165_FIDELITY.md` (`backend/tests/test_stage165_fidelity_d1.py`) — Stage 165 D1
 - `docs/STAGE_165_PLAN.md` (`backend/tests/test_stage165_open.py`) — Stage 165 open (ADR-336)
+- `docs/STAGE_166_EXIT_CRITERIA.md` / `docs/ADR_339_STAGE166_FREEZE.md` (`backend/tests/test_stage166_exit_h166x.py`) — Stage 166 H166x
+- `docs/STAGE_166_FIDELITY.md` (`backend/tests/test_stage166_fidelity_d1.py`) — Stage 166 D1
+- `docs/STAGE_166_PLAN.md` (`backend/tests/test_stage166_open.py`) — Stage 166 open (ADR-338)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1933,6 +1936,18 @@ H165x met — `docs/STAGE_165_EXIT_CRITERIA.md`, ADR-337. Stages 1–165 frozen 
 ## Stage 165 D1 — Tenant MVP Offline Client Queue + Hold/Resume + Conflict Resolve Fidelity
 
 `docs/STAGE_165_FIDELITY.md` — maps K1–R1 → readiness / launch / deploy / security. Offline Complete remains Stage 166+.
+
+## Stage 166 exit
+
+H166x met — `docs/STAGE_166_EXIT_CRITERIA.md`, ADR-339. Stages 1–166 frozen for Stage 166 feature scope.
+
+## Stage 166 D1 — Offline Complete Hardening Fidelity
+
+`docs/STAGE_166_FIDELITY.md` — maps C1–S1 → readiness / launch / deploy / security. Offline Complete remains Stage 167+.
+
+## Stage 166 open
+
+ADR-338 + `docs/STAGE_166_PLAN.md` — Offline Complete Hardening Fidelity (closed under ADR-339).
 
 ## Stage 165 open
 

@@ -1671,7 +1671,7 @@ class SyncConflict(Base):
 
 
 class PosHeldCart(Base):
-    """POS held cart park (Stage 165 H1). No stock reservation — not a sale."""
+    """POS held cart park (Stage 165 H1 / Stage 166 S1 optional soft reserve)."""
 
     __tablename__ = "pos_held_carts"
 
@@ -1684,6 +1684,9 @@ class PosHeldCart(Base):
     label: Mapped[str] = mapped_column(String(120), default="Held cart")
     cart_payload: Mapped[dict] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(String(20), default="held", index=True)
+    # Stage 166 S1 — soft product.reserved_qty hold (not SO StockReservation rows)
+    stock_reserved: Mapped[bool] = mapped_column(Boolean, default=False)
+    reservation_lines: Mapped[list | None] = mapped_column(JSON, nullable=True)
     held_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     resumed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     discarded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

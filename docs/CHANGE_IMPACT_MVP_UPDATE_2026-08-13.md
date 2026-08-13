@@ -40,7 +40,7 @@ Most core tenant ERP engines (inventory, stock, sales, POS online, purchasing, a
 | Tenant nav parents (§37) | Stage 95 Commerce/Ops flat | REQUIRES REFACTOR | `Shell.tsx` | No | No | Shell only | Menu gating unchanged | **Stage 162 N1** |
 | Role-aware dashboards | Implemented | COMPLETE | `dashboard_views.py` | — | — | dashboard | Backend enforced | Keep |
 | Inventory / Stock / Sales / Purchase | Engines + UI | COMPLETE | module pages | — | — | — | OK | Keep; nav regroup only |
-| POS Hold/Resume | Stage 165 H1 Partial | PARTIAL | `pos_held_carts` | Yes | — | POS | No stock reserve | Stock-reserving Hold later |
+| POS Hold/Resume | Stage 165 H1 Partial / Stage 166 S1 soft reserve | PARTIAL | `pos_held_carts` + `reserved_qty` | Yes | — | POS | Soft reserve optional; not Offline Complete | Offline Complete later |
 | Billers CRUD | Alias to salesperson report | PARTIAL | Shell link | Yes if CRUD | Yes | People | — | Defer (honesty) |
 | Parallel Income module | P&L alias | PARTIAL | Accounting | — | — | — | — | Defer |
 | Finance reports path CSVs | Stages 160–161 | COMPLETE | `finance_ops_export.py` | — | — | Reports/Accounting | RBAC | Keep |
@@ -101,3 +101,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 165 decision (opened after Stage 164 freeze)
 
 **Tenant MVP Offline Client Queue + Hold/Resume + Conflict Resolve Fidelity** — IndexedDB queue, Partial Hold/Resume (no stock reserve), conflict resolve without silent re-apply. Offline Complete remains Stage 166+.
+
+## Stage 166 decision (opened after Stage 165 freeze)
+
+**Offline Complete Hardening Fidelity** — stock-safe offline catalog cache (C1), accept_client safe re-apply (A1), Hold soft `product.reserved_qty` reserve (S1). Offline Complete remains deferred (Stage 167+).

@@ -5,6 +5,11 @@ import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import {
+  getOfflineCatalogMeta,
+  refreshOfflineCatalog,
+  searchOfflineCatalog,
+} from '../../lib/offlineCatalog';
+import {
   enqueueOfflineOp,
   flushOfflineQueue,
   getBoundOfflineDeviceId,
@@ -106,11 +111,13 @@ export default function Page() {
       .toLowerCase();
     return v === 'open' || v === 'closed' ? v : '';
   });
-  // Stage 165 H1 / K1 — held carts + offline IndexedDB queue
+  // Stage 165 H1 / K1 / Stage 166 C1+S1 — holds, offline queue, catalog cache
   const [heldCarts, setHeldCarts] = useState<any[]>([]);
   const [holdLabel, setHoldLabel] = useState('');
   const [pendingOffline, setPendingOffline] = useState(0);
   const [online, setOnline] = useState(true);
+  const [catalogAsOf, setCatalogAsOf] = useState<string | null>(null);
+  const [catalogStaleNote, setCatalogStaleNote] = useState('');
 
   async function refreshSession() {
     const r = await api('/pos/sessions/current');
@@ -132,6 +139,30 @@ export default function Page() {
       setPendingOffline(rows.length);
     } catch {
       setPendingOffline(0);
+    }
+  }
+
+  async function refreshCatalogMeta() {
+    try {
+      const meta = await getOfflineCatalogMeta();
+      setCatalogAsOf(meta?.as_of || null);
+    } catch {
+      setCatalogAsOf(null);
+    }
+  }
+
+  async function pullCatalogCache() {
+    setError('');
+    try {
+      const meta = await refreshOfflineCatalog(api);
+      setCatalogAsOf(meta?.as_of || null);
+      setMessage(
+        meta
+          ? `Offline catalog cached (${meta.count} products, stock non-authoritative)`
+          : 'No catalog op returned from pull',
+      );
+    } catch (err: any) {
+      setError(err.message || 'Catalog refresh failed');
     }
   }
 
@@ -190,6 +221,7 @@ export default function Page() {
     loadSessionHistory({ status: initial }).catch((err) => setError(err.message));
     refreshHolds().catch(() => undefined);
     refreshOfflinePending().catch(() => undefined);
+    refreshCatalogMeta().catch(() => undefined);
     api('/customers?active_only=true')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
@@ -273,7 +305,35 @@ export default function Page() {
 
   async function searchProducts(query: string, { autoAdd = false }: { autoAdd?: boolean } = {}) {
     setError('');
+    setCatalogStaleNote('');
     try {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const cached = await searchOfflineCatalog(query);
+        const list: Product[] = cached.map((p) => ({
+          id: p.id,
+          product_id: p.id,
+          name: p.name,
+          sku: p.sku,
+          barcode: p.barcode,
+          selling_price: p.selling_price,
+          stock_qty: p.stock_qty,
+        }));
+        setRows(list);
+        setCatalogStaleNote(
+          'Offline catalog — stock figures are stale / non-authoritative (Stage 166 C1). Checkout uses online integrity or sync push.',
+        );
+        if (autoAdd) {
+          const match = pickExactMatch(list, query.trim());
+          if (match) {
+            addToCart(match);
+            setMessage(`Scanned (offline cache): ${match.name}`);
+            setQ('');
+          } else if (!list.length) {
+            setError(`No cached product for barcode ${query}`);
+          }
+        }
+        return;
+      }
       const params = new URLSearchParams();
       params.set('q', query);
       params.set('barcode', query);
@@ -291,6 +351,28 @@ export default function Page() {
         }
       }
     } catch (err: any) {
+      // Online path failed — fall back to cached catalog if present.
+      try {
+        const cached = await searchOfflineCatalog(query);
+        if (cached.length) {
+          const list: Product[] = cached.map((p) => ({
+            id: p.id,
+            product_id: p.id,
+            name: p.name,
+            sku: p.sku,
+            barcode: p.barcode,
+            selling_price: p.selling_price,
+            stock_qty: p.stock_qty,
+          }));
+          setRows(list);
+          setCatalogStaleNote(
+            'Search fell back to offline catalog — stock is non-authoritative (Stage 166 C1).',
+          );
+          return;
+        }
+      } catch {
+        /* ignore cache miss */
+      }
       setError(err.message);
     }
   }
@@ -495,11 +577,12 @@ export default function Page() {
       return;
     }
     try {
-      await api('/pos/holds', {
+      const r = await api('/pos/holds', {
         method: 'POST',
         body: JSON.stringify({
           session_id: session?.session_id || null,
           label: holdLabel || `Hold ${new Date().toLocaleTimeString()}`,
+          reserve_stock: true,
           cart_payload: {
             items: cart.map((c) => ({
               product_id: c.product_id || c.id,
@@ -520,7 +603,12 @@ export default function Page() {
       setCartDiscount('0');
       setHoldLabel('');
       await refreshHolds();
-      setMessage('Cart held (stock not reserved — Stage 165 H1 Partial)');
+      const reserved = Boolean(r.data?.stock_reserved);
+      setMessage(
+        reserved
+          ? 'Cart held with soft stock reservation (product.reserved_qty — Stage 166 S1; not a sale)'
+          : 'Cart held (stock not reserved — Stage 165 H1 Partial)',
+      );
     } catch (err: any) {
       setError(err.message || 'Hold failed');
     }
@@ -571,6 +659,14 @@ export default function Page() {
     try {
       const out = await flushOfflineQueue(api);
       await refreshOfflinePending();
+      if (online && getBoundOfflineDeviceId()) {
+        try {
+          const meta = await refreshOfflineCatalog(api);
+          setCatalogAsOf(meta?.as_of || null);
+        } catch {
+          /* catalog refresh is best-effort after flush */
+        }
+      }
       setMessage(
         `Offline queue flush: ${out.flushed} applied/replayed, ${out.failed} failed/conflict`,
       );
@@ -583,8 +679,8 @@ export default function Page() {
     <Shell>
       <h1>Point of Sale</h1>
       <p className="muted">
-        Open a shift, sell from cart, print thermal receipt. Stage 165: Hold/Resume (no stock
-        reserve) · offline IndexedDB queue when OFFLINE.
+        Open a shift, sell from cart, print thermal receipt. Stage 166: soft Hold reserve · offline
+        catalog cache (stale stock) · IndexedDB queue when OFFLINE. Offline Complete remains deferred.
       </p>
       <p className="muted">
         Network: {online ? 'ONLINE' : 'OFFLINE'}
@@ -592,6 +688,15 @@ export default function Page() {
         {getBoundOfflineDeviceId()
           ? ` · Device ${getBoundOfflineDeviceId().slice(0, 8)}…`
           : ' · No offline device bound (Settings → Offline sync)'}
+        {catalogAsOf ? ` · Catalog as of ${catalogAsOf}` : ' · No offline catalog cached'}
+        {online && getBoundOfflineDeviceId() ? (
+          <>
+            {' '}
+            <button type="button" onClick={() => pullCatalogCache()}>
+              Refresh offline catalog
+            </button>
+          </>
+        ) : null}
         {pendingOffline > 0 && online ? (
           <>
             {' '}
@@ -601,6 +706,7 @@ export default function Page() {
           </>
         ) : null}
       </p>
+      {catalogStaleNote ? <p className="muted">{catalogStaleNote}</p> : null}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -1011,7 +1117,8 @@ export default function Page() {
           </button>
         </div>
         <p className="muted" style={{ marginTop: 8 }}>
-          Hold parks the cart only — stock is not reserved (Stage 165 H1 Partial).
+          Hold soft-reserves via product.reserved_qty when online (Stage 166 S1). Not a sale; Offline
+          Complete remains deferred. Default without reserve_stock remains Stage 165 park-only.
         </p>
       </div>
 

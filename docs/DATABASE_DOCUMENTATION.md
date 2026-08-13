@@ -1806,7 +1806,13 @@ Tenant-scoped device registration for Offline foundation (shared-schema + `tenan
 
 ### Stage 165 — `pos_held_carts` (Alembic `20260813_0093`)
 
-Cashier cart park for Hold/Resume Partial. Status held/resumed/discarded. **Does not reserve stock** and is not a sale.
+Cashier cart park for Hold/Resume Partial. Status held/resumed/discarded. Default path does not reserve stock and is not a sale.
+
+### Stage 166 — Hold soft reserve columns (Alembic `20260813_0094`)
+
+- `pos_held_carts.stock_reserved` — whether soft reserve was taken
+- `pos_held_carts.reservation_lines` — JSON lines `{product_id, quantity, sku}` used to adjust `products.reserved_qty`
+- Soft reserve only; does **not** create SO-linked `stock_reservations` rows
 
 ---
 

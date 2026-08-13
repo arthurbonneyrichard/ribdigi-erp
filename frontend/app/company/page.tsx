@@ -933,9 +933,10 @@ export default function Page() {
       <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="offline-sync">
         <h2>Offline sync</h2>
         <p className="muted">
-          Stage 165: register/bind devices for IndexedDB queue flush, resolve open conflicts
-          honestly (no silent re-apply), and use <code>/sync/push|pull|ack</code>. POS Hold/Resume is
-          Partial (cart park, no stock reserve). Offline Complete remains deferred.
+          Stage 166: register/bind devices for IndexedDB queue flush and offline catalog pull.
+          Resolve conflicts with keep_server / accept_client / dismiss — accept_client re-applies only
+          when the original op was never applied (no double-post). Soft Hold reserve uses{' '}
+          <code>product.reserved_qty</code>. Offline Complete remains deferred.
         </p>
         <p className="muted">
           Bound browser device:{' '}
@@ -982,6 +983,35 @@ export default function Page() {
                     }}
                   >
                     Keep server
+                  </button>{' '}
+                  <button
+                    type="button"
+                    disabled={deviceBusy}
+                    onClick={async () => {
+                      setDeviceBusy(true);
+                      setError('');
+                      try {
+                        const r = await api(`/sync/conflicts/${c.id}/resolve`, {
+                          method: 'POST',
+                          body: JSON.stringify({ resolution: 'accept_client' }),
+                        });
+                        const blocked = r.data?.reapply_blocked_reason;
+                        setMessage(
+                          blocked
+                            ? `Conflict resolved (accept_client blocked: ${blocked})`
+                            : r.data?.reapplied
+                              ? 'Conflict resolved — client payload re-applied under new client_op_id'
+                              : r.message || 'Conflict resolved (accept_client)',
+                        );
+                        await refreshOfflineSync();
+                      } catch (err: any) {
+                        setError(err.message || 'Resolve failed');
+                      } finally {
+                        setDeviceBusy(false);
+                      }
+                    }}
+                  >
+                    Accept client
                   </button>{' '}
                   <button
                     type="button"

@@ -8092,7 +8092,7 @@ async def pos_holds_list(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 165 H1 — list held carts for the current cashier (no stock reserved)."""
+    """Stage 165 H1 / Stage 166 S1 — list held carts for the current cashier."""
     rows = await pos_holds_svc.list_holds(
         db,
         tenant_id=claims["tenant_id"],
@@ -8108,9 +8108,10 @@ async def pos_holds_create(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 165 H1 — park cart without stock reservation (not a sale)."""
+    """Stage 165 H1 park / Stage 166 S1 optional soft stock reserve (not a sale)."""
     tenants_svc.assert_writable(claims)
     body = payload or {}
+    reserve_stock = bool(body.get("reserve_stock"))
     row = await pos_holds_svc.create_hold(
         db,
         tenant_id=claims["tenant_id"],
@@ -8118,9 +8119,15 @@ async def pos_holds_create(
         session_id=body.get("session_id"),
         label=body.get("label"),
         cart_payload=body.get("cart_payload") or {},
+        reserve_stock=reserve_stock,
     )
     await db.commit()
-    return env(pos_holds_svc.serialize_hold(row), "Cart held (stock not reserved)")
+    msg = (
+        "Cart held with soft stock reservation (product.reserved_qty)"
+        if row.stock_reserved
+        else "Cart held (stock not reserved)"
+    )
+    return env(pos_holds_svc.serialize_hold(row), msg)
 
 
 @api.post("/pos/holds/{hold_id}/resume")
@@ -13089,14 +13096,16 @@ async def sync_conflicts_resolve(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 165 R1 — resolve open conflict (no silent re-apply / double sale)."""
+    """Stage 165 R1 / Stage 166 A1 — resolve conflict; accept_client may re-apply safely."""
     tenants_svc.assert_writable(claims)
     body = payload or {}
-    row = await sync_engine_svc.resolve_conflict(
+    data = await sync_engine_svc.resolve_conflict(
         db,
         tenant_id=claims["tenant_id"],
         conflict_id=conflict_id,
         resolution=str(body.get("resolution") or ""),
+        claims=claims,
+        user_id=claims.get("sub"),
     )
     await audit_svc.record_event(
         db,
@@ -13105,18 +13114,17 @@ async def sync_conflicts_resolve(
         module="pos",
         action="sync_conflict_resolve",
         entity="sync_conflict",
-        entity_id=row.id,
-        details={"resolution": row.resolution},
+        entity_id=data["id"],
+        details={
+            "resolution": data.get("resolution"),
+            "reapplied": data.get("reapplied"),
+            "reapply_blocked_reason": data.get("reapply_blocked_reason"),
+        },
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
-    data = sync_engine_svc.serialize_conflict(row)
-    data["message"] = (
-        "Conflict marked resolved. Client payload was not re-applied "
-        "(Stage 165 R1 honesty — avoids double-posting sales)."
-    )
-    return env(data, "Sync conflict resolved")
+    return env(data, data.get("message") or "Sync conflict resolved")
 
 
 @api.get("/offline/devices")

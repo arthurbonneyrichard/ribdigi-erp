@@ -2604,6 +2604,18 @@ Every feature in every phase must meet:
 
 **Stage 165 exit (2026-08-13):** K1, H1, R1, D1, H165x met — `docs/STAGE_165_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_337_STAGE165_FREEZE.md`. Fidelity: `docs/STAGE_165_FIDELITY.md`.
 
+**Stage 166 open (2026-08-13):** Offline Complete Hardening Fidelity — `docs/ADR_338_STAGE166_OPEN.md` + `docs/STAGE_166_PLAN.md` (C1 next).
+
+**Stage 166 C1 (2026-08-13):** Offline catalog IndexedDB cache (`test_stage166_catalog_c1.py`).
+
+**Stage 166 A1 (2026-08-13):** accept_client safe re-apply (`test_stage166_accept_a1.py`).
+
+**Stage 166 S1 (2026-08-13):** Hold soft stock reservation (`test_stage166_hold_reserve_s1.py`).
+
+**Stage 166 D1 (2026-08-13):** Offline Complete Hardening fidelity sync — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`).
+
+**Stage 166 exit (2026-08-13):** C1, A1, S1, D1, H166x met — `docs/STAGE_166_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_339_STAGE166_FREEZE.md`. Fidelity: `docs/STAGE_166_FIDELITY.md`.
+
 
 
 

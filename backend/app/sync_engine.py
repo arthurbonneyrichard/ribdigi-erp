@@ -70,6 +70,25 @@ def serialize_conflict(row: m.SyncConflict) -> dict[str, Any]:
     }
 
 
+def _conflict_was_applied(item: m.SyncQueueItem | None, snapshot: dict | None) -> bool:
+    """True when the original op already succeeded — never double-post pos_sale."""
+    if item is not None:
+        if item.applied_at is not None:
+            return True
+        if item.result_entity_id:
+            return True
+        if item.status == "applied":
+            return True
+    snap = snapshot or {}
+    qi = snap.get("queue_item") if isinstance(snap, dict) else None
+    if isinstance(qi, dict):
+        if qi.get("applied_at") or qi.get("result_entity_id"):
+            return True
+        if qi.get("status") == "applied":
+            return True
+    return False
+
+
 async def require_active_device(
     db: AsyncSession, tenant_id: str, device_id: str
 ) -> m.OfflineDevice:
@@ -142,9 +161,10 @@ async def sync_status(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
         "last_sync_at": last_sync_at,
         "conflict_count": conflict_count,
         "message": (
-            "Stage 164–165 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
+            "Stage 164–166 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
             "Idempotent offline POS path requires client_request_id. "
-            "POS Hold/Resume is Partial (cart park, no stock reserve). "
+            "Hold soft reserve (Stage 166 S1) is optional via reserve_stock. "
+            "accept_client may re-apply only when the original op was never applied. "
             "Full Offline Complete remains deferred."
         ),
     }
@@ -398,19 +418,29 @@ async def pull_ops(
         )
         now = datetime.utcnow()
         client_op_id = f"pull-catalog-{device.id}-{now.strftime('%Y%m%d%H%M%S')}"
+        from app.inventory import available_qty
+
         catalog_payload = {
             "products": [
                 {
                     "id": p.id,
                     "sku": p.sku,
                     "name": p.name,
+                    "barcode": getattr(p, "barcode", None),
                     "selling_price": float(p.selling_price or 0),
                     "stock_qty": float(getattr(p, "stock_qty", 0) or 0),
+                    "reserved_qty": float(getattr(p, "reserved_qty", 0) or 0),
+                    "available_qty": available_qty(
+                        getattr(p, "stock_qty", 0), getattr(p, "reserved_qty", 0)
+                    ),
                 }
                 for p in products
             ],
             "bounded": True,
             "limit": 100,
+            # Offline clients must treat stock as non-authoritative (Stage 166 C1).
+            "stock_authoritative": False,
+            "as_of": now.isoformat() + "Z",
         }
         catalog_op = m.SyncQueueItem(
             tenant_id=tenant_id,
@@ -507,8 +537,10 @@ async def resolve_conflict(
     tenant_id: str,
     conflict_id: str,
     resolution: str,
-) -> m.SyncConflict:
-    """Stage 165 R1 — mark conflict resolved honestly (no silent re-apply / double sale)."""
+    claims: dict | None = None,
+    user_id: str | None = None,
+) -> dict[str, Any]:
+    """Stage 165 R1 / Stage 166 A1 — resolve conflict; safe accept_client re-apply only."""
     action = (resolution or "").strip().lower()
     if action not in RESOLVE_ACTIONS:
         raise HTTPException(
@@ -525,14 +557,15 @@ async def resolve_conflict(
     ).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Sync conflict not found")
-    if row.status == "resolved":
-        return row
 
-    # Honesty: never re-apply client_payload as a new sale here — that could double-post.
-    # accept_client records operator preference only; re-apply remains a future stage.
-    row.status = "resolved"
-    row.resolution = action
-    row.resolved_at = datetime.utcnow()
+    if row.status == "resolved":
+        out = serialize_conflict(row)
+        out["reapplied"] = False
+        out["reapply_blocked_reason"] = "already_resolved"
+        out["message"] = "Conflict already resolved."
+        return out
+
+    item: m.SyncQueueItem | None = None
     if row.queue_item_id:
         item = (
             await db.execute(
@@ -542,10 +575,117 @@ async def resolve_conflict(
                 )
             )
         ).scalar_one_or_none()
-        if item and item.status == "conflict":
-            item.status = "acked" if action == "keep_server" else "acked"
-            item.error = (item.error or "") + f"; conflict resolved via {action}"
-            item.updated_at = datetime.utcnow()
-            item.acked_at = datetime.utcnow()
+
+    reapplied = False
+    reapply_blocked_reason: str | None = None
+    reapply_queue_item: dict | None = None
+    message = "Conflict marked resolved."
+
+    if action == "accept_client":
+        if _conflict_was_applied(item, row.server_snapshot):
+            # Honesty: never double-post an already-applied POS (or other) op.
+            reapply_blocked_reason = "original_op_already_applied"
+            message = (
+                "Conflict resolved with accept_client. Client payload was not re-applied "
+                "because the original op was already applied (Stage 166 A1 — avoids double-post)."
+            )
+        else:
+            # Safe path: original never applied — re-apply under a new client_op_id.
+            reapply_op_id = f"reapply-{row.id}"
+            if len(reapply_op_id) > 80:
+                reapply_op_id = reapply_op_id[:80]
+            existing_reapply = await _get_by_client_op(db, tenant_id, reapply_op_id)
+            if existing_reapply:
+                reapplied = existing_reapply.status == "applied"
+                reapply_queue_item = serialize_queue_item(existing_reapply)
+                message = (
+                    "Conflict resolved; prior accept_client re-apply reused (idempotent)."
+                )
+            else:
+                now = datetime.utcnow()
+                new_item = m.SyncQueueItem(
+                    tenant_id=tenant_id,
+                    device_id=row.device_id,
+                    direction="push",
+                    op_type=row.op_type,
+                    client_op_id=reapply_op_id,
+                    payload=row.client_payload or {},
+                    status="pending",
+                    created_at=now,
+                    updated_at=now,
+                )
+                db.add(new_item)
+                await db.flush()
+                try:
+                    if row.op_type == "ping":
+                        new_item.status = "applied"
+                        new_item.applied_at = datetime.utcnow()
+                        new_item.result_payload = {"pong": True, "reapplied_from": row.id}
+                    elif row.op_type == "pos_sale":
+                        if not claims:
+                            raise HTTPException(
+                                status_code=400,
+                                detail="claims required to re-apply pos_sale",
+                            )
+                        sale_out = await _apply_pos_sale_op(
+                            db,
+                            claims=claims,
+                            user_id=user_id or claims.get("sub"),
+                            payload=row.client_payload or {},
+                        )
+                        new_item.status = "applied"
+                        new_item.applied_at = datetime.utcnow()
+                        new_item.result_entity_id = sale_out.get("id")
+                        new_item.result_payload = _json_safe(sale_out)
+                    else:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"cannot re-apply unsupported op_type: {row.op_type}",
+                        )
+                    new_item.updated_at = datetime.utcnow()
+                    await db.flush()
+                    reapplied = True
+                    reapply_queue_item = serialize_queue_item(new_item)
+                    message = (
+                        "Conflict resolved; client payload re-applied under a new client_op_id "
+                        "(Stage 166 A1)."
+                    )
+                except HTTPException as exc:
+                    detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+                    new_item.status = "failed"
+                    new_item.error = detail
+                    new_item.updated_at = datetime.utcnow()
+                    await db.flush()
+                    reapply_blocked_reason = f"reapply_failed:{detail}"
+                    reapply_queue_item = serialize_queue_item(new_item)
+                    message = (
+                        "Conflict resolved, but accept_client re-apply failed "
+                        f"({detail})."
+                    )
+    elif action == "keep_server":
+        message = (
+            "Conflict marked resolved (keep_server). Client payload was not re-applied "
+            "(Stage 165 R1 honesty)."
+        )
+    else:
+        message = (
+            "Conflict dismissed. Client payload was not re-applied "
+            "(Stage 165 R1 honesty)."
+        )
+
+    row.status = "resolved"
+    row.resolution = action
+    row.resolved_at = datetime.utcnow()
+    if item and item.status == "conflict":
+        item.status = "acked"
+        item.error = (item.error or "") + f"; conflict resolved via {action}"
+        item.updated_at = datetime.utcnow()
+        item.acked_at = datetime.utcnow()
     await db.flush()
-    return row
+
+    out = serialize_conflict(row)
+    out["reapplied"] = reapplied
+    out["reapply_blocked_reason"] = reapply_blocked_reason
+    out["reapply_queue_item"] = reapply_queue_item
+    out["message"] = message
+    return out

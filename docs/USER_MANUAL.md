@@ -100,9 +100,13 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Offline sync (Stage 163–164):** Settings → Offline sync (`/company#offline-sync`) registers/revokes tenant devices and shows real sync queue depths / open conflicts. The top bar shows browser **ONLINE/OFFLINE** status. Sync APIs (`/sync/push|pull|ack|conflicts`) are live; offline POS ops require `client_request_id` for idempotency. Hold/Resume and Offline Complete remain deferred.
 
-**POS Hold/Resume (Stage 165 H1 Partial):** On POS, **Hold cart** parks the current cart for the cashier (`/pos#holds`). Resume restores lines into the cart — stock is **not** reserved. Discard soft-closes a hold.
+**POS Hold/Resume (Stage 165 H1 / Stage 166 S1):** On POS, **Hold cart** parks the current cart for the cashier (`/pos#holds`). When online, Hold soft-reserves stock via `product.reserved_qty` (`reserve_stock: true`). Resume/discard releases the soft reserve. This is **not** a sale and is **not** Offline Complete.
 
 **Offline queue (Stage 165 K1):** Bind a device under Settings → Offline sync (**Bind browser**). When the browser is OFFLINE, Complete sale enqueues into IndexedDB and flushes via `/sync/push` when back online.
+
+**Offline catalog (Stage 166 C1):** Use **Refresh offline catalog** on POS (requires bound device) to cache a `/sync/pull` product snapshot in IndexedDB. Offline search uses that cache; stock figures are labeled **stale / non-authoritative**.
+
+**Conflict accept client (Stage 166 A1):** Settings → Offline sync can **Accept client** on an open conflict. Re-apply runs only when the original op was never applied; already-applied POS is blocked to prevent double-post.
 
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width

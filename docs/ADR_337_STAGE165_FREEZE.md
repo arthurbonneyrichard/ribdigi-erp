@@ -24,6 +24,4 @@ Stage 165 Tenant MVP Offline Client Queue + Hold/Resume + Conflict Resolve Fidel
 
 ## Next stage
 
-Stage 166 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 165 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Offline Complete hardening — stock-safe offline catalog cache + conflict accept_client re-apply policy + Hold stock reservation ADR (no fake Completes).
+Stage 166 opened under [ADR-338](ADR_338_STAGE166_OPEN.md) (Offline Complete Hardening Fidelity) and froze under [ADR-339](ADR_339_STAGE166_FREEZE.md). Stage 165 feature scope remains frozen, except Stage 166 A1 supersedes Stage 165 R1 accept_client non-reapply with a safe re-apply policy.
