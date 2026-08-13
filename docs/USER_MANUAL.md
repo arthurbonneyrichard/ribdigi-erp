@@ -112,6 +112,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Offline device revoke (Stage 168 R1):** Revoking a device under Settings → Offline sync soft-blocks that device. Pending sync queue ops are **kept** (not auto-applied). Bind a new active device before flushing again. Offline Complete remains deferred.
 
+**Ops runbooks (Stage 169):** Operators follow `docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md` for backup/restore drills, `docs/MIGRATION_GATE_MVP.md` before schema upgrades, and `docs/OFFLINE_SYNC_RUNBOOK_MVP.md` for offline/sync procedures. Live Completes remain deferred.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

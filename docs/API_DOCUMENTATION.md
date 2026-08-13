@@ -1718,3 +1718,5 @@ Stage 166 D1 — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`): 
 Stage 167 D1 — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`): `/sync/pull` catalog adds `recommended_ttl_seconds`; conflict serialize includes `summary`; `POST /pos/holds/expire-stale` + `pos_held_carts.expires_at` (Alembic `20260813_0095`, 4h soft-reserve TTL). Offline Complete remains deferred.
 
 Stage 168 D1 — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`): `DELETE /offline/devices/{id}` returns `pending_queue` honesty; revoked device sync returns 409 `OFFLINE_DEVICE_REVOKED` with pending counts; flush path remains `POST /sync/push`. Offline Complete remains deferred (`docs/OFFLINE_COMPLETE_ATTESTATION.md`).
+
+Stage 169 D1 — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`): ops packaging only — backup drill honesty / migration gate / offline-sync runbook; no new public API Completes; live DR and production migrate remain deferred.

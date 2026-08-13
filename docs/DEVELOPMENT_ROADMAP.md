@@ -2640,6 +2640,18 @@ Every feature in every phase must meet:
 
 **Stage 168 exit (2026-08-13):** W1, F1, R1, D1, H168x met — `docs/STAGE_168_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_343_STAGE168_FREEZE.md`. Fidelity: `docs/STAGE_168_FIDELITY.md`.
 
+**Stage 169 open (2026-08-13):** Tenant MVP Production Ops Hardening Fidelity — `docs/ADR_344_STAGE169_OPEN.md` + `docs/STAGE_169_PLAN.md` (B1 next).
+
+**Stage 169 B1 (2026-08-13):** Backup restore drill honesty (`test_stage169_backup_drill_b1.py`).
+
+**Stage 169 M1 (2026-08-13):** Migration gate checklist (`test_stage169_migration_gate_m1.py`).
+
+**Stage 169 R1 (2026-08-13):** Offline/sync runbook fidelity (`test_stage169_offline_runbook_r1.py`).
+
+**Stage 169 D1 (2026-08-13):** Production Ops Hardening fidelity sync — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`).
+
+**Stage 169 exit (2026-08-13):** B1, M1, R1, D1, H169x met — `docs/STAGE_169_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_345_STAGE169_FREEZE.md`. Fidelity: `docs/STAGE_169_FIDELITY.md`.
+
 
 
 

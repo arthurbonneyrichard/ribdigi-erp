@@ -47,3 +47,7 @@ Every step keeps `done: false`. Top-level `live_backup_restore_claimed: false` /
 ## Sign-off
 
 Stage 35 R1 is met when this doc + register JSON + evidence JSON exist, `test_e2e_backup_restore_r1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / plan / roadmap cite Stage 35 R1 without inventing live restore or PITR drill success.
+
+## Stage 169 B1 amendment
+
+Operator drill honesty pack: [BACKUP_RESTORE_DRILL_HONESTY_MVP.md](BACKUP_RESTORE_DRILL_HONESTY_MVP.md) (`ops/mvp/backup-restore-drill-honesty.json`, `test_stage169_backup_drill_b1.py`). Live claims remain false.

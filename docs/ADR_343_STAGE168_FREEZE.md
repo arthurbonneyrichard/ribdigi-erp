@@ -24,6 +24,4 @@ Stage 168 Offline Complete Attestation Fidelity delivered SW static-cache contra
 
 ## Next stage
 
-Stage 169 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 168 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP production ops hardening — backup restore drill honesty + migration gate checklist + runbook fidelity for offline/sync (no fake Completes).
+Stage 169 opened under [ADR-344](ADR_344_STAGE169_OPEN.md) (Tenant MVP Production Ops Hardening Fidelity) and froze under [ADR-345](ADR_345_STAGE169_FREEZE.md). Stage 168 feature scope remains frozen.

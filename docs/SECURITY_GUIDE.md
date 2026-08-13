@@ -1024,6 +1024,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 168 R1** | Device revoke mid-queue honesty (`test_stage168_revoke_r1.py`) |
 | **Stage 168 D1** | Offline attestation fidelity — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`) |
 | **Stage 168 H168x** | Exit + freeze — `docs/STAGE_168_EXIT_CRITERIA.md`, ADR-343 (`test_stage168_exit_h168x.py`); Stages 1–168 frozen |
+| **Stage 169 open** | Production Ops Hardening — `docs/STAGE_169_PLAN.md`, ADR-344 (`test_stage169_open.py`) |
+| **Stage 169 B1** | Backup restore drill honesty (`test_stage169_backup_drill_b1.py`) |
+| **Stage 169 M1** | Migration gate checklist / single Alembic head (`test_stage169_migration_gate_m1.py`) |
+| **Stage 169 R1** | Offline/sync operator runbook (`test_stage169_offline_runbook_r1.py`) |
+| **Stage 169 D1** | Ops hardening fidelity — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`) |
+| **Stage 169 H169x** | Exit + freeze — `docs/STAGE_169_EXIT_CRITERIA.md`, ADR-345 (`test_stage169_exit_h169x.py`); Stages 1–169 frozen |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

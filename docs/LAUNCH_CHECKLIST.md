@@ -791,6 +791,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Device revoke mid-queue honesty (Stage 168 R1: `test_stage168_revoke_r1.py`)
 - [x] Stage 168 fidelity sync (D1: `test_stage168_fidelity_d1.py`, `docs/STAGE_168_FIDELITY.md`)
 - [x] Stage 168 exit + freeze (H168x: `test_stage168_exit_h168x.py`, `docs/STAGE_168_EXIT_CRITERIA.md`, ADR-343)
+- [x] Stage 169 track opened (ADR-344: `test_stage169_open.py`, `docs/STAGE_169_PLAN.md`) — Production Ops Hardening; closed under ADR-345
+- [x] Backup restore drill honesty (Stage 169 B1: `test_stage169_backup_drill_b1.py`, `docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md`)
+- [x] Migration gate checklist (Stage 169 M1: `test_stage169_migration_gate_m1.py`, `docs/MIGRATION_GATE_MVP.md`)
+- [x] Offline/sync runbook (Stage 169 R1: `test_stage169_offline_runbook_r1.py`, `docs/OFFLINE_SYNC_RUNBOOK_MVP.md`)
+- [x] Stage 169 fidelity sync (D1: `test_stage169_fidelity_d1.py`, `docs/STAGE_169_FIDELITY.md`)
+- [x] Stage 169 exit + freeze (H169x: `test_stage169_exit_h169x.py`, `docs/STAGE_169_EXIT_CRITERIA.md`, ADR-345)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

@@ -113,3 +113,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 168 decision (opened after Stage 167 freeze)
 
 **Offline Complete Attestation Fidelity** — SW static-cache contract (W1), offline sale/flush API attestation (F1), device revoke mid-queue honesty (R1). Offline Complete product claim remains deferred (Stage 169+).
+
+## Stage 169 decision (opened after Stage 168 freeze)
+
+**Tenant MVP Production Ops Hardening Fidelity** — backup restore drill honesty (B1), migration gate checklist (M1), offline/sync runbook (R1). Live DR / production migrate / Offline Complete / go-live remain deferred (Stage 170+).

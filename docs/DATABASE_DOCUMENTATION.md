@@ -1819,6 +1819,10 @@ Cashier cart park for Hold/Resume Partial. Status held/resumed/discarded. Defaul
 - `pos_held_carts.expires_at` — set when soft-reserved (default TTL 4h); null for park-only holds
 - Status may become `expired` after cleanup; releases `reserved_qty`
 
+### Stage 169 — Migration gate (packaging)
+
+Pre-deploy Alembic honesty: single head + valid revision chain proven by `test_stage169_migration_gate_m1.py`. Operator checklist: `docs/MIGRATION_GATE_MVP.md` / `ops/mvp/migration-gate.json`. Does not claim production migrate Complete.
+
 ---
 
 **Document Version:** 1.0.0  

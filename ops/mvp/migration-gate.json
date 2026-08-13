@@ -1,0 +1,47 @@
+{
+  "id": "migration-gate",
+  "stage": 169,
+  "pack": "M1",
+  "doc": "docs/MIGRATION_GATE_MVP.md",
+  "packaging_complete": true,
+  "ci_deploy_claimed": false,
+  "production_migrate_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "gate_checks": [
+    "single_alembic_head",
+    "revision_chain_resolves",
+    "no_revision_cycles",
+    "offline_sync_revisions_0091_0095_present"
+  ],
+  "operator_steps": [
+    {
+      "id": "mg-heads",
+      "title": "Confirm alembic heads is a single head",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mg-staging-upgrade",
+      "title": "alembic upgrade head on staging/test DB",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mg-backup-before-prod",
+      "title": "Logical backup before production migrate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mg-prod-migrate",
+      "title": "Apply production migrate job (Remaining until operator)",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "evidence": [
+    "backend/tests/test_stage169_migration_gate_m1.py"
+  ],
+  "message": "Stage 169 M1 static migration gate only. Main ci.yml remains deploy-free (Stage 18 C1)."
+}
