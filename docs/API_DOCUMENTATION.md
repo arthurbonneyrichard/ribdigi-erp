@@ -805,6 +805,8 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 
 **Get Current Session:** `GET /pos/sessions/current`
 
+**Shift Report:** `GET /pos/sessions/{session_id}/report` — sales list, `payment_breakdown`, `summary` (sale_count, subtotal, tax, discounts, net_sales, return_count, return_total, net_after_returns), and `returns[]` for the cashier/store during the shift window (BR-8.2).
+
 ### 8.2 POS Sale
 **Create Sale:** `POST /pos/sales`
 

@@ -805,14 +805,27 @@ export default function Page() {
                 <strong>{money(Number(shiftReport.payment_breakdown?.other || 0))}</strong>
               </div>
               <div>
+                <span>Discounts</span>
+                <strong>{money(Number(shiftReport.summary?.discounts || 0))}</strong>
+              </div>
+              <div>
+                <span>Returns</span>
+                <strong>{money(Number(shiftReport.summary?.return_total || 0))}</strong>
+              </div>
+              <div>
                 <span>Expected drawer</span>
                 <strong>{money(Number(shiftReport.session?.expected_cash || 0))}</strong>
               </div>
               <div>
-                <span>Total sales</span>
-                <strong>{money(Number(shiftReport.payment_breakdown?.total || 0))}</strong>
+                <span>Net sales</span>
+                <strong>{money(Number(shiftReport.summary?.net_sales ?? shiftReport.payment_breakdown?.total || 0))}</strong>
               </div>
             </div>
+            <p className="muted" style={{ margin: '8px 0' }}>
+              {shiftReport.summary?.sale_count ?? 0} sales · tax{' '}
+              {money(Number(shiftReport.summary?.tax || 0))} · net after returns{' '}
+              {money(Number(shiftReport.summary?.net_after_returns ?? 0))}
+            </p>
             <div className="tpos-report-table-wrap">
               <table className="tpos-report-table">
                 <thead>
@@ -821,6 +834,7 @@ export default function Page() {
                     <th>Time</th>
                     <th>Customer</th>
                     <th>Pay</th>
+                    <th>Disc</th>
                     <th>Tax</th>
                     <th>Total</th>
                   </tr>
@@ -828,7 +842,7 @@ export default function Page() {
                 <tbody>
                   {(shiftReport.sales || []).length === 0 && (
                     <tr>
-                      <td colSpan={6} className="muted">
+                      <td colSpan={7} className="muted">
                         No sales in this shift yet.
                       </td>
                     </tr>
@@ -854,6 +868,7 @@ export default function Page() {
                               .join(' + ')
                           : String(sale.payment_method || 'cash').toUpperCase()}
                       </td>
+                      <td>{money(Number(sale.discounts || sale.discount_amount || 0))}</td>
                       <td>{money(Number(sale.tax || 0))}</td>
                       <td>{money(Number(sale.total || 0))}</td>
                     </tr>
@@ -861,6 +876,31 @@ export default function Page() {
                 </tbody>
               </table>
             </div>
+            {(shiftReport.returns || []).length > 0 && (
+              <div className="tpos-report-table-wrap" style={{ marginTop: 12 }}>
+                <h3 style={{ margin: '0 0 8px' }}>Returns</h3>
+                <table className="tpos-report-table">
+                  <thead>
+                    <tr>
+                      <th>Return</th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shiftReport.returns.map((ret: any) => (
+                      <tr key={ret.id}>
+                        <td>{ret.return_number}</td>
+                        <td>{ret.reason}</td>
+                        <td>{ret.status}</td>
+                        <td>{money(Number(ret.total_amount || 0))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         )}
 

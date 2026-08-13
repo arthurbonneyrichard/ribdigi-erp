@@ -354,6 +354,7 @@ async def serialize_session(db: AsyncSession, session: m.PosSession) -> dict:
 
 
 async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
+    """Shift sales summary with discounts, returns, and payment breakdown (BR-8.2)."""
     sales = (
         await db.execute(
             select(m.Transaction)
@@ -365,24 +366,101 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
             .order_by(m.Transaction.created_at.asc())
         )
     ).scalars().all()
-    return {
-        "session": await serialize_session(db, session),
-        "sales": [
+
+    sale_rows: list[dict] = []
+    subtotal_sum = 0.0
+    tax_sum = 0.0
+    discount_sum = 0.0
+    net_sum = 0.0
+    for s in sales:
+        payload = s.payload or {}
+        cart_disc = float(payload.get("discount_amount") or 0)
+        line_disc = float(payload.get("line_discounts") or 0)
+        disc = round(cart_disc + line_disc, 2)
+        subtotal = float(s.subtotal or 0)
+        tax = float(s.tax or 0)
+        total = float(s.total or 0)
+        subtotal_sum += subtotal
+        tax_sum += tax
+        discount_sum += disc
+        net_sum += total
+        sale_rows.append(
             {
                 "id": s.id,
                 "reference": s.reference,
-                "total": float(s.total or 0),
-                "tax": float(s.tax or 0),
-                "subtotal": float(s.subtotal or 0),
+                "total": total,
+                "tax": tax,
+                "subtotal": subtotal,
                 "status": s.status,
-                "payment_method": (s.payload or {}).get("payment_method", "cash"),
-                "payments": (s.payload or {}).get("payments") or [],
-                "customer_name": (s.payload or {}).get("customer_name"),
-                "discount_amount": float((s.payload or {}).get("discount_amount") or 0),
+                "payment_method": payload.get("payment_method", "cash"),
+                "payments": payload.get("payments") or [],
+                "customer_name": payload.get("customer_name"),
+                "discount_amount": cart_disc,
+                "line_discounts": line_disc,
+                "discounts": disc,
                 "created_at": s.created_at,
             }
-            for s in sales
-        ],
+        )
+
+    window_end = session.closed_at or datetime.utcnow()
+    returns_raw = (
+        await db.execute(
+            select(m.SalesReturn)
+            .where(
+                m.SalesReturn.tenant_id == session.tenant_id,
+                m.SalesReturn.created_at >= session.opened_at,
+                m.SalesReturn.created_at <= window_end,
+                m.SalesReturn.status != "cancelled",
+            )
+            .order_by(m.SalesReturn.created_at.asc())
+        )
+    ).scalars().all()
+
+    return_rows: list[dict] = []
+    return_total = 0.0
+    for ret in returns_raw:
+        include = ret.created_by == session.user_id
+        if not include and session.store_id:
+            inv = await db.get(m.SalesInvoice, ret.sales_invoice_id)
+            include = bool(
+                inv
+                and inv.tenant_id == session.tenant_id
+                and inv.store_id == session.store_id
+            )
+        if not include:
+            continue
+        amount = float(ret.total_amount or 0)
+        return_total += amount
+        return_rows.append(
+            {
+                "id": ret.id,
+                "return_number": ret.return_number,
+                "credit_note_number": ret.credit_note_number,
+                "status": ret.status,
+                "reason": ret.reason,
+                "total_amount": amount,
+                "sales_invoice_id": ret.sales_invoice_id,
+                "posted_at": ret.posted_at,
+                "created_at": ret.created_at,
+            }
+        )
+
+    summary = {
+        "sale_count": len(sale_rows),
+        "subtotal": round(subtotal_sum, 2),
+        "tax": round(tax_sum, 2),
+        "discounts": round(discount_sum, 2),
+        "net_sales": round(net_sum, 2),
+        "return_count": len(return_rows),
+        "return_total": round(return_total, 2),
+        "net_after_returns": round(net_sum - return_total, 2),
+    }
+
+    return {
+        "session": await serialize_session(db, session),
+        "summary": summary,
+        "sales": sale_rows,
+        "returns": return_rows,
         "payment_breakdown": {
             "cash": float(session.cash_sales or 0),
             "card": float(session.card_sales or 0),
