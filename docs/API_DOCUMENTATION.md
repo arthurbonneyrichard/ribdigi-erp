@@ -961,7 +961,7 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 ## 11. Credit Management
 
 ### 11.1 Customer Credit
-**Get Credit Info:** `GET /customers/{customer_id}/credit`
+**Get Credit Info:** `GET /customers/{customer_id}/credit` — `credit_limit`, `outstanding_balance`, `available_credit` (`null` when unlimited/`credit_limit<=0`), `is_over_limit`, `credit_sales[]` open invoices. Requires `credit:read`.
 
 **Credit limit enforcement / override (BR-11.1):** posting a sales invoice, POS credit checkout, or legacy `POST /sales` that would push `balance + amount` above `credit_limit` returns `409` with `detail.code = CREDIT_LIMIT_EXCEEDED` (includes `over_by`, balances). Retry with body:
 ```json
@@ -1003,6 +1003,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 ```
 
 ### 11.2 Supplier Credit
+**Get Credit / Balance:** `GET /suppliers/{supplier_id}/credit` — `outstanding_balance`, `open_bills[]` (PIs + uninvoiced POs). Requires `credit:read`.  
 **Get Outstanding Bills:** `GET /suppliers/{supplier_id}/outstanding`  
 **Supplier History:** `GET /suppliers/{supplier_id}/history?from_date=&to_date=` — purchase history (POs + purchase invoices), returns, and payments with `summary` totals (BR-6.1).
 

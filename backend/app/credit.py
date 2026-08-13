@@ -824,6 +824,168 @@ async def supplier_history(
     }
 
 
+async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: str) -> dict:
+    """Real-time customer balance + credit limit snapshot (BR-7.1)."""
+    customer = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == customer_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "customer",
+            )
+        )
+    ).scalar_one_or_none()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    invoices = (
+        await db.execute(
+            select(m.SalesInvoice)
+            .where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.customer_id == customer_id,
+                m.SalesInvoice.status.in_(["posted", "sent", "partial", "overdue"]),
+            )
+            .order_by(m.SalesInvoice.due_date.asc().nulls_last(), m.SalesInvoice.created_at.asc())
+        )
+    ).scalars().all()
+
+    credit_sales: list[dict] = []
+    open_invoice_total = 0.0
+    for inv in invoices:
+        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        if due <= 0:
+            continue
+        open_invoice_total += due
+        credit_sales.append(
+            {
+                "invoice_id": inv.id,
+                "invoice_number": inv.invoice_number,
+                "amount": round(due, 2),
+                "total_amount": float(inv.total_amount or 0),
+                "paid_amount": float(inv.paid_amount or 0),
+                "due_date": inv.due_date,
+                "status": inv.status,
+            }
+        )
+
+    credit_limit = float(customer.credit_limit or 0)
+    outstanding = float(customer.balance or 0)
+    # Prefer live party balance; fall back to open invoice sum if balance unset/stale at 0
+    if abs(outstanding) < 1e-9 and open_invoice_total > 0:
+        outstanding = round(open_invoice_total, 2)
+    unlimited = credit_limit <= 0
+    available = None if unlimited else round(max(credit_limit - outstanding, 0), 2)
+    over_limit = (not unlimited) and outstanding > credit_limit + 1e-9
+
+    return {
+        "customer": {
+            "id": customer.id,
+            "name": customer.name,
+            "email": customer.email,
+            "phone": customer.phone,
+            "payment_terms_days": getattr(customer, "payment_terms_days", None),
+        },
+        "credit_limit": credit_limit,
+        "credit_unlimited": unlimited,
+        "outstanding_balance": round(outstanding, 2),
+        "available_credit": available,
+        "is_over_limit": over_limit,
+        "open_invoice_count": len(credit_sales),
+        "open_invoice_total": round(open_invoice_total, 2),
+        "credit_sales": credit_sales,
+    }
+
+
+async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: str) -> dict:
+    """Real-time supplier payable balance snapshot (BR-6.1)."""
+    supplier = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == supplier_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "supplier",
+            )
+        )
+    ).scalar_one_or_none()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    invoices = (
+        await db.execute(
+            select(m.PurchaseInvoice).where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.supplier_id == supplier_id,
+                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+            )
+        )
+    ).scalars().all()
+    orders = (
+        await db.execute(
+            select(m.PurchaseOrder).where(
+                m.PurchaseOrder.tenant_id == tenant_id,
+                m.PurchaseOrder.supplier_id == supplier_id,
+                m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
+            )
+        )
+    ).scalars().all()
+
+    open_bills: list[dict] = []
+    open_total = 0.0
+    for inv in invoices:
+        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        if due <= 0:
+            continue
+        open_total += due
+        open_bills.append(
+            {
+                "document_type": "purchase_invoice",
+                "purchase_invoice_id": inv.id,
+                "invoice_number": inv.invoice_number,
+                "purchase_order_id": inv.purchase_order_id,
+                "amount": round(due, 2),
+                "due_date": inv.due_date,
+                "status": inv.status,
+            }
+        )
+    invoiced_pos = {i.purchase_order_id for i in invoices if i.purchase_order_id}
+    for po in orders:
+        if po.id in invoiced_pos:
+            continue
+        due = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        if due <= 0:
+            continue
+        open_total += due
+        open_bills.append(
+            {
+                "document_type": "purchase_order",
+                "purchase_order_id": po.id,
+                "po_number": po.po_number,
+                "amount": round(due, 2),
+                "due_date": po.due_date,
+                "status": po.status,
+            }
+        )
+
+    outstanding = float(supplier.balance or 0)
+    if abs(outstanding) < 1e-9 and open_total > 0:
+        outstanding = round(open_total, 2)
+
+    return {
+        "supplier": {
+            "id": supplier.id,
+            "name": supplier.name,
+            "email": getattr(supplier, "email", None),
+            "phone": getattr(supplier, "phone", None),
+            "payment_terms_days": getattr(supplier, "payment_terms_days", None),
+        },
+        "outstanding_balance": round(outstanding, 2),
+        "open_bill_count": len(open_bills),
+        "open_bill_total": round(open_total, 2),
+        "open_bills": open_bills,
+    }
+
+
 async def supplier_payment_schedule(
     db: AsyncSession,
     tenant_id: str,
