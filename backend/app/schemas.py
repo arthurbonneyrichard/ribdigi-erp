@@ -565,6 +565,22 @@ class WarehouseCreate(BaseModel):
     name: str
     code: str
     store_id: str | None = None
+    warehouse_type: str = "retail"
+    manager_id: str | None = None
+    address: str | None = None
+    capacity: float | None = Field(default=None, ge=0)
+
+
+class WarehouseUpdate(BaseModel):
+    name: str | None = None
+    store_id: str | None = None
+    clear_store: bool = False
+    warehouse_type: str | None = None
+    manager_id: str | None = None
+    clear_manager: bool = False
+    address: str | None = None
+    capacity: float | None = Field(default=None, ge=0)
+    clear_capacity: bool = False
 
 
 class StockTransferItemCreate(BaseModel):

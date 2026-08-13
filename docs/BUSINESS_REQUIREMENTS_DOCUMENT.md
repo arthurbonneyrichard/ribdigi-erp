@@ -222,10 +222,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Configure storage locations for inventory.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create multiple warehouses
-  - [ ] Define warehouse type (retail, bulk, cold storage, etc.)
-  - [ ] Assign warehouse manager
-  - [ ] Configure warehouse address and capacity
+  - [x] Create multiple warehouses (`POST /warehouses`; unique `code` per tenant)
+  - [x] Define warehouse type (retail, bulk, cold storage, etc.) (`warehouse_type`)
+  - [x] Assign warehouse manager (`manager_id` tenant user)
+  - [x] Configure warehouse address and capacity (`address`, `capacity`; PATCH + Stores UI)
 
 #### BR-2.5 Department Setup
 - **Description:** Organizational structure configuration.
