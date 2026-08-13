@@ -1185,6 +1185,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Credit titles + Accounting cross-links (Stage 232 U1: `test_stage232_ui_u1.py`)
 - [x] Stage 232 fidelity sync (D1: `test_stage232_fidelity_d1.py`, `docs/STAGE_232_FIDELITY.md`)
 - [x] Stage 232 exit + freeze (H232x: `test_stage232_exit_h232x.py`, `docs/STAGE_232_EXIT_CRITERIA.md`, ADR-471)
+- [x] Stage 233 track opened (ADR-472: `test_stage233_open.py`, `docs/STAGE_233_PLAN.md`) — WAL Offsite Remaining-Gate Index; closed under ADR-473
+- [x] WAL offsite remaining-gate hub (Stage 233 I1: `test_stage233_index_i1.py`, `docs/WAL_OFFSITE_REMAINING_GATE_MVP.md`)
+- [x] WAL offsite blocker matrix (Stage 233 B1: `test_stage233_blockers_b1.py`, `docs/WAL_OFFSITE_RG_BLOCKERS_MVP.md`)
+- [x] Stage 26 / Stage 27 / Stage 231 pointers (Stage 233 P1: `test_stage233_pointers_p1.py`, `docs/WAL_OFFSITE_RG_POINTERS_MVP.md`)
+- [x] Stage 233 fidelity sync (D1: `test_stage233_fidelity_d1.py`, `docs/STAGE_233_FIDELITY.md`)
+- [x] Stage 233 exit + freeze (H233x: `test_stage233_exit_h233x.py`, `docs/STAGE_233_EXIT_CRITERIA.md`, ADR-473)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

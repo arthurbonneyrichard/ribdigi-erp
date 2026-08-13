@@ -345,3 +345,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Accounts Receivable & Payable Accounting Surface Discoverability** — Shell Accounts Receivable / Accounts Payable leaves (S1), `/accounting/receivables` + `/accounting/payables` routes (R1), Credit titles + Accounting cross-links (U1). Prefixed `AR_AP_SURFACE_*`. Extends Stage 22 Credit engine (no new AR/AP engine claim). Distinct from Stage 98 O1 Outstanding Receivables/Payables leaves and Stage 231 PITR drill pack remaining-gate.
 
+## Stage 233 decision (opened after Stage 232 freeze)
+
+**Tenant MVP WAL Offsite Remaining-Gate Index Fidelity** — WAL offsite remaining-gate hub (I1), blocker matrix (B1), Stage 26 / Stage 27 / Stage 231 pointers with explicit non-claim (P1). Prefixed `WAL_OFFSITE_*`. Live offsite backup Completes remain deferred (Stage 234+). Distinct from Stage 231 PITR drill pack remaining-gate and Stage 232 AR/AP accounting surface.
+

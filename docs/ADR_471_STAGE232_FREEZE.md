@@ -24,6 +24,6 @@ Stage 232 Tenant MVP Accounts Receivable & Payable Accounting Surface Discoverab
 
 ## Next stage
 
-Stage 233 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 232 feature scope remains frozen.
+Stage 233 opened under **ADR-472** after CONTINUE/NEXT (WAL Offsite Remaining-Gate Index Fidelity) and is frozen under **ADR-473**. Stage 232 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP WAL Offsite Remaining-Gate Index Fidelity — single index of WAL/offsite blockers (packaged Stage 26 W1 / Stage 27 B1 auto-`.ribbak` materials non-claim as live offsite backup Complete) with explicit non-claim (no live offsite Complete). Distinct from Stage 232 AR/AP accounting surface and Stage 231 PITR drill pack remaining-gate.
+**Amendment (2026-08-13):** Stage 233 runner-up outline was approved and opened (ADR-472); freeze ADR-473. Do not reopen Stage 232 scope.

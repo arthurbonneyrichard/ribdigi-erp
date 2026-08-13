@@ -1775,6 +1775,8 @@ Stage 230 D1 — `docs/STAGE_230_FIDELITY.md` (`test_stage230_fidelity_d1.py`): 
 Stage 231 D1 — `docs/STAGE_231_FIDELITY.md` (`test_stage231_fidelity_d1.py`): PITR drill pack remaining-gate index packaging only — blocker matrix / Stage 28/230/192 pointers; no new public API Completes; live PITR drill remains deferred.
 
 Stage 232 D1 — `docs/STAGE_232_FIDELITY.md` (`test_stage232_fidelity_d1.py`): AR/AP Accounting surface discoverability — Shell + `/accounting/receivables|payables` → existing `/credit?kind=`; no new public API Completes; Stage 22 Credit remains AR/AP authority.
+
+Stage 233 D1 — `docs/STAGE_233_FIDELITY.md` (`test_stage233_fidelity_d1.py`): WAL offsite remaining-gate index packaging only — blocker matrix / Stage 26/27/231 pointers; no new public API Completes; live offsite backup remains deferred.
 Stage 213 D1 — `docs/STAGE_213_FIDELITY.md` (`test_stage213_fidelity_d1.py`): attestation pack remaining-gate index packaging only — blocker matrix / Stage 30 A1/212/187 pointers; no new public API Completes; live attestation remains deferred.
 Stage 212 D1 — `docs/STAGE_212_FIDELITY.md` (`test_stage212_fidelity_d1.py`): evidence ledger remaining-gate index packaging only — blocker matrix / Stage 30/211 pointers; no new public API Completes; live evidence-ledger remains deferred.
 Stage 211 D1 — `docs/STAGE_211_FIDELITY.md` (`test_stage211_fidelity_d1.py`): incident remaining-gate index packaging only — blocker matrix / Stage 30/210 pointers; no new public API Completes; live incident-response remains deferred.

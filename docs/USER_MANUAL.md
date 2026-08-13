@@ -220,6 +220,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Accounts Receivable / Payable accounting surface (Stage 232):** Shell **Accounts Receivable** / **Accounts Payable** and Accounting page links open `/accounting/receivables` and `/accounting/payables` (route into Credit `?kind=`). Index `docs/AR_AP_ACCOUNTING_SURFACE_MVP.md`. Stage 22 Credit remains the AR/AP engine (not a new ledger).
 
+**WAL offsite remaining-gate index (Stage 233):** Status index is `docs/WAL_OFFSITE_REMAINING_GATE_MVP.md` → blockers `docs/WAL_OFFSITE_RG_BLOCKERS_MVP.md` → Stage 26/27/231 pointers `docs/WAL_OFFSITE_RG_POINTERS_MVP.md`. Live offsite backup Complete remains MISSING (not claimed). Distinct from Stage 231 PITR drill pack remaining-gate.
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

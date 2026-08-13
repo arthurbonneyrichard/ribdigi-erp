@@ -822,6 +822,12 @@ Authoritative MVP docs:
 - `docs/STAGE_232_FIDELITY.md` (`backend/tests/test_stage232_fidelity_d1.py`) — Stage 232 D1
 - `docs/STAGE_232_PLAN.md` (`backend/tests/test_stage232_open.py`) — Stage 232 open (ADR-470)
 - `docs/AR_AP_ACCOUNTING_SURFACE_MVP.md` / `ops/mvp/ar-ap-accounting-surface.json` — Stage 232 S1/R1/U1
+- `docs/STAGE_233_EXIT_CRITERIA.md` / `docs/ADR_473_STAGE233_FREEZE.md` (`backend/tests/test_stage233_exit_h233x.py`) — Stage 233 H233x
+- `docs/STAGE_233_FIDELITY.md` (`backend/tests/test_stage233_fidelity_d1.py`) — Stage 233 D1
+- `docs/STAGE_233_PLAN.md` (`backend/tests/test_stage233_open.py`) — Stage 233 open (ADR-472)
+- `docs/WAL_OFFSITE_REMAINING_GATE_MVP.md` / `ops/mvp/wal-offsite-remaining-gate.json` — Stage 233 I1
+- `docs/WAL_OFFSITE_RG_BLOCKERS_MVP.md` / `ops/mvp/wal-offsite-rg-blockers.json` — Stage 233 B1
+- `docs/WAL_OFFSITE_RG_POINTERS_MVP.md` / `ops/mvp/wal-offsite-rg-pointers.json` — Stage 233 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4071,4 +4077,16 @@ H232x met — `docs/STAGE_232_EXIT_CRITERIA.md`, ADR-471. Stages 1–232 frozen 
 ## Stage 232 open
 
 `docs/ADR_470_STAGE232_OPEN.md` + `docs/STAGE_232_PLAN.md` (`test_stage232_open.py`).
+
+## Stage 233 exit
+
+H233x met — `docs/STAGE_233_EXIT_CRITERIA.md`, ADR-473. Stages 1–233 frozen for Stage 233 feature scope.
+
+## Stage 233 D1 — Tenant MVP WAL Offsite Remaining-Gate Index Fidelity
+
+`docs/STAGE_233_FIDELITY.md` (`test_stage233_fidelity_d1.py`). `WAL_OFFSITE_*` remaining-gate index; live offsite backup still MISSING.
+
+## Stage 233 open
+
+`docs/ADR_472_STAGE233_OPEN.md` + `docs/STAGE_233_PLAN.md` (`test_stage233_open.py`).
 
