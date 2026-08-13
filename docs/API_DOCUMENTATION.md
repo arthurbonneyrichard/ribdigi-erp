@@ -1107,7 +1107,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 ### 14.3 Purchase Reports
 **Purchase Summary:** `GET /reports/purchases/summary?from_date=&to_date=`  
-**Supplier Purchases:** `GET /reports/purchases/suppliers?supplier_id=&from_date=&to_date=`
+**Supplier Purchases:** `GET /reports/purchases/suppliers?supplier_id=&from_date=&to_date=`  
+**Pending Orders:** `GET /reports/purchases/pending-orders?from_date=&to_date=&supplier_id=&status=` — POs not fully received (`draft` / `sent` / `partially_received`); optional `status` filter; returns outstanding qty + amount. Export `purchases_pending_orders`.
 
 ### 14.4 Expense Reports
 **Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=`  

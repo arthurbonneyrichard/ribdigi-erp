@@ -48,6 +48,7 @@ const REPORT_TYPES = [
   'inventory_valuation',
   'inventory_low_stock',
   'purchases_summary',
+  'purchases_pending_orders',
   'expenses_summary',
   'expenses_budget_vs_actual',
   'cash_flow',
@@ -162,8 +163,15 @@ export default function Page() {
         });
         setSuggestSelected({});
       } else if (nextTab === 'purchases') {
-        const suppliers = await api(`/reports/purchases/suppliers${qs()}`);
-        setData({ summary: r.data, suppliers: suppliers.data });
+        const [suppliers, pending] = await Promise.all([
+          api(`/reports/purchases/suppliers${qs()}`),
+          api(`/reports/purchases/pending-orders${qs()}`),
+        ]);
+        setData({
+          summary: r.data,
+          suppliers: suppliers.data,
+          pending: pending.data,
+        });
       } else {
         setData(r.data);
       }
@@ -828,11 +836,69 @@ export default function Page() {
 
       {tab === 'purchases' && data && (
         <>
-          <div className="card">
-            <p>Orders: {data.summary?.order_count}</p>
-            <p>Total: {data.summary?.total_amount}</p>
-            <p>Outstanding: {data.summary?.outstanding_amount}</p>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Orders (period)</div>
+              <div className="kpi">{data.summary?.order_count ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Total / outstanding $</div>
+              <div className="kpi">
+                {data.summary?.total_amount ?? 0} / {data.summary?.outstanding_amount ?? 0}
+              </div>
+            </div>
+            <div className="card">
+              <div className="muted">Pending POs</div>
+              <div className="kpi">{data.pending?.order_count ?? 0}</div>
+              <p className="muted">
+                Qty open {data.pending?.total_outstanding_qty ?? 0} · amt{' '}
+                {data.pending?.total_amount ?? 0}
+              </p>
+            </div>
           </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <button onClick={() => download('xlsx', 'purchases_pending_orders')}>
+              Pending orders Excel
+            </button>
+            <button onClick={() => download('csv', 'purchases_pending_orders')}>
+              Pending orders CSV
+            </button>
+          </div>
+          <h3 style={{ marginTop: 16 }}>Pending orders (not fully received)</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>PO</th>
+                <th>Supplier</th>
+                <th>Status</th>
+                <th>Ordered</th>
+                <th>Received</th>
+                <th>Outstanding qty</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.pending?.orders || []).map((o: any) => (
+                <tr key={o.id}>
+                  <td>{o.po_number}</td>
+                  <td>{o.supplier_name}</td>
+                  <td>{o.status}</td>
+                  <td>{o.ordered_qty}</td>
+                  <td>{o.received_qty}</td>
+                  <td>{o.outstanding_qty}</td>
+                  <td>{o.total_amount}</td>
+                </tr>
+              ))}
+              {!data.pending?.orders?.length && (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    No pending purchase orders
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <h3 style={{ marginTop: 16 }}>By supplier</h3>
           <table className="table">
             <thead>
               <tr>
