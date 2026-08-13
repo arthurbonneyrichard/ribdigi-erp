@@ -10,7 +10,7 @@ import {
   subscribeStoreContext,
 } from '../lib/storeContext';
 
-/** Stage 95 N1/P1 — MVP Navigation IA (discoverability; existing engines). */
+/** Stage 95 N1/P1 — leaf discoverability; Stage 162 N1 — approved expandable parents (§37). */
 type NavLink = {
   kind: 'link';
   label: string;
@@ -22,9 +22,78 @@ type NavSection = { kind: 'section'; label: string };
 
 type NavEntry = NavLink | NavSection;
 
+type NavGroupId =
+  | 'inventory'
+  | 'stock'
+  | 'sales'
+  | 'purchase'
+  | 'finance'
+  | 'people'
+  | 'stores'
+  | 'warehouse'
+  | 'report'
+  | 'settings';
+
+const APPROVED_NAV_GROUPS: { id: NavGroupId; label: string }[] = [
+  { id: 'inventory', label: 'Inventory' },
+  { id: 'stock', label: 'Stock' },
+  { id: 'sales', label: 'Sales' },
+  { id: 'purchase', label: 'Purchase' },
+  { id: 'finance', label: 'Finance & Accounts' },
+  { id: 'people', label: 'People' },
+  { id: 'stores', label: 'Stores' },
+  { id: 'warehouse', label: 'Warehouse' },
+  { id: 'report', label: 'Report' },
+  { id: 'settings', label: 'Settings' },
+];
+
+function classifyNavLink(link: NavLink): NavGroupId | 'dashboard' {
+  const href = link.href;
+  const path = href.split('?')[0].split('#')[0];
+  const qs = href.includes('?') ? href.slice(href.indexOf('?') + 1).split('#')[0] : '';
+  const hash = href.includes('#') ? href.slice(href.indexOf('#') + 1) : '';
+  const params = new URLSearchParams(qs);
+  const tab = params.get('tab') || '';
+
+  if (path === '/dashboard') return 'dashboard';
+  if (path === '/inventory') {
+    if (['stock', 'ops', 'counts', 'transfers', 'movements', 'opening'].includes(tab)) {
+      return 'stock';
+    }
+    return 'inventory';
+  }
+  if (path === '/pos') return 'sales';
+  if (path === '/sales') {
+    if (tab === 'customers' || qs.includes('tab=customers')) return 'people';
+    return 'sales';
+  }
+  if (path === '/purchasing') {
+    if (tab === 'suppliers' || qs.includes('tab=suppliers')) return 'people';
+    return 'purchase';
+  }
+  if (path === '/expenses' || path === '/accounting' || path === '/credit' || path === '/tax') {
+    return 'finance';
+  }
+  if (link.label === 'Billers') return 'people';
+  if (path === '/reports' || path === '/ai' || path === '/audit' || path === '/activity') {
+    return 'report';
+  }
+  if (path === '/stores') {
+    if (
+      hash.startsWith('warehouse') ||
+      qs.includes('warehouse_active') ||
+      href.includes('#warehouses')
+    ) {
+      return 'warehouse';
+    }
+    return 'stores';
+  }
+  if (path === '/company' || path === '/backup' || path === '/notifications') return 'settings';
+  return 'settings';
+}
+
 const primaryNavSpec: NavEntry[] = [
   { kind: 'link', label: 'Dashboard', href: '/dashboard', modules: ['dashboard'] },
-  { kind: 'section', label: 'Commerce' },
   { kind: 'link', label: 'Inventory', href: '/inventory', modules: ['inventory'] },
   {
     kind: 'link',
@@ -619,7 +688,6 @@ const primaryNavSpec: NavEntry[] = [
     href: '/purchasing?tab=settings#purchase-settings',
     modules: ['purchasing'],
   },
-  { kind: 'section', label: 'People' },
   {
     kind: 'link',
     label: 'Customers',
@@ -663,7 +731,6 @@ const primaryNavSpec: NavEntry[] = [
     href: '/reports?tab=salesperson',
     modules: ['reports', 'users'],
   },
-  { kind: 'section', label: 'Finance' },
   { kind: 'link', label: 'Expenses', href: '/expenses', modules: ['expenses'] },
   {
     kind: 'link',
@@ -980,7 +1047,6 @@ const primaryNavSpec: NavEntry[] = [
     href: '/tax#filing',
     modules: ['tax'],
   },
-  { kind: 'section', label: 'Operations' },
   { kind: 'link', label: 'Stores', href: '/stores', modules: ['stores'] },
   {
     kind: 'link',
@@ -1868,6 +1934,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [onboarding, setOnboarding] = useState<OnboardingChecklist | null>(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  /** Stage 162 N1 — expandable approved parents; default-open groups with a visible leaf. */
+  const [openNavGroups, setOpenNavGroups] = useState<Record<string, boolean>>({});
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [searchBusy, setSearchBusy] = useState(false);
@@ -2064,30 +2132,28 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       ? link.href === '/security' || link.href.startsWith('/security')
       : canReadAnyModule(permissions, link.modules);
 
-  const visiblePrimary: NavEntry[] = [];
+  const dashboardLink =
+    principal !== 'platform'
+      ? primaryNavSpec.find(
+          (e): e is NavLink => e.kind === 'link' && e.href === '/dashboard' && linkVisible(e),
+        )
+      : undefined;
+
+  const groupedNav: { id: NavGroupId; label: string; links: NavLink[] }[] = [];
   if (principal !== 'platform') {
+    const buckets = new Map<NavGroupId, NavLink[]>();
+    for (const g of APPROVED_NAV_GROUPS) buckets.set(g.id, []);
     for (const entry of primaryNavSpec) {
-      if (entry.kind === 'section') {
-        visiblePrimary.push(entry);
-        continue;
-      }
-      if (linkVisible(entry)) visiblePrimary.push(entry);
+      if (entry.kind !== 'link') continue;
+      if (!linkVisible(entry)) continue;
+      const groupId = classifyNavLink(entry);
+      if (groupId === 'dashboard') continue;
+      buckets.get(groupId)?.push(entry);
     }
-    // Drop empty section headers (no following visible link before next section/end).
-    const pruned: NavEntry[] = [];
-    for (let i = 0; i < visiblePrimary.length; i++) {
-      const entry = visiblePrimary[i];
-      if (entry.kind === 'section') {
-        const hasLink = visiblePrimary
-          .slice(i + 1)
-          .find((e) => e.kind === 'section' || e.kind === 'link');
-        if (hasLink && hasLink.kind === 'link') pruned.push(entry);
-      } else {
-        pruned.push(entry);
-      }
+    for (const g of APPROVED_NAV_GROUPS) {
+      const links = buckets.get(g.id) || [];
+      if (links.length) groupedNav.push({ id: g.id, label: g.label, links });
     }
-    visiblePrimary.length = 0;
-    visiblePrimary.push(...pruned);
   }
 
   const visibleUserMgmt =
@@ -2097,6 +2163,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   const showStoreSwitcher =
     principal !== 'platform' && canReadModule(permissions, 'stores') && stores.length > 0;
+
+  function groupIsOpen(id: string): boolean {
+    return Boolean(openNavGroups[id]);
+  }
+
+  function toggleNavGroup(id: string) {
+    setOpenNavGroups((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
 
   return (
     <div className={`shell${navOpen ? ' nav-open' : ''}`}>
@@ -2108,35 +2182,68 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               Platform console
             </Link>
           )}
-          {visiblePrimary.map((entry, idx) =>
-            entry.kind === 'section' ? (
-              <div
-                key={`section-${entry.label}-${idx}`}
-                className="nav-section"
-                aria-hidden={false}
-              >
-                {entry.label}
-              </div>
-            ) : (
-              <Link
-                key={entry.href + entry.label}
-                href={entry.href}
-                onClick={() => setNavOpen(false)}
-              >
-                {entry.label}
-                {entry.href === '/notifications' && unread > 0 ? ` (${unread})` : ''}
-              </Link>
-            ),
+          {dashboardLink && (
+            <Link href={dashboardLink.href} onClick={() => setNavOpen(false)}>
+              {dashboardLink.label}
+            </Link>
           )}
+          {groupedNav.map((group) => {
+            const open = groupIsOpen(group.id);
+            return (
+              <div key={group.id} className="nav-group">
+                <button
+                  type="button"
+                  className="nav-group-toggle"
+                  aria-expanded={open}
+                  aria-controls={`nav-group-${group.id}`}
+                  onClick={() => toggleNavGroup(group.id)}
+                >
+                  <span>{group.label}</span>
+                  <span className="nav-group-caret" aria-hidden>
+                    {open ? '▾' : '▸'}
+                  </span>
+                </button>
+                {open && (
+                  <div id={`nav-group-${group.id}`} className="nav-group-children">
+                    {group.links.map((l) => (
+                      <Link
+                        key={l.href + l.label}
+                        href={l.href}
+                        onClick={() => setNavOpen(false)}
+                      >
+                        {l.label}
+                        {l.href === '/notifications' && unread > 0 ? ` (${unread})` : ''}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
           {visibleUserMgmt.length > 0 && (
-            <>
-              <div className="nav-section">User Management</div>
-              {visibleUserMgmt.map((l) => (
-                <Link key={l.href} href={l.href} onClick={() => setNavOpen(false)}>
-                  {l.label}
-                </Link>
-              ))}
-            </>
+            <div className="nav-group">
+              <button
+                type="button"
+                className="nav-group-toggle"
+                aria-expanded={groupIsOpen('user-management')}
+                aria-controls="nav-group-user-management"
+                onClick={() => toggleNavGroup('user-management')}
+              >
+                <span>User Management</span>
+                <span className="nav-group-caret" aria-hidden>
+                  {groupIsOpen('user-management') ? '▾' : '▸'}
+                </span>
+              </button>
+              {groupIsOpen('user-management') && (
+                <div id="nav-group-user-management" className="nav-group-children">
+                  {visibleUserMgmt.map((l) => (
+                    <Link key={l.href} href={l.href} onClick={() => setNavOpen(false)}>
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </nav>
       </aside>

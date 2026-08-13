@@ -1704,3 +1704,5 @@ Stage 159 D1 — `docs/STAGE_159_FIDELITY.md` (`test_stage159_fidelity_d1.py`): 
 Stage 160 D1 — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`): Stage 160 P1 `GET /accounting/profit-loss/export`; Stage 160 C1 `GET /reports/cash-flow/export`; Stage 160 S1 `GET /reports/balance-sheet/export`.
 
 Stage 161 D1 — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`): Stage 161 L1 `GET /reports/profit-loss/export`; Stage 161 B1 `GET /reports/trial-balance/export`; Stage 161 X1 `GET /reports/tax/export`.
+
+Stage 162 D1 — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`): Stage 162 N1/S1/M1 Shell approved navigation hierarchy (no new tenant business APIs); impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

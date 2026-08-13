@@ -63,7 +63,10 @@ def test_stage95_api_deploy_security_launch():
     assert "ADR-196" in launch or "ADR_196" in launch or "STAGE_95_PLAN.md" in launch
     manual = _read("docs/USER_MANUAL.md")
     assert "User Management" in manual
-    assert "Commerce" in manual and "People" in manual and "Finance" in manual
+    # Stage 162 N1 approved parents supersede Stage 95 Commerce/Operations chrome in the manual.
+    assert "People" in manual
+    assert ("Finance & Accounts" in manual) or ("Finance" in manual)
+    assert ("Inventory" in manual and "Stock" in manual) or ("Commerce" in manual)
 
 
 def test_stage95_readiness_and_roadmap():

@@ -213,3 +213,5 @@ Stage 159 D1 Tenant MVP Dashboard User-Stats CSV, Dashboard Summary CSV & Accoun
 Stage 160 D1 Tenant MVP Accounting Profit-Loss CSV, Reports Cash-Flow Path CSV & Reports Balance-Sheet Path CSV Export Fidelity — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`); Stage 160 P1 Complete; Stage 160 C1 Complete; Stage 160 S1 Complete (MVP honesty); exit `docs/STAGE_160_EXIT_CRITERIA.md`, ADR-327.
 
 Stage 161 D1 Tenant MVP Reports Profit-Loss Path CSV, Reports Trial-Balance Path CSV & Reports Tax Path CSV Export Fidelity — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`); Stage 161 L1 Complete; Stage 161 B1 Complete; Stage 161 X1 Complete (MVP honesty); exit `docs/STAGE_161_EXIT_CRITERIA.md`, ADR-329.
+
+Stage 162 D1 Tenant MVP Approved Navigation Hierarchy Fidelity — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); Stage 162 N1 Complete; Stage 162 S1 Complete; Stage 162 M1 Complete (MVP honesty); impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`; exit `docs/STAGE_162_EXIT_CRITERIA.md`, ADR-331. Offline/PWA/Sync remains MISSING.

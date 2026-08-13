@@ -407,6 +407,10 @@ Authoritative MVP docs:
 - `docs/STAGE_161_EXIT_CRITERIA.md` / `docs/ADR_329_STAGE161_FREEZE.md` (`backend/tests/test_stage161_exit_h161x.py`) — Stage 161 H161x
 - `docs/STAGE_161_FIDELITY.md` (`backend/tests/test_stage161_fidelity_d1.py`) — Stage 161 D1
 - `docs/STAGE_161_PLAN.md` (`backend/tests/test_stage161_open.py`) — Stage 161 open (ADR-328)
+- `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` — MVP update change-impact audit
+- `docs/STAGE_162_EXIT_CRITERIA.md` / `docs/ADR_331_STAGE162_FREEZE.md` (`backend/tests/test_stage162_exit_h162x.py`) — Stage 162 H162x
+- `docs/STAGE_162_FIDELITY.md` (`backend/tests/test_stage162_fidelity_d1.py`) — Stage 162 D1
+- `docs/STAGE_162_PLAN.md` (`backend/tests/test_stage162_open.py`) — Stage 162 open (ADR-330)
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1876,6 +1880,18 @@ H161x met — `docs/STAGE_161_EXIT_CRITERIA.md`, ADR-329. Stages 1–161 frozen 
 ## Stage 161 open
 
 ADR-328 + `docs/STAGE_161_PLAN.md` — Tenant MVP Reports Profit-Loss Path CSV, Reports Trial-Balance Path CSV & Reports Tax Path CSV Export Fidelity.
+
+## Stage 162 exit
+
+H162x met — `docs/STAGE_162_EXIT_CRITERIA.md`, ADR-331. Stages 1–162 frozen for Stage 162 feature scope.
+
+## Stage 162 D1 — Tenant MVP Approved Navigation Hierarchy Fidelity
+
+`docs/STAGE_162_FIDELITY.md` — maps N1–M1 → readiness / launch / deploy / security. Impact: `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+
+## Stage 162 open
+
+ADR-330 + `docs/STAGE_162_PLAN.md` — Tenant MVP Approved Navigation Hierarchy Fidelity.
 
 ## Stage 119 D1 — Tenant MVP Inactive Suppliers, Party CSV Export & Print Template Preview Fidelity
 

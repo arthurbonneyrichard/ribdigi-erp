@@ -888,6 +888,7 @@ Stage 158 D1 — `docs/STAGE_158_FIDELITY.md` (`test_stage158_fidelity_d1.py`); 
 Stage 159 D1 — `docs/STAGE_159_FIDELITY.md` (`test_stage159_fidelity_d1.py`); Stage 159 U1 / M1 / B1.
 Stage 160 D1 — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`); Stage 160 P1 / C1 / S1.
 Stage 161 D1 — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`); Stage 161 L1 / B1 / X1.
+Stage 162 D1 — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); Stage 162 N1 / S1 / M1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1623,3 +1624,5 @@ Stage 159 D1 dashboard user-stats, summary & accounting trial-balance export fid
 Stage 160 D1 accounting profit-loss, reports cash-flow & balance-sheet path export fidelity — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`); Stage 160 P1 accounting profit-loss CSV; Stage 160 C1 reports cash-flow path CSV; Stage 160 S1 reports balance-sheet path CSV.
 
 Stage 161 D1 reports profit-loss, trial-balance & tax path export fidelity — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`); Stage 161 L1 reports profit-loss path CSV; Stage 161 B1 reports trial-balance path CSV; Stage 161 X1 reports tax path CSV.
+
+Stage 162 D1 approved navigation hierarchy fidelity — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); Stage 162 N1 expandable Shell parents; Stage 162 S1 Stock/Stores/Warehouse parents; Stage 162 M1 manual amendment; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

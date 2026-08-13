@@ -75,31 +75,28 @@ Stage 21 (ADR-047) proves tenant lifecycle, org units, users/roles, and executiv
 ### 1.3 Understanding the Interface
 
 #### Main Navigation Sidebar
-Stage 95 aligns the tenant Shell with the MVP Navigation outline (discoverability IA — existing engines under tabs; not every leaf as a new route):
+Stage 162 N1 aligns the tenant Shell with the approved expandable parent hierarchy (existing engines under tabs/deep-links — not duplicate pages). Stage 95 Commerce/Operations chrome is superseded:
 
 ```
 ┌─────────────────────────────┐
 │  RIBDIGI ERP                │
 ├─────────────────────────────┤
 │  Dashboard                  │
-│  Commerce                   │
-│    Inventory / Stock / Low  │
-│    Sales / POS / Purchasing │
-│  People                     │
-│    Customers / Suppliers    │
-│  Finance                    │
-│    Expenses / Accounting    │
-│    Credit / Tax             │
-│  Operations                 │
-│    Stores / Warehouse       │
-│    Reports / Notifications  │
-│    AI Assistant / Settings  │
-│  User Management            │
-│    Users / Roles / …        │
+│  ▸ Inventory                │
+│  ▸ Stock                    │
+│  ▸ Sales (incl. POS)        │
+│  ▸ Purchase                 │
+│  ▸ Finance & Accounts       │
+│  ▸ People                   │
+│  ▸ Stores                   │
+│  ▸ Warehouse                │
+│  ▸ Report                   │
+│  ▸ User Management          │
+│  ▸ Settings                 │
 └─────────────────────────────┘
 ```
 
-Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/stores#warehouses`). Customers/Suppliers/Stock open existing Sales / Purchasing / Inventory tabs.
+Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/stores#warehouses`). Customers/Suppliers/Stock open existing Sales / Purchasing / Inventory tabs. Parents expand/collapse; menu visibility remains RBAC-gated.
 
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width

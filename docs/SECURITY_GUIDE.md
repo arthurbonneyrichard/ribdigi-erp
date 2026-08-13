@@ -978,6 +978,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 161 X1** | Reports tax path CSV (`test_stage161_tax_x1.py`) |
 | **Stage 161 D1** | Profit-loss / trial-balance / tax path export — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`) |
 | **Stage 161 H161x** | Exit + freeze — `docs/STAGE_161_EXIT_CRITERIA.md`, ADR-329 (`test_stage161_exit_h161x.py`); Stages 1–161 frozen; Stage 162+ requires CONTINUE/NEXT |
+| **Stage 162 open** | Tenant MVP Approved Navigation Hierarchy Fidelity — `docs/STAGE_162_PLAN.md`, ADR-330 (`test_stage162_open.py`); impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` |
+| **Stage 162 N1** | Expandable approved Shell parents (`test_stage162_nav_n1.py`) |
+| **Stage 162 S1** | Stock / Stores / Warehouse parents (`test_stage162_stock_parents_s1.py`) |
+| **Stage 162 M1** | Manual + Stage 95 shell IA amendment (`test_stage162_manual_m1.py`) |
+| **Stage 162 D1** | Navigation hierarchy — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`) |
+| **Stage 162 H162x** | Exit + freeze — `docs/STAGE_162_EXIT_CRITERIA.md`, ADR-331 (`test_stage162_exit_h162x.py`); Stages 1–162 frozen; Stage 163+ Offline foundation recommended |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

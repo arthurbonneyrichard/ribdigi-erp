@@ -2546,6 +2546,20 @@ Every feature in every phase must meet:
 
 **Stage 161 exit (2026-08-13):** L1, B1, X1, D1, H161x met — `docs/STAGE_161_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_329_STAGE161_FREEZE.md`. Fidelity: `docs/STAGE_161_FIDELITY.md`.
 
+**MVP change-impact audit (2026-08-13):** `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` — preserve engines; nav REQUIRES REFACTOR; Offline/PWA MISSING.
+
+**Stage 162 open (2026-08-13):** Tenant MVP Approved Navigation Hierarchy Fidelity — `docs/ADR_330_STAGE162_OPEN.md` + `docs/STAGE_162_PLAN.md` (N1 next).
+
+**Stage 162 N1 (2026-08-13):** Expandable approved Shell parents (`test_stage162_nav_n1.py`).
+
+**Stage 162 S1 (2026-08-13):** Stock / Stores / Warehouse parents (`test_stage162_stock_parents_s1.py`).
+
+**Stage 162 M1 (2026-08-13):** Manual + Stage 95 shell IA amendment (`test_stage162_manual_m1.py`).
+
+**Stage 162 D1 (2026-08-13):** Approved navigation hierarchy fidelity sync — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`).
+
+**Stage 162 exit (2026-08-13):** N1, S1, M1, D1, H162x met — `docs/STAGE_162_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_331_STAGE162_FREEZE.md`. Fidelity: `docs/STAGE_162_FIDELITY.md`.
+
 
 
 

@@ -23,6 +23,4 @@ Stage 161 Tenant MVP Reports Profit-Loss Path CSV, Reports Trial-Balance Path CS
 
 ## Next stage
 
-Stage 162 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 161 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Reports tax-filing path CSV + remaining reports sales/inventory/purchases path CSV clusters (if still distinct from `/reports/export` and Stages 1–161).
+Stage 162 opened via CONTINUE/NEXT as ADR-330 / ADR-331 after the 2026-08-13 MVP change-impact audit (`docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`) — approved navigation hierarchy fidelity (supersedes Stage 95 Commerce/Operations IA for tenant Shell). Stage 161 feature scope remains frozen.

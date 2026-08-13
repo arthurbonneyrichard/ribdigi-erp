@@ -744,6 +744,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Reports tax path CSV (Stage 161 X1: `test_stage161_tax_x1.py`)
 - [x] Stage 161 fidelity sync (D1: `test_stage161_fidelity_d1.py`, `docs/STAGE_161_FIDELITY.md` — L1–X1 + readiness + deploy / launch / security)
 - [x] Stage 161 exit + freeze (H161x: `test_stage161_exit_h161x.py`, `docs/STAGE_161_EXIT_CRITERIA.md`, ADR-329)
+- [x] MVP change-impact audit (2026-08-13: `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`)
+- [x] Stage 162 track opened (ADR-330: `test_stage162_open.py`, `docs/STAGE_162_PLAN.md`) — Tenant MVP Approved Navigation Hierarchy Fidelity; closed under ADR-331
+- [x] Approved expandable Shell parents (Stage 162 N1: `test_stage162_nav_n1.py`)
+- [x] Stock / Stores / Warehouse parents (Stage 162 S1: `test_stage162_stock_parents_s1.py`)
+- [x] Manual + Stage 95 shell IA amendment (Stage 162 M1: `test_stage162_manual_m1.py`)
+- [x] Stage 162 fidelity sync (D1: `test_stage162_fidelity_d1.py`, `docs/STAGE_162_FIDELITY.md`)
+- [x] Stage 162 exit + freeze (H162x: `test_stage162_exit_h162x.py`, `docs/STAGE_162_EXIT_CRITERIA.md`, ADR-331)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
