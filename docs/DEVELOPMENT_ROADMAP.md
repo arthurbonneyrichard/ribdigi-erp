@@ -3324,6 +3324,18 @@ Every feature in every phase must meet:
 
 **Stage 225 exit (2026-08-13):** I1, B1, P1, D1, H225x met — `docs/STAGE_225_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_457_STAGE225_FREEZE.md`. Fidelity: `docs/STAGE_225_FIDELITY.md`.
 
+**Stage 226 open (2026-08-13):** Tenant MVP PgBouncer Live Remaining-Gate Index Fidelity — `docs/ADR_458_STAGE226_OPEN.md` + `docs/STAGE_226_PLAN.md` (I1 next).
+
+**Stage 226 I1 (2026-08-13):** PgBouncer live remaining-gate index hub (`test_stage226_index_i1.py`).
+
+**Stage 226 B1 (2026-08-13):** PgBouncer live blocker matrix (`test_stage226_blockers_b1.py`).
+
+**Stage 226 P1 (2026-08-13):** Stage 27/29 / Stage 208 / Stage 225 pointers (`test_stage226_pointers_p1.py`).
+
+**Stage 226 D1 (2026-08-13):** PgBouncer Live Remaining-Gate Index fidelity sync — `docs/STAGE_226_FIDELITY.md` (`test_stage226_fidelity_d1.py`).
+
+**Stage 226 exit (2026-08-13):** I1, B1, P1, D1, H226x met — `docs/STAGE_226_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_459_STAGE226_FREEZE.md`. Fidelity: `docs/STAGE_226_FIDELITY.md`.
+
 
 
 

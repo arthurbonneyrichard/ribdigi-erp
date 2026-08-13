@@ -24,6 +24,6 @@ Stage 225 Tenant MVP Loadtest Baseline Remaining-Gate Index Fidelity delivered l
 
 ## Next stage
 
-Stage 226 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 225 feature scope remains frozen.
+Stage 226 opened under **ADR-458** after CONTINUE/NEXT (PgBouncer Live Remaining-Gate Index Fidelity) and is frozen under **ADR-459**. Stage 225 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP PgBouncer Remaining-Gate Index Fidelity — single index of PgBouncer blockers (packaged Stage 27 P1 / Stage 29 B2 soak materials non-claim as live PgBouncer Complete) with explicit non-claim (no live PgBouncer Complete). Distinct from Stage 225 loadtest baseline remaining-gate and Stage 224 load capacity remaining-gate.
+**Amendment (2026-08-13):** Stage 226 runner-up outline was approved and opened (ADR-458); freeze ADR-459. Do not reopen Stage 225 scope.

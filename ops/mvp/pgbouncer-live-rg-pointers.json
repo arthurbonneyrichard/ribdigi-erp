@@ -1,0 +1,59 @@
+{
+  "id": "pgbouncer-live-rg-pointers",
+  "stage": 226,
+  "pack": "P1",
+  "doc": "docs/PGBOUNCER_LIVE_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PGBOUNCER_LIVE_REMAINING_GATE_MVP.md",
+    "pgbouncer_mvp": "docs/PGBOUNCER_MVP.md",
+    "soak_pack": "docs/PGBOUNCER_SOAK_PACK_MVP.md",
+    "pgbouncer_soak_remaining_gate": "docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md",
+    "loadtest_baseline_remaining_gate": "docs/LOADTEST_BASELINE_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_pgbouncer_claimed": false,
+  "helm_pooler_default_claimed": false,
+  "live_soak_executed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "pgbouncer_mvp_stage27_p1",
+    "pgbouncer_soak_pack_stage29_b2",
+    "pgbouncer_soak_remaining_gate_stage208",
+    "loadtest_baseline_remaining_gate_stage225",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "pblp-mvp",
+      "title": "Point to Stage 27 P1 PgBouncer MVP",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblp-soak-pack",
+      "title": "Point to Stage 29 B2 soak pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblp-soak-gate",
+      "title": "Point to Stage 208 soak remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblp-ltb-gate",
+      "title": "Point to Stage 225 loadtest baseline remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblp-live-remaining",
+      "title": "Live PgBouncer Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 226 P1 PgBouncer live RG pointers packaging only. Do not claim live PgBouncer Complete."
+}

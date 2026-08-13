@@ -782,6 +782,12 @@ Authoritative MVP docs:
 - `docs/LOADTEST_BASELINE_REMAINING_GATE_MVP.md` / `ops/mvp/loadtest-baseline-remaining-gate.json` — Stage 225 I1
 - `docs/LOADTEST_BASELINE_BLOCKERS_MVP.md` / `ops/mvp/loadtest-baseline-blockers.json` — Stage 225 B1
 - `docs/LOADTEST_BASELINE_RG_POINTERS_MVP.md` / `ops/mvp/loadtest-baseline-rg-pointers.json` — Stage 225 P1
+- `docs/STAGE_226_EXIT_CRITERIA.md` / `docs/ADR_459_STAGE226_FREEZE.md` (`backend/tests/test_stage226_exit_h226x.py`) — Stage 226 H226x
+- `docs/STAGE_226_FIDELITY.md` (`backend/tests/test_stage226_fidelity_d1.py`) — Stage 226 D1
+- `docs/STAGE_226_PLAN.md` (`backend/tests/test_stage226_open.py`) — Stage 226 open (ADR-458)
+- `docs/PGBOUNCER_LIVE_REMAINING_GATE_MVP.md` / `ops/mvp/pgbouncer-live-remaining-gate.json` — Stage 226 I1
+- `docs/PGBOUNCER_LIVE_BLOCKERS_MVP.md` / `ops/mvp/pgbouncer-live-blockers.json` — Stage 226 B1
+- `docs/PGBOUNCER_LIVE_RG_POINTERS_MVP.md` / `ops/mvp/pgbouncer-live-rg-pointers.json` — Stage 226 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2913,6 +2919,18 @@ See `docs/STAGE_225_FIDELITY.md`.
 ## Stage 225 open
 
 ADR-456 / `docs/STAGE_225_PLAN.md`.
+
+## Stage 226 exit
+
+H226x met — `docs/STAGE_226_EXIT_CRITERIA.md`, ADR-459. Stages 1–226 frozen for Stage 226 feature scope.
+
+## Stage 226 D1 — Tenant MVP PgBouncer Live Remaining-Gate Index Fidelity
+
+See `docs/STAGE_226_FIDELITY.md`.
+
+## Stage 226 open
+
+ADR-458 / `docs/STAGE_226_PLAN.md`.
 
 ## Stage 213 exit
 
