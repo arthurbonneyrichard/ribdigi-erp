@@ -556,6 +556,12 @@ Authoritative MVP docs:
 - `docs/LIVE_TRAINING_REMAINING_GATE_MVP.md` / `ops/mvp/live-training-remaining-gate.json` — Stage 189 I1
 - `docs/LIVE_TRAINING_BLOCKERS_MVP.md` / `ops/mvp/live-training-blockers.json` — Stage 189 B1
 - `docs/LIVE_TRAINING_PACK_POINTERS_MVP.md` / `ops/mvp/live-training-pack-pointers.json` — Stage 189 P1
+- `docs/STAGE_190_EXIT_CRITERIA.md` / `docs/ADR_387_STAGE190_FREEZE.md` (`backend/tests/test_stage190_exit_h190x.py`) — Stage 190 H190x
+- `docs/STAGE_190_FIDELITY.md` (`backend/tests/test_stage190_fidelity_d1.py`) — Stage 190 D1
+- `docs/STAGE_190_PLAN.md` (`backend/tests/test_stage190_open.py`) — Stage 190 open (ADR-386)
+- `docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md` / `ops/mvp/offline-materials-remaining-gate.json` — Stage 190 I1
+- `docs/OFFLINE_MATERIALS_BLOCKERS_MVP.md` / `ops/mvp/offline-materials-blockers.json` — Stage 190 B1
+- `docs/OFFLINE_MATERIALS_PACK_POINTERS_MVP.md` / `ops/mvp/offline-materials-pack-pointers.json` — Stage 190 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2365,6 +2371,18 @@ H189x met — `docs/STAGE_189_EXIT_CRITERIA.md`, ADR-385. Stages 1–189 frozen 
 ## Stage 189 open
 
 ADR-384 + `docs/STAGE_189_PLAN.md` — Live-Training Remaining-Gate Index Fidelity (closed under ADR-385).
+
+## Stage 190 exit
+
+H190x met — `docs/STAGE_190_EXIT_CRITERIA.md`, ADR-387. Stages 1–190 frozen for Stage 190 feature scope.
+
+## Stage 190 D1 — Tenant MVP Offline Materials Remaining-Gate Index Fidelity
+
+`docs/STAGE_190_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Offline Complete remains MISSING (distinct from Stage 179).
+
+## Stage 190 open
+
+ADR-386 + `docs/STAGE_190_PLAN.md` — Offline Materials Remaining-Gate Index Fidelity (closed under ADR-387).
 
 ## Stage 165 open
 

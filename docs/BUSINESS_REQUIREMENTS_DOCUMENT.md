@@ -916,6 +916,7 @@ Stage 186 D1 — `docs/STAGE_186_FIDELITY.md` (`test_stage186_fidelity_d1.py`); 
 Stage 187 D1 — `docs/STAGE_187_FIDELITY.md` (`test_stage187_fidelity_d1.py`); Stage 187 I1 / B1 / P1.
 Stage 188 D1 — `docs/STAGE_188_FIDELITY.md` (`test_stage188_fidelity_d1.py`); Stage 188 I1 / B1 / P1.
 Stage 189 D1 — `docs/STAGE_189_FIDELITY.md` (`test_stage189_fidelity_d1.py`); Stage 189 I1 / B1 / P1.
+Stage 190 D1 — `docs/STAGE_190_FIDELITY.md` (`test_stage190_fidelity_d1.py`); Stage 190 I1 / B1 / P1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1689,4 +1690,5 @@ Stage 186 D1 Audit-Retention Remaining-Gate Index fidelity — `docs/STAGE_186_F
 Stage 187 D1 Attestation Remaining-Gate Index fidelity — `docs/STAGE_187_FIDELITY.md` (`test_stage187_fidelity_d1.py`); Stage 187 I1 attestation remaining-gate hub; Stage 187 B1 blocker matrix; Stage 187 P1 Stage 69/LAUNCH pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 188 D1 Support-SLA Remaining-Gate Index fidelity — `docs/STAGE_188_FIDELITY.md` (`test_stage188_fidelity_d1.py`); Stage 188 I1 support-SLA remaining-gate hub; Stage 188 B1 blocker matrix; Stage 188 P1 Stage 36/readiness pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 189 D1 Live-Training Remaining-Gate Index fidelity — `docs/STAGE_189_FIDELITY.md` (`test_stage189_fidelity_d1.py`); Stage 189 I1 live-training remaining-gate hub; Stage 189 B1 blocker matrix; Stage 189 P1 Stage 33/48/materials pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 190 D1 Offline Materials Remaining-Gate Index fidelity — `docs/STAGE_190_FIDELITY.md` (`test_stage190_fidelity_d1.py`); Stage 190 I1 offline materials remaining-gate hub; Stage 190 B1 blocker matrix; Stage 190 P1 Stage 171–175/Stage 179 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 

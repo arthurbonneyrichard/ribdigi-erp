@@ -1,0 +1,61 @@
+{
+  "id": "offline-materials-pack-pointers",
+  "stage": 190,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_MATERIALS_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "faq_offline_pos_register": "ops/mvp/faq-offline-pos.json",
+    "cashier_quickstart": "docs/CASHIER_QUICKSTART_MVP.md",
+    "store_open_checklist": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "offline_complete_remaining_gate": "docs/OFFLINE_COMPLETE_REMAINING_GATE_MVP.md",
+    "live_training_remaining_gate": "docs/LIVE_TRAINING_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "browser_e2e_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "faq_offline_pos_stage171",
+    "cashier_quickstart_stage172",
+    "store_checklists_stages173_175",
+    "offline_complete_remaining_gate_stage179",
+    "live_training_remaining_gate_stage189",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "op-faq",
+      "title": "Point to Stage 171 FAQ offline/POS/Hold",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "op-cashier",
+      "title": "Point to Stage 172 cashier quickstart",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "op-store-checklists",
+      "title": "Point to Stage 173–175 store/shift checklists",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "op-stage179-gate",
+      "title": "Point to Stage 179 Offline Complete remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "op-offline-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 190 P1 offline materials pack pointers packaging only. Do not claim Offline Complete."
+}

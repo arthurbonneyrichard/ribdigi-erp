@@ -187,3 +187,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 189 decision (opened after Stage 188 freeze)
 
 **Tenant MVP Live-Training Remaining-Gate Index Fidelity** — live-training remaining-gate hub (I1), blocker matrix (B1), Stage 33 / Stage 48 / materials pointers with explicit non-claim (P1). Live training / attendance certification Completes remain deferred (Stage 190+).
+## Stage 190 decision (opened after Stage 189 freeze)
+
+**Tenant MVP Offline Materials Remaining-Gate Index Fidelity** — offline materials remaining-gate hub (I1), blocker matrix (B1), Stage 171–175 / Stage 179 pointers with explicit non-claim (P1). Offline Complete remains deferred (Stage 191+); distinct from Stage 179 Offline Complete remaining-gate.

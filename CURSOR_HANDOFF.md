@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 189 froze Tenant MVP Live-Training Remaining-Gate Index Fidelity (ADR-385) — live-training remaining-gate hub, blocker matrix, Stage 33/48/materials pointers, explicit live-training non-claim. Live training Complete remains MISSING. Next recommended distinct outline: Tenant MVP Offline remaining-gate index fidelity (packaged offline/POS/Hold materials non-claim as Offline Complete — explicit non-claim) — Stage 190+. Do not claim live training Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 190 froze Tenant MVP Offline Materials Remaining-Gate Index Fidelity (ADR-387) — offline materials remaining-gate hub, blocker matrix, Stage 171–175/Stage 179 pointers, explicit Offline Complete non-claim (distinct from Stage 179). Offline Complete remains MISSING. Next recommended distinct outline: Tenant MVP Hosted FAQ SaaS remaining-gate index fidelity (Stage 171 KB/FAQ packaging non-claim as hosted FAQ SaaS Complete — explicit non-claim) — Stage 191+. Do not claim Offline Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

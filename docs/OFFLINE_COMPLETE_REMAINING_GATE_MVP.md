@@ -33,3 +33,5 @@ Single index of Offline Complete remaining gates. Packaging only — **Offline C
 - Go-live Complete
 
 See also Stage 180 go-live remaining-gate index: [`GOLIVE_REMAINING_GATE_MVP.md`](GOLIVE_REMAINING_GATE_MVP.md).
+
+See also Stage 190 Offline materials remaining-gate index: [`OFFLINE_MATERIALS_REMAINING_GATE_MVP.md`](OFFLINE_MATERIALS_REMAINING_GATE_MVP.md) (materials packaging ≠ Offline Complete; does not reopen this Stage 179 scope).

@@ -32,3 +32,5 @@ Single index of live-training remaining gates. Packaging only — **live trainin
 - Training attendance / certification Completes
 - Customer training delivery Completes
 - Offline / go-live Completes
+
+See also Stage 190 Offline materials remaining-gate index: [`OFFLINE_MATERIALS_REMAINING_GATE_MVP.md`](OFFLINE_MATERIALS_REMAINING_GATE_MVP.md).
