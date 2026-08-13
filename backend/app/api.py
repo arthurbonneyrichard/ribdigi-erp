@@ -7666,6 +7666,7 @@ async def reports_export(
     days: int | None = None,
     as_of: str | None = None,
     compare: str | None = None,
+    department_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7687,6 +7688,7 @@ async def reports_export(
         days=days,
         as_of=as_of or None,
         compare=compare or None,
+        department_id=department_id or None,
     )
     return Response(
         content=content,
@@ -7896,6 +7898,7 @@ async def report_sales_returns(
 async def report_sales_salesperson(
     from_date: str | None = None,
     to_date: str | None = None,
+    department_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7905,6 +7908,7 @@ async def report_sales_salesperson(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            department_id=department_id or None,
         )
     )
 
@@ -7913,6 +7917,7 @@ async def report_sales_salesperson(
 async def report_sales_by_store(
     from_date: str | None = None,
     to_date: str | None = None,
+    department_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7922,6 +7927,27 @@ async def report_sales_by_store(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            department_id=department_id or None,
+        )
+    )
+
+
+@api.get("/reports/sales/by-department")
+async def report_sales_by_department(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    department_id: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-2.5 — sales aggregated by seller department; optional department filter."""
+    return env(
+        await reports_svc.sales_by_department(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            department_id=department_id or None,
         )
     )
 

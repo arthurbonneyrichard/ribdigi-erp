@@ -576,14 +576,51 @@ async def sales_returns_summary(
     }
 
 
+async def _resolve_department_filter(
+    db: AsyncSession, tenant_id: str, department_id: str | None
+) -> tuple[str | None, str | None, set[str] | None]:
+    """Validate department and return (id, name, user_ids). user_ids is None when unfiltered."""
+    if not department_id:
+        return None, None, None
+    from fastapi import HTTPException
+
+    dept = (
+        await db.execute(
+            select(m.Department).where(
+                m.Department.tenant_id == tenant_id,
+                m.Department.id == department_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not dept:
+        raise HTTPException(status_code=404, detail="Department not found")
+    user_ids = set(
+        (
+            await db.execute(
+                select(m.User.id).where(
+                    m.User.tenant_id == tenant_id,
+                    m.User.department_id == department_id,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return dept.id, dept.name, user_ids
+
+
 async def sales_by_salesperson(
     db: AsyncSession,
     tenant_id: str,
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    department_id: str | None = None,
 ) -> dict:
     """Aggregate posted invoices + POS sales by salesperson (invoice created_by / POS session user)."""
+    dept_id, dept_name, dept_user_ids = await _resolve_department_filter(
+        db, tenant_id, department_id
+    )
 
     def _bucket(agg: dict[str, dict], user_id: str | None) -> dict:
         key = user_id or "unknown"
@@ -594,6 +631,8 @@ async def sales_by_salesperson(
                 "full_name": "Unknown",
                 "email": None,
                 "role": None,
+                "department_id": None,
+                "department_name": None,
                 "invoice_count": 0,
                 "invoice_revenue": 0.0,
                 "invoice_tax": 0.0,
@@ -617,6 +656,11 @@ async def sales_by_salesperson(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if dept_user_ids is not None:
+        if not dept_user_ids:
+            inv_stmt = inv_stmt.where(m.SalesInvoice.id == None)  # noqa: E711 — empty dept membership
+        else:
+            inv_stmt = inv_stmt.where(m.SalesInvoice.created_by.in_(dept_user_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.created_by)
         total = float(inv.total_amount or 0)
@@ -640,6 +684,11 @@ async def sales_by_salesperson(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    if dept_user_ids is not None:
+        if not dept_user_ids:
+            pos_stmt = pos_stmt.where(m.Transaction.id == None)  # noqa: E711
+        else:
+            pos_stmt = pos_stmt.where(m.PosSession.user_id.in_(dept_user_ids))
     for tx, session in (await db.execute(pos_stmt)).all():
         user_id = session.user_id if session else None
         row = _bucket(agg, user_id)
@@ -653,6 +702,7 @@ async def sales_by_salesperson(
         row["tax"] = round(row["tax"] + tax, 2)
 
     user_ids = [k for k in agg.keys() if k != "unknown"]
+    dept_names: dict[str, str] = {}
     if user_ids:
         users = (
             await db.execute(
@@ -663,6 +713,17 @@ async def sales_by_salesperson(
             )
         ).scalars().all()
         by_id = {u.id: u for u in users}
+        need_depts = {u.department_id for u in users if u.department_id}
+        if need_depts:
+            depts = (
+                await db.execute(
+                    select(m.Department).where(
+                        m.Department.tenant_id == tenant_id,
+                        m.Department.id.in_(need_depts),
+                    )
+                )
+            ).scalars().all()
+            dept_names = {d.id: d.name for d in depts}
         for key, row in agg.items():
             if key == "unknown":
                 continue
@@ -671,6 +732,8 @@ async def sales_by_salesperson(
                 row["full_name"] = user.full_name
                 row["email"] = user.email
                 row["role"] = user.role
+                row["department_id"] = user.department_id
+                row["department_name"] = dept_names.get(user.department_id or "", None)
 
     for row in agg.values():
         row["avg_ticket"] = round(row["revenue"] / row["sale_count"], 2) if row["sale_count"] else 0.0
@@ -679,6 +742,8 @@ async def sales_by_salesperson(
     return {
         "from_date": from_date,
         "to_date": to_date,
+        "department_id": dept_id,
+        "department_name": dept_name,
         "salespeople": salespeople,
         "total_revenue": round(sum(s["revenue"] for s in salespeople), 2),
         "total_sales": sum(s["sale_count"] for s in salespeople),
@@ -693,8 +758,12 @@ async def sales_by_store(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    department_id: str | None = None,
 ) -> dict:
     """Aggregate posted invoices + POS sales by store (invoice.store_id / POS session.store_id)."""
+    dept_id, dept_name, dept_user_ids = await _resolve_department_filter(
+        db, tenant_id, department_id
+    )
 
     def _bucket(agg: dict[str, dict], store_id: str | None) -> dict:
         key = store_id or "unknown"
@@ -738,6 +807,11 @@ async def sales_by_store(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if dept_user_ids is not None:
+        if not dept_user_ids:
+            inv_stmt = inv_stmt.where(m.SalesInvoice.id == None)  # noqa: E711 — empty dept membership
+        else:
+            inv_stmt = inv_stmt.where(m.SalesInvoice.created_by.in_(dept_user_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.store_id)
         total = float(inv.total_amount or 0)
@@ -761,6 +835,11 @@ async def sales_by_store(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    if dept_user_ids is not None:
+        if not dept_user_ids:
+            pos_stmt = pos_stmt.where(m.Transaction.id == None)  # noqa: E711
+        else:
+            pos_stmt = pos_stmt.where(m.PosSession.user_id.in_(dept_user_ids))
     for tx, session in (await db.execute(pos_stmt)).all():
         store_id = session.store_id if session else None
         row = _bucket(agg, store_id)
@@ -801,17 +880,166 @@ async def sales_by_store(
     for key, row in agg.items():
         if key == "unknown" and row["sale_count"] == 0:
             continue
+        if dept_user_ids is not None and row["sale_count"] == 0:
+            continue
         stores_out.append(row)
     stores_out.sort(key=lambda x: x["revenue"], reverse=True)
 
     return {
         "from_date": from_date,
         "to_date": to_date,
+        "department_id": dept_id,
+        "department_name": dept_name,
         "stores": stores_out,
         "total_revenue": round(sum(s["revenue"] for s in stores_out), 2),
         "total_sales": sum(s["sale_count"] for s in stores_out),
         "invoice_revenue": round(sum(s["invoice_revenue"] for s in stores_out), 2),
         "pos_revenue": round(sum(s["pos_revenue"] for s in stores_out), 2),
+    }
+
+
+async def sales_by_department(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    department_id: str | None = None,
+) -> dict:
+    """Aggregate posted invoices + POS sales by seller department (BR-2.5)."""
+    filter_id, filter_name, _ = await _resolve_department_filter(db, tenant_id, department_id)
+
+    def _bucket(agg: dict[str, dict], dept_key: str | None) -> dict:
+        key = dept_key or "unknown"
+        return agg.setdefault(
+            key,
+            {
+                "department_id": None if key == "unknown" else key,
+                "name": "Unassigned",
+                "code": None,
+                "invoice_count": 0,
+                "invoice_revenue": 0.0,
+                "invoice_tax": 0.0,
+                "pos_count": 0,
+                "pos_revenue": 0.0,
+                "pos_tax": 0.0,
+                "sale_count": 0,
+                "revenue": 0.0,
+                "tax": 0.0,
+                "avg_ticket": 0.0,
+            },
+        )
+
+    agg: dict[str, dict] = {}
+    depts = (
+        await db.execute(
+            select(m.Department)
+            .where(m.Department.tenant_id == tenant_id)
+            .order_by(m.Department.name)
+        )
+    ).scalars().all()
+    for dept in depts:
+        if filter_id and dept.id != filter_id:
+            continue
+        row = _bucket(agg, dept.id)
+        row["name"] = dept.name
+        row["code"] = dept.code
+
+    users = (
+        await db.execute(select(m.User).where(m.User.tenant_id == tenant_id))
+    ).scalars().all()
+    user_dept = {u.id: u.department_id for u in users}
+
+    inv_stmt = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
+    )
+    if from_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
+    if to_date:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    for inv in (await db.execute(inv_stmt)).scalars().all():
+        seller_dept = user_dept.get(inv.created_by) if inv.created_by else None
+        if filter_id and seller_dept != filter_id:
+            continue
+        row = _bucket(agg, seller_dept)
+        total = float(inv.total_amount or 0)
+        tax = float(inv.tax_amount or 0)
+        row["invoice_count"] += 1
+        row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
+        row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
+        row["sale_count"] += 1
+        row["revenue"] = round(row["revenue"] + total, 2)
+        row["tax"] = round(row["tax"] + tax, 2)
+
+    pos_stmt = (
+        select(m.Transaction, m.PosSession)
+        .outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+        .where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+        )
+    )
+    if from_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
+    if to_date:
+        pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    for tx, session in (await db.execute(pos_stmt)).all():
+        user_id = session.user_id if session else None
+        seller_dept = user_dept.get(user_id) if user_id else None
+        if filter_id and seller_dept != filter_id:
+            continue
+        row = _bucket(agg, seller_dept)
+        total = float(tx.total or 0)
+        tax = float(tx.tax or 0)
+        row["pos_count"] += 1
+        row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
+        row["pos_tax"] = round(row["pos_tax"] + tax, 2)
+        row["sale_count"] += 1
+        row["revenue"] = round(row["revenue"] + total, 2)
+        row["tax"] = round(row["tax"] + tax, 2)
+
+    orphan_ids = [k for k in agg.keys() if k != "unknown" and agg[k]["code"] is None]
+    if orphan_ids:
+        found = (
+            await db.execute(
+                select(m.Department).where(
+                    m.Department.tenant_id == tenant_id,
+                    m.Department.id.in_(orphan_ids),
+                )
+            )
+        ).scalars().all()
+        by_id = {d.id: d for d in found}
+        for key in orphan_ids:
+            dept = by_id.get(key)
+            if dept:
+                agg[key]["name"] = dept.name
+                agg[key]["code"] = dept.code
+            else:
+                agg[key]["name"] = f"Department {key[:8]}"
+
+    for row in agg.values():
+        row["avg_ticket"] = round(row["revenue"] / row["sale_count"], 2) if row["sale_count"] else 0.0
+
+    departments_out = []
+    for key, row in agg.items():
+        if key == "unknown" and row["sale_count"] == 0:
+            continue
+        if filter_id and key != filter_id and row["sale_count"] == 0:
+            continue
+        departments_out.append(row)
+    departments_out.sort(key=lambda x: x["revenue"], reverse=True)
+
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "department_id": filter_id,
+        "department_name": filter_name,
+        "departments": departments_out,
+        "total_revenue": round(sum(s["revenue"] for s in departments_out), 2),
+        "total_sales": sum(s["sale_count"] for s in departments_out),
+        "invoice_revenue": round(sum(s["invoice_revenue"] for s in departments_out), 2),
+        "pos_revenue": round(sum(s["pos_revenue"] for s in departments_out), 2),
     }
 
 

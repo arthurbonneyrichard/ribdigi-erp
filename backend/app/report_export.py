@@ -27,6 +27,7 @@ EXPORTABLE = frozenset(
         "sales_customers",
         "sales_returns",
         "sales_by_store",
+        "sales_by_department",
         "inventory_balance",
         "inventory_valuation",
         "inventory_movements",
@@ -263,6 +264,16 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         ]
         return rows or [{"note": "no rows"}], lines, "Sales by Store"
 
+    if report_type == "sales_by_department":
+        items = payload.get("departments") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload if isinstance(payload, dict) else {}) + [
+            f"{r.get('name') or r.get('code')}: sales={r.get('sale_count')} revenue={r.get('revenue')} "
+            f"inv={r.get('invoice_revenue')} pos={r.get('pos_revenue')}"
+            for r in rows[:50]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Sales by Department"
+
     if report_type == "inventory_balance":
         items = payload.get("items") or payload.get("products") or (payload if isinstance(payload, list) else [])
         rows = [dict(x) for x in items]
@@ -495,6 +506,7 @@ async def build_report_payload(
     days: int | None = None,
     as_of: str | None = None,
     compare: str | None = None,
+    department_id: str | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -533,7 +545,13 @@ async def build_report_payload(
             category_id=category_id or None,
         )
     if report_type == "sales_salesperson":
-        return await reports_svc.sales_by_salesperson(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.sales_by_salesperson(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            department_id=department_id or None,
+        )
     if report_type == "sales_customers":
         return await reports_svc.sales_by_customer(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "sales_returns":
@@ -541,7 +559,21 @@ async def build_report_payload(
             db, tenant_id, from_date=fd, to_date=td
         )
     if report_type == "sales_by_store":
-        return await reports_svc.sales_by_store(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.sales_by_store(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            department_id=department_id or None,
+        )
+    if report_type == "sales_by_department":
+        return await reports_svc.sales_by_department(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            department_id=department_id or None,
+        )
     if report_type == "inventory_balance":
         return await reports_svc.inventory_balance(db, tenant_id, warehouse_id)
     if report_type == "inventory_valuation":

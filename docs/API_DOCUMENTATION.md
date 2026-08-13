@@ -1199,8 +1199,9 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Product Sales:** `GET /reports/sales/products?from_date=&to_date=&store_id=&category_id=` — product qty/revenue (invoices + POS); optional store (invoice `store_id` / POS session store) and category filters; rows include `category_id`/`category_name`. Export `sales_products` (passes `store_id`/`category_id`).  
 **Customer Sales:** `GET /reports/sales/customers?from_date=&to_date=&limit=` — top customers by revenue (posted invoices + POS); includes walk-in bucket; optional `limit` for top-N. Export `sales_customers`.  
 **Sales Returns:** `GET /reports/sales/returns?from_date=&to_date=&customer_id=&reason=&status=` — return summary with `by_reason` / `by_customer` / line list; reasons `damaged|wrong_item|defective|customer_change|other`. Export `sales_returns`.  
-**Salesperson:** `GET /reports/sales/salesperson?from_date=&to_date=`  
-**By store:** `GET /reports/sales/by-store?from_date=&to_date=`
+**Salesperson:** `GET /reports/sales/salesperson?from_date=&to_date=&department_id=`  
+**By store:** `GET /reports/sales/by-store?from_date=&to_date=&department_id=`  
+**By department (BR-2.5):** `GET /reports/sales/by-department?from_date=&to_date=&department_id=` — buckets by seller `users.department_id` (invoice `created_by` / POS session user); optional filter; export type `sales_by_department`.
 
 ### 14.2 Inventory Reports
 **Stock Balance:** `GET /reports/inventory/balance?warehouse_id=`  
