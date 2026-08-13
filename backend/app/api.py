@@ -7597,6 +7597,30 @@ async def report_sales_customers(
     )
 
 
+@api.get("/reports/sales/returns")
+async def report_sales_returns(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    customer_id: str | None = None,
+    reason: str | None = None,
+    status: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-14.1 — sales return summary by reason / customer."""
+    return env(
+        await reports_svc.sales_returns_summary(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            customer_id=customer_id or None,
+            reason=reason or None,
+            status=status or None,
+        )
+    )
+
+
 @api.get("/reports/sales/salesperson")
 async def report_sales_salesperson(
     from_date: str | None = None,
