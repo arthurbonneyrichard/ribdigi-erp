@@ -65,6 +65,7 @@ export default function Page() {
   const [branches, setBranches] = useState<any[]>([]);
   const [period, setPeriod] = useState<any>(null);
   const [closeThrough, setCloseThrough] = useState('');
+  const [tbAsOf, setTbAsOf] = useState('');
 
   function pnlQuery() {
     const params = new URLSearchParams();
@@ -79,6 +80,12 @@ export default function Page() {
   async function loadPnl() {
     const p = await api(`/accounting/profit-loss${pnlQuery()}`);
     setPnl(p.data);
+  }
+
+  async function loadTrial() {
+    const qs = tbAsOf ? `?as_of=${encodeURIComponent(tbAsOf)}` : '';
+    const t = await api(`/accounting/trial-balance${qs}`);
+    setTrial(t.data);
   }
 
   async function refresh() {
@@ -813,9 +820,48 @@ export default function Page() {
           <div className="grid" style={{ marginTop: 16 }}>
             <div className="card">
               <h3>Trial balance</h3>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                <input
+                  type="date"
+                  value={tbAsOf}
+                  onChange={(e) => setTbAsOf(e.target.value)}
+                  title="As of (empty = live balances)"
+                />
+                <button
+                  type="button"
+                  onClick={() => loadTrial().catch((err) => setError(err.message))}
+                >
+                  Apply
+                </button>
+              </div>
               <p className="muted">
-                Balanced: {String(trial?.balanced)} | Dr {trial?.total_debit} / Cr {trial?.total_credit}
+                {trial?.mode === 'journals' ? `As of ${trial?.as_of} (journals)` : 'Live balances'}
+                {' · '}
+                Balanced: {String(trial?.balanced)} | Dr {trial?.total_debit} / Cr{' '}
+                {trial?.total_credit}
               </p>
+              {!!trial?.rows?.length && (
+                <table className="table" style={{ marginTop: 8 }}>
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Name</th>
+                      <th>Debit</th>
+                      <th>Credit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trial.rows.slice(0, 40).map((r: any) => (
+                      <tr key={r.account_id || r.code}>
+                        <td>{r.code}</td>
+                        <td>{r.name}</td>
+                        <td>{r.debit}</td>
+                        <td>{r.credit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
             <div className="card">
               <h3>Profit &amp; Loss</h3>

@@ -16,6 +16,7 @@ type Tab =
   | 'expenses'
   | 'cashflow'
   | 'pnl'
+  | 'trialbalance'
   | 'balancesheet'
   | 'schedules';
 
@@ -29,6 +30,7 @@ const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   expenses: 'expenses_budget_vs_actual',
   cashflow: 'cash_flow',
   pnl: 'profit_loss',
+  trialbalance: 'trial_balance',
   balancesheet: 'balance_sheet',
 };
 
@@ -46,6 +48,7 @@ const REPORT_TYPES = [
   'expenses_summary',
   'expenses_budget_vs_actual',
   'cash_flow',
+  'trial_balance',
   'balance_sheet',
   'tax',
   'tax_filing',
@@ -102,6 +105,14 @@ export default function Page() {
     return s ? `?${s}` : '';
   }
 
+  function trialBalanceQs() {
+    const params = new URLSearchParams();
+    const effectiveAsOf = asOf || toDate;
+    if (effectiveAsOf) params.set('as_of', effectiveAsOf);
+    const s = params.toString();
+    return s ? `?${s}` : '';
+  }
+
   async function load(nextTab: Tab = tab) {
     setLoading(true);
     setError('');
@@ -121,6 +132,7 @@ export default function Page() {
       if (nextTab === 'expenses') path = `/reports/expenses/budget-vs-actual${qs()}`;
       if (nextTab === 'cashflow') path = `/reports/cash-flow${qs()}`;
       if (nextTab === 'pnl') path = `/reports/profit-loss${qs()}`;
+      if (nextTab === 'trialbalance') path = `/reports/trial-balance${trialBalanceQs()}`;
       if (nextTab === 'balancesheet') path = `/reports/balance-sheet${balanceSheetQs()}`;
       const r = await api(path);
       if (nextTab === 'sales') {
@@ -235,10 +247,15 @@ export default function Page() {
       if (toDate) params.set('to_date', toDate);
       if (storeId) params.set('store_id', storeId);
       if (branchId) params.set('branch_id', branchId);
-      if ((reportType || TAB_EXPORT[tab]) === 'balance_sheet') {
+      if (
+        (reportType || TAB_EXPORT[tab]) === 'balance_sheet' ||
+        (reportType || TAB_EXPORT[tab]) === 'trial_balance'
+      ) {
         const effectiveAsOf = asOf || toDate;
         if (effectiveAsOf) params.set('as_of', effectiveAsOf);
-        if (compare) params.set('compare', compare);
+        if ((reportType || TAB_EXPORT[tab]) === 'balance_sheet' && compare) {
+          params.set('compare', compare);
+        }
       }
       if (
         (reportType || TAB_EXPORT[tab]) === 'inventory_valuation' ||
@@ -352,6 +369,7 @@ export default function Page() {
             ['expenses', 'Expenses'],
             ['cashflow', 'Cash flow'],
             ['pnl', 'P&L'],
+            ['trialbalance', 'Trial balance'],
             ['balancesheet', 'Balance sheet'],
             ['schedules', 'Email schedules'],
           ] as [Tab, string][]
@@ -366,7 +384,7 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        {tab === 'balancesheet' && (
+        {(tab === 'balancesheet' || tab === 'trialbalance') && (
           <>
             <input
               type="date"
@@ -374,11 +392,13 @@ export default function Page() {
               onChange={(e) => setAsOf(e.target.value)}
               title="As of date (defaults to To date)"
             />
-            <select value={compare} onChange={(e) => setCompare(e.target.value)}>
-              <option value="">No compare</option>
-              <option value="prior_period">vs prior month-end</option>
-              <option value="prior_year">vs prior year</option>
-            </select>
+            {tab === 'balancesheet' && (
+              <select value={compare} onChange={(e) => setCompare(e.target.value)}>
+                <option value="">No compare</option>
+                <option value="prior_period">vs prior month-end</option>
+                <option value="prior_year">vs prior year</option>
+              </select>
+            )}
           </>
         )}
         {tab === 'inventory' && (
@@ -933,6 +953,46 @@ export default function Page() {
                 <tr>
                   <td colSpan={4} className="muted">
                     No income/expense activity for this filter
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'trialbalance' && data && (
+        <>
+          <p className="muted">
+            As of {data.as_of}
+            {data.mode === 'journals' ? ' · reconstructed from posted journals' : ' · live balances'}
+            {' · '}
+            Balanced: {String(data.balanced)} | Dr {data.total_debit} / Cr {data.total_credit}
+          </p>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Debit</th>
+                <th>Credit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.rows || []).map((r: any) => (
+                <tr key={r.account_id || r.code}>
+                  <td>{r.code}</td>
+                  <td>{r.name}</td>
+                  <td>{r.account_type}</td>
+                  <td>{r.debit}</td>
+                  <td>{r.credit}</td>
+                </tr>
+              ))}
+              {!data.rows?.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No balances for this as-of date
                   </td>
                 </tr>
               )}
