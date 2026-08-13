@@ -1,0 +1,55 @@
+{
+  "id": "cutover-remaining-gate",
+  "stage": 203,
+  "pack": "I1",
+  "doc": "docs/CUTOVER_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/CUTOVER_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/CUTOVER_PACK_POINTERS_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md",
+    "launch_cert": "docs/LAUNCH_CERT_MVP.md",
+    "production_launch_remaining_gate": "docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_cutover_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "production_launch_live_claimed": false,
+  "distinct_from_stage29_x1_cutover_pack": true,
+  "distinct_from_stage27_l1_launch_cert": true,
+  "distinct_from_stage202_production_launch_remaining_gate": true,
+  "distinct_from_stage180_go_live_remaining_gate": true,
+  "steps": [
+    {
+      "id": "co-read-blockers",
+      "title": "Read B1 cutover blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "co-follow-pointers",
+      "title": "Follow P1 Stage 29 / Stage 27 / Stage 202 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "co-cutover-missing",
+      "title": "Reaffirm live production cutover MISSING until executed cutover ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "co-no-packaging-as-live",
+      "title": "Do not treat Stage 29 X1 / Stage 27 L1 as live production cutover Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "co-cutover-remaining",
+      "title": "Live production cutover / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 203 I1 cutover remaining-gate index packaging only. Do not claim live production cutover Complete."
+}

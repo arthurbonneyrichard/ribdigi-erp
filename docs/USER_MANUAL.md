@@ -180,6 +180,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Production launch remaining-gate index (Stage 202):** Status index is `docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md` → blockers `docs/PRODUCTION_LAUNCH_BLOCKERS_MVP.md` → Stage 66/29 pointers `docs/PRODUCTION_LAUNCH_PACK_POINTERS_MVP.md`. Live production launch Complete remains MISSING (not claimed).
 
+**Cutover remaining-gate index (Stage 203):** Status index is `docs/CUTOVER_REMAINING_GATE_MVP.md` → blockers `docs/CUTOVER_BLOCKERS_MVP.md` → Stage 29/27 pointers `docs/CUTOVER_PACK_POINTERS_MVP.md`. Live production cutover Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

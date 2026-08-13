@@ -51,3 +51,5 @@ Attestation matrix packaging maps Remaining honesty flags across Stage 26–29 p
 ## Sign-off
 
 Stage 27 L1 is met when this doc + checklist map + evidence JSON exist, `test_launch_cert_l1.py` passes, and `LAUNCH_CHECKLIST.md` / roadmap cite Stage 27 L1 without fake production sign-off. Stage 29 X1 is met when the cutover pack above passes without inventing live cutover or forged §7. Stage 30 A1 is met when the attestation pack above passes without inventing attestation Complete or forged §7.
+
+See also Stage 203 Tenant MVP Cutover remaining-gate index fidelity (`docs/CUTOVER_REMAINING_GATE_MVP.md`, ADR-412 / ADR-413).

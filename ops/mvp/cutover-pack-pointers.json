@@ -1,0 +1,53 @@
+{
+  "id": "cutover-pack-pointers",
+  "stage": 203,
+  "pack": "P1",
+  "doc": "docs/CUTOVER_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CUTOVER_REMAINING_GATE_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md",
+    "cutover_checklist": "ops/launch/cutover-checklist.json",
+    "launch_cert": "docs/LAUNCH_CERT_MVP.md",
+    "launch_cert_map": "ops/launch/checklist-map.json",
+    "production_launch_remaining_gate": "docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "production_cutover_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "production_launch_live_claimed": false,
+  "topics": [
+    "cutover_pack_stage29",
+    "launch_cert_stage27",
+    "production_launch_remaining_gate_stage202",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cp-cutover",
+      "title": "Point to Stage 29 cutover pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-launch-cert",
+      "title": "Point to Stage 27 launch cert",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-production-launch-gate",
+      "title": "Point to Stage 202 production launch remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-cutover-remaining",
+      "title": "Live production cutover Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 203 P1 cutover pack pointers packaging only. Do not claim live production cutover Complete."
+}

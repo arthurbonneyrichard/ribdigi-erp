@@ -1,0 +1,55 @@
+{
+  "id": "cutover-blockers",
+  "stage": 203,
+  "pack": "B1",
+  "doc": "docs/CUTOVER_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CUTOVER_REMAINING_GATE_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md",
+    "launch_cert": "docs/LAUNCH_CERT_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_cutover_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_production_cutover_execution": "REMAINING",
+    "section_7_signed": "REMAINING",
+    "stage29_x1_as_live_production_cutover": "NON_CLAIM",
+    "stage27_l1_as_live_production_cutover": "NON_CLAIM",
+    "production_cutover_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cb-cutover",
+      "title": "Mark live production cutover execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-section7",
+      "title": "Mark section 7 signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-stage29-nonclaim",
+      "title": "Mark Stage 29 X1 cutover pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-stage27-nonclaim",
+      "title": "Mark Stage 27 L1 launch cert as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-cutover-remaining",
+      "title": "Live production cutover Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 203 B1 cutover blocker matrix packaging only. Live production cutover Complete remains MISSING."
+}

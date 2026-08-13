@@ -3048,6 +3048,18 @@ Every feature in every phase must meet:
 
 **Stage 202 exit (2026-08-13):** I1, B1, P1, D1, H202x met — `docs/STAGE_202_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_411_STAGE202_FREEZE.md`. Fidelity: `docs/STAGE_202_FIDELITY.md`.
 
+**Stage 203 open (2026-08-13):** Tenant MVP Cutover Remaining-Gate Index Fidelity — `docs/ADR_412_STAGE203_OPEN.md` + `docs/STAGE_203_PLAN.md` (I1 next).
+
+**Stage 203 I1 (2026-08-13):** Cutover remaining-gate index hub (`test_stage203_index_i1.py`).
+
+**Stage 203 B1 (2026-08-13):** Cutover blocker matrix (`test_stage203_blockers_b1.py`).
+
+**Stage 203 P1 (2026-08-13):** Stage 29 / Stage 27 / Stage 202 pointers (`test_stage203_pointers_p1.py`).
+
+**Stage 203 D1 (2026-08-13):** Cutover Remaining-Gate Index fidelity sync — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`).
+
+**Stage 203 exit (2026-08-13):** I1, B1, P1, D1, H203x met — `docs/STAGE_203_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_413_STAGE203_FREEZE.md`. Fidelity: `docs/STAGE_203_FIDELITY.md`.
+
 
 
 
