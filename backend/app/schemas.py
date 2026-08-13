@@ -1197,6 +1197,8 @@ class CreditLimitOverrideRequest(BaseModel):
 class PosSaleCreate(BaseModel):
     session_id: str | None = None
     party_id: str | None = None
+    # Stage 164 I1 — optional online; required for offline sync push pos_sale ops
+    client_request_id: str | None = None
     subtotal: float = 0
     tax: float = 0
     total: float = 0

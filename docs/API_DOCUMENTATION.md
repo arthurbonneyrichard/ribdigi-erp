@@ -1707,4 +1707,6 @@ Stage 161 D1 — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`): 
 
 Stage 162 D1 — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`): Stage 162 N1/S1/M1 Shell approved navigation hierarchy (no new tenant business APIs); impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 
-Stage 163 D1 — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`): Offline foundation APIs — `GET/POST/DELETE /api/v1/offline/devices` (company_admin/super_admin; soft revoke); `GET /api/v1/sync/status` returns `sync_enabled: false` with empty queue fields (no fake push/pull). Sync engine remains Stage 164+.
+Stage 163 D1 — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`): Offline foundation APIs — `GET/POST/DELETE /api/v1/offline/devices` (company_admin/super_admin; soft revoke); Stage 163 S1 deferred `/sync/status` superseded by Stage 164 Q1.
+
+Stage 164 D1 — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`): Sync queue APIs — `GET /api/v1/sync/status` (real counts, `sync_enabled: true`); `POST /sync/push|pull|ack`; `GET /sync/conflicts`; POS `client_request_id` idempotency on `POST /pos/sales` and push `pos_sale`. Hold/Resume / Offline Complete remain deferred.

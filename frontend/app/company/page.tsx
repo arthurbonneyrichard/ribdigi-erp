@@ -71,6 +71,7 @@ export default function Page() {
   // Stage 163 V1 / S1 — offline devices + sync honesty
   const [offlineDevices, setOfflineDevices] = useState<any[]>([]);
   const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [syncConflicts, setSyncConflicts] = useState<any[]>([]);
   const [deviceForm, setDeviceForm] = useState({ name: '', platform: 'web' });
   const [deviceBusy, setDeviceBusy] = useState(false);
 
@@ -78,12 +79,14 @@ export default function Page() {
 
   async function refreshOfflineSync() {
     try {
-      const [devicesRes, syncRes] = await Promise.all([
+      const [devicesRes, syncRes, conflictsRes] = await Promise.all([
         api('/offline/devices').catch(() => null),
         api('/sync/status').catch(() => null),
+        api('/sync/conflicts?status=open').catch(() => null),
       ]);
       if (devicesRes?.data) setOfflineDevices(devicesRes.data || []);
       if (syncRes?.data) setSyncStatus(syncRes.data);
+      if (conflictsRes?.data) setSyncConflicts(conflictsRes.data || []);
     } catch {
       // Company admins only for devices; sync status is authenticated.
     }
@@ -926,17 +929,32 @@ export default function Page() {
       <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="offline-sync">
         <h2>Offline sync</h2>
         <p className="muted">
-          Stage 163 foundation: register devices and see honest sync status. Offline sales and sync
-          push/pull remain deferred (Stage 164+) — this panel never pretends queues are live.
+          Stage 164 sync queue: register devices, inspect real queue depths / open conflicts, and use
+          <code> /sync/push|pull|ack</code> with <code>client_request_id</code> for idempotent offline
+          POS. Hold/Resume and full Offline Complete remain deferred — failed ops stay failed.
         </p>
         {syncStatus ? (
           <p className="muted">
             Sync enabled: {String(syncStatus.sync_enabled)} · Queue depth:{' '}
-            {syncStatus.queue_depth ?? 0} · Conflicts: {syncStatus.conflict_count ?? 0}
+            {syncStatus.queue_depth ?? 0} · Pending pushes: {syncStatus.pending_pushes ?? 0} ·
+            Pending pulls: {syncStatus.pending_pulls ?? 0} · Conflicts:{' '}
+            {syncStatus.conflict_count ?? 0}
             {syncStatus.message ? ` · ${syncStatus.message}` : ''}
           </p>
         ) : (
           <p className="muted">Loading sync status…</p>
+        )}
+        {syncConflicts.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <h3 style={{ margin: '8px 0' }}>Open conflicts</h3>
+            <ul className="muted" style={{ margin: 0, paddingLeft: 18 }}>
+              {syncConflicts.map((c) => (
+                <li key={c.id}>
+                  {c.op_type} · {c.client_op_id || c.id}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <input

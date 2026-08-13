@@ -44,10 +44,11 @@ Most core tenant ERP engines (inventory, stock, sales, POS online, purchasing, a
 | Billers CRUD | Alias to salesperson report | PARTIAL | Shell link | Yes if CRUD | Yes | People | — | Defer (honesty) |
 | Parallel Income module | P&L alias | PARTIAL | Accounting | — | — | — | — | Defer |
 | Finance reports path CSVs | Stages 160–161 | COMPLETE | `finance_ops_export.py` | — | — | Reports/Accounting | RBAC | Keep |
-| Offline / PWA / Sync | Stage 163 foundation | PARTIAL | PWA+devices+status | Yes | Yes | PWA+POS | Device/tenant checks | **Stage 163** foundation Complete; sync engine **164+** |
-| Device registration | Stage 163 V1 | COMPLETE (MVP) | `offline_devices` | Yes | — | Settings | Soft revoke | Keep; wire into sync later |
-| Sync APIs `/sync/*` | `/sync/status` only | PARTIAL | honesty ADR | Yes | Yes | — | Idempotency | **Stage 164+** push/pull |
+| Offline / PWA / Sync | Stage 163–164 | PARTIAL | PWA+queue+POS idemp | Yes | Yes | PWA+POS | Device/tenant checks | Foundation+queue Complete; Offline Complete **165+** |
+| Device registration | Stage 163 V1 | COMPLETE (MVP) | `offline_devices` | Yes | — | Settings | Soft revoke | Keep |
+| Sync APIs `/sync/*` | Stage 164 Q1–C1 | COMPLETE (MVP) | `sync_engine.py` | Yes | — | — | Idempotency | Keep; conflict resolve UX later |
 | Connectivity status UI | Stage 163 C1 | COMPLETE (MVP) | Shell | No | No | Chrome | — | Keep |
+| Idempotency offline txs | Stage 164 I1 | COMPLETE (MVP) | `client_request_id` | Yes | — | POS/sync | Unique per tenant | Keep |
 | Idempotency offline txs | None | MISSING | POS schemas | Unique constraints | Yes | Queue | Critical | With sync push |
 | Backup / VPS | Complete packaging | COMPLETE | backup, helm/compose | — | — | — | Secrets | Keep |
 | Paid billing | Deferred ADR-002 | MISSING (honest) | platform billing | — | — | — | — | Keep deferred; flags false |
@@ -92,3 +93,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 163 decision (opened after Stage 162 freeze)
 
 **Tenant MVP Offline Foundation Fidelity** — PWA shell + connectivity chrome + device registration + `/sync/status` honesty. Sync push/pull/conflicts and offline sales remain Stage 164+. Do not claim Offline Complete.
+
+## Stage 164 decision (opened after Stage 163 freeze)
+
+**Tenant MVP Sync Queue + Idempotent Offline POS Fidelity** — real queue tables, push/pull/ack/conflicts, `client_request_id` idempotency. Hold/Resume and Offline Complete remain Stage 165+.

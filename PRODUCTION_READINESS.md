@@ -216,4 +216,6 @@ Stage 161 D1 Tenant MVP Reports Profit-Loss Path CSV, Reports Trial-Balance Path
 
 Stage 162 D1 Tenant MVP Approved Navigation Hierarchy Fidelity — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); Stage 162 N1 Complete; Stage 162 S1 Complete; Stage 162 M1 Complete (MVP honesty); impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`; exit `docs/STAGE_162_EXIT_CRITERIA.md`, ADR-331.
 
-Stage 163 D1 Tenant MVP Offline Foundation Fidelity — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`); Stage 163 P1 Complete; Stage 163 C1 Complete; Stage 163 V1 Complete; Stage 163 S1 Complete (MVP honesty); exit `docs/STAGE_163_EXIT_CRITERIA.md`, ADR-333. Sync push/pull/conflicts and offline sales remain MISSING (Stage 164+); do not claim Offline Complete.
+Stage 163 D1 Tenant MVP Offline Foundation Fidelity — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`); Stage 163 P1 Complete; Stage 163 C1 Complete; Stage 163 V1 Complete; Stage 163 S1 Complete (MVP honesty); exit `docs/STAGE_163_EXIT_CRITERIA.md`, ADR-333.
+
+Stage 164 D1 Tenant MVP Sync Queue + Idempotent Offline POS Fidelity — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`); Stage 164 Q1/P1/L1/A1/C1/I1 Complete (MVP honesty); exit `docs/STAGE_164_EXIT_CRITERIA.md`, ADR-335. Hold/Resume and Offline Complete claim remain MISSING (Stage 165+).

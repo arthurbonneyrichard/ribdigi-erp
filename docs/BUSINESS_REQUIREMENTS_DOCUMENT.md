@@ -890,6 +890,7 @@ Stage 160 D1 — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`); 
 Stage 161 D1 — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`); Stage 161 L1 / B1 / X1.
 Stage 162 D1 — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); Stage 162 N1 / S1 / M1.
 Stage 163 D1 — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`); Stage 163 P1 / C1 / V1 / S1.
+Stage 164 D1 — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`); Stage 164 Q1 / P1 / L1 / A1 / C1 / I1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1629,3 +1630,5 @@ Stage 161 D1 reports profit-loss, trial-balance & tax path export fidelity — `
 Stage 162 D1 approved navigation hierarchy fidelity — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); Stage 162 N1 expandable Shell parents; Stage 162 S1 Stock/Stores/Warehouse parents; Stage 162 M1 manual amendment; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 
 Stage 163 D1 offline foundation fidelity — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`); Stage 163 P1 PWA shell; Stage 163 C1 connectivity chrome; Stage 163 V1 offline devices; Stage 163 S1 sync status honesty; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+
+Stage 164 D1 sync queue + idempotent offline POS fidelity — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`); Stage 164 Q1 queue/status; Stage 164 P1/L1/A1/C1 sync APIs; Stage 164 I1 `client_request_id`; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

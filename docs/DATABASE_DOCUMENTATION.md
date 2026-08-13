@@ -1796,7 +1796,13 @@ Optional audit columns:
 
 ### Stage 163 — `offline_devices` (Alembic `20260813_0091`)
 
-Tenant-scoped device registration for Offline foundation (shared-schema + `tenant_id`). Soft-revoke via `revoked_at` (no hard delete). Unique `(tenant_id, device_code)`. Sync queue tables remain deferred (Stage 164+).
+Tenant-scoped device registration for Offline foundation (shared-schema + `tenant_id`). Soft-revoke via `revoked_at` (no hard delete). Unique `(tenant_id, device_code)`.
+
+### Stage 164 — sync queue + POS idempotency (Alembic `20260813_0092`)
+
+- `sync_queue_items` — direction push/pull, `client_op_id` unique per tenant, status pending/applied/failed/conflict/acked
+- `sync_conflicts` — open conflicts for payload mismatches (no silent overwrite)
+- `transactions.client_request_id` — nullable unique with `tenant_id` for idempotent POS (online + sync push)
 
 ---
 

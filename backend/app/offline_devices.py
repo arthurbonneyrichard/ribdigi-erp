@@ -135,7 +135,7 @@ async def revoke_device(db: AsyncSession, tenant_id: str, device_id: str) -> m.O
 
 
 def sync_status_payload() -> dict[str, Any]:
-    """Stage 163 S1 — honest deferred sync status (no fake offline sales)."""
+    """Legacy Stage 163 helper — superseded by sync_engine.sync_status (Stage 164 Q1)."""
     return {
         "sync_enabled": False,
         "queue_depth": 0,

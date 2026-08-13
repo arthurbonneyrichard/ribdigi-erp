@@ -2574,6 +2574,24 @@ Every feature in every phase must meet:
 
 **Stage 163 exit (2026-08-13):** P1, C1, V1, S1, D1, H163x met — `docs/STAGE_163_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_333_STAGE163_FREEZE.md`. Fidelity: `docs/STAGE_163_FIDELITY.md`.
 
+**Stage 164 open (2026-08-13):** Tenant MVP Sync Queue + Idempotent Offline POS Fidelity — `docs/ADR_334_STAGE164_OPEN.md` + `docs/STAGE_164_PLAN.md` (Q1 next).
+
+**Stage 164 Q1 (2026-08-13):** Sync queue schema + real `/sync/status` (`test_stage164_queue_q1.py`).
+
+**Stage 164 P1 (2026-08-13):** `POST /sync/push` (`test_stage164_push_p1.py`).
+
+**Stage 164 L1 (2026-08-13):** `POST /sync/pull` (`test_stage164_pull_l1.py`).
+
+**Stage 164 A1 (2026-08-13):** `POST /sync/ack` (`test_stage164_ack_a1.py`).
+
+**Stage 164 C1 (2026-08-13):** `GET /sync/conflicts` (`test_stage164_conflicts_c1.py`).
+
+**Stage 164 I1 (2026-08-13):** Idempotent POS `client_request_id` (`test_stage164_idempotent_pos_i1.py`).
+
+**Stage 164 D1 (2026-08-13):** Sync queue + idempotent POS fidelity sync — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`).
+
+**Stage 164 exit (2026-08-13):** Q1, P1, L1, A1, C1, I1, D1, H164x met — `docs/STAGE_164_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_335_STAGE164_FREEZE.md`. Fidelity: `docs/STAGE_164_FIDELITY.md`.
+
 
 
 

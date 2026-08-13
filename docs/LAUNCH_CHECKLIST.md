@@ -758,6 +758,15 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Sync status honesty (Stage 163 S1: `test_stage163_sync_s1.py`)
 - [x] Stage 163 fidelity sync (D1: `test_stage163_fidelity_d1.py`, `docs/STAGE_163_FIDELITY.md`)
 - [x] Stage 163 exit + freeze (H163x: `test_stage163_exit_h163x.py`, `docs/STAGE_163_EXIT_CRITERIA.md`, ADR-333)
+- [x] Stage 164 track opened (ADR-334: `test_stage164_open.py`, `docs/STAGE_164_PLAN.md`) — Sync Queue + Idempotent Offline POS; closed under ADR-335
+- [x] Sync queue schema + real status (Stage 164 Q1: `test_stage164_queue_q1.py`)
+- [x] Sync push (Stage 164 P1: `test_stage164_push_p1.py`)
+- [x] Sync pull (Stage 164 L1: `test_stage164_pull_l1.py`)
+- [x] Sync ack (Stage 164 A1: `test_stage164_ack_a1.py`)
+- [x] Sync conflicts (Stage 164 C1: `test_stage164_conflicts_c1.py`)
+- [x] Idempotent POS client_request_id (Stage 164 I1: `test_stage164_idempotent_pos_i1.py`)
+- [x] Stage 164 fidelity sync (D1: `test_stage164_fidelity_d1.py`, `docs/STAGE_164_FIDELITY.md`)
+- [x] Stage 164 exit + freeze (H164x: `test_stage164_exit_h164x.py`, `docs/STAGE_164_EXIT_CRITERIA.md`, ADR-335)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

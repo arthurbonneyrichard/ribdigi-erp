@@ -24,6 +24,4 @@ Stage 163 Tenant MVP Offline Foundation Fidelity delivered PWA shell (P1), conne
 
 ## Next stage
 
-Stage 164 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 163 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Real sync queue + `/sync/push|pull|ack|conflicts` + idempotent offline POS path (no fake success).
+Stage 164 opened under [ADR-334](ADR_334_STAGE164_OPEN.md) (Sync Queue + Idempotent Offline POS Fidelity) and froze under [ADR-335](ADR_335_STAGE164_FREEZE.md). Stage 163 feature scope remains frozen (S1 `/sync/status` deferred-only assertions superseded by Stage 164 Q1).

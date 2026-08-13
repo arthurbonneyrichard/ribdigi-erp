@@ -991,6 +991,15 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 163 S1** | `/sync/status` honesty — `sync_enabled: false` (`test_stage163_sync_s1.py`) |
 | **Stage 163 D1** | Offline foundation — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`) |
 | **Stage 163 H163x** | Exit + freeze — `docs/STAGE_163_EXIT_CRITERIA.md`, ADR-333 (`test_stage163_exit_h163x.py`); Stages 1–163 frozen; Stage 164+ sync queue recommended |
+| **Stage 164 open** | Sync Queue + Idempotent Offline POS — `docs/STAGE_164_PLAN.md`, ADR-334 (`test_stage164_open.py`) |
+| **Stage 164 Q1** | Queue schema + real `/sync/status` (`test_stage164_queue_q1.py`) |
+| **Stage 164 P1** | `POST /sync/push` — active device + tenant scope (`test_stage164_push_p1.py`) |
+| **Stage 164 L1** | `POST /sync/pull` (`test_stage164_pull_l1.py`) |
+| **Stage 164 A1** | `POST /sync/ack` (`test_stage164_ack_a1.py`) |
+| **Stage 164 C1** | `GET /sync/conflicts` — no silent overwrite (`test_stage164_conflicts_c1.py`) |
+| **Stage 164 I1** | POS `client_request_id` unique per tenant (`test_stage164_idempotent_pos_i1.py`) |
+| **Stage 164 D1** | Sync queue fidelity — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`) |
+| **Stage 164 H164x** | Exit + freeze — `docs/STAGE_164_EXIT_CRITERIA.md`, ADR-335 (`test_stage164_exit_h164x.py`); Stages 1–164 frozen; Stage 165+ offline client UX recommended |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

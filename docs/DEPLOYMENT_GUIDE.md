@@ -1540,3 +1540,5 @@ Stage 161 D1 reports profit-loss, trial-balance & tax path export fidelity — `
 Stage 162 D1 approved navigation hierarchy fidelity — `docs/STAGE_162_FIDELITY.md` (`test_stage162_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 163 D1 offline foundation fidelity — `docs/STAGE_163_FIDELITY.md` (`test_stage163_fidelity_d1.py`); Alembic `20260813_0091` adds `offline_devices`; PWA static assets under `frontend/public/`; main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 164 D1 sync queue fidelity — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`); Alembic `20260813_0092` adds `sync_queue_items`, `sync_conflicts`, `transactions.client_request_id`; main `ci.yml` remains deploy-free (Stage 18 C1).

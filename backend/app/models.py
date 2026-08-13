@@ -489,11 +489,14 @@ class PartyContact(Base):
 
 class Transaction(Base):
     __tablename__ = "transactions"
+    __table_args__ = (UniqueConstraint("tenant_id", "client_request_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
     tx_type: Mapped[str] = mapped_column(String(30), index=True)
     reference: Mapped[str] = mapped_column(String(80), index=True)
+    # Stage 164 I1 — offline/sync idempotency key (nullable for legacy online sales)
+    client_request_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     party_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True)
     session_id: Mapped[str | None] = mapped_column(ForeignKey("pos_sessions.id"), nullable=True, index=True)
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
@@ -1617,6 +1620,54 @@ class OfflineDevice(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SyncQueueItem(Base):
+    """Tenant sync queue row (Stage 164 Q1). Soft statuses only — no fake Completes."""
+
+    __tablename__ = "sync_queue_items"
+    __table_args__ = (UniqueConstraint("tenant_id", "client_op_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    device_id: Mapped[str | None] = mapped_column(
+        ForeignKey("offline_devices.id"), nullable=True, index=True
+    )
+    direction: Mapped[str] = mapped_column(String(10), default="push", index=True)
+    op_type: Mapped[str] = mapped_column(String(40), index=True)
+    client_op_id: Mapped[str] = mapped_column(String(80), index=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    result_entity_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    result_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    acked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class SyncConflict(Base):
+    """Sync conflict record (Stage 164 C1). Open until explicitly resolved."""
+
+    __tablename__ = "sync_conflicts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    queue_item_id: Mapped[str | None] = mapped_column(
+        ForeignKey("sync_queue_items.id"), nullable=True, index=True
+    )
+    device_id: Mapped[str | None] = mapped_column(
+        ForeignKey("offline_devices.id"), nullable=True, index=True
+    )
+    op_type: Mapped[str] = mapped_column(String(40), index=True)
+    client_op_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    client_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    server_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    resolution: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class WebhookEndpoint(Base):
