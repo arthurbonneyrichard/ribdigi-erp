@@ -265,3 +265,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Evidence Ledger Remaining-Gate Index Fidelity** — evidence ledger remaining-gate hub (I1), blocker matrix (B1), Stage 30 / Stage 211 pointers with explicit non-claim (P1). Live evidence-ledger Completes remain deferred (Stage 213+). Distinct from Stage 211 incident pack remaining-gate and Stage 30 L1 packaging.
 
+## Stage 213 decision (opened after Stage 212 freeze)
+
+**Tenant MVP Attestation Pack Remaining-Gate Index Fidelity** — attestation pack remaining-gate hub (I1), blocker matrix (B1), Stage 30 A1 / Stage 212 / Stage 187 pointers with explicit non-claim (P1). Live go-live attestation Completes remain deferred (Stage 214+). Distinct from Stage 212 evidence ledger remaining-gate and Stage 187 attestation remaining-gate.
+

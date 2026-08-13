@@ -1,0 +1,56 @@
+{
+  "id": "attestation-pack-remaining-gate",
+  "stage": 213,
+  "pack": "I1",
+  "doc": "docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/ATTESTATION_PACK_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/ATTESTATION_PACK_RG_POINTERS_MVP.md",
+    "attestation_pack": "docs/ATTESTATION_PACK_MVP.md",
+    "evidence_ledger_remaining_gate": "docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md",
+    "attestation_remaining_gate_stage187": "docs/ATTESTATION_REMAINING_GATE_MVP.md",
+    "attestation_matrix": "ops/launch/attestation-matrix.json"
+  },
+  "packaging_complete": true,
+  "live_attestation_claimed": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "go_live_claimed": false,
+  "distinct_from_stage30_a1_attestation_pack": true,
+  "distinct_from_stage187_attestation_remaining_gate": true,
+  "distinct_from_stage212_evidence_ledger_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ap-read-blockers",
+      "title": "Read B1 attestation pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-follow-pointers",
+      "title": "Follow P1 Stage 30 A1 / Stage 212 / Stage 187 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-attestation-missing",
+      "title": "Reaffirm live attestation MISSING until real env verification + section 7 sign-off ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-no-packaging-as-attestation",
+      "title": "Do not treat Stage 30 A1 as live go-live attestation Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ap-attestation-remaining",
+      "title": "Live attestation / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 213 I1 attestation pack remaining-gate index packaging only. Do not claim live go-live attestation Complete."
+}

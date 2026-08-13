@@ -41,3 +41,5 @@ This is the **MVP go-live attestation packaging surface**: a matrix of Remaining
 Stage 30 A1 is met when this doc + matrix + evidence schema + evidence JSON exist, `test_attestation_pack_a1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / launch / roadmap cite Stage 30 A1 without inventing attestation or forged §7.
 
 See also Stage 187 attestation remaining-gate index: [`ATTESTATION_REMAINING_GATE_MVP.md`](ATTESTATION_REMAINING_GATE_MVP.md).
+
+See also Stage 213 Tenant MVP Attestation Pack remaining-gate index fidelity (`docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md`, ADR-432 / ADR-433) — packaging non-claim as live go-live attestation Complete. Distinct from Stage 187 [`ATTESTATION_REMAINING_GATE_MVP.md`](ATTESTATION_REMAINING_GATE_MVP.md).

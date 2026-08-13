@@ -3,7 +3,7 @@
 **Status:** Complete (MVP packaging) — Stage 212 I1  
 **Evidence:** `backend/tests/test_stage212_index_i1.py`  
 **Register:** `ops/mvp/evidence-ledger-remaining-gate.json`  
-**Related:** [EVIDENCE_LEDGER_BLOCKERS_MVP.md](EVIDENCE_LEDGER_BLOCKERS_MVP.md) · [EVIDENCE_LEDGER_PACK_POINTERS_MVP.md](EVIDENCE_LEDGER_PACK_POINTERS_MVP.md) · [EVIDENCE_LEDGER_MVP.md](EVIDENCE_LEDGER_MVP.md) · [INCIDENT_REMAINING_GATE_MVP.md](INCIDENT_REMAINING_GATE_MVP.md) · [STAGE_212_PLAN.md](STAGE_212_PLAN.md)
+**Related:** [EVIDENCE_LEDGER_BLOCKERS_MVP.md](EVIDENCE_LEDGER_BLOCKERS_MVP.md) · [EVIDENCE_LEDGER_PACK_POINTERS_MVP.md](EVIDENCE_LEDGER_PACK_POINTERS_MVP.md) · [EVIDENCE_LEDGER_MVP.md](EVIDENCE_LEDGER_MVP.md) · [INCIDENT_REMAINING_GATE_MVP.md](INCIDENT_REMAINING_GATE_MVP.md) · [STAGE_212_PLAN.md](STAGE_212_PLAN.md) · [ATTESTATION_PACK_REMAINING_GATE_MVP.md](ATTESTATION_PACK_REMAINING_GATE_MVP.md) (Stage 213)
 
 Single index of evidence-ledger remaining gates. Packaging only — **live evidence-ledger Complete remains MISSING.** Distinct from Stage 30 L1 evidence ledger packaging and Stage 211 incident pack remaining-gate.
 

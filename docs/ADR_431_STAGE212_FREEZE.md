@@ -24,6 +24,4 @@ Stage 212 Tenant MVP Evidence Ledger Remaining-Gate Index Fidelity delivered evi
 
 ## Next stage
 
-Stage 213 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 212 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Attestation Pack Remaining-Gate Index Fidelity — single index of attestation-pack blockers (packaged Stage 30 A1 attestation materials non-claim as live go-live attestation Complete) with explicit non-claim (no live attestation Complete). Distinct from Stage 212 evidence ledger remaining-gate and Stage 187 attestation remaining-gate.
+Stage **213** opened under **ADR-432** / frozen under **ADR-433** — Tenant MVP Attestation Pack remaining-gate index fidelity (packaged Stage 30 A1 attestation materials non-claim as live go-live attestation Complete) with explicit non-claim of live attestation Complete. Stage 212 feature scope remains frozen. Do not reopen Stages **1–212** scopes.
