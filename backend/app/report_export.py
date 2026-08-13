@@ -31,6 +31,7 @@ EXPORTABLE = frozenset(
         "inventory_valuation",
         "inventory_movements",
         "inventory_low_stock",
+        "inventory_expiry",
         "inventory_transfers",
         "purchases_summary",
         "purchases_suppliers",
@@ -294,6 +295,16 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             "Low Stock",
         )
 
+    if report_type == "inventory_expiry":
+        items = payload.get("batches") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload) + [
+            f"{r.get('sku')} batch {r.get('batch_number')}: exp {r.get('expiry_date')} "
+            f"days={r.get('days_until_expiry')} qty={r.get('quantity')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Inventory Expiry"
+
     if report_type == "inventory_transfers":
         items = payload.get("transfers") or []
         rows = [dict(x) for x in items]
@@ -481,6 +492,7 @@ async def build_report_payload(
     store_id: str | None = None,
     branch_id: str | None = None,
     category_id: str | None = None,
+    days: int | None = None,
     as_of: str | None = None,
     compare: str | None = None,
 ) -> Any:
@@ -540,6 +552,13 @@ async def build_report_payload(
         return await reports_svc.inventory_movements(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "inventory_low_stock":
         return await reports_svc.inventory_low_stock(db, tenant_id)
+    if report_type == "inventory_expiry":
+        return await reports_svc.inventory_expiry(
+            db,
+            tenant_id,
+            within_days=int(days) if days is not None else 30,
+            warehouse_id=warehouse_id,
+        )
     if report_type == "inventory_transfers":
         return await reports_svc.inventory_transfers(
             db, tenant_id, from_date=fd, to_date=td

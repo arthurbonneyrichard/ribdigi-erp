@@ -1061,16 +1061,75 @@ async def inventory_expiry(
     tenant_id: str,
     *,
     within_days: int = 30,
+    warehouse_id: str | None = None,
 ) -> dict:
+    """Batches nearing expiry (BR-14.2); optional warehouse filter."""
     from app import catalog as catalog_svc
+
+    within_days = max(0, min(int(within_days), 3650))
+    if warehouse_id:
+        wh = (
+            await db.execute(
+                select(m.Warehouse).where(
+                    m.Warehouse.id == warehouse_id,
+                    m.Warehouse.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not wh:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail="Warehouse not found")
 
     batches = await catalog_svc.list_expiring_batches(
         db, tenant_id, within_days=within_days
     )
+    if warehouse_id:
+        batches = [b for b in batches if b.warehouse_id == warehouse_id]
+
+    product_ids = {b.product_id for b in batches}
+    products: dict[str, m.Product] = {}
+    if product_ids:
+        for p in (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == tenant_id,
+                    m.Product.id.in_(list(product_ids)),
+                )
+            )
+        ).scalars().all():
+            products[p.id] = p
+
+    today = datetime.utcnow().date()
+    rows: list[dict] = []
+    expired_count = 0
+    total_qty = 0.0
+    for b in batches:
+        product = products.get(b.product_id)
+        exp = b.expiry_date.date() if b.expiry_date else None
+        days_until = (exp - today).days if exp else None
+        if days_until is not None and days_until < 0:
+            expired_count += 1
+        qty = float(b.quantity or 0)
+        total_qty += qty
+        row = catalog_svc.serialize_batch(b)
+        row.update(
+            {
+                "sku": product.sku if product else None,
+                "name": product.name if product else None,
+                "days_until_expiry": days_until,
+                "is_expired": bool(days_until is not None and days_until < 0),
+            }
+        )
+        rows.append(row)
+
     return {
         "within_days": within_days,
-        "count": len(batches),
-        "batches": [catalog_svc.serialize_batch(b) for b in batches],
+        "warehouse_id": warehouse_id,
+        "count": len(rows),
+        "expired_count": expired_count,
+        "total_quantity": round(total_qty, 3),
+        "batches": rows,
     }
 
 

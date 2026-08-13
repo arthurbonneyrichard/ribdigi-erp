@@ -755,11 +755,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Stock visibility and analysis.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Stock Balance:** Current stock per product per warehouse
-  - [ ] **Low Stock:** Products below reorder level
-  - [ ] **Stock Movement:** All in/out/adjustment/transfer transactions
+  - [x] **Stock Balance:** Current stock per product per warehouse (`GET /reports/inventory/balance`)
+  - [x] **Low Stock:** Products below reorder level (`GET /reports/inventory/low-stock`)
+  - [x] **Stock Movement:** All in/out/adjustment/transfer transactions (`GET /reports/inventory/movements`)
   - [x] **Stock Valuation:** Standard cost via `GET /reports/inventory/valuation?method=standard` (qty × `product.cost_price`; optional `warehouse_id`); FIFO/LIFO/weighted average deferred (API returns 400)
-  - [ ] **Expiry Report:** Products nearing expiry (pharmacy/food)
+  - [x] **Expiry Report:** Products nearing expiry (pharmacy/food) (`GET /reports/inventory/expiry?days=&warehouse_id=`; Reports Inventory tab + export `inventory_expiry`)
 
 #### BR-14.3 Purchase Reports
 - **Description:** Procurement analysis.
