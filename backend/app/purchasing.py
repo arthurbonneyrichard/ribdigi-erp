@@ -686,23 +686,38 @@ async def create_grn(
 
         received_qty = float(raw.get("received_qty") or 0)
         accepted_qty = float(raw.get("accepted_qty") if raw.get("accepted_qty") is not None else received_qty)
-        rejected_qty = float(raw.get("rejected_qty") or max(received_qty - accepted_qty, 0))
+        rejected_qty = float(raw.get("rejected_qty") or 0)
         if received_qty <= 0:
             raise HTTPException(status_code=400, detail="received_qty must be positive")
         if accepted_qty < 0 or rejected_qty < 0:
             raise HTTPException(status_code=400, detail="accepted/rejected qty cannot be negative")
-        if accepted_qty + rejected_qty > received_qty + 1e-9:
-            raise HTTPException(status_code=400, detail="accepted_qty + rejected_qty cannot exceed received_qty")
+        # If rejected omitted but accepted < received, treat remainder as rejected.
+        if rejected_qty == 0 and accepted_qty < received_qty - 1e-9:
+            rejected_qty = round(received_qty - accepted_qty, 3)
+        if abs((accepted_qty + rejected_qty) - received_qty) > 1e-6:
+            raise HTTPException(
+                status_code=400,
+                detail="accepted_qty + rejected_qty must equal received_qty",
+            )
+        reason = (raw.get("rejection_reason") or "").strip() or None
+        if rejected_qty > 1e-9 and not reason:
+            raise HTTPException(
+                status_code=400,
+                detail="rejection_reason is required when rejected_qty > 0",
+            )
+        if rejected_qty <= 1e-9:
+            reason = None
+            rejected_qty = 0.0
 
         outstanding = float(po_item.quantity) - float(po_item.received_qty or 0)
-        if accepted_qty > outstanding + 1e-9:
+        if received_qty > outstanding + 1e-9:
             raise HTTPException(
                 status_code=409,
                 detail={
                     "code": "OVER_RECEIPT",
-                    "message": f"Accepted qty exceeds outstanding for PO item {po_item.id}",
+                    "message": f"Received qty exceeds outstanding for PO item {po_item.id}",
                     "outstanding": outstanding,
-                    "accepted_qty": accepted_qty,
+                    "received_qty": received_qty,
                 },
             )
 
@@ -717,7 +732,7 @@ async def create_grn(
                 received_qty=received_qty,
                 accepted_qty=accepted_qty,
                 rejected_qty=rejected_qty,
-                rejection_reason=raw.get("rejection_reason"),
+                rejection_reason=reason,
             )
         )
 
@@ -746,9 +761,11 @@ async def create_grn(
                 warehouse_id=grn.warehouse_id,
                 notes=f"GRN {grn.grn_number}",
             )
-            # received_qty stays in the PO line's entered UoM
-            po_item.received_qty = float(po_item.received_qty or 0) + accepted_qty
             accepted_value += accepted_qty * float(po_item.unit_price) * (1 + float(po_item.tax_rate or 0) / 100.0)
+
+        # Count full physical receipt (accepted + rejected) against PO outstanding;
+        # only accepted qty is stocked above.
+        po_item.received_qty = float(po_item.received_qty or 0) + received_qty
 
     updated_items = await list_po_items(db, tenant_id, po.id)
     po.status = derive_po_status(updated_items)

@@ -721,8 +721,7 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 **Create GRN:**
 ```json
 {
-  "po_id": "po_001",
-  "received_date": "2026-08-10",
+  "purchase_order_id": "po_001",
   "warehouse_id": "wh_001",
   "items": [
     {
@@ -736,6 +735,8 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
   "notes": "Delivery received in good condition"
 }
 ```
+
+`accepted_qty + rejected_qty` must equal `received_qty` (rejected may be inferred when omitted and accepted < received). `rejection_reason` is **required** when `rejected_qty > 0`. Only accepted qty is stocked; full `received_qty` reduces PO outstanding (BR-6.4).
 
 ### 6.5 Purchase Invoice
 **List:** `GET /purchases/invoices`  
