@@ -3216,6 +3216,19 @@ Every feature in every phase must meet:
 
 **Stage 216 exit (2026-08-13):** I1, B1, P1, D1, H216x met — `docs/STAGE_216_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_439_STAGE216_FREEZE.md`. Fidelity: `docs/STAGE_216_FIDELITY.md`.
 
+**Stage 217 open (2026-08-13):** Tenant MVP Operator Handoff Remaining-Gate Index Fidelity — `docs/ADR_440_STAGE217_OPEN.md` + `docs/STAGE_217_PLAN.md` (I1 next).
+
+**Stage 217 I1 (2026-08-13):** Operator handoff remaining-gate index hub (`test_stage217_index_i1.py`).
+
+**Stage 217 B1 (2026-08-13):** Operator handoff blocker matrix (`test_stage217_blockers_b1.py`).
+
+**Stage 217 P1 (2026-08-13):** Stage 32 / Stage 216 / Stage 215 pointers (`test_stage217_pointers_p1.py`).
+
+**Stage 217 D1 (2026-08-13):** Operator Handoff Remaining-Gate Index fidelity sync — `docs/STAGE_217_FIDELITY.md` (`test_stage217_fidelity_d1.py`).
+
+**Stage 217 exit (2026-08-13):** I1, B1, P1, D1, H217x met — `docs/STAGE_217_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_441_STAGE217_FREEZE.md`. Fidelity: `docs/STAGE_217_FIDELITY.md`.
+
+
 
 
 

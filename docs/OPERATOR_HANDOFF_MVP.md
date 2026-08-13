@@ -42,3 +42,5 @@ This is the **MVP operator handoff packaging surface**: a consolidated ops take-
 ## Sign-off
 
 Stage 32 H1 is met when this doc + handoff JSON + evidence JSON exist, `test_operator_handoff_h1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / launch / roadmap cite Stage 32 H1 without inventing live-run or §7 success.
+
+See also Stage 217 operator handoff remaining-gate index: [`OPERATOR_HANDOFF_REMAINING_GATE_MVP.md`](OPERATOR_HANDOFF_REMAINING_GATE_MVP.md).

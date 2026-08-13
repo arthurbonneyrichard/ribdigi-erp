@@ -1252,6 +1252,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 216 P1** | Stage 33 / Stage 215 / Stage 189 pointers (`test_stage216_pointers_p1.py`) |
 | **Stage 216 D1** | Knowledge transfer remaining-gate fidelity — `docs/STAGE_216_FIDELITY.md` (`test_stage216_fidelity_d1.py`) |
 | **Stage 216 H216x** | Exit + freeze — `docs/STAGE_216_EXIT_CRITERIA.md`, ADR-439 (`test_stage216_exit_h216x.py`); Stages 1–216 frozen |
+| **Stage 217 open** | Operator Handoff Remaining-Gate Index — `docs/STAGE_217_PLAN.md`, ADR-440 (`test_stage217_open.py`) |
+| **Stage 217 I1** | Operator handoff remaining-gate index hub (`test_stage217_index_i1.py`) |
+| **Stage 217 B1** | Operator handoff blocker matrix (`test_stage217_blockers_b1.py`) |
+| **Stage 217 P1** | Stage 32 / Stage 216 / Stage 215 pointers (`test_stage217_pointers_p1.py`) |
+| **Stage 217 D1** | Operator handoff remaining-gate fidelity — `docs/STAGE_217_FIDELITY.md` (`test_stage217_fidelity_d1.py`) |
+| **Stage 217 H217x** | Exit + freeze — `docs/STAGE_217_EXIT_CRITERIA.md`, ADR-441 (`test_stage217_exit_h217x.py`); Stages 1–217 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |

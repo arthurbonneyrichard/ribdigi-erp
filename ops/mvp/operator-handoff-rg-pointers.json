@@ -1,0 +1,60 @@
+{
+  "id": "operator-handoff-rg-pointers",
+  "stage": 217,
+  "pack": "P1",
+  "doc": "docs/OPERATOR_HANDOFF_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OPERATOR_HANDOFF_REMAINING_GATE_MVP.md",
+    "operator_handoff": "docs/OPERATOR_HANDOFF_MVP.md",
+    "operator_handoff_register": "ops/mvp/operator-handoff.json",
+    "knowledge_transfer_remaining_gate": "docs/KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md",
+    "knowledge_base_remaining_gate": "docs/KNOWLEDGE_BASE_REMAINING_GATE_MVP.md",
+    "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_operator_handoff_claimed": false,
+  "handoff_complete_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "operator_handoff_stage32_h1",
+    "knowledge_transfer_remaining_gate_stage216",
+    "knowledge_base_remaining_gate_stage215",
+    "support_runbook_adjacency",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ohp-oh",
+      "title": "Point to Stage 32 H1 operator handoff",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohp-kt-gate",
+      "title": "Point to Stage 216 knowledge transfer remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohp-kb-gate",
+      "title": "Point to Stage 215 knowledge base remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohp-support",
+      "title": "Point to support runbook adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohp-handoff-remaining",
+      "title": "Live handoff Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 217 P1 operator handoff RG pointers packaging only. Do not claim live handoff Complete."
+}

@@ -1,0 +1,55 @@
+{
+  "id": "operator-handoff-remaining-gate",
+  "stage": 217,
+  "pack": "I1",
+  "doc": "docs/OPERATOR_HANDOFF_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OPERATOR_HANDOFF_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OPERATOR_HANDOFF_RG_POINTERS_MVP.md",
+    "operator_handoff": "docs/OPERATOR_HANDOFF_MVP.md",
+    "knowledge_transfer_remaining_gate": "docs/KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md",
+    "knowledge_base_remaining_gate": "docs/KNOWLEDGE_BASE_REMAINING_GATE_MVP.md",
+    "operator_handoff_register": "ops/mvp/operator-handoff.json"
+  },
+  "packaging_complete": true,
+  "live_operator_handoff_claimed": false,
+  "handoff_complete_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage32_h1_operator_handoff": true,
+  "distinct_from_stage216_knowledge_transfer_remaining_gate": true,
+  "distinct_from_stage215_knowledge_base_remaining_gate": true,
+  "steps": [
+    {
+      "id": "oh-read-blockers",
+      "title": "Read B1 operator handoff blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oh-follow-pointers",
+      "title": "Follow P1 Stage 32 / Stage 216 / Stage 215 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oh-handoff-missing",
+      "title": "Reaffirm live handoff MISSING until ops take-over + \u00a77",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oh-no-packaging-as-handoff",
+      "title": "Do not treat Stage 32 H1 as live handoff Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oh-handoff-remaining",
+      "title": "Live handoff / go-live / \u00a77 Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 217 I1 operator handoff remaining-gate index packaging only. Do not claim live handoff Complete."
+}

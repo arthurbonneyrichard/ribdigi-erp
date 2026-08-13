@@ -188,6 +188,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Knowledge transfer remaining-gate index (Stage 216):** Status index is `docs/KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md` → blockers `docs/KNOWLEDGE_TRANSFER_BLOCKERS_MVP.md` → Stage 33/215/189 pointers `docs/KNOWLEDGE_TRANSFER_RG_POINTERS_MVP.md`. Live training Complete remains MISSING (not claimed).
 
+**Operator handoff remaining-gate index (Stage 217):** Status index is `docs/OPERATOR_HANDOFF_REMAINING_GATE_MVP.md` → blockers `docs/OPERATOR_HANDOFF_BLOCKERS_MVP.md` → Stage 32/216/215 pointers `docs/OPERATOR_HANDOFF_RG_POINTERS_MVP.md`. Live handoff Complete remains MISSING (not claimed).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

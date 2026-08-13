@@ -24,6 +24,6 @@ Stage 216 Tenant MVP Knowledge Transfer Remaining-Gate Index Fidelity delivered 
 
 ## Next stage
 
-Stage 217 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 216 feature scope remains frozen.
+Stage 217 opened under **ADR-440** after CONTINUE/NEXT (Operator Handoff Remaining-Gate Index Fidelity) and is frozen under **ADR-441**. Stage 216 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Operator Handoff Remaining-Gate Index Fidelity — single index of operator-handoff blockers (packaged Stage 32 H1 operator-handoff materials non-claim as live handoff Complete) with explicit non-claim (no live handoff Complete). Distinct from Stage 216 knowledge transfer remaining-gate and Stage 215 knowledge base remaining-gate.
+**Amendment (2026-08-13):** Stage 217 runner-up outline was approved and opened (ADR-440); freeze ADR-441. Do not reopen Stage 216 scope.
