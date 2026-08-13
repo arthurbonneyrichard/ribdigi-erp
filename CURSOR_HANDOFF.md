@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 203 froze Tenant MVP Cutover Remaining-Gate Index Fidelity (ADR-413) — cutover remaining-gate hub, blocker matrix, Stage 29/27 pointers, explicit live production cutover non-claim. Live production cutover Complete remains MISSING. Next recommended distinct outline: Tenant MVP Launch Cert Remaining-Gate Index Fidelity (packaged launch-cert checklist-map materials non-claim as LAUNCH certification Complete — explicit non-claim) — Stage 204+. Do not claim live production cutover Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 204 froze Tenant MVP Launch Cert Remaining-Gate Index Fidelity (ADR-415) — launch cert remaining-gate hub, blocker matrix, Stage 27/28 pointers, explicit launch certification non-claim. LAUNCH certification Complete remains MISSING. Next recommended distinct outline: Tenant MVP Staging GHA Remaining-Gate Index Fidelity (packaged staging workflow template materials non-claim as live staging GHA apply Complete — explicit non-claim) — Stage 205+. Do not claim LAUNCH certification Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

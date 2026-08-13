@@ -1,0 +1,55 @@
+{
+  "id": "launch-cert-blockers",
+  "stage": 204,
+  "pack": "B1",
+  "doc": "docs/LAUNCH_CERT_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LAUNCH_CERT_REMAINING_GATE_MVP.md",
+    "launch_cert": "docs/LAUNCH_CERT_MVP.md",
+    "staging_gha": "docs/STAGING_GHA_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_signoff_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "production_signoff_launch_cert_execution": "REMAINING",
+    "section_7_signed": "REMAINING",
+    "stage27_l1_as_launch_certification": "NON_CLAIM",
+    "stage28_g1_as_launch_certification": "NON_CLAIM",
+    "production_signoff_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "lb-signoff",
+      "title": "Mark production sign-off / launch certification execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-section7",
+      "title": "Mark section 7 signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-stage27-nonclaim",
+      "title": "Mark Stage 27 L1 launch cert as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-stage28-nonclaim",
+      "title": "Mark Stage 28 G1 staging GHA as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-cert-remaining",
+      "title": "Launch certification Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 204 B1 launch cert blocker matrix packaging only. LAUNCH certification Complete remains MISSING."
+}

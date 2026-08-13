@@ -1,0 +1,53 @@
+{
+  "id": "launch-cert-pack-pointers",
+  "stage": 204,
+  "pack": "P1",
+  "doc": "docs/LAUNCH_CERT_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LAUNCH_CERT_REMAINING_GATE_MVP.md",
+    "launch_cert": "docs/LAUNCH_CERT_MVP.md",
+    "launch_cert_map": "ops/launch/checklist-map.json",
+    "staging_gha": "docs/STAGING_GHA_MVP.md",
+    "staging_gha_template": "ops/k8s/deploy-staging.example.yml",
+    "cutover_remaining_gate": "docs/CUTOVER_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "production_signoff_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "sections_1_3_verified": false,
+  "topics": [
+    "launch_cert_stage27",
+    "staging_gha_stage28",
+    "cutover_remaining_gate_stage203",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "lp-launch-cert",
+      "title": "Point to Stage 27 launch cert",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-staging-gha",
+      "title": "Point to Stage 28 staging GHA",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-cutover-gate",
+      "title": "Point to Stage 203 cutover remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-cert-remaining",
+      "title": "Launch certification Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 204 P1 launch cert pack pointers packaging only. Do not claim LAUNCH certification Complete."
+}

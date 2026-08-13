@@ -24,6 +24,4 @@ Stage 203 Tenant MVP Cutover Remaining-Gate Index Fidelity delivered cutover rem
 
 ## Next stage
 
-Stage 204 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 203 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Launch Cert Remaining-Gate Index Fidelity — single index of launch-cert blockers (packaged launch-cert checklist-map materials non-claim as LAUNCH certification Complete) with explicit non-claim (no launch certification Complete). Distinct from Stage 201 preflight remaining-gate.
+Stage **204** opened under **ADR-414** / frozen under **ADR-415** — Tenant MVP Launch Cert remaining-gate index fidelity (packaged launch-cert checklist-map materials non-claim as LAUNCH certification Complete) with explicit non-claim of launch certification Complete. Stage 203 feature scope remains frozen. Do not reopen Stages **1–203** scopes.

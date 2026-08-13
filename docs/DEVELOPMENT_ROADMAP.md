@@ -3060,6 +3060,18 @@ Every feature in every phase must meet:
 
 **Stage 203 exit (2026-08-13):** I1, B1, P1, D1, H203x met — `docs/STAGE_203_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_413_STAGE203_FREEZE.md`. Fidelity: `docs/STAGE_203_FIDELITY.md`.
 
+**Stage 204 open (2026-08-13):** Tenant MVP Launch Cert Remaining-Gate Index Fidelity — `docs/ADR_414_STAGE204_OPEN.md` + `docs/STAGE_204_PLAN.md` (I1 next).
+
+**Stage 204 I1 (2026-08-13):** Launch cert remaining-gate index hub (`test_stage204_index_i1.py`).
+
+**Stage 204 B1 (2026-08-13):** Launch cert blocker matrix (`test_stage204_blockers_b1.py`).
+
+**Stage 204 P1 (2026-08-13):** Stage 27 / Stage 28 / Stage 203 pointers (`test_stage204_pointers_p1.py`).
+
+**Stage 204 D1 (2026-08-13):** Launch Cert Remaining-Gate Index fidelity sync — `docs/STAGE_204_FIDELITY.md` (`test_stage204_fidelity_d1.py`).
+
+**Stage 204 exit (2026-08-13):** I1, B1, P1, D1, H204x met — `docs/STAGE_204_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_415_STAGE204_FREEZE.md`. Fidelity: `docs/STAGE_204_FIDELITY.md`.
+
 
 
 

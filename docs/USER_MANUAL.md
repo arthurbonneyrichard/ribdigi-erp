@@ -182,6 +182,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Cutover remaining-gate index (Stage 203):** Status index is `docs/CUTOVER_REMAINING_GATE_MVP.md` → blockers `docs/CUTOVER_BLOCKERS_MVP.md` → Stage 29/27 pointers `docs/CUTOVER_PACK_POINTERS_MVP.md`. Live production cutover Complete remains MISSING (not claimed).
 
+**Launch cert remaining-gate index (Stage 204):** Status index is `docs/LAUNCH_CERT_REMAINING_GATE_MVP.md` → blockers `docs/LAUNCH_CERT_BLOCKERS_MVP.md` → Stage 27/28 pointers `docs/LAUNCH_CERT_PACK_POINTERS_MVP.md`. LAUNCH certification Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

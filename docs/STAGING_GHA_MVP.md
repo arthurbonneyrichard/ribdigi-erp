@@ -41,3 +41,5 @@ Never commit real kubeconfigs or registry tokens. Prefer GitHub Environments (`s
 ## Sign-off
 
 Stage 28 G1 is met when this doc + template + evidence JSON exist, `test_staging_gha_g1.py` passes, main `ci.yml` remains deploy-free, and DEPLOYMENT_GUIDE / K8S_DEPLOY_MVP / launch / roadmap cite Stage 28 G1 without inventing live apply success. Stage 29 X1 packages the production cutover harness without claiming live promote.
+
+See also Stage 204 Tenant MVP Launch Cert remaining-gate index fidelity (`docs/LAUNCH_CERT_REMAINING_GATE_MVP.md`, ADR-414 / ADR-415).

@@ -229,3 +229,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 203 decision (opened after Stage 202 freeze)
 
 **Tenant MVP Cutover Remaining-Gate Index Fidelity** — cutover remaining-gate hub (I1), blocker matrix (B1), Stage 29 / Stage 27 / Stage 202 pointers with explicit non-claim (P1). Live production cutover Completes remain deferred (Stage 204+). Distinct from Stage 202 / Stage 180 remaining-gates.
+## Stage 204 decision (opened after Stage 203 freeze)
+
+**Tenant MVP Launch Cert Remaining-Gate Index Fidelity** — launch cert remaining-gate hub (I1), blocker matrix (B1), Stage 27 / Stage 28 / Stage 203 pointers with explicit non-claim (P1). LAUNCH certification Completes remain deferred (Stage 205+). Distinct from Stage 201 preflight remaining-gate.

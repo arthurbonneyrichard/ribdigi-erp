@@ -30,3 +30,5 @@ Single index of cutover remaining gates. Packaging only — **live production cu
 - Live production cutover Complete
 - §7 signed Completes
 - Live production launch / go-live Completes
+
+See also Stage 204 launch cert remaining-gate index: [`LAUNCH_CERT_REMAINING_GATE_MVP.md`](LAUNCH_CERT_REMAINING_GATE_MVP.md).

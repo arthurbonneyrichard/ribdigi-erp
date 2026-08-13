@@ -640,6 +640,12 @@ Authoritative MVP docs:
 - `docs/CUTOVER_REMAINING_GATE_MVP.md` / `ops/mvp/cutover-remaining-gate.json` — Stage 203 I1
 - `docs/CUTOVER_BLOCKERS_MVP.md` / `ops/mvp/cutover-blockers.json` — Stage 203 B1
 - `docs/CUTOVER_PACK_POINTERS_MVP.md` / `ops/mvp/cutover-pack-pointers.json` — Stage 203 P1
+- `docs/STAGE_204_EXIT_CRITERIA.md` / `docs/ADR_415_STAGE204_FREEZE.md` (`backend/tests/test_stage204_exit_h204x.py`) — Stage 204 H204x
+- `docs/STAGE_204_FIDELITY.md` (`backend/tests/test_stage204_fidelity_d1.py`) — Stage 204 D1
+- `docs/STAGE_204_PLAN.md` (`backend/tests/test_stage204_open.py`) — Stage 204 open (ADR-414)
+- `docs/LAUNCH_CERT_REMAINING_GATE_MVP.md` / `ops/mvp/launch-cert-remaining-gate.json` — Stage 204 I1
+- `docs/LAUNCH_CERT_BLOCKERS_MVP.md` / `ops/mvp/launch-cert-blockers.json` — Stage 204 B1
+- `docs/LAUNCH_CERT_PACK_POINTERS_MVP.md` / `ops/mvp/launch-cert-pack-pointers.json` — Stage 204 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2617,6 +2623,18 @@ H203x met — `docs/STAGE_203_EXIT_CRITERIA.md`, ADR-413. Stages 1–203 frozen 
 ## Stage 203 open
 
 ADR-412 + `docs/STAGE_203_PLAN.md` — Cutover Remaining-Gate Index Fidelity (closed under ADR-413).
+
+## Stage 204 exit
+
+H204x met — `docs/STAGE_204_EXIT_CRITERIA.md`, ADR-415. Stages 1–204 frozen for Stage 204 feature scope.
+
+## Stage 204 D1 — Tenant MVP Launch Cert Remaining-Gate Index Fidelity
+
+`docs/STAGE_204_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. LAUNCH certification Complete remains MISSING.
+
+## Stage 204 open
+
+ADR-414 + `docs/STAGE_204_PLAN.md` — Launch Cert Remaining-Gate Index Fidelity (closed under ADR-415).
 
 ## Stage 165 open
 
