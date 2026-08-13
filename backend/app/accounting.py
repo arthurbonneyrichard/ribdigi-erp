@@ -1525,57 +1525,81 @@ async def _pnl_journal_ids_for_stores(
     db: AsyncSession,
     tenant_id: str,
     store_ids: list[str],
+    *,
+    branch_id: str | None = None,
 ) -> set[str]:
-    """Journal entries attributable to the given stores (sales/POS/expense/returns)."""
-    if not store_ids:
+    """Journal entries attributable to the given stores (sales/POS/expense/returns).
+
+    When `branch_id` is set, also include expenses assigned directly to that branch
+    (even when `store_id` is null).
+    """
+    if not store_ids and not branch_id:
         return set()
 
-    inv_ids = set(
-        (
-            await db.execute(
-                select(m.SalesInvoice.id).where(
-                    m.SalesInvoice.tenant_id == tenant_id,
-                    m.SalesInvoice.store_id.in_(store_ids),
+    inv_ids = set()
+    if store_ids:
+        inv_ids = set(
+            (
+                await db.execute(
+                    select(m.SalesInvoice.id).where(
+                        m.SalesInvoice.tenant_id == tenant_id,
+                        m.SalesInvoice.store_id.in_(store_ids),
+                    )
                 )
-            )
-        ).scalars().all()
-    )
-    exp_ids = set(
-        (
-            await db.execute(
-                select(m.Expense.id).where(
-                    m.Expense.tenant_id == tenant_id,
-                    m.Expense.store_id.in_(store_ids),
+            ).scalars().all()
+        )
+    exp_ids = set()
+    if store_ids:
+        exp_ids |= set(
+            (
+                await db.execute(
+                    select(m.Expense.id).where(
+                        m.Expense.tenant_id == tenant_id,
+                        m.Expense.store_id.in_(store_ids),
+                    )
                 )
-            )
-        ).scalars().all()
-    )
-    tx_ids = set(
-        (
-            await db.execute(
-                select(m.Transaction.id)
-                .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
-                .where(
-                    m.Transaction.tenant_id == tenant_id,
-                    m.PosSession.tenant_id == tenant_id,
-                    m.PosSession.store_id.in_(store_ids),
+            ).scalars().all()
+        )
+    if branch_id:
+        exp_ids |= set(
+            (
+                await db.execute(
+                    select(m.Expense.id).where(
+                        m.Expense.tenant_id == tenant_id,
+                        m.Expense.branch_id == branch_id,
+                    )
                 )
-            )
-        ).scalars().all()
-    )
-    return_ids = set(
-        (
-            await db.execute(
-                select(m.SalesReturn.id)
-                .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id)
-                .where(
-                    m.SalesReturn.tenant_id == tenant_id,
-                    m.SalesInvoice.tenant_id == tenant_id,
-                    m.SalesInvoice.store_id.in_(store_ids),
+            ).scalars().all()
+        )
+    tx_ids = set()
+    return_ids = set()
+    if store_ids:
+        tx_ids = set(
+            (
+                await db.execute(
+                    select(m.Transaction.id)
+                    .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+                    .where(
+                        m.Transaction.tenant_id == tenant_id,
+                        m.PosSession.tenant_id == tenant_id,
+                        m.PosSession.store_id.in_(store_ids),
+                    )
                 )
-            )
-        ).scalars().all()
-    )
+            ).scalars().all()
+        )
+        return_ids = set(
+            (
+                await db.execute(
+                    select(m.SalesReturn.id)
+                    .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id)
+                    .where(
+                        m.SalesReturn.tenant_id == tenant_id,
+                        m.SalesInvoice.tenant_id == tenant_id,
+                        m.SalesInvoice.store_id.in_(store_ids),
+                    )
+                )
+            ).scalars().all()
+        )
 
     from sqlalchemy import or_
 
@@ -1717,7 +1741,9 @@ async def profit_and_loss(
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
     if store_ids is not None:
-        je_ids = await _pnl_journal_ids_for_stores(db, tenant_id, store_ids)
+        je_ids = await _pnl_journal_ids_for_stores(
+            db, tenant_id, store_ids, branch_id=branch_id
+        )
         if not je_ids:
             return _pnl_pack(
                 revenue=0,

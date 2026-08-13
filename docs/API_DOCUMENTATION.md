@@ -969,15 +969,16 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 {
   "category_id": "exp_cat_001",
   "amount": 150.00,
-  "date": "2026-08-07",
   "payment_method": "bank_transfer",
   "reference": "UTIL-001",
   "description": "Monthly electricity bill",
-  "attachments": ["https://cdn.ribdigi.com/docs/bill.pdf"],
+  "payee": "Utility Co",
   "branch_id": "br_001",
-  "recurring": false
+  "department_id": "dept_001"
 }
 ```
+
+Optional org dims (`branch_id`, `department_id`; BR-9.2). Department must belong to the selected branch when both are set. `PATCH /expenses/{id}` accepts the same fields plus `clear_branch` / `clear_department`. Receipts use separate upload endpoints (not inline attachments on create).
 
 ### 9.3 Recurring Expenses
 **List:** `GET /expenses/recurring`  
@@ -989,11 +990,13 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
   "category_id": "exp_cat_001",
   "amount": 150.00,
   "frequency": "monthly",
-  "start_date": "2026-08-01",
-  "end_date": "2026-12-31",
-  "description": "Recurring utility payment"
+  "description": "Recurring utility payment",
+  "branch_id": "br_001",
+  "department_id": "dept_001"
 }
 ```
+
+Org dims on templates are copied onto expenses generated from the schedule.
 
 ---
 

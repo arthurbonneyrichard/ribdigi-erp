@@ -22,6 +22,8 @@ type Expense = {
   approval_step?: number;
   approval_steps_required?: number;
   awaiting_level?: number | null;
+  branch_id?: string | null;
+  department_id?: string | null;
 };
 
 export default function Page() {
@@ -39,6 +41,10 @@ export default function Page() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
+  const [branchId, setBranchId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [branches, setBranches] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [reference, setReference] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [ocrFor, setOcrFor] = useState<string | null>(null);
@@ -58,15 +64,19 @@ export default function Page() {
   const [budgetDrafts, setBudgetDrafts] = useState<Record<string, string>>({});
 
   async function refresh() {
-    const [exp, cats, settings, liquid] = await Promise.all([
+    const [exp, cats, settings, liquid, br, dep] = await Promise.all([
       api('/expenses'),
       api('/expenses/categories'),
       api('/expenses/settings'),
       api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
+      api('/branches').catch(() => ({ data: [] })),
+      api('/departments').catch(() => ({ data: [] })),
     ]);
     setRows(exp.data || []);
     setCategories(cats.data || []);
     setLiquidAccounts(liquid.data || []);
+    setBranches(br.data || []);
+    setDepartments(dep.data || []);
     setThreshold(settings.data?.expense_approval_threshold ?? 100);
     setL2Threshold(settings.data?.expense_l2_threshold ?? 1000);
     setLevels(settings.data?.levels || []);
@@ -134,12 +144,16 @@ export default function Page() {
           payment_method: paymentMethod,
           liquid_account_id: liquidAccountId || null,
           reference: reference || undefined,
+          branch_id: branchId || null,
+          department_id: departmentId || null,
         }),
       });
       setMessage(`Expense ${r.data.status}: ${r.data.amount}`);
       setDescription('');
       setPayee('');
       setReference('');
+      setBranchId('');
+      setDepartmentId('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -498,6 +512,38 @@ export default function Page() {
               </option>
             ))}
           </select>
+          <select
+            value={branchId}
+            onChange={(e) => {
+              setBranchId(e.target.value);
+              setDepartmentId('');
+            }}
+            title="Branch (optional)"
+          >
+            <option value="">All / no branch</option>
+            {branches
+              .filter((b) => b.is_active !== false)
+              .map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.code} — {b.name}
+                </option>
+              ))}
+          </select>
+          <select
+            value={departmentId}
+            onChange={(e) => setDepartmentId(e.target.value)}
+            title="Department (optional)"
+          >
+            <option value="">No department</option>
+            {departments
+              .filter((d) => d.is_active !== false)
+              .filter((d) => !branchId || !d.branch_id || d.branch_id === branchId)
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.code} — {d.name}
+                </option>
+              ))}
+          </select>
           <button onClick={createExpense}>Submit expense</button>
         </div>
       </div>
@@ -565,6 +611,8 @@ export default function Page() {
         <thead>
           <tr>
             <th>Category</th>
+            <th>Branch</th>
+            <th>Department</th>
             <th>Payee</th>
             <th>Description</th>
             <th>Amount</th>
@@ -578,6 +626,14 @@ export default function Page() {
           {rows.map((r) => (
             <tr key={r.id}>
               <td>{r.category}</td>
+              <td>
+                {branches.find((b) => b.id === r.branch_id)?.code ||
+                  (r.branch_id ? r.branch_id.slice(0, 8) : '—')}
+              </td>
+              <td>
+                {departments.find((d) => d.id === r.department_id)?.code ||
+                  (r.department_id ? r.department_id.slice(0, 8) : '—')}
+              </td>
               <td>{r.payee || '—'}</td>
               <td>{r.description}</td>
               <td>{r.amount}</td>

@@ -562,7 +562,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Expense date, category, amount, payment method, reference number
   - [ ] Payee name
   - [ ] Description/notes
-  - [ ] Assign to branch/department
+  - [x] Assign to branch/department (`branch_id` / `department_id` on expenses + recurring; Expenses UI; Alembic `20260813_0091`)
   - [ ] Link to chart of accounts for auto-posting
 
 #### BR-9.3 Expense Approval

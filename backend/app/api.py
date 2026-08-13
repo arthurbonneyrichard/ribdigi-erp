@@ -6581,6 +6581,8 @@ async def list_recurring_expenses(
                 "frequency": r.frequency,
                 "payment_method": r.payment_method,
                 "payee": r.payee,
+                "branch_id": getattr(r, "branch_id", None),
+                "department_id": getattr(r, "department_id", None),
                 "next_run_at": r.next_run_at,
                 "is_active": r.is_active,
             }
@@ -6606,6 +6608,8 @@ async def create_recurring_expense(
         category=payload.category,
         payment_method=payload.payment_method,
         payee=payload.payee,
+        branch_id=payload.branch_id,
+        department_id=payload.department_id,
     )
     await db.commit()
     return env({"id": row.id, "next_run_at": row.next_run_at}, "Recurring expense created")
@@ -6656,6 +6660,8 @@ async def add_expense(
         reference=payload.reference,
         payee=payload.payee,
         store_id=payload.store_id,
+        branch_id=payload.branch_id,
+        department_id=payload.department_id,
         liquid_account_id=payload.liquid_account_id,
         expense_date=payload.expense_date,
     )
@@ -6696,6 +6702,10 @@ async def patch_expense(
         payment_method=payload.payment_method,
         category_id=payload.category_id,
         category=payload.category,
+        branch_id=payload.branch_id,
+        department_id=payload.department_id,
+        clear_branch=payload.clear_branch,
+        clear_department=payload.clear_department,
     )
     await audit_svc.record_event(
         db,
