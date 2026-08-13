@@ -746,6 +746,12 @@ Authoritative MVP docs:
 - `docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md` / `ops/mvp/production-hypercare-remaining-gate.json` — Stage 219 I1
 - `docs/PRODUCTION_HYPERCARE_BLOCKERS_MVP.md` / `ops/mvp/production-hypercare-blockers.json` — Stage 219 B1
 - `docs/PRODUCTION_HYPERCARE_RG_POINTERS_MVP.md` / `ops/mvp/production-hypercare-rg-pointers.json` — Stage 219 P1
+- `docs/STAGE_220_EXIT_CRITERIA.md` / `docs/ADR_447_STAGE220_FREEZE.md` (`backend/tests/test_stage220_exit_h220x.py`) — Stage 220 H220x
+- `docs/STAGE_220_FIDELITY.md` (`backend/tests/test_stage220_fidelity_d1.py`) — Stage 220 D1
+- `docs/STAGE_220_PLAN.md` (`backend/tests/test_stage220_open.py`) — Stage 220 open (ADR-446)
+- `docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md` / `ops/mvp/support-sla-boundary-remaining-gate.json` — Stage 220 I1
+- `docs/SUPPORT_SLA_BOUNDARY_BLOCKERS_MVP.md` / `ops/mvp/support-sla-boundary-blockers.json` — Stage 220 B1
+- `docs/SUPPORT_SLA_BOUNDARY_RG_POINTERS_MVP.md` / `ops/mvp/support-sla-boundary-rg-pointers.json` — Stage 220 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2805,6 +2811,18 @@ See `docs/STAGE_219_FIDELITY.md`.
 ## Stage 219 open
 
 ADR-444 / `docs/STAGE_219_PLAN.md`.
+
+## Stage 220 exit
+
+H220x met — `docs/STAGE_220_EXIT_CRITERIA.md`, ADR-447. Stages 1–220 frozen for Stage 220 feature scope.
+
+## Stage 220 D1 — Tenant MVP Support SLA Boundary Remaining-Gate Index Fidelity
+
+See `docs/STAGE_220_FIDELITY.md`.
+
+## Stage 220 open
+
+ADR-446 / `docs/STAGE_220_PLAN.md`.
 
 ## Stage 213 exit
 

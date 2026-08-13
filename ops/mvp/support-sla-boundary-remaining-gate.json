@@ -1,0 +1,55 @@
+{
+  "id": "support-sla-boundary-remaining-gate",
+  "stage": 220,
+  "pack": "I1",
+  "doc": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SUPPORT_SLA_BOUNDARY_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SUPPORT_SLA_BOUNDARY_RG_POINTERS_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "production_hypercare_remaining_gate": "docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md",
+    "support_sla_remaining_gate_stage188": "docs/SUPPORT_SLA_REMAINING_GATE_MVP.md",
+    "support_sla_boundary_register": "ops/mvp/support-sla-boundary.json"
+  },
+  "packaging_complete": true,
+  "live_support_sla_boundary_claimed": false,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage36_s1_support_sla_boundary": true,
+  "distinct_from_stage188_support_sla_remaining_gate": true,
+  "distinct_from_stage219_production_hypercare_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ssb-read-blockers",
+      "title": "Read B1 support SLA boundary blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssb-follow-pointers",
+      "title": "Follow P1 Stage 36 / Stage 219 / Stage 188 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssb-sla-missing",
+      "title": "Reaffirm live support-SLA MISSING until hosted paging + measured SLA evidence ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssb-no-packaging-as-sla",
+      "title": "Do not treat Stage 36 S1 as live support-SLA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssb-sla-remaining",
+      "title": "Live support-SLA / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 220 I1 support SLA boundary remaining-gate index packaging only. Do not claim live support-SLA Complete."
+}

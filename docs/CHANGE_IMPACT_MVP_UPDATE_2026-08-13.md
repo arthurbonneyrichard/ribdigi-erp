@@ -293,3 +293,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Production Hypercare Remaining-Gate Index Fidelity** — production hypercare remaining-gate hub (I1), blocker matrix (B1), Stage 67 / Stage 218 / Stage 217 pointers with explicit non-claim (P1). Live hypercare Completes remain deferred (Stage 220+). Distinct from Stage 218 post-launch continuity remaining-gate and Stage 217 operator handoff remaining-gate.
 
+## Stage 220 decision (opened after Stage 219 freeze)
+
+**Tenant MVP Support SLA Boundary Remaining-Gate Index Fidelity** — support SLA boundary remaining-gate hub (I1), blocker matrix (B1), Stage 36 / Stage 219 / Stage 188 pointers with explicit non-claim (P1). Live support-SLA Completes remain deferred (Stage 221+). Distinct from Stage 219 production hypercare remaining-gate and Stage 188 support-SLA remaining-gate (`SUPPORT_SLA_BOUNDARY_*` ≠ `SUPPORT_SLA_*`).
+

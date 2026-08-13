@@ -24,6 +24,6 @@ Stage 219 Tenant MVP Production Hypercare Remaining-Gate Index Fidelity delivere
 
 ## Next stage
 
-Stage 220 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 219 feature scope remains frozen.
+Stage 220 opened under **ADR-446** after CONTINUE/NEXT (Support SLA Boundary Remaining-Gate Index Fidelity) and is frozen under **ADR-447**. Stage 219 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Support SLA Boundary Remaining-Gate Index Fidelity — single index of support-SLA-boundary blockers (packaged Stage 36 support-SLA boundary materials non-claim as live support-SLA Complete) with explicit non-claim (no live support-SLA Complete). Distinct from Stage 219 production hypercare remaining-gate and Stage 188 support-SLA remaining-gate (`SUPPORT_SLA_*` vs `SUPPORT_SLA_BOUNDARY_*`).
+**Amendment (2026-08-13):** Stage 220 runner-up outline was approved and opened (ADR-446); freeze ADR-447. Do not reopen Stage 219 scope.

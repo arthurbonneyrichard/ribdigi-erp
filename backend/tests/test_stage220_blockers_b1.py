@@ -1,0 +1,36 @@
+"""Stage 220 B1 — support SLA boundary blocker matrix packaging."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+REGISTER = ROOT / "ops" / "mvp" / "support-sla-boundary-blockers.json"
+
+
+def test_support_sla_boundary_blockers_register_b1():
+    data = json.loads(REGISTER.read_text(encoding="utf-8"))
+    assert data["stage"] == 220 and data["pack"] == "B1"
+    assert data["packaging_complete"] is True
+    assert data["live_support_sla_boundary_claimed"] is False
+    assert data["support_sla_claimed"] is False
+    assert data["go_live_claimed"] is False
+    blockers = data["blockers"]
+    assert blockers["live_support_sla_execution"] == "REMAINING"
+    assert blockers["hosted_pagerduty_helpdesk_saas"] == "REMAINING"
+    assert blockers["stage36_s1_as_live_support_sla"] == "NON_CLAIM"
+    assert blockers["support_sla_claimed"] == "false"
+    assert all(s["done"] is False for s in data["steps"])
+    assert any(
+        s["id"] == "ssbb-sla-remaining" and s["status"] == "remaining"
+        for s in data["steps"]
+    )
+    for rel in data["related"].values():
+        assert (ROOT / rel).is_file(), rel
+
+
+def test_support_sla_boundary_blockers_doc_b1():
+    doc = (ROOT / "docs/SUPPORT_SLA_BOUNDARY_BLOCKERS_MVP.md").read_text(encoding="utf-8")
+    assert "support_sla_claimed" in doc
+    assert "Stage 36" in doc
