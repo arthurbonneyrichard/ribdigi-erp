@@ -1534,3 +1534,5 @@ Stage 158 D1 dashboard stock-alerts, expenses & credit export fidelity — `docs
 Stage 159 D1 dashboard user-stats, summary & accounting trial-balance export fidelity — `docs/STAGE_159_FIDELITY.md` (`test_stage159_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 160 D1 accounting profit-loss, reports cash-flow & balance-sheet path export fidelity — `docs/STAGE_160_FIDELITY.md` (`test_stage160_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 161 D1 reports profit-loss, trial-balance & tax path export fidelity — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`); main `ci.yml` remains deploy-free (Stage 18 C1).

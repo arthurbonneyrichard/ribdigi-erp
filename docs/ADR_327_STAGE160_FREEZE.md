@@ -23,6 +23,4 @@ Stage 160 Tenant MVP Accounting Profit-Loss CSV, Reports Cash-Flow Path CSV & Re
 
 ## Next stage
 
-Stage 161 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 160 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Remaining distinct path-scoped CSV exports after audit (avoid generic `/reports/export` reopen and Stages 1–160 frozen scopes).
+Stage 161 opened via CONTINUE/NEXT as ADR-328 / ADR-329 (reports profit-loss / trial-balance / tax path CSV export fidelity). Stage 160 feature scope remains frozen.

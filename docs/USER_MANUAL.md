@@ -294,6 +294,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 - **Accounting Profit-Loss CSV:** Accounting Export profit-loss CSV (Stage 160 P1)
 - **Reports Cash-Flow Path CSV:** Reports Export cash-flow path CSV (Stage 160 C1)
 - **Reports Balance-Sheet Path CSV:** Reports Export balance-sheet path CSV (Stage 160 S1)
+- **Reports Profit-Loss Path CSV:** Reports Export profit-loss path CSV (Stage 161 L1)
+- **Reports Trial-Balance Path CSV:** Reports Export trial-balance path CSV (Stage 161 B1)
+- **Reports Tax Path CSV:** Reports/Tax Export tax path CSV (Stage 161 X1)
 - **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
 - **Store Selector:** Switch between stores (if you have access to multiple)
 - **Notification Bell:** View alerts and messages

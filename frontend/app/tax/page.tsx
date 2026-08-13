@@ -419,6 +419,44 @@ export default function Page() {
           <p className="muted">Source: {report?.input_tax_source ?? '—'}</p>
           <div className="kpi">{report?.net_tax_payable ?? '—'}</div>
           <p className="muted">Net payable / refundable</p>
+          <p className="muted" style={{ marginTop: 8 }}>
+            Path export via <code>GET /reports/tax/export</code> (Stage 161 X1; distinct from
+            generic <code>/reports/export</code>).
+          </p>
+          <button
+            type="button"
+            style={{ marginTop: 8 }}
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token') || '';
+                const tenant = localStorage.getItem('tenant') || '';
+                const params = new URLSearchParams();
+                if (fromDate) params.set('from_date', fromDate);
+                if (toDate) params.set('to_date', toDate);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${base}/reports/tax/export${qs}`, {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    'X-Tenant-ID': tenant,
+                  },
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'reports_tax_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Tax path CSV downloaded (Stage 161 X1)');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Export tax path CSV
+          </button>
         </div>
       </div>
 

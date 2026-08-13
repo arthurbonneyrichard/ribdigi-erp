@@ -582,3 +582,68 @@ async def export_balance_sheet_csv(
             }
         )
     return buf.getvalue()
+
+
+TAX_REPORT_EXPORT_COLUMNS = [
+    "from_date",
+    "to_date",
+    "period",
+    "period_year",
+    "period_month",
+    "period_quarter",
+    "output_tax",
+    "output_tax_invoices",
+    "output_tax_pos",
+    "reverse_charge_tax",
+    "input_tax",
+    "input_tax_source",
+    "net_tax_payable",
+    "invoice_count",
+    "pos_sale_count",
+    "purchase_count",
+    "purchase_order_count",
+    "taxable_outputs_net",
+    "zero_rated_outputs_net",
+    "exempt_outputs_net",
+    "taxable_inputs_net",
+]
+
+
+async def export_tax_report_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    from_date=None,
+    to_date=None,
+    period: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    quarter: int | None = None,
+) -> str:
+    """Stage 161 X1 — reports tax path CSV (distinct from generic /reports/export)."""
+    from app import reports as reports_svc
+    from app import tax as tax_svc
+
+    fd, td, meta = reports_svc.resolve_report_period(
+        period=period,
+        year=year,
+        month=month,
+        quarter=quarter,
+        from_date=from_date,
+        to_date=to_date,
+    )
+    data = await tax_svc.tax_report(
+        db,
+        tenant_id,
+        from_date=fd,
+        to_date=td,
+    )
+    data["period"] = meta.get("period")
+    data["period_year"] = meta.get("year")
+    data["period_month"] = meta.get("month")
+    data["period_quarter"] = meta.get("quarter")
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=TAX_REPORT_EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerow({k: _cell(data.get(k)) for k in TAX_REPORT_EXPORT_COLUMNS})
+    return buf.getvalue()

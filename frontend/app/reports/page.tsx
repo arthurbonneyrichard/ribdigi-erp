@@ -642,6 +642,43 @@ export default function Page() {
         <button onClick={() => download('csv')}>Export CSV</button>
         <button onClick={() => download('xlsx')}>Export Excel</button>
         <button onClick={() => download('pdf')}>Export PDF</button>
+        {tab === 'pnl' && (
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const params = new URLSearchParams();
+                if (fromDate) params.set('from_date', fromDate);
+                if (toDate) params.set('to_date', toDate);
+                if (storeId) params.set('store_id', storeId);
+                if (branchId) params.set('branch_id', branchId);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${base}/reports/profit-loss/export${qs}`, {
+                  headers: {
+                    Authorization: token ? `Bearer ${token}` : '',
+                    'X-Tenant-ID': tenant || '',
+                  },
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'reports_profit_loss_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Profit-loss path CSV downloaded (Stage 161 L1)');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Export profit-loss path CSV
+          </button>
+        )}
         {tab === 'cashflow' && (
           <button
             type="button"
@@ -715,12 +752,79 @@ export default function Page() {
             Export balance-sheet path CSV
           </button>
         )}
+        {tab === 'tax' && (
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const params = new URLSearchParams();
+                if (fromDate) params.set('from_date', fromDate);
+                if (toDate) params.set('to_date', toDate);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${base}/reports/tax/export${qs}`, {
+                  headers: {
+                    Authorization: token ? `Bearer ${token}` : '',
+                    'X-Tenant-ID': tenant || '',
+                  },
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'reports_tax_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Tax path CSV downloaded (Stage 161 X1)');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Export tax path CSV
+          </button>
+        )}
         {tab === 'sales' && (
           <>
             <button onClick={() => download('csv', 'sales_daily')}>Daily CSV</button>
             <button onClick={() => download('xlsx', 'sales_salesperson')}>Salespeople Excel</button>
             <button onClick={() => download('xlsx', 'trial_balance')}>Trial balance Excel</button>
             <button onClick={() => download('csv', 'trial_balance')}>Trial balance CSV</button>
+            <button
+              type="button"
+              onClick={async () => {
+                setError('');
+                setMessage('');
+                try {
+                  const token = localStorage.getItem('token');
+                  const tenant = localStorage.getItem('tenant');
+                  const params = new URLSearchParams();
+                  if (toDate) params.set('as_of_date', toDate);
+                  const qs = params.toString() ? `?${params}` : '';
+                  const res = await fetch(`${base}/reports/trial-balance/export${qs}`, {
+                    headers: {
+                      Authorization: token ? `Bearer ${token}` : '',
+                      'X-Tenant-ID': tenant || '',
+                    },
+                  });
+                  if (!res.ok) throw new Error(await res.text());
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'reports_trial_balance_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('Trial-balance path CSV downloaded (Stage 161 B1)');
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Export trial-balance path CSV
+            </button>
             <button onClick={() => download('pdf', 'profit_loss')}>P&amp;L PDF</button>
           </>
         )}

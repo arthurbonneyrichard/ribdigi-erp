@@ -2534,6 +2534,18 @@ Every feature in every phase must meet:
 
 **Stage 160 exit (2026-08-12):** P1, C1, S1, D1, H160x met — `docs/STAGE_160_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_327_STAGE160_FREEZE.md`. Fidelity: `docs/STAGE_160_FIDELITY.md`.
 
+**Stage 161 open (2026-08-13):** Tenant MVP Reports Profit-Loss Path CSV, Reports Trial-Balance Path CSV & Reports Tax Path CSV Export Fidelity — `docs/ADR_328_STAGE161_OPEN.md` + `docs/STAGE_161_PLAN.md` (Profit-loss → Trial-balance → Tax → Fidelity; L1 next).
+
+**Stage 161 L1 (2026-08-13):** Reports profit-loss path CSV (`test_stage161_profit_loss_l1.py`).
+
+**Stage 161 B1 (2026-08-13):** Reports trial-balance path CSV (`test_stage161_trial_balance_b1.py`).
+
+**Stage 161 X1 (2026-08-13):** Reports tax path CSV (`test_stage161_tax_x1.py`).
+
+**Stage 161 D1 (2026-08-13):** Reports profit-loss / trial-balance / tax path export fidelity sync — `docs/STAGE_161_FIDELITY.md` (`test_stage161_fidelity_d1.py`).
+
+**Stage 161 exit (2026-08-13):** L1, B1, X1, D1, H161x met — `docs/STAGE_161_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_329_STAGE161_FREEZE.md`. Fidelity: `docs/STAGE_161_FIDELITY.md`.
+
 
 
 

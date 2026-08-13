@@ -10522,6 +10522,33 @@ async def report_profit_loss(
     )
 
 
+@api.get("/reports/profit-loss/export")
+async def reports_profit_loss_export(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 161 L1 — reports profit-loss path CSV (distinct from /accounting/... and /reports/export)."""
+    text = await finance_ops_export_svc.export_profit_loss_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        store_id=store_id,
+        branch_id=branch_id,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="reports_profit_loss_export.csv"'
+        },
+    )
+
+
 @api.get("/reports/trial-balance")
 async def report_trial_balance(
     as_of_date: str | None = None,
@@ -10529,6 +10556,27 @@ async def report_trial_balance(
     db: AsyncSession = Depends(get_db),
 ):
     return await get_trial_balance(as_of_date, claims, db)
+
+
+@api.get("/reports/trial-balance/export")
+async def reports_trial_balance_export(
+    as_of_date: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 161 B1 — reports trial-balance path CSV (distinct from /accounting/... and /reports/export)."""
+    text = await finance_ops_export_svc.export_trial_balance_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="reports_trial_balance_export.csv"'
+        },
+    )
 
 
 @api.get("/reports/cash-flow")
@@ -11856,6 +11904,37 @@ async def reports_tax(
     data["period_month"] = meta.get("month")
     data["period_quarter"] = meta.get("quarter")
     return env(data)
+
+
+@api.get("/reports/tax/export")
+async def reports_tax_export(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    period: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    quarter: int | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 161 X1 — reports tax path CSV (distinct from generic /reports/export)."""
+    text = await finance_ops_export_svc.export_tax_report_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        from_date=from_date,
+        to_date=to_date,
+        period=period,
+        year=year,
+        month=month,
+        quarter=quarter,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="reports_tax_export.csv"'
+        },
+    )
 
 
 @api.get("/reports/tax/filing")
