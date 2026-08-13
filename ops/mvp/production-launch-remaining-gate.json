@@ -1,0 +1,54 @@
+{
+  "id": "production-launch-remaining-gate",
+  "stage": 202,
+  "pack": "I1",
+  "doc": "docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PRODUCTION_LAUNCH_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PRODUCTION_LAUNCH_PACK_POINTERS_MVP.md",
+    "production_launch": "docs/PRODUCTION_LAUNCH_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md",
+    "preflight_verification_remaining_gate": "docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_launch_live_claimed": false,
+  "production_cutover_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "distinct_from_stage66_l1_production_launch": true,
+  "distinct_from_stage29_x1_cutover_pack": true,
+  "distinct_from_stage180_go_live_remaining_gate": true,
+  "steps": [
+    {
+      "id": "pl-read-blockers",
+      "title": "Read B1 production launch blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pl-follow-pointers",
+      "title": "Follow P1 Stage 66 / Stage 29 / Stage 201 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pl-launch-missing",
+      "title": "Reaffirm live production launch MISSING until executed launch ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pl-no-packaging-as-live",
+      "title": "Do not treat Stage 66 L1 / Stage 29 X1 as live production launch Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pl-launch-remaining",
+      "title": "Live production launch / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 202 I1 production launch remaining-gate index packaging only. Do not claim live production launch Complete."
+}

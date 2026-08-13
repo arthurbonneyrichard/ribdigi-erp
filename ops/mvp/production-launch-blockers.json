@@ -1,0 +1,55 @@
+{
+  "id": "production-launch-blockers",
+  "stage": 202,
+  "pack": "B1",
+  "doc": "docs/PRODUCTION_LAUNCH_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md",
+    "production_launch": "docs/PRODUCTION_LAUNCH_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_launch_live_claimed": false,
+  "production_cutover_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_production_launch_execution": "REMAINING",
+    "production_cutover": "REMAINING",
+    "stage66_l1_as_live_production_launch": "NON_CLAIM",
+    "stage29_x1_as_live_production_launch": "NON_CLAIM",
+    "production_launch_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "pb-launch",
+      "title": "Mark live production launch execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-cutover",
+      "title": "Mark production cutover Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-stage66-nonclaim",
+      "title": "Mark Stage 66 L1 production launch as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-stage29-nonclaim",
+      "title": "Mark Stage 29 X1 cutover pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pb-launch-remaining",
+      "title": "Live production launch Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 202 B1 production launch blocker matrix packaging only. Live production launch Complete remains MISSING."
+}

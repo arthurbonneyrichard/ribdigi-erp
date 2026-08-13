@@ -628,6 +628,12 @@ Authoritative MVP docs:
 - `docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md` / `ops/mvp/preflight-verification-remaining-gate.json` — Stage 201 I1
 - `docs/PREFLIGHT_VERIFICATION_BLOCKERS_MVP.md` / `ops/mvp/preflight-verification-blockers.json` — Stage 201 B1
 - `docs/PREFLIGHT_VERIFICATION_PACK_POINTERS_MVP.md` / `ops/mvp/preflight-verification-pack-pointers.json` — Stage 201 P1
+- `docs/STAGE_202_EXIT_CRITERIA.md` / `docs/ADR_411_STAGE202_FREEZE.md` (`backend/tests/test_stage202_exit_h202x.py`) — Stage 202 H202x
+- `docs/STAGE_202_FIDELITY.md` (`backend/tests/test_stage202_fidelity_d1.py`) — Stage 202 D1
+- `docs/STAGE_202_PLAN.md` (`backend/tests/test_stage202_open.py`) — Stage 202 open (ADR-410)
+- `docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md` / `ops/mvp/production-launch-remaining-gate.json` — Stage 202 I1
+- `docs/PRODUCTION_LAUNCH_BLOCKERS_MVP.md` / `ops/mvp/production-launch-blockers.json` — Stage 202 B1
+- `docs/PRODUCTION_LAUNCH_PACK_POINTERS_MVP.md` / `ops/mvp/production-launch-pack-pointers.json` — Stage 202 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2581,6 +2587,18 @@ H201x met — `docs/STAGE_201_EXIT_CRITERIA.md`, ADR-409. Stages 1–201 frozen 
 ## Stage 201 open
 
 ADR-408 + `docs/STAGE_201_PLAN.md` — Preflight Verification Remaining-Gate Index Fidelity (closed under ADR-409).
+
+## Stage 202 exit
+
+H202x met — `docs/STAGE_202_EXIT_CRITERIA.md`, ADR-411. Stages 1–202 frozen for Stage 202 feature scope.
+
+## Stage 202 D1 — Tenant MVP Production Launch Remaining-Gate Index Fidelity
+
+`docs/STAGE_202_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Live production launch Complete remains MISSING.
+
+## Stage 202 open
+
+ADR-410 + `docs/STAGE_202_PLAN.md` — Production Launch Remaining-Gate Index Fidelity (closed under ADR-411).
 
 ## Stage 165 open
 

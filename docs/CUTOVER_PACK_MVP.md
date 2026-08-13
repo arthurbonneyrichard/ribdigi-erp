@@ -43,3 +43,5 @@ This is the **MVP production cutover packaging surface**: cutover / rollback / s
 ## Sign-off
 
 Stage 29 X1 is met when this doc + checklist + evidence schema + production GHA template + evidence JSON exist, `test_cutover_pack_x1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / launch / roadmap cite Stage 29 X1 without inventing live cutover or forged §7.
+
+See also Stage 202 Tenant MVP Production Launch remaining-gate index fidelity (`docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md`, ADR-410 / ADR-411).

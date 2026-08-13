@@ -30,3 +30,5 @@ Single index of preflight verification remaining gates. Packaging only — **LAU
 - LAUNCH §§1–3 verified Complete
 - Attestation / §7 signed Completes
 - Commercial go-live closeout / go-live Completes
+
+See also Stage 202 production launch remaining-gate index: [`PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md`](PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md).
