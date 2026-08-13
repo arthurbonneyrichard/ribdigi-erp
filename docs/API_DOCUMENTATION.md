@@ -327,6 +327,22 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 
 PATCH supports `name`, `address`, `phone`, `email`, `manager_id`, `clear_manager`, `is_active`. Deactivate with `is_active: false` (soft; row retained). Code is unique per tenant and immutable after create.
 
+### 3.5a2 Departments (BR-2.5)
+**List:** `GET /departments` (`branch_id`, `active_only` optional)  
+**Create:** `POST /departments`  
+**Update:** `PATCH /departments/{department_id}`
+
+```json
+{
+  "code": "SALES",
+  "name": "Sales",
+  "branch_id": "branch_uuid",
+  "head_user_id": "user_uuid"
+}
+```
+
+PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`, `is_active`. Soft-deactivate with `is_active: false`. Code unique per tenant.
+
 ### 3.5b Warehouses (BR-2.4)
 **List:** `GET /warehouses`  
 **Get:** `GET /warehouses/{warehouse_id}`  

@@ -231,8 +231,8 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Organizational structure configuration.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Create departments (Sales, Inventory, Accounting, etc.)
-  - [ ] Assign department head
+  - [x] Create departments (Sales, Inventory, Accounting, etc.) (`GET|POST|PATCH /departments`; Multi-Store Departments UI; soft `is_active`)
+  - [x] Assign department head (`head_user_id`; optional `branch_id` link)
   - [ ] Department-based reporting filters
 
 #### BR-2.6 Currency Setup
