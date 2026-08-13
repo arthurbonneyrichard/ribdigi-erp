@@ -76,6 +76,11 @@ class TenantProfileUpdate(BaseModel):
     email: EmailStr | None = None
     website: str | None = None
     address: str | None = None
+    legal_name: str | None = None
+    registration_number: str | None = None
+    contact_person: str | None = None
+    billing_address: str | None = None
+    shipping_address: str | None = None
     timezone: str | None = None
     fiscal_year_start: str | None = None
     tax_jurisdiction: str | None = None

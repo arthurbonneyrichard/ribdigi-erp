@@ -215,24 +215,35 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 ```
 
 ### 3.2 Get Tenant Profile
-**Endpoint:** `GET /tenants/{tenant_id}`
+**Endpoint:** `GET /tenants/me` (own company; `company_admin` / `super_admin`)  
+Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorized.
 
 ### 3.3 Update Tenant Profile
-**Endpoint:** `PATCH /tenants/{tenant_id}`
+**Endpoint:** `PATCH /tenants/me`
 
-**Request:**
+**Request (partial update):**
 ```json
 {
-  "company_name": "Acme Retail Ltd",
-  "logo_url": "https://cdn.ribdigi.com/logos/acme.png",
-  "settings": {
-    "currency": "USD",
-    "timezone": "America/New_York",
-    "date_format": "MM/DD/YYYY",
-    "number_format": "#,##0.00"
-  }
+  "company_name": "Acme Trading",
+  "legal_name": "Acme Retail Limited",
+  "registration_number": "CS123456789",
+  "contact_person": "Ama Mensah",
+  "address": "1 Headquarters Road, Accra",
+  "billing_address": "2 Billing Avenue, Accra",
+  "shipping_address": "3 Warehouse Gate, Tema",
+  "phone": "+233200000000",
+  "email": "ops@acme.example.com",
+  "website": "https://acme.example.com",
+  "currency": "GHS",
+  "timezone": "Africa/Accra",
+  "fiscal_year_start": "01-01",
+  "tax_jurisdiction": "GH",
+  "tax_registration_number": "C0001234567",
+  "tax_filing_period": "monthly"
 }
 ```
+
+Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a URL field on this patch).
 
 ### 3.4 Tenant Status Management
 **Suspend:** `POST /tenants/{tenant_ref}/suspend`  
