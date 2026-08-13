@@ -73,6 +73,8 @@ export default function Page() {
   const [catCode, setCatCode] = useState('');
   const [catName, setCatName] = useState('');
   const [catParentId, setCatParentId] = useState('');
+  const [catTaxRateId, setCatTaxRateId] = useState('');
+  const [taxRates, setTaxRates] = useState<any[]>([]);
   const [brandCode, setBrandCode] = useState('');
   const [brandName, setBrandName] = useState('');
   const [unitCode, setUnitCode] = useState('');
@@ -99,7 +101,7 @@ export default function Page() {
   const [openingHistory, setOpeningHistory] = useState<any[]>([]);
 
   async function refresh() {
-    const [p, e, c, b, u, w, sc, os] = await Promise.all([
+    const [p, e, c, b, u, w, sc, os, rates] = await Promise.all([
       api('/products'),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
@@ -108,6 +110,7 @@ export default function Page() {
       api('/warehouses'),
       api('/inventory/stock-counts'),
       api('/inventory/opening-stock').catch(() => ({ data: [] })),
+      api('/tax/rates').catch(() => ({ data: [] })),
     ]);
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
@@ -117,6 +120,7 @@ export default function Page() {
     setWarehouses(w.data || []);
     setCounts(sc.data || []);
     setOpeningHistory(os.data || []);
+    setTaxRates(rates.data || []);
     if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
@@ -849,6 +853,10 @@ export default function Page() {
         <div style={{ display: 'grid', gap: 16 }}>
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Category</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Optional category tax rate applies when a product has no product-level rate (nearest
+              parent wins). Product rate still overrides.
+            </p>
             <input value={catCode} onChange={(e) => setCatCode(e.target.value)} placeholder="Code" />
             <input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="Name" />
             <select value={catParentId} onChange={(e) => setCatParentId(e.target.value)}>
@@ -858,6 +866,16 @@ export default function Page() {
                   {c.name}
                 </option>
               ))}
+            </select>
+            <select value={catTaxRateId} onChange={(e) => setCatTaxRateId(e.target.value)}>
+              <option value="">Tax rate (optional — tenant default)</option>
+              {taxRates
+                .filter((r) => r.is_active !== false)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.rate}%){r.is_default ? ' · default' : ''}
+                  </option>
+                ))}
             </select>
             <button
               onClick={async () => {
@@ -869,11 +887,13 @@ export default function Page() {
                       code: catCode,
                       name: catName,
                       parent_id: catParentId || null,
+                      tax_rate_id: catTaxRateId || null,
                     }),
                   });
                   setCatCode('');
                   setCatName('');
                   setCatParentId('');
+                  setCatTaxRateId('');
                   setMessage('Category created');
                   await refresh();
                 } catch (err: any) {
@@ -885,32 +905,70 @@ export default function Page() {
               Add category
             </button>
             <ul className="muted">
-              {categories.map((c) => (
-                <li key={c.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span>
-                    {c.code} — {c.name}
-                    {c.parent_id ? ' (child)' : ''}
-                    {!c.is_active ? ' [inactive]' : ''}
-                  </span>
-                  {c.is_active && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setError('');
-                        try {
-                          await api(`/catalog/categories/${c.id}`, { method: 'DELETE' });
-                          setMessage('Category deactivated');
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message);
-                        }
-                      }}
-                    >
-                      Deactivate
-                    </button>
-                  )}
-                </li>
-              ))}
+              {categories.map((c) => {
+                const rate = taxRates.find((r) => r.id === c.tax_rate_id);
+                return (
+                  <li key={c.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span>
+                      {c.code} — {c.name}
+                      {c.parent_id ? ' (child)' : ''}
+                      {!c.is_active ? ' [inactive]' : ''}
+                      {rate
+                        ? ` · tax ${rate.name} (${rate.rate}%)`
+                        : c.tax_rate_id
+                          ? ' · tax set'
+                          : ' · tax inherit/default'}
+                    </span>
+                    {c.is_active && (
+                      <>
+                        <select
+                          value={c.tax_rate_id || ''}
+                          onChange={async (e) => {
+                            setError('');
+                            try {
+                              const value = e.target.value || null;
+                              await api(`/catalog/categories/${c.id}`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({ tax_rate_id: value }),
+                              });
+                              setMessage(
+                                value ? `Tax rate set on ${c.code}` : `Tax rate cleared on ${c.code}`,
+                              );
+                              await refresh();
+                            } catch (err: any) {
+                              setError(err.message);
+                            }
+                          }}
+                        >
+                          <option value="">Inherit / tenant default</option>
+                          {taxRates
+                            .filter((r) => r.is_active !== false)
+                            .map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.name} ({r.rate}%)
+                              </option>
+                            ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setError('');
+                            try {
+                              await api(`/catalog/categories/${c.id}`, { method: 'DELETE' });
+                              setMessage('Category deactivated');
+                              await refresh();
+                            } catch (err: any) {
+                              setError(err.message);
+                            }
+                          }}
+                        >
+                          Deactivate
+                        </button>
+                      </>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div className="card" style={{ display: 'grid', gap: 8 }}>

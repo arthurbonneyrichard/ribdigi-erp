@@ -374,10 +374,12 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 ## 5. Inventory & Products
 
 ### 5.1 Product Categories
-**List:** `GET /inventory/categories`  
-**Create:** `POST /inventory/categories`  
-**Update:** `PATCH /inventory/categories/{category_id}`  
-**Delete:** `DELETE /inventory/categories/{category_id}`
+**List:** `GET /catalog/categories`  
+**Create:** `POST /catalog/categories`  
+**Update:** `PATCH /catalog/categories/{category_id}`  
+**Delete:** `DELETE /catalog/categories/{category_id}` (soft deactivate)
+
+Optional `tax_rate_id` on create/update (BR-12.1 / BR-2.8). Clear with `"tax_rate_id": null`. Resolve order for product lines: product `tax_rate_id` → category (walk `parent_id`, nearest wins) → tenant default tax rate → 0%.
 
 ### 5.2 Brands
 **List:** `GET /inventory/brands`  
@@ -998,20 +1000,24 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 ## 12. Tax Management
 
 ### 12.1 Tax Rates
-**List:** `GET /taxes/rates`  
-**Create:** `POST /taxes/rates`  
-**Get:** `GET /taxes/rates/{rate_id}`
+**List:** `GET /tax/rates`  
+**Create:** `POST /tax/rates`  
+**Get:** `GET /tax/rates/{rate_id}`  
+**Set default:** `POST /tax/rates/{rate_id}/default`
 
 **Create Tax Rate:**
 ```json
 {
   "name": "Standard VAT",
   "rate": 10.0,
-  "type": "vat",
+  "tax_type": "vat",
+  "pricing_mode": "exclusive",
   "is_default": true,
   "is_active": true
 }
 ```
+
+**Category mapping:** assign rates via `POST|PATCH /catalog/categories` `tax_rate_id` (see §5.1).
 
 ### 12.2 Tax Reports
 **Endpoint:** `GET /reports/tax?from_date=&to_date=&tax_type=vat`
