@@ -30,3 +30,5 @@ Single index of commercial acceptance remaining gates. Packaging only — **comm
 - Commercial acceptance Complete
 - Steady-state ops live Completes
 - Residual risks closed / go-live Completes
+
+See also Stage 198 steady-state ops remaining-gate index: [`STEADY_STATE_OPS_REMAINING_GATE_MVP.md`](STEADY_STATE_OPS_REMAINING_GATE_MVP.md).

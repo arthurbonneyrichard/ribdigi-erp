@@ -24,6 +24,4 @@ Stage 197 Tenant MVP Commercial Acceptance Remaining-Gate Index Fidelity deliver
 
 ## Next stage
 
-Stage 198 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 197 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Steady-State Ops Remaining-Gate Index Fidelity — single index of steady-state ops blockers (packaged steady-state/first-commercial-day materials non-claim as steady-state ops live Complete) with explicit non-claim (no steady-state ops live Complete).
+Stage **198** opened under **ADR-402** / frozen under **ADR-403** — Tenant MVP Steady-State Ops remaining-gate index fidelity (packaged steady-state/first-commercial-day materials non-claim as steady-state ops live Complete) with explicit non-claim of steady-state ops live Complete. Stage 197 feature scope remains frozen. Do not reopen Stages **1–197** scopes.

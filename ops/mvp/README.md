@@ -604,6 +604,12 @@ Authoritative MVP docs:
 - `docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-acceptance-remaining-gate.json` — Stage 197 I1
 - `docs/COMMERCIAL_ACCEPTANCE_BLOCKERS_MVP.md` / `ops/mvp/commercial-acceptance-blockers.json` — Stage 197 B1
 - `docs/COMMERCIAL_ACCEPTANCE_PACK_POINTERS_MVP.md` / `ops/mvp/commercial-acceptance-pack-pointers.json` — Stage 197 P1
+- `docs/STAGE_198_EXIT_CRITERIA.md` / `docs/ADR_403_STAGE198_FREEZE.md` (`backend/tests/test_stage198_exit_h198x.py`) — Stage 198 H198x
+- `docs/STAGE_198_FIDELITY.md` (`backend/tests/test_stage198_fidelity_d1.py`) — Stage 198 D1
+- `docs/STAGE_198_PLAN.md` (`backend/tests/test_stage198_open.py`) — Stage 198 open (ADR-402)
+- `docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md` / `ops/mvp/steady-state-ops-remaining-gate.json` — Stage 198 I1
+- `docs/STEADY_STATE_OPS_BLOCKERS_MVP.md` / `ops/mvp/steady-state-ops-blockers.json` — Stage 198 B1
+- `docs/STEADY_STATE_OPS_PACK_POINTERS_MVP.md` / `ops/mvp/steady-state-ops-pack-pointers.json` — Stage 198 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2509,6 +2515,18 @@ H197x met — `docs/STAGE_197_EXIT_CRITERIA.md`, ADR-401. Stages 1–197 frozen 
 ## Stage 197 open
 
 ADR-400 + `docs/STAGE_197_PLAN.md` — Commercial Acceptance Remaining-Gate Index Fidelity (closed under ADR-401).
+
+## Stage 198 exit
+
+H198x met — `docs/STAGE_198_EXIT_CRITERIA.md`, ADR-403. Stages 1–198 frozen for Stage 198 feature scope.
+
+## Stage 198 D1 — Tenant MVP Steady-State Ops Remaining-Gate Index Fidelity
+
+`docs/STAGE_198_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Steady-state ops live Complete remains MISSING.
+
+## Stage 198 open
+
+ADR-402 + `docs/STAGE_198_PLAN.md` — Steady-State Ops Remaining-Gate Index Fidelity (closed under ADR-403).
 
 ## Stage 165 open
 

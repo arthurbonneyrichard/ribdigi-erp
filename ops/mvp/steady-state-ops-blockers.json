@@ -1,0 +1,55 @@
+{
+  "id": "steady-state-ops-blockers",
+  "stage": 198,
+  "pack": "B1",
+  "doc": "docs/STEADY_STATE_OPS_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md",
+    "steady_state_ops": "docs/STEADY_STATE_OPS_MVP.md",
+    "first_commercial_day": "docs/FIRST_COMMERCIAL_DAY_MVP.md"
+  },
+  "packaging_complete": true,
+  "steady_state_ops_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "steady_state_ops_live_execution": "REMAINING",
+    "first_commercial_day_live": "REMAINING",
+    "stage71_s1_as_steady_state_ops_live": "NON_CLAIM",
+    "stage70_f1_as_steady_state_ops_live": "NON_CLAIM",
+    "steady_state_ops_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "sb-ops",
+      "title": "Mark steady-state ops live execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-first-day",
+      "title": "Mark first commercial day live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-stage71-nonclaim",
+      "title": "Mark Stage 71 S1 steady-state as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-stage70-nonclaim",
+      "title": "Mark Stage 70 F1 first commercial day as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-ops-remaining",
+      "title": "Steady-state ops live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 198 B1 steady-state ops blocker matrix packaging only. Steady-state ops live Complete remains MISSING."
+}

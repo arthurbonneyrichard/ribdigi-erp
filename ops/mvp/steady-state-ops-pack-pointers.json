@@ -1,0 +1,53 @@
+{
+  "id": "steady-state-ops-pack-pointers",
+  "stage": 198,
+  "pack": "P1",
+  "doc": "docs/STEADY_STATE_OPS_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md",
+    "steady_state_ops": "docs/STEADY_STATE_OPS_MVP.md",
+    "steady_state_ops_register": "ops/mvp/steady-state-ops.json",
+    "first_commercial_day": "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+    "first_commercial_day_register": "ops/mvp/first-commercial-day.json",
+    "commercial_acceptance_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "steady_state_ops_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "topics": [
+    "steady_state_ops_stage71",
+    "first_commercial_day_stage70",
+    "commercial_acceptance_remaining_gate_stage197",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sp-steady-state",
+      "title": "Point to Stage 71 steady-state ops",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-first-day",
+      "title": "Point to Stage 70 first commercial day",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-acceptance-gate",
+      "title": "Point to Stage 197 commercial acceptance remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-ops-remaining",
+      "title": "Steady-state ops live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 198 P1 steady-state ops pack pointers packaging only. Do not claim steady-state ops live Complete."
+}

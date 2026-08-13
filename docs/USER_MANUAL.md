@@ -170,6 +170,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Commercial acceptance remaining-gate index (Stage 197):** Status index is `docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md` → blockers `docs/COMMERCIAL_ACCEPTANCE_BLOCKERS_MVP.md` → Stage 71 pointers `docs/COMMERCIAL_ACCEPTANCE_PACK_POINTERS_MVP.md`. Commercial acceptance Complete remains MISSING (not claimed).
 
+**Steady-state ops remaining-gate index (Stage 198):** Status index is `docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md` → blockers `docs/STEADY_STATE_OPS_BLOCKERS_MVP.md` → Stage 71/70 pointers `docs/STEADY_STATE_OPS_PACK_POINTERS_MVP.md`. Steady-state ops live Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health
