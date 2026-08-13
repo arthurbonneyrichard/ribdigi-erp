@@ -574,6 +574,12 @@ Authoritative MVP docs:
 - `docs/LIVE_DR_REMAINING_GATE_MVP.md` / `ops/mvp/live-dr-remaining-gate.json` — Stage 192 I1
 - `docs/LIVE_DR_BLOCKERS_MVP.md` / `ops/mvp/live-dr-blockers.json` — Stage 192 B1
 - `docs/LIVE_DR_PACK_POINTERS_MVP.md` / `ops/mvp/live-dr-pack-pointers.json` — Stage 192 P1
+- `docs/STAGE_193_EXIT_CRITERIA.md` / `docs/ADR_393_STAGE193_FREEZE.md` (`backend/tests/test_stage193_exit_h193x.py`) — Stage 193 H193x
+- `docs/STAGE_193_FIDELITY.md` (`backend/tests/test_stage193_fidelity_d1.py`) — Stage 193 D1
+- `docs/STAGE_193_PLAN.md` (`backend/tests/test_stage193_open.py`) — Stage 193 open (ADR-392)
+- `docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md` / `ops/mvp/live-migration-remaining-gate.json` — Stage 193 I1
+- `docs/LIVE_MIGRATION_BLOCKERS_MVP.md` / `ops/mvp/live-migration-blockers.json` — Stage 193 B1
+- `docs/LIVE_MIGRATION_PACK_POINTERS_MVP.md` / `ops/mvp/live-migration-pack-pointers.json` — Stage 193 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2419,6 +2425,18 @@ H192x met — `docs/STAGE_192_EXIT_CRITERIA.md`, ADR-391. Stages 1–192 frozen 
 ## Stage 192 open
 
 ADR-390 + `docs/STAGE_192_PLAN.md` — Live DR Remaining-Gate Index Fidelity (closed under ADR-391).
+
+## Stage 193 exit
+
+H193x met — `docs/STAGE_193_EXIT_CRITERIA.md`, ADR-393. Stages 1–193 frozen for Stage 193 feature scope.
+
+## Stage 193 D1 — Tenant MVP Live Migration Remaining-Gate Index Fidelity
+
+`docs/STAGE_193_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Live migration Complete remains MISSING.
+
+## Stage 193 open
+
+ADR-392 + `docs/STAGE_193_PLAN.md` — Live Migration Remaining-Gate Index Fidelity (closed under ADR-393).
 
 ## Stage 165 open
 

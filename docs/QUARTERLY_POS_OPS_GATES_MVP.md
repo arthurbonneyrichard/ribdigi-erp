@@ -50,6 +50,8 @@ Quarterly gate honesty: Offline Complete remaining, migration gate schedule poin
 - Live support SLA Completes
 - Go-live / attestation Completes
 
+See also Stage 193 live migration remaining-gate index: [`LIVE_MIGRATION_REMAINING_GATE_MVP.md`](LIVE_MIGRATION_REMAINING_GATE_MVP.md).
+
 ## Stage 179 I1 amendment
 
 Dedicated Offline Complete remaining-gate index: [OFFLINE_COMPLETE_REMAINING_GATE_MVP.md](OFFLINE_COMPLETE_REMAINING_GATE_MVP.md) (`ops/mvp/offline-complete-remaining-gate.json`, `test_stage179_index_i1.py`). Offline Complete remains MISSING.

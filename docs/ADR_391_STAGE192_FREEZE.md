@@ -24,6 +24,4 @@ Stage 192 Tenant MVP Live DR Remaining-Gate Index Fidelity delivered live DR rem
 
 ## Next stage
 
-Stage 193 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 192 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Live Migration Remaining-Gate Index Fidelity — single index of live migration blockers (Stage 169 migration-gate packaging non-claim as live/production migrate Complete) with explicit non-claim (no live migration Complete).
+Stage **193** opened under **ADR-392** / frozen under **ADR-393** — Tenant MVP Live Migration remaining-gate index fidelity (Stage 169 migration-gate packaging non-claim as live/production migrate Complete) with explicit non-claim of live migration Complete. Stage 192 feature scope remains frozen. Do not reopen Stages **1–192** scopes.

@@ -30,3 +30,5 @@ Single index of live DR remaining gates. Packaging only — **live DR Complete r
 - Live DR Complete
 - Live staging restore / live PITR Completes
 - Live migration / go-live Completes
+
+See also Stage 193 live migration remaining-gate index: [`LIVE_MIGRATION_REMAINING_GATE_MVP.md`](LIVE_MIGRATION_REMAINING_GATE_MVP.md).

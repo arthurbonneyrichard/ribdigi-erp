@@ -1,0 +1,54 @@
+{
+  "id": "live-migration-remaining-gate",
+  "stage": 193,
+  "pack": "I1",
+  "doc": "docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LIVE_MIGRATION_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LIVE_MIGRATION_PACK_POINTERS_MVP.md",
+    "migration_gate": "docs/MIGRATION_GATE_MVP.md",
+    "quarterly_pos_ops_gates": "docs/QUARTERLY_POS_OPS_GATES_MVP.md",
+    "live_dr_remaining_gate": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+    "database_documentation": "docs/DATABASE_DOCUMENTATION.md"
+  },
+  "packaging_complete": true,
+  "live_migration_claimed": false,
+  "production_migrate_claimed": false,
+  "ci_deploy_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage169_m1_migration_gate": true,
+  "distinct_from_stage178_g1_ops_gates": true,
+  "steps": [
+    {
+      "id": "lm-read-blockers",
+      "title": "Read B1 live migration blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lm-follow-pointers",
+      "title": "Follow P1 Stage 169 / Stage 178 / Stage 192 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lm-migrate-missing",
+      "title": "Reaffirm live migration MISSING until production migrate executes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lm-no-packaging-as-migrate",
+      "title": "Do not treat Stage 169 M1 as live/production migrate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lm-migrate-remaining",
+      "title": "Live migration / production migrate Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 193 I1 live migration remaining-gate index packaging only. Do not claim live migration Complete."
+}

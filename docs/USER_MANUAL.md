@@ -160,6 +160,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Live DR remaining-gate index (Stage 192):** Status index is `docs/LIVE_DR_REMAINING_GATE_MVP.md` → blockers `docs/LIVE_DR_BLOCKERS_MVP.md` → Stage 169/35 pointers `docs/LIVE_DR_PACK_POINTERS_MVP.md`. Live DR Complete remains MISSING (not claimed).
 
+**Live migration remaining-gate index (Stage 193):** Status index is `docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md` → blockers `docs/LIVE_MIGRATION_BLOCKERS_MVP.md` → Stage 169/178 pointers `docs/LIVE_MIGRATION_PACK_POINTERS_MVP.md`. Live migration Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

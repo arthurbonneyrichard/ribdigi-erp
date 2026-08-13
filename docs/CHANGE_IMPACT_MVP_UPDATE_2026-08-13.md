@@ -196,3 +196,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 192 decision (opened after Stage 191 freeze)
 
 **Tenant MVP Live DR Remaining-Gate Index Fidelity** — live DR remaining-gate hub (I1), blocker matrix (B1), Stage 169 / Stage 35 / Stage 191 pointers with explicit non-claim (P1). Live DR / live PITR Completes remain deferred (Stage 193+).
+## Stage 193 decision (opened after Stage 192 freeze)
+
+**Tenant MVP Live Migration Remaining-Gate Index Fidelity** — live migration remaining-gate hub (I1), blocker matrix (B1), Stage 169 / Stage 178 / Stage 192 pointers with explicit non-claim (P1). Live / production migrate Completes remain deferred (Stage 194+).

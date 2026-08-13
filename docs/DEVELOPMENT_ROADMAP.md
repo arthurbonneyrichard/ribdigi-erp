@@ -2928,6 +2928,18 @@ Every feature in every phase must meet:
 
 **Stage 192 exit (2026-08-13):** I1, B1, P1, D1, H192x met — `docs/STAGE_192_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_391_STAGE192_FREEZE.md`. Fidelity: `docs/STAGE_192_FIDELITY.md`.
 
+**Stage 193 open (2026-08-13):** Tenant MVP Live Migration Remaining-Gate Index Fidelity — `docs/ADR_392_STAGE193_OPEN.md` + `docs/STAGE_193_PLAN.md` (I1 next).
+
+**Stage 193 I1 (2026-08-13):** Live migration remaining-gate index hub (`test_stage193_index_i1.py`).
+
+**Stage 193 B1 (2026-08-13):** Live migration blocker matrix (`test_stage193_blockers_b1.py`).
+
+**Stage 193 P1 (2026-08-13):** Stage 169 / Stage 178 / Stage 192 pointers (`test_stage193_pointers_p1.py`).
+
+**Stage 193 D1 (2026-08-13):** Live Migration Remaining-Gate Index fidelity sync — `docs/STAGE_193_FIDELITY.md` (`test_stage193_fidelity_d1.py`).
+
+**Stage 193 exit (2026-08-13):** I1, B1, P1, D1, H193x met — `docs/STAGE_193_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_393_STAGE193_FREEZE.md`. Fidelity: `docs/STAGE_193_FIDELITY.md`.
+
 
 
 
