@@ -31,3 +31,7 @@ Recurring end-of-day store-close checklist hub for manager/cashier. Distinct fro
 - Live backup/restore or PITR Completes
 - Fabricated “store closed green” Completes
 - Go-live Complete
+
+## Stage 175 H1 / P1 amendment
+
+Mid-shift handoff (not end-of-day): [SHIFT_HANDOVER_CHECKLIST_MVP.md](SHIFT_HANDOVER_CHECKLIST_MVP.md) · [SHIFT_HANDOVER_POINTERS_MVP.md](SHIFT_HANDOVER_POINTERS_MVP.md) (`test_stage175_handover_h1.py`, `test_stage175_pointers_p1.py`).

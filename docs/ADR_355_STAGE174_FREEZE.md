@@ -24,6 +24,4 @@ Stage 174 Tenant MVP Store-Close Checklist Fidelity delivered store-close hub (C
 
 ## Next stage
 
-Stage 175 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 174 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP shift-handover checklist fidelity — mid/end-shift handoff linking open Holds count, pending sync depth, conflict owners, device bind status, and store-open/close pack pointers (no Offline Complete claim).
+Stage 175 opened under [ADR-356](ADR_356_STAGE175_OPEN.md) (Tenant MVP Shift-Handover Checklist Fidelity) and froze under [ADR-357](ADR_357_STAGE175_FREEZE.md). Stage 174 feature scope remains frozen.

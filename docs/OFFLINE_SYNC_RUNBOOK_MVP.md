@@ -82,3 +82,7 @@ Store-open device/conflict health: [STORE_OPEN_HEALTH_MVP.md](STORE_OPEN_HEALTH_
 ## Stage 174 C1 / E1 amendment
 
 Store-close Hold/queue drain: [STORE_CLOSE_CHECKLIST_MVP.md](STORE_CLOSE_CHECKLIST_MVP.md) · [STORE_CLOSE_DRAIN_MVP.md](STORE_CLOSE_DRAIN_MVP.md) (`test_stage174_storeclose_c1.py`, `test_stage174_drain_e1.py`). Offline Complete remains not claimed.
+
+## Stage 175 S1 amendment
+
+Shift-handover sync/conflict snapshot: [SHIFT_HANDOVER_SNAPSHOT_MVP.md](SHIFT_HANDOVER_SNAPSHOT_MVP.md) (`ops/mvp/shift-handover-snapshot.json`, `test_stage175_snapshot_s1.py`). Offline Complete remains not claimed.

@@ -827,6 +827,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Conflict/catalog/backup triage (Stage 174 T1: `test_stage174_triage_t1.py`, `docs/STORE_CLOSE_TRIAGE_MVP.md`)
 - [x] Stage 174 fidelity sync (D1: `test_stage174_fidelity_d1.py`, `docs/STAGE_174_FIDELITY.md`)
 - [x] Stage 174 exit + freeze (H174x: `test_stage174_exit_h174x.py`, `docs/STAGE_174_EXIT_CRITERIA.md`, ADR-355)
+- [x] Stage 175 track opened (ADR-356: `test_stage175_open.py`, `docs/STAGE_175_PLAN.md`) — Shift-Handover Checklist; closed under ADR-357
+- [x] Shift-handover checklist hub (Stage 175 H1: `test_stage175_handover_h1.py`, `docs/SHIFT_HANDOVER_CHECKLIST_MVP.md`)
+- [x] Shift snapshot (Stage 175 S1: `test_stage175_snapshot_s1.py`, `docs/SHIFT_HANDOVER_SNAPSHOT_MVP.md`)
+- [x] Device + open/close pointers (Stage 175 P1: `test_stage175_pointers_p1.py`, `docs/SHIFT_HANDOVER_POINTERS_MVP.md`)
+- [x] Stage 175 fidelity sync (D1: `test_stage175_fidelity_d1.py`, `docs/STAGE_175_FIDELITY.md`)
+- [x] Stage 175 exit + freeze (H175x: `test_stage175_exit_h175x.py`, `docs/STAGE_175_EXIT_CRITERIA.md`, ADR-357)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

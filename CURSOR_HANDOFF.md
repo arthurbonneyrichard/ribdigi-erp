@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 174 froze Store-Close Checklist Fidelity (ADR-355) — Hold/queue drain, conflict triage, catalog age, backup drill pointer. Offline Complete / live DR / go-live remain MISSING. Next recommended distinct outline: Tenant MVP shift-handover checklist fidelity (open Holds, pending sync depth, conflict owners, device bind status, open/close pack pointers) — Stage 175+. Do not claim Offline Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 175 froze Shift-Handover Checklist Fidelity (ADR-357) — Holds/sync/conflict snapshot, device bind, open/close pointers. Offline Complete / live training / go-live remain MISSING. Next recommended distinct outline: Tenant MVP weekly POS ops review fidelity (open/close adherence, handover notes, conflict backlog age, catalog TTL cadence, support escalation pointers) — Stage 176+. Do not claim Offline Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

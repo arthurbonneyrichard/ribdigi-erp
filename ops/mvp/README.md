@@ -466,7 +466,14 @@ Authoritative MVP docs:
 - `docs/STORE_CLOSE_CHECKLIST_MVP.md` / `ops/mvp/store-close-checklist.json` — Stage 174 C1
 - `docs/STORE_CLOSE_DRAIN_MVP.md` / `ops/mvp/store-close-drain.json` — Stage 174 E1
 - `docs/STORE_CLOSE_TRIAGE_MVP.md` / `ops/mvp/store-close-triage.json` — Stage 174 T1
+- `docs/STAGE_175_EXIT_CRITERIA.md` / `docs/ADR_357_STAGE175_FREEZE.md` (`backend/tests/test_stage175_exit_h175x.py`) — Stage 175 H175x
+- `docs/STAGE_175_FIDELITY.md` (`backend/tests/test_stage175_fidelity_d1.py`) — Stage 175 D1
+- `docs/STAGE_175_PLAN.md` (`backend/tests/test_stage175_open.py`) — Stage 175 open (ADR-356)
+- `docs/SHIFT_HANDOVER_CHECKLIST_MVP.md` / `ops/mvp/shift-handover-checklist.json` — Stage 175 H1
+- `docs/SHIFT_HANDOVER_SNAPSHOT_MVP.md` / `ops/mvp/shift-handover-snapshot.json` — Stage 175 S1
+- `docs/SHIFT_HANDOVER_POINTERS_MVP.md` / `ops/mvp/shift-handover-pointers.json` — Stage 175 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
+
 
 
 
@@ -2090,6 +2097,18 @@ H174x met — `docs/STAGE_174_EXIT_CRITERIA.md`, ADR-355. Stages 1–174 frozen 
 ## Stage 174 open
 
 ADR-354 + `docs/STAGE_174_PLAN.md` — Store-Close Checklist Fidelity (closed under ADR-355).
+
+## Stage 175 exit
+
+H175x met — `docs/STAGE_175_EXIT_CRITERIA.md`, ADR-357. Stages 1–175 frozen for Stage 175 feature scope.
+
+## Stage 175 D1 — Tenant MVP Shift-Handover Checklist Fidelity
+
+`docs/STAGE_175_FIDELITY.md` — maps H1–P1 → readiness / launch / deploy / security. Offline Complete / live training remain MISSING.
+
+## Stage 175 open
+
+ADR-356 + `docs/STAGE_175_PLAN.md` — Shift-Handover Checklist Fidelity (closed under ADR-357).
 
 ## Stage 165 open
 

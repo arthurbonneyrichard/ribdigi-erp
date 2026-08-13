@@ -2712,6 +2712,18 @@ Every feature in every phase must meet:
 
 **Stage 174 exit (2026-08-13):** C1, E1, T1, D1, H174x met — `docs/STAGE_174_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_355_STAGE174_FREEZE.md`. Fidelity: `docs/STAGE_174_FIDELITY.md`.
 
+**Stage 175 open (2026-08-13):** Tenant MVP Shift-Handover Checklist Fidelity — `docs/ADR_356_STAGE175_OPEN.md` + `docs/STAGE_175_PLAN.md` (H1 next).
+
+**Stage 175 H1 (2026-08-13):** Shift-handover checklist hub (`test_stage175_handover_h1.py`).
+
+**Stage 175 S1 (2026-08-13):** Shift snapshot Holds/sync/conflicts (`test_stage175_snapshot_s1.py`).
+
+**Stage 175 P1 (2026-08-13):** Device bind + open/close pointers (`test_stage175_pointers_p1.py`).
+
+**Stage 175 D1 (2026-08-13):** Shift-Handover Checklist fidelity sync — `docs/STAGE_175_FIDELITY.md` (`test_stage175_fidelity_d1.py`).
+
+**Stage 175 exit (2026-08-13):** H1, S1, P1, D1, H175x met — `docs/STAGE_175_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_357_STAGE175_FREEZE.md`. Fidelity: `docs/STAGE_175_FIDELITY.md`.
+
 
 
 

@@ -34,3 +34,7 @@ Recurring open-of-day checklist hub for manager/cashier. Distinct from Stage 172
 ## Stage 174 C1 amendment
 
 Recurring end-of-day (not open-of-day): [STORE_CLOSE_CHECKLIST_MVP.md](STORE_CLOSE_CHECKLIST_MVP.md) (`ops/mvp/store-close-checklist.json`, `test_stage174_storeclose_c1.py`).
+
+## Stage 175 P1 amendment
+
+Mid-shift handoff pointers back to this open pack: [SHIFT_HANDOVER_POINTERS_MVP.md](SHIFT_HANDOVER_POINTERS_MVP.md) (`ops/mvp/shift-handover-pointers.json`, `test_stage175_pointers_p1.py`).

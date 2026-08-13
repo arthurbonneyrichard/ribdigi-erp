@@ -1,0 +1,55 @@
+{
+  "id": "shift-handover-pointers",
+  "stage": 175,
+  "pack": "P1",
+  "doc": "docs/SHIFT_HANDOVER_POINTERS_MVP.md",
+  "related": {
+    "handover_checklist": "docs/SHIFT_HANDOVER_CHECKLIST_MVP.md",
+    "cashier_bind_catalog": "docs/CASHIER_BIND_CATALOG_MVP.md",
+    "store_open_checklist": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "store_close_checklist": "docs/STORE_CLOSE_CHECKLIST_MVP.md",
+    "cashier_quickstart": "docs/CASHIER_QUICKSTART_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "device_bind_status",
+    "store_open_pointer",
+    "store_close_pointer"
+  ],
+  "steps": [
+    {
+      "id": "sp-device-active",
+      "title": "Confirm register device active (not revoked)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-new-browser",
+      "title": "New browser: Stage 172 B1 bind + catalog",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-open-close",
+      "title": "Point to Stage 173 open / Stage 174 close packs",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-midshift",
+      "title": "Mid-shift: use Stage 175 hub + S1 snapshot",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 175 P1 handover pointers packaging only. Offline Complete remains MISSING."
+}
