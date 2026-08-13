@@ -33,3 +33,5 @@ Single index of attestation remaining gates. Packaging only — **attestation Co
 - Stage 69 A1 packaging as attestation Complete
 - Go-live Complete
 - Hot purge Completes
+
+See also Stage 188 support-SLA remaining-gate index: [`SUPPORT_SLA_REMAINING_GATE_MVP.md`](SUPPORT_SLA_REMAINING_GATE_MVP.md).

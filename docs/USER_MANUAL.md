@@ -150,6 +150,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Attestation remaining-gate index (Stage 187):** Status index is `docs/ATTESTATION_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_BLOCKERS_MVP.md` → Stage 69/LAUNCH pointers `docs/ATTESTATION_PACK_POINTERS_MVP.md`. Attestation Complete remains MISSING (not claimed).
 
+**Support-SLA remaining-gate index (Stage 188):** Status index is `docs/SUPPORT_SLA_REMAINING_GATE_MVP.md` → blockers `docs/SUPPORT_SLA_BLOCKERS_MVP.md` → Stage 36/readiness pointers `docs/SUPPORT_SLA_PACK_POINTERS_MVP.md`. Live support SLA Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

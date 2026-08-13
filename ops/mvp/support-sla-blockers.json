@@ -1,0 +1,59 @@
+{
+  "id": "support-sla-blockers",
+  "stage": 188,
+  "pack": "B1",
+  "doc": "docs/SUPPORT_SLA_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_SLA_REMAINING_GATE_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "commercial_support": "docs/COMMERCIAL_SUPPORT_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_support_sla_execution": "REMAINING",
+    "pagerduty_hosted": "REMAINING",
+    "oncall_rota_live": "REMAINING",
+    "stage36_s1_as_live_sla": "NON_CLAIM",
+    "incident_drill_executed": "REMAINING",
+    "support_sla_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "sb-live-sla",
+      "title": "Mark live support SLA execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-pagerduty",
+      "title": "Mark hosted PagerDuty / helpdesk Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-oncall",
+      "title": "Mark on-call rota live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-stage36-nonclaim",
+      "title": "Mark Stage 36 S1 boundary as non-claim for live SLA",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-sla-remaining",
+      "title": "Live support SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 188 B1 support-SLA blocker matrix packaging only. Live support SLA Complete remains MISSING."
+}

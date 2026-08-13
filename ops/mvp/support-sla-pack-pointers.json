@@ -1,0 +1,60 @@
+{
+  "id": "support-sla-pack-pointers",
+  "stage": 188,
+  "pack": "P1",
+  "doc": "docs/SUPPORT_SLA_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_SLA_REMAINING_GATE_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "support_sla_boundary_register": "ops/mvp/support-sla-boundary.json",
+    "commercial_support": "docs/COMMERCIAL_SUPPORT_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md",
+    "attestation_remaining_gate": "docs/ATTESTATION_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "go_live_claimed": false,
+  "topics": [
+    "support_sla_boundary_stage36",
+    "commercial_support",
+    "support_readiness_stage170",
+    "attestation_remaining_gate_stage187",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sp-boundary",
+      "title": "Point to Stage 36 support SLA boundary",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-commercial",
+      "title": "Point to commercial support honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-readiness",
+      "title": "Point to Stage 170 support readiness",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-attestation-gate",
+      "title": "Point to Stage 187 attestation remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-sla-remaining",
+      "title": "Live support SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 188 P1 support-SLA pack pointers packaging only. Do not claim live support SLA Complete."
+}

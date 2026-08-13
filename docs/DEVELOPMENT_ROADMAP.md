@@ -2868,6 +2868,18 @@ Every feature in every phase must meet:
 
 **Stage 187 exit (2026-08-13):** I1, B1, P1, D1, H187x met — `docs/STAGE_187_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_381_STAGE187_FREEZE.md`. Fidelity: `docs/STAGE_187_FIDELITY.md`.
 
+**Stage 188 open (2026-08-13):** Tenant MVP Support-SLA Remaining-Gate Index Fidelity — `docs/ADR_382_STAGE188_OPEN.md` + `docs/STAGE_188_PLAN.md` (I1 next).
+
+**Stage 188 I1 (2026-08-13):** Support-SLA remaining-gate index hub (`test_stage188_index_i1.py`).
+
+**Stage 188 B1 (2026-08-13):** Support-SLA blocker matrix (`test_stage188_blockers_b1.py`).
+
+**Stage 188 P1 (2026-08-13):** Stage 36 / commercial support / readiness pointers (`test_stage188_pointers_p1.py`).
+
+**Stage 188 D1 (2026-08-13):** Support-SLA Remaining-Gate Index fidelity sync — `docs/STAGE_188_FIDELITY.md` (`test_stage188_fidelity_d1.py`).
+
+**Stage 188 exit (2026-08-13):** I1, B1, P1, D1, H188x met — `docs/STAGE_188_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_383_STAGE188_FREEZE.md`. Fidelity: `docs/STAGE_188_FIDELITY.md`.
+
 
 
 

@@ -24,6 +24,4 @@ Stage 187 Tenant MVP Attestation Remaining-Gate Index Fidelity delivered attesta
 
 ## Next stage
 
-Stage 188 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 187 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP support-SLA remaining-gate index fidelity — single index of live support SLA blockers (packaged support boundaries non-claim as live SLA Complete) with explicit non-claim (no live support SLA Complete).
+Stage **188** opened under **ADR-382** / frozen under **ADR-383** — Tenant MVP support-SLA remaining-gate index fidelity (packaged support boundaries non-claim as live SLA Complete) with explicit non-claim of live support SLA Complete. Stage 187 feature scope remains frozen. Do not reopen Stages **1–187** scopes.

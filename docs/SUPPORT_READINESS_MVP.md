@@ -45,3 +45,5 @@ Weekly POS ops review points here for escalation (SLA stays false): [WEEKLY_POS_
 ## Stage 178 G1 amendment
 
 Quarterly gate honesty re-reads support residual (SLA stays false): [QUARTERLY_POS_OPS_GATES_MVP.md](QUARTERLY_POS_OPS_GATES_MVP.md) (`ops/mvp/quarterly-pos-ops-gates.json`, `test_stage178_gates_g1.py`).
+
+See also Stage 188 support-SLA remaining-gate index: [`SUPPORT_SLA_REMAINING_GATE_MVP.md`](SUPPORT_SLA_REMAINING_GATE_MVP.md).

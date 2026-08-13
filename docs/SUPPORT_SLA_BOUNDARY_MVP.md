@@ -47,3 +47,5 @@ Every step keeps `done: false`. Top-level `support_sla_claimed: false` / `pagerd
 ## Sign-off
 
 Stage 36 S1 is met when this doc + register JSON + evidence JSON exist, `test_support_sla_boundary_s1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / plan / roadmap cite Stage 36 S1 without inventing live SLA or PagerDuty Complete.
+
+See also Stage 188 support-SLA remaining-gate index: [`SUPPORT_SLA_REMAINING_GATE_MVP.md`](SUPPORT_SLA_REMAINING_GATE_MVP.md) (live support SLA remains deferred; not Complete).
