@@ -233,7 +233,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Create departments (Sales, Inventory, Accounting, etc.) (`GET|POST|PATCH /departments`; Multi-Store Departments UI; soft `is_active`)
   - [x] Assign department head (`head_user_id`; optional `branch_id` link)
-  - [ ] Department-based reporting filters
+  - [x] Department-based reporting filters (`GET /reports/sales/by-department` + `department_id` on salesperson/by-store; Reports UI Departments tab)
 
 #### BR-2.6 Currency Setup
 - **Description:** Multi-currency support for international operations.

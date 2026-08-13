@@ -12,6 +12,7 @@ type Tab =
   | 'salesperson'
   | 'customers'
   | 'stores'
+  | 'departments'
   | 'inventory'
   | 'purchases'
   | 'expenses'
@@ -27,6 +28,7 @@ const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   salesperson: 'sales_salesperson',
   customers: 'sales_customers',
   stores: 'sales_by_store',
+  departments: 'sales_by_department',
   inventory: 'inventory_low_stock',
   purchases: 'purchases_summary',
   expenses: 'expenses_budget_vs_actual',
@@ -45,6 +47,7 @@ const REPORT_TYPES = [
   'sales_customers',
   'sales_returns',
   'sales_by_store',
+  'sales_by_department',
   'inventory_balance',
   'inventory_valuation',
   'inventory_low_stock',
@@ -77,6 +80,8 @@ export default function Page() {
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState<any[]>([]);
+  const [departmentId, setDepartmentId] = useState('');
+  const [departments, setDepartments] = useState<any[]>([]);
   const [expiryDays, setExpiryDays] = useState('30');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
@@ -102,6 +107,7 @@ export default function Page() {
     if (toDate) params.set('to_date', toDate);
     if (storeId) params.set('store_id', storeId);
     if (branchId) params.set('branch_id', branchId);
+    if (departmentId) params.set('department_id', departmentId);
     Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
     const s = params.toString();
     return s ? `?${s}` : '';
@@ -141,6 +147,7 @@ export default function Page() {
       if (nextTab === 'salesperson') path = `/reports/sales/salesperson${qs()}`;
       if (nextTab === 'customers') path = `/reports/sales/customers${qs()}`;
       if (nextTab === 'stores') path = `/reports/sales/by-store${qs()}`;
+      if (nextTab === 'departments') path = `/reports/sales/by-department${qs()}`;
       if (nextTab === 'inventory') path = '/reports/inventory/low-stock';
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
       if (nextTab === 'expenses') path = `/reports/expenses/budget-vs-actual${qs()}`;
@@ -213,12 +220,14 @@ export default function Page() {
       api('/branches').catch(() => ({ data: [] })),
       api('/warehouses').catch(() => ({ data: [] })),
       api('/catalog/categories').catch(() => ({ data: [] })),
+      api('/departments').catch(() => ({ data: [] })),
     ])
-      .then(([st, br, wh, cats]) => {
+      .then(([st, br, wh, cats, deps]) => {
         setStores(st.data || []);
         setBranches(br.data || []);
         setWarehouses(wh.data || []);
         setCategories(cats.data || []);
+        setDepartments(deps.data || []);
       })
       .catch(() => undefined);
   }, []);
@@ -285,6 +294,7 @@ export default function Page() {
       if (toDate) params.set('to_date', toDate);
       if (storeId) params.set('store_id', storeId);
       if (branchId) params.set('branch_id', branchId);
+      if (departmentId) params.set('department_id', departmentId);
       if (
         (reportType || TAB_EXPORT[tab]) === 'sales_products' ||
         (!reportType && tab === 'sales')
@@ -413,6 +423,7 @@ export default function Page() {
             ['salesperson', 'Salespeople'],
             ['customers', 'Customers'],
             ['stores', 'Stores'],
+            ['departments', 'Departments'],
             ['inventory', 'Inventory'],
             ['purchases', 'Purchases'],
             ['expenses', 'Expenses'],
@@ -495,6 +506,16 @@ export default function Page() {
                 ))}
             </select>
           </>
+        )}
+        {(tab === 'salesperson' || tab === 'stores' || tab === 'departments') && (
+          <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+            <option value="">All departments</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.code} — {d.name}
+              </option>
+            ))}
+          </select>
         )}
         {tab === 'sales' && (
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
@@ -675,6 +696,7 @@ export default function Page() {
             <thead>
               <tr>
                 <th>Name</th>
+                <th>Department</th>
                 <th>Role</th>
                 <th>Invoices</th>
                 <th>POS</th>
@@ -687,6 +709,7 @@ export default function Page() {
               {(data.salespeople || []).map((s: any) => (
                 <tr key={s.user_id || s.full_name}>
                   <td>{s.full_name}</td>
+                  <td>{s.department_name || '—'}</td>
                   <td>{s.role || '—'}</td>
                   <td>
                     {s.invoice_count} ({s.invoice_revenue})
@@ -813,6 +836,69 @@ export default function Page() {
                   <td>{s.avg_ticket}</td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'departments' && data && (
+        <>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Total revenue</div>
+              <div className="kpi">{data.total_revenue ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Sales count</div>
+              <div className="kpi">{data.total_sales ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Invoice / POS</div>
+              <div className="kpi">
+                {data.invoice_revenue ?? 0} / {data.pos_revenue ?? 0}
+              </div>
+            </div>
+          </div>
+          {data.department_name ? (
+            <p className="muted" style={{ marginTop: 12 }}>
+              Filtered to {data.department_name}
+            </p>
+          ) : null}
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Department</th>
+                <th>Code</th>
+                <th>Invoices</th>
+                <th>POS</th>
+                <th>Sales</th>
+                <th>Revenue</th>
+                <th>Avg ticket</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.departments || []).map((d: any) => (
+                <tr key={d.department_id || d.name}>
+                  <td>{d.name}</td>
+                  <td>{d.code || '—'}</td>
+                  <td>
+                    {d.invoice_count} ({d.invoice_revenue})
+                  </td>
+                  <td>
+                    {d.pos_count} ({d.pos_revenue})
+                  </td>
+                  <td>{d.sale_count}</td>
+                  <td>{d.revenue}</td>
+                  <td>{d.avg_ticket}</td>
+                </tr>
+              ))}
+              {!data.departments?.length && (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    No department sales for this period
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </>
