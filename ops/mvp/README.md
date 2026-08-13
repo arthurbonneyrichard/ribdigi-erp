@@ -740,6 +740,12 @@ Authoritative MVP docs:
 - `docs/POST_LAUNCH_CONTINUITY_REMAINING_GATE_MVP.md` / `ops/mvp/post-launch-continuity-remaining-gate.json` — Stage 218 I1
 - `docs/POST_LAUNCH_CONTINUITY_BLOCKERS_MVP.md` / `ops/mvp/post-launch-continuity-blockers.json` — Stage 218 B1
 - `docs/POST_LAUNCH_CONTINUITY_RG_POINTERS_MVP.md` / `ops/mvp/post-launch-continuity-rg-pointers.json` — Stage 218 P1
+- `docs/STAGE_219_EXIT_CRITERIA.md` / `docs/ADR_445_STAGE219_FREEZE.md` (`backend/tests/test_stage219_exit_h219x.py`) — Stage 219 H219x
+- `docs/STAGE_219_FIDELITY.md` (`backend/tests/test_stage219_fidelity_d1.py`) — Stage 219 D1
+- `docs/STAGE_219_PLAN.md` (`backend/tests/test_stage219_open.py`) — Stage 219 open (ADR-444)
+- `docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md` / `ops/mvp/production-hypercare-remaining-gate.json` — Stage 219 I1
+- `docs/PRODUCTION_HYPERCARE_BLOCKERS_MVP.md` / `ops/mvp/production-hypercare-blockers.json` — Stage 219 B1
+- `docs/PRODUCTION_HYPERCARE_RG_POINTERS_MVP.md` / `ops/mvp/production-hypercare-rg-pointers.json` — Stage 219 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2787,6 +2793,18 @@ See `docs/STAGE_218_FIDELITY.md`.
 ## Stage 218 open
 
 ADR-442 / `docs/STAGE_218_PLAN.md`.
+
+## Stage 219 exit
+
+H219x met — `docs/STAGE_219_EXIT_CRITERIA.md`, ADR-445. Stages 1–219 frozen for Stage 219 feature scope.
+
+## Stage 219 D1 — Tenant MVP Production Hypercare Remaining-Gate Index Fidelity
+
+See `docs/STAGE_219_FIDELITY.md`.
+
+## Stage 219 open
+
+ADR-444 / `docs/STAGE_219_PLAN.md`.
 
 ## Stage 213 exit
 

@@ -1,0 +1,55 @@
+{
+  "id": "production-hypercare-remaining-gate",
+  "stage": 219,
+  "pack": "I1",
+  "doc": "docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PRODUCTION_HYPERCARE_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PRODUCTION_HYPERCARE_RG_POINTERS_MVP.md",
+    "production_hypercare": "docs/PRODUCTION_HYPERCARE_MVP.md",
+    "post_launch_continuity_remaining_gate": "docs/POST_LAUNCH_CONTINUITY_REMAINING_GATE_MVP.md",
+    "operator_handoff_remaining_gate": "docs/OPERATOR_HANDOFF_REMAINING_GATE_MVP.md",
+    "production_hypercare_register": "ops/mvp/production-hypercare.json"
+  },
+  "packaging_complete": true,
+  "live_production_hypercare_claimed": false,
+  "production_hypercare_live_claimed": false,
+  "oncall_rota_live": false,
+  "go_live_claimed": false,
+  "distinct_from_stage67_h1_production_hypercare": true,
+  "distinct_from_stage218_post_launch_continuity_remaining_gate": true,
+  "distinct_from_stage217_operator_handoff_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ph-read-blockers",
+      "title": "Read B1 production hypercare blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ph-follow-pointers",
+      "title": "Follow P1 Stage 67 / Stage 218 / Stage 217 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ph-hypercare-missing",
+      "title": "Reaffirm live hypercare MISSING until on-call + incident-drill evidence ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ph-no-packaging-as-hypercare",
+      "title": "Do not treat Stage 67 H1 as live hypercare Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ph-hypercare-remaining",
+      "title": "Live hypercare / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 219 I1 production hypercare remaining-gate index packaging only. Do not claim live hypercare Complete."
+}

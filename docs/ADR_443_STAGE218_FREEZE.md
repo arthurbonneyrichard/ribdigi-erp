@@ -24,6 +24,6 @@ Stage 218 Tenant MVP Post-Launch Continuity Remaining-Gate Index Fidelity delive
 
 ## Next stage
 
-Stage 219 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 218 feature scope remains frozen.
+Stage 219 opened under **ADR-444** after CONTINUE/NEXT (Production Hypercare Remaining-Gate Index Fidelity) and is frozen under **ADR-445**. Stage 218 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Production Hypercare Remaining-Gate Index Fidelity — single index of production-hypercare blockers (packaged Stage 67 H1 production-hypercare materials non-claim as live hypercare Complete) with explicit non-claim (no live hypercare Complete). Distinct from Stage 218 post-launch continuity remaining-gate and Stage 217 operator handoff remaining-gate.
+**Amendment (2026-08-13):** Stage 219 runner-up outline was approved and opened (ADR-444); freeze ADR-445. Do not reopen Stage 218 scope.

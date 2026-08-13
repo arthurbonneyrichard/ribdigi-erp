@@ -289,3 +289,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Post-Launch Continuity Remaining-Gate Index Fidelity** — post-launch continuity remaining-gate hub (I1), blocker matrix (B1), Stage 67 / Stage 217 / Stage 216 pointers with explicit non-claim (P1). Live continuity Completes remain deferred (Stage 219+). Distinct from Stage 217 operator handoff remaining-gate and Stage 216 knowledge transfer remaining-gate.
 
+## Stage 219 decision (opened after Stage 218 freeze)
+
+**Tenant MVP Production Hypercare Remaining-Gate Index Fidelity** — production hypercare remaining-gate hub (I1), blocker matrix (B1), Stage 67 / Stage 218 / Stage 217 pointers with explicit non-claim (P1). Live hypercare Completes remain deferred (Stage 220+). Distinct from Stage 218 post-launch continuity remaining-gate and Stage 217 operator handoff remaining-gate.
+
