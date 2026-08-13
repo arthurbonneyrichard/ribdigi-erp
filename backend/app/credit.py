@@ -523,5 +523,145 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
     }
 
 
+async def supplier_payment_schedule(
+    db: AsyncSession,
+    tenant_id: str,
+    supplier_id: str,
+    *,
+    as_of: datetime | None = None,
+) -> dict:
+    """Upcoming / overdue AP documents for a supplier (BR-11.2), sorted by due date."""
+    from app.purchasing import PURCHASE_INVOICE_OPEN, refresh_overdue_purchase_invoices
+
+    as_of = as_of or datetime.utcnow()
+    supplier = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == supplier_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "supplier",
+            )
+        )
+    ).scalar_one_or_none()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    await refresh_overdue_purchase_invoices(db, tenant_id, as_of=as_of)
+
+    invoices = (
+        await db.execute(
+            select(m.PurchaseInvoice).where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.supplier_id == supplier_id,
+                m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
+            )
+        )
+    ).scalars().all()
+    orders = (
+        await db.execute(
+            select(m.PurchaseOrder).where(
+                m.PurchaseOrder.tenant_id == tenant_id,
+                m.PurchaseOrder.supplier_id == supplier_id,
+                m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
+            )
+        )
+    ).scalars().all()
+    invoiced_pos = {i.purchase_order_id for i in invoices if i.purchase_order_id}
+
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
+    ).scalar_one_or_none()
+    ep = early_pay_settings(tenant) if tenant else {"enabled": False}
+
+    items: list[dict] = []
+    for inv in invoices:
+        balance = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        if balance <= 0:
+            continue
+        overdue_days = days_overdue(as_of, inv.due_date, inv.invoice_date or inv.created_at)
+        days_until = None
+        if inv.due_date:
+            days_until = (inv.due_date.date() - as_of.date()).days
+        early = None
+        if ep.get("enabled"):
+            quote = purchase_invoice_early_discount(
+                inv,
+                pct=float(ep["early_pay_discount_pct"]),
+                days=int(ep["early_pay_discount_days"]),
+                as_of=as_of,
+            )
+            if quote.get("eligible"):
+                early = {
+                    "discount_amount": quote.get("discount_amount"),
+                    "cash_to_settle": quote.get("cash_to_settle"),
+                    "window_days": quote.get("window_days"),
+                    "discount_pct": quote.get("discount_pct"),
+                }
+        items.append(
+            {
+                "document_type": "purchase_invoice",
+                "id": inv.id,
+                "document_number": inv.invoice_number,
+                "purchase_order_id": inv.purchase_order_id,
+                "due_date": inv.due_date,
+                "balance_due": round(balance, 2),
+                "status": inv.status,
+                "days_until_due": days_until,
+                "days_overdue": overdue_days,
+                "currency": getattr(inv, "currency", None) or "",
+                "early_discount": early,
+            }
+        )
+
+    for po in orders:
+        if po.id in invoiced_pos:
+            continue
+        balance = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        if balance <= 0:
+            continue
+        overdue_days = days_overdue(as_of, po.due_date, po.created_at)
+        days_until = None
+        if po.due_date:
+            days_until = (po.due_date.date() - as_of.date()).days
+        items.append(
+            {
+                "document_type": "purchase_order",
+                "id": po.id,
+                "document_number": po.po_number,
+                "purchase_order_id": po.id,
+                "due_date": po.due_date,
+                "balance_due": round(balance, 2),
+                "status": po.status,
+                "days_until_due": days_until,
+                "days_overdue": overdue_days,
+                "currency": "",
+                "early_discount": None,
+            }
+        )
+
+    def _sort_key(row: dict):
+        due = row.get("due_date")
+        if due is None:
+            return (1, datetime.max, row.get("document_number") or "")
+        return (0, due, row.get("document_number") or "")
+
+    items.sort(key=_sort_key)
+    upcoming = [r for r in items if (r.get("days_until_due") is None or r["days_until_due"] >= 0)]
+    overdue = [r for r in items if r.get("days_until_due") is not None and r["days_until_due"] < 0]
+
+    return {
+        "as_of": as_of,
+        "supplier": {
+            "id": supplier.id,
+            "name": supplier.name,
+            "balance": float(supplier.balance or 0),
+        },
+        "total_due": round(sum(r["balance_due"] for r in items), 2),
+        "overdue_count": len(overdue),
+        "upcoming_count": len(upcoming),
+        "items": items,
+    }
+
+
 def default_due_date(from_dt: datetime | None = None, terms_days: int = DEFAULT_PAYMENT_TERMS_DAYS) -> datetime:
     return (from_dt or datetime.utcnow()) + timedelta(days=terms_days)

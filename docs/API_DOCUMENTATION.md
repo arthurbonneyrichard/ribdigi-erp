@@ -987,7 +987,9 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 ### 11.2 Supplier Credit
 **Get Outstanding Bills:** `GET /suppliers/{supplier_id}/outstanding`
 
-**Payment Schedule:** `GET /suppliers/{supplier_id}/payment-schedule`
+**Payment Schedule:** `GET /suppliers/{supplier_id}/payment-schedule` — open purchase invoices + uninvoiced POs sorted by `due_date` ascending; each row includes `balance_due`, `days_until_due`, `days_overdue`, optional `early_discount` quote when tenant early-pay settings apply. Response also has `total_due`, `upcoming_count`, `overdue_count`. Requires `credit:read`.
+
+**Due notifications:** Celery / `POST /notifications/scan-due` runs `scan_payment_due` for both AR sales invoices and AP purchase invoices within the horizon (default 3 days), creating `payment_due` notifications (`entity_type=purchase_invoice` for bills).
 
 **Record Payment:** `POST /suppliers/{supplier_id}/payments`
 

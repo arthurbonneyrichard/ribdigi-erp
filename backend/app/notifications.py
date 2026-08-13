@@ -352,12 +352,16 @@ async def scan_low_stock(db: AsyncSession, tenant_id: str) -> int:
 
 
 async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 3) -> int:
+    from app.purchasing import PURCHASE_INVOICE_OPEN, refresh_overdue_purchase_invoices
     from app.sales import refresh_overdue_sales_invoices
 
     await refresh_overdue_sales_invoices(db, tenant_id)
+    await refresh_overdue_purchase_invoices(db, tenant_id)
     now = datetime.utcnow()
     horizon = now + timedelta(days=within_days)
-    invoices = (
+    created = 0
+
+    ar_invoices = (
         await db.execute(
             select(m.SalesInvoice).where(
                 m.SalesInvoice.tenant_id == tenant_id,
@@ -367,8 +371,7 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
             )
         )
     ).scalars().all()
-    created = 0
-    for inv in invoices:
+    for inv in ar_invoices:
         due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
         if due <= 0:
             continue
@@ -388,7 +391,7 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
             db,
             tenant_id=tenant_id,
             category="payment_due",
-            title="Payment Due",
+            title="Customer payment due",
             message=(
                 f"Invoice {inv.invoice_number} has {due:.2f} due "
                 f"by {inv.due_date.date().isoformat()}."
@@ -397,4 +400,45 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
             entity_id=inv.id,
         )
         created += 1
+
+    ap_invoices = (
+        await db.execute(
+            select(m.PurchaseInvoice).where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
+                m.PurchaseInvoice.due_date.is_not(None),
+                m.PurchaseInvoice.due_date <= horizon,
+            )
+        )
+    ).scalars().all()
+    for inv in ap_invoices:
+        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        if due <= 0:
+            continue
+        existing = (
+            await db.execute(
+                select(m.Notification).where(
+                    m.Notification.tenant_id == tenant_id,
+                    m.Notification.category == "payment_due",
+                    m.Notification.entity_id == inv.id,
+                    m.Notification.status == "unread",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            continue
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="payment_due",
+            title="Supplier payment due",
+            message=(
+                f"Bill {inv.invoice_number} has {due:.2f} due "
+                f"by {inv.due_date.date().isoformat()}."
+            ),
+            entity_type="purchase_invoice",
+            entity_id=inv.id,
+        )
+        created += 1
+
     return created

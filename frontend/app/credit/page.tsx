@@ -11,6 +11,7 @@ export default function Page() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [partyId, setPartyId] = useState('');
   const [statement, setStatement] = useState<any>(null);
+  const [schedule, setSchedule] = useState<any>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
   const [liquidAccountId, setLiquidAccountId] = useState('');
@@ -55,6 +56,7 @@ export default function Page() {
   }
 
   useEffect(() => {
+    setSchedule(null);
     refresh().catch((err) => setError(err.message));
   }, [kind]);
 
@@ -68,6 +70,20 @@ export default function Page() {
           : `/credit/suppliers/${partyId}/statement`;
       const r = await api(path);
       setStatement(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadPaymentSchedule() {
+    if (!partyId || kind !== 'payable') return;
+    setError('');
+    try {
+      const r = await api(`/suppliers/${partyId}/payment-schedule`);
+      setSchedule(r.data);
+      setMessage(
+        `Payment schedule: ${r.data?.upcoming_count ?? 0} upcoming · ${r.data?.overdue_count ?? 0} overdue · total ${r.data?.total_due ?? 0}`,
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -318,6 +334,11 @@ export default function Page() {
           </select>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
             <button onClick={loadStatement}>Statement</button>
+            {kind === 'payable' && (
+              <button type="button" onClick={loadPaymentSchedule}>
+                Payment schedule
+              </button>
+            )}
             <input
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
@@ -409,6 +430,64 @@ export default function Page() {
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
             {JSON.stringify(statement, null, 2)}
           </pre>
+        </div>
+      )}
+
+      {kind === 'payable' && schedule && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3>
+            Payment schedule · {schedule.supplier?.name} · total {schedule.total_due}
+          </h3>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Upcoming {schedule.upcoming_count} · overdue {schedule.overdue_count}
+          </p>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Due</th>
+                <th>Document</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Balance</th>
+                <th>Days</th>
+                <th>Early disc.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(schedule.items || []).map((row: any) => (
+                <tr key={`${row.document_type}-${row.id}`}>
+                  <td>
+                    {row.due_date
+                      ? String(row.due_date).replace('T', ' ').slice(0, 10)
+                      : '—'}
+                  </td>
+                  <td>{row.document_number}</td>
+                  <td>{row.document_type === 'purchase_invoice' ? 'Bill' : 'PO'}</td>
+                  <td>{row.status}</td>
+                  <td>{row.balance_due}</td>
+                  <td>
+                    {row.days_until_due == null
+                      ? '—'
+                      : row.days_until_due < 0
+                        ? `${Math.abs(row.days_until_due)} overdue`
+                        : `${row.days_until_due} left`}
+                  </td>
+                  <td>
+                    {row.early_discount
+                      ? `${row.early_discount.discount_amount} → ${row.early_discount.cash_to_settle}`
+                      : '—'}
+                  </td>
+                </tr>
+              ))}
+              {!schedule.items?.length && (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    No open supplier bills or uninvoiced POs
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </Shell>

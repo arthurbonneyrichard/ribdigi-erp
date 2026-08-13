@@ -7863,6 +7863,21 @@ async def supplier_outstanding(
     return env(out)
 
 
+@api.get("/suppliers/{supplier_id}/payment-schedule")
+async def supplier_payment_schedule(
+    supplier_id: str,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import credit as credit_svc
+
+    data = await credit_svc.supplier_payment_schedule(
+        db, claims["tenant_id"], supplier_id
+    )
+    await db.commit()
+    return env(data)
+
+
 @api.post("/suppliers/{supplier_id}/payments")
 async def supplier_payment(
     supplier_id: str,

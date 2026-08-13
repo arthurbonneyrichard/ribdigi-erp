@@ -628,21 +628,21 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Track money owed by customers.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Auto-generation from sales invoices
-  - [ ] Customer aging report (0-30, 31-60, 61-90, 90+ days)
-  - [ ] Payment recording against invoices
-  - [ ] Partial payment support
-  - [ ] Overdue notification automation
+  - [x] Auto-generation from sales invoices
+  - [x] Customer aging report (0-30, 31-60, 61-90, 90+ days)
+  - [x] Payment recording against invoices
+  - [x] Partial payment support
+  - [x] Overdue notification automation
 
 #### BR-10.5 Accounts Payable (AP)
 - **Description:** Track money owed to suppliers.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Auto-generation from purchase invoices
-  - [ ] Supplier aging report
-  - [ ] Payment recording against bills
-  - [ ] Partial payment support
-  - [ ] Due date notifications
+  - [x] Auto-generation from purchase invoices
+  - [x] Supplier aging report
+  - [x] Payment recording against bills
+  - [x] Partial payment support
+  - [x] Due date notifications
 
 #### BR-10.6 Financial Reports
 - **Description:** Standard financial statements.
@@ -672,10 +672,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Manage supplier payable tracking.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Track outstanding bills per supplier
-  - [ ] Payment schedule view (upcoming due dates)
-  - [ ] Early payment discount calculation
-  - [ ] Supplier statement generation
+  - [x] Track outstanding bills per supplier
+  - [x] Payment schedule view (upcoming due dates)
+  - [x] Early payment discount calculation
+  - [x] Supplier statement generation
 
 ---
 
