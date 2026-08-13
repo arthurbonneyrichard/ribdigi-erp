@@ -395,6 +395,18 @@ async def create_order(
     for line, _ in prepared:
         db.add(m.SalesOrderItem(tenant_id=tenant_id, sales_order_id=order.id, **line))
     await db.flush()
+
+    from app.notifications import create_notification
+
+    await create_notification(
+        db,
+        tenant_id=tenant_id,
+        category="new_order",
+        title="Sales order created",
+        message=f"Order {order.order_number} created for {float(order.total_amount or 0):.2f}.",
+        entity_type="sales_order",
+        entity_id=order.id,
+    )
     return order
 
 
@@ -483,7 +495,7 @@ async def confirm_order(
     await create_notification(
         db,
         tenant_id=tenant_id,
-        category="system",
+        category="new_order",
         title="Sales order confirmed",
         message=f"Order {order.order_number} confirmed; inventory reserved.",
         entity_type="sales_order",

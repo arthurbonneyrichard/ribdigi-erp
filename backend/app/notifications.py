@@ -17,6 +17,7 @@ DEFAULT_PREFERENCES = {
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
     "payment_due": {"dashboard": True, "email": True, "sms": False},
+    "new_order": {"dashboard": True, "email": False, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
     "security": {"dashboard": True, "email": True, "sms": False},
