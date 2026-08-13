@@ -433,7 +433,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Record batch numbers and expiry dates
   - [ ] Handle partial receipts (multiple GRNs per PO)
   - [ ] Auto-update inventory on GRN approval
-  - [ ] Handle rejected/damaged goods with reason
+  - [x] Handle rejected/damaged goods with reason (`rejected_qty` + required `rejection_reason` on GRN lines; only accepted stocked; Purchasing receive UI)
 
 #### BR-6.5 Purchase Invoice
 - **Description:** Supplier billing and payable recording.

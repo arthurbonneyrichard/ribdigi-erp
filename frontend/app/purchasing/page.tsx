@@ -70,6 +70,8 @@ type GrnItem = {
   product_id: string;
   accepted_qty: number;
   received_qty: number;
+  rejected_qty?: number;
+  rejection_reason?: string | null;
 };
 type Grn = {
   id: string;
@@ -116,6 +118,9 @@ export default function Page() {
   const [products, setProducts] = useState<Product[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
+  const [receiveDrafts, setReceiveDrafts] = useState<
+    Record<string, { received: string; accepted: string; rejected: string; reason: string }>
+  >({});
   const [supplierId, setSupplierId] = useState('');
   const [supplierName, setSupplierName] = useState('');
   const [supplierCode, setSupplierCode] = useState('');
@@ -327,6 +332,13 @@ export default function Page() {
 
   function openAmend(po: PurchaseOrder) {
     setSelected(po);
+    const drafts: Record<string, { received: string; accepted: string; rejected: string; reason: string }> =
+      {};
+    for (const i of po.items.filter((x) => x.outstanding_qty > 0)) {
+      const out = String(i.outstanding_qty);
+      drafts[i.id] = { received: out, accepted: out, rejected: '0', reason: '' };
+    }
+    setReceiveDrafts(drafts);
     const line = po.items?.[0];
     setAmendQty(String(line?.quantity ?? ''));
     setAmendPrice(String(line?.unit_price ?? ''));
@@ -393,6 +405,62 @@ export default function Page() {
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
       setSelected(updated.data);
+      setReceiveDrafts({});
+      setTab('grn');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function postPartialReceive(po: PurchaseOrder) {
+    setError('');
+    setMessage('');
+    try {
+      const items = po.items
+        .filter((i) => i.outstanding_qty > 0)
+        .map((i) => {
+          const d = receiveDrafts[i.id] || {
+            received: String(i.outstanding_qty),
+            accepted: String(i.outstanding_qty),
+            rejected: '0',
+            reason: '',
+          };
+          const received_qty = Number(d.received) || 0;
+          const accepted_qty = Number(d.accepted) || 0;
+          const rejected_qty = Number(d.rejected) || 0;
+          return {
+            po_item_id: i.id,
+            received_qty,
+            accepted_qty,
+            rejected_qty,
+            rejection_reason: d.reason.trim() || undefined,
+          };
+        })
+        .filter((i) => i.received_qty > 0);
+      if (!items.length) {
+        setError('Enter a received quantity on at least one line');
+        return;
+      }
+      const r = await api('/purchasing/grn', {
+        method: 'POST',
+        body: JSON.stringify({ purchase_order_id: po.id, items }),
+      });
+      const rejectedLines = (r.data.items || []).filter((x: GrnItem) => (x.rejected_qty || 0) > 0);
+      setMessage(
+        rejectedLines.length
+          ? `Posted ${r.data.grn_number} (${rejectedLines.length} line(s) with rejected qty)`
+          : `Posted ${r.data.grn_number}`
+      );
+      await refresh();
+      const updated = await api(`/purchasing/orders/${po.id}`);
+      setSelected(updated.data);
+      const drafts: Record<string, { received: string; accepted: string; rejected: string; reason: string }> =
+        {};
+      for (const i of (updated.data.items || []).filter((x: PoItem) => x.outstanding_qty > 0)) {
+        const out = String(i.outstanding_qty);
+        drafts[i.id] = { received: out, accepted: out, rejected: '0', reason: '' };
+      }
+      setReceiveDrafts(drafts);
       setTab('grn');
     } catch (err: any) {
       setError(err.message);
@@ -1233,20 +1301,122 @@ export default function Page() {
                     <th>Received</th>
                     <th>Outstanding</th>
                     <th>Unit price</th>
+                    {(selected.status === 'sent' || selected.status === 'partially_received') && (
+                      <>
+                        <th>Receive</th>
+                        <th>Accept</th>
+                        <th>Reject</th>
+                        <th>Reject reason</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {selected.items.map((i) => (
-                    <tr key={i.id}>
-                      <td>{i.product_id}</td>
-                      <td>{i.quantity}</td>
-                      <td>{i.received_qty}</td>
-                      <td>{i.outstanding_qty}</td>
-                      <td>{i.unit_price}</td>
-                    </tr>
-                  ))}
+                  {selected.items.map((i) => {
+                    const draft = receiveDrafts[i.id] || {
+                      received: String(i.outstanding_qty),
+                      accepted: String(i.outstanding_qty),
+                      rejected: '0',
+                      reason: '',
+                    };
+                    const receivable =
+                      (selected.status === 'sent' || selected.status === 'partially_received') &&
+                      i.outstanding_qty > 0;
+                    return (
+                      <tr key={i.id}>
+                        <td>{i.product_id}</td>
+                        <td>{i.quantity}</td>
+                        <td>{i.received_qty}</td>
+                        <td>{i.outstanding_qty}</td>
+                        <td>{i.unit_price}</td>
+                        {(selected.status === 'sent' || selected.status === 'partially_received') && (
+                          <>
+                            <td>
+                              {receivable ? (
+                                <input
+                                  style={{ width: 72 }}
+                                  value={draft.received}
+                                  onChange={(e) =>
+                                    setReceiveDrafts((prev) => ({
+                                      ...prev,
+                                      [i.id]: { ...draft, received: e.target.value },
+                                    }))
+                                  }
+                                />
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td>
+                              {receivable ? (
+                                <input
+                                  style={{ width: 72 }}
+                                  value={draft.accepted}
+                                  onChange={(e) =>
+                                    setReceiveDrafts((prev) => ({
+                                      ...prev,
+                                      [i.id]: { ...draft, accepted: e.target.value },
+                                    }))
+                                  }
+                                />
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td>
+                              {receivable ? (
+                                <input
+                                  style={{ width: 72 }}
+                                  value={draft.rejected}
+                                  onChange={(e) =>
+                                    setReceiveDrafts((prev) => ({
+                                      ...prev,
+                                      [i.id]: { ...draft, rejected: e.target.value },
+                                    }))
+                                  }
+                                />
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td>
+                              {receivable ? (
+                                <input
+                                  style={{ minWidth: 140 }}
+                                  value={draft.reason}
+                                  placeholder="Damaged / wrong item…"
+                                  onChange={(e) =>
+                                    setReceiveDrafts((prev) => ({
+                                      ...prev,
+                                      [i.id]: { ...draft, reason: e.target.value },
+                                    }))
+                                  }
+                                />
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+              {(selected.status === 'sent' || selected.status === 'partially_received') &&
+                selected.items.some((i) => i.outstanding_qty > 0) && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                    <button type="button" onClick={() => postPartialReceive(selected)}>
+                      Post GRN (accept / reject)
+                    </button>
+                    <button type="button" onClick={() => receiveAll(selected)}>
+                      Receive all accepted
+                    </button>
+                    <span className="muted">
+                      Rejected qty requires a reason; only accepted qty is stocked.
+                    </span>
+                  </div>
+                )}
               {selected.can_amend && (
                 <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
                   <h4 style={{ margin: 0 }}>Amend (first line)</h4>
@@ -1325,17 +1495,31 @@ export default function Page() {
               <th>PO</th>
               <th>Status</th>
               <th>Lines</th>
+              <th>Accepted</th>
+              <th>Rejected</th>
+              <th>Reject reasons</th>
             </tr>
           </thead>
           <tbody>
-            {grns.map((g) => (
-              <tr key={g.id}>
-                <td>{g.grn_number}</td>
-                <td>{g.purchase_order_id}</td>
-                <td>{g.status}</td>
-                <td>{g.items?.length || 0}</td>
-              </tr>
-            ))}
+            {grns.map((g) => {
+              const accepted = (g.items || []).reduce((s, i) => s + Number(i.accepted_qty || 0), 0);
+              const rejected = (g.items || []).reduce((s, i) => s + Number(i.rejected_qty || 0), 0);
+              const reasons = (g.items || [])
+                .filter((i) => (i.rejected_qty || 0) > 0 && i.rejection_reason)
+                .map((i) => i.rejection_reason)
+                .join('; ');
+              return (
+                <tr key={g.id}>
+                  <td>{g.grn_number}</td>
+                  <td>{g.purchase_order_id}</td>
+                  <td>{g.status}</td>
+                  <td>{g.items?.length || 0}</td>
+                  <td>{accepted}</td>
+                  <td>{rejected}</td>
+                  <td>{reasons || '—'}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
