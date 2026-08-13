@@ -24,6 +24,4 @@ Stage 193 Tenant MVP Live Migration Remaining-Gate Index Fidelity delivered live
 
 ## Next stage
 
-Stage 194 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 193 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP First-Tenant Live Onboarding Remaining-Gate Index Fidelity — single index of first-tenant live onboarding blockers (packaged onboarding materials non-claim as first-tenant live onboarding success Complete) with explicit non-claim (no first-tenant live onboarding Complete).
+Stage **194** opened under **ADR-394** / frozen under **ADR-395** — Tenant MVP First-Tenant Live Onboarding remaining-gate index fidelity (packaged onboarding materials non-claim as first-tenant live onboarding success Complete) with explicit non-claim of first-tenant live onboarding Complete. Stage 193 feature scope remains frozen. Do not reopen Stages **1–193** scopes.

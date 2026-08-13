@@ -30,3 +30,5 @@ Single index of live migration remaining gates. Packaging only — **live migrat
 - Live / production migrate Completes
 - Main `ci.yml` deploy Completes
 - Live DR / go-live Completes
+
+See also Stage 194 first-tenant live onboarding remaining-gate index: [`FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md`](FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md).

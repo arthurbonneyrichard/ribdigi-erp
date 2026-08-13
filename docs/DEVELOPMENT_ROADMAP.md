@@ -2940,6 +2940,18 @@ Every feature in every phase must meet:
 
 **Stage 193 exit (2026-08-13):** I1, B1, P1, D1, H193x met — `docs/STAGE_193_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_393_STAGE193_FREEZE.md`. Fidelity: `docs/STAGE_193_FIDELITY.md`.
 
+**Stage 194 open (2026-08-13):** Tenant MVP First-Tenant Live Onboarding Remaining-Gate Index Fidelity — `docs/ADR_394_STAGE194_OPEN.md` + `docs/STAGE_194_PLAN.md` (I1 next).
+
+**Stage 194 I1 (2026-08-13):** First-tenant live onboarding remaining-gate index hub (`test_stage194_index_i1.py`).
+
+**Stage 194 B1 (2026-08-13):** First-tenant live onboarding blocker matrix (`test_stage194_blockers_b1.py`).
+
+**Stage 194 P1 (2026-08-13):** Stage 33 / Stage 66 / Stage 193 pointers (`test_stage194_pointers_p1.py`).
+
+**Stage 194 D1 (2026-08-13):** First-Tenant Live Onboarding Remaining-Gate Index fidelity sync — `docs/STAGE_194_FIDELITY.md` (`test_stage194_fidelity_d1.py`).
+
+**Stage 194 exit (2026-08-13):** I1, B1, P1, D1, H194x met — `docs/STAGE_194_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_395_STAGE194_FREEZE.md`. Fidelity: `docs/STAGE_194_FIDELITY.md`.
+
 
 
 

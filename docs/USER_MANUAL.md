@@ -162,6 +162,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Live migration remaining-gate index (Stage 193):** Status index is `docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md` → blockers `docs/LIVE_MIGRATION_BLOCKERS_MVP.md` → Stage 169/178 pointers `docs/LIVE_MIGRATION_PACK_POINTERS_MVP.md`. Live migration Complete remains MISSING (not claimed).
 
+**First-tenant live onboarding remaining-gate index (Stage 194):** Status index is `docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md` → blockers `docs/FIRST_TENANT_LIVE_ONBOARDING_BLOCKERS_MVP.md` → Stage 33/66 pointers `docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_POINTERS_MVP.md`. First-tenant live onboarding Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

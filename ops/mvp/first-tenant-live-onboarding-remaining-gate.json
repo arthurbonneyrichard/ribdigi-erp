@@ -1,0 +1,54 @@
+{
+  "id": "first-tenant-live-onboarding-remaining-gate",
+  "stage": 194,
+  "pack": "I1",
+  "doc": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/FIRST_TENANT_LIVE_ONBOARDING_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_POINTERS_MVP.md",
+    "first_tenant_onboarding": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+    "first_tenant_golive": "docs/FIRST_TENANT_GOLIVE_MVP.md",
+    "live_migration_remaining_gate": "docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "first_paying_tenant_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage33_f1_onboarding": true,
+  "distinct_from_stage66_t1_golive": true,
+  "steps": [
+    {
+      "id": "fo-read-blockers",
+      "title": "Read B1 first-tenant live onboarding blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fo-follow-pointers",
+      "title": "Follow P1 Stage 33 / Stage 66 / Stage 193 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fo-onboarding-missing",
+      "title": "Reaffirm live onboarding MISSING until real commercial tenant succeeds",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fo-no-packaging-as-onboarding",
+      "title": "Do not treat Stage 33 F1 / Stage 66 T1 as live onboarding Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fo-onboarding-remaining",
+      "title": "First-tenant live onboarding Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 194 I1 first-tenant live onboarding remaining-gate index packaging only. Do not claim live onboarding Complete."
+}

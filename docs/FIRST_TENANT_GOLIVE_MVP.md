@@ -49,3 +49,5 @@ Every step keeps `done: false`. Top-level `first_paying_tenant_claimed: false` /
 ## Sign-off
 
 Stage 66 T1 is met when this doc + register JSON + evidence JSON exist, `test_first_tenant_golive_t1.py` passes, and LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan / roadmap cite Stage 66 T1 without inventing first paying tenant / live onboarding Complete.
+
+See also Stage 194 first-tenant live onboarding remaining-gate index: [`FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md`](FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md).

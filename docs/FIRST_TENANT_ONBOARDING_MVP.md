@@ -45,3 +45,5 @@ Every step keeps `done: false`. Top-level `first_tenant_onboarded_claimed: false
 ## Sign-off
 
 Stage 33 F1 is met when this doc + register JSON + evidence JSON exist, `test_first_tenant_onboarding_f1.py` passes, and LAUNCH_CHECKLIST / PRODUCTION_READINESS / plan / roadmap cite Stage 33 F1 without inventing live onboarding success.
+
+See also Stage 194 first-tenant live onboarding remaining-gate index: [`FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md`](FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md).

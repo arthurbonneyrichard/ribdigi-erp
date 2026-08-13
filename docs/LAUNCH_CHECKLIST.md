@@ -941,6 +941,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 169 / Stage 178 / Stage 192 pointers (Stage 193 P1: `test_stage193_pointers_p1.py`, `docs/LIVE_MIGRATION_PACK_POINTERS_MVP.md`)
 - [x] Stage 193 fidelity sync (D1: `test_stage193_fidelity_d1.py`, `docs/STAGE_193_FIDELITY.md`)
 - [x] Stage 193 exit + freeze (H193x: `test_stage193_exit_h193x.py`, `docs/STAGE_193_EXIT_CRITERIA.md`, ADR-393)
+- [x] Stage 194 track opened (ADR-394: `test_stage194_open.py`, `docs/STAGE_194_PLAN.md`) — First-Tenant Live Onboarding Remaining-Gate Index; closed under ADR-395
+- [x] First-tenant live onboarding remaining-gate hub (Stage 194 I1: `test_stage194_index_i1.py`, `docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md`)
+- [x] First-tenant live onboarding blocker matrix (Stage 194 B1: `test_stage194_blockers_b1.py`, `docs/FIRST_TENANT_LIVE_ONBOARDING_BLOCKERS_MVP.md`)
+- [x] Stage 33 / Stage 66 / Stage 193 pointers (Stage 194 P1: `test_stage194_pointers_p1.py`, `docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_POINTERS_MVP.md`)
+- [x] Stage 194 fidelity sync (D1: `test_stage194_fidelity_d1.py`, `docs/STAGE_194_FIDELITY.md`)
+- [x] Stage 194 exit + freeze (H194x: `test_stage194_exit_h194x.py`, `docs/STAGE_194_EXIT_CRITERIA.md`, ADR-395)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
