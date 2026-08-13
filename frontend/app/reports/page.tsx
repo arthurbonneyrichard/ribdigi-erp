@@ -47,6 +47,7 @@ const REPORT_TYPES = [
   'inventory_balance',
   'inventory_valuation',
   'inventory_low_stock',
+  'inventory_transfers',
   'purchases_summary',
   'purchases_pending_orders',
   'purchases_returns',
@@ -149,11 +150,12 @@ export default function Page() {
         setData({ products: r.data, daily: daily.data, monthly: monthly.data });
       } else if (nextTab === 'inventory') {
         const whQs = warehouseId ? `?warehouse_id=${encodeURIComponent(warehouseId)}` : '';
-        const [balance, valuation, movements, suggestions] = await Promise.all([
+        const [balance, valuation, movements, suggestions, transfers] = await Promise.all([
           api(`/reports/inventory/balance${whQs}`),
           api(`/reports/inventory/valuation?method=standard${warehouseId ? `&warehouse_id=${encodeURIComponent(warehouseId)}` : ''}`),
           api('/reports/inventory/movements'),
           api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
+          api(`/reports/inventory/transfers${qs()}`),
         ]);
         setData({
           lowStock: r.data,
@@ -161,6 +163,7 @@ export default function Page() {
           valuation: valuation.data,
           movements: movements.data,
           suggestions: suggestions.data,
+          transfers: transfers.data,
         });
         setSuggestSelected({});
       } else if (nextTab === 'purchases') {
@@ -834,6 +837,65 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          <h3 style={{ marginTop: 16 }}>Inter-store transfers</h3>
+          <p className="muted">
+            {data.transfers?.transfer_count ?? 0} transfers · qty {data.transfers?.total_quantity ?? 0}
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => download('xlsx', 'inventory_transfers')}>
+              Transfers Excel
+            </button>
+            <button type="button" onClick={() => download('csv', 'inventory_transfers')}>
+              Transfers CSV
+            </button>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Transfer</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Status</th>
+                <th>Qty</th>
+                <th>Shipped</th>
+                <th>Received</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.transfers?.transfers || []).map((t: any) => (
+                <tr key={t.id}>
+                  <td>{t.transfer_number}</td>
+                  <td>
+                    {t.from_store_code || t.from_store_name}
+                  </td>
+                  <td>{t.to_store_code || t.to_store_name}</td>
+                  <td>{t.status}</td>
+                  <td>{t.quantity}</td>
+                  <td>{t.shipped_qty}</td>
+                  <td>{t.received_qty}</td>
+                </tr>
+              ))}
+              {!data.transfers?.transfers?.length && (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    No transfers for this filter
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {(data.transfers?.by_route || []).length > 0 && (
+            <>
+              <h4 style={{ marginTop: 12 }}>By route</h4>
+              <ul>
+                {data.transfers.by_route.map((r: any) => (
+                  <li key={`${r.from_store_id}-${r.to_store_id}`}>
+                    {r.from_store_code} → {r.to_store_code}: {r.transfer_count} · qty {r.quantity}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </>
       )}
 

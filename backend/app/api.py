@@ -7699,6 +7699,30 @@ async def report_inventory_expiry(
     return env(await reports_svc.inventory_expiry(db, claims["tenant_id"], within_days=days))
 
 
+@api.get("/reports/inventory/transfers")
+async def report_inventory_transfers(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    status: str | None = None,
+    from_store_id: str | None = None,
+    to_store_id: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-13.2 — inter-store transfer history and aggregates."""
+    return env(
+        await reports_svc.inventory_transfers(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            status=status or None,
+            from_store_id=from_store_id or None,
+            to_store_id=to_store_id or None,
+        )
+    )
+
+
 @api.get("/reports/purchases/summary")
 async def report_purchases_summary(
     from_date: str | None = None,
