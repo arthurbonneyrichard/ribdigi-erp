@@ -7401,6 +7401,7 @@ async def reports_export(
     store_id: str | None = None,
     branch_id: str | None = None,
     category_id: str | None = None,
+    days: int | None = None,
     as_of: str | None = None,
     compare: str | None = None,
     claims=Depends(require_permission("reports", "read")),
@@ -7421,6 +7422,7 @@ async def reports_export(
         store_id=store_id or None,
         branch_id=branch_id or None,
         category_id=category_id or None,
+        days=days,
         as_of=as_of or None,
         compare=compare or None,
     )
@@ -7724,10 +7726,19 @@ async def report_low_stock(
 @api.get("/reports/inventory/expiry")
 async def report_inventory_expiry(
     days: int = 30,
+    warehouse_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await reports_svc.inventory_expiry(db, claims["tenant_id"], within_days=days))
+    """BR-14.2 — batches nearing expiry (pharmacy/food)."""
+    return env(
+        await reports_svc.inventory_expiry(
+            db,
+            claims["tenant_id"],
+            within_days=days,
+            warehouse_id=warehouse_id or None,
+        )
+    )
 
 
 @api.get("/reports/inventory/transfers")

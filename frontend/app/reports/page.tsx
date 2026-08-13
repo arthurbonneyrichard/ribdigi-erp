@@ -48,6 +48,7 @@ const REPORT_TYPES = [
   'inventory_balance',
   'inventory_valuation',
   'inventory_low_stock',
+  'inventory_expiry',
   'inventory_transfers',
   'purchases_summary',
   'purchases_pending_orders',
@@ -76,6 +77,7 @@ export default function Page() {
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState<any[]>([]);
+  const [expiryDays, setExpiryDays] = useState('30');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -161,12 +163,16 @@ export default function Page() {
         });
       } else if (nextTab === 'inventory') {
         const whQs = warehouseId ? `?warehouse_id=${encodeURIComponent(warehouseId)}` : '';
-        const [balance, valuation, movements, suggestions, transfers] = await Promise.all([
+        const days = expiryDays || '30';
+        const expiryQs = new URLSearchParams({ days });
+        if (warehouseId) expiryQs.set('warehouse_id', warehouseId);
+        const [balance, valuation, movements, suggestions, transfers, expiry] = await Promise.all([
           api(`/reports/inventory/balance${whQs}`),
           api(`/reports/inventory/valuation?method=standard${warehouseId ? `&warehouse_id=${encodeURIComponent(warehouseId)}` : ''}`),
           api('/reports/inventory/movements'),
           api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
           api(`/reports/inventory/transfers${qs()}`),
+          api(`/reports/inventory/expiry?${expiryQs}`),
         ]);
         setData({
           lowStock: r.data,
@@ -175,6 +181,7 @@ export default function Page() {
           movements: movements.data,
           suggestions: suggestions.data,
           transfers: transfers.data,
+          expiry: expiry.data,
         });
         setSuggestSelected({});
       } else if (nextTab === 'purchases') {
@@ -296,9 +303,13 @@ export default function Page() {
       }
       if (
         (reportType || TAB_EXPORT[tab]) === 'inventory_valuation' ||
-        (reportType || TAB_EXPORT[tab]) === 'inventory_balance'
+        (reportType || TAB_EXPORT[tab]) === 'inventory_balance' ||
+        (reportType || TAB_EXPORT[tab]) === 'inventory_expiry'
       ) {
         if (warehouseId) params.set('warehouse_id', warehouseId);
+      }
+      if ((reportType || TAB_EXPORT[tab]) === 'inventory_expiry' && expiryDays) {
+        params.set('days', expiryDays);
       }
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
@@ -440,14 +451,26 @@ export default function Page() {
           </>
         )}
         {tab === 'inventory' && (
-          <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
-            <option value="">All warehouses (company stock)</option>
-            {warehouses.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.code} — {w.name}
-              </option>
-            ))}
-          </select>
+          <>
+            <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
+              <option value="">All warehouses (company stock)</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.code} — {w.name}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              min={0}
+              max={3650}
+              value={expiryDays}
+              onChange={(e) => setExpiryDays(e.target.value)}
+              placeholder="Expiry days"
+              style={{ width: 110 }}
+              title="Expiry horizon (days)"
+            />
+          </>
         )}
         {(tab === 'pnl' || tab === 'stores' || tab === 'sales') && (
           <>
@@ -926,6 +949,50 @@ export default function Page() {
                   <td>{i.value}</td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+          <h3 style={{ marginTop: 16 }}>Expiry</h3>
+          <p className="muted">
+            {data.expiry?.count ?? 0} batches within {data.expiry?.within_days ?? expiryDays} days ·
+            expired {data.expiry?.expired_count ?? 0} · qty {data.expiry?.total_quantity ?? 0}
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => download('xlsx', 'inventory_expiry')}>
+              Expiry Excel
+            </button>
+            <button type="button" onClick={() => download('csv', 'inventory_expiry')}>
+              Expiry CSV
+            </button>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Batch</th>
+                <th>Expiry</th>
+                <th>Days</th>
+                <th>Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.expiry?.batches || []).map((b: any) => (
+                <tr key={b.id}>
+                  <td>
+                    {b.sku || '—'} {b.name ? `· ${b.name}` : ''}
+                  </td>
+                  <td>{b.batch_number}</td>
+                  <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
+                  <td>{b.days_until_expiry ?? '—'}</td>
+                  <td>{b.quantity}</td>
+                </tr>
+              ))}
+              {!data.expiry?.batches?.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No batches nearing expiry
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           <h3 style={{ marginTop: 16 }}>Inter-store transfers</h3>
