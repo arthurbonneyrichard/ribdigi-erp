@@ -105,6 +105,52 @@ def _conflict_was_applied(item: m.SyncQueueItem | None, snapshot: dict | None) -
     return False
 
 
+async def device_pending_queue_stats(
+    db: AsyncSession, *, tenant_id: str, device_id: str
+) -> dict[str, Any]:
+    """Stage 168 R1 — honest pending counts for a device (no auto-delete on revoke)."""
+    pending_pushes = int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(m.SyncQueueItem)
+                .where(
+                    m.SyncQueueItem.tenant_id == tenant_id,
+                    m.SyncQueueItem.device_id == device_id,
+                    m.SyncQueueItem.direction == "push",
+                    m.SyncQueueItem.status.in_(["pending", "failed", "conflict"]),
+                )
+            )
+        ).scalar_one()
+        or 0
+    )
+    pending_pulls = int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(m.SyncQueueItem)
+                .where(
+                    m.SyncQueueItem.tenant_id == tenant_id,
+                    m.SyncQueueItem.device_id == device_id,
+                    m.SyncQueueItem.direction == "pull",
+                    m.SyncQueueItem.status == "pending",
+                )
+            )
+        ).scalar_one()
+        or 0
+    )
+    return {
+        "pending_pushes": pending_pushes,
+        "pending_pulls": pending_pulls,
+        "pending_total": pending_pushes + pending_pulls,
+        "message": (
+            "Pending queue ops are retained after device revoke; they are not auto-applied "
+            "or deleted. Flush/push/pull/ack stay blocked while the device is revoked "
+            "(Stage 168 R1)."
+        ),
+    }
+
+
 async def require_active_device(
     db: AsyncSession, tenant_id: str, device_id: str
 ) -> m.OfflineDevice:
@@ -112,7 +158,18 @@ async def require_active_device(
         raise HTTPException(status_code=400, detail="device_id is required")
     device = await offline_devices_svc.get_device(db, tenant_id, device_id.strip())
     if device.revoked_at is not None:
-        raise HTTPException(status_code=409, detail="Offline device is revoked")
+        stats = await device_pending_queue_stats(
+            db, tenant_id=tenant_id, device_id=device.id
+        )
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "OFFLINE_DEVICE_REVOKED",
+                "message": "Offline device is revoked",
+                "device_id": device.id,
+                "pending_queue": stats,
+            },
+        )
     device.last_seen_at = datetime.utcnow()
     device.updated_at = datetime.utcnow()
     await db.flush()
@@ -177,12 +234,11 @@ async def sync_status(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
         "last_sync_at": last_sync_at,
         "conflict_count": conflict_count,
         "message": (
-            "Stage 164–167 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
+            "Stage 164–168 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
             "Idempotent offline POS path requires client_request_id. "
             f"Hold soft reserve TTL expires after {HOLD_SOFT_RESERVE_TTL_HOURS}h. "
-            "Offline catalog client TTL applies in the browser. "
-            "accept_client may re-apply only when the original op was never applied. "
-            "Full Offline Complete remains deferred."
+            "Revoked devices block sync; pending queue ops are retained (Stage 168 R1). "
+            "Offline Complete remains deferred — see OFFLINE_COMPLETE_ATTESTATION.md."
         ),
     }
 

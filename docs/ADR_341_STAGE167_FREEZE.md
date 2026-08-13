@@ -24,6 +24,4 @@ Stage 167 Offline Complete E2E Hardening Fidelity delivered catalog TTL (T1), co
 
 ## Next stage
 
-Stage 168 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 167 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Offline Complete attestation pack — browser E2E offline sale/flush proof + SW static-cache contract tests + device revoke mid-queue honesty (no fake Completes).
+Stage 168 opened under [ADR-342](ADR_342_STAGE168_OPEN.md) (Offline Complete Attestation Fidelity) and froze under [ADR-343](ADR_343_STAGE168_FREEZE.md). Stage 167 feature scope remains frozen.

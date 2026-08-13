@@ -894,6 +894,7 @@ Stage 164 D1 — `docs/STAGE_164_FIDELITY.md` (`test_stage164_fidelity_d1.py`); 
 Stage 165 D1 — `docs/STAGE_165_FIDELITY.md` (`test_stage165_fidelity_d1.py`); Stage 165 K1 / H1 / R1.
 Stage 166 D1 — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`); Stage 166 C1 / A1 / S1.
 Stage 167 D1 — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`); Stage 167 T1 / U1 / E1.
+Stage 168 D1 — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`); Stage 168 W1 / F1 / R1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1641,3 +1642,5 @@ Stage 165 D1 offline client queue + Hold/Resume + conflict resolve fidelity — 
 Stage 166 D1 Offline Complete Hardening fidelity — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`); Stage 166 C1 offline catalog cache; Stage 166 A1 accept_client safe re-apply; Stage 166 S1 Hold soft reserve; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 
 Stage 167 D1 Offline Complete E2E Hardening fidelity — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`); Stage 167 T1 catalog TTL; Stage 167 U1 conflict UX; Stage 167 E1 Hold reserve expiry; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+
+Stage 168 D1 Offline Complete Attestation fidelity — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`); Stage 168 W1 SW contract; Stage 168 F1 flush attestation; Stage 168 R1 revoke mid-queue; `docs/OFFLINE_COMPLETE_ATTESTATION.md`; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

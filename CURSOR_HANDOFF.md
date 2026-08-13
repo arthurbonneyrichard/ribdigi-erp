@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 167 froze Offline Complete E2E Hardening (ADR-341) — catalog TTL, conflict UX polish, Hold reserve expiry. Next recommended distinct outline: Offline Complete attestation (browser E2E offline sale/flush + SW static-cache contract + device revoke mid-queue honesty) — Stage 168+. Do not claim Offline Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 168 froze Offline Complete Attestation (ADR-343) — SW contract, flush proof, revoke mid-queue honesty. Offline Complete remains MISSING. Next recommended distinct outline: Tenant MVP production ops hardening (backup restore drill + migration gate + offline/sync runbook) — Stage 169+. Do not claim Offline Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

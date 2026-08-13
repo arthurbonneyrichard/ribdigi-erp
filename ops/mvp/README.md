@@ -426,6 +426,10 @@ Authoritative MVP docs:
 - `docs/STAGE_167_EXIT_CRITERIA.md` / `docs/ADR_341_STAGE167_FREEZE.md` (`backend/tests/test_stage167_exit_h167x.py`) — Stage 167 H167x
 - `docs/STAGE_167_FIDELITY.md` (`backend/tests/test_stage167_fidelity_d1.py`) — Stage 167 D1
 - `docs/STAGE_167_PLAN.md` (`backend/tests/test_stage167_open.py`) — Stage 167 open (ADR-340)
+- `docs/STAGE_168_EXIT_CRITERIA.md` / `docs/ADR_343_STAGE168_FREEZE.md` (`backend/tests/test_stage168_exit_h168x.py`) — Stage 168 H168x
+- `docs/STAGE_168_FIDELITY.md` (`backend/tests/test_stage168_fidelity_d1.py`) — Stage 168 D1
+- `docs/STAGE_168_PLAN.md` (`backend/tests/test_stage168_open.py`) — Stage 168 open (ADR-342)
+- `docs/OFFLINE_COMPLETE_ATTESTATION.md` / `ops/mvp/offline-complete-attestation.json` — Stage 168 F1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1963,6 +1967,18 @@ H167x met — `docs/STAGE_167_EXIT_CRITERIA.md`, ADR-341. Stages 1–167 frozen 
 ## Stage 167 open
 
 ADR-340 + `docs/STAGE_167_PLAN.md` — Offline Complete E2E Hardening Fidelity (closed under ADR-341).
+
+## Stage 168 exit
+
+H168x met — `docs/STAGE_168_EXIT_CRITERIA.md`, ADR-343. Stages 1–168 frozen for Stage 168 feature scope.
+
+## Stage 168 D1 — Offline Complete Attestation Fidelity
+
+`docs/STAGE_168_FIDELITY.md` — maps W1–R1 → readiness / launch / deploy / security. Offline Complete remains MISSING.
+
+## Stage 168 open
+
+ADR-342 + `docs/STAGE_168_PLAN.md` — Offline Complete Attestation Fidelity (closed under ADR-343).
 
 ## Stage 165 open
 

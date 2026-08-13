@@ -13221,8 +13221,11 @@ async def offline_devices_revoke(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 163 V1 — soft-revoke offline device (no hard delete)."""
+    """Stage 163 V1 / Stage 168 R1 — soft-revoke; pending queue retained (not auto-applied)."""
     tenants_svc.assert_writable(claims)
+    pending = await sync_engine_svc.device_pending_queue_stats(
+        db, tenant_id=claims["tenant_id"], device_id=device_id
+    )
     row = await offline_devices_svc.revoke_device(db, claims["tenant_id"], device_id)
     await audit_svc.record_event(
         db,
@@ -13232,12 +13235,22 @@ async def offline_devices_revoke(
         action="offline_device_revoke",
         entity="offline_device",
         entity_id=row.id,
-        details={"name": row.name, "device_code": row.device_code},
+        details={
+            "name": row.name,
+            "device_code": row.device_code,
+            "pending_queue": pending,
+        },
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
-    return env(offline_devices_svc.serialize_device(row), "Offline device revoked")
+    data = offline_devices_svc.serialize_device(row)
+    data["pending_queue"] = pending
+    data["message"] = (
+        "Offline device revoked (soft). Pending queue ops were not deleted or auto-applied; "
+        "push/pull/ack remain blocked for this device (Stage 168 R1)."
+    )
+    return env(data, "Offline device revoked")
 
 
 @api.get("/api-keys")

@@ -109,3 +109,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 167 decision (opened after Stage 166 freeze)
 
 **Offline Complete E2E Hardening Fidelity** — catalog TTL/refresh (T1), conflict re-apply UX polish (U1), Hold soft-reserve expiry/cleanup (E1). Offline Complete remains deferred (Stage 168+).
+
+## Stage 168 decision (opened after Stage 167 freeze)
+
+**Offline Complete Attestation Fidelity** — SW static-cache contract (W1), offline sale/flush API attestation (F1), device revoke mid-queue honesty (R1). Offline Complete product claim remains deferred (Stage 169+).

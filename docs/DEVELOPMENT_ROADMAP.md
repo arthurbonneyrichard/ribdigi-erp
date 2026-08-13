@@ -2628,6 +2628,18 @@ Every feature in every phase must meet:
 
 **Stage 167 exit (2026-08-13):** T1, U1, E1, D1, H167x met — `docs/STAGE_167_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_341_STAGE167_FREEZE.md`. Fidelity: `docs/STAGE_167_FIDELITY.md`.
 
+**Stage 168 open (2026-08-13):** Offline Complete Attestation Fidelity — `docs/ADR_342_STAGE168_OPEN.md` + `docs/STAGE_168_PLAN.md` (W1 next).
+
+**Stage 168 W1 (2026-08-13):** SW static-cache contract (`test_stage168_sw_contract_w1.py`).
+
+**Stage 168 F1 (2026-08-13):** Offline sale/flush attestation (`test_stage168_flush_proof_f1.py`).
+
+**Stage 168 R1 (2026-08-13):** Device revoke mid-queue honesty (`test_stage168_revoke_r1.py`).
+
+**Stage 168 D1 (2026-08-13):** Offline Complete Attestation fidelity sync — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`).
+
+**Stage 168 exit (2026-08-13):** W1, F1, R1, D1, H168x met — `docs/STAGE_168_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_343_STAGE168_FREEZE.md`. Fidelity: `docs/STAGE_168_FIDELITY.md`.
+
 
 
 

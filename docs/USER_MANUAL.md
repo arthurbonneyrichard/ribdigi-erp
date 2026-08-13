@@ -110,6 +110,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Hold soft-reserve expiry (Stage 167 E1):** Soft-reserved holds expire after **4 hours**. POS can **Expire stale soft-reserves**; listing holds also auto-expires past-due rows and releases `reserved_qty`.
 
+**Offline device revoke (Stage 168 R1):** Revoking a device under Settings → Offline sync soft-blocks that device. Pending sync queue ops are **kept** (not auto-applied). Bind a new active device before flushing again. Offline Complete remains deferred.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

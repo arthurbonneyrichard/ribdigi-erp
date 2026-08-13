@@ -1548,3 +1548,5 @@ Stage 165 D1 offline client queue fidelity — `docs/STAGE_165_FIDELITY.md` (`te
 Stage 166 D1 Offline Complete Hardening fidelity — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`); Alembic `20260813_0094` adds `pos_held_carts.stock_reserved` / `reservation_lines`; main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 167 D1 Offline Complete E2E Hardening fidelity — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`); Alembic `20260813_0095` adds `pos_held_carts.expires_at`; main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 168 D1 Offline Complete Attestation fidelity — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`); SW cache `ribdigi-static-v168`; attestation `docs/OFFLINE_COMPLETE_ATTESTATION.md` / `ops/mvp/offline-complete-attestation.json`; main `ci.yml` remains deploy-free (Stage 18 C1).

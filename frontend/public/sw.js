@@ -1,5 +1,13 @@
-/* Stage 163 P1 — static-asset service worker. Never cache /api/v1/* or auth tokens. */
-const CACHE_NAME = 'ribdigi-static-v163';
+/* Stage 163 P1 / Stage 168 W1 — static-asset service worker.
+ *
+ * CONTRACT (attested by test_stage168_sw_contract_w1.py):
+ * - Never cache /api/ or /api/v1/* responses
+ * - Never cache auth/token paths
+ * - Never put Authorization headers or tokens into Cache Storage
+ * - Only static same-origin assets + precached shell may be cached
+ * Offline Complete remains deferred — this SW is not a full offline app shell claim.
+ */
+const CACHE_NAME = 'ribdigi-static-v168';
 const PRECACHE = ['/', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {

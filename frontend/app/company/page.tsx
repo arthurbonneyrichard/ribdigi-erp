@@ -933,10 +933,9 @@ export default function Page() {
       <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="offline-sync">
         <h2>Offline sync</h2>
         <p className="muted">
-          Stage 167: register/bind devices for IndexedDB queue flush and offline catalog pull (4h TTL).
-          Resolve conflicts with keep_server / accept_client / dismiss — accept_client re-applies only
-          when the original op was never applied (no double-post). Soft Hold reserves expire after 4h.
-          Offline Complete remains deferred.
+          Stage 168: register/bind devices for IndexedDB queue flush and offline catalog pull (4h TTL).
+          Revoking a device blocks flush and retains pending queue ops (not auto-applied). Conflict
+          accept_client never double-posts applied POS. Offline Complete remains deferred.
         </p>
         <p className="muted">
           Bound browser device:{' '}
@@ -1137,12 +1136,20 @@ export default function Page() {
                             setError('');
                             setDeviceBusy(true);
                             try {
-                              await api(`/offline/devices/${d.id}`, { method: 'DELETE' });
+                              const r = await api(`/offline/devices/${d.id}`, {
+                                method: 'DELETE',
+                              });
                               if (boundDeviceId === d.id) {
                                 localStorage.removeItem('offline_device_id');
                                 setBoundDeviceId('');
                               }
-                              setMessage('Offline device revoked (soft revoke)');
+                              const pending = r.data?.pending_queue?.pending_total ?? 0;
+                              setMessage(
+                                pending > 0
+                                  ? `Offline device revoked — ${pending} pending queue op(s) retained (not auto-applied; flush blocked)`
+                                  : r.data?.message ||
+                                      'Offline device revoked (soft revoke; no pending queue ops)',
+                              );
                               await refreshOfflineSync();
                             } catch (err: any) {
                               setError(err.message || 'Revoke failed');

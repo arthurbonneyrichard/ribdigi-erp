@@ -1,11 +1,21 @@
 /**
- * Stage 165 K1 — IndexedDB offline op queue.
+ * Stage 165 K1 / Stage 168 F1 — IndexedDB offline op queue.
  * Flushes via POST /sync/push. Never stores tokens; SW must not cache /api/v1/*.
  */
 
 const DB_NAME = 'ribdigi-offline-queue';
 const DB_VERSION = 1;
 const STORE = 'ops';
+
+/** Stage 168 F1 — attestation contract markers (static proof; not Offline Complete). */
+export const OFFLINE_QUEUE_CONTRACT = {
+  storesTokens: false,
+  storesAuthorizationHeader: false,
+  flushEndpoint: '/sync/push',
+  requiresBoundDevice: true,
+  swMustNotCacheApi: true,
+  offlineCompleteClaimed: false,
+} as const;
 
 export type OfflineQueueOp = {
   id?: number;

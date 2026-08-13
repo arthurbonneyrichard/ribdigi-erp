@@ -1018,6 +1018,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 167 E1** | Hold soft-reserve expiry / cleanup (`test_stage167_hold_expiry_e1.py`) |
 | **Stage 167 D1** | Offline E2E hardening fidelity — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`) |
 | **Stage 167 H167x** | Exit + freeze — `docs/STAGE_167_EXIT_CRITERIA.md`, ADR-341 (`test_stage167_exit_h167x.py`); Stages 1–167 frozen |
+| **Stage 168 open** | Offline Complete Attestation — `docs/STAGE_168_PLAN.md`, ADR-342 (`test_stage168_open.py`) |
+| **Stage 168 W1** | SW static-cache contract — never cache `/api/v1/*` (`test_stage168_sw_contract_w1.py`) |
+| **Stage 168 F1** | Offline sale/flush attestation — no Offline Complete claim (`test_stage168_flush_proof_f1.py`) |
+| **Stage 168 R1** | Device revoke mid-queue honesty (`test_stage168_revoke_r1.py`) |
+| **Stage 168 D1** | Offline attestation fidelity — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`) |
+| **Stage 168 H168x** | Exit + freeze — `docs/STAGE_168_EXIT_CRITERIA.md`, ADR-343 (`test_stage168_exit_h168x.py`); Stages 1–168 frozen |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

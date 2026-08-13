@@ -225,3 +225,5 @@ Stage 165 D1 Tenant MVP Offline Client Queue + Hold/Resume + Conflict Resolve Fi
 Stage 166 D1 Offline Complete Hardening Fidelity — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`); Stage 166 C1/A1/S1 Complete (MVP honesty; soft Hold reserve + safe accept_client; catalog stock non-authoritative offline); exit `docs/STAGE_166_EXIT_CRITERIA.md`, ADR-339. Offline Complete remains MISSING (Stage 167+).
 
 Stage 167 D1 Offline Complete E2E Hardening Fidelity — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`); Stage 167 T1/U1/E1 Complete (MVP honesty; catalog TTL + conflict UX + Hold reserve expiry); exit `docs/STAGE_167_EXIT_CRITERIA.md`, ADR-341. Offline Complete remains MISSING (Stage 168+).
+
+Stage 168 D1 Offline Complete Attestation Fidelity — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`); Stage 168 W1/F1/R1 Complete (MVP honesty; SW contract + flush path + revoke mid-queue; Offline Complete still MISSING); exit `docs/STAGE_168_EXIT_CRITERIA.md`, ADR-343; attestation `docs/OFFLINE_COMPLETE_ATTESTATION.md`.
