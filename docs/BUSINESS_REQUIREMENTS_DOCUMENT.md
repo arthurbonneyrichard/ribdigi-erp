@@ -476,11 +476,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Pre-sales price quotes for customers.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Create quotation with product, quantity, price, validity period
+  - [x] Create quotation with product, quantity, price, validity period (`valid_days` → `valid_until`; Sales UI)
   - [x] Quotation number auto-generation (configurable series via `/sales/settings`)
-  - [ ] Print/email quotation to customer
-  - [ ] Convert quotation to sales order
-  - [ ] Expiry notification before validity ends
+  - [x] Print/email quotation to customer (`POST /sales/quotations/{id}/send`)
+  - [x] Convert quotation to sales order (`POST /sales/quotations/{id}/convert`)
+  - [x] Expiry notification before validity ends (`scan_quotation_expiry` Celery job + `POST /notifications/scan-due`; category `quotation_expiry`; T−1 day window)
 
 #### BR-7.3 Sales Order
 - **Description:** Customer order confirmation before invoicing.

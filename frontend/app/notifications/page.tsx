@@ -59,7 +59,11 @@ export default function Page() {
     setError('');
     try {
       const r = await api('/notifications/scan-due', { method: 'POST' });
-      setMessage(`Payment-due alerts created: ${r.data?.created ?? 0}`);
+      const payment = r.data?.payment_due ?? 0;
+      const quotes = r.data?.quotation_expiry ?? 0;
+      setMessage(
+        `Due alerts created: ${r.data?.created ?? 0} (payment ${payment}, quotations ${quotes})`,
+      );
       setStatus('unread');
       await refresh();
     } catch (err: any) {
@@ -92,7 +96,7 @@ export default function Page() {
   return (
     <Shell>
       <h1>Notifications</h1>
-      <p className="muted">In-app alerts, preferences, and payment-due scan</p>
+      <p className="muted">In-app alerts, preferences, payment-due and quotation-expiry scan</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -104,7 +108,7 @@ export default function Page() {
           All
         </button>
         <button onClick={markAll}>Mark all read</button>
-        <button onClick={scanDue}>Scan payment due</button>
+        <button onClick={scanDue}>Scan due alerts</button>
       </div>
 
       <table className="table">
