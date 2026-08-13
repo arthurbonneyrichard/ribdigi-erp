@@ -48,6 +48,11 @@ class Tenant(Base):
     shipping_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     timezone: Mapped[str] = mapped_column(String(64), default="Africa/Accra")
     fiscal_year_start: Mapped[str] = mapped_column(String(5), default="01-01")
+    # BR-20.2 regional display preferences
+    date_format: Mapped[str] = mapped_column(String(20), default="DD/MM/YYYY")
+    decimal_separator: Mapped[str] = mapped_column(String(1), default=".")
+    thousand_separator: Mapped[str] = mapped_column(String(1), default=",")
+    time_format: Mapped[str] = mapped_column(String(5), default="24h")
     # Inclusive calendar date through which books are closed (BR-10.2 period close)
     books_closed_through: Mapped[date | None] = mapped_column(Date, nullable=True)
     expense_approval_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=100)

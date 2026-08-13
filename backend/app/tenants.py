@@ -16,7 +16,19 @@ VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 VALID_INDUSTRIES = frozenset(
     {"retail", "pharmacy", "restaurant", "bakery", "wholesale", "manufacturing", "mart"}
 )
+VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
+VALID_DECIMAL_SEPARATORS = frozenset({".", ","})
+VALID_THOUSAND_SEPARATORS = frozenset({",", ".", " ", ""})
+VALID_TIME_FORMATS = frozenset({"12h", "24h"})
 TRIAL_REMINDER_DAYS = (7, 3, 1)
+
+
+def _validate_separators(decimal_sep: str, thousand_sep: str) -> None:
+    if thousand_sep and thousand_sep == decimal_sep:
+        raise HTTPException(
+            status_code=400,
+            detail="thousand_separator must differ from decimal_separator",
+        )
 
 
 def default_trial_ends_at(from_dt: datetime | None = None) -> datetime:
@@ -69,6 +81,12 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "shipping_address": getattr(tenant, "shipping_address", None),
         "timezone": tenant.timezone or "Africa/Accra",
         "fiscal_year_start": tenant.fiscal_year_start or "01-01",
+        "date_format": getattr(tenant, "date_format", None) or "DD/MM/YYYY",
+        "decimal_separator": getattr(tenant, "decimal_separator", None) or ".",
+        "thousand_separator": getattr(tenant, "thousand_separator", None)
+        if getattr(tenant, "thousand_separator", None) is not None
+        else ",",
+        "time_format": getattr(tenant, "time_format", None) or "24h",
         "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
         "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
         "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
@@ -391,6 +409,10 @@ async def update_profile(
     tax_jurisdiction: str | None = None,
     tax_registration_number: str | None = None,
     tax_filing_period: str | None = None,
+    date_format: str | None = None,
+    decimal_separator: str | None = None,
+    thousand_separator: str | None = None,
+    time_format: str | None = None,
 ) -> m.Tenant:
     if company_name is not None:
         name = company_name.strip()
@@ -462,6 +484,42 @@ async def update_profile(
         if period not in {"monthly", "quarterly"}:
             raise HTTPException(status_code=400, detail="tax_filing_period must be monthly or quarterly")
         tenant.tax_filing_period = period
+
+    # Apply formatting fields, then validate the resulting combination.
+    if date_format is not None:
+        df = date_format.strip()
+        if df not in VALID_DATE_FORMATS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"date_format must be one of: {sorted(VALID_DATE_FORMATS)}",
+            )
+        tenant.date_format = df
+    if decimal_separator is not None:
+        ds = decimal_separator if decimal_separator in {".", ","} else decimal_separator.strip()
+        if ds not in VALID_DECIMAL_SEPARATORS:
+            raise HTTPException(status_code=400, detail="decimal_separator must be '.' or ','")
+        tenant.decimal_separator = ds
+    if thousand_separator is not None:
+        # Allow empty string for "none"; treat literal "none" as empty.
+        ts = "" if thousand_separator.strip().lower() == "none" else thousand_separator
+        if ts not in VALID_THOUSAND_SEPARATORS:
+            raise HTTPException(
+                status_code=400,
+                detail="thousand_separator must be ',', '.', space, or none",
+            )
+        tenant.thousand_separator = ts
+    if time_format is not None:
+        tf = time_format.strip().lower()
+        if tf not in VALID_TIME_FORMATS:
+            raise HTTPException(status_code=400, detail="time_format must be 12h or 24h")
+        tenant.time_format = tf
+    _validate_separators(
+        getattr(tenant, "decimal_separator", None) or ".",
+        getattr(tenant, "thousand_separator", None)
+        if getattr(tenant, "thousand_separator", None) is not None
+        else ",",
+    )
+
     await db.flush()
     return tenant
 

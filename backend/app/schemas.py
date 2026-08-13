@@ -86,6 +86,10 @@ class TenantProfileUpdate(BaseModel):
     tax_jurisdiction: str | None = None
     tax_registration_number: str | None = None
     tax_filing_period: str | None = None
+    date_format: str | None = None
+    decimal_separator: str | None = None
+    thousand_separator: str | None = None
+    time_format: str | None = None
 
 
 class TenantSuspendRequest(BaseModel):
