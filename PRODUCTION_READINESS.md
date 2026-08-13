@@ -229,3 +229,5 @@ Stage 167 D1 Offline Complete E2E Hardening Fidelity — `docs/STAGE_167_FIDELIT
 Stage 168 D1 Offline Complete Attestation Fidelity — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`); Stage 168 W1/F1/R1 Complete (MVP honesty; SW contract + flush path + revoke mid-queue; Offline Complete still MISSING); exit `docs/STAGE_168_EXIT_CRITERIA.md`, ADR-343; attestation `docs/OFFLINE_COMPLETE_ATTESTATION.md`.
 
 Stage 169 D1 Tenant MVP Production Ops Hardening Fidelity — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`); Stage 169 B1/M1/R1 Complete (MVP honesty; drill packaging + migration gate + offline/sync runbook; live DR / prod migrate / Offline Complete / go-live still MISSING); exit `docs/STAGE_169_EXIT_CRITERIA.md`, ADR-345.
+
+Stage 170 D1 Tenant MVP Support Readiness Fidelity — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`); Stage 170 S1/V1/E1 Complete (MVP honesty; support readiness + severity matrix + offline/sync escalation; live SLA / PagerDuty / Offline Complete / go-live still MISSING); exit `docs/STAGE_170_EXIT_CRITERIA.md`, ADR-347.

@@ -62,3 +62,7 @@ Operator runbook for tenant offline/sync surfaces. Indexes proven contracts from
 - Full browser Playwright offline E2E Complete
 - Offline Complete product acceptance
 - Fabricated sync success
+
+## Stage 170 E1 amendment
+
+Escalation paths for offline/sync incidents: [OFFLINE_SYNC_ESCALATION_MVP.md](OFFLINE_SYNC_ESCALATION_MVP.md) (`ops/mvp/offline-sync-escalation.json`, `test_stage170_escalation_e1.py`).

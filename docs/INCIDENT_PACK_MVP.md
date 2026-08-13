@@ -40,6 +40,10 @@ Aligns with `docs/SECURITY_GUIDE.md` §15.1; Alertmanager `severity=critical` ro
 - Centralized SIEM incident bus Complete
 - Treating Stage 28 A1 / Stage 30 I1 Complete as “on-call is live”
 
+## Stage 170 V1 amendment
+
+Tenant/offline/sync severity examples: [INCIDENT_SEVERITY_MATRIX_MVP.md](INCIDENT_SEVERITY_MATRIX_MVP.md) (`ops/mvp/incident-severity-matrix.json`, `test_stage170_severity_v1.py`). PagerDuty / on-call live remain not claimed.
+
 ## Sign-off
 
 Stage 30 I1 is met when this doc + checklist + runbook example + evidence JSON exist, `test_incident_pack_i1.py` passes, and SECURITY_GUIDE / DEPLOYMENT_GUIDE / launch / roadmap cite Stage 30 I1 without inventing hosted paging success.

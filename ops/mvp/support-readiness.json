@@ -1,0 +1,60 @@
+{
+  "id": "support-readiness",
+  "stage": 170,
+  "pack": "S1",
+  "doc": "docs/SUPPORT_READINESS_MVP.md",
+  "related": {
+    "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "commercial_support": "docs/COMMERCIAL_SUPPORT_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "severity_matrix": "docs/INCIDENT_SEVERITY_MATRIX_MVP.md",
+    "escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "helpdesk_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "offline_complete_claimed": false,
+  "steps": [
+    {
+      "id": "sr-tenant-context",
+      "title": "Authenticate tenant context; enforce tenant isolation",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-triage-severity",
+      "title": "Triage with Stage 170 severity matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-offline-sync",
+      "title": "Offline/POS/sync path via offline sync runbook + escalation",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-backup-drill",
+      "title": "Backup/restore drills via drill honesty pack (live claims false)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-escalate-p1p2",
+      "title": "Escalate P1/P2 per severity + Stage 30 I1",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-live-remaining",
+      "title": "Live SLA / PagerDuty / helpdesk SaaS Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 170 S1 support readiness packaging only. Do not claim live support SLA."
+}

@@ -24,6 +24,4 @@ Stage 169 Tenant MVP Production Ops Hardening Fidelity delivered backup drill ho
 
 ## Next stage
 
-Stage 170 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 169 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP support readiness — support runbook + incident severity matrix + offline/sync escalation paths (no fake Completes).
+Stage 170 opened under [ADR-346](ADR_346_STAGE170_OPEN.md) (Tenant MVP Support Readiness Fidelity) and froze under [ADR-347](ADR_347_STAGE170_FREEZE.md). Stage 169 feature scope remains frozen.

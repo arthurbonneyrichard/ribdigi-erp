@@ -114,6 +114,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Ops runbooks (Stage 169):** Operators follow `docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md` for backup/restore drills, `docs/MIGRATION_GATE_MVP.md` before schema upgrades, and `docs/OFFLINE_SYNC_RUNBOOK_MVP.md` for offline/sync procedures. Live Completes remain deferred.
 
+**Support readiness (Stage 170):** Support intake uses `docs/SUPPORT_READINESS_MVP.md`, severity via `docs/INCIDENT_SEVERITY_MATRIX_MVP.md`, and offline/sync escalations via `docs/OFFLINE_SYNC_ESCALATION_MVP.md`. Live support SLA remains deferred.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

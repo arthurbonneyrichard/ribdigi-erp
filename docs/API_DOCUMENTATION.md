@@ -1720,3 +1720,5 @@ Stage 167 D1 — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`): 
 Stage 168 D1 — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`): `DELETE /offline/devices/{id}` returns `pending_queue` honesty; revoked device sync returns 409 `OFFLINE_DEVICE_REVOKED` with pending counts; flush path remains `POST /sync/push`. Offline Complete remains deferred (`docs/OFFLINE_COMPLETE_ATTESTATION.md`).
 
 Stage 169 D1 — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`): ops packaging only — backup drill honesty / migration gate / offline-sync runbook; no new public API Completes; live DR and production migrate remain deferred.
+
+Stage 170 D1 — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`): support readiness packaging only — support runbook / severity matrix / offline-sync escalation; no new public API Completes; live support SLA remains deferred.

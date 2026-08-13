@@ -36,6 +36,10 @@ This is the **MVP support & Admin runbook fidelity surface**: map `ADMIN_MANUAL`
 - Re-packaging Stage 26–29 packs as new Complete
 - Hosted helpdesk SaaS Complete
 
+## Stage 170 S1 amendment
+
+Tenant MVP support readiness consolidates this pack with Stage 169 offline/sync ops: [SUPPORT_READINESS_MVP.md](SUPPORT_READINESS_MVP.md) (`ops/mvp/support-readiness.json`, `test_stage170_support_s1.py`). Live support SLA remains not claimed.
+
 ## Sign-off
 
 Stage 30 S1 is met when this doc + admin-ops map + evidence JSON exist, `test_support_runbook_s1.py` passes, and ADMIN_MANUAL / launch / roadmap cite Stage 30 S1 without inventing live ops success.

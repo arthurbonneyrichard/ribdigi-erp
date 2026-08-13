@@ -1030,6 +1030,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 169 R1** | Offline/sync operator runbook (`test_stage169_offline_runbook_r1.py`) |
 | **Stage 169 D1** | Ops hardening fidelity — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`) |
 | **Stage 169 H169x** | Exit + freeze — `docs/STAGE_169_EXIT_CRITERIA.md`, ADR-345 (`test_stage169_exit_h169x.py`); Stages 1–169 frozen |
+| **Stage 170 open** | Support Readiness — `docs/STAGE_170_PLAN.md`, ADR-346 (`test_stage170_open.py`) |
+| **Stage 170 S1** | Support readiness runbook (`test_stage170_support_s1.py`) |
+| **Stage 170 V1** | Incident severity matrix (`test_stage170_severity_v1.py`) |
+| **Stage 170 E1** | Offline/sync escalation paths (`test_stage170_escalation_e1.py`) |
+| **Stage 170 D1** | Support readiness fidelity — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`) |
+| **Stage 170 H170x** | Exit + freeze — `docs/STAGE_170_EXIT_CRITERIA.md`, ADR-347 (`test_stage170_exit_h170x.py`); Stages 1–170 frozen |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |

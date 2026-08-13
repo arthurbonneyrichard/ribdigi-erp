@@ -117,3 +117,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 169 decision (opened after Stage 168 freeze)
 
 **Tenant MVP Production Ops Hardening Fidelity** — backup restore drill honesty (B1), migration gate checklist (M1), offline/sync runbook (R1). Live DR / production migrate / Offline Complete / go-live remain deferred (Stage 170+).
+
+## Stage 170 decision (opened after Stage 169 freeze)
+
+**Tenant MVP Support Readiness Fidelity** — support readiness runbook (S1), incident severity matrix (V1), offline/sync escalation paths (E1). Live support SLA / PagerDuty / Offline Complete / go-live remain deferred (Stage 171+).

@@ -2652,6 +2652,18 @@ Every feature in every phase must meet:
 
 **Stage 169 exit (2026-08-13):** B1, M1, R1, D1, H169x met — `docs/STAGE_169_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_345_STAGE169_FREEZE.md`. Fidelity: `docs/STAGE_169_FIDELITY.md`.
 
+**Stage 170 open (2026-08-13):** Tenant MVP Support Readiness Fidelity — `docs/ADR_346_STAGE170_OPEN.md` + `docs/STAGE_170_PLAN.md` (S1 next).
+
+**Stage 170 S1 (2026-08-13):** Support readiness runbook (`test_stage170_support_s1.py`).
+
+**Stage 170 V1 (2026-08-13):** Incident severity matrix (`test_stage170_severity_v1.py`).
+
+**Stage 170 E1 (2026-08-13):** Offline/sync escalation paths (`test_stage170_escalation_e1.py`).
+
+**Stage 170 D1 (2026-08-13):** Support Readiness fidelity sync — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`).
+
+**Stage 170 exit (2026-08-13):** S1, V1, E1, D1, H170x met — `docs/STAGE_170_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_347_STAGE170_FREEZE.md`. Fidelity: `docs/STAGE_170_FIDELITY.md`.
+
 
 
 

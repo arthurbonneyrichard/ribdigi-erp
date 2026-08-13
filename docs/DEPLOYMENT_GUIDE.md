@@ -1552,3 +1552,5 @@ Stage 167 D1 Offline Complete E2E Hardening fidelity — `docs/STAGE_167_FIDELIT
 Stage 168 D1 Offline Complete Attestation fidelity — `docs/STAGE_168_FIDELITY.md` (`test_stage168_fidelity_d1.py`); SW cache `ribdigi-static-v168`; attestation `docs/OFFLINE_COMPLETE_ATTESTATION.md` / `ops/mvp/offline-complete-attestation.json`; main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 169 D1 Production Ops Hardening fidelity — `docs/STAGE_169_FIDELITY.md` (`test_stage169_fidelity_d1.py`); migration gate `docs/MIGRATION_GATE_MVP.md` / `ops/mvp/migration-gate.json` (single Alembic head proof in pytest); backup drill honesty `docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md`; offline/sync runbook `docs/OFFLINE_SYNC_RUNBOOK_MVP.md`; main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 170 D1 Support Readiness fidelity — `docs/STAGE_170_FIDELITY.md` (`test_stage170_fidelity_d1.py`); `docs/SUPPORT_READINESS_MVP.md` / `docs/INCIDENT_SEVERITY_MATRIX_MVP.md` / `docs/OFFLINE_SYNC_ESCALATION_MVP.md`; main `ci.yml` remains deploy-free (Stage 18 C1).

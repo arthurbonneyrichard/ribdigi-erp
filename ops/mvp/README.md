@@ -436,6 +436,12 @@ Authoritative MVP docs:
 - `docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md` / `ops/mvp/backup-restore-drill-honesty.json` — Stage 169 B1
 - `docs/MIGRATION_GATE_MVP.md` / `ops/mvp/migration-gate.json` — Stage 169 M1
 - `docs/OFFLINE_SYNC_RUNBOOK_MVP.md` / `ops/mvp/offline-sync-runbook.json` — Stage 169 R1
+- `docs/STAGE_170_EXIT_CRITERIA.md` / `docs/ADR_347_STAGE170_FREEZE.md` (`backend/tests/test_stage170_exit_h170x.py`) — Stage 170 H170x
+- `docs/STAGE_170_FIDELITY.md` (`backend/tests/test_stage170_fidelity_d1.py`) — Stage 170 D1
+- `docs/STAGE_170_PLAN.md` (`backend/tests/test_stage170_open.py`) — Stage 170 open (ADR-346)
+- `docs/SUPPORT_READINESS_MVP.md` / `ops/mvp/support-readiness.json` — Stage 170 S1
+- `docs/INCIDENT_SEVERITY_MATRIX_MVP.md` / `ops/mvp/incident-severity-matrix.json` — Stage 170 V1
+- `docs/OFFLINE_SYNC_ESCALATION_MVP.md` / `ops/mvp/offline-sync-escalation.json` — Stage 170 E1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 - `docs/STAGE_117_PLAN.md` (`backend/tests/test_stage117_open.py`) — Stage 117 open (ADR-240)
 - `docs/STAGE_116_FIDELITY.md` (`backend/tests/test_stage116_fidelity_d1.py`) — Stage 116 D1
@@ -1997,6 +2003,18 @@ H169x met — `docs/STAGE_169_EXIT_CRITERIA.md`, ADR-345. Stages 1–169 frozen 
 ## Stage 169 open
 
 ADR-344 + `docs/STAGE_169_PLAN.md` — Production Ops Hardening Fidelity (closed under ADR-345).
+
+## Stage 170 exit
+
+H170x met — `docs/STAGE_170_EXIT_CRITERIA.md`, ADR-347. Stages 1–170 frozen for Stage 170 feature scope.
+
+## Stage 170 D1 — Tenant MVP Support Readiness Fidelity
+
+`docs/STAGE_170_FIDELITY.md` — maps S1–E1 → readiness / launch / deploy / security. Live support SLA / Offline Complete remain MISSING.
+
+## Stage 170 open
+
+ADR-346 + `docs/STAGE_170_PLAN.md` — Support Readiness Fidelity (closed under ADR-347).
 
 ## Stage 165 open
 
