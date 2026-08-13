@@ -97,6 +97,7 @@ def serialize_variant(v: m.ProductVariant) -> dict:
         "size": v.size,
         "color": v.color,
         "flavor": v.flavor,
+        "dosage": getattr(v, "dosage", None),
         "cost_price": float(v.cost_price or 0),
         "selling_price": float(v.selling_price or 0),
         "stock_qty": float(v.stock_qty or 0),
@@ -197,6 +198,13 @@ async def list_variants(db: AsyncSession, tenant_id: str, product_id: str) -> li
     ).scalars().all()
 
 
+def _clean_attr(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
 async def create_variant(
     db: AsyncSession,
     *,
@@ -208,6 +216,7 @@ async def create_variant(
     size: str | None = None,
     color: str | None = None,
     flavor: str | None = None,
+    dosage: str | None = None,
     cost_price: float | None = None,
     selling_price: float | None = None,
 ) -> m.ProductVariant:
@@ -227,10 +236,11 @@ async def create_variant(
         product_id=product.id,
         name=name,
         sku=sku,
-        barcode=barcode,
-        size=size,
-        color=color,
-        flavor=flavor,
+        barcode=_clean_attr(barcode),
+        size=_clean_attr(size),
+        color=_clean_attr(color),
+        flavor=_clean_attr(flavor),
+        dosage=_clean_attr(dosage),
         cost_price=float(cost_price if cost_price is not None else product.cost_price or 0),
         selling_price=float(
             selling_price if selling_price is not None else product.selling_price or 0
@@ -255,6 +265,7 @@ async def update_variant(
     size: str | None = None,
     color: str | None = None,
     flavor: str | None = None,
+    dosage: str | None = None,
     cost_price: float | None = None,
     selling_price: float | None = None,
     is_active: bool | None = None,
@@ -262,6 +273,7 @@ async def update_variant(
     clear_size: bool = False,
     clear_color: bool = False,
     clear_flavor: bool = False,
+    clear_dosage: bool = False,
 ) -> m.ProductVariant:
     await get_product(db, tenant_id, product_id)
     variant = await get_variant(db, tenant_id, variant_id)
@@ -297,6 +309,10 @@ async def update_variant(
         variant.flavor = None
     elif flavor is not None:
         variant.flavor = flavor.strip() or None
+    if clear_dosage:
+        variant.dosage = None
+    elif dosage is not None:
+        variant.dosage = dosage.strip() or None
     if cost_price is not None:
         variant.cost_price = float(cost_price)
     if selling_price is not None:

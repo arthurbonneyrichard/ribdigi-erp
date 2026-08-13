@@ -339,6 +339,7 @@ class ProductVariant(Base):
     size: Mapped[str | None] = mapped_column(String(80), nullable=True)
     color: Mapped[str | None] = mapped_column(String(80), nullable=True)
     flavor: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    dosage: Mapped[str | None] = mapped_column(String(80), nullable=True)
     cost_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     selling_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     stock_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)

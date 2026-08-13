@@ -3591,6 +3591,7 @@ async def patch_product_variant(
         size=data.get("size"),
         color=data.get("color"),
         flavor=data.get("flavor"),
+        dosage=data.get("dosage"),
         cost_price=data.get("cost_price"),
         selling_price=data.get("selling_price"),
         is_active=data.get("is_active"),
@@ -3598,6 +3599,7 @@ async def patch_product_variant(
         clear_size="size" in data and data["size"] is None,
         clear_color="color" in data and data["color"] is None,
         clear_flavor="flavor" in data and data["flavor"] is None,
+        clear_dosage="dosage" in data and data["dosage"] is None,
     )
     await db.commit()
     return env(catalog_svc.serialize_variant(variant), "Variant updated")

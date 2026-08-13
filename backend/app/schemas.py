@@ -351,6 +351,7 @@ class ProductVariantCreate(BaseModel):
     size: str | None = None
     color: str | None = None
     flavor: str | None = None
+    dosage: str | None = None
     cost_price: float | None = None
     selling_price: float | None = None
 
@@ -362,6 +363,7 @@ class ProductVariantUpdate(BaseModel):
     size: str | None = None
     color: str | None = None
     flavor: str | None = None
+    dosage: str | None = None
     cost_price: float | None = None
     selling_price: float | None = None
     is_active: bool | None = None

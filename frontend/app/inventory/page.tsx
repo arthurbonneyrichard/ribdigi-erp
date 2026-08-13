@@ -98,6 +98,9 @@ export default function Page() {
   const [variantName, setVariantName] = useState('');
   const [variantSku, setVariantSku] = useState('');
   const [variantSize, setVariantSize] = useState('');
+  const [variantColor, setVariantColor] = useState('');
+  const [variantFlavor, setVariantFlavor] = useState('');
+  const [variantDosage, setVariantDosage] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [stockQty, setStockQty] = useState('10');
@@ -608,13 +611,19 @@ export default function Page() {
         body: JSON.stringify({
           name: variantName,
           sku: variantSku.trim() || null,
-          size: variantSize || undefined,
+          size: variantSize.trim() || null,
+          color: variantColor.trim() || null,
+          flavor: variantFlavor.trim() || null,
+          dosage: variantDosage.trim() || null,
         }),
       });
       setMessage(`Variant ${r.data.sku} created`);
       setVariantName('');
       setVariantSku('');
       setVariantSize('');
+      setVariantColor('');
+      setVariantFlavor('');
+      setVariantDosage('');
       await refreshSelected(selectedId);
       setTab('variants');
     } catch (err: any) {
@@ -1335,6 +1344,7 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Add variant</h3>
+            <p className="muted">Size, color, flavor, dosage (pharmacy) with unique SKUs (BR-5.1).</p>
             <input value={variantName} onChange={(e) => setVariantName(e.target.value)} placeholder="Name" />
             <input
               value={variantSku}
@@ -1342,6 +1352,17 @@ export default function Page() {
               placeholder="SKU (auto if blank)"
             />
             <input value={variantSize} onChange={(e) => setVariantSize(e.target.value)} placeholder="Size (optional)" />
+            <input value={variantColor} onChange={(e) => setVariantColor(e.target.value)} placeholder="Color (optional)" />
+            <input
+              value={variantFlavor}
+              onChange={(e) => setVariantFlavor(e.target.value)}
+              placeholder="Flavor (optional)"
+            />
+            <input
+              value={variantDosage}
+              onChange={(e) => setVariantDosage(e.target.value)}
+              placeholder="Dosage (optional)"
+            />
             <button onClick={addVariant} disabled={!selectedId || !variantName.trim()}>
               Create variant
             </button>
@@ -1352,6 +1373,9 @@ export default function Page() {
                 <th>Name</th>
                 <th>SKU</th>
                 <th>Size</th>
+                <th>Color</th>
+                <th>Flavor</th>
+                <th>Dosage</th>
                 <th>Stock</th>
                 <th>Price</th>
                 <th>Active</th>
@@ -1364,6 +1388,9 @@ export default function Page() {
                   <td>{v.name}</td>
                   <td>{v.sku}</td>
                   <td>{v.size || '—'}</td>
+                  <td>{v.color || '—'}</td>
+                  <td>{v.flavor || '—'}</td>
+                  <td>{v.dosage || '—'}</td>
                   <td>{v.stock_qty}</td>
                   <td>
                     <input
