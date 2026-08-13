@@ -24,6 +24,4 @@ Stage 208 Tenant MVP PgBouncer Soak Remaining-Gate Index Fidelity delivered PgBo
 
 ## Next stage
 
-Stage 209 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 208 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Pentest Remaining-Gate Index Fidelity — single index of pentest blockers (packaged Stage 29 V1 pentest pack materials non-claim as live pentest Complete) with explicit non-claim (no live pentest Complete). Distinct from Stage 208 PgBouncer soak remaining-gate.
+Stage **209** opened under **ADR-424** / frozen under **ADR-425** — Tenant MVP Pentest remaining-gate index fidelity (packaged Stage 29 V1 pentest pack materials non-claim as live pentest Complete) with explicit non-claim of live pentest Complete. Stage 208 feature scope remains frozen. Do not reopen Stages **1–208** scopes.

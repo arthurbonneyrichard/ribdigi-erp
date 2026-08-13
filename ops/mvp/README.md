@@ -674,6 +674,13 @@ Authoritative MVP docs:
 - `docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md` / `ops/mvp/pgbouncer-soak-remaining-gate.json` — Stage 208 I1
 - `docs/PGBOUNCER_SOAK_BLOCKERS_MVP.md` / `ops/mvp/pgbouncer-soak-blockers.json` — Stage 208 B1
 - `docs/PGBOUNCER_SOAK_PACK_POINTERS_MVP.md` / `ops/mvp/pgbouncer-soak-pack-pointers.json` — Stage 208 P1
+
+- `docs/STAGE_209_EXIT_CRITERIA.md` / `docs/ADR_425_STAGE209_FREEZE.md` (`backend/tests/test_stage209_exit_h209x.py`) — Stage 209 H209x
+- `docs/STAGE_209_FIDELITY.md` (`backend/tests/test_stage209_fidelity_d1.py`) — Stage 209 D1
+- `docs/STAGE_209_PLAN.md` (`backend/tests/test_stage209_open.py`) — Stage 209 open (ADR-424)
+- `docs/PENTEST_REMAINING_GATE_MVP.md` / `ops/mvp/pentest-remaining-gate.json` — Stage 209 I1
+- `docs/PENTEST_BLOCKERS_MVP.md` / `ops/mvp/pentest-blockers.json` — Stage 209 B1
+- `docs/PENTEST_PACK_POINTERS_MVP.md` / `ops/mvp/pentest-pack-pointers.json` — Stage 209 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2655,6 +2662,19 @@ ADR-412 + `docs/STAGE_203_PLAN.md` — Cutover Remaining-Gate Index Fidelity (cl
 
 
 
+
+
+## Stage 209 exit
+
+H209x met — `docs/STAGE_209_EXIT_CRITERIA.md`, ADR-425. Stages 1–209 frozen for Stage 209 feature scope.
+
+## Stage 209 D1 — Tenant MVP Pentest Remaining-Gate Index Fidelity
+
+See `docs/STAGE_209_FIDELITY.md`.
+
+## Stage 209 open
+
+ADR-424 / `docs/STAGE_209_PLAN.md`.
 
 ## Stage 208 exit
 

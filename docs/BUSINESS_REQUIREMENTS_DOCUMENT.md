@@ -930,6 +930,7 @@ Stage 200 D1 — `docs/STAGE_200_FIDELITY.md` (`test_stage200_fidelity_d1.py`); 
 Stage 201 D1 — `docs/STAGE_201_FIDELITY.md` (`test_stage201_fidelity_d1.py`); Stage 201 I1 / B1 / P1.
 Stage 202 D1 — `docs/STAGE_202_FIDELITY.md` (`test_stage202_fidelity_d1.py`); Stage 202 I1 / B1 / P1.
 Stage 203 D1 — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`); Stage 203 I1 / B1 / P1.
+Stage 209 D1 — `docs/STAGE_209_FIDELITY.md` (`test_stage209_fidelity_d1.py`); Stage 209 I1 / B1 / P1.
 Stage 208 D1 — `docs/STAGE_208_FIDELITY.md` (`test_stage208_fidelity_d1.py`); Stage 208 I1 / B1 / P1.
 Stage 207 D1 — `docs/STAGE_207_FIDELITY.md` (`test_stage207_fidelity_d1.py`); Stage 207 I1 / B1 / P1.
 Stage 206 D1 — `docs/STAGE_206_FIDELITY.md` (`test_stage206_fidelity_d1.py`); Stage 206 I1 / B1 / P1.
@@ -1722,6 +1723,7 @@ Stage 200 D1 Commercial Go-Live Closeout Remaining-Gate Index fidelity — `docs
 Stage 201 D1 Preflight Verification Remaining-Gate Index fidelity — `docs/STAGE_201_FIDELITY.md` (`test_stage201_fidelity_d1.py`); Stage 201 I1 preflight verification remaining-gate hub; Stage 201 B1 blocker matrix; Stage 201 P1 Stage 69 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 202 D1 Production Launch Remaining-Gate Index fidelity — `docs/STAGE_202_FIDELITY.md` (`test_stage202_fidelity_d1.py`); Stage 202 I1 production launch remaining-gate hub; Stage 202 B1 blocker matrix; Stage 202 P1 Stage 66/29 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 203 D1 Cutover Remaining-Gate Index fidelity — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`); Stage 203 I1 cutover remaining-gate hub; Stage 203 B1 blocker matrix; Stage 203 P1 Stage 29/27 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 209 D1 Pentest Remaining-Gate Index fidelity — `docs/STAGE_209_FIDELITY.md` (`test_stage209_fidelity_d1.py`); Stage 209 I1 pentest remaining-gate hub; Stage 209 B1 blocker matrix; Stage 209 P1 Stage 29/208 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 208 D1 PgBouncer Soak Remaining-Gate Index fidelity — `docs/STAGE_208_FIDELITY.md` (`test_stage208_fidelity_d1.py`); Stage 208 I1 PgBouncer soak remaining-gate hub; Stage 208 B1 blocker matrix; Stage 208 P1 Stage 29/207 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 207 D1 TLS Ingress Remaining-Gate Index fidelity — `docs/STAGE_207_FIDELITY.md` (`test_stage207_fidelity_d1.py`); Stage 207 I1 TLS ingress remaining-gate hub; Stage 207 B1 blocker matrix; Stage 207 P1 Stage 29/206 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 206 D1 K8s Deploy Remaining-Gate Index fidelity — `docs/STAGE_206_FIDELITY.md` (`test_stage206_fidelity_d1.py`); Stage 206 I1 k8s deploy remaining-gate hub; Stage 206 B1 blocker matrix; Stage 206 P1 Stage 26/205/18 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

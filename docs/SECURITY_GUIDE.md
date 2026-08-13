@@ -1234,6 +1234,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 203 P1** | Stage 29 / Stage 27 / Stage 202 pointers (`test_stage203_pointers_p1.py`) |
 | **Stage 203 D1** | Cutover remaining-gate fidelity — `docs/STAGE_203_FIDELITY.md` (`test_stage203_fidelity_d1.py`) |
 | **Stage 203 H203x** | Exit + freeze — `docs/STAGE_203_EXIT_CRITERIA.md`, ADR-413 (`test_stage203_exit_h203x.py`); Stages 1–203 frozen |
+| **Stage 209 open** | Pentest Remaining-Gate Index — `docs/STAGE_209_PLAN.md`, ADR-424 (`test_stage209_open.py`) |
+| **Stage 209 I1** | Pentest remaining-gate index hub (`test_stage209_index_i1.py`) |
+| **Stage 209 B1** | Pentest blocker matrix (`test_stage209_blockers_b1.py`) |
+| **Stage 209 P1** | Stage 29 / Stage 208 pointers (`test_stage209_pointers_p1.py`) |
+| **Stage 209 D1** | Pentest remaining-gate fidelity — `docs/STAGE_209_FIDELITY.md` (`test_stage209_fidelity_d1.py`) |
+| **Stage 209 H209x** | Exit + freeze — `docs/STAGE_209_EXIT_CRITERIA.md`, ADR-425 (`test_stage209_exit_h209x.py`); Stages 1–209 frozen |
 | **Stage 208 open** | PgBouncer Soak Remaining-Gate Index — `docs/STAGE_208_PLAN.md`, ADR-422 (`test_stage208_open.py`) |
 | **Stage 208 I1** | PgBouncer soak remaining-gate index hub (`test_stage208_index_i1.py`) |
 | **Stage 208 B1** | PgBouncer soak blocker matrix (`test_stage208_blockers_b1.py`) |
