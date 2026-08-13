@@ -878,7 +878,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] OAuth2 / JWT token generation
   - [x] Token refresh endpoint
-  - [x] API key support for service integrations
+  - [x] API key support for service integrations (Integrations UI `/integrations`: create/revoke/usage)
   - [x] Rate limiting per tenant
 
 #### BR-18.2 Products API
@@ -925,7 +925,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Pagination for list endpoints
   - [x] Versioning (/api/v1/)
   - [x] OpenAPI/Swagger documentation auto-generated
-  - [x] Webhook support for event subscriptions
+  - [x] Webhook support for event subscriptions (Integrations UI: create/test/rotate/disable/delete)
 
 ---
 

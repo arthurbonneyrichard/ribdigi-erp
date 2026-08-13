@@ -24,6 +24,7 @@ const TENANT_ITEMS: NavItem[] = [
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Backup', '/backup', 'backup'],
+  ['Integrations', '/integrations', 'integrations'],
   ['Security', '/security', 'security'],
   ['AI Assistant', '/ai', 'ai'],
   ['Users', '/users', 'users'],
@@ -215,6 +216,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
     </>
   ),
+  integrations: (
+    <>
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </>
+  ),
   security: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
   ai: (
     <>
@@ -296,11 +303,18 @@ function navItemsForRole(
   const packageSet =
     enabledModules && enabledModules.length > 0 ? new Set(enabledModules) : null;
   return TENANT_ITEMS.filter(([, , module]) => {
-    if (allowed !== '*' && !allowed.includes(module)) return false;
-    if (packageSet && !packageSet.has(module) && !['dashboard', 'notifications', 'security'].includes(module)) {
+    // Integrations UI is company-admin ops (API keys / webhooks); gate like Company.
+    const permModule = module === 'integrations' ? 'company' : module;
+    if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations') return false;
+    if (allowed !== '*' && module === 'integrations' && !allowed.includes('company')) return false;
+    if (
+      packageSet &&
+      !packageSet.has(permModule) &&
+      !['dashboard', 'notifications', 'security'].includes(module)
+    ) {
       return false;
     }
-    return canReadModule(permissions, module);
+    return canReadModule(permissions, permModule);
   });
 }
 

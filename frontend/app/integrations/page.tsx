@@ -1,0 +1,426 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Shell from '../../components/Shell';
+import { api } from '../../lib/api';
+
+const WEBHOOK_EVENTS = [
+  'sale.created',
+  'sale.paid',
+  'stock.low',
+  'stock.in',
+  'purchase.order.created',
+  'purchase.grn.received',
+  'customer.created',
+  'expense.approved',
+  'user.login',
+  'tenant.suspended',
+  'webhook.test',
+] as const;
+
+type ApiKeyRow = {
+  id: string;
+  name: string;
+  key_prefix?: string;
+  status?: string;
+  permissions?: Record<string, string[]>;
+  expires_at?: string | null;
+  last_used_at?: string | null;
+  request_count?: number;
+  created_at?: string;
+  api_key?: string;
+};
+
+type WebhookRow = {
+  id: string;
+  url: string;
+  events?: string[];
+  is_active?: boolean;
+  description?: string | null;
+  failure_count?: number;
+  last_status_code?: number | null;
+  last_delivery_at?: string | null;
+  secret?: string;
+};
+
+export default function Page() {
+  const [keys, setKeys] = useState<ApiKeyRow[]>([]);
+  const [hooks, setHooks] = useState<WebhookRow[]>([]);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [revealedKey, setRevealedKey] = useState('');
+  const [revealedSecret, setRevealedSecret] = useState('');
+  const [usage, setUsage] = useState<any>(null);
+
+  const [keyName, setKeyName] = useState('');
+  const [keyExpires, setKeyExpires] = useState('');
+  const [hookUrl, setHookUrl] = useState('');
+  const [hookDesc, setHookDesc] = useState('');
+  const [hookEvents, setHookEvents] = useState<string[]>(['sale.created', 'webhook.test']);
+  const [busy, setBusy] = useState(false);
+
+  async function refresh() {
+    const [k, w] = await Promise.all([api('/api-keys'), api('/webhooks')]);
+    setKeys(k.data || []);
+    setHooks(w.data || []);
+  }
+
+  useEffect(() => {
+    refresh().catch((err) => setError(err.message));
+  }, []);
+
+  function toggleEvent(ev: string) {
+    setHookEvents((prev) =>
+      prev.includes(ev) ? prev.filter((x) => x !== ev) : [...prev, ev]
+    );
+  }
+
+  async function createKey() {
+    setError('');
+    setMessage('');
+    setRevealedKey('');
+    setBusy(true);
+    try {
+      const body: Record<string, unknown> = { name: keyName || 'Integration key' };
+      if (keyExpires) body.expires_at = new Date(keyExpires).toISOString();
+      const r = await api('/api-keys', { method: 'POST', body: JSON.stringify(body) });
+      setRevealedKey(r.data?.api_key || '');
+      setMessage(r.message || 'API key created — copy the secret now');
+      setKeyName('');
+      setKeyExpires('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revokeKey(id: string) {
+    if (!window.confirm('Revoke this API key? Clients using it will lose access immediately.')) {
+      return;
+    }
+    setError('');
+    try {
+      await api(`/api-keys/${id}`, { method: 'DELETE' });
+      setMessage('API key revoked');
+      if (usage?.id === id) setUsage(null);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadUsage(id: string) {
+    setError('');
+    try {
+      const r = await api(`/api-keys/${id}/usage`);
+      setUsage({ id, ...r.data });
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createWebhook() {
+    setError('');
+    setMessage('');
+    setRevealedSecret('');
+    if (!hookEvents.length) {
+      setError('Select at least one webhook event');
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await api('/webhooks', {
+        method: 'POST',
+        body: JSON.stringify({
+          url: hookUrl,
+          events: hookEvents,
+          description: hookDesc || null,
+          is_active: true,
+        }),
+      });
+      setRevealedSecret(r.data?.secret || '');
+      setMessage(r.message || 'Webhook created — copy the signing secret now');
+      setHookUrl('');
+      setHookDesc('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function testWebhook(id: string) {
+    setError('');
+    try {
+      const r = await api(`/webhooks/${id}/test`, { method: 'POST', body: '{}' });
+      setMessage(
+        `Test delivery: ${r.data?.status || 'unknown'}` +
+          (r.data?.response_status != null ? ` (HTTP ${r.data.response_status})` : '') +
+          (r.data?.error ? ` — ${r.data.error}` : '')
+      );
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function rotateSecret(id: string) {
+    if (!window.confirm('Rotate signing secret? Subscribers must update to the new secret.')) {
+      return;
+    }
+    setError('');
+    setRevealedSecret('');
+    try {
+      const r = await api(`/webhooks/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ rotate_secret: true }),
+      });
+      setRevealedSecret(r.data?.secret || '');
+      setMessage('Signing secret rotated — copy the new secret now');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function toggleActive(row: WebhookRow) {
+    setError('');
+    try {
+      await api(`/webhooks/${row.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: !row.is_active }),
+      });
+      setMessage(row.is_active ? 'Webhook disabled' : 'Webhook enabled');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function deleteWebhook(id: string) {
+    if (!window.confirm('Delete this webhook endpoint?')) return;
+    setError('');
+    try {
+      await api(`/webhooks/${id}`, { method: 'DELETE' });
+      setMessage('Webhook deleted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <Shell>
+      <h1>Integrations</h1>
+      <p className="muted">
+        API keys and outbound webhooks for company admins (BR-18.1 / BR-18.6). Secrets are shown
+        once at create/rotate — store them securely.
+      </p>
+      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+      {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      {(revealedKey || revealedSecret) && (
+        <div
+          className="card"
+          style={{ marginBottom: 16, borderLeft: '4px solid #ca8a04', maxWidth: 720 }}
+        >
+          <h2 style={{ marginTop: 0 }}>Copy secret now</h2>
+          {revealedKey && (
+            <>
+              <p className="muted">API key (will not be shown again)</p>
+              <code style={{ wordBreak: 'break-all', display: 'block', marginBottom: 8 }}>
+                {revealedKey}
+              </code>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard?.writeText(revealedKey)}
+              >
+                Copy API key
+              </button>
+            </>
+          )}
+          {revealedSecret && (
+            <>
+              <p className="muted" style={{ marginTop: revealedKey ? 12 : 0 }}>
+                Webhook signing secret (will not be shown again)
+              </p>
+              <code style={{ wordBreak: 'break-all', display: 'block', marginBottom: 8 }}>
+                {revealedSecret}
+              </code>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard?.writeText(revealedSecret)}
+              >
+                Copy signing secret
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="card" style={{ marginBottom: 16, maxWidth: 720 }}>
+        <h2>API keys</h2>
+        <p className="muted">
+          Authenticate with <code>X-API-Key</code> or <code>Authorization: Bearer</code>. Default
+          permissions are read-only inventory/sales/purchasing/customers/reports.
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <input
+            value={keyName}
+            onChange={(e) => setKeyName(e.target.value)}
+            placeholder="Key name"
+            style={{ minWidth: 160 }}
+          />
+          <input
+            type="datetime-local"
+            value={keyExpires}
+            onChange={(e) => setKeyExpires(e.target.value)}
+            title="Optional expiry"
+          />
+          <button type="button" onClick={createKey} disabled={busy}>
+            Create API key
+          </button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Prefix</th>
+              <th>Status</th>
+              <th>Requests</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {keys.map((k) => (
+              <tr key={k.id}>
+                <td>{k.name}</td>
+                <td>
+                  <code>{k.key_prefix || '—'}</code>
+                </td>
+                <td>{k.status}</td>
+                <td>{k.request_count ?? 0}</td>
+                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  <button type="button" onClick={() => loadUsage(k.id)}>
+                    Usage
+                  </button>
+                  {k.status === 'active' && (
+                    <button type="button" onClick={() => revokeKey(k.id)}>
+                      Revoke
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!keys.length && (
+              <tr>
+                <td colSpan={5} className="muted">
+                  No API keys yet
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        {usage && (
+          <p className="muted" style={{ marginTop: 8 }}>
+            Usage for selected key: {JSON.stringify(usage)}
+          </p>
+        )}
+      </div>
+
+      <div className="card" style={{ maxWidth: 720 }}>
+        <h2>Webhooks</h2>
+        <p className="muted">
+          Outbound HTTPS deliveries signed with <code>X-Ribdigi-Signature</code> (HMAC-SHA256).
+        </p>
+        <label className="muted">Endpoint URL</label>
+        <input
+          value={hookUrl}
+          onChange={(e) => setHookUrl(e.target.value)}
+          placeholder="https://your-app.com/webhooks/ribdigi"
+          style={{ width: '100%', marginBottom: 8 }}
+        />
+        <label className="muted">Description</label>
+        <input
+          value={hookDesc}
+          onChange={(e) => setHookDesc(e.target.value)}
+          placeholder="Optional label"
+          style={{ width: '100%', marginBottom: 8 }}
+        />
+        <p className="muted" style={{ marginBottom: 4 }}>
+          Events
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+          {WEBHOOK_EVENTS.map((ev) => (
+            <label key={ev} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={hookEvents.includes(ev)}
+                onChange={() => toggleEvent(ev)}
+              />
+              <span style={{ fontSize: 13 }}>{ev}</span>
+            </label>
+          ))}
+        </div>
+        <button type="button" onClick={createWebhook} disabled={busy || !hookUrl}>
+          Create webhook
+        </button>
+
+        <table style={{ marginTop: 16 }}>
+          <thead>
+            <tr>
+              <th>URL</th>
+              <th>Events</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {hooks.map((h) => (
+              <tr key={h.id}>
+                <td style={{ maxWidth: 220, wordBreak: 'break-all' }}>
+                  {h.url}
+                  {h.description ? (
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {h.description}
+                    </div>
+                  ) : null}
+                </td>
+                <td style={{ fontSize: 12 }}>{(h.events || []).join(', ')}</td>
+                <td>
+                  {h.is_active ? 'active' : 'disabled'}
+                  {h.failure_count ? ` · fails ${h.failure_count}` : ''}
+                  {h.last_status_code != null ? ` · HTTP ${h.last_status_code}` : ''}
+                </td>
+                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  <button type="button" onClick={() => testWebhook(h.id)}>
+                    Test
+                  </button>
+                  <button type="button" onClick={() => rotateSecret(h.id)}>
+                    Rotate secret
+                  </button>
+                  <button type="button" onClick={() => toggleActive(h)}>
+                    {h.is_active ? 'Disable' : 'Enable'}
+                  </button>
+                  <button type="button" onClick={() => deleteWebhook(h.id)}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!hooks.length && (
+              <tr>
+                <td colSpan={4} className="muted">
+                  No webhooks yet
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Shell>
+  );
+}

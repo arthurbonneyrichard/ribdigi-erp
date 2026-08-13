@@ -1345,23 +1345,27 @@ Returns tenant-scoped alerts with `kind`, `risk_score`, `user_id`, `evidence`, `
 ## 17. Webhooks
 
 RIBDIGI ERP supports webhook subscriptions for real-time event notifications.
+Company admins can also manage endpoints in the **Integrations** UI (`/integrations`).
 
 ### 17.1 Manage Webhooks
 **List:** `GET /webhooks`  
 **Create:** `POST /webhooks`  
 **Get:** `GET /webhooks/{webhook_id}`  
-**Update:** `PATCH /webhooks/{webhook_id}`  
-**Delete:** `DELETE /webhooks/{webhook_id}`
+**Update:** `PATCH /webhooks/{webhook_id}` (set `rotate_secret: true` to issue a new `whsec_…`)  
+**Delete:** `DELETE /webhooks/{webhook_id}`  
+**Test:** `POST /webhooks/{webhook_id}/test` (delivers signed `webhook.test`)
 
 **Create Webhook:**
 ```json
 {
   "url": "https://your-app.com/webhooks/ribdigi",
-  "events": ["sale.created", "stock.low", "payment.received"],
+  "events": ["sale.created", "stock.low", "webhook.test"],
   "secret": "whsec_your_secret",
   "is_active": true
 }
 ```
+
+Signing secret is returned **once** on create/rotate (`secret_shown_once`). Deliveries include `X-Ribdigi-Signature: t=<unix>,v1=<hmac-sha256>`.
 
 ### 17.2 Available Events
 
@@ -1377,6 +1381,7 @@ RIBDIGI ERP supports webhook subscriptions for real-time event notifications.
 | `expense.approved` | Expense approved |
 | `user.login` | User logged in |
 | `tenant.suspended` | Tenant account suspended |
+| `webhook.test` | Manual test ping from admin UI / `POST .../test` |
 
 ### 17.3 Webhook Payload
 ```json
@@ -1391,6 +1396,21 @@ RIBDIGI ERP supports webhook subscriptions for real-time event notifications.
   }
 }
 ```
+
+---
+
+## 17A. API Keys
+
+Service integrations authenticate with tenant API keys (BR-18.1). Manage via `GET|POST|DELETE /api-keys` or the **Integrations** UI.
+
+**List:** `GET /api-keys`  
+**Create:** `POST /api-keys` — body `{ "name", "permissions"?, "expires_at"? }`; returns `api_key` once (`rdk_…`)  
+**Get / usage:** `GET /api-keys/{id}`, `GET /api-keys/{id}/usage`  
+**Revoke:** `DELETE /api-keys/{id}`
+
+**Auth headers:** `X-API-Key: rdk_…` or `Authorization: Bearer rdk_…` (plus `X-Tenant-ID` when required).
+
+Default permissions (if omitted): read on `inventory`, `sales`, `purchasing`, `customers`, `reports`.
 
 ---
 
