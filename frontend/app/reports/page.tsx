@@ -26,7 +26,7 @@ const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   stores: 'sales_by_store',
   inventory: 'inventory_low_stock',
   purchases: 'purchases_summary',
-  expenses: 'expenses_summary',
+  expenses: 'expenses_budget_vs_actual',
   cashflow: 'cash_flow',
   pnl: 'profit_loss',
   balancesheet: 'balance_sheet',
@@ -43,6 +43,7 @@ const REPORT_TYPES = [
   'inventory_low_stock',
   'purchases_summary',
   'expenses_summary',
+  'expenses_budget_vs_actual',
   'cash_flow',
   'balance_sheet',
   'tax',
@@ -103,7 +104,7 @@ export default function Page() {
       if (nextTab === 'stores') path = `/reports/sales/by-store${qs()}`;
       if (nextTab === 'inventory') path = '/reports/inventory/low-stock';
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
-      if (nextTab === 'expenses') path = `/reports/expenses/summary${qs()}`;
+      if (nextTab === 'expenses') path = `/reports/expenses/budget-vs-actual${qs()}`;
       if (nextTab === 'cashflow') path = `/reports/cash-flow${qs()}`;
       if (nextTab === 'pnl') path = `/reports/profit-loss${qs()}`;
       if (nextTab === 'balancesheet') path = '/reports/balance-sheet';
@@ -681,19 +682,55 @@ export default function Page() {
 
       {tab === 'expenses' && data && (
         <>
-          <div className="kpi">{data.total_amount ?? 0}</div>
-          <table className="table">
+          <p className="muted">
+            Period {data.period_days ?? '—'} days · scaled budgets vs approved spend
+          </p>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Budget (scaled)</div>
+              <div className="kpi">{data.total_budget_scaled ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Actual</div>
+              <div className="kpi">{data.total_actual ?? data.total_amount ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Variance</div>
+              <div className="kpi">{data.total_variance ?? 0}</div>
+            </div>
+          </div>
+          <h3 style={{ marginTop: 16 }}>Top categories</h3>
+          <ul>
+            {(data.top_categories || []).map((c: any) => (
+              <li key={c.category_id || c.category}>
+                {c.category}: {c.actual} ({c.status})
+              </li>
+            ))}
+            {!data.top_categories?.length && <li className="muted">No spend yet</li>}
+          </ul>
+          <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
                 <th>Category</th>
-                <th>Amount</th>
+                <th>Budget (scaled)</th>
+                <th>Actual</th>
+                <th>Variance</th>
+                <th>%</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {(data.by_category || []).map((c: any) => (
-                <tr key={c.category}>
-                  <td>{c.category}</td>
-                  <td>{c.amount}</td>
+              {(data.rows || data.by_category || []).map((c: any) => (
+                <tr key={c.category_id || c.category}>
+                  <td>
+                    {c.code ? `${c.code} — ` : ''}
+                    {c.category}
+                  </td>
+                  <td>{c.budget_scaled ?? '—'}</td>
+                  <td>{c.actual ?? c.amount}</td>
+                  <td>{c.variance ?? '—'}</td>
+                  <td>{c.variance_pct != null ? `${c.variance_pct}%` : '—'}</td>
+                  <td>{c.status || '—'}</td>
                 </tr>
               ))}
             </tbody>

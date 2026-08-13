@@ -773,6 +773,125 @@ async def expenses_summary(
     }
 
 
+def _expense_period_days(
+    from_date: datetime | None, to_date: datetime | None
+) -> int:
+    if from_date and to_date:
+        return max(1, (to_date.date() - from_date.date()).days + 1)
+    return 30
+
+
+async def budget_vs_actual(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    category_id: str | None = None,
+) -> dict:
+    """Monthly category budgets scaled to the period vs approved spend (BR-9.1 / BR-14.4)."""
+    from app.expenses import ensure_default_categories, scale_monthly_budget
+
+    await ensure_default_categories(db, tenant_id)
+    period_days = _expense_period_days(from_date, to_date)
+
+    cat_stmt = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
+    if category_id:
+        cat_stmt = cat_stmt.where(m.ExpenseCategory.id == category_id)
+    categories = (await db.execute(cat_stmt.order_by(m.ExpenseCategory.name))).scalars().all()
+
+    exp_stmt = select(m.Expense).where(
+        m.Expense.tenant_id == tenant_id,
+        m.Expense.status == "approved",
+    )
+    if category_id:
+        exp_stmt = exp_stmt.where(m.Expense.category_id == category_id)
+    if from_date:
+        exp_stmt = exp_stmt.where(m.Expense.expense_date >= from_date)
+    if to_date:
+        exp_stmt = exp_stmt.where(m.Expense.expense_date <= to_date)
+    expenses = (await db.execute(exp_stmt)).scalars().all()
+
+    actual_by_id: dict[str, float] = defaultdict(float)
+    uncategorized = 0.0
+    for e in expenses:
+        amt = float(e.amount or 0)
+        if e.category_id:
+            actual_by_id[e.category_id] += amt
+        else:
+            uncategorized += amt
+
+    rows_out: list[dict] = []
+    total_budget = 0.0
+    total_actual = 0.0
+    for cat in categories:
+        budget_monthly = float(cat.budget_amount or 0)
+        scaled = scale_monthly_budget(budget_monthly, period_days)
+        actual = float(actual_by_id.get(cat.id, 0))
+        if not cat.is_active and actual <= 0 and budget_monthly <= 0:
+            continue
+        if budget_monthly <= 0:
+            status = "no_budget"
+            variance = actual
+            variance_pct = None
+        else:
+            variance = actual - scaled
+            variance_pct = round((variance / scaled) * 100.0, 1) if scaled else 0.0
+            if abs(variance) < 0.01:
+                status = "on_budget"
+            elif variance > 0:
+                status = "over_budget"
+            else:
+                status = "under_budget"
+        total_budget += scaled if budget_monthly > 0 else 0.0
+        total_actual += actual
+        rows_out.append(
+            {
+                "category_id": cat.id,
+                "code": cat.code,
+                "category": cat.name,
+                "budget_monthly": round(budget_monthly, 2),
+                "budget_scaled": round(scaled, 2) if budget_monthly > 0 else 0.0,
+                "actual": round(actual, 2),
+                "variance": round(variance, 2),
+                "variance_pct": variance_pct,
+                "status": status,
+                "is_active": bool(cat.is_active),
+            }
+        )
+
+    if uncategorized > 0 and not category_id:
+        total_actual += uncategorized
+        rows_out.append(
+            {
+                "category_id": None,
+                "code": None,
+                "category": "Uncategorized",
+                "budget_monthly": 0.0,
+                "budget_scaled": 0.0,
+                "actual": round(uncategorized, 2),
+                "variance": round(uncategorized, 2),
+                "variance_pct": None,
+                "status": "no_budget",
+                "is_active": True,
+            }
+        )
+
+    rows_out.sort(key=lambda r: (-float(r["actual"]), r["category"] or ""))
+    top_categories = rows_out[:5]
+    total_variance = total_actual - total_budget
+    return {
+        "from_date": from_date.isoformat() if from_date else None,
+        "to_date": to_date.isoformat() if to_date else None,
+        "period_days": period_days,
+        "total_budget_scaled": round(total_budget, 2),
+        "total_actual": round(total_actual, 2),
+        "total_variance": round(total_variance, 2),
+        "top_categories": top_categories,
+        "rows": rows_out,
+    }
+
+
 async def cash_flow(
     db: AsyncSession,
     tenant_id: str,

@@ -31,6 +31,7 @@ EXPORTABLE = frozenset(
         "purchases_summary",
         "purchases_suppliers",
         "expenses_summary",
+        "expenses_budget_vs_actual",
         "cash_flow",
         "trial_balance",
         "profit_loss",
@@ -273,6 +274,14 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         lines = _kv_lines(payload) + [f"{c.get('name') or c.get('category')}: {c.get('total') or c.get('amount')}" for c in cats[:40]]
         return [dict(x) for x in rows], lines, "Expenses Summary"
 
+    if report_type == "expenses_budget_vs_actual":
+        rows = [dict(x) for x in (payload.get("rows") or [])]
+        lines = _kv_lines(payload) + [
+            f"{r.get('category')}: budget {r.get('budget_scaled')} actual {r.get('actual')} ({r.get('status')})"
+            for r in rows[:40]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Expenses Budget vs Actual"
+
     if report_type == "cash_flow":
         lines_data = payload.get("lines") or []
         rows = [dict(x) for x in lines_data] if lines_data else [dict(payload)]
@@ -438,6 +447,14 @@ async def build_report_payload(
         return await reports_svc.purchases_by_supplier(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "expenses_summary":
         return await reports_svc.expenses_summary(db, tenant_id, from_date=fd, to_date=td)
+    if report_type == "expenses_budget_vs_actual":
+        return await reports_svc.budget_vs_actual(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            category_id=None,
+        )
     if report_type == "cash_flow":
         return await reports_svc.cash_flow(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "trial_balance":
