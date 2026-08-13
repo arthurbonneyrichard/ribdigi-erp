@@ -48,9 +48,16 @@ export default function Page() {
   const [newBankName, setNewBankName] = useState('');
   const [newAcctNumber, setNewAcctNumber] = useState('');
   const [newBankBranch, setNewBankBranch] = useState('');
+  const [coaOpenCode, setCoaOpenCode] = useState('1000');
+  const [coaOpenAmount, setCoaOpenAmount] = useState('0');
+  const [coaOpenLines, setCoaOpenLines] = useState<{ code: string; amount: string }[]>([]);
+  const [coaOpenRef, setCoaOpenRef] = useState('');
+  const [coaOpenStatus, setCoaOpenStatus] = useState<any>(null);
+  const [editAcctId, setEditAcctId] = useState('');
+  const [editAcctName, setEditAcctName] = useState('');
 
   async function refresh() {
-    const [a, j, t, p, liq, stmts, chq, conns, xfers] = await Promise.all([
+    const [a, j, t, p, liq, stmts, chq, conns, xfers, openSt] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
       api('/accounting/trial-balance'),
@@ -60,6 +67,7 @@ export default function Page() {
       api('/accounting/cheques'),
       api('/accounting/bank-connections').catch(() => ({ data: [] })),
       api('/accounting/transfers').catch(() => ({ data: [] })),
+      api('/accounting/opening-balances').catch(() => ({ data: null })),
     ]);
     setAccounts(a.data || []);
     setJournals(j.data || []);
@@ -70,6 +78,7 @@ export default function Page() {
     setCheques(chq.data || []);
     setConnections(conns.data || []);
     setTransfers(xfers.data || []);
+    setCoaOpenStatus(openSt.data || null);
     if (!reconAccountId && liq.data?.length) setReconAccountId(liq.data[0].id);
     if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
     if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
@@ -123,6 +132,63 @@ export default function Page() {
       setNewBankName('');
       setNewAcctNumber('');
       setNewBankBranch('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function addCoaOpenLine() {
+    if (!coaOpenCode || !coaOpenAmount || Number(coaOpenAmount) <= 0) return;
+    setCoaOpenLines((prev) => [...prev, { code: coaOpenCode, amount: coaOpenAmount }]);
+    setCoaOpenAmount('0');
+  }
+
+  async function postCoaOpening() {
+    setError('');
+    setMessage('');
+    if (!coaOpenLines.length) {
+      setError('Add at least one opening balance line');
+      return;
+    }
+    try {
+      const r = await api('/accounting/opening-balances', {
+        method: 'POST',
+        body: JSON.stringify({
+          reference: coaOpenRef.trim() || null,
+          notes: 'COA opening balances',
+          lines: coaOpenLines.map((l) => ({
+            account_code: l.code,
+            amount: Number(l.amount),
+          })),
+        }),
+      });
+      const plug =
+        r.data.equity_plug_amount && Math.abs(r.data.equity_plug_amount) > 0.009
+          ? ` · equity plug ${r.data.equity_plug_amount}`
+          : '';
+      setMessage(
+        `Opening balances posted (${r.data.journal_number})${plug}. Dr ${r.data.total_debit} / Cr ${r.data.total_credit}`,
+      );
+      setCoaOpenLines([]);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveAccountName() {
+    setError('');
+    setMessage('');
+    if (!editAcctId || !editAcctName.trim()) return;
+    try {
+      const r = await api(`/accounting/accounts/${editAcctId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: editAcctName.trim() }),
+      });
+      setMessage(`Updated ${r.data.code}`);
+      setEditAcctId('');
+      setEditAcctName('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -456,6 +522,94 @@ export default function Page() {
             </div>
           </div>
 
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+            <h3>COA opening balances (BR-10.1)</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Post go-live / fiscal-year openings. Asset &amp; expense amounts debit; liability,
+              equity &amp; income credit. Unbalanced residual plugs to Owner&apos;s Equity (3000).
+            </p>
+            {coaOpenStatus?.posted ? (
+              <p style={{ color: '#047857', margin: 0 }}>
+                Already posted: {coaOpenStatus.journal_number}
+                {coaOpenStatus.reference ? ` (${coaOpenStatus.reference})` : ''}
+              </p>
+            ) : (
+              <>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <select value={coaOpenCode} onChange={(e) => setCoaOpenCode(e.target.value)}>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.code}>
+                        {a.code} — {a.name} ({a.account_type})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={coaOpenAmount}
+                    onChange={(e) => setCoaOpenAmount(e.target.value)}
+                    placeholder="Amount"
+                    style={{ width: 120 }}
+                  />
+                  <button type="button" onClick={addCoaOpenLine}>
+                    Add line
+                  </button>
+                </div>
+                <input
+                  value={coaOpenRef}
+                  onChange={(e) => setCoaOpenRef(e.target.value)}
+                  placeholder="Reference (e.g. FY2026-OPEN)"
+                />
+                {coaOpenLines.length > 0 && (
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {coaOpenLines.map((l, i) => (
+                      <li key={`${l.code}-${i}`}>
+                        {l.code}: {l.amount}{' '}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCoaOpenLines((prev) => prev.filter((_, idx) => idx !== i))
+                          }
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button type="button" onClick={postCoaOpening} disabled={!coaOpenLines.length}>
+                  Post opening balances
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+            <h3>Edit account name</h3>
+            <select
+              value={editAcctId}
+              onChange={(e) => {
+                setEditAcctId(e.target.value);
+                const a = accounts.find((x) => x.id === e.target.value);
+                setEditAcctName(a?.name || '');
+              }}
+            >
+              <option value="">Select account</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.code} — {a.name}
+                </option>
+              ))}
+            </select>
+            <input
+              value={editAcctName}
+              onChange={(e) => setEditAcctName(e.target.value)}
+              placeholder="Display name"
+              disabled={!editAcctId}
+            />
+            <button type="button" onClick={saveAccountName} disabled={!editAcctId}>
+              Save name
+            </button>
+          </div>
+
           <h3>Chart of accounts</h3>
           <table className="table">
             <thead>
@@ -464,6 +618,7 @@ export default function Page() {
                 <th>Name</th>
                 <th>Type</th>
                 <th>Liquid</th>
+                <th>Opening</th>
                 <th>Balance</th>
               </tr>
             </thead>
@@ -471,9 +626,13 @@ export default function Page() {
               {accounts.map((r) => (
                 <tr key={r.id}>
                   <td>{r.code}</td>
-                  <td>{r.name}</td>
+                  <td>
+                    {r.name}
+                    {r.is_system ? ' · system' : ''}
+                  </td>
                   <td>{r.account_type}</td>
                   <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
+                  <td>{r.opening_balance ?? 0}</td>
                   <td>{r.balance}</td>
                 </tr>
               ))}

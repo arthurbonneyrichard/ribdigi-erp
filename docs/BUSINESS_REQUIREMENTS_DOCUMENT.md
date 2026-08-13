@@ -598,11 +598,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Financial account structure.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Predefined COA based on industry template
-  - [ ] Account types: Asset, Liability, Equity, Income, Expense
-  - [ ] Account code hierarchy (e.g., 1000-Assets, 1100-Current Assets)
-  - [ ] Add/edit accounts (non-system accounts)
-  - [ ] Opening balance entry
+  - [x] Predefined COA based on industry template
+  - [x] Account types: Asset, Liability, Equity, Income, Expense
+  - [x] Account code hierarchy (e.g., 1000-Assets, 1100-Current Assets) — flat coded template (parent_id deferred)
+  - [x] Add/edit accounts (create + `PATCH` name/bank fields; system seed codes flagged)
+  - [x] Opening balance entry (`POST /accounting/opening-balances`, equity plug to 3000)
 
 #### BR-10.2 Journal Entries
 - **Description:** Manual accounting transactions.

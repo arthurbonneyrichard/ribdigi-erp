@@ -149,6 +149,25 @@ class AccountCreate(BaseModel):
     bank_branch: str | None = None
 
 
+class AccountUpdate(BaseModel):
+    name: str | None = None
+    bank_name: str | None = None
+    account_number: str | None = None
+    bank_branch: str | None = None
+
+
+class OpeningBalanceLine(BaseModel):
+    account_id: str | None = None
+    account_code: str | None = None
+    amount: float = Field(gt=0)
+
+
+class OpeningBalanceCreate(BaseModel):
+    lines: list[OpeningBalanceLine] = Field(min_length=1)
+    reference: str | None = None
+    notes: str | None = None
+
+
 class CashTransferCreate(BaseModel):
     kind: str = "transfer"  # transfer | deposit | withdrawal
     from_account_id: str | None = None
