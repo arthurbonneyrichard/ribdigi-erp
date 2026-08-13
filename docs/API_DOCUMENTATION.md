@@ -1088,10 +1088,20 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
   "address": "100 Main St",
   "phone": "+1-555-0400",
   "manager_id": "usr_002",
-  "warehouse_id": "wh_002",
-  "status": "active"
+  "branch_id": null,
+  "operating_hours": {
+    "mon": { "open": "09:00", "close": "18:00" },
+    "tue": { "open": "09:00", "close": "18:00" },
+    "wed": { "open": "09:00", "close": "18:00" },
+    "thu": { "open": "09:00", "close": "18:00" },
+    "fri": { "open": "09:00", "close": "17:00" },
+    "sat": { "closed": true },
+    "sun": { "closed": true }
+  }
 }
 ```
+
+`operating_hours` keys: `mon`…`sun`. Open days need `open`/`close` as `HH:MM` (24h, open before close); closed days `{ "closed": true }`. Returned on list/GET; update via `PATCH /stores/{store_id}` (BR-2.3). Creating a store still auto-creates a linked warehouse.
 
 ### 13.2 Store Inventory
 **Endpoint:** `GET /stores/{store_id}/inventory`
