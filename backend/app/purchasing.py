@@ -161,6 +161,7 @@ def _po_items_snapshot(items: list[m.PurchaseOrderItem]) -> list[dict]:
 def _po_header_snapshot(po: m.PurchaseOrder) -> dict:
     return {
         "notes": po.notes,
+        "delivery_address": getattr(po, "delivery_address", None),
         "due_date": po.due_date.isoformat() if po.due_date else None,
         "subtotal": float(po.subtotal),
         "tax_amount": float(po.tax_amount),
@@ -221,6 +222,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "balance_due": max(float(po.total_amount) - float(po.paid_amount or 0), 0),
         "due_date": po.due_date,
         "notes": po.notes,
+        "delivery_address": getattr(po, "delivery_address", None),
         "emailed_at": po.emailed_at,
         "emailed_to": po.emailed_to,
         "revision_no": int(getattr(po, "revision_no", 0) or 0),
@@ -253,6 +255,7 @@ async def create_purchase_order(
     items: list[dict],
     warehouse_id: str | None = None,
     notes: str | None = None,
+    delivery_address: str | None = None,
 ) -> m.PurchaseOrder:
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
@@ -310,6 +313,7 @@ async def create_purchase_order(
         tax_amount=tax_total,
         total_amount=subtotal + tax_total,
         notes=notes,
+        delivery_address=(delivery_address or "").strip() or None,
         created_by=user_id,
     )
     db.add(po)
@@ -433,13 +437,14 @@ async def amend_purchase_order(
     po_id: str,
     items: list[dict] | None = None,
     notes: str | None = None,
+    delivery_address: str | None = None,
     due_date: datetime | None = None,
     clear_due_date: bool = False,
     reason: str | None = None,
     notify_supplier: bool = False,
     notify_to: str | None = None,
 ) -> tuple[m.PurchaseOrder, m.PurchaseOrderAmendment, dict | None]:
-    """Amend draft/sent PO lines/notes/due_date; record revision history.
+    """Amend draft/sent PO lines/notes/delivery_address/due_date; record revision history.
 
     Blocked after any receipt. Optional supplier notify fails closed (rollback amend).
     """
@@ -457,12 +462,17 @@ async def amend_purchase_order(
         "items": _po_items_snapshot(existing_items),
     }
 
-    header_touched = notes is not None or due_date is not None or clear_due_date
+    header_touched = (
+        notes is not None
+        or delivery_address is not None
+        or due_date is not None
+        or clear_due_date
+    )
     items_touched = items is not None
     if not header_touched and not items_touched:
         raise HTTPException(
             status_code=400,
-            detail="Amend requires items and/or notes/due_date changes",
+            detail="Amend requires items and/or notes/delivery_address/due_date changes",
         )
 
     if items_touched:
@@ -536,6 +546,8 @@ async def amend_purchase_order(
 
     if notes is not None:
         po.notes = notes
+    if delivery_address is not None:
+        po.delivery_address = delivery_address.strip() or None
     if clear_due_date:
         po.due_date = None
     elif due_date is not None:

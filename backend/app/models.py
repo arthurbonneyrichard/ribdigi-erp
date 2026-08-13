@@ -779,6 +779,7 @@ class PurchaseOrder(Base):
     paid_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     revision_no: Mapped[int] = mapped_column(Integer, default=0)

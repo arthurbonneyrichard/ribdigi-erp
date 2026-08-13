@@ -419,7 +419,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Create PO from PR or directly
   - [x] PO number auto-generation with configurable prefix (`GET|PATCH /purchasing/settings`)
   - [ ] Product lines with quantity, unit price, tax, discount, total
-  - [ ] Supplier selection and delivery address
+  - [x] Supplier selection and delivery address (`purchase_orders.delivery_address` on create/amend/serialize + supplier email; Purchasing UI)
   - [ ] PO status: Draft, Sent, Partially Received, Fully Received, Cancelled
   - [x] Print/email PO to supplier
   - [x] PO amendment tracking
