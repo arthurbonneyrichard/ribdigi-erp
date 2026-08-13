@@ -1,0 +1,56 @@
+{
+  "id": "hosted-faq-saas-blockers",
+  "stage": 191,
+  "pack": "B1",
+  "doc": "docs/HOSTED_FAQ_SAAS_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "troubleshooting_index": "docs/TROUBLESHOOTING_INDEX_MVP.md"
+  },
+  "packaging_complete": true,
+  "hosted_kb_saas_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "hosted_faq_saas_execution": "REMAINING",
+    "public_faq_portal": "REMAINING",
+    "helpdesk_saas": "REMAINING",
+    "stage171_k1_as_hosted_faq_saas": "NON_CLAIM",
+    "stage171_f1_as_hosted_faq_saas": "NON_CLAIM",
+    "hosted_kb_saas_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "hb-saas",
+      "title": "Mark hosted FAQ SaaS execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hb-portal",
+      "title": "Mark public FAQ portal Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hb-helpdesk",
+      "title": "Mark helpdesk SaaS Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hb-stage171-nonclaim",
+      "title": "Mark Stage 171 K1/F1 as non-claim for hosted FAQ SaaS",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hb-saas-remaining",
+      "title": "Hosted FAQ SaaS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 191 B1 hosted FAQ SaaS blocker matrix packaging only. Hosted FAQ SaaS Complete remains MISSING."
+}

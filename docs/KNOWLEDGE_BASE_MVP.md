@@ -37,6 +37,8 @@ Tenant MVP knowledge-base hub: indexes FAQ, troubleshooting, support readiness, 
 - Offline Complete or go-live Complete
 - Fabricated resolution articles as proof of live SLA
 
+See also Stage 191 hosted FAQ SaaS remaining-gate index: [`HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md`](HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md).
+
 ## Stage 172 Q1 amendment
 
 Ordered cashier day-one quickstart (not FAQ reference): [CASHIER_QUICKSTART_MVP.md](CASHIER_QUICKSTART_MVP.md) (`ops/mvp/cashier-quickstart.json`, `test_stage172_quickstart_q1.py`).

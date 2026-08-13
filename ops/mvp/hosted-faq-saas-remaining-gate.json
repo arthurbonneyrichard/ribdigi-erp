@@ -1,0 +1,54 @@
+{
+  "id": "hosted-faq-saas-remaining-gate",
+  "stage": 191,
+  "pack": "I1",
+  "doc": "docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/HOSTED_FAQ_SAAS_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/HOSTED_FAQ_SAAS_PACK_POINTERS_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "troubleshooting_index": "docs/TROUBLESHOOTING_INDEX_MVP.md",
+    "offline_materials_remaining_gate": "docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "hosted_kb_saas_claimed": false,
+  "live_training_claimed": false,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage171_k1_knowledge_base": true,
+  "distinct_from_stage171_f1_faq": true,
+  "steps": [
+    {
+      "id": "hf-read-blockers",
+      "title": "Read B1 hosted FAQ SaaS blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hf-follow-pointers",
+      "title": "Follow P1 Stage 171 / Stage 190 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hf-saas-missing",
+      "title": "Reaffirm hosted FAQ SaaS MISSING until public portal ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hf-no-packaging-as-saas",
+      "title": "Do not treat Stage 171 K1/F1 as hosted FAQ SaaS Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hf-saas-remaining",
+      "title": "Hosted FAQ SaaS / public portal Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 191 I1 hosted FAQ SaaS remaining-gate index packaging only. Do not claim hosted FAQ SaaS Complete."
+}

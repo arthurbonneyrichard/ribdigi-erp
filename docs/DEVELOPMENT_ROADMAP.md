@@ -2904,6 +2904,18 @@ Every feature in every phase must meet:
 
 **Stage 190 exit (2026-08-13):** I1, B1, P1, D1, H190x met — `docs/STAGE_190_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_387_STAGE190_FREEZE.md`. Fidelity: `docs/STAGE_190_FIDELITY.md`.
 
+**Stage 191 open (2026-08-13):** Tenant MVP Hosted FAQ SaaS Remaining-Gate Index Fidelity — `docs/ADR_388_STAGE191_OPEN.md` + `docs/STAGE_191_PLAN.md` (I1 next).
+
+**Stage 191 I1 (2026-08-13):** Hosted FAQ SaaS remaining-gate index hub (`test_stage191_index_i1.py`).
+
+**Stage 191 B1 (2026-08-13):** Hosted FAQ SaaS blocker matrix (`test_stage191_blockers_b1.py`).
+
+**Stage 191 P1 (2026-08-13):** Stage 171 KB/FAQ / Stage 190 pointers (`test_stage191_pointers_p1.py`).
+
+**Stage 191 D1 (2026-08-13):** Hosted FAQ SaaS Remaining-Gate Index fidelity sync — `docs/STAGE_191_FIDELITY.md` (`test_stage191_fidelity_d1.py`).
+
+**Stage 191 exit (2026-08-13):** I1, B1, P1, D1, H191x met — `docs/STAGE_191_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_389_STAGE191_FREEZE.md`. Fidelity: `docs/STAGE_191_FIDELITY.md`.
+
 
 
 

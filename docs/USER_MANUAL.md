@@ -156,6 +156,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Offline materials remaining-gate index (Stage 190):** Status index is `docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md` → blockers `docs/OFFLINE_MATERIALS_BLOCKERS_MVP.md` → Stage 171–175/Stage 179 pointers `docs/OFFLINE_MATERIALS_PACK_POINTERS_MVP.md`. Offline Complete remains MISSING (not claimed; distinct from Stage 179).
 
+**Hosted FAQ SaaS remaining-gate index (Stage 191):** Status index is `docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md` → blockers `docs/HOSTED_FAQ_SAAS_BLOCKERS_MVP.md` → Stage 171 KB/FAQ pointers `docs/HOSTED_FAQ_SAAS_PACK_POINTERS_MVP.md`. Hosted FAQ SaaS Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

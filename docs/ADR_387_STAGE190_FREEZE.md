@@ -24,6 +24,4 @@ Stage 190 Tenant MVP Offline Materials Remaining-Gate Index Fidelity delivered o
 
 ## Next stage
 
-Stage 191 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 190 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Hosted FAQ SaaS remaining-gate index fidelity — single index of hosted FAQ SaaS blockers (Stage 171 KB/FAQ packaging non-claim as hosted FAQ SaaS Complete) with explicit non-claim (no hosted FAQ SaaS Complete).
+Stage **191** opened under **ADR-388** / frozen under **ADR-389** — Tenant MVP Hosted FAQ SaaS remaining-gate index fidelity (Stage 171 KB/FAQ packaging non-claim as hosted FAQ SaaS Complete) with explicit non-claim of hosted FAQ SaaS Complete. Stage 190 feature scope remains frozen. Do not reopen Stages **1–190** scopes.

@@ -32,3 +32,5 @@ Single index of Offline Complete remaining gates from packaged offline/POS/Hold 
 - Playwright offline → online E2E Complete
 - Reopening Stage 179 scope as new Complete
 - Live training / go-live Completes
+
+See also Stage 191 hosted FAQ SaaS remaining-gate index: [`HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md`](HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md).

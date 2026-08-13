@@ -190,3 +190,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 190 decision (opened after Stage 189 freeze)
 
 **Tenant MVP Offline Materials Remaining-Gate Index Fidelity** — offline materials remaining-gate hub (I1), blocker matrix (B1), Stage 171–175 / Stage 179 pointers with explicit non-claim (P1). Offline Complete remains deferred (Stage 191+); distinct from Stage 179 Offline Complete remaining-gate.
+## Stage 191 decision (opened after Stage 190 freeze)
+
+**Tenant MVP Hosted FAQ SaaS Remaining-Gate Index Fidelity** — hosted FAQ SaaS remaining-gate hub (I1), blocker matrix (B1), Stage 171 KB/FAQ / Stage 190 pointers with explicit non-claim (P1). Hosted FAQ SaaS Completes remain deferred (Stage 192+).
