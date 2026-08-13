@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../lib/api';
+import { api, clearSessionAndRedirect, IDLE_LOGOUT_MS } from '../lib/api';
 
 type NavItem = [label: string, href: string, module: string];
 
@@ -380,6 +380,38 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
       clearInterval(id);
+    };
+  }, []);
+
+  // BR-19.3: auto-logout after fixed idle period (30 minutes).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let last = Date.now();
+    const bump = () => {
+      last = Date.now();
+    };
+    const events: Array<keyof WindowEventMap> = [
+      'mousemove',
+      'mousedown',
+      'keydown',
+      'scroll',
+      'touchstart',
+      'click',
+    ];
+    events.forEach((e) => window.addEventListener(e, bump, { passive: true }));
+    const onVis = () => {
+      if (document.visibilityState === 'visible') bump();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    const id = window.setInterval(() => {
+      if (Date.now() - last >= IDLE_LOGOUT_MS) {
+        clearSessionAndRedirect();
+      }
+    }, 15000);
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, bump));
+      document.removeEventListener('visibilitychange', onVis);
+      window.clearInterval(id);
     };
   }, []);
 

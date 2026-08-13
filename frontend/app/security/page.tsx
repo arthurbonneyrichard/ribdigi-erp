@@ -68,9 +68,25 @@ function credentialToJson(cred: PublicKeyCredential): Record<string, unknown> {
   };
 }
 
+type AuthSessionRow = {
+  id: string;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  created_at?: string;
+  expires_at?: string;
+  current?: boolean;
+};
+
+function shortAgent(ua?: string | null): string {
+  if (!ua) return 'Unknown device';
+  const s = ua.slice(0, 80);
+  return ua.length > 80 ? `${s}…` : s;
+}
+
 export default function Page() {
   const [status, setStatus] = useState<any>(null);
   const [passkeys, setPasskeys] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<AuthSessionRow[]>([]);
   const [setup, setSetup] = useState<any>(null);
   const [code, setCode] = useState('');
   const [passkeyName, setPasskeyName] = useState('My passkey');
@@ -78,19 +94,49 @@ export default function Page() {
   const [disablePassword, setDisablePassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [revokingId, setRevokingId] = useState('');
 
   async function refresh() {
-    const [r, keys] = await Promise.all([
+    const [r, keys, sess] = await Promise.all([
       api('/auth/2fa/status'),
       api('/auth/webauthn/credentials').catch(() => ({ data: [] })),
+      api('/auth/sessions').catch(() => ({ data: [] })),
     ]);
     setStatus(r.data);
     setPasskeys(keys.data || []);
+    setSessions(Array.isArray(sess.data) ? sess.data : []);
   }
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  async function revokeSession(id: string, isCurrent: boolean) {
+    setError('');
+    setMessage('');
+    setRevokingId(id);
+    try {
+      await api(`/auth/sessions/${id}`, { method: 'DELETE' });
+      if (isCurrent) {
+        try {
+          await api('/auth/logout', { method: 'POST' });
+        } catch {
+          /* best-effort */
+        }
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('tenant');
+        window.location.href = '/';
+        return;
+      }
+      setMessage('Session revoked');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to revoke session');
+    } finally {
+      setRevokingId('');
+    }
+  }
 
   async function startSetup() {
     setError('');
@@ -190,7 +236,7 @@ export default function Page() {
   return (
     <Shell>
       <h1>Security / 2FA</h1>
-      <p className="muted">TOTP authenticator, passkeys, and recovery codes</p>
+      <p className="muted">TOTP authenticator, passkeys, recovery codes, and active sessions</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -205,6 +251,53 @@ export default function Page() {
           {status.confirmed_at && <p className="muted">TOTP confirmed: {String(status.confirmed_at)}</p>}
         </div>
       )}
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>Active sessions</h2>
+        <p className="muted">
+          Devices signed in with your account. Revoke a remote session to force re-login. Idle
+          browsers auto-logout after 30 minutes of inactivity.
+        </p>
+        <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0' }}>
+          {sessions.map((s) => (
+            <li
+              key={s.id}
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 0',
+                borderTop: '1px solid var(--border, #e5e7eb)',
+              }}
+            >
+              <div style={{ minWidth: 0, flex: '1 1 220px' }}>
+                <div>
+                  {shortAgent(s.user_agent)}
+                  {s.current ? (
+                    <span className="muted" style={{ marginLeft: 8 }}>
+                      (this device)
+                    </span>
+                  ) : null}
+                </div>
+                <div className="muted" style={{ fontSize: 13 }}>
+                  {s.ip_address || 'IP unknown'}
+                  {s.created_at ? ` · signed in ${new Date(s.created_at).toLocaleString()}` : ''}
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={revokingId === s.id}
+                onClick={() => revokeSession(s.id, Boolean(s.current))}
+              >
+                {revokingId === s.id ? 'Revoking…' : s.current ? 'Sign out here' : 'Revoke'}
+              </button>
+            </li>
+          ))}
+          {!sessions.length && <li className="muted">No active sessions</li>}
+        </ul>
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Passkeys (WebAuthn)</h2>
