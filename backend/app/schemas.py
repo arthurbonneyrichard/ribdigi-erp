@@ -229,7 +229,7 @@ class CustomRoleUpdate(BaseModel):
 
 class ProductCreate(BaseModel):
     name: str
-    sku: str
+    sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
     barcode: str | None = None
     description: str | None = None
     category: str = "General"
@@ -341,7 +341,7 @@ class UnitConvertPreview(BaseModel):
 
 class ProductVariantCreate(BaseModel):
     name: str
-    sku: str
+    sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
     barcode: str | None = None
     size: str | None = None
     color: str | None = None

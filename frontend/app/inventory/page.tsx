@@ -332,7 +332,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           name: productName,
-          sku: productSku,
+          sku: productSku.trim() || null,
           barcode: productBarcode.trim() || null,
           description: productDescription.trim() || null,
           selling_price: Number(productPrice) || 0,
@@ -607,7 +607,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           name: variantName,
-          sku: variantSku,
+          sku: variantSku.trim() || null,
           size: variantSize || undefined,
         }),
       });
@@ -910,7 +910,11 @@ export default function Page() {
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Add product</h3>
             <input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Name" />
-            <input value={productSku} onChange={(e) => setProductSku(e.target.value)} placeholder="SKU" />
+            <input
+              value={productSku}
+              onChange={(e) => setProductSku(e.target.value)}
+              placeholder="SKU (auto if blank)"
+            />
             <input
               value={productBarcode}
               onChange={(e) => setProductBarcode(e.target.value)}
@@ -978,7 +982,7 @@ export default function Page() {
               <option value="zero_rated">Tax: zero-rated</option>
               <option value="exempt">Tax: exempt</option>
             </select>
-            <button onClick={createProduct} disabled={!productName || !productSku}>
+            <button onClick={createProduct} disabled={!productName.trim()}>
               Create product
             </button>
           </div>
@@ -1332,9 +1336,13 @@ export default function Page() {
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Add variant</h3>
             <input value={variantName} onChange={(e) => setVariantName(e.target.value)} placeholder="Name" />
-            <input value={variantSku} onChange={(e) => setVariantSku(e.target.value)} placeholder="SKU" />
+            <input
+              value={variantSku}
+              onChange={(e) => setVariantSku(e.target.value)}
+              placeholder="SKU (auto if blank)"
+            />
             <input value={variantSize} onChange={(e) => setVariantSize(e.target.value)} placeholder="Size (optional)" />
-            <button onClick={addVariant} disabled={!selectedId || !variantName || !variantSku}>
+            <button onClick={addVariant} disabled={!selectedId || !variantName.trim()}>
               Create variant
             </button>
           </div>
