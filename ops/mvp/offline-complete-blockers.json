@@ -1,0 +1,60 @@
+{
+  "id": "offline-complete-blockers",
+  "stage": 179,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_COMPLETE_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_COMPLETE_REMAINING_GATE_MVP.md",
+    "attestation": "docs/OFFLINE_COMPLETE_ATTESTATION.md",
+    "attestation_register": "ops/mvp/offline-complete-attestation.json",
+    "pack_pointers": "docs/OFFLINE_COMPLETE_PACK_POINTERS_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "browser_e2e_claimed": false,
+  "proven": {
+    "sw_static_cache_contract": "COMPLETE",
+    "sync_push_pos_sale_flush_path": "COMPLETE",
+    "device_revoke_mid_queue_honesty": "COMPLETE",
+    "offline_queue_no_tokens": "COMPLETE"
+  },
+  "missing": {
+    "browser_playwright_offline_e2e": "MISSING",
+    "offline_complete_product_claim": "MISSING"
+  },
+  "steps": [
+    {
+      "id": "ob-list-proven",
+      "title": "List proven SW / flush / revoke / no-token contracts",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ob-list-missing-e2e",
+      "title": "Mark browser Playwright offline E2E MISSING",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ob-product-missing",
+      "title": "Mark Offline Complete product claim MISSING",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ob-no-partial-as-complete",
+      "title": "Do not treat proven contracts as Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ob-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 179 B1 Offline Complete blocker matrix packaging only. Offline Complete remains MISSING."
+}

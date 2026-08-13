@@ -905,6 +905,7 @@ Stage 175 D1 — `docs/STAGE_175_FIDELITY.md` (`test_stage175_fidelity_d1.py`); 
 Stage 176 D1 — `docs/STAGE_176_FIDELITY.md` (`test_stage176_fidelity_d1.py`); Stage 176 W1 / A1 / R1.
 Stage 177 D1 — `docs/STAGE_177_FIDELITY.md` (`test_stage177_fidelity_d1.py`); Stage 177 M1 / T1 / P1.
 Stage 178 D1 — `docs/STAGE_178_FIDELITY.md` (`test_stage178_fidelity_d1.py`); Stage 178 Q1 / R1 / G1.
+Stage 179 D1 — `docs/STAGE_179_FIDELITY.md` (`test_stage179_fidelity_d1.py`); Stage 179 I1 / B1 / P1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1666,3 +1667,4 @@ Stage 175 D1 Shift-Handover Checklist fidelity — `docs/STAGE_175_FIDELITY.md` 
 Stage 176 D1 Weekly POS Ops Review fidelity — `docs/STAGE_176_FIDELITY.md` (`test_stage176_fidelity_d1.py`); Stage 176 W1 weekly hub; Stage 176 A1 open/close/handover adherence; Stage 176 R1 conflict/TTL/escalation signals; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 177 D1 Monthly POS Ops fidelity — `docs/STAGE_177_FIDELITY.md` (`test_stage177_fidelity_d1.py`); Stage 177 M1 monthly hub; Stage 177 T1 weekly/Hold trends; Stage 177 P1 device/backup/residual pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 178 D1 Quarterly POS Ops fidelity — `docs/STAGE_178_FIDELITY.md` (`test_stage178_fidelity_d1.py`); Stage 178 Q1 quarterly hub; Stage 178 R1 monthly outcomes rollup; Stage 178 G1 Offline Complete/migration/support/go-live gate honesty; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 179 D1 Offline Complete Remaining-Gate Index fidelity — `docs/STAGE_179_FIDELITY.md` (`test_stage179_fidelity_d1.py`); Stage 179 I1 remaining-gate hub; Stage 179 B1 blocker matrix; Stage 179 P1 Stages 166–169 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

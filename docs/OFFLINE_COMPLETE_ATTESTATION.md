@@ -30,3 +30,7 @@
 ## Stage 178 G1 amendment
 
 Quarterly POS ops gate honesty re-reads this attestation with `offline_complete_claimed` false: [QUARTERLY_POS_OPS_GATES_MVP.md](QUARTERLY_POS_OPS_GATES_MVP.md) (`ops/mvp/quarterly-pos-ops-gates.json`, `test_stage178_gates_g1.py`).
+
+## Stage 179 I1 / B1 amendment
+
+Remaining-gate index + blocker matrix point here without claiming Offline Complete: [OFFLINE_COMPLETE_REMAINING_GATE_MVP.md](OFFLINE_COMPLETE_REMAINING_GATE_MVP.md) · [OFFLINE_COMPLETE_BLOCKERS_MVP.md](OFFLINE_COMPLETE_BLOCKERS_MVP.md) (`test_stage179_index_i1.py`, `test_stage179_blockers_b1.py`).

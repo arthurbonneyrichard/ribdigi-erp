@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 178 froze Quarterly POS Ops Fidelity (ADR-363) — monthly outcomes rollup, Offline Complete remaining gate honesty, migration gate pointer, support residual, go-live non-claim. Offline Complete / live migration / go-live remain MISSING. Next recommended distinct outline: Tenant MVP Offline Complete remaining-gate index fidelity (attestation, E2E proof, SW contract, flush proof, revoke mid-queue honesty — explicit non-claim) — Stage 179+. Do not claim Offline Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 179 froze Offline Complete Remaining-Gate Index Fidelity (ADR-365) — blocker matrix, Stages 166–169 pointers, explicit Offline Complete non-claim. Offline Complete / go-live remain MISSING. Next recommended distinct outline: Tenant MVP go-live remaining-gate index fidelity (LAUNCH §§1–3, §7 unsigned, attestation_claimed false, Offline Complete remaining, billing ADR-002 deferred — explicit non-claim) — Stage 180+. Do not claim Offline Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

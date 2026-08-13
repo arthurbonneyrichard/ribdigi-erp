@@ -153,3 +153,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 178 decision (opened after Stage 177 freeze)
 
 **Tenant MVP Quarterly POS Ops Fidelity** — quarterly hub (Q1), monthly outcomes rollup (R1), Offline Complete remaining + migration gate + support residual + go-live non-claim (G1). Offline Complete / live migration / go-live remain deferred (Stage 179+).
+
+## Stage 179 decision (opened after Stage 178 freeze)
+
+**Tenant MVP Offline Complete Remaining-Gate Index Fidelity** — remaining-gate index hub (I1), blocker matrix (B1), Stages 166–169 pack pointers with explicit non-claim (P1). Offline Complete / go-live remain deferred (Stage 180+).

@@ -132,6 +132,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Quarterly POS ops rollup (Stage 178):** Manager quarterly review is `docs/QUARTERLY_POS_OPS_REVIEW_MVP.md` → monthly outcomes `docs/QUARTERLY_POS_OPS_ROLLUP_MVP.md` → gate honesty `docs/QUARTERLY_POS_OPS_GATES_MVP.md`. Offline Complete, live migration, and go-live remain deferred.
 
+**Offline Complete remaining-gate index (Stage 179):** Status index is `docs/OFFLINE_COMPLETE_REMAINING_GATE_MVP.md` → blockers `docs/OFFLINE_COMPLETE_BLOCKERS_MVP.md` → Stages 166–169 pointers `docs/OFFLINE_COMPLETE_PACK_POINTERS_MVP.md`. Offline Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

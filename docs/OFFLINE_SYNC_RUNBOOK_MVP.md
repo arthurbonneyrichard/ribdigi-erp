@@ -94,3 +94,7 @@ Weekly conflict backlog / catalog TTL review: [WEEKLY_POS_OPS_SIGNALS_MVP.md](WE
 ## Stage 177 P1 amendment
 
 Monthly device revoke/rebind review: [MONTHLY_POS_OPS_POINTERS_MVP.md](MONTHLY_POS_OPS_POINTERS_MVP.md) (`ops/mvp/monthly-pos-ops-pointers.json`, `test_stage177_pointers_p1.py`). Offline Complete remains not claimed.
+
+## Stage 179 P1 amendment
+
+Offline Complete remaining-gate pack pointers include this runbook: [OFFLINE_COMPLETE_PACK_POINTERS_MVP.md](OFFLINE_COMPLETE_PACK_POINTERS_MVP.md) (`ops/mvp/offline-complete-pack-pointers.json`, `test_stage179_pointers_p1.py`). Offline Complete remains not claimed.

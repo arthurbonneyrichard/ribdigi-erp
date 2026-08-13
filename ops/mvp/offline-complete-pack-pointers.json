@@ -1,0 +1,63 @@
+{
+  "id": "offline-complete-pack-pointers",
+  "stage": 179,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_COMPLETE_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_COMPLETE_REMAINING_GATE_MVP.md",
+    "attestation": "docs/OFFLINE_COMPLETE_ATTESTATION.md",
+    "stage166_fidelity": "docs/STAGE_166_FIDELITY.md",
+    "stage167_fidelity": "docs/STAGE_167_FIDELITY.md",
+    "stage168_fidelity": "docs/STAGE_168_FIDELITY.md",
+    "stage169_fidelity": "docs/STAGE_169_FIDELITY.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "adr339": "docs/ADR_339_STAGE166_FREEZE.md",
+    "adr341": "docs/ADR_341_STAGE167_FREEZE.md",
+    "adr343": "docs/ADR_343_STAGE168_FREEZE.md",
+    "adr345": "docs/ADR_345_STAGE169_FREEZE.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "stage_166_pointers",
+    "stage_167_pointers",
+    "stage_168_attestation",
+    "stage_169_ops_runbooks",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "op-166-169",
+      "title": "Point to Stage 166–169 fidelity / freeze ADRs",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "op-168-attestation",
+      "title": "Point to Stage 168 attestation (PARTIAL only)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "op-169-runbook",
+      "title": "Point to Stage 169 offline/sync runbook",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "op-explicit-nonclaim",
+      "title": "State pack Completes are not Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "op-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 179 P1 Offline Complete pack pointers packaging only. Do not claim Offline Complete."
+}

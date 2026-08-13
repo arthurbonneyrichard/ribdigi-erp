@@ -24,6 +24,4 @@ Stage 178 Tenant MVP Quarterly POS Ops Fidelity delivered quarterly hub (Q1), mo
 
 ## Next stage
 
-Stage 179 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 178 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP Offline Complete remaining-gate index fidelity — single index of Offline Complete blockers (attestation, E2E proof, SW contract, flush proof, revoke mid-queue honesty) with explicit non-claim and pointers to Stages 166–169 packs (no Offline Complete claim).
+Stage 179 opened under [ADR-364](ADR_364_STAGE179_OPEN.md) (Tenant MVP Offline Complete Remaining-Gate Index Fidelity) and froze under [ADR-365](ADR_365_STAGE179_FREEZE.md). Stage 178 feature scope remains frozen.

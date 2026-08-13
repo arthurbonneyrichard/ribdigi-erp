@@ -2760,6 +2760,18 @@ Every feature in every phase must meet:
 
 **Stage 178 exit (2026-08-13):** Q1, R1, G1, D1, H178x met — `docs/STAGE_178_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_363_STAGE178_FREEZE.md`. Fidelity: `docs/STAGE_178_FIDELITY.md`.
 
+**Stage 179 open (2026-08-13):** Tenant MVP Offline Complete Remaining-Gate Index Fidelity — `docs/ADR_364_STAGE179_OPEN.md` + `docs/STAGE_179_PLAN.md` (I1 next).
+
+**Stage 179 I1 (2026-08-13):** Remaining-gate index hub (`test_stage179_index_i1.py`).
+
+**Stage 179 B1 (2026-08-13):** Offline Complete blocker matrix (`test_stage179_blockers_b1.py`).
+
+**Stage 179 P1 (2026-08-13):** Stages 166–169 pack pointers (`test_stage179_pointers_p1.py`).
+
+**Stage 179 D1 (2026-08-13):** Offline Complete Remaining-Gate Index fidelity sync — `docs/STAGE_179_FIDELITY.md` (`test_stage179_fidelity_d1.py`).
+
+**Stage 179 exit (2026-08-13):** I1, B1, P1, D1, H179x met — `docs/STAGE_179_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_365_STAGE179_FREEZE.md`. Fidelity: `docs/STAGE_179_FIDELITY.md`.
+
 
 
 
