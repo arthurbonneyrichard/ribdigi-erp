@@ -401,6 +401,26 @@ class StockMove(BaseModel):
     expiry_date: datetime | None = None
 
 
+class OpeningStockLine(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    unit_id: str | None = None
+    warehouse_id: str | None = None
+    variant_id: str | None = None
+    batch_number: str | None = None
+    manufacturing_date: datetime | None = None
+    expiry_date: datetime | None = None
+    unit_cost: float | None = Field(default=None, ge=0)  # defaults to product.cost_price
+    notes: str | None = None
+
+
+class OpeningStockCreate(BaseModel):
+    lines: list[OpeningStockLine] = Field(min_length=1)
+    post_journal: bool = True
+    reference: str | None = None
+    notes: str | None = None
+
+
 class ExpenseCreate(BaseModel):
     category: str | None = None
     category_id: str | None = None

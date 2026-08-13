@@ -358,7 +358,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] **Stock Out:** Record outgoing stock with reference (sales, transfer, adjustment, damage), quantity, warehouse
   - [ ] **Stock Adjustment:** Correct stock discrepancies with reason (damage, theft, expiry, found, lost)
   - [ ] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow
-  - [ ] **Opening Stock:** Initialize stock levels for new products or fiscal year start
+  - [x] **Opening Stock:** Initialize stock levels for new products or fiscal year start (`POST /inventory/opening-stock`, optional equity journal)
   - [ ] **Stock Count:** Physical count reconciliation with system stock; variance report generation
 
 #### BR-5.3 Stock Movement History
