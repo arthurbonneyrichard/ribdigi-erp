@@ -7561,6 +7561,23 @@ async def report_inventory_balance(
     return env(await reports_svc.inventory_balance(db, claims["tenant_id"], warehouse_id))
 
 
+@api.get("/reports/inventory/valuation")
+async def report_inventory_valuation(
+    method: str = "standard",
+    warehouse_id: str | None = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await reports_svc.inventory_valuation(
+            db,
+            claims["tenant_id"],
+            method=method,
+            warehouse_id=warehouse_id or None,
+        )
+    )
+
+
 @api.get("/reports/inventory/movements")
 async def report_inventory_movements(
     product_id: str | None = None,

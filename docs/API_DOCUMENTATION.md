@@ -1087,7 +1087,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 ### 14.2 Inventory Reports
 **Stock Balance:** `GET /reports/inventory/balance?warehouse_id=`  
 **Stock Movement:** `GET /reports/inventory/movements?product_id=&from_date=&to_date=`  
-**Low Stock:** `GET /reports/inventory/low-stock`
+**Low Stock:** `GET /reports/inventory/low-stock`  
+**Stock Valuation:** `GET /reports/inventory/valuation?method=standard&warehouse_id=` — standard-cost valuation (qty × `products.cost_price`). Only `method=standard` is supported in MVP; `fifo` / `lifo` / `average` / `weighted_average` return **400**. Optional `warehouse_id` must belong to the tenant (**404** if missing). Response: `method`, `warehouse_id`, `items[]` (`product_id`, `sku`, `name`, `warehouse_id`, `quantity`, `unit_cost`, `cost_price`, `value`), `total_quantity`, `total_value`. Export: `POST /reports/export` with `report_type: "inventory_valuation"`.
 
 ### 14.3 Purchase Reports
 **Purchase Summary:** `GET /reports/purchases/summary?from_date=&to_date=`  

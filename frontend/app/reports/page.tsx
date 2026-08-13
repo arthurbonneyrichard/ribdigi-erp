@@ -40,6 +40,7 @@ const REPORT_TYPES = [
   'sales_salesperson',
   'sales_by_store',
   'inventory_balance',
+  'inventory_valuation',
   'inventory_low_stock',
   'purchases_summary',
   'expenses_summary',
@@ -61,6 +62,8 @@ export default function Page() {
   const [branches, setBranches] = useState<any[]>([]);
   const [asOf, setAsOf] = useState('');
   const [compare, setCompare] = useState('');
+  const [warehouseId, setWarehouseId] = useState('');
+  const [warehouses, setWarehouses] = useState<any[]>([]);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -127,14 +130,17 @@ export default function Page() {
         ]);
         setData({ products: r.data, daily: daily.data, monthly: monthly.data });
       } else if (nextTab === 'inventory') {
-        const [balance, movements, suggestions] = await Promise.all([
-          api('/reports/inventory/balance'),
+        const whQs = warehouseId ? `?warehouse_id=${encodeURIComponent(warehouseId)}` : '';
+        const [balance, valuation, movements, suggestions] = await Promise.all([
+          api(`/reports/inventory/balance${whQs}`),
+          api(`/reports/inventory/valuation?method=standard${warehouseId ? `&warehouse_id=${encodeURIComponent(warehouseId)}` : ''}`),
           api('/reports/inventory/movements'),
           api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
         ]);
         setData({
           lowStock: r.data,
           balance: balance.data,
+          valuation: valuation.data,
           movements: movements.data,
           suggestions: suggestions.data,
         });
@@ -157,10 +163,12 @@ export default function Page() {
     Promise.all([
       api('/stores').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
+      api('/warehouses').catch(() => ({ data: [] })),
     ])
-      .then(([st, br]) => {
+      .then(([st, br, wh]) => {
         setStores(st.data || []);
         setBranches(br.data || []);
+        setWarehouses(wh.data || []);
       })
       .catch(() => undefined);
   }, []);
@@ -231,6 +239,12 @@ export default function Page() {
         const effectiveAsOf = asOf || toDate;
         if (effectiveAsOf) params.set('as_of', effectiveAsOf);
         if (compare) params.set('compare', compare);
+      }
+      if (
+        (reportType || TAB_EXPORT[tab]) === 'inventory_valuation' ||
+        (reportType || TAB_EXPORT[tab]) === 'inventory_balance'
+      ) {
+        if (warehouseId) params.set('warehouse_id', warehouseId);
       }
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
@@ -366,6 +380,16 @@ export default function Page() {
               <option value="prior_year">vs prior year</option>
             </select>
           </>
+        )}
+        {tab === 'inventory' && (
+          <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
+            <option value="">All warehouses (company stock)</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.code} — {w.name}
+              </option>
+            ))}
+          </select>
         )}
         {(tab === 'pnl' || tab === 'stores') && (
           <>
@@ -659,22 +683,50 @@ export default function Page() {
               </>
             )}
           </div>
-          <h3 style={{ marginTop: 16 }}>Stock value: {data.balance?.total_value ?? 0}</h3>
+          <div className="card" style={{ marginTop: 16 }}>
+            <h3>Stock valuation (standard cost)</h3>
+            <p className="muted">
+              Method: {data.valuation?.method || 'standard'}
+              {data.valuation?.warehouse_id ? ' · warehouse filtered' : ' · company stock'}
+            </p>
+            <div className="grid">
+              <div>
+                <div className="muted">Total qty</div>
+                <div className="kpi">{data.valuation?.total_quantity ?? data.balance?.total_quantity ?? 0}</div>
+              </div>
+              <div>
+                <div className="muted">Total value</div>
+                <div className="kpi">{data.valuation?.total_value ?? data.balance?.total_value ?? 0}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              style={{ marginTop: 8 }}
+              onClick={() => download('xlsx', 'inventory_valuation')}
+            >
+              Export valuation Excel
+            </button>
+          </div>
+          <h3 style={{ marginTop: 16 }}>
+            Stock value: {data.valuation?.total_value ?? data.balance?.total_value ?? 0}
+          </h3>
           <table className="table">
             <thead>
               <tr>
                 <th>SKU</th>
                 <th>Name</th>
                 <th>Qty</th>
+                <th>Unit cost</th>
                 <th>Value</th>
               </tr>
             </thead>
             <tbody>
-              {(data.balance?.items || []).slice(0, 50).map((i: any) => (
+              {(data.valuation?.items || data.balance?.items || []).slice(0, 50).map((i: any) => (
                 <tr key={i.product_id}>
                   <td>{i.sku}</td>
                   <td>{i.name}</td>
                   <td>{i.quantity}</td>
+                  <td>{i.unit_cost ?? i.cost_price ?? '—'}</td>
                   <td>{i.value}</td>
                 </tr>
               ))}

@@ -26,6 +26,7 @@ EXPORTABLE = frozenset(
         "sales_salesperson",
         "sales_by_store",
         "inventory_balance",
+        "inventory_valuation",
         "inventory_movements",
         "inventory_low_stock",
         "purchases_summary",
@@ -242,6 +243,15 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         rows = [dict(x) for x in items]
         return rows or [{"note": "no rows"}], [f"{r.get('sku')}: {r.get('qty') or r.get('stock_qty') or r.get('quantity')}" for r in rows[:60]], "Inventory Balance"
 
+    if report_type == "inventory_valuation":
+        items = payload.get("items") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload) + [
+            f"{r.get('sku')}: qty {r.get('quantity')} @ {r.get('unit_cost') or r.get('cost_price')} = {r.get('value')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Inventory Valuation"
+
     if report_type == "inventory_movements":
         items = payload.get("movements") or payload.get("items") or (payload if isinstance(payload, list) else [])
         rows = [dict(x) for x in items]
@@ -454,6 +464,10 @@ async def build_report_payload(
         return await reports_svc.sales_by_store(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "inventory_balance":
         return await reports_svc.inventory_balance(db, tenant_id, warehouse_id)
+    if report_type == "inventory_valuation":
+        return await reports_svc.inventory_valuation(
+            db, tenant_id, method="standard", warehouse_id=warehouse_id
+        )
     if report_type == "inventory_movements":
         return await reports_svc.inventory_movements(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "inventory_low_stock":

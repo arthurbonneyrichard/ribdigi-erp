@@ -531,6 +531,67 @@ async def inventory_balance(db: AsyncSession, tenant_id: str, warehouse_id: str 
     }
 
 
+SUPPORTED_VALUATION_METHODS = frozenset({"standard"})
+
+
+async def inventory_valuation(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    method: str | None = "standard",
+    warehouse_id: str | None = None,
+) -> dict:
+    """Stock valuation at standard (product) cost — BR-14.2 / BR-5.4.
+
+    FIFO / LIFO / weighted average are deferred; requesting them returns 400.
+    """
+    from fastapi import HTTPException
+
+    method_key = (method or "standard").strip().lower() or "standard"
+    if method_key not in SUPPORTED_VALUATION_METHODS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Costing method '{method_key}' is not supported. "
+                "Use method=standard (FIFO/LIFO/weighted average deferred)."
+            ),
+        )
+    if warehouse_id:
+        wh = (
+            await db.execute(
+                select(m.Warehouse).where(
+                    m.Warehouse.id == warehouse_id,
+                    m.Warehouse.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not wh:
+            raise HTTPException(status_code=404, detail="Warehouse not found")
+
+    balance = await inventory_balance(db, tenant_id, warehouse_id)
+    items = [
+        {
+            "product_id": i["product_id"],
+            "sku": i["sku"],
+            "name": i["name"],
+            "warehouse_id": i.get("warehouse_id"),
+            "quantity": i["quantity"],
+            "unit_cost": i["cost_price"],
+            "cost_price": i["cost_price"],  # back-compat alias
+            "value": i["value"],
+        }
+        for i in balance["items"]
+        if abs(float(i["quantity"] or 0)) > 0.0001 or abs(float(i["value"] or 0)) > 0.0001
+    ]
+    return {
+        "method": method_key,
+        "warehouse_id": warehouse_id,
+        "items": items,
+        "total_quantity": round(sum(float(i["quantity"]) for i in items), 3),
+        "total_value": round(sum(float(i["value"]) for i in items), 2),
+    }
+
+
 async def inventory_movements(
     db: AsyncSession,
     tenant_id: str,
