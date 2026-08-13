@@ -967,31 +967,185 @@ async def cash_flow(
     }
 
 
-async def balance_sheet(db: AsyncSession, tenant_id: str) -> dict:
-    """Point-in-time balance sheet from account balances."""
+def _prior_period_end(as_of_day) -> datetime:
+    """Last calendar day of the month before as_of."""
+    first = as_of_day.replace(day=1)
+    prior = first - timedelta(days=1)
+    return datetime(prior.year, prior.month, prior.day, 23, 59, 59, 999999)
+
+
+def _prior_year_end(as_of_day) -> datetime:
+    try:
+        prior = as_of_day.replace(year=as_of_day.year - 1)
+    except ValueError:
+        prior = as_of_day.replace(year=as_of_day.year - 1, day=28)
+    return datetime(prior.year, prior.month, prior.day, 23, 59, 59, 999999)
+
+
+def _pack_balance_sheet(
+    *,
+    as_of_day,
+    mode: str,
+    assets: list[dict],
+    liabilities: list[dict],
+    equity: list[dict],
+    compare: dict | None = None,
+) -> dict:
+    total_assets = round(sum(float(r["balance"]) for r in assets), 2)
+    total_liabilities = round(sum(float(r["balance"]) for r in liabilities), 2)
+    total_equity = round(sum(float(r["balance"]) for r in equity), 2)
+    total_le = round(total_liabilities + total_equity, 2)
+    payload = {
+        "as_of": as_of_day.isoformat() if hasattr(as_of_day, "isoformat") else str(as_of_day),
+        "mode": mode,
+        "assets": assets,
+        "liabilities": liabilities,
+        "equity": equity,
+        "total_assets": total_assets,
+        "total_liabilities": total_liabilities,
+        "total_equity": total_equity,
+        "total_liabilities_and_equity": total_le,
+        "balanced": abs(total_assets - total_le) < 0.01,
+        "compare": compare,
+    }
+    return payload
+
+
+def _merge_bs_compare(current: dict, prior: dict, compare_mode: str) -> dict:
+    """Attach prior balances / deltas onto current BS sections."""
+
+    def merge_section(cur_rows: list[dict], prior_rows: list[dict]) -> list[dict]:
+        prior_by = {r["code"]: float(r["balance"]) for r in prior_rows}
+        seen = set()
+        out = []
+        for r in cur_rows:
+            code = r["code"]
+            seen.add(code)
+            prior_bal = prior_by.get(code, 0.0)
+            bal = float(r["balance"])
+            out.append(
+                {
+                    **r,
+                    "prior_balance": round(prior_bal, 2),
+                    "delta": round(bal - prior_bal, 2),
+                }
+            )
+        for r in prior_rows:
+            if r["code"] in seen:
+                continue
+            prior_bal = float(r["balance"])
+            out.append(
+                {
+                    "code": r["code"],
+                    "name": r["name"],
+                    "balance": 0.0,
+                    "prior_balance": round(prior_bal, 2),
+                    "delta": round(0.0 - prior_bal, 2),
+                }
+            )
+        return out
+
+    assets = merge_section(current["assets"], prior["assets"])
+    liabilities = merge_section(current["liabilities"], prior["liabilities"])
+    equity = merge_section(current["equity"], prior["equity"])
+    compare = {
+        "mode": compare_mode,
+        "as_of": prior["as_of"],
+        "total_assets": prior["total_assets"],
+        "total_liabilities": prior["total_liabilities"],
+        "total_equity": prior["total_equity"],
+        "total_liabilities_and_equity": prior["total_liabilities_and_equity"],
+        "deltas": {
+            "total_assets": round(
+                float(current["total_assets"]) - float(prior["total_assets"]), 2
+            ),
+            "total_liabilities": round(
+                float(current["total_liabilities"]) - float(prior["total_liabilities"]), 2
+            ),
+            "total_equity": round(
+                float(current["total_equity"]) - float(prior["total_equity"]), 2
+            ),
+            "total_liabilities_and_equity": round(
+                float(current["total_liabilities_and_equity"])
+                - float(prior["total_liabilities_and_equity"]),
+                2,
+            ),
+        },
+    }
+    return _pack_balance_sheet(
+        as_of_day=current["as_of"],
+        mode=current["mode"],
+        assets=assets,
+        liabilities=liabilities,
+        equity=equity,
+        compare=compare,
+    )
+
+
+async def _balance_sheet_at(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    as_of: datetime | None,
+) -> dict:
+    """Build BS at as_of from posted journals, or live balances when as_of is None."""
+    from app.accounting import _signed_balance_delta, ensure_default_accounts
+
+    await ensure_default_accounts(db, tenant_id)
     accounts = (
         await db.execute(
             select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
         )
     ).scalars().all()
 
+    if as_of is None:
+        bal_by_id = {a.id: float(a.balance or 0) for a in accounts}
+        as_of_day = datetime.utcnow().date()
+        mode = "balances"
+    else:
+        bal_by_id = {a.id: 0.0 for a in accounts}
+        stmt = (
+            select(m.JournalEntryLine, m.Account)
+            .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+            .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+            .where(
+                m.JournalEntryLine.tenant_id == tenant_id,
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.status == "posted",
+                m.JournalEntry.entry_date <= as_of,
+                m.Account.tenant_id == tenant_id,
+            )
+        )
+        for line, account in (await db.execute(stmt)).all():
+            bal_by_id[account.id] = float(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
+                account.account_type,
+                float(line.debit or 0),
+                float(line.credit or 0),
+            )
+        as_of_day = as_of.date()
+        mode = "journals"
+
     def rows_for(account_type: str) -> list[dict]:
-        return [
-            {
-                "code": a.code,
-                "name": a.name,
-                "balance": round(float(a.balance or 0), 2),
-            }
-            for a in accounts
-            if a.account_type == account_type
-        ]
+        rows = []
+        for a in accounts:
+            if a.account_type != account_type:
+                continue
+            bal = round(float(bal_by_id.get(a.id, 0)), 2)
+            # Live balances mode keeps zero rows (back-compat); journal as-of omits zeros.
+            if mode == "journals" and abs(bal) < 0.0001:
+                continue
+            rows.append({"code": a.code, "name": a.name, "balance": bal})
+        return rows
 
     assets = rows_for("asset")
     liabilities = rows_for("liability")
     equity = rows_for("equity")
-    # Retained earnings proxy from income - expense (not posted to equity yet)
-    income = sum(float(a.balance or 0) for a in accounts if a.account_type == "income")
-    expense = sum(float(a.balance or 0) for a in accounts if a.account_type == "expense")
+    income = sum(
+        float(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "income"
+    )
+    expense = sum(
+        float(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "expense"
+    )
     retained = round(income - expense, 2)
     if abs(retained) > 0.0001:
         equity = [
@@ -999,17 +1153,57 @@ async def balance_sheet(db: AsyncSession, tenant_id: str) -> dict:
             {"code": "RE", "name": "Retained earnings (computed)", "balance": retained},
         ]
 
-    total_assets = round(sum(r["balance"] for r in assets), 2)
-    total_liabilities = round(sum(r["balance"] for r in liabilities), 2)
-    total_equity = round(sum(r["balance"] for r in equity), 2)
-    return {
-        "as_of": datetime.utcnow().date().isoformat(),
-        "assets": assets,
-        "liabilities": liabilities,
-        "equity": equity,
-        "total_assets": total_assets,
-        "total_liabilities": total_liabilities,
-        "total_equity": total_equity,
-        "total_liabilities_and_equity": round(total_liabilities + total_equity, 2),
-        "balanced": abs(total_assets - (total_liabilities + total_equity)) < 0.01,
-    }
+    return _pack_balance_sheet(
+        as_of_day=as_of_day,
+        mode=mode,
+        assets=assets,
+        liabilities=liabilities,
+        equity=equity,
+        compare=None,
+    )
+
+
+async def balance_sheet(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    as_of: datetime | None = None,
+    compare: str | None = None,
+) -> dict:
+    """Point-in-time balance sheet (BR-14.5).
+
+    - No ``as_of`` / compare: live ``Account.balance`` (back-compat, ``mode=balances``).
+    - With ``as_of``: reconstruct from posted journal lines through that timestamp.
+    - ``compare=prior_period|prior_year``: side-by-side prior balances and deltas.
+      When compare is set without ``as_of``, uses end of today.
+    """
+    compare_mode = (compare or "").strip().lower() or None
+    if compare_mode and compare_mode not in {"prior_period", "prior_year"}:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=400,
+            detail="compare must be prior_period or prior_year",
+        )
+
+    effective_as_of = as_of
+    if compare_mode and effective_as_of is None:
+        today = datetime.utcnow().date()
+        effective_as_of = datetime(
+            today.year, today.month, today.day, 23, 59, 59, 999999
+        )
+
+    current = await _balance_sheet_at(db, tenant_id, as_of=effective_as_of)
+    if not compare_mode:
+        return current
+
+    as_of_day = parse_date(current["as_of"])
+    if as_of_day is None:
+        as_of_day = datetime.utcnow()
+    day = as_of_day.date() if isinstance(as_of_day, datetime) else as_of_day
+    if compare_mode == "prior_year":
+        prior_dt = _prior_year_end(day)
+    else:
+        prior_dt = _prior_period_end(day)
+    prior = await _balance_sheet_at(db, tenant_id, as_of=prior_dt)
+    return _merge_bs_compare(current, prior, compare_mode)

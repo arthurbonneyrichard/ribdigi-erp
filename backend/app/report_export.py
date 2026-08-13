@@ -308,7 +308,14 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         for section in ("assets", "liabilities", "equity"):
             lines.append(f"-- {section.upper()} --")
             for item in payload.get(section) or []:
-                lines.append(f"  {item.get('code')} {item.get('name')}: {item.get('balance')}")
+                prior = item.get("prior_balance")
+                delta = item.get("delta")
+                extra = ""
+                if prior is not None:
+                    extra = f" (prior {prior}, Δ {delta})"
+                lines.append(
+                    f"  {item.get('code')} {item.get('name')}: {item.get('balance')}{extra}"
+                )
         return rows or [{"note": "no rows"}], lines, "Balance Sheet"
 
     if report_type == "tax":
@@ -401,6 +408,8 @@ async def build_report_payload(
     jurisdiction: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    as_of: str | None = None,
+    compare: str | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -469,7 +478,13 @@ async def build_report_payload(
             branch_id=branch_id or None,
         )
     if report_type == "balance_sheet":
-        return await reports_svc.balance_sheet(db, tenant_id)
+        as_of_raw = as_of or to_date or date
+        return await reports_svc.balance_sheet(
+            db,
+            tenant_id,
+            as_of=reports_svc.parse_date(as_of_raw, end_of_day=True),
+            compare=compare,
+        )
     if report_type == "tax":
         return await tax_svc.tax_report(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "tax_filing":
