@@ -933,10 +933,10 @@ export default function Page() {
       <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="offline-sync">
         <h2>Offline sync</h2>
         <p className="muted">
-          Stage 166: register/bind devices for IndexedDB queue flush and offline catalog pull.
+          Stage 167: register/bind devices for IndexedDB queue flush and offline catalog pull (4h TTL).
           Resolve conflicts with keep_server / accept_client / dismiss — accept_client re-applies only
-          when the original op was never applied (no double-post). Soft Hold reserve uses{' '}
-          <code>product.reserved_qty</code>. Offline Complete remains deferred.
+          when the original op was never applied (no double-post). Soft Hold reserves expire after 4h.
+          Offline Complete remains deferred.
         </p>
         <p className="muted">
           Bound browser device:{' '}
@@ -959,9 +959,17 @@ export default function Page() {
             <ul style={{ margin: 0, paddingLeft: 18 }}>
               {syncConflicts.map((c) => (
                 <li key={c.id} style={{ marginBottom: 8 }}>
-                  <span className="muted">
-                    {c.op_type} · {c.client_op_id || c.id}
-                  </span>{' '}
+                  <div className="muted" style={{ marginBottom: 4 }}>
+                    <strong>{c.op_type}</strong> · {c.client_op_id || c.id}
+                    {c.summary?.reason ? ` · ${c.summary.reason}` : ''}
+                    {c.summary?.client_payload_keys?.length
+                      ? ` · client keys: ${c.summary.client_payload_keys.join(', ')}`
+                      : ''}
+                  </div>
+                  <p className="muted" style={{ margin: '0 0 6px', fontSize: 12 }}>
+                    {c.summary?.accept_client_policy ||
+                      'Accept client re-applies only when the original op was never applied.'}
+                  </p>
                   <button
                     type="button"
                     disabled={deviceBusy}

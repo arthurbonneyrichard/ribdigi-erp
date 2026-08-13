@@ -1814,6 +1814,11 @@ Cashier cart park for Hold/Resume Partial. Status held/resumed/discarded. Defaul
 - `pos_held_carts.reservation_lines` — JSON lines `{product_id, quantity, sku}` used to adjust `products.reserved_qty`
 - Soft reserve only; does **not** create SO-linked `stock_reservations` rows
 
+### Stage 167 — Hold soft-reserve expiry (Alembic `20260813_0095`)
+
+- `pos_held_carts.expires_at` — set when soft-reserved (default TTL 4h); null for park-only holds
+- Status may become `expired` after cleanup; releases `reserved_qty`
+
 ---
 
 **Document Version:** 1.0.0  

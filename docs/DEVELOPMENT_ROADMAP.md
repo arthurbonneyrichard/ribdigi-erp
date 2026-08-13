@@ -2616,6 +2616,18 @@ Every feature in every phase must meet:
 
 **Stage 166 exit (2026-08-13):** C1, A1, S1, D1, H166x met — `docs/STAGE_166_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_339_STAGE166_FREEZE.md`. Fidelity: `docs/STAGE_166_FIDELITY.md`.
 
+**Stage 167 open (2026-08-13):** Offline Complete E2E Hardening Fidelity — `docs/ADR_340_STAGE167_OPEN.md` + `docs/STAGE_167_PLAN.md` (T1 next).
+
+**Stage 167 T1 (2026-08-13):** Offline catalog TTL / refresh policy (`test_stage167_catalog_ttl_t1.py`).
+
+**Stage 167 U1 (2026-08-13):** Conflict re-apply UX polish (`test_stage167_conflict_ux_u1.py`).
+
+**Stage 167 E1 (2026-08-13):** Hold soft-reserve expiry (`test_stage167_hold_expiry_e1.py`).
+
+**Stage 167 D1 (2026-08-13):** Offline Complete E2E Hardening fidelity sync — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`).
+
+**Stage 167 exit (2026-08-13):** T1, U1, E1, D1, H167x met — `docs/STAGE_167_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_341_STAGE167_FREEZE.md`. Fidelity: `docs/STAGE_167_FIDELITY.md`.
+
 
 
 

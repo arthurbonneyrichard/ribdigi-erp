@@ -5,7 +5,8 @@ import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import {
-  getOfflineCatalogMeta,
+  DEFAULT_CATALOG_TTL_MS,
+  getOfflineCatalogFreshness,
   refreshOfflineCatalog,
   searchOfflineCatalog,
 } from '../../lib/offlineCatalog';
@@ -117,6 +118,8 @@ export default function Page() {
   const [pendingOffline, setPendingOffline] = useState(0);
   const [online, setOnline] = useState(true);
   const [catalogAsOf, setCatalogAsOf] = useState<string | null>(null);
+  const [catalogExpired, setCatalogExpired] = useState(false);
+  const [catalogExpiresAt, setCatalogExpiresAt] = useState<string | null>(null);
   const [catalogStaleNote, setCatalogStaleNote] = useState('');
 
   async function refreshSession() {
@@ -144,10 +147,14 @@ export default function Page() {
 
   async function refreshCatalogMeta() {
     try {
-      const meta = await getOfflineCatalogMeta();
-      setCatalogAsOf(meta?.as_of || null);
+      const freshness = await getOfflineCatalogFreshness();
+      setCatalogAsOf(freshness.meta?.as_of || null);
+      setCatalogExpired(freshness.expired);
+      setCatalogExpiresAt(freshness.expires_at);
     } catch {
       setCatalogAsOf(null);
+      setCatalogExpired(true);
+      setCatalogExpiresAt(null);
     }
   }
 
@@ -156,9 +163,11 @@ export default function Page() {
     try {
       const meta = await refreshOfflineCatalog(api);
       setCatalogAsOf(meta?.as_of || null);
+      setCatalogExpiresAt(meta?.expires_at || null);
+      setCatalogExpired(false);
       setMessage(
         meta
-          ? `Offline catalog cached (${meta.count} products, stock non-authoritative)`
+          ? `Offline catalog cached (${meta.count} products; TTL ${Math.round((meta.ttl_ms || DEFAULT_CATALOG_TTL_MS) / 3600000)}h; stock non-authoritative)`
           : 'No catalog op returned from pull',
       );
     } catch (err: any) {
@@ -308,6 +317,10 @@ export default function Page() {
     setCatalogStaleNote('');
     try {
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const freshness = await getOfflineCatalogFreshness();
+        setCatalogExpired(freshness.expired);
+        setCatalogExpiresAt(freshness.expires_at);
+        setCatalogAsOf(freshness.meta?.as_of || null);
         const cached = await searchOfflineCatalog(query);
         const list: Product[] = cached.map((p) => ({
           id: p.id,
@@ -320,7 +333,9 @@ export default function Page() {
         }));
         setRows(list);
         setCatalogStaleNote(
-          'Offline catalog — stock figures are stale / non-authoritative (Stage 166 C1). Checkout uses online integrity or sync push.',
+          freshness.expired
+            ? 'Offline catalog TTL expired — refresh when online. Stock remains non-authoritative (Stage 167 T1).'
+            : 'Offline catalog — stock figures are stale / non-authoritative (Stage 166–167). Checkout uses online integrity or sync push.',
         );
         if (autoAdd) {
           const match = pickExactMatch(list, query.trim());
@@ -663,6 +678,8 @@ export default function Page() {
         try {
           const meta = await refreshOfflineCatalog(api);
           setCatalogAsOf(meta?.as_of || null);
+          setCatalogExpiresAt(meta?.expires_at || null);
+          setCatalogExpired(false);
         } catch {
           /* catalog refresh is best-effort after flush */
         }
@@ -679,8 +696,8 @@ export default function Page() {
     <Shell>
       <h1>Point of Sale</h1>
       <p className="muted">
-        Open a shift, sell from cart, print thermal receipt. Stage 166: soft Hold reserve · offline
-        catalog cache (stale stock) · IndexedDB queue when OFFLINE. Offline Complete remains deferred.
+        Open a shift, sell from cart, print thermal receipt. Stage 167: catalog TTL · Hold soft-reserve
+        expiry · conflict UX polish. Offline Complete remains deferred.
       </p>
       <p className="muted">
         Network: {online ? 'ONLINE' : 'OFFLINE'}
@@ -688,12 +705,14 @@ export default function Page() {
         {getBoundOfflineDeviceId()
           ? ` · Device ${getBoundOfflineDeviceId().slice(0, 8)}…`
           : ' · No offline device bound (Settings → Offline sync)'}
-        {catalogAsOf ? ` · Catalog as of ${catalogAsOf}` : ' · No offline catalog cached'}
+        {catalogAsOf
+          ? ` · Catalog as of ${catalogAsOf}${catalogExpired ? ' (TTL expired)' : catalogExpiresAt ? ` · expires ${catalogExpiresAt}` : ''}`
+          : ' · No offline catalog cached'}
         {online && getBoundOfflineDeviceId() ? (
           <>
             {' '}
             <button type="button" onClick={() => pullCatalogCache()}>
-              Refresh offline catalog
+              {catalogExpired ? 'Refresh offline catalog (TTL expired)' : 'Refresh offline catalog'}
             </button>
           </>
         ) : null}
@@ -1117,13 +1136,32 @@ export default function Page() {
           </button>
         </div>
         <p className="muted" style={{ marginTop: 8 }}>
-          Hold soft-reserves via product.reserved_qty when online (Stage 166 S1). Not a sale; Offline
-          Complete remains deferred. Default without reserve_stock remains Stage 165 park-only.
+          Hold soft-reserves via product.reserved_qty when online (Stage 166–167). Soft reserves expire
+          after 4h and release stock. Not a sale; Offline Complete remains deferred.
         </p>
       </div>
 
       <div className="card" style={{ marginTop: 16 }} id="holds">
         <h3>Held carts</h3>
+        <p className="muted">
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              try {
+                const r = await api('/pos/holds/expire-stale', { method: 'POST', body: '{}' });
+                await refreshHolds();
+                setMessage(
+                  `Expired ${r.data?.expired_count ?? 0} stale hold(s) (TTL ${r.data?.reserve_ttl_hours ?? 4}h)`,
+                );
+              } catch (err: any) {
+                setError(err.message || 'Expire stale holds failed');
+              }
+            }}
+          >
+            Expire stale soft-reserves
+          </button>
+        </p>
         {heldCarts.length === 0 ? (
           <p className="muted">No held carts for this cashier.</p>
         ) : (
@@ -1134,6 +1172,7 @@ export default function Page() {
                 <span className="muted">
                   · {(h.cart_payload?.items || []).length} lines · stock_reserved=
                   {String(h.stock_reserved)}
+                  {h.expires_at ? ` · expires ${h.expires_at}` : ''}
                 </span>{' '}
                 <button type="button" onClick={() => resumeHold(h.id)}>
                   Resume

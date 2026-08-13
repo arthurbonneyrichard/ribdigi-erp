@@ -1546,3 +1546,5 @@ Stage 164 D1 sync queue fidelity — `docs/STAGE_164_FIDELITY.md` (`test_stage16
 Stage 165 D1 offline client queue fidelity — `docs/STAGE_165_FIDELITY.md` (`test_stage165_fidelity_d1.py`); Alembic `20260813_0093` adds `pos_held_carts`; main `ci.yml` remains deploy-free (Stage 18 C1).
 
 Stage 166 D1 Offline Complete Hardening fidelity — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`); Alembic `20260813_0094` adds `pos_held_carts.stock_reserved` / `reservation_lines`; main `ci.yml` remains deploy-free (Stage 18 C1).
+
+Stage 167 D1 Offline Complete E2E Hardening fidelity — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`); Alembic `20260813_0095` adds `pos_held_carts.expires_at`; main `ci.yml` remains deploy-free (Stage 18 C1).

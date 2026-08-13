@@ -1,6 +1,6 @@
 /**
- * Stage 166 C1 — IndexedDB offline catalog cache from /sync/pull.
- * Stock figures are non-authoritative (stale) and must be labeled as such in UI.
+ * Stage 166 C1 / Stage 167 T1 — IndexedDB offline catalog cache from /sync/pull.
+ * Stock figures are non-authoritative; Stage 167 adds client TTL / refresh policy.
  */
 
 import { getBoundOfflineDeviceId } from './offlineQueue';
@@ -9,6 +9,9 @@ const DB_NAME = 'ribdigi-offline-catalog';
 const DB_VERSION = 1;
 const STORE = 'products';
 const META = 'meta';
+
+/** Stage 167 T1 — default catalog freshness window (4 hours). */
+export const DEFAULT_CATALOG_TTL_MS = 4 * 60 * 60 * 1000;
 
 export type OfflineCatalogProduct = {
   id: string;
@@ -29,6 +32,16 @@ export type OfflineCatalogMeta = {
   count: number;
   stock_authoritative: false;
   device_id?: string;
+  ttl_ms: number;
+  expires_at: string;
+};
+
+export type OfflineCatalogFreshness = {
+  meta: OfflineCatalogMeta | null;
+  expired: boolean;
+  ttl_ms: number;
+  age_ms: number | null;
+  expires_at: string | null;
 };
 
 function openDb(): Promise<IDBDatabase> {
@@ -63,11 +76,19 @@ function txDone(tx: IDBTransaction): Promise<void> {
   });
 }
 
+function computeExpiresAt(asOf: string, ttlMs: number): string {
+  const base = Date.parse(asOf);
+  const start = Number.isFinite(base) ? base : Date.now();
+  return new Date(start + ttlMs).toISOString();
+}
+
 export async function cacheCatalogProducts(
   products: Array<Record<string, unknown>>,
-  opts?: { as_of?: string; device_id?: string },
+  opts?: { as_of?: string; device_id?: string; ttl_ms?: number },
 ): Promise<OfflineCatalogMeta> {
   const asOf = opts?.as_of || new Date().toISOString();
+  const ttlMs = opts?.ttl_ms != null && opts.ttl_ms > 0 ? opts.ttl_ms : DEFAULT_CATALOG_TTL_MS;
+  const expiresAt = computeExpiresAt(asOf, ttlMs);
   const db = await openDb();
   const tx = db.transaction([STORE, META], 'readwrite');
   const store = tx.objectStore(STORE);
@@ -100,6 +121,8 @@ export async function cacheCatalogProducts(
     count: products.length,
     stock_authoritative: false,
     device_id: opts?.device_id,
+    ttl_ms: ttlMs,
+    expires_at: expiresAt,
   };
   metaStore.put(meta);
   await txDone(tx);
@@ -117,7 +140,47 @@ export async function getOfflineCatalogMeta(): Promise<OfflineCatalogMeta | null
   });
   await txDone(tx);
   db.close();
+  if (!row) return null;
+  // Backfill TTL fields for caches written before Stage 167.
+  if (!row.ttl_ms || !row.expires_at) {
+    const ttl = DEFAULT_CATALOG_TTL_MS;
+    return {
+      ...row,
+      ttl_ms: ttl,
+      expires_at: computeExpiresAt(row.as_of, ttl),
+    };
+  }
   return row;
+}
+
+export function isOfflineCatalogExpired(meta: OfflineCatalogMeta | null, nowMs = Date.now()): boolean {
+  if (!meta?.as_of) return true;
+  const ttl = meta.ttl_ms > 0 ? meta.ttl_ms : DEFAULT_CATALOG_TTL_MS;
+  const expires = meta.expires_at ? Date.parse(meta.expires_at) : Date.parse(meta.as_of) + ttl;
+  if (!Number.isFinite(expires)) return true;
+  return nowMs >= expires;
+}
+
+export async function getOfflineCatalogFreshness(): Promise<OfflineCatalogFreshness> {
+  const meta = await getOfflineCatalogMeta();
+  if (!meta) {
+    return {
+      meta: null,
+      expired: true,
+      ttl_ms: DEFAULT_CATALOG_TTL_MS,
+      age_ms: null,
+      expires_at: null,
+    };
+  }
+  const asOfMs = Date.parse(meta.as_of);
+  const age = Number.isFinite(asOfMs) ? Math.max(0, Date.now() - asOfMs) : null;
+  return {
+    meta,
+    expired: isOfflineCatalogExpired(meta),
+    ttl_ms: meta.ttl_ms || DEFAULT_CATALOG_TTL_MS,
+    age_ms: age,
+    expires_at: meta.expires_at || null,
+  };
 }
 
 export async function searchOfflineCatalog(query: string): Promise<OfflineCatalogProduct[]> {
@@ -157,8 +220,17 @@ export async function refreshOfflineCatalog(
   const ops = (res.data?.ops || []) as Array<{
     id: string;
     op_type: string;
-    payload?: { products?: Array<Record<string, unknown>>; as_of?: string; stock_authoritative?: boolean };
-    result_payload?: { products?: Array<Record<string, unknown>>; as_of?: string };
+    payload?: {
+      products?: Array<Record<string, unknown>>;
+      as_of?: string;
+      stock_authoritative?: boolean;
+      recommended_ttl_seconds?: number;
+    };
+    result_payload?: {
+      products?: Array<Record<string, unknown>>;
+      as_of?: string;
+      recommended_ttl_seconds?: number;
+    };
   }>;
   const catalogOp = ops.find((o) => o.op_type === 'catalog_products');
   if (!catalogOp) {
@@ -166,9 +238,12 @@ export async function refreshOfflineCatalog(
   }
   const payload = catalogOp.result_payload || catalogOp.payload || {};
   const products = payload.products || [];
+  const ttlSec = Number(payload.recommended_ttl_seconds || 0);
+  const ttlMs = ttlSec > 0 ? ttlSec * 1000 : DEFAULT_CATALOG_TTL_MS;
   const meta = await cacheCatalogProducts(products, {
     as_of: payload.as_of || new Date().toISOString(),
     device_id: deviceId,
+    ttl_ms: ttlMs,
   });
   try {
     await apiFn('/sync/ack', {

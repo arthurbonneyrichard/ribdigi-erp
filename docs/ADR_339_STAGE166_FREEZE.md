@@ -24,6 +24,4 @@ Stage 166 Offline Complete Hardening Fidelity delivered offline catalog cache (C
 
 ## Next stage
 
-Stage 167 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 166 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Offline Complete E2E proof pack — offline catalog TTL/refresh policy + conflict re-apply UX polish + Hold reserve expiry/cleanup (no fake Completes).
+Stage 167 opened under [ADR-340](ADR_340_STAGE167_OPEN.md) (Offline Complete E2E Hardening Fidelity) and froze under [ADR-341](ADR_341_STAGE167_FREEZE.md). Stage 166 feature scope remains frozen.

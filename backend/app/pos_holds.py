@@ -1,8 +1,8 @@
-"""POS Hold/Resume — Stage 165 H1 park + Stage 166 S1 optional soft stock reserve."""
+"""POS Hold/Resume — Stage 165 park + Stage 166 soft reserve + Stage 167 expiry."""
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException
@@ -12,11 +12,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.inventory import available_qty
 
-ALLOWED_STATUS = {"held", "resumed", "discarded"}
+ALLOWED_STATUS = {"held", "resumed", "discarded", "expired"}
+
+# Stage 167 E1 — soft-reserve TTL (park-only holds have no expires_at).
+HOLD_SOFT_RESERVE_TTL_HOURS = 4
 
 
 def serialize_hold(row: m.PosHeldCart) -> dict[str, Any]:
     reserved = bool(getattr(row, "stock_reserved", False))
+    expires_at = getattr(row, "expires_at", None)
     return {
         "id": row.id,
         "user_id": row.user_id,
@@ -27,35 +31,21 @@ def serialize_hold(row: m.PosHeldCart) -> dict[str, Any]:
         "held_at": row.held_at,
         "resumed_at": row.resumed_at,
         "discarded_at": row.discarded_at,
+        "expires_at": expires_at,
         "stock_reserved": reserved,
         "reservation_lines": getattr(row, "reservation_lines", None) or [],
+        "reserve_ttl_hours": HOLD_SOFT_RESERVE_TTL_HOURS if reserved or expires_at else None,
         "message": (
-            "Held cart with soft stock reservation (Stage 166 S1) — reserved_qty only; not a sale."
+            "Held cart with soft stock reservation (Stage 166–167) — reserved_qty only; "
+            f"expires after {HOLD_SOFT_RESERVE_TTL_HOURS}h if not resumed."
             if reserved
-            else "Held cart park only — stock is not reserved (Stage 165 H1 Partial)."
+            else (
+                "Held cart expired — soft reserve released (Stage 167 E1)."
+                if row.status == "expired"
+                else "Held cart park only — stock is not reserved (Stage 165 H1 Partial)."
+            )
         ),
     }
-
-
-async def list_holds(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    user_id: str,
-    status: str | None = "held",
-) -> list[m.PosHeldCart]:
-    q = select(m.PosHeldCart).where(
-        m.PosHeldCart.tenant_id == tenant_id,
-        m.PosHeldCart.user_id == user_id,
-    )
-    if status is not None:
-        wanted = str(status).strip().lower()
-        if wanted not in ALLOWED_STATUS and wanted != "all":
-            raise HTTPException(status_code=400, detail="status must be held, resumed, discarded, or all")
-        if wanted != "all":
-            q = q.where(m.PosHeldCart.status == wanted)
-    q = q.order_by(m.PosHeldCart.held_at.desc())
-    return list((await db.execute(q)).scalars().all())
 
 
 async def _soft_reserve_lines(
@@ -63,7 +53,6 @@ async def _soft_reserve_lines(
 ) -> list[dict[str, Any]]:
     """Increment product.reserved_qty for hold lines (no SO StockReservation rows)."""
     lines: list[dict[str, Any]] = []
-    # Aggregate by product_id for a single lock/update per product
     by_product: dict[str, float] = {}
     for raw in items:
         if not isinstance(raw, dict):
@@ -130,6 +119,60 @@ async def _release_soft_reserve(
     await db.flush()
 
 
+async def expire_stale_holds(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None = None,
+) -> list[m.PosHeldCart]:
+    """Stage 167 E1 — expire held soft-reserves past expires_at; release reserved_qty."""
+    now = datetime.utcnow()
+    q = select(m.PosHeldCart).where(
+        m.PosHeldCart.tenant_id == tenant_id,
+        m.PosHeldCart.status == "held",
+        m.PosHeldCart.expires_at.is_not(None),
+        m.PosHeldCart.expires_at <= now,
+    )
+    if user_id:
+        q = q.where(m.PosHeldCart.user_id == user_id)
+    rows = list((await db.execute(q)).scalars().all())
+    expired: list[m.PosHeldCart] = []
+    for row in rows:
+        await _release_soft_reserve(db, tenant_id=tenant_id, row=row)
+        row.status = "expired"
+        row.discarded_at = now
+        expired.append(row)
+    if expired:
+        await db.flush()
+    return expired
+
+
+async def list_holds(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    status: str | None = "held",
+) -> list[m.PosHeldCart]:
+    # Cleanup before list so cashiers see accurate held/reserved state.
+    await expire_stale_holds(db, tenant_id=tenant_id, user_id=user_id)
+    q = select(m.PosHeldCart).where(
+        m.PosHeldCart.tenant_id == tenant_id,
+        m.PosHeldCart.user_id == user_id,
+    )
+    if status is not None:
+        wanted = str(status).strip().lower()
+        if wanted not in ALLOWED_STATUS and wanted != "all":
+            raise HTTPException(
+                status_code=400,
+                detail="status must be held, resumed, discarded, expired, or all",
+            )
+        if wanted != "all":
+            q = q.where(m.PosHeldCart.status == wanted)
+    q = q.order_by(m.PosHeldCart.held_at.desc())
+    return list((await db.execute(q)).scalars().all())
+
+
 async def create_hold(
     db: AsyncSession,
     *,
@@ -140,6 +183,7 @@ async def create_hold(
     cart_payload: dict,
     reserve_stock: bool = False,
 ) -> m.PosHeldCart:
+    await expire_stale_holds(db, tenant_id=tenant_id, user_id=user_id)
     if not isinstance(cart_payload, dict):
         raise HTTPException(status_code=400, detail="cart_payload must be an object")
     items = cart_payload.get("items")
@@ -151,9 +195,12 @@ async def create_hold(
 
     reservation_lines: list[dict[str, Any]] = []
     stock_reserved = False
+    expires_at: datetime | None = None
+    now = datetime.utcnow()
     if reserve_stock:
         reservation_lines = await _soft_reserve_lines(db, tenant_id=tenant_id, items=items)
         stock_reserved = True
+        expires_at = now + timedelta(hours=HOLD_SOFT_RESERVE_TTL_HOURS)
 
     row = m.PosHeldCart(
         tenant_id=tenant_id,
@@ -164,7 +211,8 @@ async def create_hold(
         status="held",
         stock_reserved=stock_reserved,
         reservation_lines=reservation_lines,
-        held_at=datetime.utcnow(),
+        expires_at=expires_at,
+        held_at=now,
     )
     db.add(row)
     await db.flush()
@@ -191,12 +239,19 @@ async def get_hold(
 async def resume_hold(
     db: AsyncSession, *, tenant_id: str, user_id: str, hold_id: str
 ) -> m.PosHeldCart:
+    await expire_stale_holds(db, tenant_id=tenant_id, user_id=user_id)
     row = await get_hold(db, tenant_id=tenant_id, user_id=user_id, hold_id=hold_id)
+    if row.status == "expired":
+        raise HTTPException(
+            status_code=409,
+            detail="Held cart expired — soft reserve was released; start a new hold",
+        )
     if row.status != "held":
         raise HTTPException(status_code=409, detail=f"Held cart is {row.status}, not held")
     await _release_soft_reserve(db, tenant_id=tenant_id, row=row)
     row.status = "resumed"
     row.resumed_at = datetime.utcnow()
+    row.expires_at = None
     await db.flush()
     return row
 
@@ -205,10 +260,11 @@ async def discard_hold(
     db: AsyncSession, *, tenant_id: str, user_id: str, hold_id: str
 ) -> m.PosHeldCart:
     row = await get_hold(db, tenant_id=tenant_id, user_id=user_id, hold_id=hold_id)
-    if row.status == "discarded":
+    if row.status in {"discarded", "expired"}:
         return row
     await _release_soft_reserve(db, tenant_id=tenant_id, row=row)
     row.status = "discarded"
     row.discarded_at = datetime.utcnow()
+    row.expires_at = None
     await db.flush()
     return row

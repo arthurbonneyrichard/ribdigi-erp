@@ -104,9 +104,11 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Offline queue (Stage 165 K1):** Bind a device under Settings → Offline sync (**Bind browser**). When the browser is OFFLINE, Complete sale enqueues into IndexedDB and flushes via `/sync/push` when back online.
 
-**Offline catalog (Stage 166 C1):** Use **Refresh offline catalog** on POS (requires bound device) to cache a `/sync/pull` product snapshot in IndexedDB. Offline search uses that cache; stock figures are labeled **stale / non-authoritative**.
+**Offline catalog (Stage 166 C1 / Stage 167 T1):** Use **Refresh offline catalog** on POS (requires bound device) to cache a `/sync/pull` product snapshot in IndexedDB (default **4 hour TTL**). Offline search uses that cache; stock figures are labeled **stale / non-authoritative**. When TTL expires, refresh when back online.
 
-**Conflict accept client (Stage 166 A1):** Settings → Offline sync can **Accept client** on an open conflict. Re-apply runs only when the original op was never applied; already-applied POS is blocked to prevent double-post.
+**Conflict accept client (Stage 166 A1 / Stage 167 U1):** Settings → Offline sync shows conflict reason/client keys and can **Accept client**. Re-apply runs only when the original op was never applied; already-applied POS is blocked to prevent double-post.
+
+**Hold soft-reserve expiry (Stage 167 E1):** Soft-reserved holds expire after **4 hours**. POS can **Expire stale soft-reserves**; listing holds also auto-expires past-due rows and releases `reserved_qty`.
 
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width

@@ -8092,13 +8092,14 @@ async def pos_holds_list(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 165 H1 / Stage 166 S1 — list held carts for the current cashier."""
+    """Stage 165–167 — list held carts (expires stale soft-reserves first)."""
     rows = await pos_holds_svc.list_holds(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         status=status,
     )
+    await db.commit()
     return env([pos_holds_svc.serialize_hold(r) for r in rows])
 
 
@@ -8108,7 +8109,7 @@ async def pos_holds_create(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 165 H1 park / Stage 166 S1 optional soft stock reserve (not a sale)."""
+    """Stage 165 H1 park / Stage 166–167 soft reserve with optional expiry (not a sale)."""
     tenants_svc.assert_writable(claims)
     body = payload or {}
     reserve_stock = bool(body.get("reserve_stock"))
@@ -8123,11 +8124,35 @@ async def pos_holds_create(
     )
     await db.commit()
     msg = (
-        "Cart held with soft stock reservation (product.reserved_qty)"
+        "Cart held with soft stock reservation (product.reserved_qty; TTL applies)"
         if row.stock_reserved
         else "Cart held (stock not reserved)"
     )
     return env(pos_holds_svc.serialize_hold(row), msg)
+
+
+@api.post("/pos/holds/expire-stale")
+async def pos_holds_expire_stale(
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 167 E1 — expire soft-reserved holds past expires_at; release reserved_qty."""
+    tenants_svc.assert_writable(claims)
+    # Cashiers expire their own; company_admin may pass via elevated path later.
+    rows = await pos_holds_svc.expire_stale_holds(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+    )
+    await db.commit()
+    return env(
+        {
+            "expired_count": len(rows),
+            "holds": [pos_holds_svc.serialize_hold(r) for r in rows],
+            "reserve_ttl_hours": pos_holds_svc.HOLD_SOFT_RESERVE_TTL_HOURS,
+        },
+        f"Expired {len(rows)} stale held cart(s)",
+    )
 
 
 @api.post("/pos/holds/{hold_id}/resume")

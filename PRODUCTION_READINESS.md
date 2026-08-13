@@ -223,3 +223,5 @@ Stage 164 D1 Tenant MVP Sync Queue + Idempotent Offline POS Fidelity — `docs/S
 Stage 165 D1 Tenant MVP Offline Client Queue + Hold/Resume + Conflict Resolve Fidelity — `docs/STAGE_165_FIDELITY.md` (`test_stage165_fidelity_d1.py`); Stage 165 K1/H1/R1 Complete (MVP honesty; Hold is Partial — no stock reserve); exit `docs/STAGE_165_EXIT_CRITERIA.md`, ADR-337. Offline Complete remains MISSING (Stage 166+).
 
 Stage 166 D1 Offline Complete Hardening Fidelity — `docs/STAGE_166_FIDELITY.md` (`test_stage166_fidelity_d1.py`); Stage 166 C1/A1/S1 Complete (MVP honesty; soft Hold reserve + safe accept_client; catalog stock non-authoritative offline); exit `docs/STAGE_166_EXIT_CRITERIA.md`, ADR-339. Offline Complete remains MISSING (Stage 167+).
+
+Stage 167 D1 Offline Complete E2E Hardening Fidelity — `docs/STAGE_167_FIDELITY.md` (`test_stage167_fidelity_d1.py`); Stage 167 T1/U1/E1 Complete (MVP honesty; catalog TTL + conflict UX + Hold reserve expiry); exit `docs/STAGE_167_EXIT_CRITERIA.md`, ADR-341. Offline Complete remains MISSING (Stage 168+).

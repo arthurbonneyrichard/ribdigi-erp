@@ -105,3 +105,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 166 decision (opened after Stage 165 freeze)
 
 **Offline Complete Hardening Fidelity** — stock-safe offline catalog cache (C1), accept_client safe re-apply (A1), Hold soft `product.reserved_qty` reserve (S1). Offline Complete remains deferred (Stage 167+).
+
+## Stage 167 decision (opened after Stage 166 freeze)
+
+**Offline Complete E2E Hardening Fidelity** — catalog TTL/refresh (T1), conflict re-apply UX polish (U1), Hold soft-reserve expiry/cleanup (E1). Offline Complete remains deferred (Stage 168+).

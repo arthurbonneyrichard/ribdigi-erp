@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import offline_devices as offline_devices_svc
+from app.pos_holds import HOLD_SOFT_RESERVE_TTL_HOURS
 from app.schemas import PosSaleCreate
 
 
@@ -55,18 +56,33 @@ def serialize_queue_item(row: m.SyncQueueItem) -> dict[str, Any]:
 
 
 def serialize_conflict(row: m.SyncConflict) -> dict[str, Any]:
+    client_payload = row.client_payload or {}
+    server_snapshot = row.server_snapshot or {}
+    reason = None
+    if isinstance(server_snapshot, dict):
+        reason = server_snapshot.get("reason")
+    # Stage 167 U1 — compact UX summary for Settings conflict cards.
+    client_keys = sorted(str(k) for k in client_payload.keys())[:12] if isinstance(client_payload, dict) else []
     return {
         "id": row.id,
         "queue_item_id": row.queue_item_id,
         "device_id": row.device_id,
         "op_type": row.op_type,
         "client_op_id": row.client_op_id,
-        "client_payload": row.client_payload or {},
-        "server_snapshot": row.server_snapshot or {},
+        "client_payload": client_payload,
+        "server_snapshot": server_snapshot,
         "status": row.status,
         "resolution": row.resolution,
         "created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
         "resolved_at": row.resolved_at.isoformat() + "Z" if row.resolved_at else None,
+        "summary": {
+            "reason": reason or "payload mismatch",
+            "client_payload_keys": client_keys,
+            "accept_client_policy": (
+                "Re-applies client payload under a new client_op_id only when the original "
+                "op was never applied; already-applied POS is blocked (Stage 166–167)."
+            ),
+        },
     }
 
 
@@ -161,9 +177,10 @@ async def sync_status(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
         "last_sync_at": last_sync_at,
         "conflict_count": conflict_count,
         "message": (
-            "Stage 164–166 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
+            "Stage 164–167 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
             "Idempotent offline POS path requires client_request_id. "
-            "Hold soft reserve (Stage 166 S1) is optional via reserve_stock. "
+            f"Hold soft reserve TTL expires after {HOLD_SOFT_RESERVE_TTL_HOURS}h. "
+            "Offline catalog client TTL applies in the browser. "
             "accept_client may re-apply only when the original op was never applied. "
             "Full Offline Complete remains deferred."
         ),
@@ -441,6 +458,8 @@ async def pull_ops(
             # Offline clients must treat stock as non-authoritative (Stage 166 C1).
             "stock_authoritative": False,
             "as_of": now.isoformat() + "Z",
+            # Stage 167 T1 — recommended client cache TTL (browser enforces).
+            "recommended_ttl_seconds": 4 * 60 * 60,
         }
         catalog_op = m.SyncQueueItem(
             tenant_id=tenant_id,
