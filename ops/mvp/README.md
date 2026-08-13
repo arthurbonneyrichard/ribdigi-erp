@@ -709,6 +709,13 @@ Authoritative MVP docs:
 - `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/attestation-pack-remaining-gate.json` — Stage 213 I1
 - `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` / `ops/mvp/attestation-pack-blockers.json` — Stage 213 B1
 - `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md` / `ops/mvp/attestation-pack-rg-pointers.json` — Stage 213 P1
+
+- `docs/STAGE_214_EXIT_CRITERIA.md` / `docs/ADR_435_STAGE214_FREEZE.md` (`backend/tests/test_stage214_exit_h214x.py`) — Stage 214 H214x
+- `docs/STAGE_214_FIDELITY.md` (`backend/tests/test_stage214_fidelity_d1.py`) — Stage 214 D1
+- `docs/STAGE_214_PLAN.md` (`backend/tests/test_stage214_open.py`) — Stage 214 open (ADR-434)
+- `docs/SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md` / `ops/mvp/support-runbook-remaining-gate.json` — Stage 214 I1
+- `docs/SUPPORT_RUNBOOK_BLOCKERS_MVP.md` / `ops/mvp/support-runbook-blockers.json` — Stage 214 B1
+- `docs/SUPPORT_RUNBOOK_RG_POINTERS_MVP.md` / `ops/mvp/support-runbook-rg-pointers.json` — Stage 214 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2695,6 +2702,19 @@ ADR-412 + `docs/STAGE_203_PLAN.md` — Cutover Remaining-Gate Index Fidelity (cl
 
 
 
+
+
+## Stage 214 exit
+
+H214x met — `docs/STAGE_214_EXIT_CRITERIA.md`, ADR-435. Stages 1–214 frozen for Stage 214 feature scope.
+
+## Stage 214 D1 — Tenant MVP Support Runbook Remaining-Gate Index Fidelity
+
+See `docs/STAGE_214_FIDELITY.md`.
+
+## Stage 214 open
+
+ADR-434 / `docs/STAGE_214_PLAN.md`.
 
 ## Stage 213 exit
 

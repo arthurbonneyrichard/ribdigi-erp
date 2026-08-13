@@ -3180,6 +3180,18 @@ Every feature in every phase must meet:
 
 **Stage 213 exit (2026-08-13):** I1, B1, P1, D1, H213x met — `docs/STAGE_213_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_433_STAGE213_FREEZE.md`. Fidelity: `docs/STAGE_213_FIDELITY.md`.
 
+**Stage 214 open (2026-08-13):** Tenant MVP Support Runbook Remaining-Gate Index Fidelity — `docs/ADR_434_STAGE214_OPEN.md` + `docs/STAGE_214_PLAN.md` (I1 next).
+
+**Stage 214 I1 (2026-08-13):** Support runbook remaining-gate index hub (`test_stage214_index_i1.py`).
+
+**Stage 214 B1 (2026-08-13):** Support runbook blocker matrix (`test_stage214_blockers_b1.py`).
+
+**Stage 214 P1 (2026-08-13):** Stage 30 S1 / Stage 213 / Stage 188 pointers (`test_stage214_pointers_p1.py`).
+
+**Stage 214 D1 (2026-08-13):** Support Runbook Remaining-Gate Index fidelity sync — `docs/STAGE_214_FIDELITY.md` (`test_stage214_fidelity_d1.py`).
+
+**Stage 214 exit (2026-08-13):** I1, B1, P1, D1, H214x met — `docs/STAGE_214_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_435_STAGE214_FREEZE.md`. Fidelity: `docs/STAGE_214_FIDELITY.md`.
+
 
 
 

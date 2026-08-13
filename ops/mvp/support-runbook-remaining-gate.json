@@ -1,0 +1,55 @@
+{
+  "id": "support-runbook-remaining-gate",
+  "stage": 214,
+  "pack": "I1",
+  "doc": "docs/SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SUPPORT_RUNBOOK_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SUPPORT_RUNBOOK_RG_POINTERS_MVP.md",
+    "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+    "attestation_pack_remaining_gate": "docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_remaining_gate_stage188": "docs/SUPPORT_SLA_REMAINING_GATE_MVP.md",
+    "admin_ops_map": "ops/support/admin-ops-map.json"
+  },
+  "packaging_complete": true,
+  "live_support_runbook_claimed": false,
+  "live_ops_success_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage30_s1_support_runbook": true,
+  "distinct_from_stage188_support_sla_remaining_gate": true,
+  "distinct_from_stage213_attestation_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "sr-read-blockers",
+      "title": "Read B1 support runbook blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-follow-pointers",
+      "title": "Follow P1 Stage 30 S1 / Stage 213 / Stage 188 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-sla-missing",
+      "title": "Reaffirm live support-SLA MISSING until hosted support desk / SLA evidence ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-no-packaging-as-sla",
+      "title": "Do not treat Stage 30 S1 as live support-SLA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-sla-remaining",
+      "title": "Live support-SLA / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 214 I1 support runbook remaining-gate index packaging only. Do not claim live support-SLA Complete."
+}

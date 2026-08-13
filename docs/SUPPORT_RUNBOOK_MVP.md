@@ -47,3 +47,5 @@ Tenant MVP knowledge base hub indexes FAQ / troubleshooting for support intake: 
 ## Sign-off
 
 Stage 30 S1 is met when this doc + admin-ops map + evidence JSON exist, `test_support_runbook_s1.py` passes, and ADMIN_MANUAL / launch / roadmap cite Stage 30 S1 without inventing live ops success.
+
+See also Stage 214 Tenant MVP Support Runbook remaining-gate index fidelity (`docs/SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md`, ADR-434 / ADR-435) — packaging non-claim as live support-SLA Complete. Distinct from Stage 188 [`SUPPORT_SLA_REMAINING_GATE_MVP.md`](SUPPORT_SLA_REMAINING_GATE_MVP.md).

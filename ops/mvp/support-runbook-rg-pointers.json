@@ -1,0 +1,61 @@
+{
+  "id": "support-runbook-rg-pointers",
+  "stage": 214,
+  "pack": "P1",
+  "doc": "docs/SUPPORT_RUNBOOK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md",
+    "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+    "admin_ops_map": "ops/support/admin-ops-map.json",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md",
+    "attestation_pack_remaining_gate": "docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_remaining_gate_stage188": "docs/SUPPORT_SLA_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_support_runbook_claimed": false,
+  "live_ops_success_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "support_runbook_stage30_s1",
+    "admin_ops_map",
+    "support_readiness",
+    "attestation_pack_remaining_gate_stage213",
+    "support_sla_remaining_gate_stage188",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sp-runbook",
+      "title": "Point to Stage 30 S1 support runbook",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-map",
+      "title": "Point to admin-ops map",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-readiness",
+      "title": "Point to support readiness",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-attest-gate",
+      "title": "Point to Stage 213 attestation pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-sla-remaining",
+      "title": "Live support-SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 214 P1 support runbook RG pointers packaging only. Do not claim live support-SLA Complete."
+}

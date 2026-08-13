@@ -3,7 +3,7 @@
 **Status:** Complete (MVP packaging) — Stage 213 I1  
 **Evidence:** `backend/tests/test_stage213_index_i1.py`  
 **Register:** `ops/mvp/attestation-pack-remaining-gate.json`  
-**Related:** [ATTESTATION_PACK_BLOCKERS_MVP.md](ATTESTATION_PACK_BLOCKERS_MVP.md) · [ATTESTATION_PACK_RG_POINTERS_MVP.md](ATTESTATION_PACK_RG_POINTERS_MVP.md) · [ATTESTATION_PACK_MVP.md](ATTESTATION_PACK_MVP.md) · [EVIDENCE_LEDGER_REMAINING_GATE_MVP.md](EVIDENCE_LEDGER_REMAINING_GATE_MVP.md) · [ATTESTATION_REMAINING_GATE_MVP.md](ATTESTATION_REMAINING_GATE_MVP.md) · [STAGE_213_PLAN.md](STAGE_213_PLAN.md)
+**Related:** [ATTESTATION_PACK_BLOCKERS_MVP.md](ATTESTATION_PACK_BLOCKERS_MVP.md) · [ATTESTATION_PACK_RG_POINTERS_MVP.md](ATTESTATION_PACK_RG_POINTERS_MVP.md) · [ATTESTATION_PACK_MVP.md](ATTESTATION_PACK_MVP.md) · [EVIDENCE_LEDGER_REMAINING_GATE_MVP.md](EVIDENCE_LEDGER_REMAINING_GATE_MVP.md) · [ATTESTATION_REMAINING_GATE_MVP.md](ATTESTATION_REMAINING_GATE_MVP.md) · [STAGE_213_PLAN.md](STAGE_213_PLAN.md) · [SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md](SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md) (Stage 214)
 
 Single index of Stage 30 A1 attestation-pack remaining gates. Packaging only — **live go-live attestation Complete remains MISSING.** Distinct from Stage 30 A1 packaging, Stage 187 attestation remaining-gate, and Stage 212 evidence ledger remaining-gate.
 
