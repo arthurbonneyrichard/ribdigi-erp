@@ -358,8 +358,15 @@ class ProductImagePrimaryUpdate(BaseModel):
 
 class PartyCreate(BaseModel):
     name: str
+    code: str | None = None
+    profile_type: str | None = "registered"
+    category: str | None = None
+    status: str = "active"
     email: EmailStr | None = None
     phone: str | None = None
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     credit_limit: float = 0
     payment_terms_days: int = Field(default=30, ge=0, le=3650)
     customer_group_id: str | None = None
@@ -367,8 +374,15 @@ class PartyCreate(BaseModel):
 
 class PartyUpdate(BaseModel):
     name: str | None = None
+    code: str | None = None
+    profile_type: str | None = None
+    category: str | None = None
+    status: str | None = None
     email: EmailStr | None = None
     phone: str | None = None
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     credit_limit: float | None = None
     payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
     customer_group_id: str | None = None

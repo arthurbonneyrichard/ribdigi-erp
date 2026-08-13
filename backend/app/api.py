@@ -3555,14 +3555,30 @@ async def party_list(kind: str, claims: dict, db: AsyncSession):
     return env(rows)
 
 
+_PARTY_PROFILE_TYPES = {
+    "customer": frozenset({"walk_in", "registered"}),
+    "supplier": frozenset({"registered", "trade", "manufacturer", "service", "other"}),
+}
+_PARTY_STATUSES = frozenset({"active", "inactive"})
+
+
 def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict:
+    lat = getattr(row, "latitude", None)
+    lng = getattr(row, "longitude", None)
     data = {
         "id": row.id,
         "tenant_id": row.tenant_id,
         "kind": row.kind,
+        "code": getattr(row, "code", None),
         "name": row.name,
+        "profile_type": getattr(row, "profile_type", None) or "registered",
+        "category": getattr(row, "category", None),
+        "status": getattr(row, "status", None) or "active",
         "email": row.email,
         "phone": row.phone,
+        "address": getattr(row, "address", None),
+        "latitude": float(lat) if lat is not None else None,
+        "longitude": float(lng) if lng is not None else None,
         "credit_limit": float(row.credit_limit or 0),
         "payment_terms_days": int(getattr(row, "payment_terms_days", None) or 30),
         "balance": float(row.balance or 0),
@@ -3575,6 +3591,64 @@ def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict
     else:
         data["customer_group"] = None
     return data
+
+
+def _normalize_party_profile(data: dict, *, kind: str) -> dict:
+    if "code" in data:
+        code = data["code"]
+        if code is not None:
+            code = str(code).strip() or None
+        data["code"] = code
+    if "profile_type" in data:
+        pt = data["profile_type"]
+        if pt is None or str(pt).strip() == "":
+            data["profile_type"] = "registered"
+        else:
+            pt = str(pt).strip().lower()
+            allowed = _PARTY_PROFILE_TYPES[kind]
+            if pt not in allowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid profile_type; expected one of {sorted(allowed)}",
+                )
+            data["profile_type"] = pt
+    if "status" in data and data["status"] is not None:
+        st = str(data["status"]).strip().lower()
+        if st not in _PARTY_STATUSES:
+            raise HTTPException(status_code=400, detail="Invalid status; expected active or inactive")
+        data["status"] = st
+    if "category" in data and data["category"] is not None:
+        data["category"] = str(data["category"]).strip() or None
+    if "address" in data and data["address"] is not None:
+        data["address"] = str(data["address"]).strip() or None
+    for coord, lo, hi in (("latitude", -90.0, 90.0), ("longitude", -180.0, 180.0)):
+        if coord not in data or data[coord] is None:
+            continue
+        try:
+            val = float(data[coord])
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid {coord}") from exc
+        if val < lo or val > hi:
+            raise HTTPException(status_code=400, detail=f"{coord} out of range")
+        data[coord] = val
+    return data
+
+
+async def _ensure_party_code_unique(
+    db: AsyncSession,
+    tenant_id: str,
+    code: str | None,
+    *,
+    exclude_id: str | None = None,
+) -> None:
+    if not code:
+        return
+    q = select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.code == code)
+    if exclude_id:
+        q = q.where(m.Party.id != exclude_id)
+    existing = (await db.execute(q)).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="Party code already in use for this tenant")
 
 
 @api.get("/customers/groups")
@@ -3632,17 +3706,23 @@ async def patch_customer_group(
 
 
 @api.get("/customers")
-async def customers(claims=Depends(require_permission("sales", "read")), db: AsyncSession = Depends(get_db)):
+async def customers(
+    status: str | None = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
     from app import customer_groups as customer_groups_svc
 
     await customer_groups_svc.ensure_default_groups(db, claims["tenant_id"])
-    rows = (
-        await db.execute(
-            select(m.Party).where(
-                m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "customer"
-            )
-        )
-    ).scalars().all()
+    q = select(m.Party).where(
+        m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "customer"
+    )
+    if status:
+        st = status.strip().lower()
+        if st not in _PARTY_STATUSES:
+            raise HTTPException(status_code=400, detail="Invalid status filter")
+        q = q.where(m.Party.status == st)
+    rows = (await db.execute(q)).scalars().all()
     group_ids = {r.customer_group_id for r in rows if r.customer_group_id}
     groups: dict[str, m.CustomerGroup] = {}
     if group_ids:
@@ -3661,6 +3741,34 @@ async def customers(claims=Depends(require_permission("sales", "read")), db: Asy
     return env([_serialize_party(r, groups.get(r.customer_group_id)) for r in rows])
 
 
+@api.get("/customers/{customer_id}")
+async def get_customer(
+    customer_id: str,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import customer_groups as customer_groups_svc
+
+    party = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == customer_id,
+                m.Party.tenant_id == claims["tenant_id"],
+                m.Party.kind == "customer",
+            )
+        )
+    ).scalar_one_or_none()
+    if not party:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    group = None
+    if party.customer_group_id:
+        group = await customer_groups_svc.get_group(
+            db, claims["tenant_id"], party.customer_group_id
+        )
+    await db.commit()
+    return env(_serialize_party(party, group))
+
+
 @api.post("/customers")
 async def add_customer(
     payload: PartyCreate,
@@ -3669,10 +3777,11 @@ async def add_customer(
 ):
     from app import customer_groups as customer_groups_svc
 
-    data = payload.model_dump()
+    data = _normalize_party_profile(payload.model_dump(), kind="customer")
     group_id = data.pop("customer_group_id", None)
     if group_id:
         await customer_groups_svc.get_group(db, claims["tenant_id"], group_id)
+    await _ensure_party_code_unique(db, claims["tenant_id"], data.get("code"))
     party = m.Party(
         tenant_id=claims["tenant_id"],
         kind="customer",
@@ -3710,13 +3819,17 @@ async def patch_customer(
     ).scalar_one_or_none()
     if not party:
         raise HTTPException(status_code=404, detail="Customer not found")
-    data = payload.model_dump(exclude_unset=True)
+    data = _normalize_party_profile(payload.model_dump(exclude_unset=True), kind="customer")
     if "customer_group_id" in data:
         group_id = data["customer_group_id"]
         if group_id:
             await customer_groups_svc.get_group(db, claims["tenant_id"], group_id)
         party.customer_group_id = group_id
         data.pop("customer_group_id")
+    if "code" in data:
+        await _ensure_party_code_unique(
+            db, claims["tenant_id"], data.get("code"), exclude_id=party.id
+        )
     for key, value in data.items():
         setattr(party, key, value)
     await db.commit()
@@ -3770,16 +3883,43 @@ async def product_price_for_customer(
 
 
 @api.get("/suppliers")
-async def suppliers(claims=Depends(require_permission("purchasing", "read")), db: AsyncSession = Depends(get_db)):
-    rows = (
-        await db.execute(
-            select(m.Party).where(
-                m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "supplier"
-            )
-        )
-    ).scalars().all()
+async def suppliers(
+    status: str | None = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    q = select(m.Party).where(
+        m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "supplier"
+    )
+    if status:
+        st = status.strip().lower()
+        if st not in _PARTY_STATUSES:
+            raise HTTPException(status_code=400, detail="Invalid status filter")
+        q = q.where(m.Party.status == st)
+    rows = (await db.execute(q)).scalars().all()
     await db.commit()
     return env([_serialize_party(r) for r in rows])
+
+
+@api.get("/suppliers/{supplier_id}")
+async def get_supplier(
+    supplier_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    party = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == supplier_id,
+                m.Party.tenant_id == claims["tenant_id"],
+                m.Party.kind == "supplier",
+            )
+        )
+    ).scalar_one_or_none()
+    if not party:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    await db.commit()
+    return env(_serialize_party(party))
 
 
 @api.post("/suppliers")
@@ -3788,8 +3928,9 @@ async def add_supplier(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    data = payload.model_dump()
+    data = _normalize_party_profile(payload.model_dump(), kind="supplier")
     data.pop("customer_group_id", None)
+    await _ensure_party_code_unique(db, claims["tenant_id"], data.get("code"))
     party = m.Party(tenant_id=claims["tenant_id"], kind="supplier", **data)
     db.add(party)
     await db.commit()
@@ -3815,8 +3956,12 @@ async def patch_supplier(
     ).scalar_one_or_none()
     if not party:
         raise HTTPException(status_code=404, detail="Supplier not found")
-    data = payload.model_dump(exclude_unset=True)
+    data = _normalize_party_profile(payload.model_dump(exclude_unset=True), kind="supplier")
     data.pop("customer_group_id", None)
+    if "code" in data:
+        await _ensure_party_code_unique(
+            db, claims["tenant_id"], data.get("code"), exclude_id=party.id
+        )
     for key, value in data.items():
         setattr(party, key, value)
     await db.commit()

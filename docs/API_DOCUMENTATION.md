@@ -558,16 +558,21 @@ Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.
 ```json
 {
   "name": "Global Supplies Inc",
-  "contact_person": "Jane Smith",
+  "code": "SUP-001",
+  "profile_type": "manufacturer",
+  "category": "packaging",
+  "status": "active",
   "email": "jane@globalsupplies.com",
   "phone": "+1-555-0200",
   "address": "456 Supply Ave, Industrial City",
-  "tax_id": "TAX123456",
-  "payment_terms": "net_30",
-  "opening_balance": 0.00,
-  "status": "active"
+  "latitude": 5.6698,
+  "longitude": -0.0166,
+  "payment_terms_days": 30,
+  "credit_limit": 0
 }
 ```
+
+List supports optional `?status=active|inactive`. Party `code` is unique per tenant when set.
 
 ### 6.2 Purchase Request
 **List:** `GET /purchases/requests`  
@@ -676,15 +681,21 @@ Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced 
 ```json
 {
   "name": "Walk-in Customer",
+  "code": "CUST-001",
+  "profile_type": "walk_in",
+  "status": "active",
   "email": "walkin@example.com",
   "phone": "+1-555-0300",
   "address": "789 Customer Lane",
-  "customer_group": "retail",
+  "latitude": 5.6037,
+  "longitude": -0.187,
+  "customer_group_id": null,
   "credit_limit": 500.00,
-  "opening_balance": 0.00,
-  "tax_id": ""
+  "payment_terms_days": 30
 }
 ```
+
+List supports optional `?status=active|inactive`. Party `code` is unique per tenant when set.
 
 ### 7.2 Customer Groups
 **List:** `GET /customers/groups` (seeds Retail / Wholesale / VIP defaults)  

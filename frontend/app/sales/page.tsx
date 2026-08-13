@@ -59,7 +59,14 @@ export default function Page() {
   const [currency, setCurrency] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [customerCode, setCustomerCode] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerProfileType, setCustomerProfileType] = useState('registered');
+  const [customerStatus, setCustomerStatus] = useState('active');
+  const [customerLat, setCustomerLat] = useState('');
+  const [customerLng, setCustomerLng] = useState('');
   const [customerGroupId, setCustomerGroupId] = useState('');
   const [creditLimit, setCreditLimit] = useState('0');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
@@ -198,7 +205,14 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           name: customerName,
+          code: customerCode.trim() || null,
+          profile_type: customerProfileType || 'registered',
+          status: customerStatus || 'active',
           email: customerEmail || null,
+          phone: customerPhone.trim() || null,
+          address: customerAddress.trim() || null,
+          latitude: customerLat === '' ? null : Number(customerLat),
+          longitude: customerLng === '' ? null : Number(customerLng),
           credit_limit: Number(creditLimit) || 0,
           payment_terms_days: Number(paymentTermsDays) || 0,
           customer_group_id: customerGroupId || null,
@@ -206,7 +220,14 @@ export default function Page() {
       });
       setCustomerId(r.data.id);
       setCustomerName('');
+      setCustomerCode('');
       setCustomerEmail('');
+      setCustomerPhone('');
+      setCustomerAddress('');
+      setCustomerProfileType('registered');
+      setCustomerStatus('active');
+      setCustomerLat('');
+      setCustomerLng('');
       setCustomerGroupId('');
       setPaymentTermsDays('30');
       await refresh();
@@ -527,7 +548,10 @@ export default function Page() {
             <option value="">Customer</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
+                {c.code ? `${c.code} — ` : ''}
                 {c.name}
+                {c.profile_type === 'walk_in' ? ' (walk-in)' : ''}
+                {c.status === 'inactive' ? ' [inactive]' : ''}
                 {c.customer_group ? ` [${c.customer_group.name}]` : ''}
                 {c.email ? ` (${c.email})` : ''}
               </option>
@@ -567,9 +591,53 @@ export default function Page() {
           />
           <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="New customer" />
           <input
+            value={customerCode}
+            onChange={(e) => setCustomerCode(e.target.value)}
+            placeholder="Code"
+            style={{ width: 100 }}
+          />
+          <select
+            value={customerProfileType}
+            onChange={(e) => setCustomerProfileType(e.target.value)}
+            title="Customer type"
+          >
+            <option value="registered">Registered</option>
+            <option value="walk_in">Walk-in</option>
+          </select>
+          <select value={customerStatus} onChange={(e) => setCustomerStatus(e.target.value)} title="Status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <input
             value={customerEmail}
             onChange={(e) => setCustomerEmail(e.target.value)}
             placeholder="Customer email"
+          />
+          <input
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            placeholder="Phone"
+            style={{ width: 120 }}
+          />
+          <input
+            value={customerAddress}
+            onChange={(e) => setCustomerAddress(e.target.value)}
+            placeholder="Address"
+            style={{ minWidth: 160 }}
+          />
+          <input
+            value={customerLat}
+            onChange={(e) => setCustomerLat(e.target.value)}
+            placeholder="Lat"
+            style={{ width: 90 }}
+            title="GPS latitude"
+          />
+          <input
+            value={customerLng}
+            onChange={(e) => setCustomerLng(e.target.value)}
+            placeholder="Lng"
+            style={{ width: 90 }}
+            title="GPS longitude"
           />
           <select value={customerGroupId} onChange={(e) => setCustomerGroupId(e.target.value)}>
             <option value="">Group (optional)</option>
