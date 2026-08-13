@@ -325,3 +325,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Cutover Pack Remaining-Gate Index Fidelity** — cutover pack remaining-gate hub (I1), blocker matrix (B1), Stage 29 / Stage 203 / Stage 226 pointers with explicit non-claim (P1). Prefixed `CUTOVER_PACK_*` (≠ Stage 203 `CUTOVER_*`). Live cutover Completes remain deferred (Stage 228+). Distinct from Stage 203 cutover remaining-gate and Stage 226 PgBouncer live remaining-gate.
 
+## Stage 228 decision (opened after Stage 227 freeze)
+
+**Tenant MVP TLS Ingress Pack Remaining-Gate Index Fidelity** — TLS ingress pack remaining-gate hub (I1), blocker matrix (B1), Stage 29 / Stage 207 / Stage 227 pointers with explicit non-claim (P1). Prefixed `TLS_INGRESS_PACK_*` (≠ Stage 207 `TLS_INGRESS_*`). Live TLS cutover Completes remain deferred (Stage 229+). Distinct from Stage 207 TLS ingress remaining-gate and Stage 227 cutover pack remaining-gate.
+

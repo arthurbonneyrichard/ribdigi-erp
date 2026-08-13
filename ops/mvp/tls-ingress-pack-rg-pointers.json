@@ -1,0 +1,60 @@
+{
+  "id": "tls-ingress-pack-rg-pointers",
+  "stage": 228,
+  "pack": "P1",
+  "doc": "docs/TLS_INGRESS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TLS_INGRESS_PACK_REMAINING_GATE_MVP.md",
+    "tls_ingress_pack": "docs/TLS_INGRESS_PACK_MVP.md",
+    "tls_checklist": "ops/k8s/tls-checklist.json",
+    "tls_ingress_remaining_gate": "docs/TLS_INGRESS_REMAINING_GATE_MVP.md",
+    "cutover_pack_remaining_gate": "docs/CUTOVER_PACK_REMAINING_GATE_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "tls_cutover_claimed": false,
+  "letsencrypt_issued": false,
+  "live_tls_ingress_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "tls_ingress_pack_stage29_t1",
+    "tls_ingress_remaining_gate_stage207",
+    "cutover_pack_remaining_gate_stage227",
+    "k8s_deploy_stage26_k1",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "tiprp-pack",
+      "title": "Point to Stage 29 T1 TLS ingress pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprp-tls-gate",
+      "title": "Point to Stage 207 TLS ingress remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprp-cpr-gate",
+      "title": "Point to Stage 227 cutover pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprp-k8s",
+      "title": "Point to Stage 26 K1 K8s deploy",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprp-tls-remaining",
+      "title": "Live TLS cutover Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 228 P1 TLS ingress pack RG pointers packaging only. Do not claim live TLS cutover Complete."
+}

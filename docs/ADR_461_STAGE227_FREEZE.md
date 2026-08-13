@@ -24,6 +24,6 @@ Stage 227 Tenant MVP Cutover Pack Remaining-Gate Index Fidelity delivered cutove
 
 ## Next stage
 
-Stage 228 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 227 feature scope remains frozen.
+Stage 228 opened under **ADR-462** after CONTINUE/NEXT (TLS Ingress Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-463**. Stage 227 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP TLS Ingress Pack Remaining-Gate Index Fidelity — single index of TLS-ingress-pack blockers (packaged Stage 29 T1 TLS materials non-claim as live TLS cutover Complete) with explicit non-claim (no live TLS cutover Complete). Prefixed `TLS_INGRESS_PACK_*` if Stage 207 `TLS_INGRESS_*` remaining-gate exists. Distinct from Stage 227 cutover pack remaining-gate and Stage 226 PgBouncer live remaining-gate.
+**Amendment (2026-08-13):** Stage 228 runner-up outline was approved and opened (ADR-462); freeze ADR-463. Do not reopen Stage 227 scope.

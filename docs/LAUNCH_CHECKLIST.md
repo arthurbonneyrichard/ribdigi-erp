@@ -1155,6 +1155,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 29 / Stage 203 / Stage 226 pointers (Stage 227 P1: `test_stage227_pointers_p1.py`, `docs/CUTOVER_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 227 fidelity sync (D1: `test_stage227_fidelity_d1.py`, `docs/STAGE_227_FIDELITY.md`)
 - [x] Stage 227 exit + freeze (H227x: `test_stage227_exit_h227x.py`, `docs/STAGE_227_EXIT_CRITERIA.md`, ADR-461)
+- [x] Stage 228 track opened (ADR-462: `test_stage228_open.py`, `docs/STAGE_228_PLAN.md`) — TLS Ingress Pack Remaining-Gate Index; closed under ADR-463
+- [x] TLS ingress pack remaining-gate hub (Stage 228 I1: `test_stage228_index_i1.py`, `docs/TLS_INGRESS_PACK_REMAINING_GATE_MVP.md`)
+- [x] TLS ingress pack blocker matrix (Stage 228 B1: `test_stage228_blockers_b1.py`, `docs/TLS_INGRESS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 29 / Stage 207 / Stage 227 pointers (Stage 228 P1: `test_stage228_pointers_p1.py`, `docs/TLS_INGRESS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 228 fidelity sync (D1: `test_stage228_fidelity_d1.py`, `docs/STAGE_228_FIDELITY.md`)
+- [x] Stage 228 exit + freeze (H228x: `test_stage228_exit_h228x.py`, `docs/STAGE_228_EXIT_CRITERIA.md`, ADR-463)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

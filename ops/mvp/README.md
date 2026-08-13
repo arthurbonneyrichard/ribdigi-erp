@@ -794,6 +794,12 @@ Authoritative MVP docs:
 - `docs/CUTOVER_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/cutover-pack-remaining-gate.json` — Stage 227 I1
 - `docs/CUTOVER_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/cutover-pack-rg-blockers.json` — Stage 227 B1
 - `docs/CUTOVER_PACK_RG_POINTERS_MVP.md` / `ops/mvp/cutover-pack-rg-pointers.json` — Stage 227 P1
+- `docs/STAGE_228_EXIT_CRITERIA.md` / `docs/ADR_463_STAGE228_FREEZE.md` (`backend/tests/test_stage228_exit_h228x.py`) — Stage 228 H228x
+- `docs/STAGE_228_FIDELITY.md` (`backend/tests/test_stage228_fidelity_d1.py`) — Stage 228 D1
+- `docs/STAGE_228_PLAN.md` (`backend/tests/test_stage228_open.py`) — Stage 228 open (ADR-462)
+- `docs/TLS_INGRESS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/tls-ingress-pack-remaining-gate.json` — Stage 228 I1
+- `docs/TLS_INGRESS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/tls-ingress-pack-rg-blockers.json` — Stage 228 B1
+- `docs/TLS_INGRESS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/tls-ingress-pack-rg-pointers.json` — Stage 228 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2949,6 +2955,18 @@ See `docs/STAGE_227_FIDELITY.md`.
 ## Stage 227 open
 
 ADR-460 / `docs/STAGE_227_PLAN.md`.
+
+## Stage 228 exit
+
+H228x met — `docs/STAGE_228_EXIT_CRITERIA.md`, ADR-463. Stages 1–228 frozen for Stage 228 feature scope.
+
+## Stage 228 D1 — Tenant MVP TLS Ingress Pack Remaining-Gate Index Fidelity
+
+See `docs/STAGE_228_FIDELITY.md`.
+
+## Stage 228 open
+
+ADR-462 / `docs/STAGE_228_PLAN.md`.
 
 ## Stage 213 exit
 

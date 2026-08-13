@@ -210,6 +210,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Cutover pack remaining-gate index (Stage 227):** Status index is `docs/CUTOVER_PACK_REMAINING_GATE_MVP.md` → blockers `docs/CUTOVER_PACK_RG_BLOCKERS_MVP.md` → Stage 29/203/226 pointers `docs/CUTOVER_PACK_RG_POINTERS_MVP.md`. Live cutover Complete remains MISSING (not claimed). Distinct from Stage 203 cutover remaining-gate.
 
+**TLS ingress pack remaining-gate index (Stage 228):** Status index is `docs/TLS_INGRESS_PACK_REMAINING_GATE_MVP.md` → blockers `docs/TLS_INGRESS_PACK_RG_BLOCKERS_MVP.md` → Stage 29/207/227 pointers `docs/TLS_INGRESS_PACK_RG_POINTERS_MVP.md`. Live TLS cutover Complete remains MISSING (not claimed). Distinct from Stage 207 TLS ingress remaining-gate.
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
