@@ -11,6 +11,9 @@ type Store = {
   code: string;
   name: string;
   address?: string;
+  phone?: string | null;
+  manager_id?: string | null;
+  branch_id?: string | null;
   is_active?: boolean;
   operating_hours?: OperatingHours | null;
   drawer_mode?: string;
@@ -18,6 +21,7 @@ type Store = {
   drawer_port?: number;
   drawer_open_on_cash?: boolean;
 };
+type Branch = { id: string; code: string; name: string; is_active?: boolean };
 
 const WEEKDAYS: { key: keyof OperatingHours; label: string }[] = [
   { key: 'mon', label: 'Mon' },
@@ -79,6 +83,7 @@ type Transfer = {
 
 export default function Page() {
   const [stores, setStores] = useState<Store[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -87,8 +92,14 @@ export default function Page() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [managerId, setManagerId] = useState('');
+  const [branchId, setBranchId] = useState('');
   const [hours, setHours] = useState<OperatingHours>(defaultHours());
   const [editStoreId, setEditStoreId] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editManagerId, setEditManagerId] = useState('');
+  const [editBranchId, setEditBranchId] = useState('');
   const [editHours, setEditHours] = useState<OperatingHours>(defaultHours());
   const [whCode, setWhCode] = useState('');
   const [whName, setWhName] = useState('');
@@ -116,19 +127,21 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [s, p, t, settings, wh, u] = await Promise.all([
+    const [s, p, t, settings, wh, u, br] = await Promise.all([
       api('/stores'),
       api('/products'),
       api('/stores/transfers'),
       api('/inventory/settings').catch(() => ({ data: { fefo_strict_warehouse: false } })),
       api('/warehouses').catch(() => ({ data: [] })),
       api('/users').catch(() => ({ data: [] })),
+      api('/branches').catch(() => ({ data: [] })),
     ]);
     setStores(s.data || []);
     setProducts(p.data || []);
     setTransfers(t.data || []);
     setWarehouses(wh.data || []);
     setUsers(u.data || []);
+    setBranches(br.data || []);
     setFefoStrict(!!settings.data?.fefo_strict_warehouse);
     if (!fromStore && s.data?.length) setFromStore(s.data[0].id);
     if (!toStore && s.data?.length > 1) setToStore(s.data[1].id);
@@ -156,12 +169,16 @@ export default function Page() {
           code,
           name,
           address: address || undefined,
+          manager_id: managerId || null,
+          branch_id: branchId || null,
           operating_hours: hours,
         }),
       });
       setCode('');
       setName('');
       setAddress('');
+      setManagerId('');
+      setBranchId('');
       setHours(defaultHours());
       setMessage('Store created');
       await refresh();
@@ -170,27 +187,49 @@ export default function Page() {
     }
   }
 
-  function startEditStoreHours(s: Store) {
+  function startEditStore(s: Store) {
     setEditStoreId(s.id);
+    setEditName(s.name || '');
+    setEditAddress(s.address || '');
+    setEditManagerId(s.manager_id || '');
+    setEditBranchId(s.branch_id || '');
     setEditHours(s.operating_hours ? { ...defaultHours(), ...s.operating_hours } : defaultHours());
   }
 
-  async function saveStoreHours() {
+  async function saveStoreEdit() {
     if (!editStoreId) return;
     setError('');
     setMessage('');
     try {
       await api(`/stores/${editStoreId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ operating_hours: editHours }),
+        body: JSON.stringify({
+          name: editName.trim() || undefined,
+          address: editAddress,
+          manager_id: editManagerId || null,
+          clear_manager: !editManagerId,
+          branch_id: editBranchId || null,
+          clear_branch: !editBranchId,
+          operating_hours: editHours,
+        }),
       });
-      setMessage('Store hours updated');
+      setMessage('Store updated');
       setEditStoreId('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
     }
   }
+
+  const userLabel = (id: string) => {
+    const u = users.find((x) => x.id === id);
+    return u?.full_name || u?.name || u?.email || id.slice(0, 8);
+  };
+
+  const branchLabel = (id: string) => {
+    const b = branches.find((x) => x.id === id);
+    return b ? `${b.code} — ${b.name}` : id.slice(0, 8);
+  };
 
   function setDayHours(
     target: 'create' | 'edit',
@@ -333,11 +372,6 @@ export default function Page() {
     setWhStoreId(w.store_id || '');
   }
 
-  const userLabel = (id: string) => {
-    const u = users.find((x) => x.id === id);
-    return u?.full_name || u?.name || u?.email || id.slice(0, 8);
-  };
-
   async function saveDrawerSettings() {
     if (!drawerStoreId) return;
     setError('');
@@ -463,6 +497,24 @@ export default function Page() {
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code" />
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
+            <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+              <option value="">Manager (optional)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+              <option value="">Branch (optional)</option>
+              {branches
+                .filter((b) => b.is_active !== false)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.code} — {b.name}
+                  </option>
+                ))}
+            </select>
             <label className="muted">Operating hours</label>
             <HoursEditor value={hours} onDay={(day, patch) => setDayHours('create', day, patch)} />
             <button onClick={createStore} disabled={!code.trim() || !name.trim()}>
@@ -631,12 +683,14 @@ export default function Page() {
       </div>
 
       <h3 style={{ marginTop: 16 }}>Stores</h3>
-      <p className="muted">Operating hours (BR-2.3).</p>
+      <p className="muted">Manager, branch, hours, and warehouse link (BR-2.3).</p>
       <table className="table">
         <thead>
           <tr>
             <th>Code</th>
             <th>Name</th>
+            <th>Manager</th>
+            <th>Branch</th>
             <th>Address</th>
             <th>Hours</th>
             <th></th>
@@ -647,11 +701,13 @@ export default function Page() {
             <tr key={s.id}>
               <td>{s.code}</td>
               <td>{s.name}</td>
+              <td>{s.manager_id ? userLabel(s.manager_id) : '—'}</td>
+              <td>{s.branch_id ? branchLabel(s.branch_id) : '—'}</td>
               <td>{s.address || '—'}</td>
               <td style={{ maxWidth: 280, fontSize: 13 }}>{summarizeHours(s.operating_hours)}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => startEditStoreHours(s)}>
-                  Hours
+                <button type="button" onClick={() => startEditStore(s)}>
+                  Edit
                 </button>
                 <button onClick={() => loadInventory(s.id)}>Inventory / reorder</button>
               </td>
@@ -662,15 +718,42 @@ export default function Page() {
 
       {editStoreId && (
         <div className="card" style={{ marginTop: 16, marginBottom: 16 }}>
-          <h3>Edit hours · {storeName(editStoreId)}</h3>
-          <HoursEditor value={editHours} onDay={(day, patch) => setDayHours('edit', day, patch)} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button type="button" onClick={saveStoreHours}>
-              Save hours
-            </button>
-            <button type="button" onClick={() => setEditStoreId('')}>
-              Cancel
-            </button>
+          <h3>Edit store · {stores.find((s) => s.id === editStoreId)?.code || editStoreId.slice(0, 8)}</h3>
+          <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+            <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" />
+            <input
+              value={editAddress}
+              onChange={(e) => setEditAddress(e.target.value)}
+              placeholder="Address"
+            />
+            <select value={editManagerId} onChange={(e) => setEditManagerId(e.target.value)}>
+              <option value="">No manager</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            <select value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)}>
+              <option value="">No branch</option>
+              {branches
+                .filter((b) => b.is_active !== false)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.code} — {b.name}
+                  </option>
+                ))}
+            </select>
+            <label className="muted">Operating hours</label>
+            <HoursEditor value={editHours} onDay={(day, patch) => setDayHours('edit', day, patch)} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={saveStoreEdit} disabled={!editName.trim()}>
+                Save store
+              </button>
+              <button type="button" onClick={() => setEditStoreId('')}>
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
