@@ -147,10 +147,10 @@ export default function Login() {
         <div className="login-brand">
           <img
             className="login-logo"
-            src="/brand/logo-full.png"
+            src="/brand/logo-sidebar.png"
             alt="RIBDIGI ERP — Run your business smarter"
-            width={220}
-            height={134}
+            width={260}
+            height={68}
           />
         </div>
 
