@@ -441,15 +441,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <div className="brand">
           <img
             className="brand-logo"
-            src="/brand/logo-sidebar.png"
-            alt="RIBDIGI ERP"
-            width={196}
-            height={131}
+            src="/brand/logo-full.png"
+            alt="RIBDIGI ERP — Run your business smarter"
+            width={200}
+            height={200}
           />
         </div>
-        <div className="brand-sub">
-          {isPlatformOwner ? 'Platform owner console' : 'Run your business smarter'}
-        </div>
+        {isPlatformOwner ? <div className="brand-sub">Platform owner console</div> : null}
         <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
           {visible.map(([n, h, module]) => {
             const active = pathname === h || pathname.startsWith(`${h}/`);
