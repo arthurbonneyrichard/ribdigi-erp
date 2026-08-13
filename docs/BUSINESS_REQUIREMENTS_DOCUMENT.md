@@ -344,7 +344,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Brands:** Brand name, logo, description (`brands.logo_url` + description; `POST|GET|DELETE /catalog/brands/{id}/logo`; Inventory Catalog UI)
   - [x] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios
   - [ ] **Product Variants:** Size, color, flavor, dosage (pharmacy) variants with unique SKUs
-  - [ ] **SKU:** Auto-generated or manual SKU assignment
+  - [x] **SKU:** Auto-generated or manual SKU assignment (omit/blank `sku` on product/variant create → `SKU-YYYY-NNNN`; explicit SKU still wins; unique across products+variants)
   - [ ] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes
   - [ ] **Images:** Multiple product images with primary image designation
   - [x] **Product Details:** Name, description, cost price, selling price, tax rate, category, brand, unit, weight, dimensions (`products.description` / `weight` / `length`/`width`/`height`; create/PATCH + CSV import; Inventory UI)

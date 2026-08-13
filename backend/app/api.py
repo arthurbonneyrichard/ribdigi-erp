@@ -2502,6 +2502,12 @@ async def add_product(
     for dim in ("weight", "length", "width", "height"):
         if data.get(dim) is not None:
             data[dim] = float(data[dim])
+    sku_norm = catalog_svc.normalize_sku(data.get("sku"))
+    if not sku_norm:
+        sku_norm = await catalog_svc.allocate_sku(db, claims["tenant_id"], prefix="SKU")
+    else:
+        await catalog_svc.assert_sku_available(db, claims["tenant_id"], sku_norm)
+    data["sku"] = sku_norm
     product = m.Product(tenant_id=claims["tenant_id"], **data)
     sync_product_tax_flags(product, supply_class=supply)
     db.add(product)

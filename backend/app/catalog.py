@@ -2,14 +2,89 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.inventory import apply_stock_change
+
+_SKU_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
+
+
+def normalize_sku(value: str | None) -> str | None:
+    sku = (value or "").strip().upper()
+    if not sku:
+        return None
+    if not _SKU_RE.fullmatch(sku):
+        raise HTTPException(
+            status_code=400,
+            detail="SKU must be 1–100 chars: letters, digits, . _ - (start alphanumeric)",
+        )
+    return sku
+
+
+async def sku_in_use(
+    db: AsyncSession,
+    tenant_id: str,
+    sku: str,
+    *,
+    exclude_product_id: str | None = None,
+    exclude_variant_id: str | None = None,
+) -> bool:
+    pq = select(m.Product.id).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
+    if exclude_product_id:
+        pq = pq.where(m.Product.id != exclude_product_id)
+    if (await db.execute(pq)).scalar_one_or_none():
+        return True
+    vq = select(m.ProductVariant.id).where(
+        m.ProductVariant.tenant_id == tenant_id, m.ProductVariant.sku == sku
+    )
+    if exclude_variant_id:
+        vq = vq.where(m.ProductVariant.id != exclude_variant_id)
+    return (await db.execute(vq)).scalar_one_or_none() is not None
+
+
+async def assert_sku_available(
+    db: AsyncSession,
+    tenant_id: str,
+    sku: str,
+    *,
+    exclude_product_id: str | None = None,
+    exclude_variant_id: str | None = None,
+) -> None:
+    if await sku_in_use(
+        db,
+        tenant_id,
+        sku,
+        exclude_product_id=exclude_product_id,
+        exclude_variant_id=exclude_variant_id,
+    ):
+        raise HTTPException(status_code=409, detail="SKU already in use")
+
+
+async def allocate_sku(db: AsyncSession, tenant_id: str, *, prefix: str = "SKU") -> str:
+    """Allocate a unique tenant SKU: PREFIX-YYYY-NNNN."""
+    year = datetime.utcnow().year
+    head = f"{prefix}-{year}-"
+    # Count existing catalog rows as a starting sequence hint
+    product_count = (
+        await db.execute(select(func.count()).select_from(m.Product).where(m.Product.tenant_id == tenant_id))
+    ).scalar_one()
+    variant_count = (
+        await db.execute(
+            select(func.count()).select_from(m.ProductVariant).where(m.ProductVariant.tenant_id == tenant_id)
+        )
+    ).scalar_one()
+    start = int(product_count or 0) + int(variant_count or 0) + 1
+    for n in range(start, start + 10_000):
+        candidate = f"{head}{n:04d}"
+        if not await sku_in_use(db, tenant_id, candidate):
+            return candidate
+    raise HTTPException(status_code=500, detail="Unable to allocate SKU")
 
 
 def serialize_variant(v: m.ProductVariant) -> dict:
@@ -128,7 +203,7 @@ async def create_variant(
     tenant_id: str,
     product_id: str,
     name: str,
-    sku: str,
+    sku: str | None = None,
     barcode: str | None = None,
     size: str | None = None,
     color: str | None = None,
@@ -137,28 +212,15 @@ async def create_variant(
     selling_price: float | None = None,
 ) -> m.ProductVariant:
     product = await get_product(db, tenant_id, product_id)
-    sku = (sku or "").strip()
     name = (name or "").strip()
-    if not sku or not name:
-        raise HTTPException(status_code=400, detail="Variant name and sku are required")
-    exists = (
-        await db.execute(
-            select(m.ProductVariant).where(
-                m.ProductVariant.tenant_id == tenant_id,
-                m.ProductVariant.sku == sku,
-            )
-        )
-    ).scalar_one_or_none()
-    if exists:
-        raise HTTPException(status_code=409, detail="Variant SKU already exists")
-    # Also block collision with parent product SKUs
-    prod_sku = (
-        await db.execute(
-            select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
-        )
-    ).scalar_one_or_none()
-    if prod_sku:
-        raise HTTPException(status_code=409, detail="SKU already used by a product")
+    if not name:
+        raise HTTPException(status_code=400, detail="Variant name is required")
+    sku_norm = normalize_sku(sku)
+    if not sku_norm:
+        sku_norm = await allocate_sku(db, tenant_id, prefix="SKU")
+    else:
+        await assert_sku_available(db, tenant_id, sku_norm)
+    sku = sku_norm
 
     variant = m.ProductVariant(
         tenant_id=tenant_id,
@@ -212,28 +274,13 @@ async def update_variant(
             raise HTTPException(status_code=400, detail="Variant name is required")
         variant.name = name
     if sku is not None:
-        sku = sku.strip()
-        if not sku:
+        sku_norm = normalize_sku(sku)
+        if not sku_norm:
             raise HTTPException(status_code=400, detail="Variant sku is required")
-        clash = (
-            await db.execute(
-                select(m.ProductVariant).where(
-                    m.ProductVariant.tenant_id == tenant_id,
-                    m.ProductVariant.sku == sku,
-                    m.ProductVariant.id != variant.id,
-                )
-            )
-        ).scalar_one_or_none()
-        if clash:
-            raise HTTPException(status_code=409, detail="Variant SKU already exists")
-        prod_sku = (
-            await db.execute(
-                select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
-            )
-        ).scalar_one_or_none()
-        if prod_sku:
-            raise HTTPException(status_code=409, detail="SKU already used by a product")
-        variant.sku = sku
+        await assert_sku_available(
+            db, tenant_id, sku_norm, exclude_variant_id=variant.id
+        )
+        variant.sku = sku_norm
     if clear_barcode:
         variant.barcode = None
     elif barcode is not None:
