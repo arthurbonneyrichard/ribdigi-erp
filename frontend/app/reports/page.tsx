@@ -43,6 +43,7 @@ const REPORT_TYPES = [
   'sales_products',
   'sales_salesperson',
   'sales_customers',
+  'sales_returns',
   'sales_by_store',
   'inventory_balance',
   'inventory_valuation',
@@ -143,11 +144,17 @@ export default function Page() {
       if (nextTab === 'balancesheet') path = `/reports/balance-sheet${balanceSheetQs()}`;
       const r = await api(path);
       if (nextTab === 'sales') {
-        const [daily, monthly] = await Promise.all([
+        const [daily, monthly, returns] = await Promise.all([
           api('/reports/sales/daily'),
           api('/reports/sales/monthly'),
+          api(`/reports/sales/returns${qs()}`),
         ]);
-        setData({ products: r.data, daily: daily.data, monthly: monthly.data });
+        setData({
+          products: r.data,
+          daily: daily.data,
+          monthly: monthly.data,
+          returns: returns.data,
+        });
       } else if (nextTab === 'inventory') {
         const whQs = warehouseId ? `?warehouse_id=${encodeURIComponent(warehouseId)}` : '';
         const [balance, valuation, movements, suggestions, transfers] = await Promise.all([
@@ -536,6 +543,59 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+            <button onClick={() => download('xlsx', 'sales_returns')}>Returns Excel</button>
+            <button onClick={() => download('csv', 'sales_returns')}>Returns CSV</button>
+          </div>
+          <h3 style={{ marginTop: 16 }}>Sales returns</h3>
+          <p className="muted">
+            {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
+            posted {data.returns?.posted_amount ?? 0} · qty {data.returns?.total_quantity ?? 0} ·
+            refunded {data.returns?.refunded_amount ?? 0}
+          </p>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Return</th>
+                <th>Customer</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Qty</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.returns?.returns || []).map((ret: any) => (
+                <tr key={ret.id}>
+                  <td>{ret.return_number}</td>
+                  <td>{ret.customer_name}</td>
+                  <td>{ret.reason}</td>
+                  <td>{ret.status}</td>
+                  <td>{ret.quantity}</td>
+                  <td>{ret.total_amount}</td>
+                </tr>
+              ))}
+              {!data.returns?.returns?.length && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No sales returns
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {(data.returns?.by_reason || []).length > 0 && (
+            <>
+              <h4 style={{ marginTop: 12 }}>Returns by reason</h4>
+              <ul>
+                {data.returns.by_reason.map((x: any) => (
+                  <li key={x.reason}>
+                    {x.reason}: {x.return_count} · qty {x.quantity} · {x.total_amount}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </>
       )}
 

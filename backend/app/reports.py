@@ -355,6 +355,149 @@ async def sales_by_customer(
     }
 
 
+async def sales_returns_summary(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    customer_id: str | None = None,
+    reason: str | None = None,
+    status: str | None = None,
+) -> dict:
+    """Sales return summary by period / reason / customer (BR-14.1)."""
+    from app.sales_docs import RETURN_REASONS
+
+    if reason:
+        key = reason.strip().lower()
+        if key not in RETURN_REASONS:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=400,
+                detail=f"reason must be one of {sorted(RETURN_REASONS)}",
+            )
+        reason = key
+    if status:
+        status = status.strip().lower()
+        if status not in {"draft", "posted", "cancelled"}:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=400,
+                detail="status must be draft, posted, or cancelled",
+            )
+
+    stmt = (
+        select(m.SalesReturn, m.Party)
+        .join(m.Party, m.Party.id == m.SalesReturn.customer_id)
+        .where(m.SalesReturn.tenant_id == tenant_id)
+        .order_by(m.SalesReturn.created_at.desc())
+    )
+    if customer_id:
+        stmt = stmt.where(m.SalesReturn.customer_id == customer_id)
+    if reason:
+        stmt = stmt.where(m.SalesReturn.reason == reason)
+    if status:
+        stmt = stmt.where(m.SalesReturn.status == status)
+    if from_date:
+        stmt = stmt.where(m.SalesReturn.created_at >= from_date)
+    if to_date:
+        stmt = stmt.where(m.SalesReturn.created_at <= to_date)
+
+    rows = (await db.execute(stmt)).all()
+    by_reason: dict[str, dict] = {}
+    by_status: dict[str, int] = defaultdict(int)
+    by_customer: dict[str, dict] = {}
+    returns: list[dict] = []
+    total_amount = 0.0
+    posted_amount = 0.0
+    total_qty = 0.0
+    refunded_total = 0.0
+
+    for ret, party in rows:
+        items = (
+            await db.execute(
+                select(m.SalesReturnItem).where(
+                    m.SalesReturnItem.tenant_id == tenant_id,
+                    m.SalesReturnItem.sales_return_id == ret.id,
+                )
+            )
+        ).scalars().all()
+        qty = round(sum(float(i.quantity or 0) for i in items), 3)
+        amount = float(ret.total_amount or 0)
+        refunded = float(ret.refunded_amount or 0)
+        total_amount += amount
+        total_qty += qty
+        refunded_total += refunded
+        by_status[ret.status] += 1
+        if ret.status == "posted":
+            posted_amount += amount
+
+        reason_row = by_reason.setdefault(
+            ret.reason or "other",
+            {"reason": ret.reason or "other", "return_count": 0, "total_amount": 0.0, "quantity": 0.0},
+        )
+        reason_row["return_count"] += 1
+        reason_row["total_amount"] = round(reason_row["total_amount"] + amount, 2)
+        reason_row["quantity"] = round(reason_row["quantity"] + qty, 3)
+
+        cust = by_customer.setdefault(
+            party.id,
+            {
+                "customer_id": party.id,
+                "name": party.name,
+                "return_count": 0,
+                "total_amount": 0.0,
+                "quantity": 0.0,
+            },
+        )
+        cust["return_count"] += 1
+        cust["total_amount"] = round(cust["total_amount"] + amount, 2)
+        cust["quantity"] = round(cust["quantity"] + qty, 3)
+
+        returns.append(
+            {
+                "id": ret.id,
+                "return_number": ret.return_number,
+                "credit_note_number": ret.credit_note_number,
+                "customer_id": party.id,
+                "customer_name": party.name,
+                "status": ret.status,
+                "reason": ret.reason,
+                "restock": bool(ret.restock),
+                "settlement_method": ret.settlement_method,
+                "quantity": qty,
+                "subtotal": float(ret.subtotal or 0),
+                "tax_amount": float(ret.tax_amount or 0),
+                "total_amount": amount,
+                "refunded_amount": refunded,
+                "sales_invoice_id": ret.sales_invoice_id,
+                "posted_at": ret.posted_at,
+                "created_at": ret.created_at,
+            }
+        )
+
+    reasons = sorted(by_reason.values(), key=lambda x: x["total_amount"], reverse=True)
+    customers = sorted(by_customer.values(), key=lambda x: x["total_amount"], reverse=True)
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "customer_id": customer_id,
+        "reason": reason,
+        "status": status,
+        "return_count": len(returns),
+        "total_amount": round(total_amount, 2),
+        "posted_amount": round(posted_amount, 2),
+        "total_quantity": round(total_qty, 3),
+        "refunded_amount": round(refunded_total, 2),
+        "by_status": dict(by_status),
+        "by_reason": reasons,
+        "by_customer": customers,
+        "returns": returns,
+    }
+
+
 async def sales_by_salesperson(
     db: AsyncSession,
     tenant_id: str,

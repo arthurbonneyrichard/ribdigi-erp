@@ -1096,6 +1096,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Monthly Sales:** `GET /reports/sales/monthly?month=&year=`  
 **Product Sales:** `GET /reports/sales/products?from_date=&to_date=`  
 **Customer Sales:** `GET /reports/sales/customers?from_date=&to_date=&limit=` — top customers by revenue (posted invoices + POS); includes walk-in bucket; optional `limit` for top-N. Export `sales_customers`.  
+**Sales Returns:** `GET /reports/sales/returns?from_date=&to_date=&customer_id=&reason=&status=` — return summary with `by_reason` / `by_customer` / line list; reasons `damaged|wrong_item|defective|customer_change|other`. Export `sales_returns`.  
 **Salesperson:** `GET /reports/sales/salesperson?from_date=&to_date=`  
 **By store:** `GET /reports/sales/by-store?from_date=&to_date=`
 
