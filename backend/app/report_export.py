@@ -24,6 +24,7 @@ EXPORTABLE = frozenset(
         "sales_monthly",
         "sales_products",
         "sales_salesperson",
+        "sales_customers",
         "sales_by_store",
         "inventory_balance",
         "inventory_valuation",
@@ -227,6 +228,15 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             for r in rows[:50]
         ]
         return rows or [{"note": "no rows"}], lines, "Sales by Salesperson"
+
+    if report_type == "sales_customers":
+        items = payload.get("customers") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload if isinstance(payload, dict) else {}) + [
+            f"{r.get('name')}: sales={r.get('sale_count')} revenue={r.get('revenue')} avg={r.get('avg_ticket')}"
+            for r in rows[:50]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Sales by Customer"
 
     if report_type == "sales_by_store":
         items = payload.get("stores") or []
@@ -460,6 +470,8 @@ async def build_report_payload(
         return await reports_svc.sales_by_product(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "sales_salesperson":
         return await reports_svc.sales_by_salesperson(db, tenant_id, from_date=fd, to_date=td)
+    if report_type == "sales_customers":
+        return await reports_svc.sales_by_customer(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "sales_by_store":
         return await reports_svc.sales_by_store(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "inventory_balance":

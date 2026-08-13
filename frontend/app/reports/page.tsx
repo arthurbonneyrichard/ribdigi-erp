@@ -10,6 +10,7 @@ type Tab =
   | 'summary'
   | 'sales'
   | 'salesperson'
+  | 'customers'
   | 'stores'
   | 'inventory'
   | 'purchases'
@@ -24,6 +25,7 @@ const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   summary: 'summary',
   sales: 'sales_products',
   salesperson: 'sales_salesperson',
+  customers: 'sales_customers',
   stores: 'sales_by_store',
   inventory: 'inventory_low_stock',
   purchases: 'purchases_summary',
@@ -40,6 +42,7 @@ const REPORT_TYPES = [
   'sales_monthly',
   'sales_products',
   'sales_salesperson',
+  'sales_customers',
   'sales_by_store',
   'inventory_balance',
   'inventory_valuation',
@@ -126,6 +129,7 @@ export default function Page() {
       let path = '/reports/summary';
       if (nextTab === 'sales') path = `/reports/sales/products${qs()}`;
       if (nextTab === 'salesperson') path = `/reports/sales/salesperson${qs()}`;
+      if (nextTab === 'customers') path = `/reports/sales/customers${qs()}`;
       if (nextTab === 'stores') path = `/reports/sales/by-store${qs()}`;
       if (nextTab === 'inventory') path = '/reports/inventory/low-stock';
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
@@ -363,6 +367,7 @@ export default function Page() {
             ['summary', 'Summary'],
             ['sales', 'Sales'],
             ['salesperson', 'Salespeople'],
+            ['customers', 'Customers'],
             ['stores', 'Stores'],
             ['inventory', 'Inventory'],
             ['purchases', 'Purchases'],
@@ -450,6 +455,9 @@ export default function Page() {
         )}
         {tab === 'salesperson' && (
           <button onClick={() => download('xlsx', 'sales_salesperson')}>Export Excel</button>
+        )}
+        {tab === 'customers' && (
+          <button onClick={() => download('xlsx', 'sales_customers')}>Export Excel</button>
         )}
         {tab === 'stores' && (
           <button onClick={() => download('xlsx', 'sales_by_store')}>Export Excel</button>
@@ -563,6 +571,69 @@ export default function Page() {
                   <td>{s.avg_ticket}</td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'customers' && data && (
+        <>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Total revenue</div>
+              <div className="kpi">{data.total_revenue ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Customers</div>
+              <div className="kpi">{data.customer_count ?? data.customers?.length ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Sales / Invoice·POS</div>
+              <div className="kpi">
+                {data.total_sales ?? 0} · {data.invoice_revenue ?? 0}/{data.pos_revenue ?? 0}
+              </div>
+            </div>
+          </div>
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Invoices</th>
+                <th>POS</th>
+                <th>Frequency</th>
+                <th>Revenue</th>
+                <th>Avg ticket</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.customers || []).map((c: any) => (
+                <tr key={c.customer_id || c.name}>
+                  <td>
+                    {c.name}
+                    {c.email ? (
+                      <span className="muted" style={{ display: 'block', fontSize: 12 }}>
+                        {c.email}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td>
+                    {c.invoice_count} ({c.invoice_revenue})
+                  </td>
+                  <td>
+                    {c.pos_count} ({c.pos_revenue})
+                  </td>
+                  <td>{c.sale_count}</td>
+                  <td>{c.revenue}</td>
+                  <td>{c.avg_ticket}</td>
+                </tr>
+              ))}
+              {!data.customers?.length && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No customer sales for this period
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </>
