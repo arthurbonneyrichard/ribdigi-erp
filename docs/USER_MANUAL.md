@@ -126,6 +126,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Shift handover (Stage 175):** Mid/end-shift handoff is `docs/SHIFT_HANDOVER_CHECKLIST_MVP.md` → snapshot `docs/SHIFT_HANDOVER_SNAPSHOT_MVP.md` → device/open-close pointers `docs/SHIFT_HANDOVER_POINTERS_MVP.md`. Offline Complete remains deferred.
 
+**Weekly POS ops review (Stage 176):** Manager weekly review is `docs/WEEKLY_POS_OPS_REVIEW_MVP.md` → adherence `docs/WEEKLY_POS_OPS_ADHERENCE_MVP.md` → signals `docs/WEEKLY_POS_OPS_SIGNALS_MVP.md`. Offline Complete and live support SLA remain deferred.
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

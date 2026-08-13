@@ -86,3 +86,7 @@ Store-close Hold/queue drain: [STORE_CLOSE_CHECKLIST_MVP.md](STORE_CLOSE_CHECKLI
 ## Stage 175 S1 amendment
 
 Shift-handover sync/conflict snapshot: [SHIFT_HANDOVER_SNAPSHOT_MVP.md](SHIFT_HANDOVER_SNAPSHOT_MVP.md) (`ops/mvp/shift-handover-snapshot.json`, `test_stage175_snapshot_s1.py`). Offline Complete remains not claimed.
+
+## Stage 176 R1 amendment
+
+Weekly conflict backlog / catalog TTL review: [WEEKLY_POS_OPS_SIGNALS_MVP.md](WEEKLY_POS_OPS_SIGNALS_MVP.md) (`ops/mvp/weekly-pos-ops-signals.json`, `test_stage176_review_r1.py`). Offline Complete / live SLA remain not claimed.

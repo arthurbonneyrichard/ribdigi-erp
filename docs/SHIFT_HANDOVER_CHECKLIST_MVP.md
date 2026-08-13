@@ -30,3 +30,7 @@ Mid/end-shift handoff checklist hub between outgoing and incoming cashiers. Dist
 - Offline Complete product acceptance
 - Fabricated “shift handed green” Completes
 - Live training / go-live Completes
+
+## Stage 176 A1 amendment
+
+Weekly manager adherence reviews this handoff pack: [WEEKLY_POS_OPS_ADHERENCE_MVP.md](WEEKLY_POS_OPS_ADHERENCE_MVP.md) (`ops/mvp/weekly-pos-ops-adherence.json`, `test_stage176_adhere_a1.py`).

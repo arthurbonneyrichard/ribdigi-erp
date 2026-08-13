@@ -35,3 +35,7 @@ Recurring end-of-day store-close checklist hub for manager/cashier. Distinct fro
 ## Stage 175 H1 / P1 amendment
 
 Mid-shift handoff (not end-of-day): [SHIFT_HANDOVER_CHECKLIST_MVP.md](SHIFT_HANDOVER_CHECKLIST_MVP.md) · [SHIFT_HANDOVER_POINTERS_MVP.md](SHIFT_HANDOVER_POINTERS_MVP.md) (`test_stage175_handover_h1.py`, `test_stage175_pointers_p1.py`).
+
+## Stage 176 A1 / W1 amendment
+
+Weekly manager review of close adherence: [WEEKLY_POS_OPS_REVIEW_MVP.md](WEEKLY_POS_OPS_REVIEW_MVP.md) · [WEEKLY_POS_OPS_ADHERENCE_MVP.md](WEEKLY_POS_OPS_ADHERENCE_MVP.md) (`test_stage176_weekly_w1.py`, `test_stage176_adhere_a1.py`).

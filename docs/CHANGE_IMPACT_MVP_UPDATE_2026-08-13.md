@@ -141,3 +141,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 175 decision (opened after Stage 174 freeze)
 
 **Tenant MVP Shift-Handover Checklist Fidelity** — handover hub (H1), shift snapshot Holds/sync/conflicts (S1), device bind + open/close pack pointers (P1). Offline Complete / live training / go-live remain deferred (Stage 176+).
+
+## Stage 176 decision (opened after Stage 175 freeze)
+
+**Tenant MVP Weekly POS Ops Review Fidelity** — weekly review hub (W1), open/close/handover adherence (A1), conflict backlog age + catalog TTL cadence + support escalation pointers (R1). Offline Complete / live SLA / go-live remain deferred (Stage 177+).

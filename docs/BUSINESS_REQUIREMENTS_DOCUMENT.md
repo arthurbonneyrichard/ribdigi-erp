@@ -902,6 +902,7 @@ Stage 172 D1 — `docs/STAGE_172_FIDELITY.md` (`test_stage172_fidelity_d1.py`); 
 Stage 173 D1 — `docs/STAGE_173_FIDELITY.md` (`test_stage173_fidelity_d1.py`); Stage 173 S1 / L1 / H1.
 Stage 174 D1 — `docs/STAGE_174_FIDELITY.md` (`test_stage174_fidelity_d1.py`); Stage 174 C1 / E1 / T1.
 Stage 175 D1 — `docs/STAGE_175_FIDELITY.md` (`test_stage175_fidelity_d1.py`); Stage 175 H1 / S1 / P1.
+Stage 176 D1 — `docs/STAGE_176_FIDELITY.md` (`test_stage176_fidelity_d1.py`); Stage 176 W1 / A1 / R1.
 ### 4.17 Audit Logs
 
 #### BR-17.1 Activity Tracking
@@ -1660,3 +1661,4 @@ Stage 172 D1 Cashier Quickstart fidelity — `docs/STAGE_172_FIDELITY.md` (`test
 Stage 173 D1 Store-Open Checklist fidelity — `docs/STAGE_173_FIDELITY.md` (`test_stage173_fidelity_d1.py`); Stage 173 S1 store-open hub; Stage 173 L1 store/low-stock; Stage 173 H1 Hold/device/conflict health; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 174 D1 Store-Close Checklist fidelity — `docs/STAGE_174_FIDELITY.md` (`test_stage174_fidelity_d1.py`); Stage 174 C1 store-close hub; Stage 174 E1 Hold/queue drain; Stage 174 T1 conflict/catalog/backup triage; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 175 D1 Shift-Handover Checklist fidelity — `docs/STAGE_175_FIDELITY.md` (`test_stage175_fidelity_d1.py`); Stage 175 H1 handover hub; Stage 175 S1 Holds/sync/conflict snapshot; Stage 175 P1 device/open-close pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 176 D1 Weekly POS Ops Review fidelity — `docs/STAGE_176_FIDELITY.md` (`test_stage176_fidelity_d1.py`); Stage 176 W1 weekly hub; Stage 176 A1 open/close/handover adherence; Stage 176 R1 conflict/TTL/escalation signals; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.

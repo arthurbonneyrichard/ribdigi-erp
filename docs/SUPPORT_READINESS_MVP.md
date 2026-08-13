@@ -37,3 +37,7 @@ Tenant MVP support desk readiness packaging: indexes Stage 30/36/74 support surf
 ## Stage 171 K1 amendment
 
 Knowledge base hub for support intake FAQs / troubleshooting: [KNOWLEDGE_BASE_MVP.md](KNOWLEDGE_BASE_MVP.md) (`ops/mvp/knowledge-base.json`, `test_stage171_knowledge_k1.py`).
+
+## Stage 176 R1 amendment
+
+Weekly POS ops review points here for escalation (SLA stays false): [WEEKLY_POS_OPS_SIGNALS_MVP.md](WEEKLY_POS_OPS_SIGNALS_MVP.md) (`ops/mvp/weekly-pos-ops-signals.json`, `test_stage176_review_r1.py`).

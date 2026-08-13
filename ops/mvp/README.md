@@ -472,7 +472,14 @@ Authoritative MVP docs:
 - `docs/SHIFT_HANDOVER_CHECKLIST_MVP.md` / `ops/mvp/shift-handover-checklist.json` — Stage 175 H1
 - `docs/SHIFT_HANDOVER_SNAPSHOT_MVP.md` / `ops/mvp/shift-handover-snapshot.json` — Stage 175 S1
 - `docs/SHIFT_HANDOVER_POINTERS_MVP.md` / `ops/mvp/shift-handover-pointers.json` — Stage 175 P1
+- `docs/STAGE_176_EXIT_CRITERIA.md` / `docs/ADR_359_STAGE176_FREEZE.md` (`backend/tests/test_stage176_exit_h176x.py`) — Stage 176 H176x
+- `docs/STAGE_176_FIDELITY.md` (`backend/tests/test_stage176_fidelity_d1.py`) — Stage 176 D1
+- `docs/STAGE_176_PLAN.md` (`backend/tests/test_stage176_open.py`) — Stage 176 open (ADR-358)
+- `docs/WEEKLY_POS_OPS_REVIEW_MVP.md` / `ops/mvp/weekly-pos-ops-review.json` — Stage 176 W1
+- `docs/WEEKLY_POS_OPS_ADHERENCE_MVP.md` / `ops/mvp/weekly-pos-ops-adherence.json` — Stage 176 A1
+- `docs/WEEKLY_POS_OPS_SIGNALS_MVP.md` / `ops/mvp/weekly-pos-ops-signals.json` — Stage 176 R1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
+
 
 
 
@@ -2109,6 +2116,18 @@ H175x met — `docs/STAGE_175_EXIT_CRITERIA.md`, ADR-357. Stages 1–175 frozen 
 ## Stage 175 open
 
 ADR-356 + `docs/STAGE_175_PLAN.md` — Shift-Handover Checklist Fidelity (closed under ADR-357).
+
+## Stage 176 exit
+
+H176x met — `docs/STAGE_176_EXIT_CRITERIA.md`, ADR-359. Stages 1–176 frozen for Stage 176 feature scope.
+
+## Stage 176 D1 — Tenant MVP Weekly POS Ops Review Fidelity
+
+`docs/STAGE_176_FIDELITY.md` — maps W1–R1 → readiness / launch / deploy / security. Offline Complete / live SLA remain MISSING.
+
+## Stage 176 open
+
+ADR-358 + `docs/STAGE_176_PLAN.md` — Weekly POS Ops Review Fidelity (closed under ADR-359).
 
 ## Stage 165 open
 

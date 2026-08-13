@@ -2724,6 +2724,18 @@ Every feature in every phase must meet:
 
 **Stage 175 exit (2026-08-13):** H1, S1, P1, D1, H175x met — `docs/STAGE_175_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_357_STAGE175_FREEZE.md`. Fidelity: `docs/STAGE_175_FIDELITY.md`.
 
+**Stage 176 open (2026-08-13):** Tenant MVP Weekly POS Ops Review Fidelity — `docs/ADR_358_STAGE176_OPEN.md` + `docs/STAGE_176_PLAN.md` (W1 next).
+
+**Stage 176 W1 (2026-08-13):** Weekly POS ops review hub (`test_stage176_weekly_w1.py`).
+
+**Stage 176 A1 (2026-08-13):** Open/close + handover adherence (`test_stage176_adhere_a1.py`).
+
+**Stage 176 R1 (2026-08-13):** Conflict backlog / catalog TTL / escalation (`test_stage176_review_r1.py`).
+
+**Stage 176 D1 (2026-08-13):** Weekly POS Ops Review fidelity sync — `docs/STAGE_176_FIDELITY.md` (`test_stage176_fidelity_d1.py`).
+
+**Stage 176 exit (2026-08-13):** W1, A1, R1, D1, H176x met — `docs/STAGE_176_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_359_STAGE176_FREEZE.md`. Fidelity: `docs/STAGE_176_FIDELITY.md`.
+
 
 
 

@@ -1,0 +1,53 @@
+{
+  "id": "weekly-pos-ops-review",
+  "stage": 176,
+  "pack": "W1",
+  "doc": "docs/WEEKLY_POS_OPS_REVIEW_MVP.md",
+  "related": {
+    "adherence": "docs/WEEKLY_POS_OPS_ADHERENCE_MVP.md",
+    "signals": "docs/WEEKLY_POS_OPS_SIGNALS_MVP.md",
+    "shift_handover": "docs/SHIFT_HANDOVER_CHECKLIST_MVP.md",
+    "store_open": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "store_close": "docs/STORE_CLOSE_CHECKLIST_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_daily_packs": true,
+  "steps": [
+    {
+      "id": "wr-weekly-slot",
+      "title": "Pick weekly slot; review each active store",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wr-adherence",
+      "title": "Complete A1 open/close + handover adherence",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wr-signals",
+      "title": "Complete R1 conflict/TTL/escalation signals",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wr-actions",
+      "title": "Record next-week actions; escalate P1/P2",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wr-offline-sla-remaining",
+      "title": "Offline Complete / live SLA Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 176 W1 weekly POS ops review packaging only. Do not claim Offline Complete or live SLA."
+}

@@ -38,3 +38,7 @@ Recurring end-of-day (not open-of-day): [STORE_CLOSE_CHECKLIST_MVP.md](STORE_CLO
 ## Stage 175 P1 amendment
 
 Mid-shift handoff pointers back to this open pack: [SHIFT_HANDOVER_POINTERS_MVP.md](SHIFT_HANDOVER_POINTERS_MVP.md) (`ops/mvp/shift-handover-pointers.json`, `test_stage175_pointers_p1.py`).
+
+## Stage 176 A1 amendment
+
+Weekly adherence samples this open pack: [WEEKLY_POS_OPS_ADHERENCE_MVP.md](WEEKLY_POS_OPS_ADHERENCE_MVP.md) (`test_stage176_adhere_a1.py`).

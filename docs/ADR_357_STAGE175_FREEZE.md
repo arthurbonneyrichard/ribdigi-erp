@@ -24,6 +24,4 @@ Stage 175 Tenant MVP Shift-Handover Checklist Fidelity delivered handover hub (H
 
 ## Next stage
 
-Stage 176 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 175 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP weekly POS ops review fidelity — weekly manager review linking store-open/close adherence, shift-handover notes, conflict backlog age, catalog TTL refresh cadence, and support escalation pointers (no Offline Complete / live SLA claims).
+Stage 176 opened under [ADR-358](ADR_358_STAGE176_OPEN.md) (Tenant MVP Weekly POS Ops Review Fidelity) and froze under [ADR-359](ADR_359_STAGE176_FREEZE.md). Stage 175 feature scope remains frozen.

@@ -1066,6 +1066,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 175 P1** | Device bind + open/close pointers (`test_stage175_pointers_p1.py`) |
 | **Stage 175 D1** | Shift-handover fidelity — `docs/STAGE_175_FIDELITY.md` (`test_stage175_fidelity_d1.py`) |
 | **Stage 175 H175x** | Exit + freeze — `docs/STAGE_175_EXIT_CRITERIA.md`, ADR-357 (`test_stage175_exit_h175x.py`); Stages 1–175 frozen |
+| **Stage 176 open** | Weekly POS Ops Review — `docs/STAGE_176_PLAN.md`, ADR-358 (`test_stage176_open.py`) |
+| **Stage 176 W1** | Weekly POS ops review hub (`test_stage176_weekly_w1.py`) |
+| **Stage 176 A1** | Open/close + handover adherence (`test_stage176_adhere_a1.py`) |
+| **Stage 176 R1** | Conflict backlog / catalog TTL / escalation (`test_stage176_review_r1.py`) |
+| **Stage 176 D1** | Weekly POS ops fidelity — `docs/STAGE_176_FIDELITY.md` (`test_stage176_fidelity_d1.py`) |
+| **Stage 176 H176x** | Exit + freeze — `docs/STAGE_176_EXIT_CRITERIA.md`, ADR-359 (`test_stage176_exit_h176x.py`); Stages 1–176 frozen |
 
 | **Stage 68 open** | Platform ↔ Tenant Console Fidelity — `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`); historical open; closed via H68x / ADR-143 |
 | **Stage 68 H1** | Ribdigi House console honesty — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`); paid billing / live subscriptions Remaining |
