@@ -3228,6 +3228,19 @@ Every feature in every phase must meet:
 
 **Stage 217 exit (2026-08-13):** I1, B1, P1, D1, H217x met — `docs/STAGE_217_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_441_STAGE217_FREEZE.md`. Fidelity: `docs/STAGE_217_FIDELITY.md`.
 
+**Stage 218 open (2026-08-13):** Tenant MVP Post-Launch Continuity Remaining-Gate Index Fidelity — `docs/ADR_442_STAGE218_OPEN.md` + `docs/STAGE_218_PLAN.md` (I1 next).
+
+**Stage 218 I1 (2026-08-13):** Post-launch continuity remaining-gate index hub (`test_stage218_index_i1.py`).
+
+**Stage 218 B1 (2026-08-13):** Post-launch continuity blocker matrix (`test_stage218_blockers_b1.py`).
+
+**Stage 218 P1 (2026-08-13):** Stage 67 / Stage 217 / Stage 216 pointers (`test_stage218_pointers_p1.py`).
+
+**Stage 218 D1 (2026-08-13):** Post-Launch Continuity Remaining-Gate Index fidelity sync — `docs/STAGE_218_FIDELITY.md` (`test_stage218_fidelity_d1.py`).
+
+**Stage 218 exit (2026-08-13):** I1, B1, P1, D1, H218x met — `docs/STAGE_218_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_443_STAGE218_FREEZE.md`. Fidelity: `docs/STAGE_218_FIDELITY.md`.
+
+
 
 
 

@@ -734,6 +734,12 @@ Authoritative MVP docs:
 - `docs/OPERATOR_HANDOFF_REMAINING_GATE_MVP.md` / `ops/mvp/operator-handoff-remaining-gate.json` — Stage 217 I1
 - `docs/OPERATOR_HANDOFF_BLOCKERS_MVP.md` / `ops/mvp/operator-handoff-blockers.json` — Stage 217 B1
 - `docs/OPERATOR_HANDOFF_RG_POINTERS_MVP.md` / `ops/mvp/operator-handoff-rg-pointers.json` — Stage 217 P1
+- `docs/STAGE_218_EXIT_CRITERIA.md` / `docs/ADR_443_STAGE218_FREEZE.md` (`backend/tests/test_stage218_exit_h218x.py`) — Stage 218 H218x
+- `docs/STAGE_218_FIDELITY.md` (`backend/tests/test_stage218_fidelity_d1.py`) — Stage 218 D1
+- `docs/STAGE_218_PLAN.md` (`backend/tests/test_stage218_open.py`) — Stage 218 open (ADR-442)
+- `docs/POST_LAUNCH_CONTINUITY_REMAINING_GATE_MVP.md` / `ops/mvp/post-launch-continuity-remaining-gate.json` — Stage 218 I1
+- `docs/POST_LAUNCH_CONTINUITY_BLOCKERS_MVP.md` / `ops/mvp/post-launch-continuity-blockers.json` — Stage 218 B1
+- `docs/POST_LAUNCH_CONTINUITY_RG_POINTERS_MVP.md` / `ops/mvp/post-launch-continuity-rg-pointers.json` — Stage 218 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2769,6 +2775,18 @@ See `docs/STAGE_217_FIDELITY.md`.
 ## Stage 217 open
 
 ADR-440 / `docs/STAGE_217_PLAN.md`.
+
+## Stage 218 exit
+
+H218x met — `docs/STAGE_218_EXIT_CRITERIA.md`, ADR-443. Stages 1–218 frozen for Stage 218 feature scope.
+
+## Stage 218 D1 — Tenant MVP Post-Launch Continuity Remaining-Gate Index Fidelity
+
+See `docs/STAGE_218_FIDELITY.md`.
+
+## Stage 218 open
+
+ADR-442 / `docs/STAGE_218_PLAN.md`.
 
 ## Stage 213 exit
 

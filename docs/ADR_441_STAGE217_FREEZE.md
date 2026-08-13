@@ -24,6 +24,6 @@ Stage 217 Tenant MVP Operator Handoff Remaining-Gate Index Fidelity delivered op
 
 ## Next stage
 
-Stage 218 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 217 feature scope remains frozen.
+Stage 218 opened under **ADR-442** after CONTINUE/NEXT (Post-Launch Continuity Remaining-Gate Index Fidelity) and is frozen under **ADR-443**. Stage 217 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Post-Launch Continuity Remaining-Gate Index Fidelity — single index of post-launch continuity blockers (packaged Stage 67 C1 post-launch continuity materials non-claim as live continuity Complete) with explicit non-claim (no live continuity Complete). Distinct from Stage 217 operator handoff remaining-gate and Stage 216 knowledge transfer remaining-gate.
+**Amendment (2026-08-13):** Stage 218 runner-up outline was approved and opened (ADR-442); freeze ADR-443. Do not reopen Stage 217 scope.
