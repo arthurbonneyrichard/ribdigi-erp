@@ -493,12 +493,14 @@ Optional physical fields: `weight` (kg), `length` / `width` / `height` (cm). Als
   "variant_id": "var_001",
   "warehouse_id": "wh_001",
   "quantity": 100,
-  "unit_cost": 8.50,
-  "reference_type": "purchase",
-  "reference_id": "po_001",
+  "batch_number": "LOT-001",
+  "manufacturing_date": "2026-07-01T00:00:00",
+  "expiry_date": "2027-07-01T00:00:00",
   "notes": "Initial stock from PO-001"
 }
 ```
+
+Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update a `product_batches` row; response includes serialized `batch`. Same date fields are accepted on opening-stock lines.
 
 **Stock Out:** `POST /inventory/stock-out`
 
