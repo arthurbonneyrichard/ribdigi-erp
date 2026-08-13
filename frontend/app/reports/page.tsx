@@ -59,6 +59,8 @@ export default function Page() {
   const [branchId, setBranchId] = useState('');
   const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const [asOf, setAsOf] = useState('');
+  const [compare, setCompare] = useState('');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -88,6 +90,15 @@ export default function Page() {
     return s ? `?${s}` : '';
   }
 
+  function balanceSheetQs() {
+    const params = new URLSearchParams();
+    const effectiveAsOf = asOf || toDate;
+    if (effectiveAsOf) params.set('as_of', effectiveAsOf);
+    if (compare) params.set('compare', compare);
+    const s = params.toString();
+    return s ? `?${s}` : '';
+  }
+
   async function load(nextTab: Tab = tab) {
     setLoading(true);
     setError('');
@@ -107,7 +118,7 @@ export default function Page() {
       if (nextTab === 'expenses') path = `/reports/expenses/budget-vs-actual${qs()}`;
       if (nextTab === 'cashflow') path = `/reports/cash-flow${qs()}`;
       if (nextTab === 'pnl') path = `/reports/profit-loss${qs()}`;
-      if (nextTab === 'balancesheet') path = '/reports/balance-sheet';
+      if (nextTab === 'balancesheet') path = `/reports/balance-sheet${balanceSheetQs()}`;
       const r = await api(path);
       if (nextTab === 'sales') {
         const [daily, monthly] = await Promise.all([
@@ -216,6 +227,11 @@ export default function Page() {
       if (toDate) params.set('to_date', toDate);
       if (storeId) params.set('store_id', storeId);
       if (branchId) params.set('branch_id', branchId);
+      if ((reportType || TAB_EXPORT[tab]) === 'balance_sheet') {
+        const effectiveAsOf = asOf || toDate;
+        if (effectiveAsOf) params.set('as_of', effectiveAsOf);
+        if (compare) params.set('compare', compare);
+      }
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -336,6 +352,21 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        {tab === 'balancesheet' && (
+          <>
+            <input
+              type="date"
+              value={asOf}
+              onChange={(e) => setAsOf(e.target.value)}
+              title="As of date (defaults to To date)"
+            />
+            <select value={compare} onChange={(e) => setCompare(e.target.value)}>
+              <option value="">No compare</option>
+              <option value="prior_period">vs prior month-end</option>
+              <option value="prior_year">vs prior year</option>
+            </select>
+          </>
+        )}
         {(tab === 'pnl' || tab === 'stores') && (
           <>
             <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
@@ -840,14 +871,29 @@ export default function Page() {
 
       {tab === 'balancesheet' && data && (
         <>
+          <p className="muted">
+            As of {data.as_of}
+            {data.mode === 'journals' ? ' · reconstructed from posted journals' : ' · live balances'}
+            {data.compare
+              ? ` · compare ${data.compare.mode} (${data.compare.as_of})`
+              : ''}
+          </p>
           <div className="grid">
             <div className="card">
               <div className="muted">Total assets</div>
               <div className="kpi">{data.total_assets}</div>
+              {data.compare && (
+                <p className="muted">Δ {data.compare.deltas?.total_assets ?? 0}</p>
+              )}
             </div>
             <div className="card">
               <div className="muted">Liabilities + equity</div>
               <div className="kpi">{data.total_liabilities_and_equity}</div>
+              {data.compare && (
+                <p className="muted">
+                  Δ {data.compare.deltas?.total_liabilities_and_equity ?? 0}
+                </p>
+              )}
             </div>
             <div className="card">
               <div className="muted">Balanced</div>
@@ -863,6 +909,12 @@ export default function Page() {
                     <th>Code</th>
                     <th>Name</th>
                     <th>Balance</th>
+                    {data.compare && (
+                      <>
+                        <th>Prior</th>
+                        <th>Δ</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -871,6 +923,12 @@ export default function Page() {
                       <td>{r.code}</td>
                       <td>{r.name}</td>
                       <td>{r.balance}</td>
+                      {data.compare && (
+                        <>
+                          <td>{r.prior_balance ?? 0}</td>
+                          <td>{r.delta ?? 0}</td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>

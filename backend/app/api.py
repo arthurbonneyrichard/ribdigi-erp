@@ -7296,10 +7296,36 @@ async def report_cash_flow(
 
 @api.get("/reports/balance-sheet")
 async def report_balance_sheet(
+    as_of: str | None = None,
+    compare: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await reports_svc.balance_sheet(db, claims["tenant_id"]))
+    return env(
+        await reports_svc.balance_sheet(
+            db,
+            claims["tenant_id"],
+            as_of=reports_svc.parse_date(as_of, end_of_day=True),
+            compare=compare,
+        )
+    )
+
+
+@api.get("/accounting/balance-sheet")
+async def accounting_balance_sheet(
+    as_of: str | None = None,
+    compare: str | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await reports_svc.balance_sheet(
+            db,
+            claims["tenant_id"],
+            as_of=reports_svc.parse_date(as_of, end_of_day=True),
+            compare=compare,
+        )
+    )
 
 
 @api.get("/reports/export")
@@ -7315,6 +7341,8 @@ async def reports_export(
     jurisdiction: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    as_of: str | None = None,
+    compare: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7332,6 +7360,8 @@ async def reports_export(
         jurisdiction=jurisdiction,
         store_id=store_id or None,
         branch_id=branch_id or None,
+        as_of=as_of or None,
+        compare=compare or None,
     )
     return Response(
         content=content,

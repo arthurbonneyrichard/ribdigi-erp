@@ -782,9 +782,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Profit & Loss Statement (`GET /accounting/profit-loss` + `/reports/profit-loss` with date/store/branch filters)
   - [ ] Cash Flow Statement
-  - [ ] Balance Sheet (Assets = Liabilities + Equity)
-  - [ ] All reports filterable by date range, branch, store (P&L supports date/store/branch; others partial)
-  - [ ] Comparative reports (current period vs previous period)
+  - [x] Balance Sheet (Assets = Liabilities + Equity; `as_of` reconstructs from posted journals; computed retained earnings)
+  - [ ] All reports filterable by date range, branch, store (P&L supports date/store/branch; BS supports `as_of`; others partial)
+  - [x] Comparative reports (current period vs previous period) — BS `compare=prior_period|prior_year`
 
 ---
 
