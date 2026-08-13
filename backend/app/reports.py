@@ -853,6 +853,140 @@ async def inventory_expiry(
     }
 
 
+TRANSFER_REPORT_STATUSES = frozenset(
+    {"draft", "requested", "in_transit", "received", "cancelled"}
+)
+
+
+async def inventory_transfers(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    status: str | None = None,
+    from_store_id: str | None = None,
+    to_store_id: str | None = None,
+) -> dict:
+    """Inter-store transfer history & reporting (BR-13.2)."""
+    if status:
+        key = status.strip().lower()
+        if key not in TRANSFER_REPORT_STATUSES:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Invalid transfer status '{key}'. "
+                    f"Allowed: {sorted(TRANSFER_REPORT_STATUSES)}"
+                ),
+            )
+        status = key
+
+    stores = {
+        s.id: s
+        for s in (
+            await db.execute(select(m.Store).where(m.Store.tenant_id == tenant_id))
+        ).scalars().all()
+    }
+    stmt = (
+        select(m.StockTransfer)
+        .where(m.StockTransfer.tenant_id == tenant_id)
+        .order_by(m.StockTransfer.created_at.desc())
+    )
+    if status:
+        stmt = stmt.where(m.StockTransfer.status == status)
+    if from_store_id:
+        stmt = stmt.where(m.StockTransfer.from_store_id == from_store_id)
+    if to_store_id:
+        stmt = stmt.where(m.StockTransfer.to_store_id == to_store_id)
+    if from_date:
+        stmt = stmt.where(m.StockTransfer.created_at >= from_date)
+    if to_date:
+        stmt = stmt.where(m.StockTransfer.created_at <= to_date)
+
+    rows = (await db.execute(stmt)).scalars().all()
+    by_status: dict[str, int] = defaultdict(int)
+    by_route: dict[str, dict] = {}
+    transfers: list[dict] = []
+    total_qty = 0.0
+
+    for xfer in rows:
+        from_store = stores.get(xfer.from_store_id)
+        to_store = stores.get(xfer.to_store_id)
+        from_name = from_store.name if from_store else "Unknown"
+        to_name = to_store.name if to_store else "Unknown"
+        from_code = from_store.code if from_store else None
+        to_code = to_store.code if to_store else None
+        items = (
+            await db.execute(
+                select(m.StockTransferItem).where(
+                    m.StockTransferItem.tenant_id == tenant_id,
+                    m.StockTransferItem.transfer_id == xfer.id,
+                )
+            )
+        ).scalars().all()
+        qty = round(sum(float(i.quantity or 0) for i in items), 3)
+        shipped_qty = round(sum(float(i.shipped_qty or 0) for i in items), 3)
+        received_qty = round(sum(float(i.received_qty or 0) for i in items), 3)
+        total_qty += qty
+        by_status[xfer.status] += 1
+        route_key = f"{xfer.from_store_id}->{xfer.to_store_id}"
+        route = by_route.setdefault(
+            route_key,
+            {
+                "from_store_id": xfer.from_store_id,
+                "to_store_id": xfer.to_store_id,
+                "from_store_code": from_code,
+                "to_store_code": to_code,
+                "from_store_name": from_name,
+                "to_store_name": to_name,
+                "transfer_count": 0,
+                "quantity": 0.0,
+            },
+        )
+        route["transfer_count"] += 1
+        route["quantity"] = round(route["quantity"] + qty, 3)
+
+        transfers.append(
+            {
+                "id": xfer.id,
+                "transfer_number": xfer.transfer_number,
+                "from_store_id": xfer.from_store_id,
+                "to_store_id": xfer.to_store_id,
+                "from_store_code": from_code,
+                "to_store_code": to_code,
+                "from_store_name": from_name,
+                "to_store_name": to_name,
+                "from_warehouse_id": xfer.from_warehouse_id,
+                "to_warehouse_id": xfer.to_warehouse_id,
+                "status": xfer.status,
+                "quantity": qty,
+                "shipped_qty": shipped_qty,
+                "received_qty": received_qty,
+                "line_count": len(items),
+                "shipped_at": xfer.shipped_at,
+                "received_at": xfer.received_at,
+                "created_at": xfer.created_at,
+                "notes": xfer.notes,
+            }
+        )
+
+    routes = sorted(by_route.values(), key=lambda x: x["transfer_count"], reverse=True)
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "status": status,
+        "from_store_id": from_store_id,
+        "to_store_id": to_store_id,
+        "transfer_count": len(transfers),
+        "total_quantity": round(total_qty, 3),
+        "by_status": dict(by_status),
+        "by_route": routes,
+        "transfers": transfers,
+    }
+
+
 async def purchases_summary(
     db: AsyncSession,
     tenant_id: str,
