@@ -722,6 +722,12 @@ Authoritative MVP docs:
 - `docs/KNOWLEDGE_BASE_REMAINING_GATE_MVP.md` / `ops/mvp/knowledge-base-remaining-gate.json` — Stage 215 I1
 - `docs/KNOWLEDGE_BASE_BLOCKERS_MVP.md` / `ops/mvp/knowledge-base-blockers.json` — Stage 215 B1
 - `docs/KNOWLEDGE_BASE_RG_POINTERS_MVP.md` / `ops/mvp/knowledge-base-rg-pointers.json` — Stage 215 P1
+- `docs/STAGE_216_EXIT_CRITERIA.md` / `docs/ADR_439_STAGE216_FREEZE.md` (`backend/tests/test_stage216_exit_h216x.py`) — Stage 216 H216x
+- `docs/STAGE_216_FIDELITY.md` (`backend/tests/test_stage216_fidelity_d1.py`) — Stage 216 D1
+- `docs/STAGE_216_PLAN.md` (`backend/tests/test_stage216_open.py`) — Stage 216 open (ADR-438)
+- `docs/KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md` / `ops/mvp/knowledge-transfer-remaining-gate.json` — Stage 216 I1
+- `docs/KNOWLEDGE_TRANSFER_BLOCKERS_MVP.md` / `ops/mvp/knowledge-transfer-blockers.json` — Stage 216 B1
+- `docs/KNOWLEDGE_TRANSFER_RG_POINTERS_MVP.md` / `ops/mvp/knowledge-transfer-rg-pointers.json` — Stage 216 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2733,6 +2739,18 @@ See `docs/STAGE_215_FIDELITY.md`.
 ## Stage 215 open
 
 ADR-436 / `docs/STAGE_215_PLAN.md`.
+
+## Stage 216 exit
+
+H216x met — `docs/STAGE_216_EXIT_CRITERIA.md`, ADR-439. Stages 1–216 frozen for Stage 216 feature scope.
+
+## Stage 216 D1 — Tenant MVP Knowledge Transfer Remaining-Gate Index Fidelity
+
+See `docs/STAGE_216_FIDELITY.md`.
+
+## Stage 216 open
+
+ADR-438 / `docs/STAGE_216_PLAN.md`.
 
 ## Stage 213 exit
 

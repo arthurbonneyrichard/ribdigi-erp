@@ -34,3 +34,4 @@ Single index of live-training remaining gates. Packaging only — **live trainin
 - Offline / go-live Completes
 
 See also Stage 190 Offline materials remaining-gate index: [`OFFLINE_MATERIALS_REMAINING_GATE_MVP.md`](OFFLINE_MATERIALS_REMAINING_GATE_MVP.md).
+See also Stage 216 knowledge transfer remaining-gate index: [`KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md`](KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md).

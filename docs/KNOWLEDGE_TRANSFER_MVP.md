@@ -47,3 +47,4 @@ Every module keeps `delivered: false`. Top-level `live_training_claimed: false` 
 Stage 33 T1 is met when this doc + register JSON + evidence JSON exist, `test_knowledge_transfer_t1.py` passes, and LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan / roadmap cite Stage 33 T1 without inventing live training Complete.
 
 See also Stage 189 live-training remaining-gate index: [`LIVE_TRAINING_REMAINING_GATE_MVP.md`](LIVE_TRAINING_REMAINING_GATE_MVP.md).
+See also Stage 216 knowledge transfer remaining-gate index: [`KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md`](KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md).
