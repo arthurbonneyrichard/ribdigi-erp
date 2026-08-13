@@ -2880,6 +2880,18 @@ Every feature in every phase must meet:
 
 **Stage 188 exit (2026-08-13):** I1, B1, P1, D1, H188x met — `docs/STAGE_188_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_383_STAGE188_FREEZE.md`. Fidelity: `docs/STAGE_188_FIDELITY.md`.
 
+**Stage 189 open (2026-08-13):** Tenant MVP Live-Training Remaining-Gate Index Fidelity — `docs/ADR_384_STAGE189_OPEN.md` + `docs/STAGE_189_PLAN.md` (I1 next).
+
+**Stage 189 I1 (2026-08-13):** Live-training remaining-gate index hub (`test_stage189_index_i1.py`).
+
+**Stage 189 B1 (2026-08-13):** Live-training blocker matrix (`test_stage189_blockers_b1.py`).
+
+**Stage 189 P1 (2026-08-13):** Stage 33 / Stage 48 / materials pointers (`test_stage189_pointers_p1.py`).
+
+**Stage 189 D1 (2026-08-13):** Live-Training Remaining-Gate Index fidelity sync — `docs/STAGE_189_FIDELITY.md` (`test_stage189_fidelity_d1.py`).
+
+**Stage 189 exit (2026-08-13):** I1, B1, P1, D1, H189x met — `docs/STAGE_189_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_385_STAGE189_FREEZE.md`. Fidelity: `docs/STAGE_189_FIDELITY.md`.
+
 
 
 

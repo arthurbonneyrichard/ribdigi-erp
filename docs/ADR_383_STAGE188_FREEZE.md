@@ -24,6 +24,4 @@ Stage 188 Tenant MVP Support-SLA Remaining-Gate Index Fidelity delivered support
 
 ## Next stage
 
-Stage 189 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 188 feature scope remains frozen.
-
-**Runner-up outline (not opened):** Tenant MVP live-training remaining-gate index fidelity — single index of live training blockers (packaged training materials non-claim as live training Complete) with explicit non-claim (no live training Complete).
+Stage **189** opened under **ADR-384** / frozen under **ADR-385** — Tenant MVP live-training remaining-gate index fidelity (packaged training materials non-claim as live training Complete) with explicit non-claim of live training Complete. Stage 188 feature scope remains frozen. Do not reopen Stages **1–188** scopes.

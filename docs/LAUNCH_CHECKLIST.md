@@ -911,6 +911,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 36 / commercial support / readiness pointers (Stage 188 P1: `test_stage188_pointers_p1.py`, `docs/SUPPORT_SLA_PACK_POINTERS_MVP.md`)
 - [x] Stage 188 fidelity sync (D1: `test_stage188_fidelity_d1.py`, `docs/STAGE_188_FIDELITY.md`)
 - [x] Stage 188 exit + freeze (H188x: `test_stage188_exit_h188x.py`, `docs/STAGE_188_EXIT_CRITERIA.md`, ADR-383)
+- [x] Stage 189 track opened (ADR-384: `test_stage189_open.py`, `docs/STAGE_189_PLAN.md`) — Live-Training Remaining-Gate Index; closed under ADR-385
+- [x] Live-training remaining-gate hub (Stage 189 I1: `test_stage189_index_i1.py`, `docs/LIVE_TRAINING_REMAINING_GATE_MVP.md`)
+- [x] Live-training blocker matrix (Stage 189 B1: `test_stage189_blockers_b1.py`, `docs/LIVE_TRAINING_BLOCKERS_MVP.md`)
+- [x] Stage 33 / Stage 48 / materials pointers (Stage 189 P1: `test_stage189_pointers_p1.py`, `docs/LIVE_TRAINING_PACK_POINTERS_MVP.md`)
+- [x] Stage 189 fidelity sync (D1: `test_stage189_fidelity_d1.py`, `docs/STAGE_189_FIDELITY.md`)
+- [x] Stage 189 exit + freeze (H189x: `test_stage189_exit_h189x.py`, `docs/STAGE_189_EXIT_CRITERIA.md`, ADR-385)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

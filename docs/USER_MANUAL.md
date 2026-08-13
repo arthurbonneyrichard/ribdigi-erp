@@ -152,6 +152,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Support-SLA remaining-gate index (Stage 188):** Status index is `docs/SUPPORT_SLA_REMAINING_GATE_MVP.md` → blockers `docs/SUPPORT_SLA_BLOCKERS_MVP.md` → Stage 36/readiness pointers `docs/SUPPORT_SLA_PACK_POINTERS_MVP.md`. Live support SLA Complete remains MISSING (not claimed).
 
+**Live-training remaining-gate index (Stage 189):** Status index is `docs/LIVE_TRAINING_REMAINING_GATE_MVP.md` → blockers `docs/LIVE_TRAINING_BLOCKERS_MVP.md` → Stage 33/48/materials pointers `docs/LIVE_TRAINING_PACK_POINTERS_MVP.md`. Live training Complete remains MISSING (not claimed).
+
 #### Top Bar
 - **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
 - **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health

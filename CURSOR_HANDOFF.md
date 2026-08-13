@@ -2,7 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 188 froze Tenant MVP Support-SLA Remaining-Gate Index Fidelity (ADR-383) — support-SLA remaining-gate hub, blocker matrix, Stage 36/support readiness pointers, explicit live-SLA non-claim. Live support SLA Complete remains MISSING. Next recommended distinct outline: Tenant MVP live-training remaining-gate index fidelity (packaged training materials non-claim as live training Complete — explicit non-claim) — Stage 189+. Do not claim live support SLA Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
+Do **not** restart the project. Preserve working engines. Stage 189 froze Tenant MVP Live-Training Remaining-Gate Index Fidelity (ADR-385) — live-training remaining-gate hub, blocker matrix, Stage 33/48/materials pointers, explicit live-training non-claim. Live training Complete remains MISSING. Next recommended distinct outline: Tenant MVP Offline remaining-gate index fidelity (packaged offline/POS/Hold materials non-claim as Offline Complete — explicit non-claim) — Stage 190+. Do not claim live training Complete. Do not weaken tenant isolation, RBAC, audit logging, or financial double-entry requirements. Do not fabricate MRR/billing Completes (ADR-002).
 
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE

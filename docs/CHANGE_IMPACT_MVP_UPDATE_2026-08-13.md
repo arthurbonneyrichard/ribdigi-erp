@@ -184,3 +184,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 188 decision (opened after Stage 187 freeze)
 
 **Tenant MVP Support-SLA Remaining-Gate Index Fidelity** — support-SLA remaining-gate hub (I1), blocker matrix (B1), Stage 36 / support readiness pointers with explicit non-claim (P1). Live support SLA / PagerDuty Completes remain deferred (Stage 189+).
+## Stage 189 decision (opened after Stage 188 freeze)
+
+**Tenant MVP Live-Training Remaining-Gate Index Fidelity** — live-training remaining-gate hub (I1), blocker matrix (B1), Stage 33 / Stage 48 / materials pointers with explicit non-claim (P1). Live training / attendance certification Completes remain deferred (Stage 190+).

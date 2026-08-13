@@ -550,6 +550,12 @@ Authoritative MVP docs:
 - `docs/SUPPORT_SLA_REMAINING_GATE_MVP.md` / `ops/mvp/support-sla-remaining-gate.json` — Stage 188 I1
 - `docs/SUPPORT_SLA_BLOCKERS_MVP.md` / `ops/mvp/support-sla-blockers.json` — Stage 188 B1
 - `docs/SUPPORT_SLA_PACK_POINTERS_MVP.md` / `ops/mvp/support-sla-pack-pointers.json` — Stage 188 P1
+- `docs/STAGE_189_EXIT_CRITERIA.md` / `docs/ADR_385_STAGE189_FREEZE.md` (`backend/tests/test_stage189_exit_h189x.py`) — Stage 189 H189x
+- `docs/STAGE_189_FIDELITY.md` (`backend/tests/test_stage189_fidelity_d1.py`) — Stage 189 D1
+- `docs/STAGE_189_PLAN.md` (`backend/tests/test_stage189_open.py`) — Stage 189 open (ADR-384)
+- `docs/LIVE_TRAINING_REMAINING_GATE_MVP.md` / `ops/mvp/live-training-remaining-gate.json` — Stage 189 I1
+- `docs/LIVE_TRAINING_BLOCKERS_MVP.md` / `ops/mvp/live-training-blockers.json` — Stage 189 B1
+- `docs/LIVE_TRAINING_PACK_POINTERS_MVP.md` / `ops/mvp/live-training-pack-pointers.json` — Stage 189 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -2347,6 +2353,18 @@ H188x met — `docs/STAGE_188_EXIT_CRITERIA.md`, ADR-383. Stages 1–188 frozen 
 ## Stage 188 open
 
 ADR-382 + `docs/STAGE_188_PLAN.md` — Support-SLA Remaining-Gate Index Fidelity (closed under ADR-383).
+
+## Stage 189 exit
+
+H189x met — `docs/STAGE_189_EXIT_CRITERIA.md`, ADR-385. Stages 1–189 frozen for Stage 189 feature scope.
+
+## Stage 189 D1 — Tenant MVP Live-Training Remaining-Gate Index Fidelity
+
+`docs/STAGE_189_FIDELITY.md` — maps I1–P1 → readiness / launch / deploy / security. Live training Complete remains MISSING.
+
+## Stage 189 open
+
+ADR-384 + `docs/STAGE_189_PLAN.md` — Live-Training Remaining-Gate Index Fidelity (closed under ADR-385).
 
 ## Stage 165 open
 

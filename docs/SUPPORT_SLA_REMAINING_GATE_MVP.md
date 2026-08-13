@@ -33,3 +33,5 @@ Single index of live support-SLA remaining gates. Packaging only — **live supp
 - Hosted PagerDuty / helpdesk Completes
 - On-call rota live Completes
 - Attestation / go-live Completes
+
+See also Stage 189 live-training remaining-gate index: [`LIVE_TRAINING_REMAINING_GATE_MVP.md`](LIVE_TRAINING_REMAINING_GATE_MVP.md).

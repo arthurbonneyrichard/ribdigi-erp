@@ -46,3 +46,5 @@ Every step keeps `done: false`. Top-level `customer_training_delivered_claimed: 
 ## Sign-off
 
 Stage 48 T1 is met when this doc + register JSON + evidence JSON exist, `test_customer_training_cert_t1.py` passes, and LAUNCH_CHECKLIST / DEVELOPMENT_ROADMAP / plan cite Stage 48 T1 without inventing live training / attendance cert Complete.
+
+See also Stage 189 live-training remaining-gate index: [`LIVE_TRAINING_REMAINING_GATE_MVP.md`](LIVE_TRAINING_REMAINING_GATE_MVP.md).

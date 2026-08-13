@@ -1,0 +1,59 @@
+{
+  "id": "live-training-blockers",
+  "stage": 189,
+  "pack": "B1",
+  "doc": "docs/LIVE_TRAINING_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_TRAINING_REMAINING_GATE_MVP.md",
+    "knowledge_transfer": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "training_certification_claimed": false,
+  "customer_training_delivered_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_training_execution": "REMAINING",
+    "training_attendance_certification": "REMAINING",
+    "customer_training_delivery": "REMAINING",
+    "stage33_t1_as_live_training": "NON_CLAIM",
+    "stage48_t1_as_live_training": "NON_CLAIM",
+    "live_training_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "lb-live-training",
+      "title": "Mark live training execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-attendance",
+      "title": "Mark training attendance certification Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-customer-delivery",
+      "title": "Mark customer training delivery Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-stage33-nonclaim",
+      "title": "Mark Stage 33 T1 knowledge transfer as non-claim for live training",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-training-remaining",
+      "title": "Live training Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 189 B1 live-training blocker matrix packaging only. Live training Complete remains MISSING."
+}

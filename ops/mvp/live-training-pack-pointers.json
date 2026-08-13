@@ -1,0 +1,61 @@
+{
+  "id": "live-training-pack-pointers",
+  "stage": 189,
+  "pack": "P1",
+  "doc": "docs/LIVE_TRAINING_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_TRAINING_REMAINING_GATE_MVP.md",
+    "knowledge_transfer": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+    "knowledge_transfer_register": "ops/mvp/knowledge-transfer.json",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+    "customer_training_cert_register": "ops/mvp/customer-training-cert.json",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "support_sla_remaining_gate": "docs/SUPPORT_SLA_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "knowledge_transfer_stage33",
+    "customer_training_cert_stage48",
+    "knowledge_base_stage171",
+    "cashier_materials_stages172_175",
+    "support_sla_remaining_gate_stage188",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "lp-knowledge-transfer",
+      "title": "Point to Stage 33 knowledge transfer",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-customer-cert",
+      "title": "Point to Stage 48 customer training cert",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-kb-materials",
+      "title": "Point to Stage 171–175 cashier materials",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-support-sla-gate",
+      "title": "Point to Stage 188 support-SLA remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-training-remaining",
+      "title": "Live training Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 189 P1 live-training pack pointers packaging only. Do not claim live training Complete."
+}
