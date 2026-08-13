@@ -1,0 +1,54 @@
+{
+  "id": "loadtest-baseline-blockers",
+  "stage": 225,
+  "pack": "B1",
+  "doc": "docs/LOADTEST_BASELINE_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LOADTEST_BASELINE_REMAINING_GATE_MVP.md",
+    "load_test_baseline": "docs/LOAD_TEST_BASELINE.md",
+    "load_capacity": "docs/LOAD_CAPACITY_MVP.md"
+  },
+  "packaging_complete": true,
+  "certified_load_claimed": false,
+  "live_load_capacity_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "certified_staging_load_run": "REMAINING",
+    "live_sized_staging_capacity": "REMAINING",
+    "stage5_l1_stage18_t1_as_certified_load": "NON_CLAIM",
+    "certified_load_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ltbb-certified",
+      "title": "Mark certified staging load Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbb-live",
+      "title": "Mark live / sized-staging capacity Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbb-baseline-nonclaim",
+      "title": "Mark Stage 5 L1 / Stage 18 T1 baseline as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbb-claimed-false",
+      "title": "Mark certified_load_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbb-certified-remaining",
+      "title": "Certified load Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 225 B1 loadtest baseline blocker matrix packaging only. Certified load Complete remains MISSING."
+}

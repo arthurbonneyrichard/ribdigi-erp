@@ -313,3 +313,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Load Capacity Remaining-Gate Index Fidelity** — load capacity remaining-gate hub (I1), blocker matrix (B1), Stage 26 / Stage 223 / Stage 222 pointers with explicit non-claim (P1). Live capacity Completes remain deferred (Stage 225+). Distinct from Stage 223 load cert pack remaining-gate and Stage 222 Grafana pack remaining-gate.
 
+## Stage 225 decision (opened after Stage 224 freeze)
+
+**Tenant MVP Loadtest Baseline Remaining-Gate Index Fidelity** — loadtest baseline remaining-gate hub (I1), blocker matrix (B1), Stage 5/18 / Stage 224 / Stage 223 pointers with explicit non-claim (P1). Certified load Completes remain deferred (Stage 226+). Distinct from Stage 224 load capacity remaining-gate and Stage 223 load cert pack remaining-gate.
+

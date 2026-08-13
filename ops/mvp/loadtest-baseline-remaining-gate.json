@@ -1,0 +1,55 @@
+{
+  "id": "loadtest-baseline-remaining-gate",
+  "stage": 225,
+  "pack": "I1",
+  "doc": "docs/LOADTEST_BASELINE_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LOADTEST_BASELINE_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LOADTEST_BASELINE_RG_POINTERS_MVP.md",
+    "load_test_baseline": "docs/LOAD_TEST_BASELINE.md",
+    "load_capacity_remaining_gate": "docs/LOAD_CAPACITY_REMAINING_GATE_MVP.md",
+    "load_cert_pack_remaining_gate": "docs/LOAD_CERT_PACK_REMAINING_GATE_MVP.md",
+    "load_capacity": "docs/LOAD_CAPACITY_MVP.md"
+  },
+  "packaging_complete": true,
+  "certified_load_claimed": false,
+  "live_load_capacity_claimed": false,
+  "operator_1000vu_executed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage5_l1_stage18_t1_baseline": true,
+  "distinct_from_stage224_load_capacity_remaining_gate": true,
+  "distinct_from_stage223_load_cert_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ltb-read-blockers",
+      "title": "Read B1 loadtest baseline blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltb-follow-pointers",
+      "title": "Follow P1 Stage 5/18 / Stage 224 / Stage 223 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltb-certified-missing",
+      "title": "Reaffirm certified load MISSING until a real certified staging run ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltb-no-packaging-as-certified",
+      "title": "Do not treat Stage 5 L1 / Stage 18 T1 as certified load Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltb-certified-remaining",
+      "title": "Certified load / live capacity / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 225 I1 loadtest baseline remaining-gate index packaging only. Do not claim certified load Complete."
+}
