@@ -78,6 +78,12 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.SalesOrder,
         "field": "order_number",
     },
+    "purchase_request": {
+        "default_prefix": "PREQ",
+        "storage": "json",
+        "model": m.PurchaseRequest,
+        "field": "request_number",
+    },
 }
 
 # Back-compat aliases
@@ -312,14 +318,4 @@ async def next_sales_order_number(db: AsyncSession, tenant_id: str) -> str:
 
 
 async def next_purchase_request_number(db: AsyncSession, tenant_id: str) -> str:
-    day = datetime.utcnow().strftime("%y%m%d")
-    prefix = f"R{day}-"
-    rows = (
-        await db.execute(
-            select(m.PurchaseRequest.request_number).where(
-                m.PurchaseRequest.tenant_id == tenant_id,
-                m.PurchaseRequest.request_number.like(f"{prefix}%"),
-            )
-        )
-    ).scalars().all()
-    return format_daily_number("R", day, _max_seq(list(rows), prefix) + 1)
+    return await next_series_document_number(db, tenant_id, "purchase_request")

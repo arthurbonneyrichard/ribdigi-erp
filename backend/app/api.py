@@ -4770,6 +4770,7 @@ async def purchasing_settings(
             "purchase_order_numbering": numbering_settings(tenant, "purchase_order"),
             "grn_numbering": numbering_settings(tenant, "grn"),
             "purchase_invoice_numbering": numbering_settings(tenant, "purchase_invoice"),
+            "purchase_request_numbering": numbering_settings(tenant, "purchase_request"),
             "purchase_return_numbering": numbering_settings(tenant, "purchase_return"),
             "debit_note_numbering": numbering_settings(tenant, "debit_note"),
         }
@@ -4788,6 +4789,7 @@ async def update_purchasing_settings(
         payload.purchase_order_numbering is None
         and payload.grn_numbering is None
         and payload.purchase_invoice_numbering is None
+        and payload.purchase_request_numbering is None
         and payload.purchase_return_numbering is None
         and payload.debit_note_numbering is None
     ):
@@ -4814,6 +4816,13 @@ async def update_purchasing_settings(
             prefix=payload.purchase_invoice_numbering.prefix,
             next_number=payload.purchase_invoice_numbering.next_number,
         )
+    if payload.purchase_request_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "purchase_request",
+            prefix=payload.purchase_request_numbering.prefix,
+            next_number=payload.purchase_request_numbering.next_number,
+        )
     if payload.purchase_return_numbering is not None:
         apply_numbering_update(
             tenant,
@@ -4834,6 +4843,7 @@ async def update_purchasing_settings(
             "purchase_order_numbering": numbering_settings(tenant, "purchase_order"),
             "grn_numbering": numbering_settings(tenant, "grn"),
             "purchase_invoice_numbering": numbering_settings(tenant, "purchase_invoice"),
+            "purchase_request_numbering": numbering_settings(tenant, "purchase_request"),
             "purchase_return_numbering": numbering_settings(tenant, "purchase_return"),
             "debit_note_numbering": numbering_settings(tenant, "debit_note"),
         },

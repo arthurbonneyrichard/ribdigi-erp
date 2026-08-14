@@ -69,7 +69,9 @@ async def test_purchase_request_happy_path_convert(client, db_session):
     assert created.status_code == 200, created.text
     pr = created.json()["data"]
     assert pr["status"] == "draft"
-    assert pr["request_number"].startswith("R")
+    assert pr["request_number"].startswith("PREQ-")
+    parts = pr["request_number"].split("-")
+    assert len(parts) == 3 and len(parts[2]) == 4 and parts[2].isdigit()
     request_id = pr["id"]
 
     submitted = await ac.post(

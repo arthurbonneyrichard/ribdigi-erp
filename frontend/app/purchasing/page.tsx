@@ -232,6 +232,9 @@ export default function Page() {
   const [piPrefix, setPiPrefix] = useState('PINV');
   const [piNext, setPiNext] = useState('1');
   const [piPreview, setPiPreview] = useState('');
+  const [preqPrefix, setPreqPrefix] = useState('PREQ');
+  const [preqNext, setPreqNext] = useState('1');
+  const [preqPreview, setPreqPreview] = useState('');
   const [prPrefix, setPrPrefix] = useState('PR');
   const [prNext, setPrNext] = useState('1');
   const [prPreview, setPrPreview] = useState('');
@@ -279,6 +282,12 @@ export default function Page() {
       setPiPrefix(piNum.prefix || 'PINV');
       setPiNext(String(piNum.next_number ?? 1));
       setPiPreview(piNum.preview || '');
+    }
+    const preqNum = numRes.data?.purchase_request_numbering;
+    if (preqNum) {
+      setPreqPrefix(preqNum.prefix || 'PREQ');
+      setPreqNext(String(preqNum.next_number ?? 1));
+      setPreqPreview(preqNum.preview || '');
     }
     const prNum = numRes.data?.purchase_return_numbering;
     if (prNum) {
@@ -906,6 +915,10 @@ export default function Page() {
             prefix: piPrefix.trim(),
             next_number: Math.max(1, Number(piNext) || 1),
           },
+          purchase_request_numbering: {
+            prefix: preqPrefix.trim(),
+            next_number: Math.max(1, Number(preqNext) || 1),
+          },
           purchase_return_numbering: {
             prefix: prPrefix.trim(),
             next_number: Math.max(1, Number(prNext) || 1),
@@ -934,6 +947,12 @@ export default function Page() {
         setPiNext(String(piNum.next_number));
         setPiPreview(piNum.preview);
       }
+      const preqNum = r.data?.purchase_request_numbering;
+      if (preqNum) {
+        setPreqPrefix(preqNum.prefix);
+        setPreqNext(String(preqNum.next_number));
+        setPreqPreview(preqNum.preview);
+      }
       const prNum = r.data?.purchase_return_numbering;
       if (prNum) {
         setPrPrefix(prNum.prefix);
@@ -947,7 +966,7 @@ export default function Page() {
         setDnPreview(dnNum.preview);
       }
       setMessage(
-        `Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''} / PI ${piNum?.preview || ''} / PR ${prNum?.preview || ''} / DN ${dnNum?.preview || ''}`.trim()
+        `Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''} / PI ${piNum?.preview || ''} / PREQ ${preqNum?.preview || ''} / PR ${prNum?.preview || ''} / DN ${dnNum?.preview || ''}`.trim()
       );
     } catch (err: any) {
       setError(err.message);
@@ -1069,6 +1088,22 @@ export default function Page() {
                 style={{ width: 90 }}
               />
               <span className="muted">{piPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+              <span className="muted">Request</span>
+              <input
+                value={preqPrefix}
+                onChange={(e) => setPreqPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+              />
+              <input
+                value={preqNext}
+                onChange={(e) => setPreqNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+              />
+              <span className="muted">{preqPreview || '—'}</span>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
               <span className="muted">PR</span>
