@@ -1071,6 +1071,8 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 
 Optional org dims (`branch_id`, `department_id`; BR-9.2). Department must belong to the selected branch when both are set. `PATCH /expenses/{id}` accepts the same fields plus `clear_branch` / `clear_department`. Receipts use separate upload endpoints (not inline attachments on create).
 
+**Attachments (BR-9.4):** `POST|GET|DELETE /expenses/{expense_id}/attachment` — multipart upload (PDF/image); GET returns file bytes (`Content-Disposition: attachment`). Expenses UI **Preview** loads the blob into an image/PDF modal (object URL); Download still forces save. Same Preview pattern on purchase-invoice and journal-entry attachments. OCR: `POST /expenses/{expense_id}/ocr-suggest`.
+
 Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_approval` plus email (default on; opt out via notification preferences). Creator is excluded from the email fan-out. Advancing a level re-notifies the next step's roles.
 
 ### 9.3 Recurring Expenses

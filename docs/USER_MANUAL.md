@@ -664,8 +664,9 @@ Store Manager reviews & approves/rejects
    - **Branch/Department** (for multi-location tracking)
 3. **Attach Receipt:** Upload photo or PDF of receipt
 4. Click **Submit**
+5. After upload, use **Preview** (image/PDF modal) or **Download**; **OCR** can suggest amount/date/payee
 
-> **OCR Tip:** The AI Document Assistant can auto-extract amount, date, and vendor from receipt images.
+> **OCR Tip:** The AI Document Assistant can auto-extract amount, date, and vendor from receipt images. Expenses also has per-row **OCR** + **Preview**.
 
 ### 7.2 Expense Approval
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
+import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -20,6 +21,7 @@ export default function Page() {
   const [selected, setSelected] = useState<any>(null);
   const [cheques, setCheques] = useState<any[]>([]);
   const [error, setError] = useState('');
+  const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
   const [debitCode, setDebitCode] = useState('6000');
   const [creditCode, setCreditCode] = useState('1000');
   const [amount, setAmount] = useState('100');
@@ -1060,6 +1062,17 @@ export default function Page() {
                       </label>
                       {j.has_attachment && (
                         <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAttachPreview({
+                                apiPath: `/accounting/journal-entries/${j.id}/attachment`,
+                                title: `Journal attachment — ${j.entry_number || j.id.slice(0, 8)}`,
+                              })
+                            }
+                          >
+                            Preview
+                          </button>
                           <button type="button" onClick={() => downloadJournalAttachment(j.id)}>
                             Download
                           </button>
@@ -1574,6 +1587,15 @@ export default function Page() {
             </tbody>
           </table>
         </>
+      )}
+      {attachPreview && (
+        <AttachmentPreview
+          open
+          apiPath={attachPreview.apiPath}
+          title={attachPreview.title}
+          onClose={() => setAttachPreview(null)}
+          onError={(msg) => setError(msg)}
+        />
       )}
     </Shell>
   );

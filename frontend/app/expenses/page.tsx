@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
+import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
 
@@ -71,6 +72,7 @@ export default function Page() {
   const [ocrMeta, setOcrMeta] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
   const [newCatCode, setNewCatCode] = useState('');
   const [newCatName, setNewCatName] = useState('');
   const [newCatBudget, setNewCatBudget] = useState('0');
@@ -1043,6 +1045,17 @@ export default function Page() {
               <td>
                 {r.has_attachment ? (
                   <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAttachPreview({
+                          apiPath: `/expenses/${r.id}/attachment`,
+                          title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
+                        })
+                      }
+                    >
+                      Preview
+                    </button>
                     <button onClick={() => downloadAttachment(r.id)}>Download</button>
                     <button onClick={() => suggestOcr(r.id)}>OCR</button>
                     <button onClick={() => removeAttachment(r.id)}>Remove</button>
@@ -1079,6 +1092,15 @@ export default function Page() {
           ))}
         </tbody>
       </table>
+      {attachPreview && (
+        <AttachmentPreview
+          open
+          apiPath={attachPreview.apiPath}
+          title={attachPreview.title}
+          onClose={() => setAttachPreview(null)}
+          onError={(msg) => setError(msg)}
+        />
+      )}
     </Shell>
   );
 }

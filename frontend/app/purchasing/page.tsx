@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import PartyContactsPanel from '../../components/PartyContactsPanel';
+import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
 
 type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
@@ -223,6 +224,7 @@ export default function Page() {
   const [ocrMeta, setOcrMeta] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
   const [poPrefix, setPoPrefix] = useState('PO');
   const [poNext, setPoNext] = useState('1');
   const [poPreview, setPoPreview] = useState('');
@@ -2077,6 +2079,17 @@ export default function Page() {
                   </label>
                   {inv.has_attachment && (
                     <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAttachPreview({
+                            apiPath: `/purchasing/invoices/${inv.id}/attachment`,
+                            title: `Invoice attachment — ${inv.invoice_number || inv.id.slice(0, 8)}`,
+                          })
+                        }
+                      >
+                        Preview
+                      </button>
                       <button onClick={() => downloadInvoiceAttachment(inv.id)}>Download</button>
                       {inv.status === 'draft' && (
                         <button onClick={() => suggestInvoiceOcr(inv.id)}>OCR</button>
@@ -2251,6 +2264,15 @@ export default function Page() {
           </tbody>
         </table>
         </>
+      )}
+      {attachPreview && (
+        <AttachmentPreview
+          open
+          apiPath={attachPreview.apiPath}
+          title={attachPreview.title}
+          onClose={() => setAttachPreview(null)}
+          onError={(msg) => setError(msg)}
+        />
       )}
     </Shell>
   );
