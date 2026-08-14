@@ -10,7 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.inventory import apply_stock_change
-from app.doc_numbers import next_credit_note_number, next_quotation_number, next_sales_return_number
+from app.doc_numbers import (
+    next_credit_note_number,
+    next_quotation_number,
+    next_sales_order_number,
+    next_sales_return_number,
+)
 from app.sales import create_sales_invoice, get_customer, get_invoice, list_invoice_items
 from app.tax import resolve_product_tax
 from app.catalog import get_variant, resolve_sale_line
@@ -376,7 +381,7 @@ async def create_order(
     total = round(subtotal + tax_total - discount_amount, 2)
     order = m.SalesOrder(
         tenant_id=tenant_id,
-        order_number=_stamp("SO"),
+        order_number=await next_sales_order_number(db, tenant_id),
         customer_id=customer_id,
         quotation_id=quotation_id,
         store_id=resolved_store_id,

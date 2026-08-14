@@ -72,6 +72,12 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.SalesReturn,
         "field": "credit_note_number",
     },
+    "sales_order": {
+        "default_prefix": "SO",
+        "storage": "json",
+        "model": m.SalesOrder,
+        "field": "order_number",
+    },
 }
 
 # Back-compat aliases
@@ -299,6 +305,10 @@ async def next_sales_return_number(db: AsyncSession, tenant_id: str) -> str:
 
 async def next_credit_note_number(db: AsyncSession, tenant_id: str) -> str:
     return await next_series_document_number(db, tenant_id, "credit_note")
+
+
+async def next_sales_order_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "sales_order")
 
 
 async def next_purchase_request_number(db: AsyncSession, tenant_id: str) -> str:

@@ -486,7 +486,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Customer order confirmation before invoicing.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [x] Create order from quotation or directly
+  - [x] Create order from quotation or directly (order_number via tenant series `GET|PATCH /sales/settings` → `sales_order_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `SO`; Sales Document numbering UI)
   - [x] Reserve inventory (soft allocation) on confirm against store warehouse (`stock_reservations`); cancel releases; invoice post consumes then hard stock-out
   - [x] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled (plus `invoiced` after convert-to-invoice; cancel allowed through processing)
   - [x] Delivery date and address
@@ -994,7 +994,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, purchase return, debit note, quotation, sales return, credit note numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PR/DN; `GET|PATCH /sales/settings` for INV/QT/SR/CN)
+  - [x] Configure PO, GRN, purchase invoice, purchase return, debit note, quotation, sales order, sales return, credit note numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PR/DN; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)
