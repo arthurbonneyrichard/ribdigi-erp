@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_370_EXIT_CRITERIA.md` / `docs/ADR_748_STAGE370_FREEZE.md` (`backend/tests/test_stage370_exit_h370x.py`) — Stage 370 H370x
+- `docs/STAGE_370_FIDELITY.md` (`backend/tests/test_stage370_fidelity_d1.py`) — Stage 370 D1
+- `docs/STAGE_370_PLAN.md` (`backend/tests/test_stage370_open.py`) — Stage 370 open (ADR-747)
+- `docs/PERMISSION_ALIAS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/permission-alias-pack-remaining-gate.json` — Stage 370 I1
+- `docs/PERMISSION_ALIAS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/permission-alias-pack-rg-blockers.json` — Stage 370 B1
+- `docs/PERMISSION_ALIAS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/permission-alias-pack-rg-pointers.json` — Stage 370 P1
 - `docs/STAGE_369_EXIT_CRITERIA.md` / `docs/ADR_746_STAGE369_FREEZE.md` (`backend/tests/test_stage369_exit_h369x.py`) — Stage 369 H369x
 - `docs/STAGE_369_FIDELITY.md` (`backend/tests/test_stage369_fidelity_d1.py`) — Stage 369 D1
 - `docs/STAGE_369_PLAN.md` (`backend/tests/test_stage369_open.py`) — Stage 369 open (ADR-745)
@@ -5497,6 +5503,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 370 exit
+
+H370x met — `docs/STAGE_370_EXIT_CRITERIA.md`, ADR-748. Stages 1–370 frozen for Stage 370 feature scope.
+
+## Stage 370 D1 — Tenant MVP Permission Alias Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `PERMISSION_ALIAS_PACK_REMAINING_GATE_MVP.md` / `PERMISSION_ALIAS_PACK_RG_BLOCKERS_MVP.md` / `PERMISSION_ALIAS_PACK_RG_POINTERS_MVP.md` ≠ permission-rename Completes. Source: `CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md` P2.
+
+## Stage 370 open
+
+ADR-747 / `docs/STAGE_370_PLAN.md`.
 
 ## Stage 369 exit
 

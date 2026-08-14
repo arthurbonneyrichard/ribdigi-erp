@@ -31,3 +31,10 @@ Stage 370 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, manager-conflict-review, reconciliation, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 370 opened under **ADR-747** after CONTINUE/NEXT (Tenant MVP Permission Alias Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-748**. Stage 369 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 370 runner-up outline was approved and opened (ADR-747); freeze ADR-748. Do not reopen Stage 369 scope.
+

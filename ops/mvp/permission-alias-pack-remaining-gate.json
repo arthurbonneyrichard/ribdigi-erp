@@ -1,0 +1,58 @@
+{
+  "id": "permission-alias-pack-remaining-gate",
+  "stage": 370,
+  "pack": "I1",
+  "doc": "docs/PERMISSION_ALIAS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PERMISSION_ALIAS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PERMISSION_ALIAS_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "adr_004": "docs/ADR_004_MENU_PERMISSIONS.md",
+    "menu_permissions_pack_remaining_gate": "docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md",
+    "sync_conflict_ux_pack_remaining_gate": "docs/SYNC_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "permission_rename_complete_claimed": false,
+  "products_stock_alias_map_complete_claimed": false,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage369_sync_conflict_ux_pack_remaining_gate": true,
+  "distinct_from_adr004_menu_permissions": true,
+  "distinct_from_stage275_menu_permissions_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "paprg-read-blockers",
+      "title": "Read B1 permission alias pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "paprg-follow-pointers",
+      "title": "Follow P1 Stage 369 / ADR-004 / Stage 275 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "paprg-checklist-missing",
+      "title": "Reaffirm permission-rename / products-stock alias-map / Offline Complete / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "paprg-no-packaging-as-live",
+      "title": "Do not treat ADR-004 / Stage 84 / Stage 275 / Stage 329 as rename Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "paprg-checklist-remaining",
+      "title": "Permission-rename / products-stock alias-map / Offline Complete / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 370 I1 permission alias pack remaining-gate index packaging only. Do not claim rename Completes."
+}

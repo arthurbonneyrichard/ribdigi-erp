@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 370 track opened (ADR-747: `test_stage370_open.py`, `docs/STAGE_370_PLAN.md`) — Permission Alias Pack Remaining-Gate Index; closed under ADR-748
+- [x] Permission alias pack remaining-gate hub (Stage 370 I1: `test_stage370_index_i1.py`, `docs/PERMISSION_ALIAS_PACK_REMAINING_GATE_MVP.md`)
+- [x] Permission alias pack blocker matrix (Stage 370 B1: `test_stage370_blockers_b1.py`, `docs/PERMISSION_ALIAS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 369 / ADR-004 / Stage 275 / Stage 329 pointers (Stage 370 P1: `test_stage370_pointers_p1.py`, `docs/PERMISSION_ALIAS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 370 fidelity sync (D1: `test_stage370_fidelity_d1.py`, `docs/STAGE_370_FIDELITY.md`)
+- [x] Stage 370 exit + freeze (H370x: `test_stage370_exit_h370x.py`, `docs/STAGE_370_EXIT_CRITERIA.md`, ADR-748)
 - [x] Stage 369 track opened (ADR-745: `test_stage369_open.py`, `docs/STAGE_369_PLAN.md`) — Sync Conflict UX Pack Remaining-Gate Index; closed under ADR-746
 - [x] Sync conflict UX pack remaining-gate hub (Stage 369 I1: `test_stage369_index_i1.py`, `docs/SYNC_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md`)
 - [x] Sync conflict UX pack blocker matrix (Stage 369 B1: `test_stage369_blockers_b1.py`, `docs/SYNC_CONFLICT_UX_PACK_RG_BLOCKERS_MVP.md`)
