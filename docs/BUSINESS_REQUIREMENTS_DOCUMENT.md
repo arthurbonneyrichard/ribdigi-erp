@@ -227,6 +227,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Define warehouse type (retail, bulk, cold storage, etc.) (`warehouse_type`)
   - [x] Assign warehouse manager (`manager_id` tenant user)
   - [x] Configure warehouse address and capacity (`address`, `capacity`; PATCH + Stores UI)
+  - [x] Deactivate warehouse without data loss (`PATCH /warehouses/{id}` `{ is_active: false }`; Multi-Store **Activate** / **Deactivate**; inactive hidden from Inventory/Reports warehouse pickers; stock movements + warehouse transfers + PO warehouse assign reject inactive)
 
 #### BR-2.5 Department Setup
 - **Description:** Organizational structure configuration.

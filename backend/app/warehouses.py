@@ -23,6 +23,7 @@ def serialize_warehouse(row: m.Warehouse) -> dict:
         "manager_id": getattr(row, "manager_id", None),
         "address": getattr(row, "address", None),
         "capacity": float(cap) if cap is not None else None,
+        "is_active": bool(getattr(row, "is_active", True)),
     }
 
 
@@ -75,6 +76,16 @@ async def get_warehouse(db: AsyncSession, tenant_id: str, warehouse_id: str) -> 
     return row
 
 
+async def require_active_warehouse(
+    db: AsyncSession, tenant_id: str, warehouse_id: str
+) -> m.Warehouse:
+    """Resolve warehouse for new stock ops / PO assign; inactive warehouses cannot be newly used."""
+    row = await get_warehouse(db, tenant_id, warehouse_id)
+    if not bool(getattr(row, "is_active", True)):
+        raise HTTPException(status_code=400, detail="Warehouse is inactive")
+    return row
+
+
 async def create_warehouse(
     db: AsyncSession,
     *,
@@ -113,6 +124,7 @@ async def create_warehouse(
         manager_id=await _assert_tenant_user(db, tenant_id, manager_id),
         address=(address or "").strip() or None,
         capacity=capacity,
+        is_active=True,
     )
     db.add(row)
     await db.flush()
@@ -133,6 +145,7 @@ async def update_warehouse(
     address: str | None = None,
     capacity: float | None = None,
     clear_capacity: bool = False,
+    is_active: bool | None = None,
 ) -> m.Warehouse:
     row = await get_warehouse(db, tenant_id, warehouse_id)
     if name is not None:
@@ -158,5 +171,7 @@ async def update_warehouse(
         if capacity < 0:
             raise HTTPException(status_code=400, detail="capacity must be >= 0")
         row.capacity = capacity
+    if is_active is not None:
+        row.is_active = bool(is_active)
     await db.flush()
     return row

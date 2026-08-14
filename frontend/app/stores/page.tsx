@@ -83,6 +83,7 @@ type Warehouse = {
   address?: string | null;
   capacity?: number | null;
   store_id?: string | null;
+  is_active?: boolean;
 };
 type UserRow = { id: string; email?: string; full_name?: string; name?: string };
 type Product = { id: string; name: string; sku: string; stock_qty: number };
@@ -495,6 +496,21 @@ export default function Page() {
         body: JSON.stringify({ is_active: isActive }),
       });
       setMessage(isActive ? 'Store reactivated' : 'Store deactivated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setWarehouseActive(warehouseId: string, isActive: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/warehouses/${warehouseId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      setMessage(isActive ? 'Warehouse reactivated' : 'Warehouse deactivated');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1223,7 +1239,10 @@ export default function Page() {
       )}
 
       <h3 style={{ marginTop: 16 }}>Warehouses</h3>
-      <p className="muted">Type, manager, address, and capacity (BR-2.4).</p>
+      <p className="muted">
+        Type, manager, address, and capacity (BR-2.4). Soft-deactivate hides the warehouse from new
+        stock ops without deleting history.
+      </p>
       <table className="table" style={{ marginBottom: 24 }}>
         <thead>
           <tr>
@@ -1233,6 +1252,7 @@ export default function Page() {
             <th>Manager</th>
             <th>Address</th>
             <th>Capacity</th>
+            <th>Active</th>
             <th></th>
           </tr>
         </thead>
@@ -1240,21 +1260,34 @@ export default function Page() {
           {warehouses.map((w) => (
             <tr key={w.id}>
               <td>{w.code}</td>
-              <td>{w.name}</td>
+              <td>
+                {w.name}
+                {w.is_active === false ? ' [inactive]' : ''}
+              </td>
               <td>{w.warehouse_type || 'retail'}</td>
               <td>{w.manager_id ? userLabel(w.manager_id) : '—'}</td>
               <td>{w.address || '—'}</td>
               <td>{w.capacity != null ? w.capacity : '—'}</td>
-              <td>
+              <td>{w.is_active === false ? 'no' : 'yes'}</td>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => startEditWarehouse(w)}>
                   Edit
                 </button>
+                {w.is_active === false ? (
+                  <button type="button" onClick={() => setWarehouseActive(w.id, true)}>
+                    Activate
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setWarehouseActive(w.id, false)}>
+                    Deactivate
+                  </button>
+                )}
               </td>
             </tr>
           ))}
           {warehouses.length === 0 && (
             <tr>
-              <td colSpan={7} className="muted">
+              <td colSpan={8} className="muted">
                 No warehouses yet
               </td>
             </tr>

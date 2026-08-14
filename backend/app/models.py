@@ -239,6 +239,7 @@ class Warehouse(Base):
     manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     capacity: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
 
 
 class WarehouseStock(Base):

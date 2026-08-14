@@ -705,6 +705,7 @@ class WarehouseUpdate(BaseModel):
     address: str | None = None
     capacity: float | None = Field(default=None, ge=0)
     clear_capacity: bool = False
+    is_active: bool | None = None
 
 
 class StockTransferItemCreate(BaseModel):

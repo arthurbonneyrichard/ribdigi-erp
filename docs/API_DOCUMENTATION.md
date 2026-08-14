@@ -357,7 +357,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 **List:** `GET /warehouses`  
 **Get:** `GET /warehouses/{warehouse_id}`  
 **Create:** `POST /warehouses`  
-**Update:** `PATCH /warehouses/{warehouse_id}`
+**Update:** `PATCH /warehouses/{warehouse_id}` — partial fields include name/type/manager/address/capacity/store plus soft-deactivate via `is_active` (Multi-Store **Activate** / **Deactivate**; inactive hidden from Inventory/Reports pickers; stock movements, warehouse transfers, and PO warehouse assign return 400)
 
 ```json
 {
@@ -371,7 +371,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 }
 ```
 
-`warehouse_type`: `retail` | `bulk` | `cold_storage` | `other`. PATCH supports `clear_manager`, `clear_store`, `clear_capacity`.
+`warehouse_type`: `retail` | `bulk` | `cold_storage` | `other`. PATCH supports `clear_manager`, `clear_store`, `clear_capacity`, `is_active`.
 
 ---
 
