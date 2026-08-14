@@ -20,10 +20,10 @@ async def _purchase_line_tax(
     tenant_id: str,
     product: m.Product,
     item: dict,
-) -> tuple[float, float, float, float]:
+) -> tuple[float, float, float, float, list | None]:
     """Resolve purchase line tax (BR-12.2).
 
-    Returns (line_subtotal, line_tax, line_total, rate_pct).
+    Returns (line_subtotal, line_tax, line_total, rate_pct, tax_components).
     ``tax_rate`` omitted/None → product → category → tenant default;
     explicit value (including 0) wins.
     """
@@ -36,8 +36,15 @@ async def _purchase_line_tax(
         spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
     qty = float(item.get("quantity") or 0)
     unit = float(item.get("unit_price") or 0)
-    line_sub, line_tax, line_total = spec.compute_amounts(qty * unit)
-    return line_sub, line_tax, line_total, float(spec.rate_pct)
+    breakdown = spec.compute_breakdown(qty * unit)
+    comps = list(breakdown.get("components") or []) or None
+    return (
+        float(breakdown["net"]),
+        float(breakdown["tax"]),
+        float(breakdown["gross"]),
+        float(spec.rate_pct),
+        comps,
+    )
 
 PO_EDITABLE = {"draft"}
 PO_AMENDABLE = frozenset({"draft", "sent"})
@@ -285,7 +292,7 @@ async def create_purchase_order(
             quantity=float(item["quantity"]),
         )
         line_item = {**item, "quantity": qty, "unit_price": item.get("unit_price", 0)}
-        line_sub, line_tax, line_total, rate_pct = await _purchase_line_tax(
+        line_sub, line_tax, line_total, rate_pct, _comps = await _purchase_line_tax(
             db, tenant_id, product, line_item
         )
         subtotal += line_sub
@@ -506,7 +513,7 @@ async def amend_purchase_order(
                 "quantity": qty,
                 "unit_price": float(item.get("unit_price") or 0),
             }
-            line_sub, line_tax, line_total, rate_pct = await _purchase_line_tax(
+            line_sub, line_tax, line_total, rate_pct, _comps = await _purchase_line_tax(
                 db, tenant_id, product, line_item
             )
             subtotal += line_sub
@@ -1544,6 +1551,7 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         "notes": inv.notes,
         "approved_at": inv.approved_at,
         "created_at": inv.created_at,
+        "tax_breakdown": _purchase_invoice_tax_breakdown(items, inv),
         "items": [
             {
                 "id": i.id,
@@ -1552,10 +1560,77 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
                 "discount": float(i.discount or 0),
+                "line_subtotal": float(getattr(i, "line_subtotal", None) or _pi_line_subtotal(i)),
+                "line_tax": _pi_line_tax_value(i),
+                "tax_components": getattr(i, "tax_components", None) or None,
                 "line_total": float(i.line_total),
             }
             for i in items
         ],
+    }
+
+
+def _pi_line_subtotal(item: m.PurchaseInvoiceItem) -> float:
+    stored = float(getattr(item, "line_subtotal", None) or 0)
+    if stored > 0:
+        return stored
+    return round(float(item.quantity or 0) * float(item.unit_price or 0), 2)
+
+
+def _pi_line_tax_value(item: m.PurchaseInvoiceItem) -> float:
+    stored = float(getattr(item, "line_tax", None) or 0)
+    if stored > 0 or getattr(item, "tax_components", None) is not None:
+        return stored
+    rate = float(item.tax_rate or 0)
+    if rate <= 0:
+        return 0.0
+    sub = _pi_line_subtotal(item)
+    total = float(item.line_total or 0)
+    discount = float(item.discount or 0)
+    derived = round(total - sub + discount, 2)
+    if derived < 0:
+        return round(sub * rate / 100.0, 2)
+    return derived
+
+
+def _purchase_invoice_tax_breakdown(
+    items: list[m.PurchaseInvoiceItem], inv: m.PurchaseInvoice
+) -> dict:
+    by_rate: dict[str, dict] = {}
+    component_totals: dict[str, dict] = {}
+    line_rows: list[dict] = []
+    for i in items:
+        line_tax = _pi_line_tax_value(i)
+        rate = float(i.tax_rate or 0)
+        key = f"{rate:.4f}"
+        bucket = by_rate.setdefault(
+            key,
+            {"tax_rate": rate, "taxable": 0.0, "tax": 0.0},
+        )
+        bucket["taxable"] = round(bucket["taxable"] + _pi_line_subtotal(i), 2)
+        bucket["tax"] = round(bucket["tax"] + line_tax, 2)
+        comps = getattr(i, "tax_components", None) or []
+        for c in comps:
+            cname = str(c.get("name") or c.get("code") or "component")
+            cb = component_totals.setdefault(cname, {"name": cname, "tax": 0.0})
+            cb["tax"] = round(cb["tax"] + float(c.get("amount") or 0), 2)
+        line_rows.append(
+            {
+                "item_id": i.id,
+                "product_id": i.product_id,
+                "tax_rate": rate,
+                "line_subtotal": _pi_line_subtotal(i),
+                "line_tax": line_tax,
+                "tax_components": comps or None,
+            }
+        )
+    return {
+        "lines": line_rows,
+        "by_rate": sorted(by_rate.values(), key=lambda r: -r["tax_rate"]),
+        "by_component": sorted(component_totals.values(), key=lambda r: r["name"]),
+        "tax_amount": float(inv.tax_amount or 0),
+        "reverse_charge_tax": float(getattr(inv, "reverse_charge_tax", 0) or 0),
+        "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
     }
 
 
@@ -1582,7 +1657,7 @@ async def _prepare_invoice_lines(
         unit = float(item.get("unit_price") if item.get("unit_price") is not None else product.cost_price or 0)
         discount = float(item.get("discount") or 0)
         line_item = {**item, "quantity": qty, "unit_price": unit}
-        line_sub, line_tax, line_total, rate_pct = await _purchase_line_tax(
+        line_sub, line_tax, line_total, rate_pct, comps = await _purchase_line_tax(
             db, tenant_id, product, line_item
         )
         line_total = max(line_total - discount, 0)
@@ -1595,6 +1670,9 @@ async def _prepare_invoice_lines(
                 "unit_price": unit,
                 "tax_rate": rate_pct,
                 "discount": discount,
+                "line_subtotal": line_sub,
+                "line_tax": line_tax,
+                "tax_components": comps,
                 "line_total": line_total,
             }
         )

@@ -1539,6 +1539,9 @@ class PurchaseInvoiceItem(Base):
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_components: Mapped[list | None] = mapped_column(JSON, nullable=True)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 

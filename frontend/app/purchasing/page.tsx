@@ -105,6 +105,24 @@ type PurchaseInvoice = {
   ap_posted: boolean;
   has_attachment?: boolean;
   attachment_url?: string | null;
+  subtotal?: number;
+  items?: {
+    id: string;
+    product_id: string;
+    quantity: number;
+    unit_price: number;
+    tax_rate: number;
+    line_subtotal?: number;
+    line_tax?: number;
+    line_total: number;
+    tax_components?: { name?: string; code?: string; amount?: number }[] | null;
+  }[];
+  tax_breakdown?: {
+    by_rate?: { tax_rate: number; taxable: number; tax: number }[];
+    tax_amount?: number;
+    reverse_charge_tax?: number;
+    is_reverse_charge?: boolean;
+  };
 };
 
 export default function Page() {
@@ -113,6 +131,7 @@ export default function Page() {
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [grns, setGrns] = useState<Grn[]>([]);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
   const [returns, setReturns] = useState<PurchaseReturn[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -1588,14 +1607,29 @@ export default function Page() {
           <tbody>
             {invoices.map((inv) => (
               <tr key={inv.id}>
-                <td>{inv.invoice_number}</td>
+                <td>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const r = await api(`/purchasing/invoices/${inv.id}`);
+                        setSelectedInvoice(r.data);
+                      } catch (err: any) {
+                        setError(err.message);
+                      }
+                    }}
+                    style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                  >
+                    {inv.invoice_number}
+                  </button>
+                </td>
                 <td>{inv.supplier_invoice_number || '—'}</td>
                 <td>{inv.status}</td>
                 <td>{inv.total_amount}</td>
                 <td>
                   {inv.is_reverse_charge
                     ? `${inv.reverse_charge_tax ?? 0}`
-                    : '—'}
+                    : inv.tax_amount ?? '—'}
                 </td>
                 <td>{inv.balance_due}</td>
                 <td>{inv.ap_posted ? 'yes' : 'no (via GRN)'}</td>
@@ -1632,6 +1666,86 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+        {selectedInvoice && (
+          <div className="card" style={{ marginTop: 16 }}>
+            <h3>
+              {selectedInvoice.invoice_number} — {selectedInvoice.status}
+            </h3>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Unit</th>
+                  <th>Tax %</th>
+                  <th>Line tax</th>
+                  <th>Line total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(selectedInvoice.items || []).map((it) => (
+                  <tr key={it.id}>
+                    <td>{productName(it.product_id)}</td>
+                    <td>{it.quantity}</td>
+                    <td>{it.unit_price}</td>
+                    <td>{it.tax_rate}</td>
+                    <td>
+                      {it.line_tax ?? 0}
+                      {(it.tax_components || []).length
+                        ? ` (${(it.tax_components || [])
+                            .map((c) => `${c.name || c.code}:${c.amount}`)
+                            .join(', ')})`
+                        : ''}
+                    </td>
+                    <td>{it.line_total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="grid" style={{ marginTop: 12 }}>
+              <div className="card">
+                <div className="muted">Subtotal</div>
+                <div className="kpi">{selectedInvoice.subtotal ?? 0}</div>
+              </div>
+              <div className="card">
+                <div className="muted">Tax</div>
+                <div className="kpi">{selectedInvoice.tax_amount ?? 0}</div>
+              </div>
+              <div className="card">
+                <div className="muted">Total</div>
+                <div className="kpi">{selectedInvoice.total_amount ?? 0}</div>
+              </div>
+            </div>
+            {(selectedInvoice.tax_breakdown?.by_rate || []).length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <h4 style={{ margin: '8px 0' }}>Tax breakdown</h4>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Rate</th>
+                      <th>Taxable</th>
+                      <th>Tax</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedInvoice.tax_breakdown!.by_rate!.map((r, idx) => (
+                      <tr key={`${r.tax_rate}-${idx}`}>
+                        <td>{r.tax_rate}%</td>
+                        <td>{r.taxable}</td>
+                        <td>{r.tax}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!!selectedInvoice.reverse_charge_tax && selectedInvoice.reverse_charge_tax > 0 && (
+                  <p className="muted">
+                    Reverse-charge tax (memo): {selectedInvoice.reverse_charge_tax}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         </>
       )}
 

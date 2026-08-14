@@ -746,6 +746,8 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 
 Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced invoices copy the PO line snapshot.
 
+Response lines include `line_subtotal`, `line_tax`, and optional `tax_components`. Header includes `tax_amount` plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Purchasing → Invoices UI shows per-line tax and by-rate totals when an invoice number is selected.
+
 ### 6.6 Purchase Return
 **List:** `GET /purchases/returns`  
 **Create:** `POST /purchases/returns`  
