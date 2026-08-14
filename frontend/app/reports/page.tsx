@@ -108,6 +108,7 @@ export default function Page() {
     if (storeId) params.set('store_id', storeId);
     if (branchId) params.set('branch_id', branchId);
     if (departmentId) params.set('department_id', departmentId);
+    if (warehouseId) params.set('warehouse_id', warehouseId);
     Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
     const s = params.toString();
     return s ? `?${s}` : '';
@@ -295,6 +296,7 @@ export default function Page() {
       if (storeId) params.set('store_id', storeId);
       if (branchId) params.set('branch_id', branchId);
       if (departmentId) params.set('department_id', departmentId);
+      if (warehouseId) params.set('warehouse_id', warehouseId);
       if (
         (reportType || TAB_EXPORT[tab]) === 'sales_products' ||
         (!reportType && tab === 'sales')
@@ -481,6 +483,34 @@ export default function Page() {
               style={{ width: 110 }}
               title="Expiry horizon (days)"
             />
+          </>
+        )}
+        {tab === 'purchases' && (
+          <>
+            <select
+              value={storeId}
+              onChange={(e) => {
+                setStoreId(e.target.value);
+                setWarehouseId('');
+              }}
+            >
+              <option value="">All stores</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
+                </option>
+              ))}
+            </select>
+            <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
+              <option value="">All warehouses</option>
+              {warehouses
+                .filter((w) => !storeId || w.store_id === storeId)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.code} — {w.name}
+                  </option>
+                ))}
+            </select>
           </>
         )}
         {(tab === 'pnl' || tab === 'stores' || tab === 'sales' || tab === 'customers' || tab === 'expenses' || tab === 'cashflow' || tab === 'salesperson') && (
@@ -1159,7 +1189,14 @@ export default function Page() {
         <>
           <div className="grid">
             <div className="card">
-              <div className="muted">Orders (period)</div>
+              <div className="muted">
+                Orders (period)
+                {data.summary?.store_name
+                  ? ` · ${data.summary.store_name}`
+                  : data.summary?.warehouse_name
+                    ? ` · ${data.summary.warehouse_name}`
+                    : ''}
+              </div>
               <div className="kpi">{data.summary?.order_count ?? 0}</div>
             </div>
             <div className="card">

@@ -765,9 +765,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Procurement analysis.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [x] **Purchase Summary:** Total purchases by period (`GET /reports/purchases/summary`)
-  - [x] **Supplier Purchases:** Purchase volume and value per supplier (`GET /reports/purchases/suppliers`)
-  - [x] **Pending Orders:** POs not yet received (`GET /reports/purchases/pending-orders`; draft/sent/partially_received; Reports Purchases tab + export)
+  - [x] **Purchase Summary:** Total purchases by period (`GET /reports/purchases/summary`; optional `warehouse_id` / `store_id`; Reports Purchases tab)
+  - [x] **Supplier Purchases:** Purchase volume and value per supplier (`GET /reports/purchases/suppliers`; optional `warehouse_id` / `store_id`)
+  - [x] **Pending Orders:** POs not yet received (`GET /reports/purchases/pending-orders`; draft/sent/partially_received; optional `warehouse_id` / `store_id`; Reports Purchases tab + export)
   - [x] **Purchase Return Summary** (`GET /reports/purchases/returns`; by reason/supplier; Reports Purchases tab + export `purchases_returns`)
 
 #### BR-14.4 Expense Reports
@@ -786,7 +786,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Profit & Loss Statement (`GET /accounting/profit-loss` + `/reports/profit-loss` with date/store/branch filters)
   - [x] Cash Flow Statement (O/I/F + internal transfers; date range; liquid GL direct method; optional `store_id`/`branch_id` for attributable operating cash)
   - [x] Balance Sheet (Assets = Liabilities + Equity; `as_of` reconstructs from posted journals; computed retained earnings)
-  - [ ] All reports filterable by date range, branch, store (P&L + cash-flow support date/store/branch; customer/product/salesperson sales support `store_id`; BS + TB support `as_of`; **expense summary/budget-vs-actual support `branch_id`/`department_id`/`store_id`**; others partial)
+  - [ ] All reports filterable by date range, branch, store (P&L + cash-flow support date/store/branch; customer/product/salesperson sales support `store_id`; purchase summary/suppliers/pending support `store_id`/`warehouse_id`; BS + TB support `as_of`; **expense summary/budget-vs-actual support `branch_id`/`department_id`/`store_id`**; others partial)
   - [x] Comparative reports (current period vs previous period) — BS `compare=prior_period|prior_year`
 
 ---

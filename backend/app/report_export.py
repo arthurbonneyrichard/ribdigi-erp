@@ -603,12 +603,31 @@ async def build_report_payload(
             db, tenant_id, from_date=fd, to_date=td
         )
     if report_type == "purchases_summary":
-        return await reports_svc.purchases_summary(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
     if report_type == "purchases_suppliers":
-        return await reports_svc.purchases_by_supplier(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_by_supplier(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
     if report_type == "purchases_pending_orders":
         return await reports_svc.purchases_pending_orders(
-            db, tenant_id, from_date=fd, to_date=td
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     if report_type == "purchases_returns":
         return await reports_svc.purchases_returns_summary(

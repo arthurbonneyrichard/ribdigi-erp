@@ -8343,6 +8343,8 @@ async def report_inventory_transfers(
 async def report_purchases_summary(
     from_date: str | None = None,
     to_date: str | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8352,6 +8354,8 @@ async def report_purchases_summary(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     )
 
@@ -8361,6 +8365,8 @@ async def report_purchases_suppliers(
     supplier_id: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8371,6 +8377,8 @@ async def report_purchases_suppliers(
             supplier_id=supplier_id,
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     )
 
@@ -8381,6 +8389,8 @@ async def report_purchases_pending_orders(
     to_date: str | None = None,
     supplier_id: str | None = None,
     status: str | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8393,6 +8403,8 @@ async def report_purchases_pending_orders(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             supplier_id=supplier_id or None,
             status=status or None,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     )
 
