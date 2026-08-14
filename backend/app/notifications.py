@@ -18,6 +18,7 @@ DEFAULT_PREFERENCES = {
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
     "payment_due": {"dashboard": True, "email": True, "sms": False},
     "quotation_expiry": {"dashboard": True, "email": False, "sms": False},
+    "recurring_expense_due": {"dashboard": True, "email": True, "sms": False},
     "new_order": {"dashboard": True, "email": False, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
@@ -540,6 +541,68 @@ async def scan_quotation_expiry(db: AsyncSession, tenant_id: str, within_days: i
             message=message,
             entity_type="sales_quotation",
             entity_id=quote.id,
+        )
+        created += 1
+    return created
+
+
+async def scan_recurring_expense_due(db: AsyncSession, tenant_id: str, within_days: int = 1) -> int:
+    """Notify before active recurring schedules auto-generate (BR-9.5).
+
+    Default window is T−1 day on ``next_run_at`` (includes already-due schedules not yet
+    generated). Dedupes unread notifications per recurring template.
+    """
+    now = datetime.utcnow()
+    horizon = now + timedelta(days=max(0, int(within_days)))
+    rows = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.tenant_id == tenant_id,
+                m.RecurringExpense.is_active == True,  # noqa: E712
+                m.RecurringExpense.next_run_at.is_not(None),
+                m.RecurringExpense.next_run_at <= horizon,
+            )
+        )
+    ).scalars().all()
+    created = 0
+    for row in rows:
+        if row.end_date and row.end_date < now:
+            continue
+        existing = (
+            await db.execute(
+                select(m.Notification).where(
+                    m.Notification.tenant_id == tenant_id,
+                    m.Notification.category == "recurring_expense_due",
+                    m.Notification.entity_id == row.id,
+                    m.Notification.status == "unread",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            continue
+        when = row.next_run_at
+        when_label = when.date().isoformat() if when else "unknown"
+        past = bool(when and when <= now)
+        title = "Recurring expense due" if past else "Recurring expense due soon"
+        amount = float(row.amount or 0)
+        message = (
+            f"Recurring {row.category} ({amount:.2f}) "
+            + (
+                f"is due to generate (scheduled {when_label})."
+                if past
+                else f"will auto-generate on {when_label}."
+            )
+        )
+        if row.description:
+            message = f"{message} {row.description[:80]}"
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="recurring_expense_due",
+            title=title,
+            message=message,
+            entity_type="recurring_expense",
+            entity_id=row.id,
         )
         created += 1
     return created

@@ -43,6 +43,12 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "scan-recurring-expense-due": {
+            "task": "app.tasks.scan_recurring_expense_due",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_RECURRING_NOTIFY_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
         "generate-recurring-expenses": {
             "task": "app.tasks.generate_recurring_expenses",
             "schedule": schedule(

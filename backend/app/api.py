@@ -10358,13 +10358,17 @@ async def scan_due_notifications(
 ):
     payment_due = await notifications_svc.scan_payment_due(db, claims["tenant_id"])
     quotation_expiry = await notifications_svc.scan_quotation_expiry(db, claims["tenant_id"])
+    recurring_expense_due = await notifications_svc.scan_recurring_expense_due(
+        db, claims["tenant_id"]
+    )
     await db.commit()
-    total = int(payment_due) + int(quotation_expiry)
+    total = int(payment_due) + int(quotation_expiry) + int(recurring_expense_due)
     return env(
         {
             "created": total,
             "payment_due": payment_due,
             "quotation_expiry": quotation_expiry,
+            "recurring_expense_due": recurring_expense_due,
         },
         f"Created {total} due notification(s)",
     )
@@ -10386,6 +10390,7 @@ async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin")
                 "scan_low_stock_minutes": app_settings.CELERY_LOW_STOCK_INTERVAL_MINUTES,
                 "scan_payment_due_minutes": app_settings.CELERY_PAYMENT_DUE_INTERVAL_MINUTES,
                 "scan_quotation_expiry_minutes": app_settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES,
+                "scan_recurring_expense_due_minutes": app_settings.CELERY_RECURRING_NOTIFY_INTERVAL_MINUTES,
                 "generate_recurring_expenses_minutes": app_settings.CELERY_RECURRING_INTERVAL_MINUTES,
                 "run_due_backups_minutes": app_settings.CELERY_BACKUP_INTERVAL_MINUTES,
                 "scan_trial_lifecycle_minutes": app_settings.CELERY_TRIAL_INTERVAL_MINUTES,
