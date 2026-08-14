@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 420 D1 Pentest Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_420_FIDELITY.md` (`test_stage420_fidelity_d1.py`); Offline Complete / Pentest honesty / go-live still MISSING.
 Stage 419 D1 TLS Ingress Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_419_FIDELITY.md` (`test_stage419_fidelity_d1.py`); Offline Complete / TLS Ingress honesty / go-live still MISSING.
 Stage 418 D1 Cutover Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_418_FIDELITY.md` (`test_stage418_fidelity_d1.py`); Offline Complete / Cutover honesty / go-live still MISSING.
 Stage 417 D1 Staging GHA Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_417_FIDELITY.md` (`test_stage417_fidelity_d1.py`); Offline Complete / Staging GHA honesty / go-live still MISSING.

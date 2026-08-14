@@ -31,3 +31,9 @@ Stage 420 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, TLS, TLS Ingress honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 420 opened under **ADR-847** after CONTINUE/NEXT (Tenant MVP Pentest Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-848**. Stage 419 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 419 runner-up outline was approved and opened (ADR-847); freeze ADR-848. Do not reopen Stage 419 scope.
