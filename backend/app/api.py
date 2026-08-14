@@ -8284,6 +8284,9 @@ async def report_inventory_movements(
     product_id: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
+    movement_type: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8294,6 +8297,9 @@ async def report_inventory_movements(
             product_id=product_id,
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+            movement_type=movement_type or None,
         )
     )
 

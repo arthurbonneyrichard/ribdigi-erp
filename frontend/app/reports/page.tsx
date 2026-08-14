@@ -177,7 +177,7 @@ export default function Page() {
         const [balance, valuation, movements, suggestions, transfers, expiry] = await Promise.all([
           api(`/reports/inventory/balance${whQs}`),
           api(`/reports/inventory/valuation?method=standard${warehouseId ? `&warehouse_id=${encodeURIComponent(warehouseId)}` : ''}`),
-          api('/reports/inventory/movements'),
+          api(`/reports/inventory/movements${qs()}`),
           api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
           api(`/reports/inventory/transfers${qs()}`),
           api(`/reports/inventory/expiry?${expiryQs}`),
@@ -465,13 +465,39 @@ export default function Page() {
         )}
         {tab === 'inventory' && (
           <>
-            <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
-              <option value="">All warehouses (company stock)</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.code} — {w.name}
+            <select
+              value={storeId}
+              onChange={(e) => {
+                setStoreId(e.target.value);
+                setWarehouseId('');
+              }}
+            >
+              <option value="">All stores</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
                 </option>
               ))}
+            </select>
+            <select
+              value={warehouseId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setWarehouseId(next);
+                if (next) {
+                  const wh = warehouses.find((w) => w.id === next);
+                  if (wh?.store_id) setStoreId(wh.store_id);
+                }
+              }}
+            >
+              <option value="">All warehouses (company stock)</option>
+              {warehouses
+                .filter((w) => !storeId || w.store_id === storeId)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.code} — {w.name}
+                  </option>
+                ))}
             </select>
             <input
               type="number"
@@ -1054,6 +1080,59 @@ export default function Page() {
             >
               Export valuation Excel
             </button>
+          </div>
+          <div className="card" style={{ marginTop: 16 }}>
+            <h3>Stock movements</h3>
+            <p className="muted">
+              {data.movements?.count ?? 0} recent
+              {data.movements?.store_name
+                ? ` · ${data.movements.store_name}`
+                : data.movements?.warehouse_name
+                  ? ` · ${data.movements.warehouse_name}`
+                  : ''}
+            </p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => download('xlsx', 'inventory_movements')}>
+                Movements Excel
+              </button>
+              <button type="button" onClick={() => download('csv', 'inventory_movements')}>
+                Movements CSV
+              </button>
+            </div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Type</th>
+                  <th>Qty</th>
+                  <th>Before → after</th>
+                  <th>Ref</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.movements?.movements || []).slice(0, 25).map((mv: any) => (
+                  <tr key={mv.id}>
+                    <td>{mv.created_at ? String(mv.created_at).slice(0, 19) : '—'}</td>
+                    <td>{mv.movement_type}</td>
+                    <td>{mv.quantity}</td>
+                    <td>
+                      {mv.quantity_before} → {mv.quantity_after}
+                    </td>
+                    <td>
+                      {mv.reference_type || '—'}
+                      {mv.reference_id ? ` ${String(mv.reference_id).slice(0, 8)}…` : ''}
+                    </td>
+                  </tr>
+                ))}
+                {!data.movements?.movements?.length && (
+                  <tr>
+                    <td colSpan={5} className="muted">
+                      No stock movements
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
           <h3 style={{ marginTop: 16 }}>
             Stock value: {data.valuation?.total_value ?? data.balance?.total_value ?? 0}

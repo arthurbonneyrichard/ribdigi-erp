@@ -366,7 +366,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [ ] Log every stock change with timestamp, user, transaction type, quantity before/after
-  - [ ] Filter by date range, product, warehouse, transaction type
+  - [x] Filter by date range, product, warehouse, transaction type (`GET /reports/inventory/movements` + `/inventory/movements`; `warehouse_id` / `store_id` / `movement_type` / dates / product)
   - [ ] Export to CSV/PDF
   - [ ] Immutable records (no deletion allowed)
 
@@ -757,7 +757,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] **Stock Balance:** Current stock per product per warehouse (`GET /reports/inventory/balance`)
   - [x] **Low Stock:** Products below reorder level (`GET /reports/inventory/low-stock`)
-  - [x] **Stock Movement:** All in/out/adjustment/transfer transactions (`GET /reports/inventory/movements`)
+  - [x] **Stock Movement:** All in/out/adjustment/transfer transactions (`GET /reports/inventory/movements`; optional `warehouse_id` / `store_id` / `movement_type`; Reports Inventory tab + export)
   - [x] **Stock Valuation:** Standard cost via `GET /reports/inventory/valuation?method=standard` (qty × `product.cost_price`; optional `warehouse_id`); FIFO/LIFO/weighted average deferred (API returns 400)
   - [x] **Expiry Report:** Products nearing expiry (pharmacy/food) (`GET /reports/inventory/expiry?days=&warehouse_id=`; Reports Inventory tab + export `inventory_expiry`)
 
@@ -786,7 +786,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Profit & Loss Statement (`GET /accounting/profit-loss` + `/reports/profit-loss` with date/store/branch filters)
   - [x] Cash Flow Statement (O/I/F + internal transfers; date range; liquid GL direct method; optional `store_id`/`branch_id` for attributable operating cash)
   - [x] Balance Sheet (Assets = Liabilities + Equity; `as_of` reconstructs from posted journals; computed retained earnings)
-  - [ ] All reports filterable by date range, branch, store (P&L + cash-flow support date/store/branch; daily/monthly/product/customer/salesperson/returns sales support `store_id`; purchase summary/suppliers/pending/returns support `store_id`/`warehouse_id`; BS + TB support `as_of`; **expense summary/budget-vs-actual support `branch_id`/`department_id`/`store_id`**; others partial)
+  - [ ] All reports filterable by date range, branch, store (P&L + cash-flow support date/store/branch; daily/monthly/product/customer/salesperson/returns sales support `store_id`; purchase summary/suppliers/pending/returns support `store_id`/`warehouse_id`; inventory movements support `store_id`/`warehouse_id`; BS + TB support `as_of`; **expense summary/budget-vs-actual support `branch_id`/`department_id`/`store_id`**; others partial)
   - [x] Comparative reports (current period vs previous period) — BS `compare=prior_period|prior_year`
 
 ---
