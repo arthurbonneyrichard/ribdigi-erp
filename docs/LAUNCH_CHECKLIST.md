@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 371 track opened (ADR-749: `test_stage371_open.py`, `docs/STAGE_371_PLAN.md`) — Business Metrics Pack Remaining-Gate Index; closed under ADR-750
+- [x] Business metrics pack remaining-gate hub (Stage 371 I1: `test_stage371_index_i1.py`, `docs/BUSINESS_METRICS_PACK_REMAINING_GATE_MVP.md`)
+- [x] Business metrics pack blocker matrix (Stage 371 B1: `test_stage371_blockers_b1.py`, `docs/BUSINESS_METRICS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 370 / Stage 58 / billing-deferred / Stage 329 pointers (Stage 371 P1: `test_stage371_pointers_p1.py`, `docs/BUSINESS_METRICS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 371 fidelity sync (D1: `test_stage371_fidelity_d1.py`, `docs/STAGE_371_FIDELITY.md`)
+- [x] Stage 371 exit + freeze (H371x: `test_stage371_exit_h371x.py`, `docs/STAGE_371_EXIT_CRITERIA.md`, ADR-750)
 - [x] Stage 370 track opened (ADR-747: `test_stage370_open.py`, `docs/STAGE_370_PLAN.md`) — Permission Alias Pack Remaining-Gate Index; closed under ADR-748
 - [x] Permission alias pack remaining-gate hub (Stage 370 I1: `test_stage370_index_i1.py`, `docs/PERMISSION_ALIAS_PACK_REMAINING_GATE_MVP.md`)
 - [x] Permission alias pack blocker matrix (Stage 370 B1: `test_stage370_blockers_b1.py`, `docs/PERMISSION_ALIAS_PACK_RG_BLOCKERS_MVP.md`)

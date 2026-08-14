@@ -1,0 +1,59 @@
+{
+  "id": "business-metrics-pack-rg-pointers",
+  "stage": 371,
+  "pack": "P1",
+  "doc": "docs/BUSINESS_METRICS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BUSINESS_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "business_metrics_mvp": "docs/BUSINESS_METRICS_MVP.md",
+    "permission_alias_pack": "docs/PERMISSION_ALIAS_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "mrr_measured_claimed": false,
+  "paying_customers_measured_claimed": false,
+  "nrr_grr_measured_claimed": false,
+  "business_metrics_program_live_claimed": false,
+  "go_live_claimed": false,
+  "topics": {
+    "business_metrics_mvp_stage58": "docs/BUSINESS_METRICS_MVP.md",
+    "permission_alias_pack_remaining_gate_stage370": "docs/PERMISSION_ALIAS_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "mrr_measured / paying_customers_measured / nrr_grr_measured / business_metrics_program_live / go_live remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "bmprgp-stage58",
+      "title": "Point to Stage 58 BUSINESS_METRICS_MVP",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bmprgp-stage370",
+      "title": "Point to Stage 370 permission alias pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bmprgp-billing",
+      "title": "Point to billing-deferred honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bmprgp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bmprgp-checklist-remaining",
+      "title": "Measured MRR / paying customers / NRR\u00b7GRR Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 371 P1 business metrics pack RG pointers packaging only."
+}

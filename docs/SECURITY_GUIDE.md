@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 371 open** | Business Metrics Pack Remaining-Gate Index — `docs/STAGE_371_PLAN.md`, ADR-749 (`test_stage371_open.py`) |
+| **Stage 371 I1** | Business metrics pack remaining-gate index hub (`test_stage371_index_i1.py`) |
+| **Stage 371 B1** | Business metrics pack blocker matrix (`test_stage371_blockers_b1.py`) |
+| **Stage 371 P1** | Stage 370 / Stage 58 / billing-deferred / Stage 329 pointers (`test_stage371_pointers_p1.py`) |
+| **Stage 371 D1** | Business metrics pack remaining-gate fidelity — `docs/STAGE_371_FIDELITY.md` (`test_stage371_fidelity_d1.py`) |
+| **Stage 371 H371x** | Exit + freeze — `docs/STAGE_371_EXIT_CRITERIA.md`, ADR-750 (`test_stage371_exit_h371x.py`); Stages 1–371 frozen |
 | **Stage 370 open** | Permission Alias Pack Remaining-Gate Index — `docs/STAGE_370_PLAN.md`, ADR-747 (`test_stage370_open.py`) |
 | **Stage 370 I1** | Permission alias pack remaining-gate index hub (`test_stage370_index_i1.py`) |
 | **Stage 370 B1** | Permission alias pack blocker matrix (`test_stage370_blockers_b1.py`) |

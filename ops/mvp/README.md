@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_371_EXIT_CRITERIA.md` / `docs/ADR_750_STAGE371_FREEZE.md` (`backend/tests/test_stage371_exit_h371x.py`) — Stage 371 H371x
+- `docs/STAGE_371_FIDELITY.md` (`backend/tests/test_stage371_fidelity_d1.py`) — Stage 371 D1
+- `docs/STAGE_371_PLAN.md` (`backend/tests/test_stage371_open.py`) — Stage 371 open (ADR-749)
+- `docs/BUSINESS_METRICS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/business-metrics-pack-remaining-gate.json` — Stage 371 I1
+- `docs/BUSINESS_METRICS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/business-metrics-pack-rg-blockers.json` — Stage 371 B1
+- `docs/BUSINESS_METRICS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/business-metrics-pack-rg-pointers.json` — Stage 371 P1
 - `docs/STAGE_370_EXIT_CRITERIA.md` / `docs/ADR_748_STAGE370_FREEZE.md` (`backend/tests/test_stage370_exit_h370x.py`) — Stage 370 H370x
 - `docs/STAGE_370_FIDELITY.md` (`backend/tests/test_stage370_fidelity_d1.py`) — Stage 370 D1
 - `docs/STAGE_370_PLAN.md` (`backend/tests/test_stage370_open.py`) — Stage 370 open (ADR-747)
@@ -5503,6 +5509,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 371 exit
+
+H371x met — `docs/STAGE_371_EXIT_CRITERIA.md`, ADR-750. Stages 1–371 frozen for Stage 371 feature scope.
+
+## Stage 371 D1 — Tenant MVP Business Metrics Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `BUSINESS_METRICS_PACK_REMAINING_GATE_MVP.md` / `BUSINESS_METRICS_PACK_RG_BLOCKERS_MVP.md` / `BUSINESS_METRICS_PACK_RG_POINTERS_MVP.md` ≠ measured MRR Completes. Source: `BUSINESS_METRICS_MVP.md`.
+
+## Stage 371 open
+
+ADR-749 / `docs/STAGE_371_PLAN.md`.
 
 ## Stage 370 exit
 

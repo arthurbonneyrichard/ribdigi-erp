@@ -31,3 +31,10 @@ Stage 371 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for permission-rename, products/stock alias-map, Offline, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 371 opened under **ADR-749** after CONTINUE/NEXT (Tenant MVP Business Metrics Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-750**. Stage 370 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 371 runner-up outline was approved and opened (ADR-749); freeze ADR-750. Do not reopen Stage 370 scope.
+
