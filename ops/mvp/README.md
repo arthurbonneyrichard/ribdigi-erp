@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_346_EXIT_CRITERIA.md` / `docs/ADR_700_STAGE346_FREEZE.md` (`backend/tests/test_stage346_exit_h346x.py`) — Stage 346 H346x
+- `docs/STAGE_346_FIDELITY.md` (`backend/tests/test_stage346_fidelity_d1.py`) — Stage 346 D1
+- `docs/STAGE_346_PLAN.md` (`backend/tests/test_stage346_open.py`) — Stage 346 open (ADR-699)
+- `docs/MONTHLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/monthly-pos-ops-review-pack-remaining-gate.json` — Stage 346 I1
+- `docs/MONTHLY_POS_OPS_REVIEW_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/monthly-pos-ops-review-pack-rg-blockers.json` — Stage 346 B1
+- `docs/MONTHLY_POS_OPS_REVIEW_PACK_RG_POINTERS_MVP.md` / `ops/mvp/monthly-pos-ops-review-pack-rg-pointers.json` — Stage 346 P1
 - `docs/STAGE_345_EXIT_CRITERIA.md` / `docs/ADR_698_STAGE345_FREEZE.md` (`backend/tests/test_stage345_exit_h345x.py`) — Stage 345 H345x
 - `docs/STAGE_345_FIDELITY.md` (`backend/tests/test_stage345_fidelity_d1.py`) — Stage 345 D1
 - `docs/STAGE_345_PLAN.md` (`backend/tests/test_stage345_open.py`) — Stage 345 open (ADR-697)
@@ -5353,6 +5359,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 346 exit
+
+H346x met — `docs/STAGE_346_EXIT_CRITERIA.md`, ADR-700. Stages 1–346 frozen for Stage 346 feature scope.
+
+## Stage 346 D1 — Tenant MVP Monthly POS Ops Review Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_346_FIDELITY.md` (`test_stage346_fidelity_d1.py`). `MONTHLY_POS_OPS_REVIEW_PACK_*` remaining-gate index; Offline Complete / live DR / attestation / fabricated monthly green / go-live still MISSING.
+
+## Stage 346 open
+
+ADR-699 / `docs/STAGE_346_PLAN.md`.
 
 ## Stage 345 exit
 

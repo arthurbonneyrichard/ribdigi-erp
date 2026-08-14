@@ -31,3 +31,9 @@ Stage 346 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for weekly POS ops signals, Offline Complete, support SLA, attestation, fabricated zero-conflict, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 346 opened under **ADR-699** after CONTINUE/NEXT (Tenant MVP Monthly POS Ops Review Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-700**. Stage 345 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 346 runner-up outline was approved and opened (ADR-699); freeze ADR-700. Do not reopen Stage 345 scope.
