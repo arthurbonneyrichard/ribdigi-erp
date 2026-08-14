@@ -1102,6 +1102,12 @@ Authoritative MVP docs:
 - `docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/data-portability-pack-remaining-gate.json` — Stage 278 I1
 - `docs/DATA_PORTABILITY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/data-portability-pack-rg-blockers.json` — Stage 278 B1
 - `docs/DATA_PORTABILITY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/data-portability-pack-rg-pointers.json` — Stage 278 P1
+- `docs/STAGE_279_EXIT_CRITERIA.md` / `docs/ADR_566_STAGE279_FREEZE.md` (`backend/tests/test_stage279_exit_h279x.py`) — Stage 279 H279x
+- `docs/STAGE_279_FIDELITY.md` (`backend/tests/test_stage279_fidelity_d1.py`) — Stage 279 D1
+- `docs/STAGE_279_PLAN.md` (`backend/tests/test_stage279_open.py`) — Stage 279 open (ADR-565)
+- `docs/COMPLIANCE_QUESTIONNAIRE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/compliance-questionnaire-pack-remaining-gate.json` — Stage 279 I1
+- `docs/COMPLIANCE_QUESTIONNAIRE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/compliance-questionnaire-pack-rg-blockers.json` — Stage 279 B1
+- `docs/COMPLIANCE_QUESTIONNAIRE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/compliance-questionnaire-pack-rg-pointers.json` — Stage 279 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4903,4 +4909,16 @@ H278x met — `docs/STAGE_278_EXIT_CRITERIA.md`, ADR-564. Stages 1–278 frozen 
 ## Stage 278 open
 
 `docs/ADR_563_STAGE278_OPEN.md` + `docs/STAGE_278_PLAN.md` (`test_stage278_open.py`).
+
+## Stage 279 exit
+
+H279x met — `docs/STAGE_279_EXIT_CRITERIA.md`, ADR-566. Stages 1–279 frozen for Stage 279 feature scope.
+
+## Stage 279 D1 — Tenant MVP Compliance Questionnaire Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_279_FIDELITY.md` (`test_stage279_fidelity_d1.py`). `COMPLIANCE_QUESTIONNAIRE_PACK_*` remaining-gate index; SOC 2 / certification / go-live still MISSING.
+
+## Stage 279 open
+
+`docs/ADR_565_STAGE279_OPEN.md` + `docs/STAGE_279_PLAN.md` (`test_stage279_open.py`).
 

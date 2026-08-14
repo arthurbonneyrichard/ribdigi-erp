@@ -31,3 +31,10 @@ Stage 279 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for GDPR, live DSAR portal, paid billing, or go-live.
+
+
+## Amendment — Stage 279 opened
+
+Stage 279 opened under **ADR-565** after CONTINUE/NEXT (Tenant MVP Compliance Questionnaire Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-566**. Stage 278 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 279 runner-up outline was approved and opened (ADR-565); freeze ADR-566. Do not reopen Stage 278 scope.
