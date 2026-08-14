@@ -1,0 +1,57 @@
+{
+  "id": "offline-sync-runbook-pack-remaining-gate",
+  "stage": 336,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_SYNC_RUNBOOK_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_SYNC_RUNBOOK_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_SYNC_RUNBOOK_PACK_RG_POINTERS_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "offline_sync_escalation_pack_remaining_gate": "docs/OFFLINE_SYNC_ESCALATION_PACK_REMAINING_GATE_MVP.md",
+    "incident_severity_pack_remaining_gate": "docs/INCIDENT_SEVERITY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "attestation_claimed": false,
+  "browser_e2e_claimed": false,
+  "go_live_claimed": false,
+  "fabricated_sync_claimed": false,
+  "distinct_from_stage169_offline_sync_runbook": true,
+  "distinct_from_stage335_offline_sync_escalation_pack_remaining_gate": true,
+  "distinct_from_stage334_incident_severity_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "osrpr-read-blockers",
+      "title": "Read B1 offline sync runbook pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrpr-follow-pointers",
+      "title": "Follow P1 Stage 169 / Stage 335 / Stage 334 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrpr-runbook-missing",
+      "title": "Reaffirm live offline sync runbook / Offline Complete / browser E2E / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrpr-no-packaging-as-live",
+      "title": "Do not treat Stage 169 / Stage 163-168 / Stage 335 / Stage 334 / Stage 329 as live offline sync runbook Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrpr-runbook-remaining",
+      "title": "Offline Complete / attestation / browser E2E / fabricated sync / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 336 I1 offline sync runbook pack remaining-gate index packaging only. Do not claim live offline sync runbook Complete."
+}

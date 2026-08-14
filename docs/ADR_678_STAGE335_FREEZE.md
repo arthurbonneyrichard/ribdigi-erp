@@ -31,3 +31,10 @@ Stage 336 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for offline sync escalation, Offline Complete, on-call rota live, PagerDuty hosted, attestation, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 336 opened under **ADR-679** after CONTINUE/NEXT (Tenant MVP Offline Sync Runbook Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-680**. Stage 335 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 336 runner-up outline was approved and opened (ADR-679); freeze ADR-680. Do not reopen Stage 335 scope.
+

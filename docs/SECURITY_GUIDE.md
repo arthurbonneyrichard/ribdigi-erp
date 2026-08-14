@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 336 open** | Offline Sync Runbook Pack Remaining-Gate Index — `docs/STAGE_336_PLAN.md`, ADR-679 (`test_stage336_open.py`) |
+| **Stage 336 I1** | Offline sync runbook pack remaining-gate index hub (`test_stage336_index_i1.py`) |
+| **Stage 336 B1** | Offline sync runbook pack blocker matrix (`test_stage336_blockers_b1.py`) |
+| **Stage 336 P1** | Stage 169 / Stage 335 / Stage 334 / Stage 329 pointers (`test_stage336_pointers_p1.py`) |
+| **Stage 336 D1** | Offline sync runbook pack remaining-gate fidelity — `docs/STAGE_336_FIDELITY.md` (`test_stage336_fidelity_d1.py`) |
+| **Stage 336 H336x** | Exit + freeze — `docs/STAGE_336_EXIT_CRITERIA.md`, ADR-680 (`test_stage336_exit_h336x.py`); Stages 1–336 frozen |
 | **Stage 335 open** | Offline Sync Escalation Pack Remaining-Gate Index — `docs/STAGE_335_PLAN.md`, ADR-677 (`test_stage335_open.py`) |
 | **Stage 335 I1** | Offline sync escalation pack remaining-gate index hub (`test_stage335_index_i1.py`) |
 | **Stage 335 B1** | Offline sync escalation pack blocker matrix (`test_stage335_blockers_b1.py`) |

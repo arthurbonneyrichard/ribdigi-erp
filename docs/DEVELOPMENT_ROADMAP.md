@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 336 open (2026-08-14):** Tenant MVP Offline Sync Runbook Pack Remaining-Gate Index Fidelity — `docs/ADR_679_STAGE336_OPEN.md` + `docs/STAGE_336_PLAN.md` (I1 next).
+
+**Stage 336 I1 (2026-08-14):** Offline sync runbook pack remaining-gate index hub (`test_stage336_index_i1.py`).
+
+**Stage 336 B1 (2026-08-14):** Offline sync runbook pack blocker matrix (`test_stage336_blockers_b1.py`).
+
+**Stage 336 P1 (2026-08-14):** Stage 169 / Stage 335 / Stage 334 / Stage 329 pointers (`test_stage336_pointers_p1.py`).
+
+**Stage 336 D1 (2026-08-14):** Offline Sync Runbook Pack Remaining-Gate Index fidelity sync — `docs/STAGE_336_FIDELITY.md` (`test_stage336_fidelity_d1.py`).
+
+**Stage 336 exit (2026-08-14):** I1, B1, P1, D1, H336x met — `docs/STAGE_336_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_680_STAGE336_FREEZE.md`. Fidelity: `docs/STAGE_336_FIDELITY.md`.
+
 **Stage 335 open (2026-08-14):** Tenant MVP Offline Sync Escalation Pack Remaining-Gate Index Fidelity — `docs/ADR_677_STAGE335_OPEN.md` + `docs/STAGE_335_PLAN.md` (I1 next).
 
 **Stage 335 I1 (2026-08-14):** Offline sync escalation pack remaining-gate index hub (`test_stage335_index_i1.py`).

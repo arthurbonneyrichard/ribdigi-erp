@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_336_EXIT_CRITERIA.md` / `docs/ADR_680_STAGE336_FREEZE.md` (`backend/tests/test_stage336_exit_h336x.py`) — Stage 336 H336x
+- `docs/STAGE_336_FIDELITY.md` (`backend/tests/test_stage336_fidelity_d1.py`) — Stage 336 D1
+- `docs/STAGE_336_PLAN.md` (`backend/tests/test_stage336_open.py`) — Stage 336 open (ADR-679)
+- `docs/OFFLINE_SYNC_RUNBOOK_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-sync-runbook-pack-remaining-gate.json` — Stage 336 I1
+- `docs/OFFLINE_SYNC_RUNBOOK_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-sync-runbook-pack-rg-blockers.json` — Stage 336 B1
+- `docs/OFFLINE_SYNC_RUNBOOK_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-sync-runbook-pack-rg-pointers.json` — Stage 336 P1
 - `docs/STAGE_335_EXIT_CRITERIA.md` / `docs/ADR_678_STAGE335_FREEZE.md` (`backend/tests/test_stage335_exit_h335x.py`) — Stage 335 H335x
 - `docs/STAGE_335_FIDELITY.md` (`backend/tests/test_stage335_fidelity_d1.py`) — Stage 335 D1
 - `docs/STAGE_335_PLAN.md` (`backend/tests/test_stage335_open.py`) — Stage 335 open (ADR-677)
@@ -5293,6 +5299,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 336 exit
+
+H336x met — `docs/STAGE_336_EXIT_CRITERIA.md`, ADR-680. Stages 1–336 frozen for Stage 336 feature scope.
+
+## Stage 336 D1 — Tenant MVP Offline Sync Runbook Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_336_FIDELITY.md` (`test_stage336_fidelity_d1.py`). `OFFLINE_SYNC_RUNBOOK_PACK_*` remaining-gate index; Offline Complete / attestation / browser E2E / fabricated sync / go-live still MISSING.
+
+## Stage 336 open
+
+ADR-679 / `docs/STAGE_336_PLAN.md`.
 
 ## Stage 335 exit
 
