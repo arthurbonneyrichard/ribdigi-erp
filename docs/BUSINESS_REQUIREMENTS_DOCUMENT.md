@@ -721,11 +721,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Manage multiple retail/service locations.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create stores with unique code, name, location
-  - [ ] Assign store manager and staff
-  - [ ] Store-specific inventory view
-  - [ ] Store-specific sales reporting
-  - [ ] Consolidated reporting across all stores
+  - [x] Create stores with unique code, name, location (`GET|POST|PATCH /stores`; Multi-Store UI)
+  - [x] Assign store manager and staff (`manager_id`; Multi-Store UI)
+  - [x] Store-specific inventory view (warehouse stock + report filters; Shell store context)
+  - [x] Store-specific sales reporting (`store_id` on sales reports + Shell store context)
+  - [x] Consolidated reporting across all stores (omit `store_id` / header **All stores**)
 
 #### BR-13.2 Inter-Store Transfers
 - **Description:** Move stock between stores.

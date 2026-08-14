@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useStoreContext } from '../../lib/storeContext';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -25,6 +26,7 @@ export default function Page() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [storeId, setStoreId] = useState('');
+  const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [stores, setStores] = useState<any[]>([]);
   const [name, setName] = useState('Standard VAT');
   const [rate, setRate] = useState('15');
@@ -61,10 +63,18 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
     api('/stores')
-      .then((r) => setStores(r.data || []))
+      .then((r) => {
+        setStores(r.data || []);
+        if (ctxStoreId && (r.data || []).some((s: any) => s.id === ctxStoreId)) {
+          setStoreId(ctxStoreId);
+        }
+      })
       .catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    if (ctxStoreId) setStoreId(ctxStoreId);
+  }, [ctxStoreId]);
   async function createRate() {
     setError('');
     setMessage('');
@@ -177,7 +187,13 @@ export default function Page() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
           <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-          <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+          <select
+            value={storeId}
+            onChange={(e) => {
+              setStoreId(e.target.value);
+              setCtxStoreId(e.target.value);
+            }}
+          >
             <option value="">All stores</option>
             {stores.map((s) => (
               <option key={s.id} value={s.id}>

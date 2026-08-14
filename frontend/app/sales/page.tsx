@@ -5,6 +5,7 @@ import Shell from '../../components/Shell';
 import PartyContactsPanel from '../../components/PartyContactsPanel';
 import { api } from '../../lib/api';
 import { formatNumber, type FormatPrefs } from '../../lib/format';
+import { useStoreContext } from '../../lib/storeContext';
 
 type Tab = 'invoices' | 'quotations' | 'orders' | 'returns';
 
@@ -58,6 +59,7 @@ export default function Page() {
   const [selected, setSelected] = useState<any>(null);
   const [customerId, setCustomerId] = useState('');
   const [storeId, setStoreId] = useState('');
+  const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [currency, setCurrency] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -133,6 +135,9 @@ export default function Page() {
     setOrders(oRes.data || []);
     setReturns(rRes.data || []);
     setStores(storeRes.data || []);
+    if (ctxStoreId && (storeRes.data || []).some((s: any) => s.id === ctxStoreId)) {
+      setStoreId(ctxStoreId);
+    }
     setGroups(groupRes.data || []);
     if (tenantRes.data) setFmt(tenantRes.data);
     const numbering = settingsRes.data?.invoice_numbering;
@@ -176,6 +181,10 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  useEffect(() => {
+    if (ctxStoreId) setStoreId(ctxStoreId);
+  }, [ctxStoreId]);
 
   useEffect(() => {
     setVariantId('');
@@ -702,7 +711,13 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+          <select
+            value={storeId}
+            onChange={(e) => {
+              setStoreId(e.target.value);
+              setCtxStoreId(e.target.value);
+            }}
+          >
             <option value="">Store (required to confirm orders)</option>
             {stores.map((s) => (
               <option key={s.id} value={s.id}>

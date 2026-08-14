@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useStoreContext } from '../../lib/storeContext';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -51,6 +52,7 @@ export default function Page() {
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
   const [storeId, setStoreId] = useState('');
+  const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [branchId, setBranchId] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [stores, setStores] = useState<any[]>([]);
@@ -105,6 +107,9 @@ export default function Page() {
     setCategories(cats.data || []);
     setLiquidAccounts(liquid.data || []);
     setStores(st.data || []);
+    if (ctxStoreId && (st.data || []).some((s: any) => s.id === ctxStoreId)) {
+      setStoreId(ctxStoreId);
+    }
     setBranches(br.data || []);
     setDepartments(dep.data || []);
     setRecurring(rec.data || []);
@@ -894,7 +899,10 @@ export default function Page() {
           </select>
           <select
             value={storeId}
-            onChange={(e) => setStoreId(e.target.value)}
+            onChange={(e) => {
+              setStoreId(e.target.value);
+              setCtxStoreId(e.target.value);
+            }}
             title="Store (optional)"
           >
             <option value="">No store</option>
