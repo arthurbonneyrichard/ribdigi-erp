@@ -8355,6 +8355,7 @@ async def report_inventory_transfers(
     status: str | None = None,
     from_store_id: str | None = None,
     to_store_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8368,6 +8369,7 @@ async def report_inventory_transfers(
             status=status or None,
             from_store_id=from_store_id or None,
             to_store_id=to_store_id or None,
+            store_id=store_id or None,
         )
     )
 

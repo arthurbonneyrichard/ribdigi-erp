@@ -639,7 +639,11 @@ async def build_report_payload(
         )
     if report_type == "inventory_transfers":
         return await reports_svc.inventory_transfers(
-            db, tenant_id, from_date=fd, to_date=td
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
         )
     if report_type == "purchases_summary":
         return await reports_svc.purchases_summary(
