@@ -3515,3 +3515,15 @@ Every feature in every phase must meet:
 **Stage 241 D1 (2026-08-14):** Live Training Pack Remaining-Gate Index fidelity sync — `docs/STAGE_241_FIDELITY.md` (`test_stage241_fidelity_d1.py`).
 
 **Stage 241 exit (2026-08-14):** I1, B1, P1, D1, H241x met — `docs/STAGE_241_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_489_STAGE241_FREEZE.md`. Fidelity: `docs/STAGE_241_FIDELITY.md`.
+
+**Stage 242 open (2026-08-14):** Tenant MVP Customer Training Cert Pack Remaining-Gate Index Fidelity — `docs/ADR_491_STAGE242_OPEN.md` + `docs/STAGE_242_PLAN.md` (I1 next).
+
+**Stage 242 I1 (2026-08-14):** Customer training cert pack remaining-gate index hub (`test_stage242_index_i1.py`).
+
+**Stage 242 B1 (2026-08-14):** Customer training cert pack blocker matrix (`test_stage242_blockers_b1.py`).
+
+**Stage 242 P1 (2026-08-14):** Stage 48 / Stage 241 / Stage 189 / Stage 240 pointers (`test_stage242_pointers_p1.py`).
+
+**Stage 242 D1 (2026-08-14):** Customer Training Cert Pack Remaining-Gate Index fidelity sync — `docs/STAGE_242_FIDELITY.md` (`test_stage242_fidelity_d1.py`).
+
+**Stage 242 exit (2026-08-14):** I1, B1, P1, D1, H242x met — `docs/STAGE_242_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_492_STAGE242_FREEZE.md`. Fidelity: `docs/STAGE_242_FIDELITY.md`.

@@ -880,6 +880,12 @@ Authoritative MVP docs:
 - `docs/LIVE_TRAINING_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/live-training-pack-remaining-gate.json` — Stage 241 I1
 - `docs/LIVE_TRAINING_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/live-training-pack-rg-blockers.json` — Stage 241 B1
 - `docs/LIVE_TRAINING_PACK_RG_POINTERS_MVP.md` / `ops/mvp/live-training-pack-rg-pointers.json` — Stage 241 P1
+- `docs/STAGE_242_EXIT_CRITERIA.md` / `docs/ADR_492_STAGE242_FREEZE.md` (`backend/tests/test_stage242_exit_h242x.py`) — Stage 242 H242x
+- `docs/STAGE_242_FIDELITY.md` (`backend/tests/test_stage242_fidelity_d1.py`) — Stage 242 D1
+- `docs/STAGE_242_PLAN.md` (`backend/tests/test_stage242_open.py`) — Stage 242 open (ADR-491)
+- `docs/CUSTOMER_TRAINING_CERT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/customer-training-cert-pack-remaining-gate.json` — Stage 242 I1
+- `docs/CUSTOMER_TRAINING_CERT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/customer-training-cert-pack-rg-blockers.json` — Stage 242 B1
+- `docs/CUSTOMER_TRAINING_CERT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/customer-training-cert-pack-rg-pointers.json` — Stage 242 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4237,4 +4243,16 @@ H241x met — `docs/STAGE_241_EXIT_CRITERIA.md`, ADR-489. Stages 1–241 frozen 
 ## Stage 241 open
 
 `docs/ADR_488_STAGE241_OPEN.md` + `docs/STAGE_241_PLAN.md` (`test_stage241_open.py`).
+
+## Stage 242 exit
+
+H242x met — `docs/STAGE_242_EXIT_CRITERIA.md`, ADR-492. Stages 1–242 frozen for Stage 242 feature scope.
+
+## Stage 242 D1 — Tenant MVP Customer Training Cert Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_242_FIDELITY.md` (`test_stage242_fidelity_d1.py`). `CUSTOMER_TRAINING_CERT_PACK_*` remaining-gate index; live training / training certification still MISSING.
+
+## Stage 242 open
+
+`docs/ADR_491_STAGE242_OPEN.md` + `docs/STAGE_242_PLAN.md` (`test_stage242_open.py`).
 

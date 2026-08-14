@@ -1,0 +1,57 @@
+{
+  "id": "customer-training-cert-pack-remaining-gate",
+  "stage": 242,
+  "pack": "I1",
+  "doc": "docs/CUSTOMER_TRAINING_CERT_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/CUSTOMER_TRAINING_CERT_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/CUSTOMER_TRAINING_CERT_PACK_RG_POINTERS_MVP.md",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+    "live_training_pack_remaining_gate": "docs/LIVE_TRAINING_PACK_REMAINING_GATE_MVP.md",
+    "live_training_remaining_gate": "docs/LIVE_TRAINING_REMAINING_GATE_MVP.md",
+    "knowledge_transfer_pack_remaining_gate": "docs/KNOWLEDGE_TRANSFER_PACK_REMAINING_GATE_MVP.md",
+    "customer_training_cert_register": "ops/mvp/customer-training-cert.json"
+  },
+  "packaging_complete": true,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "training_certification_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage48_t1_customer_training_cert": true,
+  "distinct_from_stage241_live_training_pack_remaining_gate": true,
+  "distinct_from_stage189_live_training_remaining_gate": true,
+  "distinct_from_stage240_knowledge_transfer_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ctcpr-read-blockers",
+      "title": "Read B1 customer training cert pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcpr-follow-pointers",
+      "title": "Follow P1 Stage 48 / Stage 241 / Stage 189 / Stage 240 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcpr-training-missing",
+      "title": "Reaffirm live training / certification MISSING until real customer training delivery ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcpr-no-packaging-as-live",
+      "title": "Do not treat Stage 48 T1 / Stage 241 as live training or certification Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcpr-training-remaining",
+      "title": "Live training / certification / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 242 I1 customer training cert pack remaining-gate index packaging only. Do not claim live training or training certification Complete."
+}

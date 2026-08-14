@@ -1,0 +1,60 @@
+{
+  "id": "customer-training-cert-pack-rg-pointers",
+  "stage": 242,
+  "pack": "P1",
+  "doc": "docs/CUSTOMER_TRAINING_CERT_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CUSTOMER_TRAINING_CERT_PACK_REMAINING_GATE_MVP.md",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+    "live_training_pack_remaining_gate": "docs/LIVE_TRAINING_PACK_REMAINING_GATE_MVP.md",
+    "live_training_remaining_gate": "docs/LIVE_TRAINING_REMAINING_GATE_MVP.md",
+    "knowledge_transfer_pack_remaining_gate": "docs/KNOWLEDGE_TRANSFER_PACK_REMAINING_GATE_MVP.md",
+    "customer_training_cert_register": "ops/mvp/customer-training-cert.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "training_certification_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "customer_training_cert_stage48_t1",
+    "live_training_pack_remaining_gate_stage241",
+    "live_training_remaining_gate_stage189",
+    "knowledge_transfer_pack_remaining_gate_stage240",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ctcprp-stage48",
+      "title": "Point to Stage 48 T1 customer training cert",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcprp-stage241",
+      "title": "Point to Stage 241 live training pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcprp-stage189",
+      "title": "Point to Stage 189 live-training remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcprp-stage240",
+      "title": "Point to Stage 240 knowledge transfer pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcprp-training-remaining",
+      "title": "Live training / certification Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 242 P1 customer training cert pack RG pointers packaging only. Do not claim live training or training certification Complete."
+}

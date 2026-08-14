@@ -27,3 +27,9 @@ Stage 241 Tenant MVP Live Training Pack Remaining-Gate Index Fidelity delivered 
 Stage 242 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 241 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP Customer Training Cert Pack Remaining-Gate Index Fidelity — single index of customer-training-cert-pack blockers (packaged Stage 48 T1 customer-training-cert materials non-claim as live training Complete) with explicit non-claim. Prefixed `CUSTOMER_TRAINING_CERT_PACK_*` if a prior remaining-gate exists. Distinct from Stage 241 live training pack remaining-gate and Stage 240 knowledge transfer pack remaining-gate.
+
+## Amendment — Stage 242 opened
+
+Stage 242 opened under **ADR-491** after CONTINUE/NEXT (Customer Training Cert Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-492**. Stage 241 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 242 runner-up outline was approved and opened (ADR-491); freeze ADR-492. Do not reopen Stage 241 scope.

@@ -1239,6 +1239,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 48 / Stage 189 / Stage 240 pointers (Stage 241 P1: `test_stage241_pointers_p1.py`, `docs/LIVE_TRAINING_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 241 fidelity sync (D1: `test_stage241_fidelity_d1.py`, `docs/STAGE_241_FIDELITY.md`)
 - [x] Stage 241 exit + freeze (H241x: `test_stage241_exit_h241x.py`, `docs/STAGE_241_EXIT_CRITERIA.md`, ADR-489)
+- [x] Stage 242 track opened (ADR-491: `test_stage242_open.py`, `docs/STAGE_242_PLAN.md`) — Customer Training Cert Pack Remaining-Gate Index; closed under ADR-492
+- [x] Customer training cert pack remaining-gate hub (Stage 242 I1: `test_stage242_index_i1.py`, `docs/CUSTOMER_TRAINING_CERT_PACK_REMAINING_GATE_MVP.md`)
+- [x] Customer training cert pack blocker matrix (Stage 242 B1: `test_stage242_blockers_b1.py`, `docs/CUSTOMER_TRAINING_CERT_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 48 / Stage 241 / Stage 189 / Stage 240 pointers (Stage 242 P1: `test_stage242_pointers_p1.py`, `docs/CUSTOMER_TRAINING_CERT_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 242 fidelity sync (D1: `test_stage242_fidelity_d1.py`, `docs/STAGE_242_FIDELITY.md`)
+- [x] Stage 242 exit + freeze (H242x: `test_stage242_exit_h242x.py`, `docs/STAGE_242_EXIT_CRITERIA.md`, ADR-492)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

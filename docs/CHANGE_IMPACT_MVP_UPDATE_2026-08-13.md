@@ -380,3 +380,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 241 decision (opened after Stage 240 freeze)
 
 **Tenant MVP Live Training Pack Remaining-Gate Index Fidelity** — live training pack remaining-gate hub (I1), blocker matrix (B1), Stage 48 / Stage 189 / Stage 240 pointers with explicit non-claim (P1). Prefixed `LIVE_TRAINING_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 189 `LIVE_TRAINING_*` / Stage 189 P1 `LIVE_TRAINING_PACK_POINTERS`). Live training Completes remain deferred (Stage 242+). Distinct from Stage 189 live-training remaining-gate and Stage 240 knowledge transfer pack remaining-gate.
+
+## Stage 242 decision (opened after Stage 241 freeze)
+
+**Tenant MVP Customer Training Cert Pack Remaining-Gate Index Fidelity** — customer training cert pack remaining-gate hub (I1), blocker matrix (B1), Stage 48 / Stage 241 / Stage 189 / Stage 240 pointers with explicit non-claim (P1). Prefixed `CUSTOMER_TRAINING_CERT_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 48 T1 `CUSTOMER_TRAINING_CERT_*`). Live training / training certification Completes remain deferred (Stage 243+). Distinct from Stage 241 live training pack remaining-gate, Stage 189 live-training remaining-gate, and Stage 48 T1 customer training cert packaging. Open ADR-491 / freeze ADR-492 (ADR-490 reserved for Tenant–Company Hierarchy).
