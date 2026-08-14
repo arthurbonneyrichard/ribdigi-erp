@@ -577,6 +577,18 @@ class RecurringExpenseCreate(BaseModel):
 
 class RecurringExpenseUpdate(BaseModel):
     is_active: bool | None = None
+    amount: float | None = Field(default=None, gt=0)
+    payee: str | None = None
+    clear_payee: bool = False
+    description: str | None = None
+    payment_method: str | None = None
+    frequency: str | None = None
+    category_id: str | None = None
+    category: str | None = None
+    branch_id: str | None = None
+    department_id: str | None = None
+    clear_branch: bool = False
+    clear_department: bool = False
 
 
 class ApprovalLevelUpdate(BaseModel):

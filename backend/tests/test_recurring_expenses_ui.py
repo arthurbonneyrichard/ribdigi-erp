@@ -18,7 +18,7 @@ async def _admin(ac, seed):
 
 
 @pytest.mark.asyncio
-async def test_recurring_create_generate_exp_series_and_deactivate(client, seeded):
+async def test_recurring_create_generate_exp_series_and_deactivate(client, seeded, db_session):
     ac, seed = client
     admin = await _admin(ac, seed)
     year = datetime.utcnow().year
@@ -96,6 +96,32 @@ async def test_recurring_create_generate_exp_series_and_deactivate(client, seede
     )
     assert react.status_code == 200
     assert react.json()["data"]["is_active"] is True
+
+    # Template edit (amount/payee) — future generates use new values
+    edited = await ac.patch(
+        f"/api/v1/expenses/recurring/{rid}",
+        headers=admin,
+        json={"amount": 99.0, "payee": "New Landlord", "description": "Office rent (updated)"},
+    )
+    assert edited.status_code == 200, edited.text
+    assert edited.json()["data"]["amount"] == 99.0
+    assert edited.json()["data"]["payee"] == "New Landlord"
+    assert edited.json()["data"]["description"] == "Office rent (updated)"
+
+    # Force due again and generate — new payee/amount on the new expense
+    from app import models as m
+    from sqlalchemy import select
+
+    row = (
+        await db_session.execute(select(m.RecurringExpense).where(m.RecurringExpense.id == rid))
+    ).scalar_one()
+    row.next_run_at = datetime.utcnow() - timedelta(days=1)
+    await db_session.commit()
+
+    gen3 = await ac.post("/api/v1/expenses/recurring/generate", headers=admin, json={})
+    assert gen3.status_code == 200, gen3.text
+    hit2 = next(e for e in gen3.json()["data"] if e.get("payee") == "New Landlord")
+    assert float(hit2["amount"]) == 99.0
 
 
 @pytest.mark.asyncio

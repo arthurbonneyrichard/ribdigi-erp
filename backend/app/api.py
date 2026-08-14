@@ -7018,19 +7018,32 @@ async def update_recurring_expense(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    if payload.is_active is None:
-        raise HTTPException(status_code=400, detail="No recurring fields to update")
-    row = await expenses_svc.set_recurring_active(
+    row = await expenses_svc.update_recurring(
         db,
         tenant_id=claims["tenant_id"],
         recurring_id=recurring_id,
         is_active=payload.is_active,
+        amount=payload.amount,
+        payee=payload.payee,
+        clear_payee=payload.clear_payee,
+        description=payload.description,
+        payment_method=payload.payment_method,
+        frequency=payload.frequency,
+        category_id=payload.category_id,
+        category=payload.category,
+        branch_id=payload.branch_id,
+        department_id=payload.department_id,
+        clear_branch=payload.clear_branch,
+        clear_department=payload.clear_department,
     )
     await db.commit()
-    return env(
-        expenses_svc.serialize_recurring(row),
-        "Recurring expense activated" if row.is_active else "Recurring expense deactivated",
-    )
+    if payload.is_active is True:
+        msg = "Recurring expense activated"
+    elif payload.is_active is False:
+        msg = "Recurring expense deactivated"
+    else:
+        msg = "Recurring schedule updated"
+    return env(expenses_svc.serialize_recurring(row), msg)
 
 
 @api.post("/expenses/recurring/{recurring_id}/skip-next")

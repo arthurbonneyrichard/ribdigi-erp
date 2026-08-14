@@ -690,7 +690,7 @@ For regular payments like rent or subscriptions:
 5. **Skip next** advances `next_run_at` by one period without creating an expense (e.g. skip a holiday cycle)
 6. **Deactivate** / **Activate** a schedule from the list when you need to pause it
 
-> Advance notifications (category `recurring_expense_due`) fire about one day before `next_run_at` via Notifications → Scan due / Celery. To change one occurrence’s amount/payee: **Generate due**, then **Edit** that pending expense before approve. Changing the recurring schedule’s default amount still requires a new schedule (template PATCH deferred).
+> Advance notifications (category `recurring_expense_due`) fire about one day before `next_run_at` via Notifications → Scan due / Celery. To change one occurrence’s amount/payee: **Generate due**, then **Edit** that pending expense before approve. To change the schedule’s default amount/payee for future runs: **Edit schedule** on the Recurring card (does not rewrite past expenses).
 
 ### 7.4 Expense Reports
 
