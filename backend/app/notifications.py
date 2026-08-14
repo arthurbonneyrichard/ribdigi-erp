@@ -70,6 +70,7 @@ def serialize_notification(note: m.Notification) -> dict:
     cat = note.category or "system"
     return {
         "id": note.id,
+        "company_id": getattr(note, "company_id", None),
         "user_id": note.user_id,
         "category": cat,
         "group": category_group(cat),
@@ -220,8 +221,11 @@ async def list_notifications(
     category: str | None = None,
     group: str | None = None,
     limit: int = 100,
+    company_id: str | None = None,
 ) -> list[m.Notification]:
     stmt = select(m.Notification).where(m.Notification.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Notification.company_id == company_id)
     if user_id:
         stmt = stmt.where(
             or_(m.Notification.user_id == user_id, m.Notification.user_id.is_(None))
@@ -245,9 +249,20 @@ async def list_notifications(
     return (await db.execute(stmt)).scalars().all()
 
 
-async def unread_count(db: AsyncSession, tenant_id: str, user_id: str | None = None) -> int:
+async def unread_count(
+    db: AsyncSession,
+    tenant_id: str,
+    user_id: str | None = None,
+    *,
+    company_id: str | None = None,
+) -> int:
     rows = await list_notifications(
-        db, tenant_id=tenant_id, user_id=user_id, status="unread", limit=500
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        status="unread",
+        limit=500,
+        company_id=company_id,
     )
     return len(rows)
 

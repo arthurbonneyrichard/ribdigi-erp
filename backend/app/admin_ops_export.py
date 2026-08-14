@@ -148,6 +148,7 @@ async def export_notifications_csv(
     status: str | None = None,
     category: str | None = None,
     group: str | None = None,
+    company_id: str | None = None,
 ) -> str:
     status_n = (status or "").strip().lower() or None
     if status_n == "all":
@@ -160,6 +161,7 @@ async def export_notifications_csv(
         category=category,
         group=group,
         limit=500,
+        company_id=company_id,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=NOTIFICATION_EXPORT_COLUMNS)

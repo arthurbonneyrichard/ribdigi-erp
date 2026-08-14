@@ -96,3 +96,11 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Tax report, tax report CSV, filing pack, and government filing packs filter sales invoices / POS / purchase invoices / POs by `company_id`.
 - Category tax-rate validation and product default-tax resolution prefer the product/category company.
 - Remaining PARTIAL: AI ops aggregations, report schedules/notifications; FX may stay tenant-shared; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 11 follow-up (2026-08-14)
+
+- AI insights, sales/expenses/purchases analysis, inventory low-stock/forecast/dead-stock (+ CSV exports) filter by workspace `company_id`.
+- Cross-domain AI analysis threads company scope into domain analyzers; insight publish / stockout notify stamp `Notification.company_id`.
+- Report schedules (list/create/export/get/update/delete/run) stamp and filter by company; scheduled exports pass `company_id` into report builders.
+- Notifications list/unread/export filter by company; creates accept `company_id`.
+- Remaining PARTIAL: AI chat history/templates/customers/documents/security may still be tenant-wide; FX may stay tenant-shared; ADR-002 billing and ADR-005 store membership remain deferred.

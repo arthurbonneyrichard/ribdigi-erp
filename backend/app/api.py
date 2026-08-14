@@ -11033,7 +11033,7 @@ async def report_schedules_list(
 ):
     """Stage 127 S1 — optional enabled filter for honest schedule lists."""
     rows = await report_schedules_svc.list_schedules(
-        db, claims["tenant_id"], enabled=enabled
+        db, claims["tenant_id"], enabled=enabled, company_id=claims.get("company_id")
     )
     return env([report_schedules_svc.serialize_schedule(r) for r in rows])
 
@@ -11049,6 +11049,7 @@ async def report_schedules_export(
         db,
         tenant_id=claims["tenant_id"],
         enabled=enabled,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -11075,6 +11076,7 @@ async def report_schedules_create(
         hour_utc=int(payload.get("hour_utc", 6)),
         recipients=payload.get("recipients"),
         enabled=bool(payload.get("enabled", True)),
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(report_schedules_svc.serialize_schedule(row), "Report schedule created")
@@ -11099,6 +11101,7 @@ async def report_schedules_patch(
         hour_utc=payload.get("hour_utc"),
         recipients=payload.get("recipients"),
         enabled=payload.get("enabled"),
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(report_schedules_svc.serialize_schedule(row), "Report schedule updated")
@@ -11110,7 +11113,9 @@ async def report_schedules_delete(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    await report_schedules_svc.delete_schedule(db, claims["tenant_id"], schedule_id)
+    await report_schedules_svc.delete_schedule(
+        db, claims["tenant_id"], schedule_id, company_id=claims.get("company_id")
+    )
     await db.commit()
     return env({"id": schedule_id}, "Report schedule deleted")
 
@@ -11122,7 +11127,9 @@ async def report_schedules_run(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    row = await report_schedules_svc.get_schedule(db, claims["tenant_id"], schedule_id)
+    row = await report_schedules_svc.get_schedule(
+        db, claims["tenant_id"], schedule_id, company_id=claims.get("company_id")
+    )
     result = await report_schedules_svc.run_schedule(
         db,
         tenant_id=claims["tenant_id"],
@@ -13235,6 +13242,7 @@ async def notifications(
         status=status,
         category=category,
         group=group,
+        company_id=claims.get("company_id"),
     )
     # Array payload preserved for existing clients; history window is HISTORY_DAYS (BR-4.4).
     return env([notifications_svc.serialize_notification(n) for n in rows])
@@ -13256,6 +13264,7 @@ async def notifications_export(
         status=status,
         category=category,
         group=group,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -13271,7 +13280,9 @@ async def notifications_unread_count(
     claims=Depends(require_permission("notifications", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    count = await notifications_svc.unread_count(db, claims["tenant_id"], claims["sub"])
+    count = await notifications_svc.unread_count(
+        db, claims["tenant_id"], claims["sub"], company_id=claims.get("company_id")
+    )
     return env({"count": count})
 
 
@@ -14602,7 +14613,9 @@ async def ai_chat_history_export(
 async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSession = Depends(get_db)):
     from app import ai_insights as ai_insights_svc
 
-    data = await ai_insights_svc.generate_insights(db, claims["tenant_id"])
+    data = await ai_insights_svc.generate_insights(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     return env(
         {
             "insights": data["summaries"],
@@ -14625,7 +14638,7 @@ async def insights_export(
 ):
     """Stage 145 I1 — business insight cards CSV."""
     text = await ai_ops_export_svc.export_business_insights_csv(
-        db, tenant_id=claims["tenant_id"]
+        db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
     )
     return Response(
         content=text,
@@ -14654,6 +14667,7 @@ async def ai_low_stock_prediction(
         horizon_days=horizon_days,
         lead_time_days=lead_time_days,
         at_risk_only=at_risk_only,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -14675,6 +14689,7 @@ async def ai_low_stock_prediction_export(
         horizon_days=horizon_days,
         lead_time_days=lead_time_days,
         at_risk_only=at_risk_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -14702,6 +14717,7 @@ async def ai_demand_forecast(
         lookback_days=lookback_days,
         lead_time_days=lead_time_days,
         product_id=product_id,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -14721,6 +14737,7 @@ async def ai_demand_forecast_export(
         lookback_days=lookback_days,
         lead_time_days=lead_time_days,
         product_id=product_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -14746,6 +14763,7 @@ async def ai_dead_stock(
         claims["tenant_id"],
         lookback_days=lookback_days,
         min_stock=min_stock,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -14763,6 +14781,7 @@ async def ai_dead_stock_export(
         tenant_id=claims["tenant_id"],
         lookback_days=lookback_days,
         min_stock=min_stock,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -14789,6 +14808,7 @@ async def ai_inventory_predictions(
         claims["tenant_id"],
         lookback_days=lookback_days,
         lead_time_days=lead_time_days,
+        company_id=claims.get("company_id"),
     )
     low = await ai_inventory_svc.predict_low_stock(
         db,
@@ -14797,6 +14817,7 @@ async def ai_inventory_predictions(
         horizon_days=horizon_days,
         lead_time_days=lead_time_days,
         at_risk_only=False,
+        company_id=claims.get("company_id"),
     )
     return env(
         {
@@ -14829,6 +14850,7 @@ async def ai_inventory_predictions_export(
         lookback_days=lookback_days,
         horizon_days=horizon_days,
         lead_time_days=lead_time_days,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -14856,6 +14878,7 @@ async def ai_sales_analysis(
         from_date=from_date,
         to_date=to_date,
         lookback_days=lookback_days,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -14875,6 +14898,7 @@ async def ai_sales_analysis_export(
         from_date=from_date,
         to_date=to_date,
         lookback_days=lookback_days,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -14900,6 +14924,7 @@ async def ai_expenses_analysis(
         claims["tenant_id"],
         from_date=from_date,
         to_date=to_date,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -14917,6 +14942,7 @@ async def ai_expenses_analysis_export(
         tenant_id=claims["tenant_id"],
         from_date=from_date,
         to_date=to_date,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -14944,6 +14970,7 @@ async def ai_purchases_analysis(
         from_date=from_date,
         to_date=to_date,
         lookback_days=lookback_days,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -14963,6 +14990,7 @@ async def ai_purchases_analysis_export(
         from_date=from_date,
         to_date=to_date,
         lookback_days=lookback_days,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -14990,6 +15018,7 @@ async def ai_cross_domain_analysis(
         from_date=from_date,
         to_date=to_date,
         lookback_days=lookback_days,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -15009,6 +15038,7 @@ async def ai_cross_domain_analysis_export(
         from_date=from_date,
         to_date=to_date,
         lookback_days=lookback_days,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,

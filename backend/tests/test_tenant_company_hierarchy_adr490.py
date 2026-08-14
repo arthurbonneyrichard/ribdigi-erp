@@ -1091,3 +1091,169 @@ async def test_tax_rates_and_reports_company_scoped(client, db_session):
     assert export.status_code == 200, export.text
     assert "Company B Only VAT" not in export.text
     assert "Company A Phase10 VAT" in export.text
+
+
+@pytest.mark.asyncio
+async def test_ai_ops_and_schedules_company_scoped(client, db_session):
+    """Company B AI aggregations / notifications / schedules must not leak into company A."""
+    ac, seed = client
+    from datetime import datetime
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="AI11",
+        name="Alpha AI B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    party_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="AI B Customer",
+        kind="customer",
+        credit_limit=0,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="AI B Only SKU Widget",
+        sku="AI-B-SKU",
+        selling_price=25,
+        stock_qty=2,
+        reorder_level=10,
+        is_active=True,
+    )
+    db_session.add_all([party_b, prod_b])
+    await db_session.flush()
+    inv_b = m.SalesInvoice(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        customer_id=party_b.id,
+        invoice_number="INV-AI-B-ONLY",
+        status="posted",
+        subtotal=250,
+        tax_amount=0,
+        total_amount=250,
+        posted_at=datetime.utcnow(),
+        created_at=datetime.utcnow(),
+    )
+    db_session.add(inv_b)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoiceItem(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            sales_invoice_id=inv_b.id,
+            product_id=prod_b.id,
+            quantity=10,
+            unit_price=25,
+            line_total=250,
+        )
+    )
+    db_session.add(
+        m.Expense(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            category="AI B Expense",
+            description="Company B only expense",
+            amount=999.0,
+            status="approved",
+            expense_date=datetime.utcnow(),
+        )
+    )
+    db_session.add(
+        m.PurchaseOrder(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            po_number="PO-AI-B-ONLY",
+            supplier_id=party_b.id,
+            status="sent",
+            subtotal=100,
+            tax_amount=0,
+            total_amount=100,
+        )
+    )
+    db_session.add(
+        m.Notification(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            user_id=seed["super"].id,
+            category="ai_insight",
+            title="Company B AI Alert",
+            message="Should not appear in company A",
+            status="unread",
+        )
+    )
+    db_session.add(
+        m.ReportSchedule(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            name="Company B Only Schedule",
+            report_type="sales_daily",
+            format="csv",
+            frequency="daily",
+            hour_utc=6,
+            recipients=["ops-b@example.com"],
+            enabled=True,
+            created_by=seed["super"].id,
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    sales = await ac.get("/api/v1/ai/sales/analysis", headers=headers)
+    assert sales.status_code == 200, sales.text
+    sales_blob = sales.text
+    assert "INV-AI-B-ONLY" not in sales_blob
+    assert float(sales.json()["data"].get("total_sales") or 0) != 250.0
+
+    low = await ac.get("/api/v1/ai/inventory/low-stock-prediction", headers=headers)
+    assert low.status_code == 200, low.text
+    skus = {r.get("sku") for r in low.json()["data"].get("predictions") or []}
+    assert "AI-B-SKU" not in skus
+
+    expenses = await ac.get("/api/v1/ai/expenses/analysis", headers=headers)
+    assert expenses.status_code == 200, expenses.text
+    assert "Company B only expense" not in expenses.text
+    assert float(expenses.json()["data"].get("total_approved") or 0) != 999.0
+
+    purchases = await ac.get("/api/v1/ai/purchases/analysis", headers=headers)
+    assert purchases.status_code == 200, purchases.text
+    assert "PO-AI-B-ONLY" not in purchases.text
+
+    insights = await ac.get("/api/v1/ai/insights", headers=headers)
+    assert insights.status_code == 200, insights.text
+    assert "AI-B-SKU" not in insights.text
+
+    notes = await ac.get("/api/v1/notifications", headers=headers)
+    assert notes.status_code == 200, notes.text
+    titles = {n.get("title") for n in notes.json()["data"]}
+    assert "Company B AI Alert" not in titles
+
+    schedules = await ac.get("/api/v1/reports/schedules", headers=headers)
+    assert schedules.status_code == 200, schedules.text
+    names = {r.get("name") for r in schedules.json()["data"]}
+    assert "Company B Only Schedule" not in names
+
+    created = await ac.post(
+        "/api/v1/reports/schedules",
+        headers=headers,
+        json={
+            "name": "Company A Phase11 Schedule",
+            "report_type": "sales_daily",
+            "format": "csv",
+            "frequency": "daily",
+            "hour_utc": 7,
+            "recipients": ["ops-a@example.com"],
+            "enabled": True,
+        },
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["data"]["company_id"] == seed["c1"].id
+    assert created.json()["data"]["name"] == "Company A Phase11 Schedule"

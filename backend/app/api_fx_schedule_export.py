@@ -56,6 +56,7 @@ SCHEDULE_EXPORT_COLUMNS = [
     "enabled",
     "last_run_at",
     "last_error",
+    "company_id",
 ]
 
 
@@ -179,9 +180,10 @@ async def export_report_schedules_csv(
     *,
     tenant_id: str,
     enabled: bool | None = None,
+    company_id: str | None = None,
 ) -> str:
     rows = await report_schedules_svc.list_schedules(
-        db, tenant_id, enabled=enabled
+        db, tenant_id, enabled=enabled, company_id=company_id
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=SCHEDULE_EXPORT_COLUMNS)
@@ -200,6 +202,7 @@ async def export_report_schedules_csv(
                 "enabled": _cell(bool(data.get("enabled"))),
                 "last_run_at": _cell(data.get("last_run_at")),
                 "last_error": _cell(data.get("last_error")),
+                "company_id": _cell(data.get("company_id")),
             }
         )
     return buf.getvalue()
