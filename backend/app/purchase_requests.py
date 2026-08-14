@@ -283,7 +283,7 @@ async def create_request(
     if not items:
         raise HTTPException(status_code=400, detail="Purchase request requires at least one line")
     if preferred_supplier_id:
-        await purchasing_svc.get_supplier(db, tenant_id, preferred_supplier_id)
+        await purchasing_svc.require_active_supplier(db, tenant_id, preferred_supplier_id)
     if warehouse_id:
         wh = (
             await db.execute(

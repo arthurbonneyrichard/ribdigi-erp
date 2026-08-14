@@ -376,6 +376,28 @@ export default function Page() {
     }
   }
 
+  async function setSupplierActive(isActive: boolean) {
+    if (!supplierId) {
+      setError('Select a supplier first');
+      return;
+    }
+    setError('');
+    try {
+      const r = await api(`/suppliers/${supplierId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: isActive ? 'active' : 'inactive' }),
+      });
+      await refresh();
+      setMessage(
+        isActive
+          ? `Supplier ${r.data?.name || ''} activated`
+          : `Supplier ${r.data?.name || ''} deactivated`,
+      );
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function createPo() {
     setError('');
     setMessage('');
@@ -1240,7 +1262,9 @@ export default function Page() {
             <div className="erp-form-grid">
               <select value={prSupplierId} onChange={(e) => setPrSupplierId(e.target.value)}>
                 <option value="">Preferred supplier (optional)</option>
-                {suppliers.map((s) => (
+                {suppliers
+                  .filter((s) => s.status !== 'inactive')
+                  .map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
@@ -1432,6 +1456,44 @@ export default function Page() {
             Add
           </button>
         </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+          <select
+            value={supplierId}
+            onChange={(e) => setSupplierId(e.target.value)}
+            title="Select supplier to manage"
+            aria-label="Manage supplier"
+          >
+            <option value="">Manage supplier…</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code ? `${s.code} — ` : ''}
+                {s.name}
+                {s.status === 'inactive' ? ' [inactive]' : ''}
+              </option>
+            ))}
+          </select>
+          {supplierId ? (
+            <button
+              type="button"
+              onClick={() =>
+                setSupplierActive(
+                  (suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive',
+                )
+              }
+            >
+              {(suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive'
+                ? 'Activate'
+                : 'Deactivate'}
+            </button>
+          ) : null}
+        </div>
+        {supplierId &&
+          (suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive' && (
+            <p className="muted" style={{ marginTop: 8 }}>
+              Inactive — hidden from new PO / PR / manual invoice pickers; existing documents can still
+              settle.
+            </p>
+          )}
         {supplierId ? (
           <PartyContactsPanel
             kind="supplier"
@@ -1445,11 +1507,12 @@ export default function Page() {
         <div className="erp-form-grid">
           <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
             <option value="">Select supplier</option>
-            {suppliers.map((s) => (
+            {suppliers
+              .filter((s) => s.status !== 'inactive')
+              .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.code ? `${s.code} — ` : ''}
                 {s.name}
-                {s.status === 'inactive' ? ' [inactive]' : ''}
               </option>
             ))}
           </select>
@@ -1915,7 +1978,9 @@ export default function Page() {
         <div className="erp-form-grid">
           <select value={manualInvSupplierId} onChange={(e) => setManualInvSupplierId(e.target.value)}>
             <option value="">Select supplier</option>
-            {suppliers.map((s) => (
+            {suppliers
+              .filter((s) => s.status !== 'inactive')
+              .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>

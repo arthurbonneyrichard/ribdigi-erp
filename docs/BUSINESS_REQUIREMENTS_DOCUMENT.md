@@ -399,8 +399,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Vendor relationship and information management.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [x] **Supplier Profile:** Name, code, type, category, status (`parties.code` / `profile_type` / `category` / `status`; create/PATCH/GET `/suppliers`)
+  - [x] **Supplier Profile:** Name, code, type, category, status (`parties.code` / `profile_type` / `category` / `status`; create/PATCH/GET `/suppliers`; Purchasing **Deactivate** / **Activate**; inactive blocked on new PO / preferred-supplier PR / standalone PI)
   - [x] **Contact Details:** Multiple contacts with name, phone, email, designation (`GET|POST|PATCH|DELETE /suppliers/{id}/contacts` + `/customers/{id}/contacts`; primary syncs party phone/email; Alembic `20260813_0090`)
+  - [x] **Soft-deactivate:** Hide from new purchasing docs without data loss (`status=inactive` via `PATCH /suppliers/{id}`; existing PO/GRN/PI can still settle)
   - [x] **Supplier Balance:** Real-time outstanding payable balance (`GET /suppliers/{id}/credit`; Credit UI Balance)
   - [x] **Payment Terms:** Credit period (`payment_terms_days` / Net N) drives PO and purchase-invoice due dates; early-pay discount remains tenant-level
   - [x] **Supplier History:** Purchase history, return history, payment history (`GET /suppliers/{id}/history`; Credit UI)
