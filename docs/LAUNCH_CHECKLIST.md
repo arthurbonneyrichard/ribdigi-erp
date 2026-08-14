@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 316 track opened (ADR-639: `test_stage316_open.py`, `docs/STAGE_316_PLAN.md`) — Pen-Test Pack Remaining-Gate Index; closed under ADR-640
+- [x] Pen-test pack remaining-gate hub (Stage 316 I1: `test_stage316_index_i1.py`, `docs/PENTEST_PACK_REMAINING_GATE_MVP.md`)
+- [x] Pen-test pack blocker matrix (Stage 316 B1: `test_stage316_blockers_b1.py`, `docs/PENTEST_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 29 V1 / Stage 315 / Stage 314 / Stage 209 pointers (Stage 316 P1: `test_stage316_pointers_p1.py`, `docs/PENTEST_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 316 fidelity sync (D1: `test_stage316_fidelity_d1.py`, `docs/STAGE_316_FIDELITY.md`)
+- [x] Stage 316 exit + freeze (H316x: `test_stage316_exit_h316x.py`, `docs/STAGE_316_EXIT_CRITERIA.md`, ADR-640)
 - [x] Stage 315 track opened (ADR-637: `test_stage315_open.py`, `docs/STAGE_315_PLAN.md`) — Security Scan Pack Remaining-Gate Index; closed under ADR-638
 - [x] Security scan pack remaining-gate hub (Stage 315 I1: `test_stage315_index_i1.py`, `docs/SECURITY_SCAN_PACK_REMAINING_GATE_MVP.md`)
 - [x] Security scan pack blocker matrix (Stage 315 B1: `test_stage315_blockers_b1.py`, `docs/SECURITY_SCAN_PACK_RG_BLOCKERS_MVP.md`)

@@ -380,6 +380,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+**Pen-test pack remaining-gate index (Stage 316):** Status index is `docs/PENTEST_PACK_REMAINING_GATE_MVP.md` → blockers `docs/PENTEST_PACK_RG_BLOCKERS_MVP.md` → Stage 29/315/314/209 pointers `docs/PENTEST_PACK_RG_POINTERS_MVP.md`. Vendor pen-test purchased Complete and live ZAP executed Complete remain MISSING (not claimed). Prefixed `PENTEST_PACK_*` remaining-gate docs (≠ Stage 29 V1 `PENTEST_PACK_MVP.md`; ≠ Stage 209 `PENTEST_REMAINING_GATE_*`).
+
 **Security scan pack remaining-gate index (Stage 315):** Status index is `docs/SECURITY_SCAN_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SECURITY_SCAN_PACK_RG_BLOCKERS_MVP.md` → Stage 27/314/313/210 pointers `docs/SECURITY_SCAN_PACK_RG_POINTERS_MVP.md`. Live security-scan Complete and live ZAP executed Complete remain MISSING (not claimed). Prefixed `SECURITY_SCAN_PACK_*` remaining-gate docs (≠ Stage 27 S1 `SECURITY_SCAN_MVP.md`; ≠ Stage 210 `SECURITY_SCAN_REMAINING_GATE_*`).
 
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).

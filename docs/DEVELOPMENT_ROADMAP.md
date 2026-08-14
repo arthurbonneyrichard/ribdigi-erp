@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 316 open (2026-08-14):** Tenant MVP Pen-Test Pack Remaining-Gate Index Fidelity — `docs/ADR_639_STAGE316_OPEN.md` + `docs/STAGE_316_PLAN.md` (I1 next).
+
+**Stage 316 I1 (2026-08-14):** Pen-test pack remaining-gate index hub (`test_stage316_index_i1.py`).
+
+**Stage 316 B1 (2026-08-14):** Pen-test pack blocker matrix (`test_stage316_blockers_b1.py`).
+
+**Stage 316 P1 (2026-08-14):** Stage 29 V1 / Stage 315 / Stage 314 / Stage 209 pointers (`test_stage316_pointers_p1.py`).
+
+**Stage 316 D1 (2026-08-14):** Pen-Test Pack Remaining-Gate Index fidelity sync — `docs/STAGE_316_FIDELITY.md` (`test_stage316_fidelity_d1.py`).
+
+**Stage 316 exit (2026-08-14):** I1, B1, P1, D1, H316x met — `docs/STAGE_316_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_640_STAGE316_FREEZE.md`. Fidelity: `docs/STAGE_316_FIDELITY.md`.
+
 **Stage 315 open (2026-08-14):** Tenant MVP Security Scan Pack Remaining-Gate Index Fidelity — `docs/ADR_637_STAGE315_OPEN.md` + `docs/STAGE_315_PLAN.md` (I1 next).
 
 **Stage 315 I1 (2026-08-14):** Security scan pack remaining-gate index hub (`test_stage315_index_i1.py`).

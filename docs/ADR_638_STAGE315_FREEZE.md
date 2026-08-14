@@ -31,3 +31,10 @@ Stage 316 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live security-scan, live ZAP executed, vendor pen-test purchased, ZAP CI wired, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 316 opened under **ADR-639** after CONTINUE/NEXT (Tenant MVP Pen-Test Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-640**. Stage 315 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 316 runner-up outline was approved and opened (ADR-639); freeze ADR-640. Do not reopen Stage 315 scope.
+
