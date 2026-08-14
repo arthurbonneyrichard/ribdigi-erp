@@ -350,7 +350,7 @@ Use this to correct discrepancies between physical and system stock:
 3. Add products:
    - Search by name/SKU/barcode
    - Quantity and unit price auto-filled (editable)
-   - Apply line-item discounts if needed
+   - Apply **Line discount** and optional **Header discount** on Create sale (tax before line discount)
 4. Set **Validity Period** (e.g., 7 days)
 5. Add notes/terms
 6. Click **Save** (draft) or **Send** (email to customer)
@@ -363,7 +363,7 @@ Use this to correct discrepancies between physical and system stock:
 1. Go to **Sales → Sales Orders → + New Order**
    - Or convert from a quotation: Open quotation → **Convert to Order**
 2. Select **Customer**
-3. Add products and quantities
+3. Add products and quantities (optional **Line discount** / **Header discount** on Create sale)
 4. Set **Expected Delivery Date**
 5. Click **Confirm Order**
 6. System reserves inventory
@@ -387,7 +387,7 @@ Use this to correct discrepancies between physical and system stock:
 4. Review:
    - Subtotal
    - Tax (auto-calculated)
-   - Discount (percentage or fixed)
+   - Line + header **Discount** (Create sale fields; detail KPI)
    - **Total Amount**
 5. Select **Payment Method**:
    - **Cash:** Immediate payment
