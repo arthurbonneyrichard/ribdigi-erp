@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 
 DEFAULT_PREFERENCES = {
-    "low_stock": {"dashboard": True, "email": False, "sms": False},
+    "low_stock": {"dashboard": True, "email": True, "sms": False},
     "expense_approval": {"dashboard": True, "email": True, "sms": False},
     "shift_variance": {"dashboard": True, "email": False, "sms": False},
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
@@ -27,6 +27,13 @@ DEFAULT_PREFERENCES = {
 
 VALID_CATEGORIES = set(DEFAULT_PREFERENCES.keys())
 
+# BR-5.5 — low-stock alerts target inventory + store managers (admins included for visibility).
+LOW_STOCK_NOTIFY_ROLES = (
+    "inventory_officer",
+    "store_manager",
+    "company_admin",
+    "super_admin",
+)
 
 def merge_preferences(raw: dict | None) -> dict:
     merged = {k: dict(v) for k, v in DEFAULT_PREFERENCES.items()}
@@ -309,6 +316,7 @@ async def notify_low_stock_if_needed(
         message=f"{product.name} ({product.sku}) is at {stock} (reorder {reorder}).",
         entity_type="product",
         entity_id=product.id,
+        roles=list(LOW_STOCK_NOTIFY_ROLES),
     )
 
 
@@ -357,6 +365,7 @@ async def notify_warehouse_low_stock_if_needed(
         ),
         entity_type="warehouse_stock",
         entity_id=entity_id,
+        roles=list(LOW_STOCK_NOTIFY_ROLES),
     )
 
 

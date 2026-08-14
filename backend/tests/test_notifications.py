@@ -6,6 +6,7 @@ def test_default_preferences_cover_core_types():
     assert "payment_due" in DEFAULT_PREFERENCES
     assert "new_order" in DEFAULT_PREFERENCES
     assert DEFAULT_PREFERENCES["low_stock"]["dashboard"] is True
+    assert DEFAULT_PREFERENCES["low_stock"]["email"] is True
     assert DEFAULT_PREFERENCES["new_order"]["dashboard"] is True
 
 
