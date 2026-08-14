@@ -12,15 +12,20 @@ from app import models as m
 from app.inventory import allocate_unlocated_stock, apply_stock_change, get_or_create_warehouse_stock
 
 
-async def get_warehouse(db: AsyncSession, tenant_id: str, warehouse_id: str) -> m.Warehouse:
-    wh = (
-        await db.execute(
-            select(m.Warehouse).where(
-                m.Warehouse.id == warehouse_id,
-                m.Warehouse.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+async def get_warehouse(
+    db: AsyncSession,
+    tenant_id: str,
+    warehouse_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Warehouse:
+    stmt = select(m.Warehouse).where(
+        m.Warehouse.id == warehouse_id,
+        m.Warehouse.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.Warehouse.company_id == company_id)
+    wh = (await db.execute(stmt)).scalar_one_or_none()
     if not wh:
         raise HTTPException(status_code=404, detail="Warehouse not found")
     return wh
@@ -70,6 +75,7 @@ def serialize_item(item: m.StockCountItem, *, product: m.Product | None = None) 
     variance = None if counted is None else round(counted - expected, 3)
     return {
         "id": item.id,
+        "company_id": getattr(item, "company_id", None),
         "product_id": item.product_id,
         "product_name": product.name if product else None,
         "product_sku": product.sku if product else None,
@@ -134,7 +140,10 @@ async def _resolve_product_ids(
     tenant_id: str,
     warehouse_id: str,
     product_ids: list[str] | None,
+    company_id: str | None = None,
 ) -> list[str]:
+    from app.workspace import assert_fk_company
+
     if product_ids:
         ids: list[str] = []
         for pid in product_ids:
@@ -149,50 +158,44 @@ async def _resolve_product_ids(
             ).scalar_one_or_none()
             if not product:
                 raise HTTPException(status_code=404, detail=f"Product not found: {pid}")
+            assert_fk_company(product, company_id, detail=f"Product not found: {pid}")
             if pid not in ids:
                 ids.append(pid)
         if not ids:
             raise HTTPException(status_code=400, detail="No valid products for stock count")
         return ids
 
-    stock_rows = (
-        await db.execute(
-            select(m.WarehouseStock.product_id).where(
-                m.WarehouseStock.tenant_id == tenant_id,
-                m.WarehouseStock.warehouse_id == warehouse_id,
-            )
-        )
-    ).scalars().all()
+    stock_q = select(m.WarehouseStock.product_id).where(
+        m.WarehouseStock.tenant_id == tenant_id,
+        m.WarehouseStock.warehouse_id == warehouse_id,
+    )
+    if company_id:
+        stock_q = stock_q.where(m.WarehouseStock.company_id == company_id)
+    stock_rows = (await db.execute(stock_q)).scalars().all()
     ids = list(dict.fromkeys(stock_rows))
 
     # Include products with consolidated stock not yet located at this warehouse.
-    active = (
-        await db.execute(
-            select(m.Product).where(
-                m.Product.tenant_id == tenant_id,
-                m.Product.is_active == True,  # noqa: E712
-                m.Product.stock_qty > 0,
-            )
-        )
-    ).scalars().all()
+    active_q = select(m.Product).where(
+        m.Product.tenant_id == tenant_id,
+        m.Product.is_active == True,  # noqa: E712
+        m.Product.stock_qty > 0,
+    )
+    if company_id:
+        active_q = active_q.where(m.Product.company_id == company_id)
+    active = (await db.execute(active_q)).scalars().all()
     for product in active:
         if product.id not in ids:
             ids.append(product.id)
 
     if not ids:
         # Empty warehouse: still allow a count of all active products at zero.
-        ids = list(
-            (
-                await db.execute(
-                    select(m.Product.id).where(
-                        m.Product.tenant_id == tenant_id,
-                        m.Product.is_active == True,  # noqa: E712
-                    )
-                )
-            )
-            .scalars()
-            .all()
+        empty_q = select(m.Product.id).where(
+            m.Product.tenant_id == tenant_id,
+            m.Product.is_active == True,  # noqa: E712
         )
+        if company_id:
+            empty_q = empty_q.where(m.Product.company_id == company_id)
+        ids = list((await db.execute(empty_q)).scalars().all())
     if not ids:
         raise HTTPException(status_code=400, detail="No products available for stock count")
     return ids
@@ -208,9 +211,13 @@ async def create_count(
     product_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> m.StockCount:
-    await get_warehouse(db, tenant_id, warehouse_id)
+    await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
     ids = await _resolve_product_ids(
-        db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_ids=product_ids
+        db,
+        tenant_id=tenant_id,
+        warehouse_id=warehouse_id,
+        product_ids=product_ids,
+        company_id=company_id,
     )
 
     count = m.StockCount(

@@ -74,7 +74,13 @@ def refresh_invoice_overdue(invoice: m.SalesInvoice, *, now: datetime | None = N
     return False
 
 
-async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.Party:
+async def get_customer(
+    db: AsyncSession,
+    tenant_id: str,
+    customer_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Party:
     customer = (
         await db.execute(
             select(m.Party).where(
@@ -86,6 +92,9 @@ async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.
     ).scalar_one_or_none()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
+    from app.workspace import assert_fk_company
+
+    assert_fk_company(customer, company_id, detail="Customer not found")
     return customer
 
 
@@ -617,7 +626,7 @@ async def create_sales_invoice(
 ) -> m.SalesInvoice:
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires at least one line item")
-    await get_customer(db, tenant_id, customer_id)
+    await get_customer(db, tenant_id, customer_id, company_id=company_id)
 
     from app.fx import resolve_rate
 
@@ -627,7 +636,7 @@ async def create_sales_invoice(
     if store_id:
         from app import stores as stores_svc
 
-        store = await stores_svc.get_store(db, tenant_id, store_id)
+        store = await stores_svc.get_store(db, tenant_id, store_id, company_id=company_id)
         resolved_store_id = store.id
 
     from app.customers import customer_group_discount_percent
@@ -637,10 +646,13 @@ async def create_sales_invoice(
     tax_total = 0.0
     reverse_charge_tax = 0.0
     prepared: list[tuple[dict, float]] = []
+    from app.workspace import assert_fk_company
+
     for item in items:
         product, variant, unit_price = await resolve_sale_line(
             db, tenant_id, item, group_discount_percent=group_discount
         )
+        assert_fk_company(product, company_id, detail="Product not found")
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(

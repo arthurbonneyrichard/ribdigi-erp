@@ -646,6 +646,7 @@ async def transfer_history(
     to_date: datetime | None = None,
     scope: str = "all",
     limit: int = 200,
+    company_id: str | None = None,
 ) -> dict:
     """Consolidated transfer history report (BR-13.2) — Stage 16 M2."""
     rows = await list_transfers_filtered(
@@ -657,6 +658,7 @@ async def transfer_history(
         to_date=to_date,
         scope=scope,
         limit=limit,
+        company_id=company_id,
     )
     transfers = [await serialize_transfer(db, t) for t in rows]
     by_status: dict[str, int] = {}
@@ -702,6 +704,9 @@ async def _add_transfer_items(
         ).scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
+        from app.workspace import assert_fk_company
+
+        assert_fk_company(product, company_id, detail=f"Product not found: {product_id}")
         db.add(
             m.StockTransferItem(
                 tenant_id=tenant_id,
@@ -731,8 +736,8 @@ async def create_transfer(
     if not items:
         raise HTTPException(status_code=400, detail="Transfer requires at least one item")
 
-    await get_store(db, tenant_id, from_store_id)
-    await get_store(db, tenant_id, to_store_id)
+    await get_store(db, tenant_id, from_store_id, company_id=company_id)
+    await get_store(db, tenant_id, to_store_id, company_id=company_id)
     from_wh = await warehouse_for_store(db, tenant_id, from_store_id)
     to_wh = await warehouse_for_store(db, tenant_id, to_store_id)
 
@@ -780,8 +785,8 @@ async def create_warehouse_transfer(
     if not items:
         raise HTTPException(status_code=400, detail="Transfer requires at least one item")
 
-    from_wh = await get_warehouse(db, tenant_id, from_warehouse_id)
-    to_wh = await get_warehouse(db, tenant_id, to_warehouse_id)
+    from_wh = await get_warehouse(db, tenant_id, from_warehouse_id, company_id=company_id)
+    to_wh = await get_warehouse(db, tenant_id, to_warehouse_id, company_id=company_id)
 
     transfer = m.StockTransfer(
         tenant_id=tenant_id,

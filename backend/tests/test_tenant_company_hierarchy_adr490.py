@@ -3154,3 +3154,255 @@ async def test_phase24_payment_export_serialize_and_idor(client, db_session):
         )
     ).scalar_one()
     assert pay_row.company_id == seed["c1"].id
+
+
+@pytest.mark.asyncio
+async def test_phase25_create_fk_serialize_and_reports(client, db_session):
+    """Phase 25: create-path FK company asserts + transfer report scope."""
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="P25B",
+        name="Alpha Phase25 B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="P25 Customer B",
+        status="active",
+        credit_limit=100,
+    )
+    supp_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="supplier",
+        name="P25 Supplier B",
+        status="active",
+        credit_limit=0,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="P25 Product B",
+        sku="P25-SKU-B",
+        selling_price=5,
+        cost_price=2,
+        stock_qty=3,
+        reorder_level=10,
+        is_active=True,
+    )
+    store_b = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P25SB",
+        name="P25 Store B",
+        is_active=True,
+    )
+    store_b2 = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P25SB2",
+        name="P25 Store B2",
+        is_active=True,
+    )
+    wh_b = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P25WB",
+        name="P25 WH B",
+        is_active=True,
+    )
+    exp_cat_b = m.ExpenseCategory(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P25CAT",
+        name="P25 Expense Cat",
+        budget_amount=100,
+        is_active=True,
+    )
+    db_session.add_all([cust_b, supp_b, prod_b, store_b, store_b2, wh_b, exp_cat_b])
+    await db_session.flush()
+    wh_b.store_id = store_b.id
+    xfer_b = m.StockTransfer(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        transfer_number="TR-P25-B",
+        from_store_id=store_b.id,
+        to_store_id=store_b2.id,
+        from_warehouse_id=wh_b.id,
+        to_warehouse_id=wh_b.id,
+        status="draft",
+        created_by=seed["super"].id,
+    )
+    db_session.add(xfer_b)
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    # --- Create FK IDOR ---
+    inv = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers_a,
+        json={
+            "customer_id": cust_b.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
+        },
+    )
+    assert inv.status_code == 404, inv.text
+
+    quote = await ac.post(
+        "/api/v1/sales/quotations",
+        headers=headers_a,
+        json={
+            "customer_id": cust_b.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
+        },
+    )
+    assert quote.status_code == 404, quote.text
+
+    pr = await ac.post(
+        "/api/v1/purchasing/requests",
+        headers=headers_a,
+        json={
+            "supplier_id": supp_b.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
+        },
+    )
+    assert pr.status_code == 404, pr.text
+
+    po = await ac.post(
+        "/api/v1/purchasing/orders",
+        headers=headers_a,
+        json={
+            "supplier_id": supp_b.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
+        },
+    )
+    assert po.status_code == 404, po.text
+
+    # Product from B on otherwise valid A customer
+    inv_prod = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers_a,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [{"product_id": prod_b.id, "quantity": 1, "unit_price": 1}],
+        },
+    )
+    assert inv_prod.status_code == 404, inv_prod.text
+
+    stock_in = await ac.post(
+        "/api/v1/inventory/stock-in",
+        headers=headers_a,
+        json={"product_id": prod_b.id, "quantity": 1},
+    )
+    assert stock_in.status_code == 404, stock_in.text
+
+    stock_out = await ac.post(
+        "/api/v1/inventory/stock-out",
+        headers=headers_a,
+        json={"product_id": prod_b.id, "quantity": 1},
+    )
+    assert stock_out.status_code == 404, stock_out.text
+
+    reorder = await ac.post(
+        "/api/v1/inventory/low-stock/reorder-po",
+        headers=headers_a,
+        json={"product_id": prod_b.id, "supplier_id": supp_b.id},
+    )
+    assert reorder.status_code == 404, reorder.text
+
+    xfer = await ac.post(
+        "/api/v1/stores/transfers",
+        headers=headers_a,
+        json={
+            "from_store_id": store_b.id,
+            "to_store_id": store_b2.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert xfer.status_code == 404, xfer.text
+
+    count = await ac.post(
+        "/api/v1/inventory/stock-counts",
+        headers=headers_a,
+        json={"warehouse_id": wh_b.id},
+    )
+    assert count.status_code == 404, count.text
+
+    exp = await ac.post(
+        "/api/v1/expenses",
+        headers=headers_a,
+        json={
+            "category_id": exp_cat_b.id,
+            "description": "cross company",
+            "amount": 5,
+        },
+    )
+    assert exp.status_code == 404, exp.text
+
+    # --- Transfer report must not list company B transfer ---
+    report = await ac.get("/api/v1/reports/transfers", headers=headers_a)
+    assert report.status_code == 200, report.text
+    ids = {t["id"] for t in report.json()["data"].get("transfers") or []}
+    assert xfer_b.id not in ids
+
+    # --- Serialize child company_id on stock count item (company A) ---
+    # Ensure company A has a warehouse
+    wh_a = (
+        await db_session.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == seed["t1"].id,
+                m.Warehouse.company_id == seed["c1"].id,
+            )
+        )
+    ).scalars().first()
+    if wh_a is None:
+        store_a = m.Store(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            code="P25SA",
+            name="P25 Store A",
+            is_active=True,
+        )
+        db_session.add(store_a)
+        await db_session.flush()
+        wh_a = m.Warehouse(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            store_id=store_a.id,
+            code="P25WA",
+            name="P25 WH A",
+            is_active=True,
+        )
+        db_session.add(wh_a)
+        await db_session.commit()
+
+    sc = await ac.post(
+        "/api/v1/inventory/stock-counts",
+        headers=headers_a,
+        json={"warehouse_id": wh_a.id, "product_ids": [seed["p1"].id]},
+    )
+    assert sc.status_code == 200, sc.text
+    items = sc.json()["data"].get("items") or []
+    assert items
+    assert all(i.get("company_id") == seed["c1"].id for i in items)

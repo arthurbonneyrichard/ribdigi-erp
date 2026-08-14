@@ -549,6 +549,7 @@ async def list_approval_actions(
 def serialize_approval_action(row: m.ExpenseApprovalAction) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "expense_id": row.expense_id,
         "step": int(row.step),
         "action": row.action,
@@ -608,6 +609,7 @@ async def resolve_category(
     *,
     category_id: str | None,
     category: str | None,
+    company_id: str | None = None,
 ) -> tuple[str | None, str]:
     if category_id:
         cat = (
@@ -620,6 +622,9 @@ async def resolve_category(
         ).scalar_one_or_none()
         if not cat:
             raise HTTPException(status_code=404, detail="Expense category not found")
+        from app.workspace import assert_fk_company
+
+        assert_fk_company(cat, company_id, detail="Expense category not found")
         return cat.id, cat.name
     name = (category or "").strip()
     if not name:
@@ -633,14 +638,15 @@ async def resolve_org_dimensions(
     tenant_id: str,
     store_id: str | None,
     department_id: str | None,
+    company_id: str | None = None,
 ) -> tuple[str | None, str | None]:
-    """Validate optional store/department are tenant-scoped (404 on foreign ids)."""
+    """Validate optional store/department are tenant/company-scoped (404 on foreign ids)."""
     resolved_store = None
     resolved_dept = None
     if store_id:
         from app.stores import get_store
 
-        store = await get_store(db, tenant_id, store_id)
+        store = await get_store(db, tenant_id, store_id, company_id=company_id)
         resolved_store = store.id
     if department_id:
         from app.org_units import get_department
@@ -710,7 +716,11 @@ async def create_expense(
 ) -> m.Expense:
     await ensure_default_categories(db, tenant_id, company_id=company_id)
     cat_id, cat_name = await resolve_category(
-        db, tenant_id, category_id=category_id, category=category
+        db,
+        tenant_id,
+        category_id=category_id,
+        category=category,
+        company_id=company_id,
     )
     settings = await get_approval_settings(db, tenant_id)
     levels = settings["levels"]
@@ -730,7 +740,11 @@ async def create_expense(
         )
 
     resolved_store, resolved_dept = await resolve_org_dimensions(
-        db, tenant_id=tenant_id, store_id=store_id, department_id=department_id
+        db,
+        tenant_id=tenant_id,
+        store_id=store_id,
+        department_id=department_id,
+        company_id=company_id,
     )
 
     expense = m.Expense(
@@ -1035,7 +1049,11 @@ async def update_expense(
 
     if category_id is not None or category is not None:
         cat_id, cat_name = await resolve_category(
-            db, tenant_id, category_id=category_id, category=category
+            db,
+            tenant_id,
+            category_id=category_id,
+            category=category,
+            company_id=getattr(expense, "company_id", None),
         )
         expense.category_id = cat_id
         expense.category = cat_name
@@ -1055,14 +1073,22 @@ async def update_expense(
         expense.store_id = None
     elif store_id is not None:
         resolved_store, _ = await resolve_org_dimensions(
-            db, tenant_id=tenant_id, store_id=store_id, department_id=None
+            db,
+            tenant_id=tenant_id,
+            store_id=store_id,
+            department_id=None,
+            company_id=getattr(expense, "company_id", None),
         )
         expense.store_id = resolved_store
     if clear_department:
         expense.department_id = None
     elif department_id is not None:
         _, resolved_dept = await resolve_org_dimensions(
-            db, tenant_id=tenant_id, store_id=None, department_id=department_id
+            db,
+            tenant_id=tenant_id,
+            store_id=None,
+            department_id=department_id,
+            company_id=getattr(expense, "company_id", None),
         )
         expense.department_id = resolved_dept
 
@@ -1184,10 +1210,18 @@ async def create_recurring(
 ) -> m.RecurringExpense:
     await ensure_default_categories(db, tenant_id, company_id=company_id)
     cat_id, cat_name = await resolve_category(
-        db, tenant_id, category_id=category_id, category=category
+        db,
+        tenant_id,
+        category_id=category_id,
+        category=category,
+        company_id=company_id,
     )
     resolved_store, resolved_dept = await resolve_org_dimensions(
-        db, tenant_id=tenant_id, store_id=store_id, department_id=department_id
+        db,
+        tenant_id=tenant_id,
+        store_id=store_id,
+        department_id=department_id,
+        company_id=company_id,
     )
     start = start_date or datetime.utcnow()
     row = m.RecurringExpense(

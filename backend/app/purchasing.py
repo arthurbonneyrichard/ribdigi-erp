@@ -195,6 +195,7 @@ async def list_pr_approval_actions(
 def serialize_pr_approval_action(row: m.PurchaseRequestApprovalAction) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "purchase_request_id": row.purchase_request_id,
         "step": int(row.step),
         "action": row.action,
@@ -251,7 +252,13 @@ def derive_po_status(items: list[m.PurchaseOrderItem]) -> str:
     return "sent"
 
 
-async def get_supplier(db: AsyncSession, tenant_id: str, supplier_id: str) -> m.Party:
+async def get_supplier(
+    db: AsyncSession,
+    tenant_id: str,
+    supplier_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Party:
     supplier = (
         await db.execute(
             select(m.Party).where(
@@ -263,6 +270,9 @@ async def get_supplier(db: AsyncSession, tenant_id: str, supplier_id: str) -> m.
     ).scalar_one_or_none()
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
+    from app.workspace import assert_fk_company
+
+    assert_fk_company(supplier, company_id, detail="Supplier not found")
     return supplier
 
 
@@ -397,8 +407,11 @@ async def _prepare_po_lines(
     tenant_id: str,
     items: list[dict],
     existing_by_id: dict[str, m.PurchaseOrderItem] | None = None,
+    company_id: str | None = None,
 ) -> list[dict]:
     existing_by_id = existing_by_id or {}
+    from app.workspace import assert_fk_company
+
     prepared: list[dict] = []
     for item in items:
         product_id = item.get("product_id")
@@ -414,6 +427,7 @@ async def _prepare_po_lines(
         ).scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
+        assert_fk_company(product, company_id, detail=f"Product not found: {product_id}")
         qty = float(item.get("quantity") or 0)
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be greater than zero")
@@ -728,7 +742,9 @@ async def create_purchase_request(
 ) -> m.PurchaseRequest:
     if not items:
         raise HTTPException(status_code=400, detail="Purchase request requires at least one line item")
-    await get_supplier(db, tenant_id, supplier_id)
+    await get_supplier(db, tenant_id, supplier_id, company_id=company_id)
+    from app.workspace import assert_fk_company
+
     prepared: list[dict] = []
     for item in items:
         product = (
@@ -741,6 +757,7 @@ async def create_purchase_request(
         ).scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+        assert_fk_company(product, company_id, detail=f"Product not found: {item['product_id']}")
         qty = float(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be greater than zero")
@@ -1101,12 +1118,14 @@ async def create_purchase_order(
 ) -> m.PurchaseOrder:
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
-    await get_supplier(db, tenant_id, supplier_id)
+    await get_supplier(db, tenant_id, supplier_id, company_id=company_id)
     if purchase_request_id and company_id is None:
         pr = await get_purchase_request(db, tenant_id, purchase_request_id)
         company_id = getattr(pr, "company_id", None)
 
-    prepared = await _prepare_po_lines(db, tenant_id=tenant_id, items=items)
+    prepared = await _prepare_po_lines(
+        db, tenant_id=tenant_id, items=items, company_id=company_id
+    )
     subtotal = sum(p["line_sub"] for p in prepared)
     tax_total = sum(p["line_tax"] for p in prepared)
     address = (delivery_address or "").strip() or None

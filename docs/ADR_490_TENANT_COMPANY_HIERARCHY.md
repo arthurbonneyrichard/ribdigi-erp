@@ -211,3 +211,12 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Gallery image upload asserts product company before `save_upload`.
 - Serialize helpers expose `company_id` for customer/supplier payments, contacts, stock movements, batches, product images, POS sales export rows, and bank connections.
 - Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design; optional child-row serializers (approval actions, stock-count items, POS payment lines).
+
+## Phase 25 — Create-path FK company asserts (2026-08-14)
+
+- Added `workspace.assert_fk_company` for create-path related-row checks; `get_customer` / `get_supplier` accept optional `company_id`.
+- Sales invoice/quotation/order and purchasing PR/PO create paths reject sibling-company customer/supplier/product/store/warehouse FKs.
+- Inventory stock-in/out/opening and low-stock reorder-PO assert product (and supplier/warehouse) company; stock transfer and stock-count creates gate stores/warehouses/products by company.
+- Expense create/update/recurring resolve category and store/department with company scope; `/reports/transfers` filters by workspace `company_id`.
+- Child-row serialize exposes `company_id` for expense/PR approval actions, stock-count items, and POS payment lines.
+- Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design; deeper line helpers (GRN/return) and document-line serializers remain secondary.

@@ -35,9 +35,12 @@ async def _prepare_lines(
     items: list[dict],
     *,
     group_discount_percent: float = 0,
+    company_id: str | None = None,
 ) -> tuple[float, float, list[tuple[dict, float]]]:
     if not items:
         raise HTTPException(status_code=400, detail="At least one line item is required")
+    from app.workspace import assert_fk_company
+
     subtotal = 0.0
     tax_total = 0.0
     prepared: list[tuple[dict, float]] = []
@@ -45,6 +48,7 @@ async def _prepare_lines(
         product, variant, unit = await resolve_sale_line(
             db, tenant_id, item, group_discount_percent=group_discount_percent
         )
+        assert_fk_company(product, company_id, detail="Product not found")
         qty = float(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Quantity must be positive")
@@ -412,12 +416,12 @@ async def create_quotation(
     valid_days: int = 14,
     company_id: str | None = None,
 ) -> m.SalesQuotation:
-    await get_customer(db, tenant_id, customer_id)
+    await get_customer(db, tenant_id, customer_id, company_id=company_id)
     from app.customers import customer_group_discount_percent
 
     group_discount = await customer_group_discount_percent(db, tenant_id, customer_id)
     subtotal, tax_total, prepared = await _prepare_lines(
-        db, tenant_id, items, group_discount_percent=group_discount
+        db, tenant_id, items, group_discount_percent=group_discount, company_id=company_id
     )
     discount_amount = float(discount_amount or 0)
     total = round(subtotal + tax_total - discount_amount, 2)
@@ -631,20 +635,21 @@ async def _resolve_order_warehouse(
     tenant_id: str,
     store_id: str | None,
     warehouse_id: str | None,
+    company_id: str | None = None,
 ) -> tuple[str | None, str | None]:
     resolved_store = None
     resolved_wh = None
     if store_id:
         from app.stores import get_store, warehouse_for_store
 
-        store = await get_store(db, tenant_id, store_id)
+        store = await get_store(db, tenant_id, store_id, company_id=company_id)
         resolved_store = store.id
         wh = await warehouse_for_store(db, tenant_id, store.id)
         resolved_wh = wh.id
     if warehouse_id:
         from app.inventory import get_warehouse
 
-        wh = await get_warehouse(db, tenant_id, warehouse_id)
+        wh = await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
         if resolved_wh and resolved_wh != wh.id:
             raise HTTPException(
                 status_code=400,
@@ -707,7 +712,7 @@ async def create_order(
     delivery_address: str | None = None,
     company_id: str | None = None,
 ) -> m.SalesOrder:
-    customer = await get_customer(db, tenant_id, customer_id)
+    customer = await get_customer(db, tenant_id, customer_id, company_id=company_id)
     if quotation_id:
         quote = await get_quotation(db, tenant_id, quotation_id)
         if quote.customer_id != customer_id:
@@ -715,13 +720,17 @@ async def create_order(
         if company_id is None:
             company_id = getattr(quote, "company_id", None)
     resolved_store, resolved_wh = await _resolve_order_warehouse(
-        db, tenant_id=tenant_id, store_id=store_id, warehouse_id=warehouse_id
+        db,
+        tenant_id=tenant_id,
+        store_id=store_id,
+        warehouse_id=warehouse_id,
+        company_id=company_id,
     )
     from app.customers import customer_group_discount_percent
 
     group_discount = await customer_group_discount_percent(db, tenant_id, customer_id)
     subtotal, tax_total, prepared = await _prepare_lines(
-        db, tenant_id, items, group_discount_percent=group_discount
+        db, tenant_id, items, group_discount_percent=group_discount, company_id=company_id
     )
     discount_amount = float(discount_amount or 0)
     total = round(subtotal + tax_total - discount_amount, 2)

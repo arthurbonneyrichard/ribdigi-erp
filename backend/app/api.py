@@ -5030,6 +5030,7 @@ async def low_stock_reorder_po(
     ).scalar_one_or_none()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    workspace_svc.assert_record_company(claims, product)
     supplier = (
         await db.execute(
             select(m.Party).where(
@@ -5041,10 +5042,13 @@ async def low_stock_reorder_po(
     ).scalar_one_or_none()
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
+    workspace_svc.assert_record_company(claims, supplier)
     if payload.warehouse_id:
         from app.inventory import get_warehouse
 
-        await get_warehouse(db, claims["tenant_id"], payload.warehouse_id)
+        await get_warehouse(
+            db, claims["tenant_id"], payload.warehouse_id, company_id=claims.get("company_id")
+        )
 
     suggested = max(
         1.0,
@@ -5453,6 +5457,8 @@ async def stock_in(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    product = await catalog_svc.get_product(db, claims["tenant_id"], payload.product_id)
+    workspace_svc.assert_record_company(claims, product)
     result = await catalog_svc.stock_in_with_batch(
         db,
         tenant_id=claims["tenant_id"],
@@ -5478,6 +5484,10 @@ async def opening_stock(
 ):
     """BR-5.2 Opening Stock — initialize levels for existing products / fiscal start."""
     if payload.items:
+        for item in payload.items:
+            pid = item.product_id if hasattr(item, "product_id") else item.get("product_id")
+            product = await catalog_svc.get_product(db, claims["tenant_id"], pid)
+            workspace_svc.assert_record_company(claims, product)
         result = await catalog_svc.record_opening_stock_batch(
             db,
             tenant_id=claims["tenant_id"],
@@ -5502,6 +5512,8 @@ async def opening_stock(
         raise HTTPException(
             status_code=400, detail="product_id and quantity required for single-line opening stock"
         )
+    product = await catalog_svc.get_product(db, claims["tenant_id"], payload.product_id)
+    workspace_svc.assert_record_company(claims, product)
     result = await catalog_svc.record_opening_stock(
         db,
         tenant_id=claims["tenant_id"],
@@ -5527,6 +5539,8 @@ async def stock_out(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    product = await catalog_svc.get_product(db, claims["tenant_id"], payload.product_id)
+    workspace_svc.assert_record_company(claims, product)
     result = await catalog_svc.stock_out_with_batch(
         db,
         tenant_id=claims["tenant_id"],
@@ -11921,6 +11935,7 @@ async def report_transfer_history(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             scope=scope,
             limit=limit,
+            company_id=claims.get("company_id"),
         )
     )
 

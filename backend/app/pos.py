@@ -310,6 +310,7 @@ async def list_sale_payments(
 def serialize_payment(row: m.PosPayment) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "sale_id": row.sale_id,
         "payment_method": row.payment_method,
         "amount": float(row.amount or 0),

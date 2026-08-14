@@ -334,6 +334,15 @@ def assert_record_company(claims: dict, row) -> None:
         raise HTTPException(status_code=404, detail="Not found")
 
 
+def assert_fk_company(row, company_id: str | None, *, detail: str = "Not found") -> None:
+    """Create-path FK guard: related row must match workspace company when both set."""
+    if not company_id or row is None:
+        return
+    row_cid = getattr(row, "company_id", None)
+    if row_cid and row_cid != company_id:
+        raise HTTPException(status_code=404, detail=detail)
+
+
 def stamp_company_id(claims: dict) -> str | None:
     """Company id to persist on new operational rows (None outside company workspace)."""
     if (claims.get("workspace_kind") or "") != "company":
