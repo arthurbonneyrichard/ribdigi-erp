@@ -1,0 +1,66 @@
+{
+  "id": "cyber-insurance-pack-rg-blockers",
+  "stage": 288,
+  "pack": "B1",
+  "doc": "docs/CYBER_INSURANCE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CYBER_INSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "cyber_insurance": "docs/CYBER_INSURANCE_MVP.md"
+  },
+  "packaging_complete": true,
+  "coi_issued_claimed": false,
+  "cyber_insurance_live": false,
+  "insurance_certificate_claimed": false,
+  "broker_attestation_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "coi_issued": "REMAINING",
+    "cyber_insurance_live": "REMAINING",
+    "insurance_certificate": "REMAINING",
+    "broker_attestation": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage47_as_coi_issued": "NON_CLAIM",
+    "stage287_as_disclosure_program": "NON_CLAIM",
+    "coi_issued_claimed": "false",
+    "cyber_insurance_live_claimed": "false",
+    "insurance_certificate_claimed": "false",
+    "broker_attestation_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ciprb-coi",
+      "title": "Mark issued COI Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ciprb-live",
+      "title": "Mark live cyber insurance Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ciprb-broker",
+      "title": "Mark broker attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ciprb-stage47-nonclaim",
+      "title": "Mark Stage 47 I1 as non-claim for issued COI Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ciprb-coi-remaining",
+      "title": "Issued COI Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 288 B1 cyber insurance pack RG blocker matrix packaging only. Issued COI Completes remain MISSING."
+}

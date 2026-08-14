@@ -4068,6 +4068,18 @@ Every feature in every phase must meet:
 
 **Stage 287 exit (2026-08-14):** I1, B1, P1, D1, H287x met — `docs/STAGE_287_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_582_STAGE287_FREEZE.md`. Fidelity: `docs/STAGE_287_FIDELITY.md`.
 
+**Stage 288 open (2026-08-14):** Tenant MVP Cyber Insurance Pack Remaining-Gate Index Fidelity — `docs/ADR_583_STAGE288_OPEN.md` + `docs/STAGE_288_PLAN.md` (I1 next).
+
+**Stage 288 I1 (2026-08-14):** Cyber insurance pack remaining-gate index hub (`test_stage288_index_i1.py`).
+
+**Stage 288 B1 (2026-08-14):** Cyber insurance pack blocker matrix (`test_stage288_blockers_b1.py`).
+
+**Stage 288 P1 (2026-08-14):** Stage 47 I1 / Stage 287 / Stage 286 / Stage 46 pointers (`test_stage288_pointers_p1.py`).
+
+**Stage 288 D1 (2026-08-14):** Cyber Insurance Pack Remaining-Gate Index fidelity sync — `docs/STAGE_288_FIDELITY.md` (`test_stage288_fidelity_d1.py`).
+
+**Stage 288 exit (2026-08-14):** I1, B1, P1, D1, H288x met — `docs/STAGE_288_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_584_STAGE288_FREEZE.md`. Fidelity: `docs/STAGE_288_FIDELITY.md`.
+
 
 
 

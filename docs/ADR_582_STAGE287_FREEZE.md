@@ -28,6 +28,12 @@ Stage 288 requires CONTINUE/NEXT with a distinct product outline after this free
 
 **Runner-up outline (not opened):** Tenant MVP Cyber Insurance Pack Remaining-Gate Index Fidelity — single index of cyber-insurance-pack blockers (packaged Stage 47 I1 cyber insurance materials non-claim as COI / policy-live Completes) with explicit non-claim. Prefixed `CYBER_INSURANCE_PACK_*` if a prior remaining-gate exists. Distinct from Stage 287 vuln disclosure pack remaining-gate, Stage 286 breach notification pack remaining-gate, and `CYBER_INSURANCE_MVP.md` packaging. Source: `CYBER_INSURANCE_MVP.md`.
 
+## Amendment — Stage 288 opened
+
+Stage 288 opened under **ADR-583** after CONTINUE/NEXT (Tenant MVP Cyber Insurance Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-584**. Stage 287 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 288 runner-up outline was approved and opened (ADR-583); freeze ADR-584. Do not reopen Stage 287 scope.
+
 ## Non-claims
 
 Packaging ≠ live Completes for disclosure program, bug bounty, continuous disclosure, researcher intake live, paid billing, or go-live.

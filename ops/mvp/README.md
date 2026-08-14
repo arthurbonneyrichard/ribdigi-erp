@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_288_EXIT_CRITERIA.md` / `docs/ADR_584_STAGE288_FREEZE.md` (`backend/tests/test_stage288_exit_h288x.py`) — Stage 288 H288x
+- `docs/STAGE_288_FIDELITY.md` (`backend/tests/test_stage288_fidelity_d1.py`) — Stage 288 D1
+- `docs/STAGE_288_PLAN.md` (`backend/tests/test_stage288_open.py`) — Stage 288 open (ADR-583)
+- `docs/CYBER_INSURANCE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/cyber-insurance-pack-remaining-gate.json` — Stage 288 I1
+- `docs/CYBER_INSURANCE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/cyber-insurance-pack-rg-blockers.json` — Stage 288 B1
+- `docs/CYBER_INSURANCE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/cyber-insurance-pack-rg-pointers.json` — Stage 288 P1
 - `docs/STAGE_287_EXIT_CRITERIA.md` / `docs/ADR_582_STAGE287_FREEZE.md` (`backend/tests/test_stage287_exit_h287x.py`) — Stage 287 H287x
 - `docs/STAGE_287_FIDELITY.md` (`backend/tests/test_stage287_fidelity_d1.py`) — Stage 287 D1
 - `docs/STAGE_287_PLAN.md` (`backend/tests/test_stage287_open.py`) — Stage 287 open (ADR-581)
@@ -5005,6 +5011,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 288 exit
+
+H288x met — `docs/STAGE_288_EXIT_CRITERIA.md`, ADR-584. Stages 1–288 frozen for Stage 288 feature scope.
+
+## Stage 288 D1 — Tenant MVP Cyber Insurance Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_288_FIDELITY.md` (`test_stage288_fidelity_d1.py`). `CYBER_INSURANCE_PACK_*` remaining-gate index; issued COI / live cyber insurance / go-live still MISSING.
+
+## Stage 288 open
+
+`docs/ADR_583_STAGE288_OPEN.md` + `docs/STAGE_288_PLAN.md` (`test_stage288_open.py`).
 
 ## Stage 287 exit
 

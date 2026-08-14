@@ -587,3 +587,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 287 decision (opened after Stage 286 freeze)
 
 **Tenant MVP Vuln Disclosure Pack Remaining-Gate Index Fidelity** — vuln disclosure pack remaining-gate hub (I1), blocker matrix (B1), Stage 38 V1 / Stage 286 / Stage 237-211 / Stage 27 pointers with explicit non-claim (P1). Prefixed `VULN_DISCLOSURE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 38 V1 `VULN_DISCLOSURE_MVP.md`). Disclosure program / bug bounty / continuous disclosure / researcher intake / paid billing / go-live Completes remain deferred (Stage 288+; ADR-002 in force). Distinct from Stage 286 breach notification pack remaining-gate, Stage 237/211 incident pack remaining-gate, and Stage 38 V1 vuln disclosure packaging. Open ADR-581 / freeze ADR-582.
+
+
+## Stage 288 decision (opened after Stage 287 freeze)
+
+**Tenant MVP Cyber Insurance Pack Remaining-Gate Index Fidelity** — cyber insurance pack remaining-gate hub (I1), blocker matrix (B1), Stage 47 I1 / Stage 287 / Stage 286 / Stage 46 pointers with explicit non-claim (P1). Prefixed `CYBER_INSURANCE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 47 I1 `CYBER_INSURANCE_MVP.md`). Issued COI / live cyber insurance / broker attestation / insurance certificate / paid billing / go-live Completes remain deferred (Stage 289+; ADR-002 in force). Distinct from Stage 287 vuln disclosure pack remaining-gate, Stage 286 breach notification pack remaining-gate, and Stage 47 I1 cyber insurance packaging. Open ADR-583 / freeze ADR-584.
