@@ -10296,6 +10296,7 @@ async def patch_warehouse(
         address=payload.address,
         capacity=payload.capacity,
         clear_capacity=payload.clear_capacity,
+        is_active=payload.is_active,
     )
     await db.commit()
     await db.refresh(warehouse)

@@ -133,6 +133,11 @@ async def transfer_warehouse_stock(
     if from_warehouse_id == to_warehouse_id:
         raise HTTPException(status_code=400, detail="Source and destination warehouse must differ")
 
+    from app.warehouses import require_active_warehouse
+
+    await require_active_warehouse(db, tenant_id, from_warehouse_id)
+    await require_active_warehouse(db, tenant_id, to_warehouse_id)
+
     await allocate_unlocated_stock(
         db, tenant_id=tenant_id, warehouse_id=from_warehouse_id, product_id=product_id
     )
@@ -237,6 +242,9 @@ async def apply_stock_change(
 
     product.stock_qty = after
     if warehouse_id:
+        from app.warehouses import require_active_warehouse
+
+        await require_active_warehouse(db, tenant_id, warehouse_id)
         await apply_warehouse_stock_change(
             db,
             tenant_id=tenant_id,

@@ -506,6 +506,7 @@ export default function Page() {
             >
               <option value="">All warehouses (company stock)</option>
               {warehouses
+                .filter((w) => w.is_active !== false)
                 .filter((w) => !storeId || w.store_id === storeId)
                 .map((w) => (
                   <option key={w.id} value={w.id}>
@@ -547,6 +548,7 @@ export default function Page() {
             <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
               <option value="">All warehouses</option>
               {warehouses
+                .filter((w) => w.is_active !== false)
                 .filter((w) => !storeId || w.store_id === storeId)
                 .map((w) => (
                   <option key={w.id} value={w.id}>

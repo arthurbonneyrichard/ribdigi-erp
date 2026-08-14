@@ -300,6 +300,10 @@ async def create_purchase_order(
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
     await require_active_supplier(db, tenant_id, supplier_id)
+    if warehouse_id:
+        from app.warehouses import require_active_warehouse
+
+        await require_active_warehouse(db, tenant_id, warehouse_id)
 
     from app.uom import resolve_line_unit
 

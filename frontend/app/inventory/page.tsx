@@ -2236,7 +2236,9 @@ export default function Page() {
               onChange={(e) => setStockWarehouseId(e.target.value)}
             >
               <option value="">Warehouse (optional)</option>
-              {warehouses.map((w) => (
+              {warehouses
+                .filter((w) => w.is_active !== false)
+                .map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name || w.code || w.id.slice(0, 8)}
                 </option>
@@ -2324,7 +2326,9 @@ export default function Page() {
               onChange={(e) => setOpeningWarehouseId(e.target.value)}
             >
               <option value="">Warehouse (optional)</option>
-              {warehouses.map((w) => (
+              {warehouses
+                .filter((w) => w.is_active !== false)
+                .map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name || w.code || w.id.slice(0, 8)}
                 </option>
@@ -2460,7 +2464,9 @@ export default function Page() {
             <h3>Start stock count</h3>
             <select value={countWarehouseId} onChange={(e) => setCountWarehouseId(e.target.value)}>
               <option value="">Warehouse</option>
-              {warehouses.map((w) => (
+              {warehouses
+                .filter((w) => w.is_active !== false)
+                .map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name} ({w.code})
                 </option>
@@ -2565,7 +2571,9 @@ export default function Page() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <select value={mvWarehouseId} onChange={(e) => setMvWarehouseId(e.target.value)}>
                 <option value="">All warehouses</option>
-                {warehouses.map((w) => (
+                {warehouses
+                .filter((w) => w.is_active !== false)
+                .map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name || w.code || w.id.slice(0, 8)}
                   </option>
@@ -2688,7 +2696,9 @@ export default function Page() {
           <label className="muted">Warehouse (optional)</label>
           <select value={adjWarehouseId} onChange={(e) => setAdjWarehouseId(e.target.value)}>
             <option value="">Company / product stock only</option>
-            {warehouses.map((w) => (
+            {warehouses
+                .filter((w) => w.is_active !== false)
+                .map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name || w.code || w.id.slice(0, 8)}
               </option>
@@ -2742,7 +2752,9 @@ export default function Page() {
           <label className="muted">Warehouse (optional)</label>
           <select value={outWarehouseId} onChange={(e) => setOutWarehouseId(e.target.value)}>
             <option value="">Company / product stock only</option>
-            {warehouses.map((w) => (
+            {warehouses
+                .filter((w) => w.is_active !== false)
+                .map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name || w.code || w.id.slice(0, 8)}
               </option>
@@ -2808,7 +2820,9 @@ export default function Page() {
               onChange={(e) => setWhStockWarehouseId(e.target.value)}
             >
               <option value="">Select warehouse</option>
-              {warehouses.map((w) => (
+              {warehouses
+                .filter((w) => w.is_active !== false)
+                .map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name || w.code || w.id.slice(0, 8)}
                 </option>
