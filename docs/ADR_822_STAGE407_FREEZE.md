@@ -31,3 +31,9 @@ Stage 408 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Offline acceptance-path, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 408 opened under **ADR-823** after CONTINUE/NEXT (Tenant MVP Go-Live Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-824**. Stage 407 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 407 runner-up outline was approved and opened (ADR-823); freeze ADR-824. Do not reopen Stage 407 scope.

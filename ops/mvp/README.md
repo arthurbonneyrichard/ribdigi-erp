@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_408_EXIT_CRITERIA.md` / `docs/ADR_824_STAGE408_FREEZE.md` (`backend/tests/test_stage408_exit_h408x.py`) — Stage 408 H408x
+- `docs/STAGE_408_FIDELITY.md` (`backend/tests/test_stage408_fidelity_d1.py`) — Stage 408 D1
+- `docs/STAGE_408_PLAN.md` (`backend/tests/test_stage408_open.py`) — Stage 408 open (ADR-823)
+- `docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/golive-honesty-pack-remaining-gate.json` — Stage 408 I1
+- `docs/GOLIVE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/golive-honesty-pack-rg-blockers.json` — Stage 408 B1
+- `docs/GOLIVE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/golive-honesty-pack-rg-pointers.json` — Stage 408 P1
 - `docs/STAGE_407_EXIT_CRITERIA.md` / `docs/ADR_822_STAGE407_FREEZE.md` (`backend/tests/test_stage407_exit_h407x.py`) — Stage 407 H407x
 - `docs/STAGE_407_FIDELITY.md` (`backend/tests/test_stage407_fidelity_d1.py`) — Stage 407 D1
 - `docs/STAGE_407_PLAN.md` (`backend/tests/test_stage407_open.py`) — Stage 407 open (ADR-821)
@@ -5725,6 +5731,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 408 exit
+
+H408x met — `docs/STAGE_408_EXIT_CRITERIA.md`, ADR-824. Stages 1–408 frozen for Stage 408 feature scope.
+
+## Stage 408 D1 — Tenant MVP Go-Live Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / go-live Completes remain MISSING. See `docs/STAGE_408_FIDELITY.md`.
+
+## Stage 408 open
+
+Opened under ADR-823; plan `docs/STAGE_408_PLAN.md`.
 
 ## Stage 407 exit
 
