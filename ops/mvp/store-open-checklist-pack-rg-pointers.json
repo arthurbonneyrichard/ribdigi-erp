@@ -1,0 +1,60 @@
+{
+  "id": "store-open-checklist-pack-rg-pointers",
+  "stage": 340,
+  "pack": "P1",
+  "doc": "docs/STORE_OPEN_CHECKLIST_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_OPEN_CHECKLIST_PACK_REMAINING_GATE_MVP.md",
+    "store_open_checklist": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "cashier_quickstart_pack_remaining_gate": "docs/CASHIER_QUICKSTART_PACK_REMAINING_GATE_MVP.md",
+    "troubleshooting_index_pack_remaining_gate": "docs/TROUBLESHOOTING_INDEX_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_store_open_claimed": false,
+  "topics": [
+    "store_open_checklist_stage173",
+    "cashier_quickstart_pack_remaining_gate_stage339",
+    "troubleshooting_index_pack_remaining_gate_stage338",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "socprp-stage173",
+      "title": "Point to Stage 173 store open checklist packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socprp-stage339",
+      "title": "Point to Stage 339 cashier quickstart pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socprp-stage338",
+      "title": "Point to Stage 338 troubleshooting index pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socprp-checklist-remaining",
+      "title": "Live store open checklist Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 340 P1 store open checklist pack RG pointers packaging only. Do not claim live store open checklist Complete."
+}

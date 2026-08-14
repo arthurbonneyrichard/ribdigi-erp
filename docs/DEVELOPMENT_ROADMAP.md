@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 340 open (2026-08-14):** Tenant MVP Store Open Checklist Pack Remaining-Gate Index Fidelity — `docs/ADR_687_STAGE340_OPEN.md` + `docs/STAGE_340_PLAN.md` (I1 next).
+
+**Stage 340 I1 (2026-08-14):** Store open checklist pack remaining-gate index hub (`test_stage340_index_i1.py`).
+
+**Stage 340 B1 (2026-08-14):** Store open checklist pack blocker matrix (`test_stage340_blockers_b1.py`).
+
+**Stage 340 P1 (2026-08-14):** Stage 173 / Stage 339 / Stage 338 / Stage 329 pointers (`test_stage340_pointers_p1.py`).
+
+**Stage 340 D1 (2026-08-14):** Store Open Checklist Pack Remaining-Gate Index fidelity sync — `docs/STAGE_340_FIDELITY.md` (`test_stage340_fidelity_d1.py`).
+
+**Stage 340 exit (2026-08-14):** I1, B1, P1, D1, H340x met — `docs/STAGE_340_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_688_STAGE340_FREEZE.md`. Fidelity: `docs/STAGE_340_FIDELITY.md`.
+
 **Stage 339 open (2026-08-14):** Tenant MVP Cashier Quickstart Pack Remaining-Gate Index Fidelity — `docs/ADR_685_STAGE339_OPEN.md` + `docs/STAGE_339_PLAN.md` (I1 next).
 
 **Stage 339 I1 (2026-08-14):** Cashier quickstart pack remaining-gate index hub (`test_stage339_index_i1.py`).

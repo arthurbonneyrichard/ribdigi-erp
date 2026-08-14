@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 340 open** | Store Open Checklist Pack Remaining-Gate Index — `docs/STAGE_340_PLAN.md`, ADR-687 (`test_stage340_open.py`) |
+| **Stage 340 I1** | Store open checklist pack remaining-gate index hub (`test_stage340_index_i1.py`) |
+| **Stage 340 B1** | Store open checklist pack blocker matrix (`test_stage340_blockers_b1.py`) |
+| **Stage 340 P1** | Stage 173 / Stage 339 / Stage 338 / Stage 329 pointers (`test_stage340_pointers_p1.py`) |
+| **Stage 340 D1** | Store open checklist pack remaining-gate fidelity — `docs/STAGE_340_FIDELITY.md` (`test_stage340_fidelity_d1.py`) |
+| **Stage 340 H340x** | Exit + freeze — `docs/STAGE_340_EXIT_CRITERIA.md`, ADR-688 (`test_stage340_exit_h340x.py`); Stages 1–340 frozen |
 | **Stage 339 open** | Cashier Quickstart Pack Remaining-Gate Index — `docs/STAGE_339_PLAN.md`, ADR-685 (`test_stage339_open.py`) |
 | **Stage 339 I1** | Cashier quickstart pack remaining-gate index hub (`test_stage339_index_i1.py`) |
 | **Stage 339 B1** | Cashier quickstart pack blocker matrix (`test_stage339_blockers_b1.py`) |

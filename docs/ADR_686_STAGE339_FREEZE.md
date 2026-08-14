@@ -31,3 +31,10 @@ Stage 340 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for cashier quickstart, Offline Complete, live training, attestation, fabricated cashier cert, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 340 opened under **ADR-687** after CONTINUE/NEXT (Tenant MVP Store Open Checklist Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-688**. Stage 339 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 340 runner-up outline was approved and opened (ADR-687); freeze ADR-688. Do not reopen Stage 339 scope.
+
