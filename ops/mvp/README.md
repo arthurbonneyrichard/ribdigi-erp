@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_291_EXIT_CRITERIA.md` / `docs/ADR_590_STAGE291_FREEZE.md` (`backend/tests/test_stage291_exit_h291x.py`) — Stage 291 H291x
+- `docs/STAGE_291_FIDELITY.md` (`backend/tests/test_stage291_fidelity_d1.py`) — Stage 291 D1
+- `docs/STAGE_291_PLAN.md` (`backend/tests/test_stage291_open.py`) — Stage 291 open (ADR-589)
+- `docs/COMMERCIAL_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-privacy-notice-pack-remaining-gate.json` — Stage 291 I1
+- `docs/COMMERCIAL_PRIVACY_NOTICE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-privacy-notice-pack-rg-blockers.json` — Stage 291 B1
+- `docs/COMMERCIAL_PRIVACY_NOTICE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-privacy-notice-pack-rg-pointers.json` — Stage 291 P1
 - `docs/STAGE_290_EXIT_CRITERIA.md` / `docs/ADR_588_STAGE290_FREEZE.md` (`backend/tests/test_stage290_exit_h290x.py`) — Stage 290 H290x
 - `docs/STAGE_290_FIDELITY.md` (`backend/tests/test_stage290_fidelity_d1.py`) — Stage 290 D1
 - `docs/STAGE_290_PLAN.md` (`backend/tests/test_stage290_open.py`) — Stage 290 open (ADR-587)
@@ -5023,6 +5029,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 291 exit
+
+H291x met — `docs/STAGE_291_EXIT_CRITERIA.md`, ADR-590. Stages 1–291 frozen for Stage 291 feature scope.
+
+## Stage 291 D1 — Tenant MVP Commercial Privacy Notice Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_291_FIDELITY.md` (`test_stage291_fidelity_d1.py`). `COMMERCIAL_PRIVACY_NOTICE_PACK_*` remaining-gate index; privacy notice live / cookie consent live / go-live still MISSING.
+
+## Stage 291 open
+
+`docs/ADR_589_STAGE291_OPEN.md` + `docs/STAGE_291_PLAN.md` (`test_stage291_open.py`).
 
 ## Stage 290 exit
 

@@ -1,0 +1,66 @@
+{
+  "id": "commercial-privacy-notice-pack-rg-blockers",
+  "stage": 291,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_PRIVACY_NOTICE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_privacy_notice": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md"
+  },
+  "packaging_complete": true,
+  "privacy_notice_live": false,
+  "cookie_consent_live": false,
+  "security_contact_live_claimed": false,
+  "commercial_support_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "privacy_notice_live": "REMAINING",
+    "cookie_consent_live": "REMAINING",
+    "security_contact_live": "REMAINING",
+    "commercial_support": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage75_as_privacy_notice_live": "NON_CLAIM",
+    "stage290_as_cookie_consent": "NON_CLAIM",
+    "privacy_notice_live_claimed": "false",
+    "cookie_consent_live_claimed": "false",
+    "security_contact_live_claimed": "false",
+    "commercial_support_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cpnprb-notice",
+      "title": "Mark privacy notice live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprb-consent",
+      "title": "Mark cookie consent live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprb-contact",
+      "title": "Mark security contact live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprb-stage75-nonclaim",
+      "title": "Mark Stage 75 P1 as non-claim for privacy notice live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprb-notice-remaining",
+      "title": "Privacy notice live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 291 B1 commercial privacy notice pack RG blocker matrix packaging only. Privacy notice live Completes remain MISSING."
+}

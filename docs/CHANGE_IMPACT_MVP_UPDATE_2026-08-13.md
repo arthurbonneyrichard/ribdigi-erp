@@ -602,3 +602,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 290 decision (opened after Stage 289 freeze)
 
 **Tenant MVP Cookie Privacy Notice Pack Remaining-Gate Index Fidelity** — cookie privacy notice pack remaining-gate hub (I1), blocker matrix (B1), Stage 43 C1 / Stage 289 / Stage 285 / Stage 278 pointers with explicit non-claim (P1). Prefixed `COOKIE_PRIVACY_NOTICE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 43 C1 `COOKIE_PRIVACY_NOTICE_MVP.md`). Live cookie consent / CMP SaaS / published privacy notice / legal counsel / paid billing / go-live Completes remain deferred (Stage 291+; ADR-002 in force). Distinct from Stage 289 change governance pack remaining-gate, Stage 285 accessibility statement pack remaining-gate, and Stage 43 C1 cookie privacy notice packaging. Open ADR-587 / freeze ADR-588.
+
+
+## Stage 291 decision (opened after Stage 290 freeze)
+
+**Tenant MVP Commercial Privacy Notice Pack Remaining-Gate Index Fidelity** — commercial privacy notice pack remaining-gate hub (I1), blocker matrix (B1), Stage 75 P1 / Stage 290 / Stage 289 / Stage 75 C1 pointers with explicit non-claim (P1). Prefixed `COMMERCIAL_PRIVACY_NOTICE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 75 P1 `COMMERCIAL_PRIVACY_NOTICE_MVP.md`). Privacy notice live / cookie consent live / security contact / commercial support / paid billing / go-live Completes remain deferred (Stage 292+; ADR-002 in force). Distinct from Stage 290 cookie privacy notice pack remaining-gate, Stage 289 change governance pack remaining-gate, and Stage 75 P1 commercial privacy notice packaging. Open ADR-589 / freeze ADR-590.

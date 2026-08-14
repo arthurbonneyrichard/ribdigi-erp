@@ -1,0 +1,61 @@
+{
+  "id": "commercial-privacy-notice-pack-rg-pointers",
+  "stage": 291,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_PRIVACY_NOTICE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_privacy_notice": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md",
+    "cookie_privacy_notice_pack_remaining_gate": "docs/COOKIE_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "change_governance_pack_remaining_gate": "docs/CHANGE_GOVERNANCE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_security_contact": "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "privacy_notice_live": false,
+  "cookie_consent_live": false,
+  "security_contact_live_claimed": false,
+  "commercial_support_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_privacy_notice_stage75",
+    "cookie_privacy_notice_pack_remaining_gate_stage290",
+    "change_governance_pack_remaining_gate_stage289",
+    "commercial_security_contact_stage75",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cpnprp-stage75",
+      "title": "Point to Stage 75 P1 commercial privacy notice",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprp-stage290",
+      "title": "Point to Stage 290 cookie privacy notice pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprp-stage289",
+      "title": "Point to Stage 289 change governance pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprp-contact",
+      "title": "Point to Stage 75 C1 commercial security contact adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprp-notice-remaining",
+      "title": "Privacy notice live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 291 P1 commercial privacy notice pack RG pointers packaging only. Do not claim privacy notice live Complete."
+}

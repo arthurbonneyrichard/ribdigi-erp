@@ -28,6 +28,12 @@ Stage 291 requires CONTINUE/NEXT with a distinct product outline after this free
 
 **Runner-up outline (not opened):** Tenant MVP Commercial Privacy Notice Pack Remaining-Gate Index Fidelity — single index of commercial-privacy-notice-pack blockers (packaged Stage 75 P1 commercial privacy notice materials non-claim as published-privacy-notice / counsel Completes) with explicit non-claim. Prefixed `COMMERCIAL_PRIVACY_NOTICE_PACK_*` if a prior remaining-gate exists. Distinct from Stage 290 cookie privacy notice pack remaining-gate, Stage 289 change governance pack remaining-gate, and `COMMERCIAL_PRIVACY_NOTICE_MVP.md` packaging. Source: `COMMERCIAL_PRIVACY_NOTICE_MVP.md`.
 
+## Amendment — Stage 291 opened
+
+Stage 291 opened under **ADR-589** after CONTINUE/NEXT (Tenant MVP Commercial Privacy Notice Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-590**. Stage 290 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 291 runner-up outline was approved and opened (ADR-589); freeze ADR-590. Do not reopen Stage 290 scope.
+
 ## Non-claims
 
 Packaging ≠ live Completes for live cookie consent, CMP SaaS, published privacy notice, legal counsel, paid billing, or go-live.

@@ -4104,6 +4104,18 @@ Every feature in every phase must meet:
 
 **Stage 290 exit (2026-08-14):** I1, B1, P1, D1, H290x met — `docs/STAGE_290_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_588_STAGE290_FREEZE.md`. Fidelity: `docs/STAGE_290_FIDELITY.md`.
 
+**Stage 291 open (2026-08-14):** Tenant MVP Commercial Privacy Notice Pack Remaining-Gate Index Fidelity — `docs/ADR_589_STAGE291_OPEN.md` + `docs/STAGE_291_PLAN.md` (I1 next).
+
+**Stage 291 I1 (2026-08-14):** Commercial privacy notice pack remaining-gate index hub (`test_stage291_index_i1.py`).
+
+**Stage 291 B1 (2026-08-14):** Commercial privacy notice pack blocker matrix (`test_stage291_blockers_b1.py`).
+
+**Stage 291 P1 (2026-08-14):** Stage 75 P1 / Stage 290 / Stage 289 / Stage 75 C1 pointers (`test_stage291_pointers_p1.py`).
+
+**Stage 291 D1 (2026-08-14):** Commercial Privacy Notice Pack Remaining-Gate Index fidelity sync — `docs/STAGE_291_FIDELITY.md` (`test_stage291_fidelity_d1.py`).
+
+**Stage 291 exit (2026-08-14):** I1, B1, P1, D1, H291x met — `docs/STAGE_291_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_590_STAGE291_FREEZE.md`. Fidelity: `docs/STAGE_291_FIDELITY.md`.
+
 
 
 
