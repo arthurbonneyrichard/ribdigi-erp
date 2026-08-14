@@ -868,7 +868,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Filter by user, module, action type, date range
   - [x] Export audit logs (CSV, PDF)
   - [x] Tamper-proof storage (append-only, hashed)
-  - [x] Retention policy: minimum 7 years for financial records
+  - [x] Retention policy: minimum 7 years for financial records (cold archive JSONL + `archived_at`; Audit UI retention card / Archive cold now; never purged)
 
 ---
 

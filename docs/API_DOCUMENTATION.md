@@ -30,6 +30,7 @@
 15. [Notifications](#15-notifications)
 15A. [Onboarding Checklist](#15a-onboarding-checklist)
 15B. [Scheduled Jobs](#15b-scheduled-jobs)
+15C. [Audit Logs](#15c-audit-logs)
 16. [AI Business Assistant](#16-ai-business-assistant)
 17. [Webhooks](#17-webhooks)
 18. [Rate Limits](#18-rate-limits)
@@ -1398,6 +1399,24 @@ Returns `celery_enabled`, broker/result URLs, `task_always_eager`, sorted handle
 Unknown `job_name` → 404. Sync run returns handler result payload.
 
 **UI:** Shell → **Jobs** (`/jobs`).
+
+---
+
+## 15C. Audit Logs
+
+Append-only hash-chained audit trail (BR-17.1–17.2).
+
+### 15C.1 Query / verify / export
+**List:** `GET /audit-logs?module=&action=&user_id=&entity=&from_date=&to_date=&limit=`  
+**Verify chain:** `GET /audit-logs/verify`  
+**Export CSV:** `GET /audit-logs/export` (same filters)
+
+### 15C.2 Retention & cold archive
+**Policy:** `GET /audit-logs/retention` — `retention_years` (≥7), `cold_archive_after_days`, `purge_allowed=false`  
+**Archives:** `GET /audit-logs/archives` — company_admin / super_admin  
+**Archive now:** `POST /audit-logs/archive-cold?older_than_days=` — copies aged rows to checksummed JSONL, sets `archived_at`, never deletes
+
+**UI:** Shell → **Audit** retention card + archives table + **Archive cold now** + date filters.
 
 ---
 

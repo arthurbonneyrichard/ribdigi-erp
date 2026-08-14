@@ -111,3 +111,18 @@ async def test_archive_cold_job_registered():
     from app import jobs as jobs_svc
 
     assert "archive_cold_audit_logs" in jobs_svc.JOB_HANDLERS
+
+
+def test_audit_cold_archive_ui_packaged():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    page = (root / "frontend/app/audit/page.tsx").read_text(encoding="utf-8")
+    assert "/audit-logs/retention" in page
+    assert "/audit-logs/archives" in page
+    assert "/audit-logs/archive-cold" in page
+    assert "Archive cold now" in page
+    assert "from_date" in page
+    assert "archived_at" in page
+    readiness = (root / "PRODUCTION_READINESS.md").read_text(encoding="utf-8")
+    assert "Audit cold-archive UI" in readiness or "cold-archive UI" in readiness
