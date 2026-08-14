@@ -2062,9 +2062,20 @@ async def cash_flow(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> dict:
-    """Cash flow from cash + bank GL accounts with O/I/F sections (BR-10.6 / BR-14.5)."""
-    from app.accounting import ensure_default_accounts
+    """Cash flow from cash + bank GL accounts with O/I/F sections (BR-10.6 / BR-14.5).
+
+    Optional ``store_id`` / ``branch_id`` restrict lines to journals attributable to that
+    location (expenses, POS, sales returns, customer payments on store invoices). Unlocated
+    financing/transfers (e.g. ``cash_transfer``, ``coa_opening``) are omitted when filtered.
+    """
+    from app.accounting import (
+        _pnl_journal_ids_for_stores,
+        _pnl_store_ids,
+        ensure_default_accounts,
+    )
 
     empty_sections = {
         "operating": _round_cf_bucket(_empty_cf_bucket()),
@@ -2072,6 +2083,20 @@ async def cash_flow(
         "financing": _round_cf_bucket(_empty_cf_bucket()),
         "transfers": _round_cf_bucket(_empty_cf_bucket()),
     }
+    store_ids = await _pnl_store_ids(
+        db, tenant_id, store_id=store_id, branch_id=branch_id
+    )
+    location_filter = store_ids is not None
+    allowed_journal_ids: set[str] | None = None
+    if location_filter:
+        allowed_journal_ids = await _cf_journal_ids_for_location(
+            db,
+            tenant_id,
+            store_ids or [],
+            branch_id=branch_id,
+            pnl_helper=_pnl_journal_ids_for_stores,
+        )
+
     await ensure_default_accounts(db, tenant_id)
     liquid = (
         await db.execute(
@@ -2097,6 +2122,11 @@ async def cash_flow(
             **empty_sections,
             "lines": [],
             "accounts": [],
+            "from_date": from_date.isoformat() if from_date else None,
+            "to_date": to_date.isoformat() if to_date else None,
+            "store_id": store_id,
+            "branch_id": branch_id,
+            "mode": "journals" if location_filter or from_date or to_date else "all",
         }
 
     account_ids = [a.id for a in liquid]
@@ -2115,6 +2145,22 @@ async def cash_flow(
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
+    if allowed_journal_ids is not None:
+        if not allowed_journal_ids:
+            return {
+                "inflows": 0,
+                "outflows": 0,
+                "net": 0,
+                **empty_sections,
+                "lines": [],
+                "accounts": [{"id": a.id, "code": a.code, "name": a.name} for a in liquid],
+                "from_date": from_date.isoformat() if from_date else None,
+                "to_date": to_date.isoformat() if to_date else None,
+                "store_id": store_id,
+                "branch_id": branch_id,
+                "mode": "journals",
+            }
+        stmt = stmt.where(m.JournalEntry.id.in_(allowed_journal_ids))
     rows = (await db.execute(stmt.order_by(m.JournalEntry.entry_date.asc()))).all()
 
     transfer_ids = {
@@ -2178,7 +2224,57 @@ async def cash_flow(
         "transfers": _round_cf_bucket(buckets["transfers"]),
         "lines": lines,
         "accounts": [{"id": a.id, "code": a.code, "name": a.name} for a in liquid],
+        "from_date": from_date.isoformat() if from_date else None,
+        "to_date": to_date.isoformat() if to_date else None,
+        "store_id": store_id,
+        "branch_id": branch_id,
+        "mode": "journals" if location_filter or from_date or to_date else "all",
     }
+
+
+async def _cf_journal_ids_for_location(
+    db: AsyncSession,
+    tenant_id: str,
+    store_ids: list[str],
+    *,
+    branch_id: str | None,
+    pnl_helper,
+) -> set[str]:
+    """Posted journals whose liquid lines are attributable to store/branch (BR-14.5)."""
+    ids: set[str] = set(
+        await pnl_helper(db, tenant_id, store_ids, branch_id=branch_id)
+    )
+    # Customer payments against invoices at these stores
+    if store_ids:
+        pay_ids = set(
+            (
+                await db.execute(
+                    select(m.CustomerPayment.id)
+                    .join(
+                        m.SalesInvoice,
+                        m.SalesInvoice.id == m.CustomerPayment.sales_invoice_id,
+                    )
+                    .where(
+                        m.CustomerPayment.tenant_id == tenant_id,
+                        m.SalesInvoice.tenant_id == tenant_id,
+                        m.SalesInvoice.store_id.in_(store_ids),
+                    )
+                )
+            ).scalars().all()
+        )
+        if pay_ids:
+            rows = (
+                await db.execute(
+                    select(m.JournalEntry.id).where(
+                        m.JournalEntry.tenant_id == tenant_id,
+                        m.JournalEntry.status == "posted",
+                        m.JournalEntry.source_type == "customer_payment",
+                        m.JournalEntry.source_id.in_(pay_ids),
+                    )
+                )
+            ).scalars().all()
+            ids.update(rows)
+    return ids
 
 
 def _prior_period_end(as_of_day) -> datetime:
