@@ -11006,6 +11006,7 @@ async def reports_export(
         scope=scope,
         limit=limit,
         compare=compare,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=content,
@@ -12108,7 +12109,7 @@ async def taxes(
     """Stage 123 F1 — is_active / active_only for honest inactive-only tax rate lists."""
     stmt = (
         select(m.TaxRate)
-        .where(m.TaxRate.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.TaxRate, claims))
         .order_by(m.TaxRate.name)
     )
     if is_active is not None:
@@ -12125,8 +12126,9 @@ async def add_tax(
     claims=Depends(require_permission("tax", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    company_id = claims.get("company_id")
     if payload.is_default:
-        await tax_svc.clear_default_flags(db, claims["tenant_id"])
+        await tax_svc.clear_default_flags(db, claims["tenant_id"], company_id=company_id)
     data = payload.model_dump()
     comps = tax_svc.normalize_components(data.pop("components", None))
     if comps:
@@ -12134,7 +12136,7 @@ async def add_tax(
         data["rate"] = tax_svc.effective_rate_from_components(comps, data.get("rate") or 0)
     else:
         data["components"] = None
-    tax = m.TaxRate(tenant_id=claims["tenant_id"], **data)
+    tax = m.TaxRate(tenant_id=claims["tenant_id"], company_id=company_id, **data)
     db.add(tax)
     await db.commit()
     return env(tax_svc.serialize_tax_rate(tax), "Tax rate created")
@@ -12153,6 +12155,7 @@ async def tax_rates_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -12167,7 +12170,9 @@ async def get_tax_rate(
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rate = await tax_svc.get_tax_rate(db, claims["tenant_id"], rate_id)
+    rate = await tax_svc.get_tax_rate(
+        db, claims["tenant_id"], rate_id, company_id=claims.get("company_id")
+    )
     return env(tax_svc.serialize_tax_rate(rate))
 
 
@@ -12182,6 +12187,7 @@ async def update_tax_rate_api(
         db,
         tenant_id=claims["tenant_id"],
         rate_id=rate_id,
+        company_id=claims.get("company_id"),
         **payload.model_dump(),
     )
     await db.commit()
@@ -12194,8 +12200,11 @@ async def set_default_tax(
     claims=Depends(require_permission("tax", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    rate = await tax_svc.get_tax_rate(db, claims["tenant_id"], rate_id)
-    await tax_svc.clear_default_flags(db, claims["tenant_id"])
+    company_id = claims.get("company_id")
+    rate = await tax_svc.get_tax_rate(
+        db, claims["tenant_id"], rate_id, company_id=company_id
+    )
+    await tax_svc.clear_default_flags(db, claims["tenant_id"], company_id=company_id)
     rate.is_default = True
     rate.is_active = True
     await db.commit()
@@ -12208,12 +12217,15 @@ async def calculate_tax(
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    company_id = claims.get("company_id")
     mode = payload.pricing_mode or "exclusive"
     rate_pct = payload.rate
     components = payload.components
     is_rc = bool(payload.is_reverse_charge) if payload.is_reverse_charge is not None else False
     if payload.tax_rate_id:
-        row = await tax_svc.get_tax_rate(db, claims["tenant_id"], payload.tax_rate_id)
+        row = await tax_svc.get_tax_rate(
+            db, claims["tenant_id"], payload.tax_rate_id, company_id=company_id
+        )
         rate_pct = float(row.rate)
         mode = payload.pricing_mode or row.pricing_mode
         if components is None:
@@ -12221,7 +12233,9 @@ async def calculate_tax(
         if payload.is_reverse_charge is None:
             is_rc = bool(row.is_reverse_charge)
     if rate_pct is None and not components:
-        default = await tax_svc.get_default_tax_rate(db, claims["tenant_id"])
+        default = await tax_svc.get_default_tax_rate(
+            db, claims["tenant_id"], company_id=company_id
+        )
         if not default:
             raise HTTPException(status_code=400, detail="No tax rate available")
         rate_pct = float(default.rate)
@@ -12278,6 +12292,7 @@ async def reports_tax(
         claims["tenant_id"],
         from_date=fd,
         to_date=td,
+        company_id=claims.get("company_id"),
     )
     data["period"] = meta.get("period")
     data["period_year"] = meta.get("year")
@@ -12307,6 +12322,7 @@ async def reports_tax_export(
         year=year,
         month=month,
         quarter=quarter,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -12331,6 +12347,7 @@ async def reports_tax_filing(
 ):
     from app import tax_filings as tax_filings_svc
 
+    company_id = claims.get("company_id")
     fd, td, meta = reports_svc.resolve_report_period(
         period=period,
         year=year,
@@ -12356,6 +12373,7 @@ async def reports_tax_filing(
                     from_date=fd,
                     to_date=td,
                     jurisdiction=jurisdiction,
+                    company_id=company_id,
                 )
             )
         )
@@ -12371,13 +12389,18 @@ async def reports_tax_filing(
                     from_date=fd,
                     to_date=td,
                     jurisdiction=juris,
+                    company_id=company_id,
                 )
             )
         )
     except HTTPException as exc:
         if exc.status_code == 400:
             pack = await tax_svc.tax_filing_pack(
-                db, claims["tenant_id"], from_date=fd, to_date=td
+                db,
+                claims["tenant_id"],
+                from_date=fd,
+                to_date=td,
+                company_id=company_id,
             )
             pack["jurisdiction"] = juris
             pack["government"] = None

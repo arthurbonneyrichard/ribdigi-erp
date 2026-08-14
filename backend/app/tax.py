@@ -249,35 +249,44 @@ class TaxSpec:
         )
 
 
-async def get_default_tax_rate(db: AsyncSession, tenant_id: str) -> m.TaxRate | None:
-    return (
-        await db.execute(
-            select(m.TaxRate).where(
-                m.TaxRate.tenant_id == tenant_id,
-                m.TaxRate.is_active == True,  # noqa: E712
-                m.TaxRate.is_default == True,  # noqa: E712
-            )
-        )
-    ).scalar_one_or_none()
+async def get_default_tax_rate(
+    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
+) -> m.TaxRate | None:
+    stmt = select(m.TaxRate).where(
+        m.TaxRate.tenant_id == tenant_id,
+        m.TaxRate.is_active == True,  # noqa: E712
+        m.TaxRate.is_default == True,  # noqa: E712
+    )
+    if company_id:
+        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    return (await db.execute(stmt)).scalar_one_or_none()
 
 
-async def get_tax_rate(db: AsyncSession, tenant_id: str, tax_rate_id: str) -> m.TaxRate:
-    row = (
-        await db.execute(
-            select(m.TaxRate).where(m.TaxRate.id == tax_rate_id, m.TaxRate.tenant_id == tenant_id)
-        )
-    ).scalar_one_or_none()
+async def get_tax_rate(
+    db: AsyncSession,
+    tenant_id: str,
+    tax_rate_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.TaxRate:
+    stmt = select(m.TaxRate).where(m.TaxRate.id == tax_rate_id, m.TaxRate.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Tax rate not found")
     return row
 
 
-async def clear_default_flags(db: AsyncSession, tenant_id: str) -> None:
-    rows = (
-        await db.execute(
-            select(m.TaxRate).where(m.TaxRate.tenant_id == tenant_id, m.TaxRate.is_default == True)  # noqa: E712
-        )
-    ).scalars().all()
+async def clear_default_flags(
+    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
+) -> None:
+    stmt = select(m.TaxRate).where(
+        m.TaxRate.tenant_id == tenant_id, m.TaxRate.is_default == True  # noqa: E712
+    )
+    if company_id:
+        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    rows = (await db.execute(stmt)).scalars().all()
     for row in rows:
         row.is_default = False
 
@@ -296,9 +305,10 @@ async def update_tax_rate(
     is_reverse_charge: bool | None = None,
     is_default: bool | None = None,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> m.TaxRate:
     """Edit or deactivate a tax rate (Stage 14 T1)."""
-    row = await get_tax_rate(db, tenant_id, rate_id)
+    row = await get_tax_rate(db, tenant_id, rate_id, company_id=company_id)
     if name is not None:
         name_norm = name.strip()
         if not name_norm:
@@ -337,7 +347,9 @@ async def update_tax_rate(
 
     if is_default is not None:
         if is_default:
-            await clear_default_flags(db, tenant_id)
+            await clear_default_flags(
+                db, tenant_id, company_id=company_id or getattr(row, "company_id", None)
+            )
             row.is_default = True
             row.is_active = True
         else:
@@ -395,8 +407,9 @@ async def resolve_product_tax(
     """Resolve full tax spec for a product line.
 
     Precedence: exempt → explicit line rate → product.tax_rate_id →
-    category tax (walk parents) → tenant default → zero.
+    category tax (walk parents) → company default → zero.
     """
+    company_id = getattr(product, "company_id", None)
     if product.tax_exempt:
         return TaxSpec(
             rate_pct=0.0,
@@ -404,7 +417,7 @@ async def resolve_product_tax(
             supply_category="exempt",
         )
     if explicit_rate is not None:
-        default = await get_default_tax_rate(db, tenant_id)
+        default = await get_default_tax_rate(db, tenant_id, company_id=company_id)
         mode = default.pricing_mode if default else "exclusive"
         rate_pct = float(explicit_rate)
         # Explicit override uses single-rate path (no compound legs).
@@ -422,7 +435,7 @@ async def resolve_product_tax(
     )
     if category_rate:
         return tax_spec_from_rate(category_rate)
-    default = await get_default_tax_rate(db, tenant_id)
+    default = await get_default_tax_rate(db, tenant_id, company_id=company_id)
     if default:
         return tax_spec_from_rate(default)
     return TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_category="zero")
@@ -443,6 +456,7 @@ def serialize_tax_rate(rate: m.TaxRate) -> dict:
     comps = normalize_components(rate.components) if rate.components else None
     return {
         "id": rate.id,
+        "company_id": getattr(rate, "company_id", None),
         "name": rate.name,
         "rate": float(rate.rate),
         "tax_type": rate.tax_type,
@@ -460,9 +474,12 @@ async def tax_report(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Summary VAT/GST output vs input tax for a period."""
-    pack = await tax_filing_pack(db, tenant_id, from_date=from_date, to_date=to_date)
+    pack = await tax_filing_pack(
+        db, tenant_id, from_date=from_date, to_date=to_date, company_id=company_id
+    )
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -490,12 +507,15 @@ async def tax_filing_pack(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Jurisdiction-neutral VAT/GST filing pack: boxes + detailed schedules for export."""
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     )
+    if company_id:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.company_id == company_id)
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
@@ -558,6 +578,8 @@ async def tax_filing_pack(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type == "pos_sale",
     )
+    if company_id:
+        pos_stmt = pos_stmt.where(m.Transaction.company_id == company_id)
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
@@ -609,6 +631,8 @@ async def tax_filing_pack(
         m.PurchaseInvoice.tenant_id == tenant_id,
         m.PurchaseInvoice.status.in_(["unpaid", "partial", "paid", "overdue"]),
     )
+    if company_id:
+        pi_stmt = pi_stmt.where(m.PurchaseInvoice.company_id == company_id)
     if from_date:
         pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date >= from_date)
     if to_date:
@@ -651,6 +675,8 @@ async def tax_filing_pack(
             m.PurchaseOrder.tenant_id == tenant_id,
             m.PurchaseOrder.status.in_(["received", "partial", "sent", "closed"]),
         )
+        if company_id:
+            po_stmt = po_stmt.where(m.PurchaseOrder.company_id == company_id)
         if from_date:
             po_stmt = po_stmt.where(m.PurchaseOrder.created_at >= from_date)
         if to_date:

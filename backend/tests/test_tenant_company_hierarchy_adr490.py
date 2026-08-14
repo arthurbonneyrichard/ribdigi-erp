@@ -983,3 +983,111 @@ async def test_pos_sessions_sales_holds_and_lookup_company_scoped(client, db_ses
     open_nums = {r.get("session_number") for r in sessions2.json()["data"]}
     assert "POS-B-ONLY" not in open_nums
     assert opened.json()["data"]["session_number"] in open_nums
+
+
+@pytest.mark.asyncio
+async def test_tax_rates_and_reports_company_scoped(client, db_session):
+    """Company B tax rates and tax report rows must not leak into company A."""
+    ac, seed = client
+    from datetime import datetime
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="TAX10",
+        name="Alpha Tax B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    party_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Tax B Customer",
+        kind="customer",
+        credit_limit=0,
+    )
+    db_session.add(party_b)
+    await db_session.flush()
+    rate_b = m.TaxRate(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Company B Only VAT",
+        rate=7.5,
+        tax_type="vat",
+        pricing_mode="exclusive",
+        is_default=True,
+        is_active=True,
+    )
+    db_session.add(rate_b)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            customer_id=party_b.id,
+            invoice_number="INV-TAX-B-ONLY",
+            status="posted",
+            subtotal=100,
+            tax_amount=7.5,
+            total_amount=107.5,
+            posted_at=datetime.utcnow(),
+        )
+    )
+    db_session.add(
+        m.Transaction(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            tx_type="pos_sale",
+            reference="POS-TAX-B-ONLY",
+            subtotal=50,
+            tax=3.75,
+            total=53.75,
+            status="posted",
+            payload={"items": []},
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    listed = await ac.get("/api/v1/tax/rates", headers=headers)
+    assert listed.status_code == 200, listed.text
+    names = {r.get("name") for r in listed.json()["data"]}
+    assert "Company B Only VAT" not in names
+
+    foreign = await ac.get(f"/api/v1/tax/rates/{rate_b.id}", headers=headers)
+    assert foreign.status_code == 404
+
+    created = await ac.post(
+        "/api/v1/tax/rates",
+        headers=headers,
+        json={
+            "name": "Company A Phase10 VAT",
+            "rate": 12.5,
+            "tax_type": "vat",
+            "pricing_mode": "exclusive",
+            "is_default": False,
+            "is_active": True,
+        },
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["data"]["company_id"] == seed["c1"].id
+    assert created.json()["data"]["name"] == "Company A Phase10 VAT"
+
+    report = await ac.get("/api/v1/reports/tax", headers=headers)
+    assert report.status_code == 200, report.text
+    data = report.json()["data"]
+    # Company B invoice/POS tax must not inflate company A output boxes.
+    assert float(data.get("output_tax_invoices") or 0) != 7.5
+    assert float(data.get("output_tax_pos") or 0) != 3.75
+    assert float(data.get("output_tax_invoices") or 0) == 0.0
+    assert float(data.get("output_tax_pos") or 0) == 0.0
+
+    export = await ac.get("/api/v1/tax/rates/export", headers=headers)
+    assert export.status_code == 200, export.text
+    assert "Company B Only VAT" not in export.text
+    assert "Company A Phase10 VAT" in export.text

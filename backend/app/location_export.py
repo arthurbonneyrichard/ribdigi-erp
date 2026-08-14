@@ -183,8 +183,11 @@ async def export_tax_rates_csv(
     tenant_id: str,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = select(m.TaxRate).where(m.TaxRate.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.TaxRate.company_id == company_id)
     stmt = _apply_active_filter(
         stmt, m.TaxRate.is_active, is_active=is_active, active_only=active_only
     )

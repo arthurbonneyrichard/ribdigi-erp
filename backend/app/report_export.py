@@ -651,6 +651,7 @@ async def build_report_payload(
     scope: str | None = None,
     limit: int | None = None,
     compare: bool = False,
+    company_id: str | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -754,9 +755,13 @@ async def build_report_payload(
             return await credit_svc.ap_aging(db, tenant_id, as_of=as_of or now)
         return await credit_svc.ar_aging(db, tenant_id, as_of=as_of or now)
     if report_type == "tax":
-        return await tax_svc.tax_report(db, tenant_id, from_date=fd, to_date=td)
+        return await tax_svc.tax_report(
+            db, tenant_id, from_date=fd, to_date=td, company_id=company_id
+        )
     if report_type == "tax_filing":
-        return await tax_svc.tax_filing_pack(db, tenant_id, from_date=fd, to_date=td)
+        return await tax_svc.tax_filing_pack(
+            db, tenant_id, from_date=fd, to_date=td, company_id=company_id
+        )
     if report_type == "tax_filing_gh":
         from app import tax_filings as tax_filings_svc
 
@@ -766,6 +771,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             jurisdiction=jurisdiction or "GH",
+            company_id=company_id,
         )
     if report_type == "tax_filing_ke":
         from app import tax_filings as tax_filings_svc
@@ -776,6 +782,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             jurisdiction=jurisdiction or "KE",
+            company_id=company_id,
         )
     if report_type == "tax_filing_ng":
         from app import tax_filings as tax_filings_svc
@@ -786,6 +793,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             jurisdiction=jurisdiction or "NG",
+            company_id=company_id,
         )
     if report_type == "transfer_history":
         from app import stores as stores_svc

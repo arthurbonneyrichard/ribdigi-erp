@@ -220,18 +220,21 @@ async def list_categories(
 
 
 async def _validate_category_tax_rate(
-    db: AsyncSession, *, tenant_id: str, tax_rate_id: str | None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    tax_rate_id: str | None,
+    company_id: str | None = None,
 ) -> str | None:
     if tax_rate_id is None:
         return None
-    rate = (
-        await db.execute(
-            select(m.TaxRate).where(
-                m.TaxRate.id == tax_rate_id,
-                m.TaxRate.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+    stmt = select(m.TaxRate).where(
+        m.TaxRate.id == tax_rate_id,
+        m.TaxRate.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    rate = (await db.execute(stmt)).scalar_one_or_none()
     if not rate:
         raise HTTPException(status_code=404, detail="Tax rate not found")
     if not rate.is_active:
@@ -258,7 +261,7 @@ async def create_category(
         if not parent or parent.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Parent category not found")
     validated_tax = await _validate_category_tax_rate(
-        db, tenant_id=tenant_id, tax_rate_id=tax_rate_id
+        db, tenant_id=tenant_id, tax_rate_id=tax_rate_id, company_id=company_id
     )
     dup = (
         await db.execute(
@@ -348,7 +351,10 @@ async def update_category(
         row.tax_rate_id = None
     elif tax_rate_id is not None:
         row.tax_rate_id = await _validate_category_tax_rate(
-            db, tenant_id=tenant_id, tax_rate_id=tax_rate_id
+            db,
+            tenant_id=tenant_id,
+            tax_rate_id=tax_rate_id,
+            company_id=getattr(row, "company_id", None),
         )
     await db.flush()
     return row

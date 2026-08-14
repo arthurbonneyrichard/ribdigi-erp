@@ -89,3 +89,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - POS sales (create/list/export/receipt) and payments stamp `company_id`; journals use company COA.
 - Held carts (list/create/resume/discard/expire) are company-scoped; product lookup and products CSV export filter by company.
 - Remaining PARTIAL: tax rates/tax reports, AI ops aggregations, report schedules/notifications; FX may stay tenant-shared; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 10 follow-up (2026-08-14)
+
+- Tax rates (list/create/export/get/update/set-default/calculate) stamp and filter by workspace `company_id`; defaults clear only within the active company.
+- Tax report, tax report CSV, filing pack, and government filing packs filter sales invoices / POS / purchase invoices / POs by `company_id`.
+- Category tax-rate validation and product default-tax resolution prefer the product/category company.
+- Remaining PARTIAL: AI ops aggregations, report schedules/notifications; FX may stay tenant-shared; ADR-002 billing and ADR-005 store membership remain deferred.
