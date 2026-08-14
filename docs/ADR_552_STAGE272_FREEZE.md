@@ -31,3 +31,10 @@ Stage 273 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for paid billing, live subscriptions, annual-discount enforcement, or go-live.
+
+
+## Amendment — Stage 273 opened
+
+Stage 273 opened under **ADR-553** after CONTINUE/NEXT (Tenant MVP Store Membership Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-554**. Stage 272 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 273 runner-up outline was approved and opened (ADR-553); freeze ADR-554. Do not reopen Stage 272 scope.

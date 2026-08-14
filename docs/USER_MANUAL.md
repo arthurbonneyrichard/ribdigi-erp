@@ -296,6 +296,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Subscription renewal pack remaining-gate index (Stage 272):** Status index is `docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SUBSCRIPTION_RENEWAL_PACK_RG_BLOCKERS_MVP.md` → Stage 52/271/36/ADR-002 pointers `docs/SUBSCRIPTION_RENEWAL_PACK_RG_POINTERS_MVP.md`. Paid billing Complete and live subscriptions Complete remain MISSING (not claimed; ADR-002). Prefixed `SUBSCRIPTION_RENEWAL_PACK_*` remaining-gate docs (≠ Stage 52 R1).
 
+**Store membership pack remaining-gate index (Stage 273):** Status index is `docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md` → blockers `docs/STORE_MEMBERSHIP_PACK_RG_BLOCKERS_MVP.md` → ADR-005/272/271/182 pointers `docs/STORE_MEMBERSHIP_PACK_RG_POINTERS_MVP.md`. Live store-membership Complete and `users.store_id` Complete remain MISSING (not claimed; ADR-005). Prefixed `STORE_MEMBERSHIP_PACK_*` remaining-gate docs (≠ ADR-005 / Stage 182 `MEMBERSHIP_*`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

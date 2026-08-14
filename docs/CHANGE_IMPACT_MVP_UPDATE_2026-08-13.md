@@ -512,3 +512,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 272 decision (opened after Stage 271 freeze)
 
 **Tenant MVP Subscription Renewal Pack Remaining-Gate Index Fidelity** — subscription renewal pack remaining-gate hub (I1), blocker matrix (B1), Stage 52 / Stage 271 / Stage 36 / ADR-002 pointers with explicit non-claim (P1). Prefixed `SUBSCRIPTION_RENEWAL_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 52 R1). Live paid billing / live subscriptions / annual-discount enforcement / go-live Completes remain deferred (Stage 273+; ADR-002 in force). Distinct from Stage 271 billing deferred pack remaining-gate, Stage 270 shared-schema tenancy pack remaining-gate, and Stage 52 R1 packaging. Open ADR-551 / freeze ADR-552.
+
+
+## Stage 273 decision (opened after Stage 272 freeze)
+
+**Tenant MVP Store Membership Pack Remaining-Gate Index Fidelity** — store membership pack remaining-gate hub (I1), blocker matrix (B1), ADR-005 / Stage 272 / Stage 271 / Stage 182 pointers with explicit non-claim (P1). Prefixed `STORE_MEMBERSHIP_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ ADR-005 decision text / Stage 182 `MEMBERSHIP_*`). Live store-membership / `users.store_id` / paid billing / go-live Completes remain deferred (Stage 274+; ADR-005 / ADR-002 in force). Distinct from Stage 272 subscription renewal pack remaining-gate, Stage 271 billing deferred pack remaining-gate, ADR-005 decision text, and Stage 182 membership remaining-gate. Open ADR-553 / freeze ADR-554.

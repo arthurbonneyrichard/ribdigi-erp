@@ -1066,6 +1066,12 @@ Authoritative MVP docs:
 - `docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/subscription-renewal-pack-remaining-gate.json` — Stage 272 I1
 - `docs/SUBSCRIPTION_RENEWAL_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/subscription-renewal-pack-rg-blockers.json` — Stage 272 B1
 - `docs/SUBSCRIPTION_RENEWAL_PACK_RG_POINTERS_MVP.md` / `ops/mvp/subscription-renewal-pack-rg-pointers.json` — Stage 272 P1
+- `docs/STAGE_273_EXIT_CRITERIA.md` / `docs/ADR_554_STAGE273_FREEZE.md` (`backend/tests/test_stage273_exit_h273x.py`) — Stage 273 H273x
+- `docs/STAGE_273_FIDELITY.md` (`backend/tests/test_stage273_fidelity_d1.py`) — Stage 273 D1
+- `docs/STAGE_273_PLAN.md` (`backend/tests/test_stage273_open.py`) — Stage 273 open (ADR-553)
+- `docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/store-membership-pack-remaining-gate.json` — Stage 273 I1
+- `docs/STORE_MEMBERSHIP_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/store-membership-pack-rg-blockers.json` — Stage 273 B1
+- `docs/STORE_MEMBERSHIP_PACK_RG_POINTERS_MVP.md` / `ops/mvp/store-membership-pack-rg-pointers.json` — Stage 273 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4795,4 +4801,16 @@ H272x met — `docs/STAGE_272_EXIT_CRITERIA.md`, ADR-552. Stages 1–272 frozen 
 ## Stage 272 open
 
 `docs/ADR_551_STAGE272_OPEN.md` + `docs/STAGE_272_PLAN.md` (`test_stage272_open.py`).
+
+## Stage 273 exit
+
+H273x met — `docs/STAGE_273_EXIT_CRITERIA.md`, ADR-554. Stages 1–273 frozen for Stage 273 feature scope.
+
+## Stage 273 D1 — Tenant MVP Store Membership Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_273_FIDELITY.md` (`test_stage273_fidelity_d1.py`). `STORE_MEMBERSHIP_PACK_*` remaining-gate index; live store-membership / users.store_id / go-live still MISSING (ADR-005).
+
+## Stage 273 open
+
+`docs/ADR_553_STAGE273_OPEN.md` + `docs/STAGE_273_PLAN.md` (`test_stage273_open.py`).
 

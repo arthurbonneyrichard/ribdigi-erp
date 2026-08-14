@@ -1425,6 +1425,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 52 / Stage 271 / Stage 36 / ADR-002 pointers (Stage 272 P1: `test_stage272_pointers_p1.py`, `docs/SUBSCRIPTION_RENEWAL_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 272 fidelity sync (D1: `test_stage272_fidelity_d1.py`, `docs/STAGE_272_FIDELITY.md`)
 - [x] Stage 272 exit + freeze (H272x: `test_stage272_exit_h272x.py`, `docs/STAGE_272_EXIT_CRITERIA.md`, ADR-552)
+- [x] Stage 273 track opened (ADR-553: `test_stage273_open.py`, `docs/STAGE_273_PLAN.md`) — Store Membership Pack Remaining-Gate Index; closed under ADR-554
+- [x] Store membership pack remaining-gate hub (Stage 273 I1: `test_stage273_index_i1.py`, `docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md`)
+- [x] Store membership pack blocker matrix (Stage 273 B1: `test_stage273_blockers_b1.py`, `docs/STORE_MEMBERSHIP_PACK_RG_BLOCKERS_MVP.md`)
+- [x] ADR-005 / Stage 272 / Stage 271 / Stage 182 pointers (Stage 273 P1: `test_stage273_pointers_p1.py`, `docs/STORE_MEMBERSHIP_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 273 fidelity sync (D1: `test_stage273_fidelity_d1.py`, `docs/STAGE_273_FIDELITY.md`)
+- [x] Stage 273 exit + freeze (H273x: `test_stage273_exit_h273x.py`, `docs/STAGE_273_EXIT_CRITERIA.md`, ADR-554)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

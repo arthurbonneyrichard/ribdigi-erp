@@ -1,0 +1,59 @@
+{
+  "id": "store-membership-pack-rg-pointers",
+  "stage": 273,
+  "pack": "P1",
+  "doc": "docs/STORE_MEMBERSHIP_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "store_membership_adr": "docs/ADR_005_USER_STORE_ASSIGNMENT.md",
+    "subscription_renewal_pack_remaining_gate": "docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_pack_remaining_gate": "docs/BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md",
+    "membership_remaining_gate": "docs/MEMBERSHIP_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "store_membership_live_claimed": false,
+  "users_store_id_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "store_membership_adr005",
+    "subscription_renewal_pack_remaining_gate_stage272",
+    "billing_deferred_pack_remaining_gate_stage271",
+    "membership_remaining_gate_stage182",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "smprp-adr005",
+      "title": "Point to ADR-005 User\u2194Store assignment",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smprp-stage272",
+      "title": "Point to Stage 272 subscription renewal pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smprp-stage271",
+      "title": "Point to Stage 271 billing deferred pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smprp-stage182",
+      "title": "Point to Stage 182 membership remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smprp-membership-remaining",
+      "title": "Live store-membership Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 273 P1 store membership pack RG pointers packaging only. Do not claim live store-membership Complete."
+}

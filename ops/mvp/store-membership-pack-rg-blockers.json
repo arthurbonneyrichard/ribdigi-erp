@@ -1,0 +1,61 @@
+{
+  "id": "store-membership-pack-rg-blockers",
+  "stage": 273,
+  "pack": "B1",
+  "doc": "docs/STORE_MEMBERSHIP_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "store_membership_adr": "docs/ADR_005_USER_STORE_ASSIGNMENT.md",
+    "membership_remaining_gate": "docs/MEMBERSHIP_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "store_membership_live_claimed": false,
+  "users_store_id_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "store_membership_live": "REMAINING",
+    "users_store_id_complete": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "adr005_as_store_membership_complete": "NON_CLAIM",
+    "stage182_as_membership_complete": "NON_CLAIM",
+    "store_membership_live_claimed": "false",
+    "users_store_id_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "smprb-membership",
+      "title": "Mark live store-membership Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smprb-store-id",
+      "title": "Mark users.store_id Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smprb-adr005-nonclaim",
+      "title": "Mark ADR-005 as non-claim for live store-membership Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smprb-membership-remaining",
+      "title": "Live store-membership Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 273 B1 store membership pack RG blocker matrix packaging only. Live store-membership Completes remain MISSING."
+}
