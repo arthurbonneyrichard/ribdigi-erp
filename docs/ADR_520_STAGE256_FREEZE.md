@@ -31,3 +31,9 @@ Stage 257 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for packaging archive live, residual closed, commercial acceptance, or go-live.
+
+## Amendment — Stage 257 opened
+
+Stage 257 opened under **ADR-521** after CONTINUE/NEXT (Commercial Acceptance Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-522**. Stage 256 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 257 runner-up outline was approved and opened (ADR-521); freeze ADR-522. Do not reopen Stage 256 scope.

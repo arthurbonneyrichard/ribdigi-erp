@@ -264,6 +264,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Commercial packaging archive pack remaining-gate index (Stage 256):** Status index is `docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_RG_BLOCKERS_MVP.md` → Stage 72/255/254/197 pointers `docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_RG_POINTERS_MVP.md`. Packaging archive live Complete and residual closed Complete remain MISSING (not claimed). Prefixed `COMMERCIAL_PACKAGING_ARCHIVE_PACK_*` remaining-gate docs (≠ Stage 72 P1 `COMMERCIAL_PACKAGING_ARCHIVE_*`).
 
+**Commercial acceptance pack remaining-gate index (Stage 257):** Status index is `docs/COMMERCIAL_ACCEPTANCE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/COMMERCIAL_ACCEPTANCE_PACK_RG_BLOCKERS_MVP.md` → Stage 71/256/255/197 pointers `docs/COMMERCIAL_ACCEPTANCE_PACK_RG_POINTERS_MVP.md`. Commercial acceptance Complete and steady-state ops Complete remain MISSING (not claimed). Prefixed `COMMERCIAL_ACCEPTANCE_PACK_*` remaining-gate docs (≠ Stage 71 A1 / Stage 197 `COMMERCIAL_ACCEPTANCE_*`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

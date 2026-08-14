@@ -1,0 +1,62 @@
+{
+  "id": "commercial-acceptance-pack-rg-blockers",
+  "stage": 257,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_ACCEPTANCE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_acceptance": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+    "commercial_acceptance_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md",
+    "commercial_acceptance_register": "ops/mvp/commercial-acceptance.json"
+  },
+  "packaging_complete": true,
+  "commercial_acceptance_claimed": false,
+  "steady_state_ops_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "blockers": {
+    "commercial_acceptance_complete": "REMAINING",
+    "steady_state_ops_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "section_7_signed_complete": "REMAINING",
+    "stage71_a1_as_acceptance_complete": "NON_CLAIM",
+    "stage197_as_acceptance_complete": "NON_CLAIM",
+    "commercial_acceptance_claimed": "false",
+    "steady_state_ops_claimed": "false",
+    "go_live_claimed": "false",
+    "section_7_signed": "false"
+  },
+  "steps": [
+    {
+      "id": "caprb-acceptance",
+      "title": "Mark commercial acceptance Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caprb-steady",
+      "title": "Mark steady-state ops Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caprb-golive",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caprb-stage71-nonclaim",
+      "title": "Mark Stage 71 A1 as non-claim for commercial acceptance Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caprb-acceptance-remaining",
+      "title": "Commercial acceptance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 257 B1 commercial acceptance pack RG blocker matrix packaging only. Commercial acceptance Completes remain MISSING."
+}

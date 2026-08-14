@@ -1,0 +1,60 @@
+{
+  "id": "commercial-acceptance-pack-rg-pointers",
+  "stage": 257,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_ACCEPTANCE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_acceptance": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+    "commercial_packaging_archive_pack_remaining_gate": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_residual_pack_remaining_gate": "docs/COMMERCIAL_RESIDUAL_PACK_REMAINING_GATE_MVP.md",
+    "commercial_acceptance_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md",
+    "commercial_acceptance_register": "ops/mvp/commercial-acceptance.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "commercial_acceptance_claimed": false,
+  "steady_state_ops_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "topics": [
+    "commercial_acceptance_stage71_a1",
+    "commercial_packaging_archive_pack_remaining_gate_stage256",
+    "commercial_residual_pack_remaining_gate_stage255",
+    "commercial_acceptance_remaining_gate_stage197",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "caprp-stage71",
+      "title": "Point to Stage 71 A1 commercial acceptance",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caprp-stage256",
+      "title": "Point to Stage 256 commercial packaging archive pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caprp-stage255",
+      "title": "Point to Stage 255 commercial residual pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caprp-stage197",
+      "title": "Point to Stage 197 commercial acceptance remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caprp-acceptance-remaining",
+      "title": "Commercial acceptance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 257 P1 commercial acceptance pack RG pointers packaging only. Do not claim commercial acceptance Complete."
+}
