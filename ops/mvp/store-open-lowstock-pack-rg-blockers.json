@@ -1,0 +1,63 @@
+{
+  "id": "store-open-lowstock-pack-rg-blockers",
+  "stage": 356,
+  "pack": "B1",
+  "doc": "docs/STORE_OPEN_LOWSTOCK_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_OPEN_LOWSTOCK_PACK_REMAINING_GATE_MVP.md",
+    "store_open_lowstock": "docs/STORE_OPEN_LOWSTOCK_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "auto_po_claimed": false,
+  "offline_stock_authoritative_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "auto_po_claimed": "REMAINING",
+    "offline_stock_authoritative_claimed": "REMAINING",
+    "stage173_as_live_store_open_lowstock": "NON_CLAIM",
+    "stage172_as_live_store_open_lowstock": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "auto_po_claimed_flag": "false",
+    "offline_stock_authoritative_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "solprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solprb-auto-po",
+      "title": "Mark auto PO Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solprb-offline-stock",
+      "title": "Mark authoritative offline stock Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solprb-stage173-nonclaim",
+      "title": "Mark Stage 173 / Stage 172 as non-claim for live store-open lowstock Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solprb-checklist-remaining",
+      "title": "Live store-open lowstock Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 356 B1 store open lowstock pack RG blocker matrix packaging only. Live store-open lowstock Completes remain MISSING."
+}

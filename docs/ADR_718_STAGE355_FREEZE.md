@@ -31,3 +31,10 @@ Stage 356 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for store-close triage, Offline Complete, live DR, attestation, fabricated conflict-free, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 356 opened under **ADR-719** after CONTINUE/NEXT (Tenant MVP Store Open Lowstock Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-720**. Stage 355 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 356 runner-up outline was approved and opened (ADR-719); freeze ADR-720. Do not reopen Stage 355 scope.
+
