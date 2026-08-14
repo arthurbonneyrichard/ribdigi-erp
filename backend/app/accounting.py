@@ -243,7 +243,11 @@ def build_account_tree(rows: list[m.Account]) -> list[dict]:
 
 
 async def get_tenant_account(
-    db: AsyncSession, tenant_id: str, account_id: str
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    *,
+    company_id: str | None = None,
 ) -> m.Account:
     row = (
         await db.execute(
@@ -254,6 +258,8 @@ async def get_tenant_account(
         )
     ).scalar_one_or_none()
     if not row:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if company_id and row.company_id and row.company_id != company_id:
         raise HTTPException(status_code=404, detail="Account not found")
     return row
 
@@ -273,9 +279,10 @@ async def account_transactions(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     include_unposted: bool = False,
+    company_id: str | None = None,
 ) -> dict:
     """Ledger drill-down for one COA account (Stage 8 A1)."""
-    account = await get_tenant_account(db, tenant_id, account_id)
+    account = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
     stmt = (
         select(m.JournalEntryLine, m.JournalEntry)
         .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
@@ -544,10 +551,11 @@ async def post_account_opening_balance(
     account_id: str,
     amount: float,
     description: str | None = None,
+    company_id: str | None = None,
 ) -> m.JournalEntry:
     """Post a balanced opening-balance journal for one account (BR-10.1)."""
-    await ensure_default_accounts(db, tenant_id)
-    account = await get_tenant_account(db, tenant_id, account_id)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
+    account = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
     if not account.is_active:
         raise HTTPException(status_code=400, detail="Account is inactive")
     if account.code == OPENING_BALANCE_EQUITY_CODE:
@@ -580,7 +588,9 @@ async def post_account_opening_balance(
             },
         )
 
-    equity = await get_account_by_code(db, tenant_id, OPENING_BALANCE_EQUITY_CODE)
+    equity = await get_account_by_code(
+        db, tenant_id, OPENING_BALANCE_EQUITY_CODE, company_id=company_id
+    )
     abs_amt = abs(amt)
     # Natural side: assets/expenses debit-positive; liability/equity/income credit-positive.
     # Negative amount flips the side (e.g. credit balance on an asset).
@@ -627,6 +637,7 @@ async def post_account_opening_balance(
         reference=f"OB-{account.code}",
         source_type="opening_balance",
         source_id=account.id,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -744,19 +755,22 @@ async def transfer_liquid_funds(
     description: str | None = None,
     reference: str | None = None,
     kind: str | None = None,
+    company_id: str | None = None,
 ) -> m.JournalEntry:
     """Move funds between cash/bank accounts (deposit, withdrawal, or transfer)."""
     from app.bank_recon import get_liquid_account
 
-    await ensure_default_accounts(db, tenant_id)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     amt = round(float(amount), 2)
     if amt <= 0:
         raise HTTPException(status_code=400, detail="amount must be positive")
     if from_account_id == to_account_id:
         raise HTTPException(status_code=400, detail="from_account_id and to_account_id must differ")
 
-    from_acct = await get_liquid_account(db, tenant_id, from_account_id)
-    to_acct = await get_liquid_account(db, tenant_id, to_account_id)
+    from_acct = await get_liquid_account(
+        db, tenant_id, from_account_id, company_id=company_id
+    )
+    to_acct = await get_liquid_account(db, tenant_id, to_account_id, company_id=company_id)
 
     inferred = _infer_liquid_move_kind(from_acct, to_acct)
     kind_norm = (kind or inferred).strip().lower()
@@ -785,6 +799,7 @@ async def transfer_liquid_funds(
         reference=reference,
         source_type=f"liquid_{kind_norm}",
         source_id=None,
+        company_id=company_id,
         lines=[
             {
                 "account_id": to_acct.id,

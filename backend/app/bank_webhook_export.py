@@ -86,10 +86,13 @@ async def export_bank_connections_csv(
     tenant_id: str,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = select(m.BankAccountConnection).where(
         m.BankAccountConnection.tenant_id == tenant_id
     )
+    if company_id:
+        stmt = stmt.where(m.BankAccountConnection.company_id == company_id)
     stmt = _apply_active_filter(
         stmt,
         m.BankAccountConnection.is_active,

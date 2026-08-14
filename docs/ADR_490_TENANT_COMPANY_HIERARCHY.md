@@ -75,3 +75,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Liquid account list/export/create/update are company-scoped; creates stamp `company_id` and use company-scoped uniqueness for account codes.
 - Bank statement list/export/create/import stamp and filter `company_id`; statement GET rejects foreign-company rows.
 - Remaining PARTIAL: bank-connection sync helpers and some adjacent finance tooling may still be tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 8 follow-up (2026-08-14)
+
+- Bank connections (list/export/create/update/delete/sync) stamp and filter by workspace `company_id`; sync creates company-stamped bank statements.
+- Cheques (list/export/get/deposit/clear/bounce/cancel) are company-scoped; creates from payments stamp `company_id`; lifecycle journals use company COA.
+- Liquid transfers, COA account GET, account ledger/transactions (+ CSV), and opening-balance posts are company-scoped.
+- Remaining PARTIAL: FX exchange-rate catalog may remain tenant-shared by design; ADR-002 billing and ADR-005 store membership remain deferred.

@@ -9389,7 +9389,9 @@ async def get_account(
 ):
     from app import accounting as accounting_svc
 
-    row = await accounting_svc.get_tenant_account(db, claims["tenant_id"], account_id)
+    row = await accounting_svc.get_tenant_account(
+        db, claims["tenant_id"], account_id, company_id=claims.get("company_id")
+    )
     return env(accounting_svc.serialize_coa_account(row))
 
 
@@ -9413,6 +9415,7 @@ async def account_transactions(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             include_unposted=include_unposted,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -9434,6 +9437,7 @@ async def export_account_transactions(
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         include_unposted=include_unposted,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -9518,6 +9522,7 @@ async def post_opening_balance(
         account_id=account_id,
         amount=payload.amount,
         description=payload.description,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(
@@ -9658,6 +9663,7 @@ async def create_liquid_transfer(
         description=payload.description,
         reference=payload.reference,
         kind=payload.kind,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await accounting_svc.serialize_journal(db, entry), "Liquid transfer posted")
@@ -9700,6 +9706,7 @@ async def list_bank_connections(
         claims["tenant_id"],
         active_only=active_only,
         is_active=is_active,
+        company_id=claims.get("company_id"),
     )
     return env([bank_connectors_svc.serialize_connection(r) for r in rows])
 
@@ -9717,6 +9724,7 @@ async def bank_connections_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -9735,7 +9743,7 @@ async def create_bank_connection(
     from app import bank_connectors as bank_connectors_svc
     from app import audit as audit_svc
 
-    await ensure_default_accounts(db, claims["tenant_id"])
+    await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     row = await bank_connectors_svc.create_connection(
         db,
         tenant_id=claims["tenant_id"],
@@ -9748,6 +9756,7 @@ async def create_bank_connection(
         auto_sync=payload.auto_sync,
         auto_match_after_sync=payload.auto_match_after_sync,
         sync_lookback_days=payload.sync_lookback_days,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -9777,6 +9786,7 @@ async def update_bank_connection(
         tenant_id=claims["tenant_id"],
         connection_id=connection_id,
         payload=payload.model_dump(exclude_unset=True),
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(bank_connectors_svc.serialize_connection(row), "Bank connection updated")
@@ -9792,7 +9802,10 @@ async def delete_bank_connection(
     from app import audit as audit_svc
 
     await bank_connectors_svc.delete_connection(
-        db, tenant_id=claims["tenant_id"], connection_id=connection_id
+        db,
+        tenant_id=claims["tenant_id"],
+        connection_id=connection_id,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -9817,13 +9830,14 @@ async def sync_bank_connection(
     from app import bank_connectors as bank_connectors_svc
     from app import audit as audit_svc
 
-    await ensure_default_accounts(db, claims["tenant_id"])
+    await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     result = await bank_connectors_svc.sync_connection(
         db,
         tenant_id=claims["tenant_id"],
         connection_id=connection_id,
         user_id=claims.get("sub"),
         force=True,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -10226,7 +10240,11 @@ async def list_cheques(
     db: AsyncSession = Depends(get_db),
 ):
     rows = await cheques_svc.list_cheques(
-        db, claims["tenant_id"], direction=direction, status=status
+        db,
+        claims["tenant_id"],
+        direction=direction,
+        status=status,
+        company_id=claims.get("company_id"),
     )
     return env([cheques_svc.serialize_cheque(r) for r in rows])
 
@@ -10244,6 +10262,7 @@ async def cheques_export(
         tenant_id=claims["tenant_id"],
         direction=direction,
         status=status,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -10258,7 +10277,9 @@ async def get_cheque_detail(
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    row = await cheques_svc.get_cheque(db, claims["tenant_id"], cheque_id)
+    row = await cheques_svc.get_cheque(
+        db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
+    )
     return env(cheques_svc.serialize_cheque(row))
 
 
@@ -10269,7 +10290,11 @@ async def deposit_cheque_api(
     db: AsyncSession = Depends(get_db),
 ):
     row = await cheques_svc.deposit_cheque(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], cheque_id=cheque_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        cheque_id=cheque_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(cheques_svc.serialize_cheque(row), "Cheque deposited to bank")
@@ -10282,7 +10307,11 @@ async def clear_cheque_api(
     db: AsyncSession = Depends(get_db),
 ):
     row = await cheques_svc.clear_cheque(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], cheque_id=cheque_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        cheque_id=cheque_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(cheques_svc.serialize_cheque(row), "Cheque cleared")
@@ -10301,6 +10330,7 @@ async def bounce_cheque_api(
         user_id=claims["sub"],
         cheque_id=cheque_id,
         reason=reason,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(cheques_svc.serialize_cheque(row), "Cheque bounced")
@@ -10319,6 +10349,7 @@ async def cancel_cheque_api(
         user_id=claims["sub"],
         cheque_id=cheque_id,
         reason=reason,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(cheques_svc.serialize_cheque(row), "Cheque cancelled")

@@ -797,3 +797,79 @@ async def test_outstanding_statements_and_liquid_company_scoped(client, db_sessi
     )
     assert create_liq.status_code == 200, create_liq.text
     assert create_liq.json()["data"]["code"] == "LIQA7"
+
+
+@pytest.mark.asyncio
+async def test_bank_connections_and_cheques_company_scoped(client, db_session):
+    """Company B bank connections and cheques must not appear in company A lists."""
+    ac, seed = client
+    from datetime import datetime
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="BANK8",
+        name="Alpha Bank B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    acct_b = m.Account(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="1010B",
+        name="Company B Bank",
+        account_type="asset",
+        balance=0,
+        is_cash_account=False,
+        is_bank_account=True,
+        is_active=True,
+        is_system=False,
+        bank_name="Beta Bank",
+    )
+    db_session.add(acct_b)
+    await db_session.flush()
+    db_session.add(
+        m.BankAccountConnection(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            account_id=acct_b.id,
+            provider="mock",
+            display_name="Company B Feed",
+            is_active=True,
+            auto_sync=False,
+        )
+    )
+    db_session.add(
+        m.Cheque(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            direction="received",
+            status="pending",
+            cheque_number="CHQ-B-ONLY",
+            amount=75,
+            bank_name="Beta Bank",
+            created_by=seed["super"].id,
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    conns = await ac.get("/api/v1/accounting/bank-connections", headers=headers)
+    assert conns.status_code == 200, conns.text
+    names = {r.get("display_name") for r in conns.json()["data"]}
+    assert "Company B Feed" not in names
+
+    cheques = await ac.get("/api/v1/accounting/cheques", headers=headers)
+    assert cheques.status_code == 200, cheques.text
+    nums = {r.get("cheque_number") for r in cheques.json()["data"]}
+    assert "CHQ-B-ONLY" not in nums
+
+    foreign = await ac.get(
+        f"/api/v1/accounting/accounts/{acct_b.id}", headers=headers
+    )
+    assert foreign.status_code == 404
