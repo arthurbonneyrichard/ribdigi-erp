@@ -6466,15 +6466,25 @@ async def list_expense_categories(
             .order_by(m.ExpenseCategory.name)
         )
     ).scalars().all()
+    account_ids = {c.account_id for c in rows if getattr(c, "account_id", None)}
+    accounts: dict[str, m.Account] = {}
+    if account_ids:
+        accounts = {
+            a.id: a
+            for a in (
+                await db.execute(
+                    select(m.Account).where(
+                        m.Account.tenant_id == claims["tenant_id"],
+                        m.Account.id.in_(account_ids),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        }
     return env(
         [
-            {
-                "id": c.id,
-                "code": c.code,
-                "name": c.name,
-                "budget_amount": float(c.budget_amount or 0),
-                "is_active": c.is_active,
-            }
+            expenses_svc.serialize_category(c, accounts.get(c.account_id) if c.account_id else None)
             for c in rows
         ]
     )
@@ -6486,11 +6496,15 @@ async def create_expense_category(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    account = await expenses_svc.resolve_expense_category_account(
+        db, claims["tenant_id"], payload.account_id
+    )
     cat = m.ExpenseCategory(
         tenant_id=claims["tenant_id"],
         code=payload.code.strip().upper(),
         name=payload.name.strip(),
         budget_amount=payload.budget_amount,
+        account_id=account.id if account else None,
     )
     db.add(cat)
     try:
@@ -6499,7 +6513,7 @@ async def create_expense_category(
         await db.rollback()
         raise HTTPException(status_code=409, detail="Category code already exists") from exc
     await db.refresh(cat)
-    return env(expenses_svc.serialize_category(cat))
+    return env(expenses_svc.serialize_category(cat, account))
 
 
 @api.patch("/expenses/categories/{category_id}")
@@ -6519,10 +6533,15 @@ async def patch_expense_category(
         name=data.get("name"),
         budget_amount=data.get("budget_amount"),
         is_active=data.get("is_active"),
+        account_id=data.get("account_id"),
+        clear_account=bool(data.get("clear_account")),
     )
     await db.commit()
     await db.refresh(cat)
-    return env(expenses_svc.serialize_category(cat))
+    account = None
+    if cat.account_id:
+        account = await db.get(m.Account, cat.account_id)
+    return env(expenses_svc.serialize_category(cat, account))
 
 
 @api.get("/expenses/settings")

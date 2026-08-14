@@ -563,7 +563,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Payee name
   - [ ] Description/notes
   - [x] Assign to branch/department (`branch_id` / `department_id` on expenses + recurring; Expenses UI; Alembic `20260813_0091`)
-  - [ ] Link to chart of accounts for auto-posting
+  - [x] Link to chart of accounts for auto-posting (`expense_categories.account_id`; debit linked GL or default `6000`; Expenses category GL picker; Alembic `20260813_0092`)
 
 #### BR-9.3 Expense Approval
 - **Description:** Control spending through approval workflows.

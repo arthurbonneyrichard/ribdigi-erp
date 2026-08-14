@@ -1289,6 +1289,20 @@ async def post_expense_journal(
         liquid_account_id=getattr(expense, "liquid_account_id", None),
         outflow=True,
     )
+    debit_code = "6000"
+    debit_desc = expense.category
+    category_id = getattr(expense, "category_id", None)
+    if category_id:
+        cat = await db.get(m.ExpenseCategory, category_id)
+        if cat and cat.tenant_id == tenant_id and getattr(cat, "account_id", None):
+            account = await db.get(m.Account, cat.account_id)
+            if (
+                account
+                and account.tenant_id == tenant_id
+                and (account.account_type or "").lower() == "expense"
+            ):
+                debit_code = account.code
+                debit_desc = f"{expense.category} ({account.code})"
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1298,7 +1312,12 @@ async def post_expense_journal(
         source_type="expense",
         source_id=expense.id,
         lines=[
-            {"account_code": "6000", "debit": amount, "credit": 0, "description": expense.category},
+            {
+                "account_code": debit_code,
+                "debit": amount,
+                "credit": 0,
+                "description": debit_desc,
+            },
             {
                 "account_code": liquid_code,
                 "debit": 0,
