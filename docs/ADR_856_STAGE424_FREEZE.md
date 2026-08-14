@@ -31,3 +31,9 @@ Stage 425 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, PITR Drill, PITR Drill honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 425 opened under **ADR-857** after CONTINUE/NEXT (Tenant MVP Security Scan Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-858**. Stage 424 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 424 runner-up outline was approved and opened (ADR-857); freeze ADR-858. Do not reopen Stage 424 scope.

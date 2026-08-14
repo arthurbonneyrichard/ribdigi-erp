@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_425_EXIT_CRITERIA.md` / `docs/ADR_858_STAGE425_FREEZE.md` (`backend/tests/test_stage425_exit_h425x.py`) — Stage 425 H425x
+- `docs/STAGE_425_FIDELITY.md` (`backend/tests/test_stage425_fidelity_d1.py`) — Stage 425 D1
+- `docs/STAGE_425_PLAN.md` (`backend/tests/test_stage425_open.py`) — Stage 425 open (ADR-857)
+- `docs/SECURITY_SCAN_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/security-scan-honesty-pack-remaining-gate.json` — Stage 425 I1
+- `docs/SECURITY_SCAN_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/security-scan-honesty-pack-rg-blockers.json` — Stage 425 B1
+- `docs/SECURITY_SCAN_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/security-scan-honesty-pack-rg-pointers.json` — Stage 425 P1
 - `docs/STAGE_424_EXIT_CRITERIA.md` / `docs/ADR_856_STAGE424_FREEZE.md` (`backend/tests/test_stage424_exit_h424x.py`) — Stage 424 H424x
 - `docs/STAGE_424_FIDELITY.md` (`backend/tests/test_stage424_fidelity_d1.py`) — Stage 424 D1
 - `docs/STAGE_424_PLAN.md` (`backend/tests/test_stage424_open.py`) — Stage 424 open (ADR-855)
@@ -5827,6 +5833,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 425 exit
+
+H425x met — `docs/STAGE_425_EXIT_CRITERIA.md`, ADR-858. Stages 1–425 frozen for Stage 425 feature scope.
+
+## Stage 425 D1 — Tenant MVP Security Scan Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Security Scan honesty / go-live Completes remain MISSING. See `docs/STAGE_425_FIDELITY.md`.
+
+## Stage 425 open
+
+Opened under ADR-857; plan `docs/STAGE_425_PLAN.md`.
 
 ## Stage 424 exit
 
