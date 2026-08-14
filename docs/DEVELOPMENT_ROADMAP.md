@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 320 open (2026-08-14):** Tenant MVP E2E Backup Restore Pack Remaining-Gate Index Fidelity — `docs/ADR_647_STAGE320_OPEN.md` + `docs/STAGE_320_PLAN.md` (I1 next).
+
+**Stage 320 I1 (2026-08-14):** E2E backup restore pack remaining-gate index hub (`test_stage320_index_i1.py`).
+
+**Stage 320 B1 (2026-08-14):** E2E backup restore pack blocker matrix (`test_stage320_blockers_b1.py`).
+
+**Stage 320 P1 (2026-08-14):** Stage 35 R1 / Stage 319 / Stage 318 / Stage 192 pointers (`test_stage320_pointers_p1.py`).
+
+**Stage 320 D1 (2026-08-14):** E2E Backup Restore Pack Remaining-Gate Index fidelity sync — `docs/STAGE_320_FIDELITY.md` (`test_stage320_fidelity_d1.py`).
+
+**Stage 320 exit (2026-08-14):** I1, B1, P1, D1, H320x met — `docs/STAGE_320_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_648_STAGE320_FREEZE.md`. Fidelity: `docs/STAGE_320_FIDELITY.md`.
+
 **Stage 319 open (2026-08-14):** Tenant MVP Backup Restore Drill Honesty Pack Remaining-Gate Index Fidelity — `docs/ADR_645_STAGE319_OPEN.md` + `docs/STAGE_319_PLAN.md` (I1 next).
 
 **Stage 319 I1 (2026-08-14):** Backup restore drill honesty pack remaining-gate index hub (`test_stage319_index_i1.py`).

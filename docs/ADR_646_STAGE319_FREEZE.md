@@ -31,3 +31,10 @@ Stage 320 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live backup restore, E2E smoke executed, live PITR drill, demo tenant, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 320 opened under **ADR-647** after CONTINUE/NEXT (Tenant MVP E2E Backup Restore Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-648**. Stage 319 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 320 runner-up outline was approved and opened (ADR-647); freeze ADR-648. Do not reopen Stage 319 scope.
+

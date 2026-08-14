@@ -1,0 +1,60 @@
+{
+  "id": "e2e-backup-restore-pack-rg-pointers",
+  "stage": 320,
+  "pack": "P1",
+  "doc": "docs/E2E_BACKUP_RESTORE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore": "docs/E2E_BACKUP_RESTORE_MVP.md",
+    "backup_restore_drill_honesty_pack_remaining_gate": "docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "k8s_deploy_pack_remaining_gate": "docs/K8S_DEPLOY_PACK_REMAINING_GATE_MVP.md",
+    "live_dr_remaining_gate": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_backup_restore_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "e2e_backup_restore_stage35",
+    "backup_restore_drill_honesty_pack_remaining_gate_stage319",
+    "k8s_deploy_pack_remaining_gate_stage318",
+    "live_dr_remaining_gate_stage192",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ebrprp-stage35",
+      "title": "Point to Stage 35 R1 E2E backup restore",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ebrprp-stage319",
+      "title": "Point to Stage 319 backup restore drill honesty pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ebrprp-stage318",
+      "title": "Point to Stage 318 k8s deploy pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ebrprp-stage192",
+      "title": "Point to Stage 192 live DR remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ebrprp-e2e-remaining",
+      "title": "Live E2E backup restore Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 320 P1 E2E backup restore pack RG pointers packaging only. Do not claim live E2E backup restore Complete."
+}

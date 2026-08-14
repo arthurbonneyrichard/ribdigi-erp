@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_320_EXIT_CRITERIA.md` / `docs/ADR_648_STAGE320_FREEZE.md` (`backend/tests/test_stage320_exit_h320x.py`) — Stage 320 H320x
+- `docs/STAGE_320_FIDELITY.md` (`backend/tests/test_stage320_fidelity_d1.py`) — Stage 320 D1
+- `docs/STAGE_320_PLAN.md` (`backend/tests/test_stage320_open.py`) — Stage 320 open (ADR-647)
+- `docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/e2e-backup-restore-pack-remaining-gate.json` — Stage 320 I1
+- `docs/E2E_BACKUP_RESTORE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/e2e-backup-restore-pack-rg-blockers.json` — Stage 320 B1
+- `docs/E2E_BACKUP_RESTORE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/e2e-backup-restore-pack-rg-pointers.json` — Stage 320 P1
 - `docs/STAGE_319_EXIT_CRITERIA.md` / `docs/ADR_646_STAGE319_FREEZE.md` (`backend/tests/test_stage319_exit_h319x.py`) — Stage 319 H319x
 - `docs/STAGE_319_FIDELITY.md` (`backend/tests/test_stage319_fidelity_d1.py`) — Stage 319 D1
 - `docs/STAGE_319_PLAN.md` (`backend/tests/test_stage319_open.py`) — Stage 319 open (ADR-645)
@@ -5197,6 +5203,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 320 exit
+
+H320x met — `docs/STAGE_320_EXIT_CRITERIA.md`, ADR-648. Stages 1–320 frozen for Stage 320 feature scope.
+
+## Stage 320 D1 — Tenant MVP E2E Backup Restore Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_320_FIDELITY.md` (`test_stage320_fidelity_d1.py`). `E2E_BACKUP_RESTORE_PACK_*` remaining-gate index; live backup restore / E2E smoke / go-live still MISSING.
+
+## Stage 320 open
+
+ADR-647 / `docs/STAGE_320_PLAN.md`.
 
 ## Stage 319 exit
 
