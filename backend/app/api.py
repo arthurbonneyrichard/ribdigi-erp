@@ -4132,7 +4132,7 @@ async def add_customer(
     data = _normalize_party_profile(payload.model_dump(), kind="customer")
     group_id = data.pop("customer_group_id", None)
     if group_id:
-        await customer_groups_svc.get_group(db, claims["tenant_id"], group_id)
+        await customer_groups_svc.require_active_group(db, claims["tenant_id"], group_id)
     await _ensure_party_code_unique(db, claims["tenant_id"], data.get("code"))
     party = m.Party(
         tenant_id=claims["tenant_id"],
@@ -4175,7 +4175,7 @@ async def patch_customer(
     if "customer_group_id" in data:
         group_id = data["customer_group_id"]
         if group_id:
-            await customer_groups_svc.get_group(db, claims["tenant_id"], group_id)
+            await customer_groups_svc.require_active_group(db, claims["tenant_id"], group_id)
         party.customer_group_id = group_id
         data.pop("customer_group_id")
     if "code" in data:

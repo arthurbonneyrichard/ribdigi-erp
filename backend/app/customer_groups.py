@@ -83,6 +83,16 @@ async def get_group(db: AsyncSession, tenant_id: str, group_id: str) -> m.Custom
     return row
 
 
+async def require_active_group(
+    db: AsyncSession, tenant_id: str, group_id: str
+) -> m.CustomerGroup:
+    """Resolve a group for assignment; inactive groups cannot be newly assigned."""
+    row = await get_group(db, tenant_id, group_id)
+    if not row.is_active:
+        raise HTTPException(status_code=400, detail="Customer group is inactive")
+    return row
+
+
 async def create_group(
     db: AsyncSession,
     *,

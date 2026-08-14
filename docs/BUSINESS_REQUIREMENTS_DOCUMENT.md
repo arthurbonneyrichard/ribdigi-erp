@@ -467,7 +467,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] **Customer Profile:** Name, code, type (walk-in/registered), status (`parties.code` / `profile_type` / `status`; create/PATCH/GET `/customers`)
   - [x] **Contact Details:** Phone, email, address, GPS coordinates (`parties.phone` / `email` / `address` / `latitude` / `longitude`)
-  - [x] **Customer Groups:** Wholesale, Retail, VIP, etc. with group-based pricing
+  - [x] **Customer Groups:** Wholesale, Retail, VIP, etc. with group-based pricing (`GET|POST|PATCH /customers/groups`; Sales UI create + **Save discount** + soft **Deactivate** / **Activate**; inactive blocked on customer assign; pricing ignores inactive groups)
   - [x] **Customer Balance:** Real-time outstanding receivable balance (`GET /customers/{id}/credit`; Credit UI Balance)
   - [x] **Credit Limit:** Per-customer credit limit with enforcement (`GET /customers/{id}/credit` + post/POS override; see BR-11.1)
   - [x] **Payment Terms:** Per-customer Net N (`payment_terms_days`) sets sales-invoice due date on post
