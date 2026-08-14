@@ -29,6 +29,7 @@
 14. [Reports](#14-reports)
 15. [Notifications](#15-notifications)
 15A. [Onboarding Checklist](#15a-onboarding-checklist)
+15B. [Scheduled Jobs](#15b-scheduled-jobs)
 16. [AI Business Assistant](#16-ai-business-assistant)
 17. [Webhooks](#17-webhooks)
 18. [Rate Limits](#18-rate-limits)
@@ -1376,6 +1377,27 @@ Valid `step_id`: `setup_company` | `add_products` | `create_supplier` | `stock_r
 **Endpoint:** `POST /onboarding/checklist/restore` — clears dismiss so the Shell banner returns.
 
 UI: persistent **Getting started** banner in the tenant Shell (`OnboardingChecklist`).
+
+---
+
+## 15B. Scheduled Jobs
+
+Celery reliability admin surface (see `docs/CELERY_RELIABILITY_RUNBOOK.md`).
+
+### 15B.1 List jobs
+**Endpoint:** `GET /jobs`  
+**Roles:** `company_admin`, `super_admin`, `platform_owner`
+
+Returns `celery_enabled`, broker/result URLs, `task_always_eager`, sorted handler names in `jobs`, and beat interval map in `beat`.
+
+### 15B.2 Run job
+**Endpoint:** `POST /jobs/{job_name}/run`  
+**Query:** `enqueue=true` to push to Celery (requires `CELERY_ENABLED`)  
+**Roles:** `super_admin`, `platform_owner`
+
+Unknown `job_name` → 404. Sync run returns handler result payload.
+
+**UI:** Shell → **Jobs** (`/jobs`).
 
 ---
 

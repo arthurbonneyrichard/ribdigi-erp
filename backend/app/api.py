@@ -10394,7 +10394,9 @@ async def scan_due_notifications(
 
 
 @api.get("/jobs")
-async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin"))):
+async def list_jobs(
+    claims=Depends(require_roles("super_admin", "company_admin", "platform_owner")),
+):
     from app.config import settings as app_settings
     from app import jobs as jobs_svc
 

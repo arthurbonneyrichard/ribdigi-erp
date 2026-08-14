@@ -41,8 +41,10 @@ Compose services: `redis`, `rabbitmq`, `celery_worker`, `celery_beat` in root `d
 
 Admin APIs:
 
-- `GET /api/v1/jobs` — lists handlers + full beat interval map (`celery_enabled`, broker, result backend).
-- `POST /api/v1/jobs/{name}/run` — sync run (default) or `?enqueue=true` (requires `CELERY_ENABLED`).
+- `GET /api/v1/jobs` — lists handlers + full beat interval map (`celery_enabled`, broker, result backend). Roles: `company_admin`, `super_admin`, `platform_owner`.
+- `POST /api/v1/jobs/{name}/run` — sync run (default) or `?enqueue=true` (requires `CELERY_ENABLED`). Roles: `super_admin`, `platform_owner`.
+
+**UI:** tenant/platform Shell → **Jobs** (`frontend/app/jobs/page.tsx`) — company admins view handlers/beat; super_admin / platform_owner can Run sync or Enqueue.
 
 ## Health probes
 
@@ -56,9 +58,9 @@ Broker down while Celery is enabled reports `celery_broker.status=degraded` (ove
 
 1. Start Redis + RabbitMQ + API + worker + beat.
 2. Confirm `GET /api/v1/health/ready` shows `database`/`redis`/`celery_broker` ok.
-3. As `super_admin`, `GET /api/v1/jobs` shows all registered handlers and beat intervals (including `scan_ai_security_alerts`).
-4. `POST /api/v1/jobs/scan_low_stock/run` (sync) returns tenant results.
-5. Optional: `?enqueue=true` and confirm worker consumes the task.
+3. As `super_admin` / `company_admin` / `platform_owner`, `GET /api/v1/jobs` (or open **Jobs** in the Shell) shows all registered handlers and beat intervals (including `scan_ai_security_alerts`).
+4. `POST /api/v1/jobs/scan_low_stock/run` (sync) returns tenant results (UI: **Run sync**).
+5. Optional: `?enqueue=true` (UI: **Enqueue**) and confirm worker consumes the task.
 
 **Gotcha:** Celery workers do not auto-reload. After changing `jobs.py` / `tasks.py` / beat schedule, restart `celery_worker` and `celery_beat`. `run_async` keeps one event loop per worker process so sequential tasks do not hit async SQLAlchemy “different loop” errors.
 

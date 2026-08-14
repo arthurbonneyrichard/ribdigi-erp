@@ -25,6 +25,7 @@ const TENANT_ITEMS: NavItem[] = [
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Backup', '/backup', 'backup'],
+  ['Jobs', '/jobs', 'jobs'],
   ['Integrations', '/integrations', 'integrations'],
   ['Security', '/security', 'security'],
   ['AI Assistant', '/ai', 'ai'],
@@ -36,6 +37,7 @@ const PLATFORM_ITEMS: NavItem[] = [
   ['Platform', '/platform', 'platform'],
   ['Staff', '/platform/staff', 'platform_staff'],
   ['Reports', '/platform/reports', 'platform_reports'],
+  ['Jobs', '/jobs', 'jobs'],
   ['Users', '/users', 'users'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
@@ -217,6 +219,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
     </>
   ),
+  jobs: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" />
+    </>
+  ),
   integrations: (
     <>
       <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
@@ -304,10 +312,13 @@ function navItemsForRole(
   const packageSet =
     enabledModules && enabledModules.length > 0 ? new Set(enabledModules) : null;
   return TENANT_ITEMS.filter(([, , module]) => {
-    // Integrations UI is company-admin ops (API keys / webhooks); gate like Company.
-    const permModule = module === 'integrations' ? 'company' : module;
-    if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations') return false;
-    if (allowed !== '*' && module === 'integrations' && !allowed.includes('company')) return false;
+    // Integrations + Jobs are company-admin ops surfaces; gate like Company.
+    const permModule =
+      module === 'integrations' || module === 'jobs' ? 'company' : module;
+    if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations' && module !== 'jobs')
+      return false;
+    if (allowed !== '*' && (module === 'integrations' || module === 'jobs') && !allowed.includes('company'))
+      return false;
     if (
       packageSet &&
       !packageSet.has(permModule) &&
