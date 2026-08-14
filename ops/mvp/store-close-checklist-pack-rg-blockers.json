@@ -1,0 +1,63 @@
+{
+  "id": "store-close-checklist-pack-rg-blockers",
+  "stage": 341,
+  "pack": "B1",
+  "doc": "docs/STORE_CLOSE_CHECKLIST_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_CLOSE_CHECKLIST_PACK_REMAINING_GATE_MVP.md",
+    "store_close_checklist": "docs/STORE_CLOSE_CHECKLIST_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_store_close_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "live_dr_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "fabricated_store_close_claimed": "REMAINING",
+    "stage174_as_live_store_close_checklist": "NON_CLAIM",
+    "stage173_as_live_store_close_checklist": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "live_dr_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "fabricated_store_close_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "sccprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sccprb-dr",
+      "title": "Mark live DR Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sccprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sccprb-stage174-nonclaim",
+      "title": "Mark Stage 174 / Stage 173 as non-claim for live store close checklist Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sccprb-checklist-remaining",
+      "title": "Live store close checklist Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 341 B1 store close checklist pack RG blocker matrix packaging only. Live store close checklist Completes remain MISSING."
+}

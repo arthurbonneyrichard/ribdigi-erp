@@ -31,3 +31,10 @@ Stage 341 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for store open checklist, Offline Complete, live training, attestation, fabricated store-open green, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 341 opened under **ADR-689** after CONTINUE/NEXT (Tenant MVP Store Close Checklist Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-690**. Stage 340 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 341 runner-up outline was approved and opened (ADR-689); freeze ADR-690. Do not reopen Stage 340 scope.
+

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_341_EXIT_CRITERIA.md` / `docs/ADR_690_STAGE341_FREEZE.md` (`backend/tests/test_stage341_exit_h341x.py`) — Stage 341 H341x
+- `docs/STAGE_341_FIDELITY.md` (`backend/tests/test_stage341_fidelity_d1.py`) — Stage 341 D1
+- `docs/STAGE_341_PLAN.md` (`backend/tests/test_stage341_open.py`) — Stage 341 open (ADR-689)
+- `docs/STORE_CLOSE_CHECKLIST_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/store-close-checklist-pack-remaining-gate.json` — Stage 341 I1
+- `docs/STORE_CLOSE_CHECKLIST_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/store-close-checklist-pack-rg-blockers.json` — Stage 341 B1
+- `docs/STORE_CLOSE_CHECKLIST_PACK_RG_POINTERS_MVP.md` / `ops/mvp/store-close-checklist-pack-rg-pointers.json` — Stage 341 P1
 - `docs/STAGE_340_EXIT_CRITERIA.md` / `docs/ADR_688_STAGE340_FREEZE.md` (`backend/tests/test_stage340_exit_h340x.py`) — Stage 340 H340x
 - `docs/STAGE_340_FIDELITY.md` (`backend/tests/test_stage340_fidelity_d1.py`) — Stage 340 D1
 - `docs/STAGE_340_PLAN.md` (`backend/tests/test_stage340_open.py`) — Stage 340 open (ADR-687)
@@ -5323,6 +5329,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 341 exit
+
+H341x met — `docs/STAGE_341_EXIT_CRITERIA.md`, ADR-690. Stages 1–341 frozen for Stage 341 feature scope.
+
+## Stage 341 D1 — Tenant MVP Store Close Checklist Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_341_FIDELITY.md` (`test_stage341_fidelity_d1.py`). `STORE_CLOSE_CHECKLIST_PACK_*` remaining-gate index; Offline Complete / live DR / attestation / fabricated store-closed green / go-live still MISSING.
+
+## Stage 341 open
+
+ADR-689 / `docs/STAGE_341_PLAN.md`.
 
 ## Stage 340 exit
 
