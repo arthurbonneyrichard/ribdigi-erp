@@ -567,19 +567,15 @@ Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update
 **Create:** `POST /inventory/stock-counts`  
 **List:** `GET /inventory/stock-counts`  
 **Get:** `GET /inventory/stock-counts/{count_id}`  
-**Complete:** `POST /inventory/stock-counts/{count_id}/complete`
+**Complete:** `POST /inventory/stock-counts/{count_id}/complete` — posts warehouse/product variance adjustments (`movement_type=adjustment`).
+
+**Variance report (BR-5.2):** `GET /reports/inventory/stock-counts?from_date=&to_date=&warehouse_id=&store_id=&variance_only=true&status=completed` — completed counts with line variances (`expected_qty` / `counted_qty` / `variance`); default `variance_only=true` omits zero lines. Flat `lines[]` for export. Export type `inventory_stock_counts`. Reports Inventory panel.
 
 **Request:**
 ```json
 {
   "warehouse_id": "wh_001",
-  "products": [
-    {
-      "product_id": "prod_001",
-      "expected_qty": 100,
-      "actual_qty": 98
-    }
-  ]
+  "product_ids": ["prod_001"]
 }
 ```
 
@@ -1238,6 +1234,7 @@ Tax UI (`/tax`) period controls include store picker.
 **Stock Valuation:** `GET /reports/inventory/valuation?method=standard&warehouse_id=&store_id=` — standard-cost valuation (qty × `products.cost_price`). Only `method=standard` is supported in MVP; `fifo` / `lifo` / `average` / `weighted_average` return **400**. Optional `warehouse_id` / `store_id` (same location resolver as balance). Response: `method`, location fields, `items[]` (`product_id`, `sku`, `name`, `warehouse_id`, `quantity`, `unit_cost`, `cost_price`, `value`), `total_quantity`, `total_value`. Export: `POST /reports/export` with `report_type: "inventory_valuation"`.  
 **Expiry Report:** `GET /reports/inventory/expiry?days=30&warehouse_id=&store_id=` — batches with quantity > 0 and `expiry_date` within horizon (includes already expired); rows include `sku`/`name`/`days_until_expiry`/`is_expired`; optional warehouse/store filter. Export `inventory_expiry` (optional `days`, location filters).  
 **Inter-Store Transfers:** `GET /reports/inventory/transfers?from_date=&to_date=&status=&from_store_id=&to_store_id=&store_id=` — transfer history with `by_status` / `by_route` aggregates (BR-13.2). Optional `store_id` matches source **or** destination store. Response echoes `store_id`/`store_name`. Export `inventory_transfers` (passes `store_id`).
+**Stock Count Variances:** `GET /reports/inventory/stock-counts?from_date=&to_date=&warehouse_id=&store_id=&variance_only=true&status=completed` — physical count variance report (BR-5.2); `counts[]` + flat `lines[]`; default variance-only. Export `inventory_stock_counts`.
 
 ### 14.3 Purchase Reports
 **Purchase Summary:** `GET /reports/purchases/summary?from_date=&to_date=&warehouse_id=&store_id=` — PO totals by period; optional warehouse (PO `warehouse_id`) or store (warehouses linked to store). Echoes `warehouse_name`/`store_name`. Export `purchases_summary`.  
