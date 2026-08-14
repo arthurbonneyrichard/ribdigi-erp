@@ -145,6 +145,7 @@ async def create_notification(
     user_id: str | None = None,
     entity_type: str | None = None,
     entity_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.Notification | None:
     category = category if category in VALID_CATEGORIES else "system"
     if user_id and not await channel_enabled(
@@ -153,6 +154,7 @@ async def create_notification(
         return None
     note = m.Notification(
         tenant_id=tenant_id,
+        company_id=company_id,
         user_id=user_id,
         category=category,
         title=title,

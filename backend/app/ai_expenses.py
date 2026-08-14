@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import expenses as expenses_svc
+from app.reports import apply_company_filter
 
 CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     "Rent": ("rent", "lease", "landlord", "premises"),
@@ -132,6 +133,7 @@ async def analyze_expenses(
     *,
     from_date: datetime | str | None = None,
     to_date: datetime | str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     now = datetime.utcnow()
     try:
@@ -147,24 +149,20 @@ async def analyze_expenses(
         raise HTTPException(status_code=400, detail="to_date must be on or after from_date")
 
     budgets = await expenses_svc.category_budget_variance(
-        db, tenant_id, from_date=start, to_date=end
+        db, tenant_id, from_date=start, to_date=end, company_id=company_id
     )
 
-    expenses = (
-        await db.execute(
-            select(m.Expense).where(
-                m.Expense.tenant_id == tenant_id,
-                m.Expense.expense_date >= start,
-                m.Expense.expense_date <= end,
-            )
-        )
-    ).scalars().all()
+    exp_stmt = select(m.Expense).where(
+        m.Expense.tenant_id == tenant_id,
+        m.Expense.expense_date >= start,
+        m.Expense.expense_date <= end,
+    )
+    exp_stmt = apply_company_filter(exp_stmt, m.Expense.company_id, company_id)
+    expenses = (await db.execute(exp_stmt)).scalars().all()
 
-    cats = (
-        await db.execute(
-            select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
-        )
-    ).scalars().all()
+    cat_stmt = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
+    cat_stmt = apply_company_filter(cat_stmt, m.ExpenseCategory.company_id, company_id)
+    cats = (await db.execute(cat_stmt)).scalars().all()
     cat_by_id = {c.id: c for c in cats}
 
     approved = [e for e in expenses if e.status == "approved"]

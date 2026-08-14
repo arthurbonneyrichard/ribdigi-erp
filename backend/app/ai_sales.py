@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.reports import apply_company_filter
 
 POSTED_INVOICE_STATUSES = frozenset({"posted", "sent", "partial", "paid", "overdue"})
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -78,6 +79,7 @@ async def analyze_sales(
     from_date: datetime | str | None = None,
     to_date: datetime | str | None = None,
     lookback_days: int = 90,
+    company_id: str | None = None,
 ) -> dict:
     now = datetime.utcnow()
     lookback_days = max(14, min(int(lookback_days), 365))
@@ -93,57 +95,49 @@ async def analyze_sales(
 
         raise HTTPException(status_code=400, detail="to_date must be on or after from_date")
 
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
-                m.SalesInvoice.created_at >= start,
-                m.SalesInvoice.created_at <= end,
-            )
-        )
-    ).scalars().all()
+    inv_stmt = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
+        m.SalesInvoice.created_at >= start,
+        m.SalesInvoice.created_at <= end,
+    )
+    inv_stmt = apply_company_filter(inv_stmt, m.SalesInvoice.company_id, company_id)
+    invoices = (await db.execute(inv_stmt)).scalars().all()
 
     inv_ids = [i.id for i in invoices]
     items: list[m.SalesInvoiceItem] = []
     if inv_ids:
-        items = (
-            await db.execute(
-                select(m.SalesInvoiceItem).where(
-                    m.SalesInvoiceItem.tenant_id == tenant_id,
-                    m.SalesInvoiceItem.sales_invoice_id.in_(inv_ids),
-                )
-            )
-        ).scalars().all()
+        item_stmt = select(m.SalesInvoiceItem).where(
+            m.SalesInvoiceItem.tenant_id == tenant_id,
+            m.SalesInvoiceItem.sales_invoice_id.in_(inv_ids),
+        )
+        item_stmt = apply_company_filter(
+            item_stmt, m.SalesInvoiceItem.company_id, company_id
+        )
+        items = (await db.execute(item_stmt)).scalars().all()
 
     product_ids = {it.product_id for it in items}
     products = {}
     if product_ids:
+        prod_stmt = select(m.Product).where(
+            m.Product.tenant_id == tenant_id,
+            m.Product.id.in_(list(product_ids)),
+        )
+        prod_stmt = apply_company_filter(prod_stmt, m.Product.company_id, company_id)
         products = {
-            p.id: p
-            for p in (
-                await db.execute(
-                    select(m.Product).where(
-                        m.Product.tenant_id == tenant_id,
-                        m.Product.id.in_(list(product_ids)),
-                    )
-                )
-            ).scalars().all()
+            p.id: p for p in (await db.execute(prod_stmt)).scalars().all()
         }
 
     customer_ids = {i.customer_id for i in invoices if i.customer_id}
     parties = {}
     if customer_ids:
+        party_stmt = select(m.Party).where(
+            m.Party.tenant_id == tenant_id,
+            m.Party.id.in_(list(customer_ids)),
+        )
+        party_stmt = apply_company_filter(party_stmt, m.Party.company_id, company_id)
         parties = {
-            p.id: p
-            for p in (
-                await db.execute(
-                    select(m.Party).where(
-                        m.Party.tenant_id == tenant_id,
-                        m.Party.id.in_(list(customer_ids)),
-                    )
-                )
-            ).scalars().all()
+            p.id: p for p in (await db.execute(party_stmt)).scalars().all()
         }
 
     # --- Daily trend + forecast ---

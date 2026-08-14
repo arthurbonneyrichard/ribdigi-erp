@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.reports import apply_company_filter
 
 ACTIVE_PO_STATUSES = frozenset(
     {"draft", "sent", "partially_received", "received"}
@@ -48,6 +49,7 @@ async def analyze_purchases(
     from_date: datetime | str | None = None,
     to_date: datetime | str | None = None,
     lookback_days: int = 90,
+    company_id: str | None = None,
 ) -> dict:
     now = datetime.utcnow()
     lookback_days = max(14, min(int(lookback_days), 365))
@@ -63,35 +65,29 @@ async def analyze_purchases(
 
         raise HTTPException(status_code=400, detail="to_date must be on or after from_date")
 
-    orders = (
-        await db.execute(
-            select(m.PurchaseOrder).where(
-                m.PurchaseOrder.tenant_id == tenant_id,
-                m.PurchaseOrder.created_at >= start,
-                m.PurchaseOrder.created_at <= end,
-            )
-        )
-    ).scalars().all()
+    po_stmt = select(m.PurchaseOrder).where(
+        m.PurchaseOrder.tenant_id == tenant_id,
+        m.PurchaseOrder.created_at >= start,
+        m.PurchaseOrder.created_at <= end,
+    )
+    po_stmt = apply_company_filter(po_stmt, m.PurchaseOrder.company_id, company_id)
+    orders = (await db.execute(po_stmt)).scalars().all()
 
-    grns = (
-        await db.execute(
-            select(m.GoodsReceipt).where(
-                m.GoodsReceipt.tenant_id == tenant_id,
-                m.GoodsReceipt.created_at >= start,
-                m.GoodsReceipt.created_at <= end,
-            )
-        )
-    ).scalars().all()
+    grn_stmt = select(m.GoodsReceipt).where(
+        m.GoodsReceipt.tenant_id == tenant_id,
+        m.GoodsReceipt.created_at >= start,
+        m.GoodsReceipt.created_at <= end,
+    )
+    grn_stmt = apply_company_filter(grn_stmt, m.GoodsReceipt.company_id, company_id)
+    grns = (await db.execute(grn_stmt)).scalars().all()
 
-    invoices = (
-        await db.execute(
-            select(m.PurchaseInvoice).where(
-                m.PurchaseInvoice.tenant_id == tenant_id,
-                m.PurchaseInvoice.invoice_date >= start,
-                m.PurchaseInvoice.invoice_date <= end,
-            )
-        )
-    ).scalars().all()
+    pi_stmt = select(m.PurchaseInvoice).where(
+        m.PurchaseInvoice.tenant_id == tenant_id,
+        m.PurchaseInvoice.invoice_date >= start,
+        m.PurchaseInvoice.invoice_date <= end,
+    )
+    pi_stmt = apply_company_filter(pi_stmt, m.PurchaseInvoice.company_id, company_id)
+    invoices = (await db.execute(pi_stmt)).scalars().all()
 
     po_ids = [o.id for o in orders]
     po_items: list[m.PurchaseOrderItem] = []
@@ -112,16 +108,13 @@ async def analyze_purchases(
     }
     parties = {}
     if supplier_ids:
+        party_stmt = select(m.Party).where(
+            m.Party.tenant_id == tenant_id,
+            m.Party.id.in_(list(supplier_ids)),
+        )
+        party_stmt = apply_company_filter(party_stmt, m.Party.company_id, company_id)
         parties = {
-            p.id: p
-            for p in (
-                await db.execute(
-                    select(m.Party).where(
-                        m.Party.tenant_id == tenant_id,
-                        m.Party.id.in_(list(supplier_ids)),
-                    )
-                )
-            ).scalars().all()
+            p.id: p for p in (await db.execute(party_stmt)).scalars().all()
         }
 
     # --- Spend trend from posted / open purchase invoices ---

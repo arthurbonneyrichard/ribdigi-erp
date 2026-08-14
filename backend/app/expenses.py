@@ -346,9 +346,12 @@ async def category_budget_variance(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Budget vs approved spend by category for a period (defaults to current month)."""
-    await ensure_default_categories(db, tenant_id)
+    from app.reports import apply_company_filter
+
+    await ensure_default_categories(db, tenant_id, company_id=company_id)
     now = datetime.utcnow()
     start = from_date or datetime(now.year, now.month, 1)
     if to_date is None:
@@ -359,24 +362,22 @@ async def category_budget_variance(
     else:
         end = to_date
 
-    cats = (
-        await db.execute(
-            select(m.ExpenseCategory)
-            .where(m.ExpenseCategory.tenant_id == tenant_id)
-            .order_by(m.ExpenseCategory.name)
-        )
-    ).scalars().all()
+    cat_stmt = (
+        select(m.ExpenseCategory)
+        .where(m.ExpenseCategory.tenant_id == tenant_id)
+        .order_by(m.ExpenseCategory.name)
+    )
+    cat_stmt = apply_company_filter(cat_stmt, m.ExpenseCategory.company_id, company_id)
+    cats = (await db.execute(cat_stmt)).scalars().all()
 
-    expenses = (
-        await db.execute(
-            select(m.Expense).where(
-                m.Expense.tenant_id == tenant_id,
-                m.Expense.expense_date >= start,
-                m.Expense.expense_date <= end,
-                m.Expense.status.in_(["approved", "pending"]),
-            )
-        )
-    ).scalars().all()
+    exp_stmt = select(m.Expense).where(
+        m.Expense.tenant_id == tenant_id,
+        m.Expense.expense_date >= start,
+        m.Expense.expense_date <= end,
+        m.Expense.status.in_(["approved", "pending"]),
+    )
+    exp_stmt = apply_company_filter(exp_stmt, m.Expense.company_id, company_id)
+    expenses = (await db.execute(exp_stmt)).scalars().all()
 
     spent_by: dict[str, float] = {}
     pending_by: dict[str, float] = {}

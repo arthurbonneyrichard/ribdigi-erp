@@ -44,6 +44,7 @@ async def analyze_cross_domain(
     from_date: datetime | str | None = None,
     to_date: datetime | str | None = None,
     lookback_days: int = 90,
+    company_id: str | None = None,
 ) -> dict:
     """Run domain analyzers and synthesize cross-domain signals."""
     now = datetime.utcnow()
@@ -55,6 +56,7 @@ async def analyze_cross_domain(
         from_date=from_date,
         to_date=to_date,
         lookback_days=lookback_days,
+        company_id=company_id,
     )
     purchases = await ai_purchases_svc.analyze_purchases(
         db,
@@ -62,12 +64,14 @@ async def analyze_cross_domain(
         from_date=from_date,
         to_date=to_date,
         lookback_days=lookback_days,
+        company_id=company_id,
     )
     expenses = await ai_expenses_svc.analyze_expenses(
         db,
         tenant_id,
         from_date=from_date or sales["from_date"],
         to_date=to_date or sales["to_date"],
+        company_id=company_id,
     )
     low = await ai_inventory_svc.predict_low_stock(
         db,
@@ -76,11 +80,13 @@ async def analyze_cross_domain(
         horizon_days=14,
         lead_time_days=7,
         at_risk_only=True,
+        company_id=company_id,
     )
     dead = await ai_inventory_svc.identify_dead_stock(
         db,
         tenant_id,
         lookback_days=min(lookback_days, 90),
+        company_id=company_id,
     )
 
     sales_summary = sales.get("summary") or {}

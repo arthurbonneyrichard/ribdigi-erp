@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.reports import apply_company_filter
 
 POSTED_INVOICE_STATUSES = frozenset({"posted", "sent", "partial", "paid", "overdue"})
 DEFAULT_LOOKBACK_DAYS = 30
@@ -45,15 +46,15 @@ def _seasonality_label(factor: float, *, has_signal: bool) -> str:
     return "stable"
 
 
-async def _load_active_products(db: AsyncSession, tenant_id: str) -> list[m.Product]:
-    return (
-        await db.execute(
-            select(m.Product).where(
-                m.Product.tenant_id == tenant_id,
-                m.Product.is_active == True,  # noqa: E712
-            )
-        )
-    ).scalars().all()
+async def _load_active_products(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> list[m.Product]:
+    stmt = select(m.Product).where(
+        m.Product.tenant_id == tenant_id,
+        m.Product.is_active == True,  # noqa: E712
+    )
+    stmt = apply_company_filter(stmt, m.Product.company_id, company_id)
+    return (await db.execute(stmt)).scalars().all()
 
 
 async def _sales_rows_since(
@@ -61,19 +62,22 @@ async def _sales_rows_since(
     tenant_id: str,
     *,
     window_start: datetime,
+    company_id: str | None = None,
 ):
-    return (
-        await db.execute(
-            select(m.SalesInvoiceItem, m.SalesInvoice)
-            .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
-            .where(
-                m.SalesInvoiceItem.tenant_id == tenant_id,
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
-                m.SalesInvoice.created_at >= window_start,
-            )
+    stmt = (
+        select(m.SalesInvoiceItem, m.SalesInvoice)
+        .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
+        .where(
+            m.SalesInvoiceItem.tenant_id == tenant_id,
+            m.SalesInvoice.tenant_id == tenant_id,
+            m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
+            m.SalesInvoice.created_at >= window_start,
         )
-    ).all()
+    )
+    stmt = apply_company_filter(stmt, m.SalesInvoice.company_id, company_id)
+    if company_id:
+        stmt = apply_company_filter(stmt, m.SalesInvoiceItem.company_id, company_id)
+    return (await db.execute(stmt)).all()
 
 
 def _aggregate_sales(
@@ -181,6 +185,7 @@ async def predict_low_stock(
     horizon_days: int = DEFAULT_HORIZON_DAYS,
     lead_time_days: int = DEFAULT_LEAD_TIME_DAYS,
     at_risk_only: bool = False,
+    company_id: str | None = None,
 ) -> dict:
     """Predict stockouts from average daily sales velocity + short-window seasonality."""
     lookback_days = max(7, min(int(lookback_days), 90))
@@ -189,9 +194,11 @@ async def predict_low_stock(
 
     now = datetime.utcnow()
     window_start = now - timedelta(days=lookback_days)
-    products = await _load_active_products(db, tenant_id)
+    products = await _load_active_products(db, tenant_id, company_id=company_id)
     by_id = {p.id: p for p in products}
-    rows = await _sales_rows_since(db, tenant_id, window_start=window_start)
+    rows = await _sales_rows_since(
+        db, tenant_id, window_start=window_start, company_id=company_id
+    )
     sold_total, sold_recent, sold_prior, days_seen, _last = _aggregate_sales(
         rows, product_ids=set(by_id), now=now, lookback_days=lookback_days
     )
@@ -292,6 +299,7 @@ async def forecast_demand(
     lookback_days: int = DEFAULT_LOOKBACK_DAYS,
     lead_time_days: int = DEFAULT_LEAD_TIME_DAYS,
     product_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """BR-21.3 — demand forecast for 7/30/90 days with reorder + seasonality."""
     lookback_days = max(14, min(int(lookback_days), 180))
@@ -299,11 +307,13 @@ async def forecast_demand(
     now = datetime.utcnow()
     # Need enough history for seasonality (14d) and velocity
     window_start = now - timedelta(days=max(lookback_days, 90))
-    products = await _load_active_products(db, tenant_id)
+    products = await _load_active_products(db, tenant_id, company_id=company_id)
     if product_id:
         products = [p for p in products if p.id == product_id]
     by_id = {p.id: p for p in products}
-    rows = await _sales_rows_since(db, tenant_id, window_start=window_start)
+    rows = await _sales_rows_since(
+        db, tenant_id, window_start=window_start, company_id=company_id
+    )
     sold_total, sold_recent, sold_prior, days_seen, last_sale = _aggregate_sales(
         rows, product_ids=set(by_id), now=now, lookback_days=lookback_days
     )
@@ -390,6 +400,7 @@ async def identify_dead_stock(
     *,
     lookback_days: int = DEFAULT_DEAD_STOCK_DAYS,
     min_stock: float = 0.0,
+    company_id: str | None = None,
 ) -> dict:
     """BR-21.3 — products with on-hand stock and no posted sales in the lookback window."""
     lookback_days = max(30, min(int(lookback_days), 365))
@@ -397,11 +408,13 @@ async def identify_dead_stock(
     now = datetime.utcnow()
     window_start = now - timedelta(days=lookback_days)
 
-    products = await _load_active_products(db, tenant_id)
+    products = await _load_active_products(db, tenant_id, company_id=company_id)
     by_id = {p.id: p for p in products}
     # Wider window to find last sale even beyond lookback
     history_start = now - timedelta(days=max(lookback_days, 365))
-    rows = await _sales_rows_since(db, tenant_id, window_start=history_start)
+    rows = await _sales_rows_since(
+        db, tenant_id, window_start=history_start, company_id=company_id
+    )
     _t, _r, _p, _d, last_sale = _aggregate_sales(
         rows, product_ids=set(by_id), now=now, lookback_days=lookback_days
     )
@@ -456,12 +469,17 @@ async def notify_predicted_stockouts(
     tenant_id: str,
     *,
     horizon_days: int = DEFAULT_HORIZON_DAYS,
+    company_id: str | None = None,
 ) -> dict:
     """Create low_stock notifications for products predicted to stock out within horizon."""
     from app.notifications import create_notification
 
     result = await predict_low_stock(
-        db, tenant_id, horizon_days=horizon_days, at_risk_only=True
+        db,
+        tenant_id,
+        horizon_days=horizon_days,
+        at_risk_only=True,
+        company_id=company_id,
     )
     created = 0
     for pred in result["predictions"]:
@@ -495,6 +513,7 @@ async def notify_predicted_stockouts(
             ),
             entity_type="product",
             entity_id=pred["product_id"],
+            company_id=company_id,
         )
         created += 1
     await db.flush()
