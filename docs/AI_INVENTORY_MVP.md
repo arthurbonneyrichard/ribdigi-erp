@@ -25,6 +25,8 @@ Velocity-based forecasts from tenant sales invoices + POS transactions. **No LLM
 `POST` body optional: `{ "lines": [...], "days_ahead": 14, "min_confidence": 0 }`.  
 If `lines` omitted, runs prediction then creates draft PRs (requires `purchasing:write`).
 
+**UI:** `/ai` — **Inventory predictions** + **Create draft PR(s)** (uses loaded lines when available).
+
 ## Env
 
 ```

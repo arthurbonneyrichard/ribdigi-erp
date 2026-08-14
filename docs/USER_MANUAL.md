@@ -1046,11 +1046,13 @@ Instead of waiting for stock to hit reorder level, the AI predicts stockouts **7
 - Seasonal trends
 - Lead time from suppliers
 
-Go to **Inventory → AI Predictions** to see:
-- Predicted stockout date
+Go to **AI → Inventory predictions** to see at-risk SKUs (14-day window), then **Create draft PR(s)** for one-click draft purchase requests:
+- Predicted stockout timing (`days_to_stockout`)
 - Recommended order quantity
 - Confidence score
-- One-click **Generate Purchase Request**
+- Draft PRs appear under **Purchasing → Requests** (requires purchasing write permission)
+
+> Reports → Inventory also has threshold-based low-stock suggestions with a separate draft-PR action.
 
 ### 14.4 AI Document Assistant
 

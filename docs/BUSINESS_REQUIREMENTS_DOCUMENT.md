@@ -1047,7 +1047,7 @@ All modules listed in Section 4 are within MVP scope, including:
     - Complete (MVP heuristic); supplier-specific lead time post-MVP
   - [x] Confidence score on predictions
   - [x] Auto-generate purchase suggestions
-    - Complete (MVP): `POST /ai/inventory/low-stock-prediction/requests` → draft PRs
+    - Complete (MVP): `POST /ai/inventory/low-stock-prediction/requests` → draft PRs; AI page **Create draft PR(s)** UI
 
 #### BR-21.5 AI Sales Analysis
 - **Description:** Deep sales pattern recognition.

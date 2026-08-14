@@ -544,6 +544,7 @@ Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven 
 | `/ai/insights` | GET | Dashboard insights |
 | `/ai/inventory/predictions` | GET | Inventory predictions |
 | `/ai/inventory/low-stock-prediction` | GET | Low stock prediction |
+| `/ai/inventory/low-stock-prediction/requests` | POST | Draft PRs from predictions (AI UI) |
 | `/ai/sales/analysis` | GET | Sales analysis |
 | `/ai/expenses/analysis` | GET | Expense analysis |
 | `/ai/reports/generate` | POST | AI report generation |

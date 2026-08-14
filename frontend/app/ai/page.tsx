@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
@@ -8,10 +9,16 @@ export default function Page() {
   const [q, setQ] = useState('');
   const [a, setA] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [predBusy, setPredBusy] = useState(false);
+  const [draftPrBusy, setDraftPrBusy] = useState(false);
+  const [lastAtRisk, setLastAtRisk] = useState<any[]>([]);
+  const [includeOpenPr, setIncludeOpenPr] = useState(false);
 
   async function go() {
     setError('');
+    setMessage('');
     setA('');
     try {
       const r = await api('/ai/chat', { method: 'POST', body: JSON.stringify({ message: q }) });
@@ -23,6 +30,7 @@ export default function Page() {
 
   async function loadInsights() {
     setError('');
+    setMessage('');
     try {
       const r = await api('/ai/insights');
       setA((r.data?.insights || []).join('\n'));
@@ -33,6 +41,7 @@ export default function Page() {
 
   async function loadSecurityAlerts() {
     setError('');
+    setMessage('');
     try {
       const r = await api('/ai/security/alerts?scan=true');
       setAlerts(r.data?.alerts || []);
@@ -48,9 +57,12 @@ export default function Page() {
 
   async function loadInventoryPredictions() {
     setError('');
+    setMessage('');
+    setPredBusy(true);
     try {
       const r = await api('/ai/inventory/low-stock-prediction?days_ahead=14');
       const lines = r.data?.at_risk || [];
+      setLastAtRisk(lines);
       setA(
         lines.length
           ? lines
@@ -62,13 +74,82 @@ export default function Page() {
               .join('\n')
           : 'No at-risk products in the prediction window'
       );
+      if (!lines.length) {
+        setMessage('No at-risk lines — nothing to turn into draft PRs yet.');
+      }
     } catch (err: any) {
       setError(err.message || 'Unable to load inventory predictions');
+    } finally {
+      setPredBusy(false);
+    }
+  }
+
+  async function createDraftPrsFromPredictions() {
+    setError('');
+    setMessage('');
+    setDraftPrBusy(true);
+    try {
+      const body: Record<string, unknown> = {
+        days_ahead: 14,
+        notes: 'Created from AI low-stock prediction',
+        include_open: includeOpenPr,
+      };
+      // Prefer lines already loaded so the UI matches what the user saw
+      if (lastAtRisk.length) {
+        body.lines = lastAtRisk;
+      }
+      const r = await api('/ai/inventory/low-stock-prediction/requests', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      const created = r.data?.created || [];
+      const skipped = r.data?.skipped || [];
+      const nums = created.map((p: any) => p.request_number).filter(Boolean).join(', ');
+      if (created.length) {
+        setMessage(
+          `Created draft PR(s): ${nums || created.length}. Open Purchasing → Requests to submit.`
+        );
+        setA(
+          [
+            `created_count=${r.data?.created_count ?? created.length}`,
+            nums ? `requests: ${nums}` : '',
+            skipped.length ? `skipped=${skipped.length}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n')
+        );
+      } else {
+        setMessage(r.message || 'No draft purchase requests created (nothing eligible).');
+        setA(
+          skipped.length
+            ? `skipped=${JSON.stringify(skipped.slice(0, 10))}`
+            : 'No at-risk lines eligible for draft PRs'
+        );
+      }
+    } catch (err: any) {
+      const detail = err.detail;
+      const skipped = detail?.skipped || [];
+      if (skipped.length) {
+        setA(
+          skipped
+            .slice(0, 20)
+            .map((s: any) => `${s.product_id}: ${s.reason}`)
+            .join('\n')
+        );
+        setError(
+          `${detail?.message || err.message || 'No lines eligible'}. Enable “Include open PRs” to allow duplicates, or cancel existing requests.`
+        );
+      } else {
+        setError(err.message || 'Unable to create draft purchase requests');
+      }
+    } finally {
+      setDraftPrBusy(false);
     }
   }
 
   async function loadSalesAnalysis() {
     setError('');
+    setMessage('');
     try {
       const r = await api('/ai/sales/analysis');
       const d = r.data || {};
@@ -87,6 +168,7 @@ export default function Page() {
 
   async function loadExpenseAnalysis() {
     setError('');
+    setMessage('');
     try {
       const r = await api('/ai/expenses/analysis');
       const d = r.data || {};
@@ -104,6 +186,7 @@ export default function Page() {
 
   async function generateReport() {
     setError('');
+    setMessage('');
     try {
       const prompt = q.trim() || 'monthly sales for this month';
       const r = await api('/ai/reports/generate', {
@@ -125,6 +208,7 @@ export default function Page() {
 
   async function customerAssist() {
     setError('');
+    setMessage('');
     try {
       const prompt = q.trim() || 'overview of best customers and churn';
       const r = await api('/ai/customer/assist', {
@@ -147,6 +231,7 @@ export default function Page() {
 
   async function analyzeDocument(file: File) {
     setError('');
+    setMessage('');
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -174,7 +259,12 @@ export default function Page() {
         Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, report generator, customer/document assistants, and the Security Monitor are available now.
       </p>
       <div className="card">
-        <textarea value={q} onChange={(e) => setQ(e.target.value)} style={{ width: '100%', minHeight: 100 }} placeholder="Ask a business question, report prompt, or customer query e.g. best customers / outstanding balance" />
+        <textarea
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          style={{ width: '100%', minHeight: 100 }}
+          placeholder="Ask a business question, report prompt, or customer query e.g. best customers / outstanding balance"
+        />
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={go}>Ask</button>
           <button onClick={generateReport}>Generate report</button>
@@ -193,12 +283,39 @@ export default function Page() {
             />
           </label>
           <button onClick={loadInsights}>Load insights</button>
-          <button onClick={loadInventoryPredictions}>Inventory predictions</button>
+          <button onClick={loadInventoryPredictions} disabled={predBusy}>
+            {predBusy ? 'Loading predictions…' : 'Inventory predictions'}
+          </button>
+          <button
+            onClick={createDraftPrsFromPredictions}
+            disabled={draftPrBusy}
+            title="Creates draft purchase requests from at-risk prediction lines (requires purchasing:write)"
+          >
+            {draftPrBusy ? 'Creating draft PR(s)…' : 'Create draft PR(s)'}
+          </button>
+          <label
+            style={{ display: 'inline-flex', gap: 4, alignItems: 'center', fontSize: 13 }}
+            title="Allow creating another draft PR even if the product is already on an open request"
+          >
+            <input
+              type="checkbox"
+              checked={includeOpenPr}
+              onChange={(e) => setIncludeOpenPr(e.target.checked)}
+            />
+            Include open PRs
+          </label>
           <button onClick={loadSalesAnalysis}>Sales analysis</button>
           <button onClick={loadExpenseAnalysis}>Expense analysis</button>
           <button onClick={loadSecurityAlerts}>Security alerts</button>
         </div>
+        <p className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+          Inventory predictions lists at-risk SKUs (14-day window). <strong>Create draft PR(s)</strong> turns
+          those lines into draft purchase requests — open{' '}
+          <Link href="/purchasing">Purchasing → Requests</Link> to submit. Requires purchasing write
+          permission.
+        </p>
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+        {message && <p style={{ color: '#166534' }}>{message}</p>}
         {a && <pre style={{ whiteSpace: 'pre-wrap' }}>{a}</pre>}
         {alerts.length > 0 && (
           <ul>
