@@ -31,3 +31,9 @@ Stage 296 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for commercial support, support boundary live, support SLA, status page live, paid billing, or go-live.
+
+## Amendment — Stage 296 opened
+
+Stage 296 opened under **ADR-599** after CONTINUE/NEXT (Tenant MVP Commercial Status Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-600**. Stage 295 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 296 runner-up outline was approved and opened (ADR-599); freeze ADR-600. Do not reopen Stage 295 scope.
