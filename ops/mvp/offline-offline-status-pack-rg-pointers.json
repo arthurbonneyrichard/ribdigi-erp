@@ -1,0 +1,67 @@
+{
+  "id": "offline-offline-status-pack-rg-pointers",
+  "stage": 398,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_OFFLINE_STATUS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_OFFLINE_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_online_status_pack": "docs/OFFLINE_ONLINE_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "offline_synchronizing_status_pack": "docs/OFFLINE_SYNCHRONIZING_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_offline_status_complete_claimed": false,
+  "offline_status_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section3_offline_offline_status": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_online_status_pack_remaining_gate_stage397": "docs/OFFLINE_ONLINE_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "offline_synchronizing_status_pack_remaining_gate_stage396": "docs/OFFLINE_SYNCHRONIZING_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_offline_status / offline_status / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "oofsprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a73 offline OFFLINE status",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprp-stage397",
+      "title": "Point to Stage 397 offline ONLINE status pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprp-stage396",
+      "title": "Point to Stage 396 offline SYNCHRONIZING status pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprp-checklist-remaining",
+      "title": "Offline Complete / offline offline-status Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 398 P1 offline OFFLINE status pack RG pointers packaging only."
+}

@@ -1,0 +1,59 @@
+{
+  "id": "offline-offline-status-pack-remaining-gate",
+  "stage": 398,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_OFFLINE_STATUS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_OFFLINE_STATUS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_OFFLINE_STATUS_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_online_status_pack_remaining_gate": "docs/OFFLINE_ONLINE_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "offline_synchronizing_status_pack_remaining_gate": "docs/OFFLINE_SYNCHRONIZING_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_offline_status_complete_claimed": false,
+  "offline_status_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage397_offline_online_status_pack_remaining_gate": true,
+  "distinct_from_stage396_offline_synchronizing_status_pack_remaining_gate": true,
+  "distinct_from_stage392_offline_connectivity_badge_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "oofspr-read-blockers",
+      "title": "Read B1 offline OFFLINE status pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofspr-follow-pointers",
+      "title": "Follow P1 Stage 397 / Stage 396 / Stage 392 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofspr-checklist-missing",
+      "title": "Reaffirm Offline Complete / offline offline-status / OFFLINE status / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofspr-no-packaging-as-live",
+      "title": "Do not treat Stage 392 / Stage 397 / Stage 396 as Offline Complete or offline offline-status Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofspr-checklist-remaining",
+      "title": "Offline Complete / offline offline-status / OFFLINE status / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 398 I1 offline OFFLINE status pack remaining-gate index packaging only. Do not claim Offline Complete."
+}

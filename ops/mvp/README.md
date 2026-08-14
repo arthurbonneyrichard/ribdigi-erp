@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_398_EXIT_CRITERIA.md` / `docs/ADR_804_STAGE398_FREEZE.md` (`backend/tests/test_stage398_exit_h398x.py`) — Stage 398 H398x
+- `docs/STAGE_398_FIDELITY.md` (`backend/tests/test_stage398_fidelity_d1.py`) — Stage 398 D1
+- `docs/STAGE_398_PLAN.md` (`backend/tests/test_stage398_open.py`) — Stage 398 open (ADR-803)
+- `docs/OFFLINE_OFFLINE_STATUS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-offline-status-pack-remaining-gate.json` — Stage 398 I1
+- `docs/OFFLINE_OFFLINE_STATUS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-offline-status-pack-rg-blockers.json` — Stage 398 B1
+- `docs/OFFLINE_OFFLINE_STATUS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-offline-status-pack-rg-pointers.json` — Stage 398 P1
 - `docs/STAGE_397_EXIT_CRITERIA.md` / `docs/ADR_802_STAGE397_FREEZE.md` (`backend/tests/test_stage397_exit_h397x.py`) — Stage 397 H397x
 - `docs/STAGE_397_FIDELITY.md` (`backend/tests/test_stage397_fidelity_d1.py`) — Stage 397 D1
 - `docs/STAGE_397_PLAN.md` (`backend/tests/test_stage397_open.py`) — Stage 397 open (ADR-801)
@@ -5665,6 +5671,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 398 exit
+
+H398x met — `docs/STAGE_398_EXIT_CRITERIA.md`, ADR-804. Stages 1–398 frozen for Stage 398 feature scope.
+
+## Stage 398 D1 — Tenant MVP Offline Offline Status Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_398_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 398 open
+
+Opened under ADR-803; plan `docs/STAGE_398_PLAN.md`.
 
 ## Stage 397 exit
 
