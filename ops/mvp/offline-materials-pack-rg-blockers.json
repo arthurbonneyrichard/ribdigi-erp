@@ -1,0 +1,63 @@
+{
+  "id": "offline-materials-pack-rg-blockers",
+  "stage": 330,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_MATERIALS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_MATERIALS_PACK_REMAINING_GATE_MVP.md",
+    "offline_materials_remaining_gate": "docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "browser_e2e_claimed": false,
+  "attestation_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "browser_e2e_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "live_training_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage190_as_live_offline_complete": "NON_CLAIM",
+    "stage171_175_as_live_offline_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "browser_e2e_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "live_training_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ofmprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmprb-browser",
+      "title": "Mark browser E2E Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmprb-training",
+      "title": "Mark live training Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmprb-stage190-nonclaim",
+      "title": "Mark Stage 190 / Stage 171\u2013175 as non-claim for live Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmprb-materials-remaining",
+      "title": "Live Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 330 B1 Offline materials pack RG blocker matrix packaging only. Live Offline Completes remain MISSING."
+}

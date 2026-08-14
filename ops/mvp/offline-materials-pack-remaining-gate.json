@@ -1,0 +1,57 @@
+{
+  "id": "offline-materials-pack-remaining-gate",
+  "stage": 330,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_MATERIALS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_MATERIALS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_MATERIALS_PACK_RG_POINTERS_MVP.md",
+    "offline_materials_remaining_gate": "docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "loadtest_baseline_pack_remaining_gate": "docs/LOADTEST_BASELINE_PACK_REMAINING_GATE_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "browser_e2e_claimed": false,
+  "attestation_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage190_offline_materials_remaining_gate": true,
+  "distinct_from_stage190_pack_pointers": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "distinct_from_stage328_loadtest_baseline_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ofmpr-read-blockers",
+      "title": "Read B1 Offline materials pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmpr-follow-pointers",
+      "title": "Follow P1 Stage 190 / Stage 329 / Stage 328 / FAQ offline POS pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmpr-materials-missing",
+      "title": "Reaffirm Offline Complete / browser E2E MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmpr-no-packaging-as-live",
+      "title": "Do not treat Stage 190 / Stage 171\u2013175 / Stage 329 as live Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmpr-materials-remaining",
+      "title": "Offline Complete / browser E2E / attestation / live training / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 330 I1 Offline materials pack remaining-gate index packaging only. Do not claim live Offline Complete."
+}

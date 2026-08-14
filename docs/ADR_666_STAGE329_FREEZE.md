@@ -31,3 +31,10 @@ Stage 330 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline Complete, browser E2E, attestation, product acceptance, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 330 opened under **ADR-667** after CONTINUE/NEXT (Tenant MVP Offline Materials Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-668**. Stage 329 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 330 runner-up outline was approved and opened (ADR-667); freeze ADR-668. Do not reopen Stage 329 scope.
+
