@@ -31,3 +31,10 @@ Stage 391 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline catalog-snapshot, catalog snapshot cache as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 391 opened under **ADR-789** after CONTINUE/NEXT (Tenant MVP Offline Device Auth Token Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-790**. Stage 390 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 390 runner-up outline was approved and opened (ADR-789); freeze ADR-790. Do not reopen Stage 390 scope.
+

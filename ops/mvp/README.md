@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_391_EXIT_CRITERIA.md` / `docs/ADR_790_STAGE391_FREEZE.md` (`backend/tests/test_stage391_exit_h391x.py`) — Stage 391 H391x
+- `docs/STAGE_391_FIDELITY.md` (`backend/tests/test_stage391_fidelity_d1.py`) — Stage 391 D1
+- `docs/STAGE_391_PLAN.md` (`backend/tests/test_stage391_open.py`) — Stage 391 open (ADR-789)
+- `docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-device-auth-token-pack-remaining-gate.json` — Stage 391 I1
+- `docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-device-auth-token-pack-rg-blockers.json` — Stage 391 B1
+- `docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-device-auth-token-pack-rg-pointers.json` — Stage 391 P1
 - `docs/STAGE_390_EXIT_CRITERIA.md` / `docs/ADR_788_STAGE390_FREEZE.md` (`backend/tests/test_stage390_exit_h390x.py`) — Stage 390 H390x
 - `docs/STAGE_390_FIDELITY.md` (`backend/tests/test_stage390_fidelity_d1.py`) — Stage 390 D1
 - `docs/STAGE_390_PLAN.md` (`backend/tests/test_stage390_open.py`) — Stage 390 open (ADR-787)
@@ -5623,6 +5629,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 391 exit
+
+H391x met — `docs/STAGE_391_EXIT_CRITERIA.md`, ADR-790. Stages 1–391 frozen for Stage 391 feature scope.
+
+## Stage 391 D1 — Tenant MVP Offline Device Auth Token Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_391_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 391 open
+
+Opened under ADR-789; plan `docs/STAGE_391_PLAN.md`.
 
 ## Stage 390 exit
 

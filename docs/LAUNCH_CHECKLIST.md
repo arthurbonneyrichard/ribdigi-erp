@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 391 track opened (ADR-789: `test_stage391_open.py`, `docs/STAGE_391_PLAN.md`) — Offline Device Auth Token Pack Remaining-Gate Index; closed under ADR-790
+- [x] Offline device auth token pack remaining-gate hub (Stage 391 I1: `test_stage391_index_i1.py`, `docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline device auth token pack blocker matrix (Stage 391 B1: `test_stage391_blockers_b1.py`, `docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 390 / Stage 389 / Stage 374 / CHANGE_IMPACT pointers (Stage 391 P1: `test_stage391_pointers_p1.py`, `docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 391 fidelity sync (D1: `test_stage391_fidelity_d1.py`, `docs/STAGE_391_FIDELITY.md`)
+- [x] Stage 391 exit + freeze (H391x: `test_stage391_exit_h391x.py`, `docs/STAGE_391_EXIT_CRITERIA.md`, ADR-790)
 - [x] Stage 390 track opened (ADR-787: `test_stage390_open.py`, `docs/STAGE_390_PLAN.md`) — Offline Catalog Snapshot Pack Remaining-Gate Index; closed under ADR-788
 - [x] Offline catalog snapshot pack remaining-gate hub (Stage 390 I1: `test_stage390_index_i1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline catalog snapshot pack blocker matrix (Stage 390 B1: `test_stage390_blockers_b1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_PACK_RG_BLOCKERS_MVP.md`)

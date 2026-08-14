@@ -1,0 +1,59 @@
+{
+  "id": "offline-device-auth-token-pack-remaining-gate",
+  "stage": 391,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage374_fidelity": "docs/STAGE_374_FIDELITY.md",
+    "offline_catalog_snapshot_pack_remaining_gate": "docs/OFFLINE_CATALOG_SNAPSHOT_PACK_REMAINING_GATE_MVP.md",
+    "offline_client_request_id_pack_remaining_gate": "docs/OFFLINE_CLIENT_REQUEST_ID_PACK_REMAINING_GATE_MVP.md",
+    "device_offline_registry_pack_remaining_gate": "docs/DEVICE_OFFLINE_REGISTRY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_device_auth_token_complete_claimed": false,
+  "device_auth_token_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage390_offline_catalog_snapshot_pack_remaining_gate": true,
+  "distinct_from_stage389_offline_client_request_id_pack_remaining_gate": true,
+  "distinct_from_stage374_device_offline_registry_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "odatpr-read-blockers",
+      "title": "Read B1 offline device auth token pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "odatpr-follow-pointers",
+      "title": "Follow P1 Stage 390 / Stage 389 / Stage 374 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "odatpr-checklist-missing",
+      "title": "Reaffirm Offline Complete / offline device-auth-token / device auth token / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "odatpr-no-packaging-as-live",
+      "title": "Do not treat Stage 374 / Stage 390 / Stage 389 as Offline Complete or offline device-auth-token Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "odatpr-checklist-remaining",
+      "title": "Offline Complete / offline device-auth-token / device auth token / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 391 I1 offline device auth token pack remaining-gate index packaging only. Do not claim Offline Complete."
+}

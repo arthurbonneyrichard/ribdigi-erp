@@ -1,0 +1,67 @@
+{
+  "id": "offline-device-auth-token-pack-rg-pointers",
+  "stage": 391,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_catalog_snapshot_pack": "docs/OFFLINE_CATALOG_SNAPSHOT_PACK_REMAINING_GATE_MVP.md",
+    "offline_client_request_id_pack": "docs/OFFLINE_CLIENT_REQUEST_ID_PACK_REMAINING_GATE_MVP.md",
+    "device_offline_registry_pack": "docs/DEVICE_OFFLINE_REGISTRY_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_device_auth_token_complete_claimed": false,
+  "device_auth_token_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section8_offline_device_auth_token": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_catalog_snapshot_pack_remaining_gate_stage390": "docs/OFFLINE_CATALOG_SNAPSHOT_PACK_REMAINING_GATE_MVP.md",
+    "offline_client_request_id_pack_remaining_gate_stage389": "docs/OFFLINE_CLIENT_REQUEST_ID_PACK_REMAINING_GATE_MVP.md",
+    "device_offline_registry_pack_remaining_gate_stage374": "docs/DEVICE_OFFLINE_REGISTRY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_device_auth_token / device_auth_token / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "odatprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a78 offline device auth token",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "odatprp-stage390",
+      "title": "Point to Stage 390 offline catalog snapshot pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "odatprp-stage389",
+      "title": "Point to Stage 389 offline client_request_id pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "odatprp-stage374",
+      "title": "Point to Stage 374 device offline registry pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "odatprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "odatprp-checklist-remaining",
+      "title": "Offline Complete / offline device-auth-token Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 391 P1 offline device auth token pack RG pointers packaging only."
+}
