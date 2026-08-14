@@ -53,31 +53,34 @@ def template_csv() -> str:
     return buf.getvalue()
 
 
-async def export_products_csv(db: AsyncSession, *, tenant_id: str) -> str:
+async def export_products_csv(
+    db: AsyncSession, *, tenant_id: str, company_id: str | None = None
+) -> str:
     """Stage 118 E1 — export tenant products using the same columns as the import template."""
-    await catalog_meta_svc.ensure_default_catalog(db, tenant_id)
+    await catalog_meta_svc.ensure_default_catalog(db, tenant_id, company_id=company_id)
+    cat_q = select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
+    brand_q = select(m.Brand).where(m.Brand.tenant_id == tenant_id)
+    unit_q = select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id)
+    prod_q = select(m.Product).where(m.Product.tenant_id == tenant_id)
+    if company_id:
+        cat_q = cat_q.where(m.ProductCategory.company_id == company_id)
+        brand_q = brand_q.where(m.Brand.company_id == company_id)
+        unit_q = unit_q.where(m.UnitOfMeasure.company_id == company_id)
+        prod_q = prod_q.where(m.Product.company_id == company_id)
     cats = {
         c.id: c.code
-        for c in (
-            await db.execute(select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id))
-        ).scalars().all()
+        for c in (await db.execute(cat_q)).scalars().all()
     }
     brands = {
         b.id: b.code
-        for b in (await db.execute(select(m.Brand).where(m.Brand.tenant_id == tenant_id))).scalars().all()
+        for b in (await db.execute(brand_q)).scalars().all()
     }
     units = {
         u.id: u.code
-        for u in (
-            await db.execute(select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id))
-        ).scalars().all()
+        for u in (await db.execute(unit_q)).scalars().all()
     }
     products = (
-        await db.execute(
-            select(m.Product)
-            .where(m.Product.tenant_id == tenant_id)
-            .order_by(m.Product.sku)
-        )
+        await db.execute(prod_q.order_by(m.Product.sku))
     ).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=TEMPLATE_COLUMNS)

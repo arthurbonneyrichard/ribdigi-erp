@@ -16,6 +16,7 @@ async def lookup_products(
     q: str = "",
     barcode: str | None = None,
     limit: int = 40,
+    company_id: str | None = None,
 ) -> list[dict]:
     """Resolve products and variants by barcode scan or text search."""
     q = (q or "").strip()
@@ -26,6 +27,8 @@ async def lookup_products(
         m.Product.tenant_id == tenant_id,
         m.Product.is_active == True,  # noqa: E712
     )
+    if company_id:
+        stmt = stmt.where(m.Product.company_id == company_id)
     if scan:
         product_match = (m.Product.barcode == scan) | (m.Product.sku == scan)
         if q:
@@ -57,6 +60,8 @@ async def lookup_products(
         m.ProductVariant.tenant_id == tenant_id,
         m.ProductVariant.is_active == True,  # noqa: E712
     )
+    if company_id:
+        vstmt = vstmt.where(m.ProductVariant.company_id == company_id)
     if scan:
         variant_match = (m.ProductVariant.barcode == scan) | (m.ProductVariant.sku == scan)
         if q:

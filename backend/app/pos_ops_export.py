@@ -106,6 +106,7 @@ async def list_pos_sales(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     limit: int = 500,
+    company_id: str | None = None,
 ) -> list[tuple[m.Transaction, m.PosSession | None]]:
     """Stage 142 S1 — tenant POS sales register (header rows)."""
     stmt = (
@@ -118,6 +119,8 @@ async def list_pos_sales(
         .order_by(m.Transaction.created_at.desc())
         .limit(min(max(limit, 1), 500))
     )
+    if company_id:
+        stmt = stmt.where(m.Transaction.company_id == company_id)
     if session_id:
         stmt = stmt.where(m.Transaction.session_id == session_id.strip())
     if store_id:
@@ -176,6 +179,7 @@ async def export_pos_sales_csv(
     store_id: str | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> str:
     rows = await list_pos_sales(
         db,
@@ -184,6 +188,7 @@ async def export_pos_sales_csv(
         store_id=store_id,
         from_date=from_date,
         to_date=to_date,
+        company_id=company_id,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=POS_SALE_EXPORT_COLUMNS)
@@ -199,9 +204,12 @@ async def export_session_z_report_csv(
     *,
     tenant_id: str,
     session_id: str,
+    company_id: str | None = None,
 ) -> str:
     """Stage 142 Z1 — session summary row + sale detail rows."""
-    session = await pos_svc.get_session(db, tenant_id, session_id)
+    session = await pos_svc.get_session(
+        db, tenant_id, session_id, company_id=company_id
+    )
     report = await pos_svc.shift_report(db, session)
     sess = report.get("session") or {}
     buf = io.StringIO()

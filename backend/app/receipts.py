@@ -271,6 +271,7 @@ async def build_sale_receipt(
     tenant_id: str,
     sale_id: str,
     user_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict[str, Any]:
     from sqlalchemy import select
 
@@ -284,6 +285,8 @@ async def build_sale_receipt(
         )
     ).scalar_one_or_none()
     if not tx:
+        raise HTTPException(status_code=404, detail="POS sale not found")
+    if company_id and tx.company_id and tx.company_id != company_id:
         raise HTTPException(status_code=404, detail="POS sale not found")
     tenant = await db.get(m.Tenant, tenant_id)
     cashier_name = None

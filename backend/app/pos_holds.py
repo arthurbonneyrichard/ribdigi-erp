@@ -124,6 +124,7 @@ async def expire_stale_holds(
     *,
     tenant_id: str,
     user_id: str | None = None,
+    company_id: str | None = None,
 ) -> list[m.PosHeldCart]:
     """Stage 167 E1 — expire held soft-reserves past expires_at; release reserved_qty."""
     now = datetime.utcnow()
@@ -135,6 +136,8 @@ async def expire_stale_holds(
     )
     if user_id:
         q = q.where(m.PosHeldCart.user_id == user_id)
+    if company_id:
+        q = q.where(m.PosHeldCart.company_id == company_id)
     rows = list((await db.execute(q)).scalars().all())
     expired: list[m.PosHeldCart] = []
     for row in rows:
@@ -153,13 +156,18 @@ async def list_holds(
     tenant_id: str,
     user_id: str,
     status: str | None = "held",
+    company_id: str | None = None,
 ) -> list[m.PosHeldCart]:
     # Cleanup before list so cashiers see accurate held/reserved state.
-    await expire_stale_holds(db, tenant_id=tenant_id, user_id=user_id)
+    await expire_stale_holds(
+        db, tenant_id=tenant_id, user_id=user_id, company_id=company_id
+    )
     q = select(m.PosHeldCart).where(
         m.PosHeldCart.tenant_id == tenant_id,
         m.PosHeldCart.user_id == user_id,
     )
+    if company_id:
+        q = q.where(m.PosHeldCart.company_id == company_id)
     if status is not None:
         wanted = str(status).strip().lower()
         if wanted not in ALLOWED_STATUS and wanted != "all":
@@ -182,8 +190,11 @@ async def create_hold(
     label: str | None,
     cart_payload: dict,
     reserve_stock: bool = False,
+    company_id: str | None = None,
 ) -> m.PosHeldCart:
-    await expire_stale_holds(db, tenant_id=tenant_id, user_id=user_id)
+    await expire_stale_holds(
+        db, tenant_id=tenant_id, user_id=user_id, company_id=company_id
+    )
     if not isinstance(cart_payload, dict):
         raise HTTPException(status_code=400, detail="cart_payload must be an object")
     items = cart_payload.get("items")
@@ -204,6 +215,7 @@ async def create_hold(
 
     row = m.PosHeldCart(
         tenant_id=tenant_id,
+        company_id=company_id,
         user_id=user_id,
         session_id=session_id,
         label=cleaned_label,
@@ -220,7 +232,12 @@ async def create_hold(
 
 
 async def get_hold(
-    db: AsyncSession, *, tenant_id: str, user_id: str, hold_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    hold_id: str,
+    company_id: str | None = None,
 ) -> m.PosHeldCart:
     row = (
         await db.execute(
@@ -233,14 +250,25 @@ async def get_hold(
     ).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Held cart not found")
+    if company_id and row.company_id and row.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Held cart not found")
     return row
 
 
 async def resume_hold(
-    db: AsyncSession, *, tenant_id: str, user_id: str, hold_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    hold_id: str,
+    company_id: str | None = None,
 ) -> m.PosHeldCart:
-    await expire_stale_holds(db, tenant_id=tenant_id, user_id=user_id)
-    row = await get_hold(db, tenant_id=tenant_id, user_id=user_id, hold_id=hold_id)
+    await expire_stale_holds(
+        db, tenant_id=tenant_id, user_id=user_id, company_id=company_id
+    )
+    row = await get_hold(
+        db, tenant_id=tenant_id, user_id=user_id, hold_id=hold_id, company_id=company_id
+    )
     if row.status == "expired":
         raise HTTPException(
             status_code=409,
@@ -257,9 +285,16 @@ async def resume_hold(
 
 
 async def discard_hold(
-    db: AsyncSession, *, tenant_id: str, user_id: str, hold_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    hold_id: str,
+    company_id: str | None = None,
 ) -> m.PosHeldCart:
-    row = await get_hold(db, tenant_id=tenant_id, user_id=user_id, hold_id=hold_id)
+    row = await get_hold(
+        db, tenant_id=tenant_id, user_id=user_id, hold_id=hold_id, company_id=company_id
+    )
     if row.status in {"discarded", "expired"}:
         return row
     await _release_soft_reserve(db, tenant_id=tenant_id, row=row)

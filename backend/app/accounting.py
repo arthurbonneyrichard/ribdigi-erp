@@ -1941,9 +1941,11 @@ async def post_pos_sale_journal(
     tx: m.Transaction,
     payment_method: str = "cash",
     payments: list[dict] | None = None,
+    company_id: str | None = None,
 ) -> m.JournalEntry:
     """Post POS sale GL; supports split tenders as multiple debit lines."""
-    await ensure_default_accounts(db, tenant_id)
+    cid = company_id or getattr(tx, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=cid)
     amount = float(tx.total or 0)
     tax = float(tx.tax or 0)
     cart_discount = float((tx.payload or {}).get("discount_amount") or 0)
@@ -2008,6 +2010,7 @@ async def post_pos_sale_journal(
         source_type="pos_sale",
         source_id=tx.id,
         store_id=store_id,
+        company_id=cid,
         lines=lines,
     )
 

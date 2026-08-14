@@ -35,7 +35,13 @@ async def next_session_number(db: AsyncSession, tenant_id: str) -> str:
     return f"POS-{datetime.utcnow():%Y%m%d}-{count + 1:04d}"
 
 
-async def get_session(db: AsyncSession, tenant_id: str, session_id: str) -> m.PosSession:
+async def get_session(
+    db: AsyncSession,
+    tenant_id: str,
+    session_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.PosSession:
     session = (
         await db.execute(
             select(m.PosSession).where(
@@ -46,21 +52,26 @@ async def get_session(db: AsyncSession, tenant_id: str, session_id: str) -> m.Po
     ).scalar_one_or_none()
     if not session:
         raise HTTPException(status_code=404, detail="POS session not found")
+    if company_id and session.company_id and session.company_id != company_id:
+        raise HTTPException(status_code=404, detail="POS session not found")
     return session
 
 
 async def get_open_session_for_user(
-    db: AsyncSession, tenant_id: str, user_id: str
+    db: AsyncSession,
+    tenant_id: str,
+    user_id: str,
+    *,
+    company_id: str | None = None,
 ) -> m.PosSession | None:
-    return (
-        await db.execute(
-            select(m.PosSession).where(
-                m.PosSession.tenant_id == tenant_id,
-                m.PosSession.user_id == user_id,
-                m.PosSession.status == "open",
-            )
-        )
-    ).scalar_one_or_none()
+    stmt = select(m.PosSession).where(
+        m.PosSession.tenant_id == tenant_id,
+        m.PosSession.user_id == user_id,
+        m.PosSession.status == "open",
+    )
+    if company_id:
+        stmt = stmt.where(m.PosSession.company_id == company_id)
+    return (await db.execute(stmt)).scalar_one_or_none()
 
 
 async def require_open_session(
@@ -69,16 +80,21 @@ async def require_open_session(
     tenant_id: str,
     user_id: str,
     session_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.PosSession:
     if session_id:
-        session = await get_session(db, tenant_id, session_id)
+        session = await get_session(
+            db, tenant_id, session_id, company_id=company_id
+        )
         if session.status != "open":
             raise HTTPException(status_code=409, detail="POS session is not open")
         if session.user_id != user_id:
             raise HTTPException(status_code=403, detail="POS session belongs to another cashier")
         return session
 
-    session = await get_open_session_for_user(db, tenant_id, user_id)
+    session = await get_open_session_for_user(
+        db, tenant_id, user_id, company_id=company_id
+    )
     if not session:
         raise HTTPException(status_code=409, detail="Open a POS shift before recording sales")
     return session
@@ -91,8 +107,11 @@ async def open_session(
     user_id: str,
     store_id: str | None,
     opening_cash: float,
+    company_id: str | None = None,
 ) -> m.PosSession:
-    existing = await get_open_session_for_user(db, tenant_id, user_id)
+    existing = await get_open_session_for_user(
+        db, tenant_id, user_id, company_id=company_id
+    )
     if existing:
         raise HTTPException(status_code=409, detail="Cashier already has an open POS shift")
 
@@ -104,6 +123,8 @@ async def open_session(
         ).scalar_one_or_none()
         if not store:
             raise HTTPException(status_code=404, detail="Store not found")
+        if company_id and store.company_id and store.company_id != company_id:
+            raise HTTPException(status_code=404, detail="Store not found")
 
     cash = round(float(opening_cash or 0), 2)
     if cash < 0:
@@ -111,6 +132,7 @@ async def open_session(
 
     session = m.PosSession(
         tenant_id=tenant_id,
+        company_id=company_id,
         store_id=store_id,
         user_id=user_id,
         session_number=await next_session_number(db, tenant_id),
@@ -246,11 +268,13 @@ async def record_pos_payments(
     tenant_id: str,
     sale_id: str,
     payments: list[dict],
+    company_id: str | None = None,
 ) -> list[m.PosPayment]:
     rows: list[m.PosPayment] = []
     for tender in payments:
         row = m.PosPayment(
             tenant_id=tenant_id,
+            company_id=company_id,
             sale_id=sale_id,
             payment_method=tender["payment_method"],
             amount=tender["amount"],
@@ -302,8 +326,9 @@ async def close_session(
     session_id: str,
     actual_cash: float,
     notes: str | None = None,
+    company_id: str | None = None,
 ) -> m.PosSession:
-    session = await get_session(db, tenant_id, session_id)
+    session = await get_session(db, tenant_id, session_id, company_id=company_id)
     if session.status != "open":
         raise HTTPException(status_code=409, detail="POS session is already closed")
 

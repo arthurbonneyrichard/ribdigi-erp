@@ -3802,7 +3802,11 @@ async def inventory_products_lookup(
 ):
     """Resolve SKU/barcode scans for inventory stock ops and counts (no POS permission required)."""
     rows = await product_lookup_svc.lookup_products(
-        db, tenant_id=claims["tenant_id"], q=q, barcode=barcode
+        db,
+        tenant_id=claims["tenant_id"],
+        q=q,
+        barcode=barcode,
+        company_id=claims.get("company_id"),
     )
     return env(rows)
 
@@ -3825,7 +3829,9 @@ async def products_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 118 E1 — catalog CSV export aligned with the product import template columns."""
-    text = await product_import_svc.export_products_csv(db, tenant_id=claims["tenant_id"])
+    text = await product_import_svc.export_products_csv(
+        db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
+    )
     return Response(
         content=text,
         media_type="text/csv",
@@ -8163,6 +8169,7 @@ async def pos_open_session(
         user_id=claims["sub"],
         store_id=payload.store_id,
         opening_cash=payload.opening_cash,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await pos_svc.serialize_session(session), "POS shift opened")
@@ -8173,7 +8180,9 @@ async def pos_current_session(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    session = await pos_svc.get_open_session_for_user(db, claims["tenant_id"], claims["sub"])
+    session = await pos_svc.get_open_session_for_user(
+        db, claims["tenant_id"], claims["sub"], company_id=claims.get("company_id")
+    )
     if not session:
         return env(None, "No open POS shift")
     return env(await pos_svc.serialize_session(session))
@@ -8237,6 +8246,7 @@ async def pos_close_session(
         session_id=session_id,
         actual_cash=payload.actual_cash,
         notes=payload.notes,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await pos_svc.serialize_session(session), "POS shift closed")
@@ -8250,7 +8260,9 @@ async def pos_session_drawer(
 ):
     from app import cash_drawer as cash_drawer_svc
 
-    session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    session = await pos_svc.get_session(
+        db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
+    )
     summary = await pos_svc.drawer_summary(session)
     cfg = await cash_drawer_svc.resolve_config(
         db, tenant_id=claims["tenant_id"], store_id=session.store_id
@@ -8267,7 +8279,9 @@ async def pos_open_cash_drawer(
 ):
     from app import cash_drawer as cash_drawer_svc
 
-    session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    session = await pos_svc.get_session(
+        db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
+    )
     if session.status != "open":
         raise HTTPException(status_code=400, detail="POS session is not open")
     if session.user_id != claims["sub"] and claims.get("role") not in {
@@ -8303,7 +8317,9 @@ async def pos_session_report(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    session = await pos_svc.get_session(
+        db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
+    )
     return env(await pos_svc.shift_report(db, session))
 
 
@@ -8315,7 +8331,10 @@ async def pos_session_report_export(
 ):
     """Stage 142 Z1 — POS session Z-report CSV (summary + sale lines)."""
     text = await pos_ops_export_svc.export_session_z_report_csv(
-        db, tenant_id=claims["tenant_id"], session_id=session_id
+        db,
+        tenant_id=claims["tenant_id"],
+        session_id=session_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -8343,6 +8362,7 @@ async def pos_list_sales(
         store_id=store_id,
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        company_id=claims.get("company_id"),
     )
     return env(
         [pos_ops_export_svc.serialize_pos_sale(tx, sess) for tx, sess in rows]
@@ -8366,6 +8386,7 @@ async def pos_sales_export(
         store_id=store_id,
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -8402,6 +8423,7 @@ async def pos_holds_list(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         status=status,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env([pos_holds_svc.serialize_hold(r) for r in rows])
@@ -8425,6 +8447,7 @@ async def pos_holds_create(
         label=body.get("label"),
         cart_payload=body.get("cart_payload") or {},
         reserve_stock=reserve_stock,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     msg = (
@@ -8447,6 +8470,7 @@ async def pos_holds_expire_stale(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(
@@ -8472,6 +8496,7 @@ async def pos_holds_resume(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         hold_id=hold_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(pos_holds_svc.serialize_hold(row), "Held cart resumed")
@@ -8490,6 +8515,7 @@ async def pos_holds_discard(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         hold_id=hold_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(pos_holds_svc.serialize_hold(row), "Held cart discarded")
@@ -8503,7 +8529,11 @@ async def pos_search(
     db: AsyncSession = Depends(get_db),
 ):
     out = await product_lookup_svc.lookup_products(
-        db, tenant_id=claims["tenant_id"], q=q, barcode=barcode
+        db,
+        tenant_id=claims["tenant_id"],
+        q=q,
+        barcode=barcode,
+        company_id=claims.get("company_id"),
     )
     return env(out)
 
@@ -8523,6 +8553,7 @@ async def pos_receipt(
         tenant_id=claims["tenant_id"],
         sale_id=sale_id,
         user_id=claims.get("sub"),
+        company_id=claims.get("company_id"),
     )
     fmt = (format or "json").lower()
     tenant = await db.get(m.Tenant, claims["tenant_id"])
@@ -8568,6 +8599,7 @@ async def pos_receipt_send(
         tenant_id=claims["tenant_id"],
         sale_id=sale_id,
         user_id=claims.get("sub"),
+        company_id=claims.get("company_id"),
     )
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     paper = receipts_svc.resolve_receipt_paper(tenant, paper)

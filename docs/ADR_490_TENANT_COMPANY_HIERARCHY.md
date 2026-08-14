@@ -82,3 +82,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Cheques (list/export/get/deposit/clear/bounce/cancel) are company-scoped; creates from payments stamp `company_id`; lifecycle journals use company COA.
 - Liquid transfers, COA account GET, account ledger/transactions (+ CSV), and opening-balance posts are company-scoped.
 - Remaining PARTIAL: FX exchange-rate catalog may remain tenant-shared by design; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 9 follow-up (2026-08-14)
+
+- POS sessions (open/current/list/close/report) stamp and filter by workspace `company_id`.
+- POS sales (create/list/export/receipt) and payments stamp `company_id`; journals use company COA.
+- Held carts (list/create/resume/discard/expire) are company-scoped; product lookup and products CSV export filter by company.
+- Remaining PARTIAL: tax rates/tax reports, AI ops aggregations, report schedules/notifications; FX may stay tenant-shared; ADR-002 billing and ADR-005 store membership remain deferred.

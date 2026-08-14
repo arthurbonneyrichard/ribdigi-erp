@@ -78,6 +78,7 @@ async def record_pos_sale(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         session_id=payload.session_id,
+        company_id=claims.get("company_id"),
     )
     items = [i.model_dump() for i in payload.items]
     from app.tax import resolve_product_tax
@@ -158,6 +159,9 @@ async def record_pos_sale(
         ).scalar_one_or_none()
         if party is None:
             raise HTTPException(status_code=404, detail="Customer not found")
+        company_id = claims.get("company_id")
+        if company_id and party.company_id and party.company_id != company_id:
+            raise HTTPException(status_code=404, detail="Customer not found")
         if (party.status or "active") != "active":
             raise HTTPException(status_code=409, detail="Customer is not active")
         if credit_amount > 0:
@@ -216,6 +220,7 @@ async def record_pos_sale(
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id") or session.company_id,
         tx_type="pos_sale",
         reference=ref,
         client_request_id=client_request_id,
@@ -257,6 +262,7 @@ async def record_pos_sale(
         tenant_id=claims["tenant_id"],
         sale_id=tx.id,
         payments=payments,
+        company_id=tx.company_id,
     )
 
     warehouse_id = None
@@ -293,6 +299,7 @@ async def record_pos_sale(
         tx=tx,
         payment_method=payment_method,
         payments=payments,
+        company_id=tx.company_id,
     )
 
     from app import audit as audit_svc
