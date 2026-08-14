@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_362_EXIT_CRITERIA.md` / `docs/ADR_732_STAGE362_FREEZE.md` (`backend/tests/test_stage362_exit_h362x.py`) — Stage 362 H362x
+- `docs/STAGE_362_FIDELITY.md` (`backend/tests/test_stage362_fidelity_d1.py`) — Stage 362 D1
+- `docs/STAGE_362_PLAN.md` (`backend/tests/test_stage362_open.py`) — Stage 362 open (ADR-731)
+- `docs/E2E_PURCHASE_STOCK_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/e2e-purchase-stock-pack-remaining-gate.json` — Stage 362 I1
+- `docs/E2E_PURCHASE_STOCK_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/e2e-purchase-stock-pack-rg-blockers.json` — Stage 362 B1
+- `docs/E2E_PURCHASE_STOCK_PACK_RG_POINTERS_MVP.md` / `ops/mvp/e2e-purchase-stock-pack-rg-pointers.json` — Stage 362 P1
 - `docs/STAGE_361_EXIT_CRITERIA.md` / `docs/ADR_730_STAGE361_FREEZE.md` (`backend/tests/test_stage361_exit_h361x.py`) — Stage 361 H361x
 - `docs/STAGE_361_FIDELITY.md` (`backend/tests/test_stage361_fidelity_d1.py`) — Stage 361 D1
 - `docs/STAGE_361_PLAN.md` (`backend/tests/test_stage361_open.py`) — Stage 361 open (ADR-729)
@@ -5449,6 +5455,16 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 362 exit
+
+H362x met — `docs/STAGE_362_EXIT_CRITERIA.md`, ADR-732. Stages 1–362 frozen for Stage 362 feature scope.
+
+## Stage 362 D1 — Tenant MVP E2E Purchase Stock Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_362_FIDELITY.md` (`test_stage362_fidelity_d1.py`). `E2E_PURCHASE_STOCK_PACK_*` remaining-gate index; live purchase-stock / E2E smoke / demo tenant / PO Kanban / go-live still MISSING.
+
+## Stage 362 open
 
 ## Stage 361 exit
 

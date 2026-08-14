@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 362 track opened (ADR-731: `test_stage362_open.py`, `docs/STAGE_362_PLAN.md`) — E2E Purchase Stock Pack Remaining-Gate Index; closed under ADR-732
+- [x] E2E purchase stock pack remaining-gate hub (Stage 362 I1: `test_stage362_index_i1.py`, `docs/E2E_PURCHASE_STOCK_PACK_REMAINING_GATE_MVP.md`)
+- [x] E2E purchase stock pack blocker matrix (Stage 362 B1: `test_stage362_blockers_b1.py`, `docs/E2E_PURCHASE_STOCK_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 35 / Stage 361 / Stage 320 / Stage 329 pointers (Stage 362 P1: `test_stage362_pointers_p1.py`, `docs/E2E_PURCHASE_STOCK_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 362 fidelity sync (D1: `test_stage362_fidelity_d1.py`, `docs/STAGE_362_FIDELITY.md`)
+- [x] Stage 362 exit + freeze (H362x: `test_stage362_exit_h362x.py`, `docs/STAGE_362_EXIT_CRITERIA.md`, ADR-732)
 - [x] Stage 361 track opened (ADR-729: `test_stage361_open.py`, `docs/STAGE_361_PLAN.md`) — E2E Sale Payment Pack Remaining-Gate Index; closed under ADR-730
 - [x] E2E sale payment pack remaining-gate hub (Stage 361 I1: `test_stage361_index_i1.py`, `docs/E2E_SALE_PAYMENT_PACK_REMAINING_GATE_MVP.md`)
 - [x] E2E sale payment pack blocker matrix (Stage 361 B1: `test_stage361_blockers_b1.py`, `docs/E2E_SALE_PAYMENT_PACK_RG_BLOCKERS_MVP.md`)

@@ -1,0 +1,62 @@
+{
+  "id": "e2e-purchase-stock-pack-rg-blockers",
+  "stage": 362,
+  "pack": "B1",
+  "doc": "docs/E2E_PURCHASE_STOCK_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/E2E_PURCHASE_STOCK_PACK_REMAINING_GATE_MVP.md",
+    "e2e_purchase_stock": "docs/E2E_PURCHASE_STOCK_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_purchase_stock_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "po_kanban_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_purchase_stock_claimed": "REMAINING",
+    "e2e_smoke_executed_claimed": "REMAINING",
+    "demo_tenant_claimed": "REMAINING",
+    "po_kanban_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage35_as_live_e2e_purchase_stock": "NON_CLAIM",
+    "live_purchase_stock_claimed_flag": "false",
+    "e2e_smoke_executed_claimed_flag": "false",
+    "demo_tenant_claimed_flag": "false",
+    "po_kanban_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "epsprb-live-purchase",
+      "title": "Mark live purchase-stock Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "epsprb-e2e-smoke",
+      "title": "Mark E2E smoke Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "epsprb-demo",
+      "title": "Mark demo tenant Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "epsprb-stage35-nonclaim",
+      "title": "Mark Stage 35 as non-claim for live E2E purchase-stock Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "epsprb-checklist-remaining",
+      "title": "Live E2E purchase-stock Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 362 B1 E2E purchase stock pack RG blocker matrix packaging only. Live E2E purchase-stock Completes remain MISSING."
+}

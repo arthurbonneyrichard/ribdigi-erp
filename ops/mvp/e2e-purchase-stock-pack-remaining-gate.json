@@ -1,0 +1,57 @@
+{
+  "id": "e2e-purchase-stock-pack-remaining-gate",
+  "stage": 362,
+  "pack": "I1",
+  "doc": "docs/E2E_PURCHASE_STOCK_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/E2E_PURCHASE_STOCK_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/E2E_PURCHASE_STOCK_PACK_RG_POINTERS_MVP.md",
+    "e2e_purchase_stock": "docs/E2E_PURCHASE_STOCK_MVP.md",
+    "e2e_sale_payment_pack_remaining_gate": "docs/E2E_SALE_PAYMENT_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_purchase_stock_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "po_kanban_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage35_e2e_purchase_stock": true,
+  "distinct_from_stage361_e2e_sale_payment_pack_remaining_gate": true,
+  "distinct_from_stage320_e2e_backup_restore_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "epspr-read-blockers",
+      "title": "Read B1 E2E purchase stock pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "epspr-follow-pointers",
+      "title": "Follow P1 Stage 35 / Stage 361 / Stage 320 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "epspr-checklist-missing",
+      "title": "Reaffirm live purchase-stock / E2E smoke / demo tenant / PO Kanban MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "epspr-no-packaging-as-live",
+      "title": "Do not treat Stage 35 / Stage 361 / Stage 320 / Stage 329 as live E2E purchase-stock Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "epspr-checklist-remaining",
+      "title": "Live purchase-stock / E2E smoke / demo tenant / PO Kanban / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 362 I1 E2E purchase stock pack remaining-gate index packaging only. Do not claim live E2E purchase-stock Complete."
+}

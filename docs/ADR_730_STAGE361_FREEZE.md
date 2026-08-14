@@ -31,3 +31,9 @@ Stage 362 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live sale-payment, E2E smoke, demo tenant, USB-serial drivers, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 362 opened under **ADR-731** after CONTINUE/NEXT (Tenant MVP E2E Purchase Stock Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-732**. Stage 361 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 362 runner-up outline was approved and opened (ADR-731); freeze ADR-732. Do not reopen Stage 361 scope.
