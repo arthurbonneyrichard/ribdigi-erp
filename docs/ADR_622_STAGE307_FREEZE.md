@@ -31,3 +31,9 @@ Stage 308 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for HSM, Vault SaaS live, customer-managed keys, mTLS mesh, or go-live.
+
+## Amendment — Stage 308 opened
+
+Stage 308 opened under **ADR-623** after CONTINUE/NEXT (Tenant MVP RTO/RPO Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-624**. Stage 307 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 308 runner-up outline was approved and opened (ADR-623); freeze ADR-624. Do not reopen Stage 307 scope.

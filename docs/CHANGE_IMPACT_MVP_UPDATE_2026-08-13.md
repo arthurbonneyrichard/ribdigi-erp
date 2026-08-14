@@ -671,3 +671,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 307 decision (opened after Stage 306 freeze)
 
 **Tenant MVP Encryption KMS Pack Remaining-Gate Index Fidelity** — encryption KMS pack remaining-gate hub (I1), blocker matrix (B1), Stage 44 E1 / Stage 306 / Stage 44 R1 / Stage 305 pointers with explicit non-claim (P1). Prefixed `ENCRYPTION_KMS_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 44 E1 `ENCRYPTION_KMS_MVP.md`). HSM / Vault SaaS live / customer-managed keys / mTLS mesh / go-live Completes remain deferred (Stage 308+; ADR-002 in force). Distinct from Stage 306 data residency pack remaining-gate, Stage 305 erasure honesty pack remaining-gate, Stage 44 R1 data residency packaging, and Stage 44 E1 encryption KMS packaging. Open ADR-621 / freeze ADR-622.
+
+## Stage 308 decision (opened after Stage 307 freeze)
+
+**Tenant MVP RTO/RPO Pack Remaining-Gate Index Fidelity** — RTO/RPO pack remaining-gate hub (I1), blocker matrix (B1), Stage 45 O1 / Stage 307 / Stage 306 / Stage 45 T1 pointers with explicit non-claim (P1). Prefixed `RTO_RPO_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 45 O1 `RTO_RPO_MVP.md`). Measured RTO / measured RPO / multi-region failover / RTO/RPO SLA live / go-live Completes remain deferred (Stage 309+; ADR-002 in force). Distinct from Stage 307 encryption KMS pack remaining-gate, Stage 306 data residency pack remaining-gate, Stage 45 T1 data retention return packaging, and Stage 45 O1 RTO/RPO packaging. Open ADR-623 / freeze ADR-624.

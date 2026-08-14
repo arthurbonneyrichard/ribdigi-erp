@@ -366,6 +366,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Encryption KMS pack remaining-gate index (Stage 307):** Status index is `docs/ENCRYPTION_KMS_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ENCRYPTION_KMS_PACK_RG_BLOCKERS_MVP.md` → Stage 44/306/44R1/305 pointers `docs/ENCRYPTION_KMS_PACK_RG_POINTERS_MVP.md`. HSM Complete and customer-managed keys Complete remain MISSING (not claimed). Prefixed `ENCRYPTION_KMS_PACK_*` remaining-gate docs (≠ Stage 44 E1 `ENCRYPTION_KMS_MVP.md`).
 
+**RTO/RPO pack remaining-gate index (Stage 308):** Status index is `docs/RTO_RPO_PACK_REMAINING_GATE_MVP.md` → blockers `docs/RTO_RPO_PACK_RG_BLOCKERS_MVP.md` → Stage 45/307/306/45T1 pointers `docs/RTO_RPO_PACK_RG_POINTERS_MVP.md`. Measured RTO Complete and measured RPO Complete remain MISSING (not claimed). Prefixed `RTO_RPO_PACK_*` remaining-gate docs (≠ Stage 45 O1 `RTO_RPO_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

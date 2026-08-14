@@ -1,0 +1,63 @@
+{
+  "id": "rto-rpo-pack-rg-blockers",
+  "stage": 308,
+  "pack": "B1",
+  "doc": "docs/RTO_RPO_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RTO_RPO_PACK_REMAINING_GATE_MVP.md",
+    "rto_rpo": "docs/RTO_RPO_MVP.md"
+  },
+  "packaging_complete": true,
+  "measured_rto_claimed": false,
+  "measured_rpo_claimed": false,
+  "multi_region_failover_claimed": false,
+  "rto_rpo_sla_live": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "measured_rto_claimed": "REMAINING",
+    "measured_rpo_claimed": "REMAINING",
+    "multi_region_failover_claimed": "REMAINING",
+    "rto_rpo_sla_live": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage45_as_measured_rto": "NON_CLAIM",
+    "stage307_as_hsm": "NON_CLAIM",
+    "measured_rto_claimed_flag": "false",
+    "measured_rpo_claimed_flag": "false",
+    "multi_region_failover_claimed_flag": "false",
+    "rto_rpo_sla_live_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "rrprb-rto",
+      "title": "Mark measured RTO Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprb-rpo",
+      "title": "Mark measured RPO Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprb-failover",
+      "title": "Mark multi-region failover Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprb-stage45-nonclaim",
+      "title": "Mark Stage 45 O1 as non-claim for measured RTO Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprb-rto-remaining",
+      "title": "Measured RTO Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 308 B1 RTO/RPO pack RG blocker matrix packaging only. Measured RTO Completes remain MISSING."
+}

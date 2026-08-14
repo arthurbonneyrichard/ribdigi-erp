@@ -4308,6 +4308,18 @@ Every feature in every phase must meet:
 
 **Stage 307 exit (2026-08-14):** I1, B1, P1, D1, H307x met — `docs/STAGE_307_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_622_STAGE307_FREEZE.md`. Fidelity: `docs/STAGE_307_FIDELITY.md`.
 
+**Stage 308 open (2026-08-14):** Tenant MVP RTO/RPO Pack Remaining-Gate Index Fidelity — `docs/ADR_623_STAGE308_OPEN.md` + `docs/STAGE_308_PLAN.md` (I1 next).
+
+**Stage 308 I1 (2026-08-14):** RTO/RPO pack remaining-gate index hub (`test_stage308_index_i1.py`).
+
+**Stage 308 B1 (2026-08-14):** RTO/RPO pack blocker matrix (`test_stage308_blockers_b1.py`).
+
+**Stage 308 P1 (2026-08-14):** Stage 45 O1 / Stage 307 / Stage 306 / Stage 45 T1 pointers (`test_stage308_pointers_p1.py`).
+
+**Stage 308 D1 (2026-08-14):** RTO/RPO Pack Remaining-Gate Index fidelity sync — `docs/STAGE_308_FIDELITY.md` (`test_stage308_fidelity_d1.py`).
+
+**Stage 308 exit (2026-08-14):** I1, B1, P1, D1, H308x met — `docs/STAGE_308_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_624_STAGE308_FREEZE.md`. Fidelity: `docs/STAGE_308_FIDELITY.md`.
+
 
 
 

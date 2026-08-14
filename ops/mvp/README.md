@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_308_EXIT_CRITERIA.md` / `docs/ADR_624_STAGE308_FREEZE.md` (`backend/tests/test_stage308_exit_h308x.py`) — Stage 308 H308x
+- `docs/STAGE_308_FIDELITY.md` (`backend/tests/test_stage308_fidelity_d1.py`) — Stage 308 D1
+- `docs/STAGE_308_PLAN.md` (`backend/tests/test_stage308_open.py`) — Stage 308 open (ADR-623)
+- `docs/RTO_RPO_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/rto-rpo-pack-remaining-gate.json` — Stage 308 I1
+- `docs/RTO_RPO_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/rto-rpo-pack-rg-blockers.json` — Stage 308 B1
+- `docs/RTO_RPO_PACK_RG_POINTERS_MVP.md` / `ops/mvp/rto-rpo-pack-rg-pointers.json` — Stage 308 P1
 - `docs/STAGE_307_EXIT_CRITERIA.md` / `docs/ADR_622_STAGE307_FREEZE.md` (`backend/tests/test_stage307_exit_h307x.py`) — Stage 307 H307x
 - `docs/STAGE_307_FIDELITY.md` (`backend/tests/test_stage307_fidelity_d1.py`) — Stage 307 D1
 - `docs/STAGE_307_PLAN.md` (`backend/tests/test_stage307_open.py`) — Stage 307 open (ADR-621)
@@ -5125,6 +5131,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 308 exit
+
+H308x met — `docs/STAGE_308_EXIT_CRITERIA.md`, ADR-624. Stages 1–308 frozen for Stage 308 feature scope.
+
+## Stage 308 D1 — Tenant MVP RTO/RPO Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_308_FIDELITY.md` (`test_stage308_fidelity_d1.py`). `RTO_RPO_PACK_*` remaining-gate index; measured RTO/RPO / multi-region failover / go-live still MISSING.
+
+## Stage 308 open
+
+ADR-623 / `docs/STAGE_308_PLAN.md`.
 
 ## Stage 307 exit
 
