@@ -31,3 +31,10 @@ Stage 351 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for quarterly POS ops rollup, Offline Complete, live DR, attestation, fabricated quarterly green, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 351 opened under **ADR-709** after CONTINUE/NEXT (Tenant MVP Quarterly POS Ops Gates Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-710**. Stage 350 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 351 runner-up outline was approved and opened (ADR-709); freeze ADR-710. Do not reopen Stage 350 scope.
+

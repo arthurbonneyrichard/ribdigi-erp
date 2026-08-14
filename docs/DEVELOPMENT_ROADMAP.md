@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 351 open (2026-08-14):** Tenant MVP Quarterly POS Ops Gates Pack Remaining-Gate Index Fidelity — `docs/ADR_709_STAGE351_OPEN.md` + `docs/STAGE_351_PLAN.md` (I1 next).
+
+**Stage 351 I1 (2026-08-14):** Quarterly POS ops gates pack remaining-gate index hub (`test_stage351_index_i1.py`).
+
+**Stage 351 B1 (2026-08-14):** Quarterly POS ops gates pack blocker matrix (`test_stage351_blockers_b1.py`).
+
+**Stage 351 P1 (2026-08-14):** Stage 178 / Stage 350 / Stage 349 / Stage 329 pointers (`test_stage351_pointers_p1.py`).
+
+**Stage 351 D1 (2026-08-14):** Quarterly POS Ops Gates Pack Remaining-Gate Index fidelity sync — `docs/STAGE_351_FIDELITY.md` (`test_stage351_fidelity_d1.py`).
+
+**Stage 351 exit (2026-08-14):** I1, B1, P1, D1, H351x met — `docs/STAGE_351_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_710_STAGE351_FREEZE.md`. Fidelity: `docs/STAGE_351_FIDELITY.md`.
+
 **Stage 350 open (2026-08-14):** Tenant MVP Quarterly POS Ops Rollup Pack Remaining-Gate Index Fidelity — `docs/ADR_707_STAGE350_OPEN.md` + `docs/STAGE_350_PLAN.md` (I1 next).
 
 **Stage 350 I1 (2026-08-14):** Quarterly POS ops rollup pack remaining-gate index hub (`test_stage350_index_i1.py`).
