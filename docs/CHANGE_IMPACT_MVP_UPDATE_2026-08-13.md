@@ -582,3 +582,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 286 decision (opened after Stage 285 freeze)
 
 **Tenant MVP Breach Notification Pack Remaining-Gate Index Fidelity** — breach notification pack remaining-gate hub (I1), blocker matrix (B1), Stage 38 B1 / Stage 285 / Stage 237-211 / Stage 38 V1 pointers with explicit non-claim (P1). Prefixed `BREACH_NOTIFICATION_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 38 B1 `BREACH_NOTIFICATION_MVP.md`). Breach drill / regulatory filing / customer notification SaaS / security mailbox / paid billing / go-live Completes remain deferred (Stage 287+; ADR-002 in force). Distinct from Stage 285 accessibility statement pack remaining-gate, Stage 237/211 incident pack remaining-gate, and Stage 38 B1 breach notification packaging. Open ADR-579 / freeze ADR-580.
+
+
+## Stage 287 decision (opened after Stage 286 freeze)
+
+**Tenant MVP Vuln Disclosure Pack Remaining-Gate Index Fidelity** — vuln disclosure pack remaining-gate hub (I1), blocker matrix (B1), Stage 38 V1 / Stage 286 / Stage 237-211 / Stage 27 pointers with explicit non-claim (P1). Prefixed `VULN_DISCLOSURE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 38 V1 `VULN_DISCLOSURE_MVP.md`). Disclosure program / bug bounty / continuous disclosure / researcher intake / paid billing / go-live Completes remain deferred (Stage 288+; ADR-002 in force). Distinct from Stage 286 breach notification pack remaining-gate, Stage 237/211 incident pack remaining-gate, and Stage 38 V1 vuln disclosure packaging. Open ADR-581 / freeze ADR-582.

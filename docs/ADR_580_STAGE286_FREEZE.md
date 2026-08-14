@@ -28,6 +28,12 @@ Stage 287 requires CONTINUE/NEXT with a distinct product outline after this free
 
 **Runner-up outline (not opened):** Tenant MVP Vuln Disclosure Pack Remaining-Gate Index Fidelity — single index of vuln-disclosure-pack blockers (packaged Stage 38 V1 vulnerability disclosure materials non-claim as disclosure-program / mailbox-live Completes) with explicit non-claim. Prefixed `VULN_DISCLOSURE_PACK_*` if a prior remaining-gate exists. Distinct from Stage 286 breach notification pack remaining-gate, Stage 237/211 incident pack remaining-gate, and `VULN_DISCLOSURE_MVP.md` packaging. Source: `VULN_DISCLOSURE_MVP.md`.
 
+## Amendment — Stage 287 opened
+
+Stage 287 opened under **ADR-581** after CONTINUE/NEXT (Tenant MVP Vuln Disclosure Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-582**. Stage 286 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 287 runner-up outline was approved and opened (ADR-581); freeze ADR-582. Do not reopen Stage 286 scope.
+
 ## Non-claims
 
 Packaging ≠ live Completes for breach drill, regulatory filing, customer notification SaaS, security mailbox live, paid billing, or go-live.

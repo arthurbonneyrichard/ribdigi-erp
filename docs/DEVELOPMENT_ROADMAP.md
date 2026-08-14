@@ -4056,6 +4056,18 @@ Every feature in every phase must meet:
 
 **Stage 286 exit (2026-08-14):** I1, B1, P1, D1, H286x met — `docs/STAGE_286_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_580_STAGE286_FREEZE.md`. Fidelity: `docs/STAGE_286_FIDELITY.md`.
 
+**Stage 287 open (2026-08-14):** Tenant MVP Vuln Disclosure Pack Remaining-Gate Index Fidelity — `docs/ADR_581_STAGE287_OPEN.md` + `docs/STAGE_287_PLAN.md` (I1 next).
+
+**Stage 287 I1 (2026-08-14):** Vuln disclosure pack remaining-gate index hub (`test_stage287_index_i1.py`).
+
+**Stage 287 B1 (2026-08-14):** Vuln disclosure pack blocker matrix (`test_stage287_blockers_b1.py`).
+
+**Stage 287 P1 (2026-08-14):** Stage 38 V1 / Stage 286 / Stage 237-211 / Stage 27 pointers (`test_stage287_pointers_p1.py`).
+
+**Stage 287 D1 (2026-08-14):** Vuln Disclosure Pack Remaining-Gate Index fidelity sync — `docs/STAGE_287_FIDELITY.md` (`test_stage287_fidelity_d1.py`).
+
+**Stage 287 exit (2026-08-14):** I1, B1, P1, D1, H287x met — `docs/STAGE_287_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_582_STAGE287_FREEZE.md`. Fidelity: `docs/STAGE_287_FIDELITY.md`.
+
 
 
 

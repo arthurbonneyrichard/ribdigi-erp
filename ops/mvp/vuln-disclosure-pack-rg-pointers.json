@@ -1,0 +1,61 @@
+{
+  "id": "vuln-disclosure-pack-rg-pointers",
+  "stage": 287,
+  "pack": "P1",
+  "doc": "docs/VULN_DISCLOSURE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/VULN_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "vuln_disclosure": "docs/VULN_DISCLOSURE_MVP.md",
+    "breach_notification_pack_remaining_gate": "docs/BREACH_NOTIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "incident_pack_remaining_gate": "docs/INCIDENT_PACK_REMAINING_GATE_MVP.md",
+    "security_scan": "docs/SECURITY_SCAN_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "disclosure_program_claimed": false,
+  "bug_bounty_claimed": false,
+  "continuous_disclosure_claimed": false,
+  "researcher_intake_live": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "vuln_disclosure_stage38",
+    "breach_notification_pack_remaining_gate_stage286",
+    "incident_pack_remaining_gate_stage211",
+    "security_scan_stage27",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "vdprp-stage38",
+      "title": "Point to Stage 38 V1 vuln disclosure",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "vdprp-stage286",
+      "title": "Point to Stage 286 breach notification pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "vdprp-stage211",
+      "title": "Point to Stage 237/211 incident pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "vdprp-stage27",
+      "title": "Point to Stage 27 security scan adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "vdprp-program-remaining",
+      "title": "Disclosure program Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 287 P1 vuln disclosure pack RG pointers packaging only. Do not claim disclosure program Complete."
+}
