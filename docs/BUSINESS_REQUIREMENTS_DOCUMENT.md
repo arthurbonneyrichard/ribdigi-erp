@@ -632,7 +632,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Auto-generation from sales invoices
   - [x] Customer aging report (0-30, 31-60, 61-90, 90+ days)
-  - [x] Payment recording against invoices
+  - [x] Payment recording against invoices (`payment_number` via tenant series `GET|PATCH /sales/settings` → `payment_receipt_numbering`; default `RCP`; Sales Document numbering Receipt row)
   - [x] Partial payment support
   - [x] Overdue notification automation
 
@@ -642,7 +642,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Auto-generation from purchase invoices
   - [x] Supplier aging report
-  - [x] Payment recording against bills
+  - [x] Payment recording against bills (`payment_number` via tenant series `GET|PATCH /purchasing/settings` → `supplier_payment_numbering`; default `SPY`; Purchasing Document numbering SPY row)
   - [x] Partial payment support
   - [x] Due date notifications
 
@@ -994,7 +994,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, quotation, sales order, sales return, credit note numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN)
+  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)

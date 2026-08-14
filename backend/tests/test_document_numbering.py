@@ -264,6 +264,64 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
     assert preq.status_code == 200, preq.text
     assert preq.json()["data"]["request_number"] == f"PREQ-{year}-0003"
 
+    # Customer payment receipt + supplier payment numbering (BR-20.4 / BR-10.4 / BR-10.5)
+    pay_sales = await ac.patch(
+        "/api/v1/sales/settings",
+        headers=admin,
+        json={"payment_receipt_numbering": {"prefix": "RCP", "next_number": 5}},
+    )
+    assert pay_sales.status_code == 200, pay_sales.text
+    assert pay_sales.json()["data"]["payment_receipt_numbering"]["preview"] == f"RCP-{year}-0005"
+    pay_purch = await ac.patch(
+        "/api/v1/purchasing/settings",
+        headers=admin,
+        json={"supplier_payment_numbering": {"prefix": "SPY", "next_number": 6}},
+    )
+    assert pay_purch.status_code == 200, pay_purch.text
+    assert pay_purch.json()["data"]["supplier_payment_numbering"]["preview"] == f"SPY-{year}-0006"
+
+    # Fresh open sales invoice for receipt allocation
+    pay_inv = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=admin,
+        json={
+            "customer_id": cust.json()["data"]["id"],
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 40}],
+        },
+    )
+    assert pay_inv.status_code == 200, pay_inv.text
+    pay_inv_id = pay_inv.json()["data"]["id"]
+    assert (await ac.post(f"/api/v1/sales/invoices/{pay_inv_id}/post", headers=admin)).status_code == 200
+    cust_pay = await ac.post(
+        "/api/v1/sales/payments",
+        headers=admin,
+        json={
+            "customer_id": cust.json()["data"]["id"],
+            "sales_invoice_id": pay_inv_id,
+            "amount": 10,
+            "payment_method": "cash",
+        },
+    )
+    assert cust_pay.status_code == 200, cust_pay.text
+    assert cust_pay.json()["data"]["payment_number"] == f"RCP-{year}-0005"
+
+    # Approve purchase invoice then pay supplier
+    pinvid = inv.json()["data"]["id"]
+    approved = await ac.post(f"/api/v1/purchasing/invoices/{pinvid}/approve", headers=admin)
+    assert approved.status_code in (200, 409), approved.text
+    spy = await ac.post(
+        f"/api/v1/suppliers/{supplier_id}/payments",
+        headers=admin,
+        json={
+            "supplier_id": supplier_id,
+            "purchase_invoice_id": pinvid,
+            "amount": 5,
+            "payment_method": "cash",
+        },
+    )
+    assert spy.status_code == 200, spy.text
+    assert spy.json()["data"]["payment_number"] == f"SPY-{year}-0006"
+
     # Counter advanced for next GRN
     assert await next_grn_number(db_session, seed["t1"].id) == f"GRN-{year}-0010"
     await db_session.commit()

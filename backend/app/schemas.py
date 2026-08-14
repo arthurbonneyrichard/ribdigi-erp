@@ -967,6 +967,7 @@ class SalesSettingsUpdate(BaseModel):
     sales_order_numbering: DocumentNumberingFields | None = None
     sales_return_numbering: DocumentNumberingFields | None = None
     credit_note_numbering: DocumentNumberingFields | None = None
+    payment_receipt_numbering: DocumentNumberingFields | None = None
     # Legacy flat fields (invoice only)
     prefix: str | None = Field(default=None, min_length=1, max_length=20)
     next_number: int | None = Field(default=None, ge=1, le=999999)
@@ -979,6 +980,7 @@ class PurchasingNumberingUpdate(BaseModel):
     purchase_request_numbering: DocumentNumberingFields | None = None
     purchase_return_numbering: DocumentNumberingFields | None = None
     debit_note_numbering: DocumentNumberingFields | None = None
+    supplier_payment_numbering: DocumentNumberingFields | None = None
 
 
 class PrintBrandingUpdate(BaseModel):

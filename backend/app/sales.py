@@ -12,7 +12,7 @@ from app import models as m
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
 from app.catalog import resolve_sale_line, stock_out_with_batch
-from app.doc_numbers import next_sales_invoice_number
+from app.doc_numbers import next_customer_payment_number, next_sales_invoice_number
 
 
 SALES_INVOICE_OPEN = frozenset({"posted", "sent", "partial", "overdue"})
@@ -811,7 +811,7 @@ async def record_customer_payment(
     )
     payment = m.CustomerPayment(
         tenant_id=tenant_id,
-        payment_number=f"RCP-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        payment_number=await next_customer_payment_number(db, tenant_id),
         customer_id=customer_id,
         sales_invoice_id=sales_invoice_id or primary_invoice_id,
         amount=amount,

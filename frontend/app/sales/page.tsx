@@ -105,6 +105,9 @@ export default function Page() {
   const [cnPrefix, setCnPrefix] = useState('CN');
   const [cnNext, setCnNext] = useState('1');
   const [cnPreview, setCnPreview] = useState('');
+  const [rcpPrefix, setRcpPrefix] = useState('RCP');
+  const [rcpNext, setRcpNext] = useState('1');
+  const [rcpPreview, setRcpPreview] = useState('');
   const [fmt, setFmt] = useState<FormatPrefs | null>(null);
 
   async function refresh() {
@@ -161,6 +164,12 @@ export default function Page() {
       setCnPrefix(cn.prefix || 'CN');
       setCnNext(String(cn.next_number ?? 1));
       setCnPreview(cn.preview || '');
+    }
+    const rcp = settingsRes.data?.payment_receipt_numbering;
+    if (rcp) {
+      setRcpPrefix(rcp.prefix || 'RCP');
+      setRcpNext(String(rcp.next_number ?? 1));
+      setRcpPreview(rcp.preview || '');
     }
   }
 
@@ -346,6 +355,10 @@ export default function Page() {
             prefix: cnPrefix.trim(),
             next_number: Math.max(1, Number(cnNext) || 1),
           },
+          payment_receipt_numbering: {
+            prefix: rcpPrefix.trim(),
+            next_number: Math.max(1, Number(rcpNext) || 1),
+          },
         }),
       });
       const numbering = r.data?.invoice_numbering;
@@ -378,8 +391,14 @@ export default function Page() {
         setCnNext(String(cn.next_number));
         setCnPreview(cn.preview);
       }
+      const rcp = r.data?.payment_receipt_numbering;
+      if (rcp) {
+        setRcpPrefix(rcp.prefix);
+        setRcpNext(String(rcp.next_number));
+        setRcpPreview(rcp.preview);
+      }
       setMessage(
-        `Numbering saved — INV ${numbering?.preview || ''} / QT ${qt?.preview || ''} / SO ${so?.preview || ''} / SR ${sr?.preview || ''} / CN ${cn?.preview || ''}`.trim(),
+        `Numbering saved — INV ${numbering?.preview || ''} / QT ${qt?.preview || ''} / SO ${so?.preview || ''} / SR ${sr?.preview || ''} / CN ${cn?.preview || ''} / RCP ${rcp?.preview || ''}`.trim(),
       );
     } catch (err: any) {
       setError(err.message);
@@ -624,6 +643,22 @@ export default function Page() {
             style={{ width: 90 }}
           />
           <span className="muted">{cnPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Receipt</span>
+          <input
+            value={rcpPrefix}
+            onChange={(e) => setRcpPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={rcpNext}
+            onChange={(e) => setRcpNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <span className="muted">{rcpPreview || '—'}</span>
           <button type="button" onClick={saveInvoiceNumbering}>
             Save numbering
           </button>
