@@ -31,3 +31,9 @@ Stage 416 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, onboarding, Implementation Onboarding honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 416 opened under **ADR-839** after CONTINUE/NEXT (Tenant MVP Release Pipeline Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-840**. Stage 415 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 415 runner-up outline was approved and opened (ADR-839); freeze ADR-840. Do not reopen Stage 415 scope.

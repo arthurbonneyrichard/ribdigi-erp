@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 416 D1 Release Pipeline Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_416_FIDELITY.md` (`test_stage416_fidelity_d1.py`); Offline Complete / Release Pipeline honesty / go-live still MISSING.
 Stage 415 D1 Implementation Onboarding Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_415_FIDELITY.md` (`test_stage415_fidelity_d1.py`); Offline Complete / Implementation Onboarding honesty / go-live still MISSING.
 Stage 414 D1 Business Pilot Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_414_FIDELITY.md` (`test_stage414_fidelity_d1.py`); Offline Complete / Business Pilot honesty / go-live still MISSING.
 Stage 413 D1 First Tenant Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_413_FIDELITY.md` (`test_stage413_fidelity_d1.py`); Offline Complete / First Tenant honesty / go-live still MISSING.
