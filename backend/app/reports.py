@@ -42,41 +42,74 @@ def month_bounds(year: int, month: int) -> tuple[datetime, datetime]:
     return start, end
 
 
-async def sales_daily(db: AsyncSession, tenant_id: str, date: datetime | None = None) -> dict:
+async def _resolve_sales_store(
+    db: AsyncSession, tenant_id: str, store_id: str | None
+) -> tuple[str | None, str | None]:
+    """Validate optional store filter; returns (store_id, store_name)."""
+    if not store_id:
+        return None, None
+    store = (
+        await db.execute(
+            select(m.Store).where(
+                m.Store.tenant_id == tenant_id,
+                m.Store.id == store_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not store:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="Store not found")
+    return store.id, store.name
+
+
+async def sales_daily(
+    db: AsyncSession,
+    tenant_id: str,
+    date: datetime | None = None,
+    *,
+    store_id: str | None = None,
+) -> dict:
     day = date or datetime.utcnow()
     start, end = day_bounds(day)
+    store_id, store_name = await _resolve_sales_store(db, tenant_id, store_id)
 
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
-                m.SalesInvoice.posted_at >= start,
-                m.SalesInvoice.posted_at <= end,
-            )
+    inv_stmt = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
+        m.SalesInvoice.posted_at >= start,
+        m.SalesInvoice.posted_at <= end,
+    )
+    if store_id:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
+    invoices = (await db.execute(inv_stmt)).scalars().all()
+
+    pos_stmt = (
+        select(m.Transaction, m.PosSession)
+        .outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+        .where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.Transaction.created_at >= start,
+            m.Transaction.created_at <= end,
         )
-    ).scalars().all()
-    pos = (
-        await db.execute(
-            select(m.Transaction).where(
-                m.Transaction.tenant_id == tenant_id,
-                m.Transaction.tx_type == "pos_sale",
-                m.Transaction.created_at >= start,
-                m.Transaction.created_at <= end,
-            )
-        )
-    ).scalars().all()
+    )
+    if store_id:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
+    pos_rows = (await db.execute(pos_stmt)).all()
 
     invoice_total = sum(float(i.total_amount or 0) for i in invoices)
     invoice_tax = sum(float(i.tax_amount or 0) for i in invoices)
     invoice_discount = sum(float(i.discount_amount or 0) for i in invoices)
-    pos_total = sum(float(t.total or 0) for t in pos)
-    pos_tax = sum(float(t.tax or 0) for t in pos)
+    pos_total = sum(float(t.total or 0) for t, _ in pos_rows)
+    pos_tax = sum(float(t.tax or 0) for t, _ in pos_rows)
 
     return {
         "date": start.date().isoformat(),
+        "store_id": store_id,
+        "store_name": store_name,
         "invoice_count": len(invoices),
-        "pos_count": len(pos),
+        "pos_count": len(pos_rows),
         "invoice_revenue": round(invoice_total, 2),
         "pos_revenue": round(pos_total, 2),
         "total_revenue": round(invoice_total + pos_total, 2),
@@ -86,45 +119,61 @@ async def sales_daily(db: AsyncSession, tenant_id: str, date: datetime | None = 
     }
 
 
-async def sales_monthly(db: AsyncSession, tenant_id: str, year: int, month: int) -> dict:
+async def sales_monthly(
+    db: AsyncSession,
+    tenant_id: str,
+    year: int,
+    month: int,
+    *,
+    store_id: str | None = None,
+) -> dict:
     start, end = month_bounds(year, month)
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
-                m.SalesInvoice.posted_at >= start,
-                m.SalesInvoice.posted_at <= end,
-            )
+    store_id, store_name = await _resolve_sales_store(db, tenant_id, store_id)
+
+    inv_stmt = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
+        m.SalesInvoice.posted_at >= start,
+        m.SalesInvoice.posted_at <= end,
+    )
+    if store_id:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
+    invoices = (await db.execute(inv_stmt)).scalars().all()
+
+    pos_stmt = (
+        select(m.Transaction, m.PosSession)
+        .outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+        .where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.Transaction.created_at >= start,
+            m.Transaction.created_at <= end,
         )
-    ).scalars().all()
-    pos = (
-        await db.execute(
-            select(m.Transaction).where(
-                m.Transaction.tenant_id == tenant_id,
-                m.Transaction.tx_type == "pos_sale",
-                m.Transaction.created_at >= start,
-                m.Transaction.created_at <= end,
-            )
-        )
-    ).scalars().all()
+    )
+    if store_id:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
+    pos_rows = (await db.execute(pos_stmt)).all()
 
     by_day: dict[str, float] = defaultdict(float)
     for inv in invoices:
         key = (inv.posted_at or inv.created_at).date().isoformat()
         by_day[key] += float(inv.total_amount or 0)
-    for tx in pos:
+    for tx, _ in pos_rows:
         key = tx.created_at.date().isoformat()
         by_day[key] += float(tx.total or 0)
 
     total = sum(by_day.values())
     prev_year, prev_month = (year - 1, month) if month == 1 else (year, month - 1)
-    prev = await sales_monthly_total(db, tenant_id, prev_year, prev_month)
+    prev = await sales_monthly_total(
+        db, tenant_id, prev_year, prev_month, store_id=store_id
+    )
     return {
         "year": year,
         "month": month,
+        "store_id": store_id,
+        "store_name": store_name,
         "invoice_count": len(invoices),
-        "pos_count": len(pos),
+        "pos_count": len(pos_rows),
         "total_revenue": round(total, 2),
         "previous_month_revenue": prev,
         "change_pct": round(((total - prev) / prev) * 100, 2) if prev else None,
@@ -132,34 +181,39 @@ async def sales_monthly(db: AsyncSession, tenant_id: str, year: int, month: int)
     }
 
 
-async def sales_monthly_total(db: AsyncSession, tenant_id: str, year: int, month: int) -> float:
+async def sales_monthly_total(
+    db: AsyncSession,
+    tenant_id: str,
+    year: int,
+    month: int,
+    *,
+    store_id: str | None = None,
+) -> float:
     start, end = month_bounds(year, month)
-    inv = float(
-        (
-            await db.execute(
-                select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-                    m.SalesInvoice.tenant_id == tenant_id,
-                    m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
-                    m.SalesInvoice.posted_at >= start,
-                    m.SalesInvoice.posted_at <= end,
-                )
-            )
-        ).scalar()
-        or 0
+    inv_stmt = select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
+        m.SalesInvoice.posted_at >= start,
+        m.SalesInvoice.posted_at <= end,
     )
-    pos = float(
-        (
-            await db.execute(
-                select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-                    m.Transaction.tenant_id == tenant_id,
-                    m.Transaction.tx_type == "pos_sale",
-                    m.Transaction.created_at >= start,
-                    m.Transaction.created_at <= end,
-                )
-            )
-        ).scalar()
-        or 0
+    if store_id:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
+    inv = float((await db.execute(inv_stmt)).scalar() or 0)
+
+    pos_stmt = (
+        select(func.coalesce(func.sum(m.Transaction.total), 0))
+        .select_from(m.Transaction)
+        .outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+        .where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.Transaction.created_at >= start,
+            m.Transaction.created_at <= end,
+        )
     )
+    if store_id:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
+    pos = float((await db.execute(pos_stmt)).scalar() or 0)
     return round(inv + pos, 2)
 
 
@@ -466,9 +520,15 @@ async def sales_returns_summary(
     customer_id: str | None = None,
     reason: str | None = None,
     status: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
-    """Sales return summary by period / reason / customer (BR-14.1)."""
+    """Sales return summary by period / reason / customer (BR-14.1).
+
+    Optional ``store_id`` scopes returns to the original invoice store.
+    """
     from app.sales_docs import RETURN_REASONS
+
+    store_id, store_name = await _resolve_sales_store(db, tenant_id, store_id)
 
     if reason:
         key = reason.strip().lower()
@@ -496,6 +556,10 @@ async def sales_returns_summary(
         .where(m.SalesReturn.tenant_id == tenant_id)
         .order_by(m.SalesReturn.created_at.desc())
     )
+    if store_id:
+        stmt = stmt.join(
+            m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id
+        ).where(m.SalesInvoice.store_id == store_id)
     if customer_id:
         stmt = stmt.where(m.SalesReturn.customer_id == customer_id)
     if reason:
@@ -588,6 +652,8 @@ async def sales_returns_summary(
         "customer_id": customer_id,
         "reason": reason,
         "status": status,
+        "store_id": store_id,
+        "store_name": store_name,
         "return_count": len(returns),
         "total_amount": round(total_amount, 2),
         "posted_amount": round(posted_amount, 2),

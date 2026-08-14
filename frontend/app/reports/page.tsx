@@ -159,8 +159,8 @@ export default function Page() {
       const r = await api(path);
       if (nextTab === 'sales') {
         const [daily, monthly, returns] = await Promise.all([
-          api('/reports/sales/daily'),
-          api('/reports/sales/monthly'),
+          api(`/reports/sales/daily${qs()}`),
+          api(`/reports/sales/monthly${qs()}`),
           api(`/reports/sales/returns${qs()}`),
         ]);
         setData({
@@ -618,12 +618,12 @@ export default function Page() {
         <>
           <div className="grid">
             <div className="card">
-              <h3>Today</h3>
+              <h3>Today{data.daily?.store_name ? ` · ${data.daily.store_name}` : ''}</h3>
               <p>Revenue: {data.daily?.total_revenue}</p>
               <p>Invoices: {data.daily?.invoice_count} · POS: {data.daily?.pos_count}</p>
             </div>
             <div className="card">
-              <h3>This month</h3>
+              <h3>This month{data.monthly?.store_name ? ` · ${data.monthly.store_name}` : ''}</h3>
               <p>Revenue: {data.monthly?.total_revenue}</p>
               <p>Change: {data.monthly?.change_pct ?? '—'}%</p>
             </div>
@@ -665,6 +665,7 @@ export default function Page() {
             {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
             posted {data.returns?.posted_amount ?? 0} · qty {data.returns?.total_quantity ?? 0} ·
             refunded {data.returns?.refunded_amount ?? 0}
+            {data.returns?.store_name ? ` · ${data.returns.store_name}` : ""}
           </p>
           <table className="table">
             <thead>
