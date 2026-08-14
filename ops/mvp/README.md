@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_334_EXIT_CRITERIA.md` / `docs/ADR_676_STAGE334_FREEZE.md` (`backend/tests/test_stage334_exit_h334x.py`) — Stage 334 H334x
+- `docs/STAGE_334_FIDELITY.md` (`backend/tests/test_stage334_fidelity_d1.py`) — Stage 334 D1
+- `docs/STAGE_334_PLAN.md` (`backend/tests/test_stage334_open.py`) — Stage 334 open (ADR-675)
+- `docs/INCIDENT_SEVERITY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/incident-severity-pack-remaining-gate.json` — Stage 334 I1
+- `docs/INCIDENT_SEVERITY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/incident-severity-pack-rg-blockers.json` — Stage 334 B1
+- `docs/INCIDENT_SEVERITY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/incident-severity-pack-rg-pointers.json` — Stage 334 P1
 - `docs/STAGE_333_EXIT_CRITERIA.md` / `docs/ADR_674_STAGE333_FREEZE.md` (`backend/tests/test_stage333_exit_h333x.py`) — Stage 333 H333x
 - `docs/STAGE_333_FIDELITY.md` (`backend/tests/test_stage333_fidelity_d1.py`) — Stage 333 D1
 - `docs/STAGE_333_PLAN.md` (`backend/tests/test_stage333_open.py`) — Stage 333 open (ADR-673)
@@ -5281,6 +5287,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 334 exit
+
+H334x met — `docs/STAGE_334_EXIT_CRITERIA.md`, ADR-676. Stages 1–334 frozen for Stage 334 feature scope.
+
+## Stage 334 D1 — Tenant MVP Incident Severity Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_334_FIDELITY.md` (`test_stage334_fidelity_d1.py`). `INCIDENT_SEVERITY_PACK_*` remaining-gate index; PagerDuty hosted / on-call rota live / incident drill / attestation / go-live still MISSING.
+
+## Stage 334 open
+
+ADR-675 / `docs/STAGE_334_PLAN.md`.
 
 ## Stage 333 exit
 

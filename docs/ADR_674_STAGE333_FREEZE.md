@@ -31,3 +31,10 @@ Stage 334 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for support readiness, support-SLA, helpdesk hosted, on-call rota live, attestation, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 334 opened under **ADR-675** after CONTINUE/NEXT (Tenant MVP Incident Severity Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-676**. Stage 333 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 334 runner-up outline was approved and opened (ADR-675); freeze ADR-676. Do not reopen Stage 333 scope.
+

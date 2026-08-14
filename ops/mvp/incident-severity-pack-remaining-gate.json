@@ -1,0 +1,57 @@
+{
+  "id": "incident-severity-pack-remaining-gate",
+  "stage": 334,
+  "pack": "I1",
+  "doc": "docs/INCIDENT_SEVERITY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/INCIDENT_SEVERITY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/INCIDENT_SEVERITY_PACK_RG_POINTERS_MVP.md",
+    "incident_severity_matrix": "docs/INCIDENT_SEVERITY_MATRIX_MVP.md",
+    "support_readiness_pack_remaining_gate": "docs/SUPPORT_READINESS_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_pack_remaining_gate": "docs/SUPPORT_SLA_PACK_REMAINING_GATE_MVP.md",
+    "incident_pack_remaining_gate": "docs/INCIDENT_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "pagerduty_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage170_incident_severity_matrix": true,
+  "distinct_from_stage333_support_readiness_pack_remaining_gate": true,
+  "distinct_from_stage332_support_sla_pack_remaining_gate": true,
+  "distinct_from_stage237_incident_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ispr-read-blockers",
+      "title": "Read B1 incident severity pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ispr-follow-pointers",
+      "title": "Follow P1 Stage 170 / Stage 333 / Stage 332 / Stage 237 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ispr-severity-missing",
+      "title": "Reaffirm live incident severity / PagerDuty / on-call / drill MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ispr-no-packaging-as-live",
+      "title": "Do not treat Stage 170 / Stage 30 / Stage 237 / Stage 333 / Stage 332 as live incident severity Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ispr-severity-remaining",
+      "title": "PagerDuty hosted / on-call rota live / incident drill / attestation / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 334 I1 incident severity pack remaining-gate index packaging only. Do not claim live incident severity Complete."
+}

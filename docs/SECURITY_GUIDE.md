@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 334 open** | Incident Severity Pack Remaining-Gate Index — `docs/STAGE_334_PLAN.md`, ADR-675 (`test_stage334_open.py`) |
+| **Stage 334 I1** | Incident severity pack remaining-gate index hub (`test_stage334_index_i1.py`) |
+| **Stage 334 B1** | Incident severity pack blocker matrix (`test_stage334_blockers_b1.py`) |
+| **Stage 334 P1** | Stage 170 / Stage 333 / Stage 332 / Stage 237 pointers (`test_stage334_pointers_p1.py`) |
+| **Stage 334 D1** | Incident severity pack remaining-gate fidelity — `docs/STAGE_334_FIDELITY.md` (`test_stage334_fidelity_d1.py`) |
+| **Stage 334 H334x** | Exit + freeze — `docs/STAGE_334_EXIT_CRITERIA.md`, ADR-676 (`test_stage334_exit_h334x.py`); Stages 1–334 frozen |
 | **Stage 333 open** | Support Readiness Pack Remaining-Gate Index — `docs/STAGE_333_PLAN.md`, ADR-673 (`test_stage333_open.py`) |
 | **Stage 333 I1** | Support readiness pack remaining-gate index hub (`test_stage333_index_i1.py`) |
 | **Stage 333 B1** | Support readiness pack blocker matrix (`test_stage333_blockers_b1.py`) |

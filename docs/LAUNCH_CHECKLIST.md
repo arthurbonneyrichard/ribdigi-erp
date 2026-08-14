@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 334 track opened (ADR-675: `test_stage334_open.py`, `docs/STAGE_334_PLAN.md`) — Incident Severity Pack Remaining-Gate Index; closed under ADR-676
+- [x] Incident severity pack remaining-gate hub (Stage 334 I1: `test_stage334_index_i1.py`, `docs/INCIDENT_SEVERITY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Incident severity pack blocker matrix (Stage 334 B1: `test_stage334_blockers_b1.py`, `docs/INCIDENT_SEVERITY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 170 / Stage 333 / Stage 332 / Stage 237 pointers (Stage 334 P1: `test_stage334_pointers_p1.py`, `docs/INCIDENT_SEVERITY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 334 fidelity sync (D1: `test_stage334_fidelity_d1.py`, `docs/STAGE_334_FIDELITY.md`)
+- [x] Stage 334 exit + freeze (H334x: `test_stage334_exit_h334x.py`, `docs/STAGE_334_EXIT_CRITERIA.md`, ADR-676)
 - [x] Stage 333 track opened (ADR-673: `test_stage333_open.py`, `docs/STAGE_333_PLAN.md`) — Support Readiness Pack Remaining-Gate Index; closed under ADR-674
 - [x] Support readiness pack remaining-gate hub (Stage 333 I1: `test_stage333_index_i1.py`, `docs/SUPPORT_READINESS_PACK_REMAINING_GATE_MVP.md`)
 - [x] Support readiness pack blocker matrix (Stage 333 B1: `test_stage333_blockers_b1.py`, `docs/SUPPORT_READINESS_PACK_RG_BLOCKERS_MVP.md`)
