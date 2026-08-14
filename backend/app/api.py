@@ -4574,25 +4574,17 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
     tx_override_info = None
     if kind in {"sale", "pos_sale"} and payload.party_id:
         from app.credit import claims_may_override_credit, enforce_customer_credit_limit
+        from app.sales import require_active_customer
 
-        party = (
-            await db.execute(
-                select(m.Party).where(
-                    m.Party.id == payload.party_id,
-                    m.Party.tenant_id == claims["tenant_id"],
-                    m.Party.kind == "customer",
-                )
-            )
-        ).scalar_one_or_none()
-        if party:
-            tx_override_info = enforce_customer_credit_limit(
-                party,
-                amount=float(payload.total or 0),
-                override=bool(payload.override_credit_limit),
-                override_allowed=claims_may_override_credit(claims),
-                override_reason=payload.override_reason,
-                extra={"source": kind},
-            )
+        party = await require_active_customer(db, claims["tenant_id"], payload.party_id)
+        tx_override_info = enforce_customer_credit_limit(
+            party,
+            amount=float(payload.total or 0),
+            override=bool(payload.override_credit_limit),
+            override_allowed=claims_may_override_credit(claims),
+            override_reason=payload.override_reason,
+            extra={"source": kind},
+        )
 
     ref = f"{kind.upper()}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
     body = payload.model_dump()
@@ -6418,17 +6410,9 @@ async def pos_sale(
     party = None
     customer_name = (payload.customer_name or "").strip() or None
     if payload.party_id:
-        party = (
-            await db.execute(
-                select(m.Party).where(
-                    m.Party.id == payload.party_id,
-                    m.Party.tenant_id == claims["tenant_id"],
-                    m.Party.kind == "customer",
-                )
-            )
-        ).scalar_one_or_none()
-        if not party:
-            raise HTTPException(status_code=404, detail="Customer not found")
+        from app.sales import require_active_customer
+
+        party = await require_active_customer(db, claims["tenant_id"], payload.party_id)
         if not customer_name:
             customer_name = party.name
 

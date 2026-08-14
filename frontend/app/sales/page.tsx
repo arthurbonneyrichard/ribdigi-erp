@@ -298,6 +298,28 @@ export default function Page() {
     }
   }
 
+  async function setCustomerActive(isActive: boolean) {
+    if (!customerId) {
+      setError('Select a customer first');
+      return;
+    }
+    setError('');
+    try {
+      const r = await api(`/customers/${customerId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: isActive ? 'active' : 'inactive' }),
+      });
+      await refresh();
+      setMessage(
+        isActive
+          ? `Customer ${r.data?.name || ''} activated`
+          : `Customer ${r.data?.name || ''} deactivated`,
+      );
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function createGroup() {
     setError('');
     try {
@@ -780,14 +802,57 @@ export default function Page() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-            <option value="">Customer</option>
+          <select
+            value={customerId}
+            onChange={(e) => setCustomerId(e.target.value)}
+            title="Manage customer"
+            aria-label="Manage customer"
+          >
+            <option value="">Manage customer…</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.code ? `${c.code} — ` : ''}
                 {c.name}
                 {c.profile_type === 'walk_in' ? ' (walk-in)' : ''}
                 {c.status === 'inactive' ? ' [inactive]' : ''}
+                {c.customer_group ? ` [${c.customer_group.name}]` : ''}
+                {c.email ? ` (${c.email})` : ''}
+              </option>
+            ))}
+          </select>
+          {customerId ? (
+            <button
+              type="button"
+              onClick={() =>
+                setCustomerActive(
+                  (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive',
+                )
+              }
+            >
+              {(customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive'
+                ? 'Activate'
+                : 'Deactivate'}
+            </button>
+          ) : null}
+          <select
+            value={
+              customerId &&
+              (customers.find((c) => c.id === customerId)?.status || 'active') !== 'inactive'
+                ? customerId
+                : ''
+            }
+            onChange={(e) => setCustomerId(e.target.value)}
+            title="Customer for new sales"
+            aria-label="Sale customer"
+          >
+            <option value="">Sale customer</option>
+            {customers
+              .filter((c) => c.status !== 'inactive')
+              .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code ? `${c.code} — ` : ''}
+                {c.name}
+                {c.profile_type === 'walk_in' ? ' (walk-in)' : ''}
                 {c.customer_group ? ` [${c.customer_group.name}]` : ''}
                 {c.email ? ` (${c.email})` : ''}
               </option>
@@ -904,6 +969,13 @@ export default function Page() {
             Assign group
           </button>
         </div>
+        {customerId &&
+          (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive' && (
+            <p className="muted" style={{ margin: 0 }}>
+              Inactive — hidden from new sale / quote / order / POS pickers; existing documents can still
+              settle.
+            </p>
+          )}
         {customerId ? (
           <PartyContactsPanel
             kind="customer"

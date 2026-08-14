@@ -840,7 +840,7 @@ Line credits inherit proportional PO line discount (`return_qty / ordered_qty ×
 **List:** `GET /customers`  
 **Create:** `POST /customers`  
 **Get:** `GET /customers/{customer_id}`  
-**Update:** `PATCH /customers/{customer_id}`  
+**Update:** `PATCH /customers/{customer_id}` — partial fields include profile + `status` (`active`|`inactive`); soft-deactivate via `status=inactive` (Sales **Activate** / **Deactivate**; inactive blocked on new QT/SO/INV/POS; existing docs can still settle)  
 **Delete:** `DELETE /customers/{customer_id}`
 
 **Create Customer:**
