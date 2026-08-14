@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_379_EXIT_CRITERIA.md` / `docs/ADR_766_STAGE379_FREEZE.md` (`backend/tests/test_stage379_exit_h379x.py`) — Stage 379 H379x
+- `docs/STAGE_379_FIDELITY.md` (`backend/tests/test_stage379_fidelity_d1.py`) — Stage 379 D1
+- `docs/STAGE_379_PLAN.md` (`backend/tests/test_stage379_open.py`) — Stage 379 open (ADR-765)
+- `docs/OFFLINE_ACCEPT_CLIENT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-accept-client-pack-remaining-gate.json` — Stage 379 I1
+- `docs/OFFLINE_ACCEPT_CLIENT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-accept-client-pack-rg-blockers.json` — Stage 379 B1
+- `docs/OFFLINE_ACCEPT_CLIENT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-accept-client-pack-rg-pointers.json` — Stage 379 P1
 - `docs/STAGE_378_EXIT_CRITERIA.md` / `docs/ADR_764_STAGE378_FREEZE.md` (`backend/tests/test_stage378_exit_h378x.py`) — Stage 378 H378x
 - `docs/STAGE_378_FIDELITY.md` (`backend/tests/test_stage378_fidelity_d1.py`) — Stage 378 D1
 - `docs/STAGE_378_PLAN.md` (`backend/tests/test_stage378_open.py`) — Stage 378 open (ADR-763)
@@ -5551,6 +5557,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 379 exit
+
+H379x met — `docs/STAGE_379_EXIT_CRITERIA.md`, ADR-766. Stages 1–379 frozen for Stage 379 feature scope.
+
+## Stage 379 D1 — Tenant MVP Offline Accept Client Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `OFFLINE_ACCEPT_CLIENT_PACK_REMAINING_GATE_MVP.md` / `OFFLINE_ACCEPT_CLIENT_PACK_RG_BLOCKERS_MVP.md` / `OFFLINE_ACCEPT_CLIENT_PACK_RG_POINTERS_MVP.md` / ops JSON twins. Honesty: Offline Complete / offline accept_client / accept_client re-apply / go-live / attestation remain **false**. Packaging only.
+
+## Stage 379 open
+
+ADR-765 / `docs/STAGE_379_PLAN.md`.
 
 ## Stage 378 exit
 

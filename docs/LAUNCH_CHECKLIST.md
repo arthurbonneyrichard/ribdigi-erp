@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 379 track opened (ADR-765: `test_stage379_open.py`, `docs/STAGE_379_PLAN.md`) — Offline Accept Client Pack Remaining-Gate Index; closed under ADR-766
+- [x] Offline accept client pack remaining-gate hub (Stage 379 I1: `test_stage379_index_i1.py`, `docs/OFFLINE_ACCEPT_CLIENT_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline accept client pack blocker matrix (Stage 379 B1: `test_stage379_blockers_b1.py`, `docs/OFFLINE_ACCEPT_CLIENT_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 378 / Stage 166 / Stage 329 / CHANGE_IMPACT pointers (Stage 379 P1: `test_stage379_pointers_p1.py`, `docs/OFFLINE_ACCEPT_CLIENT_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 379 fidelity sync (D1: `test_stage379_fidelity_d1.py`, `docs/STAGE_379_FIDELITY.md`)
+- [x] Stage 379 exit + freeze (H379x: `test_stage379_exit_h379x.py`, `docs/STAGE_379_EXIT_CRITERIA.md`, ADR-766)
 - [x] Stage 378 track opened (ADR-763: `test_stage378_open.py`, `docs/STAGE_378_PLAN.md`) — Offline Hold Soft-Reserve Pack Remaining-Gate Index; closed under ADR-764
 - [x] Offline hold soft-reserve pack remaining-gate hub (Stage 378 I1: `test_stage378_index_i1.py`, `docs/OFFLINE_HOLD_RESERVE_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline hold soft-reserve pack blocker matrix (Stage 378 B1: `test_stage378_blockers_b1.py`, `docs/OFFLINE_HOLD_RESERVE_PACK_RG_BLOCKERS_MVP.md`)
