@@ -1114,6 +1114,12 @@ Authoritative MVP docs:
 - `docs/COMPLIANCE_READINESS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/compliance-readiness-pack-remaining-gate.json` — Stage 280 I1
 - `docs/COMPLIANCE_READINESS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/compliance-readiness-pack-rg-blockers.json` — Stage 280 B1
 - `docs/COMPLIANCE_READINESS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/compliance-readiness-pack-rg-pointers.json` — Stage 280 P1
+- `docs/STAGE_281_EXIT_CRITERIA.md` / `docs/ADR_570_STAGE281_FREEZE.md` (`backend/tests/test_stage281_exit_h281x.py`) — Stage 281 H281x
+- `docs/STAGE_281_FIDELITY.md` (`backend/tests/test_stage281_fidelity_d1.py`) — Stage 281 D1
+- `docs/STAGE_281_PLAN.md` (`backend/tests/test_stage281_open.py`) — Stage 281 open (ADR-569)
+- `docs/RESIDUAL_RISK_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/residual-risk-pack-remaining-gate.json` — Stage 281 I1
+- `docs/RESIDUAL_RISK_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/residual-risk-pack-rg-blockers.json` — Stage 281 B1
+- `docs/RESIDUAL_RISK_PACK_RG_POINTERS_MVP.md` / `ops/mvp/residual-risk-pack-rg-pointers.json` — Stage 281 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4939,4 +4945,16 @@ H280x met — `docs/STAGE_280_EXIT_CRITERIA.md`, ADR-568. Stages 1–280 frozen 
 ## Stage 280 open
 
 `docs/ADR_567_STAGE280_OPEN.md` + `docs/STAGE_280_PLAN.md` (`test_stage280_open.py`).
+
+## Stage 281 exit
+
+H281x met — `docs/STAGE_281_EXIT_CRITERIA.md`, ADR-570. Stages 1–281 frozen for Stage 281 feature scope.
+
+## Stage 281 D1 — Tenant MVP Residual Risk Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_281_FIDELITY.md` (`test_stage281_fidelity_d1.py`). `RESIDUAL_RISK_PACK_*` remaining-gate index; residual risks closed / certification / go-live still MISSING.
+
+## Stage 281 open
+
+`docs/ADR_569_STAGE281_OPEN.md` + `docs/STAGE_281_PLAN.md` (`test_stage281_open.py`).
 

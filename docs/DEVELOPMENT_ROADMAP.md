@@ -3984,6 +3984,18 @@ Every feature in every phase must meet:
 
 **Stage 280 exit (2026-08-14):** I1, B1, P1, D1, H280x met — `docs/STAGE_280_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_568_STAGE280_FREEZE.md`. Fidelity: `docs/STAGE_280_FIDELITY.md`.
 
+**Stage 281 open (2026-08-14):** Tenant MVP Residual Risk Pack Remaining-Gate Index Fidelity — `docs/ADR_569_STAGE281_OPEN.md` + `docs/STAGE_281_PLAN.md` (I1 next).
+
+**Stage 281 I1 (2026-08-14):** Residual risk pack remaining-gate index hub (`test_stage281_index_i1.py`).
+
+**Stage 281 B1 (2026-08-14):** Residual risk pack blocker matrix (`test_stage281_blockers_b1.py`).
+
+**Stage 281 P1 (2026-08-14):** Stage 33 K1 / Stage 280 / Stage 279 / Stage 196 pointers (`test_stage281_pointers_p1.py`).
+
+**Stage 281 D1 (2026-08-14):** Residual Risk Pack Remaining-Gate Index fidelity sync — `docs/STAGE_281_FIDELITY.md` (`test_stage281_fidelity_d1.py`).
+
+**Stage 281 exit (2026-08-14):** I1, B1, P1, D1, H281x met — `docs/STAGE_281_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_570_STAGE281_FREEZE.md`. Fidelity: `docs/STAGE_281_FIDELITY.md`.
+
 
 
 

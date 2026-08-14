@@ -1,0 +1,59 @@
+{
+  "id": "residual-risk-pack-rg-pointers",
+  "stage": 281,
+  "pack": "P1",
+  "doc": "docs/RESIDUAL_RISK_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RESIDUAL_RISK_PACK_REMAINING_GATE_MVP.md",
+    "residual_risk": "docs/RESIDUAL_RISK_MVP.md",
+    "compliance_readiness_pack_remaining_gate": "docs/COMPLIANCE_READINESS_PACK_REMAINING_GATE_MVP.md",
+    "compliance_questionnaire_pack_remaining_gate": "docs/COMPLIANCE_QUESTIONNAIRE_PACK_REMAINING_GATE_MVP.md",
+    "residual_risk_remaining_gate": "docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "risks_closed_claimed": false,
+  "certification_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "residual_risk_stage33",
+    "compliance_readiness_pack_remaining_gate_stage280",
+    "compliance_questionnaire_pack_remaining_gate_stage279",
+    "residual_risk_remaining_gate_stage196",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "rrprp-stage33",
+      "title": "Point to Stage 33 K1 residual risk",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprp-stage280",
+      "title": "Point to Stage 280 compliance readiness pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprp-stage279",
+      "title": "Point to Stage 279 compliance questionnaire pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprp-stage196",
+      "title": "Point to Stage 196 residual risk remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprp-risks-remaining",
+      "title": "Residual risks closed Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 281 P1 residual risk pack RG pointers packaging only. Do not claim residual risks closed Complete."
+}

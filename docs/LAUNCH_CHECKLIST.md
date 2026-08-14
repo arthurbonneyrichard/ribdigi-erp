@@ -1473,6 +1473,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 33 C1 / Stage 279 / Stage 278 / Stage 34 C1 pointers (Stage 280 P1: `test_stage280_pointers_p1.py`, `docs/COMPLIANCE_READINESS_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 280 fidelity sync (D1: `test_stage280_fidelity_d1.py`, `docs/STAGE_280_FIDELITY.md`)
 - [x] Stage 280 exit + freeze (H280x: `test_stage280_exit_h280x.py`, `docs/STAGE_280_EXIT_CRITERIA.md`, ADR-568)
+- [x] Stage 281 track opened (ADR-569: `test_stage281_open.py`, `docs/STAGE_281_PLAN.md`) — Residual Risk Pack Remaining-Gate Index; closed under ADR-570
+- [x] Residual risk pack remaining-gate hub (Stage 281 I1: `test_stage281_index_i1.py`, `docs/RESIDUAL_RISK_PACK_REMAINING_GATE_MVP.md`)
+- [x] Residual risk pack blocker matrix (Stage 281 B1: `test_stage281_blockers_b1.py`, `docs/RESIDUAL_RISK_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 33 K1 / Stage 280 / Stage 279 / Stage 196 pointers (Stage 281 P1: `test_stage281_pointers_p1.py`, `docs/RESIDUAL_RISK_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 281 fidelity sync (D1: `test_stage281_fidelity_d1.py`, `docs/STAGE_281_FIDELITY.md`)
+- [x] Stage 281 exit + freeze (H281x: `test_stage281_exit_h281x.py`, `docs/STAGE_281_EXIT_CRITERIA.md`, ADR-570)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
