@@ -1207,7 +1207,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **List:** `GET /tax/rates`  
 **Create:** `POST /tax/rates`  
 **Get:** `GET /tax/rates/{rate_id}`  
-**Set default:** `POST /tax/rates/{rate_id}/default`
+**Update:** `PATCH /tax/rates/{rate_id}` — `{ name?, rate?, tax_type?, pricing_mode?, components?, is_reverse_charge?, is_active? }` (soft-deactivate via `is_active=false` clears `is_default`; Tax UI **Activate** / **Deactivate**)  
+**Set default:** `POST /tax/rates/{rate_id}/default` (rejects inactive rates)
 
 **Create Tax Rate:**
 ```json

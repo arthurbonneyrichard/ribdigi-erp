@@ -117,6 +117,21 @@ export default function Page() {
     }
   }
 
+  async function setRateActive(row: TaxRate, is_active: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/tax/rates/${row.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active }),
+      });
+      setMessage(is_active ? `Tax rate ${row.name} activated` : `Tax rate ${row.name} deactivated`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function calculate() {
     setError('');
     try {
@@ -376,11 +391,19 @@ export default function Page() {
                   : '—'}
               </td>
               <td>{String(r.is_default)}</td>
-              <td>{String(r.is_active)}</td>
               <td>
-                {!r.is_default && (
-                  <button onClick={() => makeDefault(r.id)}>Set default</button>
+                {r.is_active === false ? 'no' : 'yes'}
+                {r.is_active === false ? ' [inactive]' : ''}
+              </td>
+              <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {r.is_active !== false && !r.is_default && (
+                  <button type="button" onClick={() => makeDefault(r.id)}>
+                    Set default
+                  </button>
                 )}
+                <button type="button" onClick={() => setRateActive(r, r.is_active === false)}>
+                  {r.is_active === false ? 'Activate' : 'Deactivate'}
+                </button>
               </td>
             </tr>
           ))}

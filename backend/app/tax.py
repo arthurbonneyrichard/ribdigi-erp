@@ -293,6 +293,52 @@ async def clear_default_flags(db: AsyncSession, tenant_id: str) -> None:
         row.is_default = False
 
 
+async def update_tax_rate(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    rate_id: str,
+    name: str | None = None,
+    rate: float | None = None,
+    tax_type: str | None = None,
+    pricing_mode: str | None = None,
+    components: list[dict] | None = None,
+    clear_components: bool = False,
+    is_reverse_charge: bool | None = None,
+    is_active: bool | None = None,
+) -> m.TaxRate:
+    row = await get_tax_rate(db, tenant_id, rate_id)
+    if name is not None:
+        name = name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        row.name = name
+    if rate is not None:
+        row.rate = float(rate)
+    if tax_type is not None:
+        row.tax_type = tax_type
+    if pricing_mode is not None:
+        row.pricing_mode = pricing_mode
+    if clear_components:
+        row.components = None
+    elif components is not None:
+        comps = normalize_components(components)
+        if comps:
+            row.components = comps
+            row.rate = effective_rate_from_components(comps, row.rate or 0)
+        else:
+            row.components = None
+    if is_reverse_charge is not None:
+        row.is_reverse_charge = bool(is_reverse_charge)
+    if is_active is not None:
+        row.is_active = bool(is_active)
+        if not row.is_active:
+            # Soft-deactivate clears default so resolution falls through to another active default.
+            row.is_default = False
+    await db.flush()
+    return row
+
+
 def tax_spec_from_rate(rate: m.TaxRate, *, supply_class: str = "standard") -> TaxSpec:
     comps = normalize_components(rate.components) if rate.components else None
     return TaxSpec(
