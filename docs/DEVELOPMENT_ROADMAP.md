@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 315 open (2026-08-14):** Tenant MVP Security Scan Pack Remaining-Gate Index Fidelity — `docs/ADR_637_STAGE315_OPEN.md` + `docs/STAGE_315_PLAN.md` (I1 next).
+
+**Stage 315 I1 (2026-08-14):** Security scan pack remaining-gate index hub (`test_stage315_index_i1.py`).
+
+**Stage 315 B1 (2026-08-14):** Security scan pack blocker matrix (`test_stage315_blockers_b1.py`).
+
+**Stage 315 P1 (2026-08-14):** Stage 27 S1 / Stage 314 / Stage 313 / Stage 210 pointers (`test_stage315_pointers_p1.py`).
+
+**Stage 315 D1 (2026-08-14):** Security Scan Pack Remaining-Gate Index fidelity sync — `docs/STAGE_315_FIDELITY.md` (`test_stage315_fidelity_d1.py`).
+
+**Stage 315 exit (2026-08-14):** I1, B1, P1, D1, H315x met — `docs/STAGE_315_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_638_STAGE315_FREEZE.md`. Fidelity: `docs/STAGE_315_FIDELITY.md`.
+
 
 
 

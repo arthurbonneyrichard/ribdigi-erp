@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_315_EXIT_CRITERIA.md` / `docs/ADR_638_STAGE315_FREEZE.md` (`backend/tests/test_stage315_exit_h315x.py`) — Stage 315 H315x
+- `docs/STAGE_315_FIDELITY.md` (`backend/tests/test_stage315_fidelity_d1.py`) — Stage 315 D1
+- `docs/STAGE_315_PLAN.md` (`backend/tests/test_stage315_open.py`) — Stage 315 open (ADR-637)
+- `docs/SECURITY_SCAN_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/security-scan-pack-remaining-gate.json` — Stage 315 I1
+- `docs/SECURITY_SCAN_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/security-scan-pack-rg-blockers.json` — Stage 315 B1
+- `docs/SECURITY_SCAN_PACK_RG_POINTERS_MVP.md` / `ops/mvp/security-scan-pack-rg-pointers.json` — Stage 315 P1
 - `docs/STAGE_314_EXIT_CRITERIA.md` / `docs/ADR_636_STAGE314_FREEZE.md` (`backend/tests/test_stage314_exit_h314x.py`) — Stage 314 H314x
 - `docs/STAGE_314_FIDELITY.md` (`backend/tests/test_stage314_fidelity_d1.py`) — Stage 314 D1
 - `docs/STAGE_314_PLAN.md` (`backend/tests/test_stage314_open.py`) — Stage 314 open (ADR-635)
@@ -5167,6 +5173,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 315 exit
+
+H315x met — `docs/STAGE_315_EXIT_CRITERIA.md`, ADR-638. Stages 1–315 frozen for Stage 315 feature scope.
+
+## Stage 315 D1 — Tenant MVP Security Scan Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_315_FIDELITY.md` (`test_stage315_fidelity_d1.py`). `SECURITY_SCAN_PACK_*` remaining-gate index; live security-scan / live ZAP / go-live still MISSING.
+
+## Stage 315 open
+
+ADR-637 / `docs/STAGE_315_PLAN.md`.
 
 ## Stage 314 exit
 

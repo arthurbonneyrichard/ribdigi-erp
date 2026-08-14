@@ -31,3 +31,10 @@ Stage 315 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live SBOM pipeline, Cosign signing, Snyk SaaS, Dependabot live, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 315 opened under **ADR-637** after CONTINUE/NEXT (Tenant MVP Security Scan Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-638**. Stage 314 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 315 runner-up outline was approved and opened (ADR-637); freeze ADR-638. Do not reopen Stage 314 scope.
+

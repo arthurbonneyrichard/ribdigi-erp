@@ -1,0 +1,60 @@
+{
+  "id": "security-scan-pack-rg-pointers",
+  "stage": 315,
+  "pack": "P1",
+  "doc": "docs/SECURITY_SCAN_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SECURITY_SCAN_PACK_REMAINING_GATE_MVP.md",
+    "security_scan": "docs/SECURITY_SCAN_MVP.md",
+    "sbom_disclosure_pack_remaining_gate": "docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_liability_pack_remaining_gate": "docs/COMMERCIAL_LIABILITY_PACK_REMAINING_GATE_MVP.md",
+    "security_scan_remaining_gate": "docs/SECURITY_SCAN_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_security_scan_claimed": false,
+  "live_zap_executed": false,
+  "vendor_pen_test_purchased": false,
+  "zap_ci_wired": false,
+  "go_live_claimed": false,
+  "topics": [
+    "security_scan_stage27",
+    "sbom_disclosure_pack_remaining_gate_stage314",
+    "commercial_liability_pack_remaining_gate_stage313",
+    "security_scan_remaining_gate_stage210",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sscprp-stage27",
+      "title": "Point to Stage 27 S1 security scan",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscprp-stage314",
+      "title": "Point to Stage 314 SBOM disclosure pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscprp-stage313",
+      "title": "Point to Stage 313 commercial liability pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscprp-stage210",
+      "title": "Point to Stage 210 security-scan remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscprp-scan-remaining",
+      "title": "Live security-scan Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 315 P1 security scan pack RG pointers packaging only. Do not claim live security-scan Complete."
+}
