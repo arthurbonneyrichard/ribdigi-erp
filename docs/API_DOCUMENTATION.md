@@ -503,6 +503,12 @@ Optional physical fields: `weight` (kg), `length` / `width` / `height` (cm). Als
 
 Product responses include `stock_qty`, `reorder_level`, plus traffic-light fields `stock_status` (`green`|`yellow`|`red`) and `stock_status_label` (`ok`|`near_reorder`|`low`|`out_of_stock`) for Inventory list badges (BR-5.5). Rules: **red** when on-hand ≤ 0 or (reorder > 0 and on-hand ≤ reorder); **yellow** when reorder > 0 and on-hand ≤ reorder × 1.5; otherwise **green**.
 
+**Barcode symbology (BR-5.1):**  
+- `POST /products/{id}/barcode/generate?symbology=code128|ean13|upca&force=false` — Code 128 from SKU; EAN-13 / UPC-A allocate unique internal GTINs (prefixes `200` / `2`) with valid check digits. Response includes `symbology`.  
+- `GET /products/{id}/barcode.png?symbology=` — PNG render (auto-detects EAN-13/UPC-A from digits when omitted).  
+- `GET /products/{id}/barcode/label?copies=&symbology=` — printable HTML labels.  
+Assigning a 12/13-digit barcode via create/PATCH validates the check digit.
+
 ### 5.5 Stock Operations
 
 **Stock In:** `POST /inventory/stock-in`
