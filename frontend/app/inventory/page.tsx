@@ -12,7 +12,8 @@ type Tab =
   | 'batches'
   | 'opening'
   | 'expiry'
-  | 'counts';
+  | 'counts'
+  | 'movements';
 
 type ImportReportRow = {
   line: number;
@@ -169,6 +170,13 @@ export default function Page() {
   const [openingNotes, setOpeningNotes] = useState('');
   const [openingPostJournal, setOpeningPostJournal] = useState(true);
   const [openingHistory, setOpeningHistory] = useState<any[]>([]);
+  const [movements, setMovements] = useState<any[]>([]);
+  const [mvWarehouseId, setMvWarehouseId] = useState('');
+  const [mvType, setMvType] = useState('');
+  const [mvFrom, setMvFrom] = useState('');
+  const [mvTo, setMvTo] = useState('');
+  const [mvProductOnly, setMvProductOnly] = useState(false);
+  const [mvMeta, setMvMeta] = useState<{ count?: number; warehouse_name?: string | null }>({});
 
   async function refresh() {
     const [p, e, c, b, u, w, sc, os, rates] = await Promise.all([
@@ -211,6 +219,35 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  async function loadMovements() {
+    setError('');
+    try {
+      const params = new URLSearchParams();
+      if (mvWarehouseId) params.set('warehouse_id', mvWarehouseId);
+      if (mvType) params.set('movement_type', mvType);
+      if (mvFrom) params.set('from_date', mvFrom);
+      if (mvTo) params.set('to_date', mvTo);
+      if (mvProductOnly && selectedId) params.set('product_id', selectedId);
+      const q = params.toString();
+      const r = await api(`/inventory/movements${q ? `?${q}` : ''}`);
+      const data = r.data || {};
+      setMovements(data.movements || []);
+      setMvMeta({
+        count: data.count,
+        warehouse_name: data.warehouse_name,
+      });
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  useEffect(() => {
+    if (tab === 'movements') {
+      loadMovements().catch((err) => setError(err.message));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   useEffect(() => {
     brands
@@ -764,7 +801,7 @@ export default function Page() {
   return (
     <Shell>
       <h1>Inventory</h1>
-      <p className="muted">Products, catalog, variants, batches, expiry &amp; stock counts</p>
+      <p className="muted">Products, catalog, variants, batches, expiry, stock counts &amp; movements</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -779,6 +816,7 @@ export default function Page() {
             ['opening', 'Opening stock'],
             ['expiry', 'Expiring'],
             ['counts', 'Stock counts'],
+            ['movements', 'Movements'],
           ] as const
         ).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
@@ -1766,6 +1804,101 @@ export default function Page() {
               )}
             </div>
           )}
+        </>
+      )}
+
+      {tab === 'movements' && (
+        <>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+            <h3>Stock movement history</h3>
+            <p className="muted">
+              Immutable audit trail (BR-5.3). Records cannot be deleted. Filter by warehouse, type,
+              date, or the selected product above.
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select value={mvWarehouseId} onChange={(e) => setMvWarehouseId(e.target.value)}>
+                <option value="">All warehouses</option>
+                {warehouses.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name || w.code || w.id.slice(0, 8)}
+                  </option>
+                ))}
+              </select>
+              <select value={mvType} onChange={(e) => setMvType(e.target.value)}>
+                <option value="">All types</option>
+                <option value="stock_in">stock_in</option>
+                <option value="stock_out">stock_out</option>
+                <option value="opening_stock">opening_stock</option>
+                <option value="adjustment">adjustment</option>
+                <option value="transfer_out">transfer_out</option>
+                <option value="transfer_in">transfer_in</option>
+              </select>
+              <label className="muted">From</label>
+              <input type="date" value={mvFrom} onChange={(e) => setMvFrom(e.target.value)} />
+              <label className="muted">To</label>
+              <input type="date" value={mvTo} onChange={(e) => setMvTo(e.target.value)} />
+              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={mvProductOnly}
+                  onChange={(e) => setMvProductOnly(e.target.checked)}
+                />
+                Selected product only
+              </label>
+              <button type="button" onClick={() => loadMovements()}>
+                Refresh
+              </button>
+            </div>
+            <p className="muted">
+              {mvMeta.count ?? movements.length} movement
+              {(mvMeta.count ?? movements.length) === 1 ? '' : 's'}
+              {mvMeta.warehouse_name ? ` · ${mvMeta.warehouse_name}` : ''}
+            </p>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Product</th>
+                <th>Type</th>
+                <th>Qty</th>
+                <th>Before → after</th>
+                <th>User</th>
+                <th>Ref</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movements.map((mv) => (
+                <tr key={mv.id}>
+                  <td>{mv.created_at ? String(mv.created_at).slice(0, 19) : '—'}</td>
+                  <td>
+                    {mv.product_sku || mv.product_name
+                      ? `${mv.product_sku || ''}${mv.product_name ? ` ${mv.product_name}` : ''}`.trim()
+                      : mv.product_id
+                        ? String(mv.product_id).slice(0, 8)
+                        : '—'}
+                  </td>
+                  <td>{mv.movement_type}</td>
+                  <td>{mv.quantity}</td>
+                  <td>
+                    {mv.quantity_before} → {mv.quantity_after}
+                  </td>
+                  <td>{mv.created_by_name || mv.created_by_email || '—'}</td>
+                  <td>
+                    {mv.reference_type || '—'}
+                    {mv.reference_id ? ` ${String(mv.reference_id).slice(0, 8)}…` : ''}
+                  </td>
+                </tr>
+              ))}
+              {!movements.length && (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    No stock movements
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </>
       )}
     </Shell>

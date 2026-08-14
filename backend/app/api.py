@@ -3329,21 +3329,28 @@ async def lowstock(claims=Depends(require_permission("inventory", "read")), db: 
 async def movements(
     product_id: str | None = None,
     warehouse_id: str | None = None,
+    store_id: str | None = None,
     movement_type: str | None = None,
+    created_by: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == claims["tenant_id"])
-    if product_id:
-        stmt = stmt.where(m.StockMovement.product_id == product_id)
-    if warehouse_id:
-        stmt = stmt.where(m.StockMovement.warehouse_id == warehouse_id)
-    if movement_type:
-        stmt = stmt.where(m.StockMovement.movement_type == movement_type)
-    rows = (
-        await db.execute(stmt.order_by(m.StockMovement.created_at.desc()).limit(200))
-    ).scalars().all()
-    return env(rows)
+    """Immutable stock movement history (BR-5.3). No DELETE endpoint."""
+    return env(
+        await reports_svc.inventory_movements(
+            db,
+            claims["tenant_id"],
+            product_id=product_id or None,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+            movement_type=movement_type or None,
+            created_by=created_by or None,
+        )
+    )
 
 
 @api.get("/inventory/stock-counts")
@@ -8297,6 +8304,7 @@ async def report_inventory_movements(
     warehouse_id: str | None = None,
     store_id: str | None = None,
     movement_type: str | None = None,
+    created_by: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8310,6 +8318,7 @@ async def report_inventory_movements(
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
             movement_type=movement_type or None,
+            created_by=created_by or None,
         )
     )
 

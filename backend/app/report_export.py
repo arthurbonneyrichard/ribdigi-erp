@@ -291,7 +291,13 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
     if report_type == "inventory_movements":
         items = payload.get("movements") or payload.get("items") or (payload if isinstance(payload, list) else [])
         rows = [dict(x) for x in items]
-        return rows or [{"note": "no rows"}], [f"{r.get('created_at')}: {r.get('movement_type')} {r.get('quantity')}" for r in rows[:60]], "Inventory Movements"
+        lines = [
+            f"{r.get('created_at')}: {r.get('movement_type')} {r.get('quantity')} "
+            f"{r.get('product_sku') or r.get('product_id') or ''} "
+            f"by {r.get('created_by_name') or r.get('created_by_email') or r.get('created_by') or '—'}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Inventory Movements"
 
     if report_type == "inventory_low_stock":
         items = payload.get("items") or payload.get("products") or (payload if isinstance(payload, list) else [])

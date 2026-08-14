@@ -365,10 +365,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Complete audit trail of all inventory changes.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Log every stock change with timestamp, user, transaction type, quantity before/after
-  - [x] Filter by date range, product, warehouse, transaction type (`GET /reports/inventory/movements` + `/inventory/movements`; `warehouse_id` / `store_id` / `movement_type` / dates / product)
-  - [ ] Export to CSV/PDF
-  - [ ] Immutable records (no deletion allowed)
+  - [x] Log every stock change with timestamp, user, transaction type, quantity before/after (`stock_movements.created_by` + before/after qty; exposed on `/reports/inventory/movements` + `/inventory/movements` as `created_by` / `created_by_name` / `created_by_email`)
+  - [x] Filter by date range, product, warehouse, transaction type (`GET /reports/inventory/movements` + `/inventory/movements`; `warehouse_id` / `store_id` / `movement_type` / `created_by` / dates / product)
+  - [x] Export to CSV/PDF (export type `inventory_movements` includes user + product columns)
+  - [x] Immutable records (no deletion allowed) (no DELETE endpoint; Inventory Movements UI notes immutability)
 
 #### BR-5.4 Warehouse Stock
 - **Description:** Warehouse-specific inventory visibility.
