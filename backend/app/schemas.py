@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 
 class ORMSchema(BaseModel):
@@ -664,11 +664,23 @@ class StockTransferItemCreate(BaseModel):
 
 
 class StockTransferCreate(BaseModel):
-    from_store_id: str
-    to_store_id: str
+    from_store_id: str | None = None
+    to_store_id: str | None = None
+    from_warehouse_id: str | None = None
+    to_warehouse_id: str | None = None
     notes: str | None = None
     submit: bool = False
     items: list[StockTransferItemCreate] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_store_or_warehouse_pair(self):
+        has_wh = bool(self.from_warehouse_id and self.to_warehouse_id)
+        has_st = bool(self.from_store_id and self.to_store_id)
+        if not has_wh and not has_st:
+            raise ValueError(
+                "Provide from_store_id/to_store_id or from_warehouse_id/to_warehouse_id"
+            )
+        return self
 
 
 class StockTransferReject(BaseModel):

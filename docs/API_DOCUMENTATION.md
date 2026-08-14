@@ -588,20 +588,20 @@ Creates/updates `warehouse_stocks` reorder fields for that warehouse (`inventory
 ```
 
 `reason` required ∈ `{damage, theft, expiry, found, lost}`. Persists `stock_movements.reason` with `movement_type=adjustment`. Optional warehouse scope. Inventory UI **Adjust** tab. Filter movements with `reason=` on `/inventory/movements` and `/reports/inventory/movements`.
-**Stock Transfer:** `POST /inventory/stock-transfers`
+
+**Stock Transfer (BR-5.2 / BR-5.4):** `POST /inventory/stock-transfers` (also `POST /stores/transfers`)
 
 ```json
 {
-  "product_id": "prod_001",
   "from_warehouse_id": "wh_001",
   "to_warehouse_id": "wh_002",
-  "quantity": 50,
-  "status": "pending",
-  "notes": "Transfer to branch warehouse"
+  "submit": true,
+  "notes": "Transfer to branch warehouse",
+  "items": [{ "product_id": "prod_001", "quantity": 50 }]
 }
 ```
 
-**Update Transfer Status:** `PATCH /inventory/stock-transfers/{transfer_id}`
+Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a store. Same-store warehouse pairs use **1-step** approval; different stores keep **dual** manager approval (BR-13.2). Store-only create still requires different `from_store_id` / `to_store_id` (warehouses derived). Lifecycle: `submit` → `approve` (×1 or ×2) → `ship` → `receive` (also `reject` / `cancel`). Inventory aliases under `/inventory/stock-transfers*` use `inventory:read|write`. Inventory **Transfers** tab.
 
 ### 5.6 Stock Count
 **Create:** `POST /inventory/stock-counts`  
