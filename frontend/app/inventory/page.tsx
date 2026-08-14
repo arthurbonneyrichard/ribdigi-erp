@@ -162,9 +162,13 @@ export default function Page() {
   const [mfgDate, setMfgDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [stockQty, setStockQty] = useState('10');
+  const [stockWarehouseId, setStockWarehouseId] = useState('');
+  const [stockVariantId, setStockVariantId] = useState('');
+  const [stockNotes, setStockNotes] = useState('');
   const [openingQty, setOpeningQty] = useState('10');
   const [openingWarehouseId, setOpeningWarehouseId] = useState('');
   const [openingUnitId, setOpeningUnitId] = useState('');
+  const [openingVariantId, setOpeningVariantId] = useState('');
   const [openingUnitCost, setOpeningUnitCost] = useState('');
   const [openingBatch, setOpeningBatch] = useState('');
   const [openingMfg, setOpeningMfg] = useState('');
@@ -210,6 +214,7 @@ export default function Page() {
     if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
+    if (!stockWarehouseId && w.data?.length) setStockWarehouseId(w.data[0].id);
   }
 
   async function refreshSelected(id: string) {
@@ -222,6 +227,8 @@ export default function Page() {
     setVariants(v.data || []);
     setBatches(b.data || []);
     setGallery(g.data || []);
+    setStockVariantId('');
+    setOpeningVariantId('');
   }
 
   useEffect(() => {
@@ -820,6 +827,9 @@ export default function Page() {
           product_id: selectedId,
           quantity: Number(stockQty),
           unit_id: stockUnitId || null,
+          warehouse_id: stockWarehouseId || null,
+          variant_id: stockVariantId || null,
+          notes: stockNotes.trim() || null,
           batch_number: batchNumber,
           manufacturing_date: mfgDate ? new Date(mfgDate).toISOString() : null,
           expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
@@ -829,10 +839,16 @@ export default function Page() {
         r.data.quantity_base != null && r.data.quantity_entered != null
           ? ` (${r.data.quantity_entered} entered → ${r.data.quantity_base} stock)`
           : '';
-      setMessage(`Stock in — on-hand ${r.data.stock_qty}${converted}`);
+      const loc =
+        r.data.batch?.warehouse_id || stockWarehouseId
+          ? ` · wh ${(r.data.batch?.warehouse_id || stockWarehouseId).slice(0, 8)}…`
+          : '';
+      const varLabel = r.data.variant?.sku ? ` · ${r.data.variant.sku}` : '';
+      setMessage(`Stock in — on-hand ${r.data.stock_qty}${converted}${loc}${varLabel}`);
       setBatchNumber('');
       setMfgDate('');
       setExpiryDate('');
+      setStockNotes('');
       await refresh();
       await refreshSelected(selectedId);
       setTab('batches');
@@ -854,6 +870,7 @@ export default function Page() {
         quantity: Number(openingQty),
         unit_id: openingUnitId || null,
         warehouse_id: openingWarehouseId || null,
+        variant_id: openingVariantId || null,
         batch_number: openingBatch || null,
         manufacturing_date: openingMfg ? new Date(openingMfg).toISOString() : null,
         expiry_date: openingExpiry ? new Date(openingExpiry).toISOString() : null,
@@ -1678,8 +1695,30 @@ export default function Page() {
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Stock in with batch</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Batch number, manufacturing date, and expiry (BR-5.1).
+              Batch number, manufacturing date, expiry, warehouse, and optional variant (BR-5.1 /
+              BR-5.2).
             </p>
+            <select
+              value={stockWarehouseId}
+              onChange={(e) => setStockWarehouseId(e.target.value)}
+            >
+              <option value="">Warehouse (optional)</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name || w.code || w.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            <select value={stockVariantId} onChange={(e) => setStockVariantId(e.target.value)}>
+              <option value="">Variant (optional)</option>
+              {variants
+                .filter((v) => v.is_active !== false)
+                .map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name} ({v.sku})
+                  </option>
+                ))}
+            </select>
             <input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Batch number" />
             <label className="muted">Manufacturing date</label>
             <input type="date" value={mfgDate} onChange={(e) => setMfgDate(e.target.value)} />
@@ -1697,6 +1736,11 @@ export default function Page() {
                   </option>
                 ))}
             </select>
+            <input
+              value={stockNotes}
+              onChange={(e) => setStockNotes(e.target.value)}
+              placeholder="Notes (optional)"
+            />
             <button onClick={stockInBatch} disabled={!selectedId || !batchNumber}>
               Receive batch
             </button>
@@ -1708,21 +1752,27 @@ export default function Page() {
                 <th>Qty</th>
                 <th>Mfg</th>
                 <th>Expiry</th>
+                <th>Warehouse</th>
                 <th>Variant</th>
               </tr>
             </thead>
             <tbody>
-              {batches.map((b) => (
-                <tr key={b.id}>
-                  <td>{b.batch_number}</td>
-                  <td>{b.quantity}</td>
-                  <td>
-                    {b.manufacturing_date ? String(b.manufacturing_date).slice(0, 10) : '—'}
-                  </td>
-                  <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
-                  <td>{b.variant_id || '—'}</td>
-                </tr>
-              ))}
+              {batches.map((b) => {
+                const wh = warehouses.find((w) => w.id === b.warehouse_id);
+                const vr = variants.find((v) => v.id === b.variant_id);
+                return (
+                  <tr key={b.id}>
+                    <td>{b.batch_number}</td>
+                    <td>{b.quantity}</td>
+                    <td>
+                      {b.manufacturing_date ? String(b.manufacturing_date).slice(0, 10) : '—'}
+                    </td>
+                    <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
+                    <td>{wh ? wh.name || wh.code : b.warehouse_id ? String(b.warehouse_id).slice(0, 8) : '—'}</td>
+                    <td>{vr ? `${vr.sku}` : b.variant_id ? String(b.variant_id).slice(0, 8) : '—'}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </>
@@ -1746,6 +1796,16 @@ export default function Page() {
                   {w.name || w.code || w.id.slice(0, 8)}
                 </option>
               ))}
+            </select>
+            <select value={openingVariantId} onChange={(e) => setOpeningVariantId(e.target.value)}>
+              <option value="">Variant (optional)</option>
+              {variants
+                .filter((v) => v.is_active !== false)
+                .map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name} ({v.sku})
+                  </option>
+                ))}
             </select>
             <input
               value={openingQty}
