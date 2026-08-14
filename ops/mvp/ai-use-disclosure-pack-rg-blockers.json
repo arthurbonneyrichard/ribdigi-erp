@@ -1,0 +1,66 @@
+{
+  "id": "ai-use-disclosure-pack-rg-blockers",
+  "stage": 301,
+  "pack": "B1",
+  "doc": "docs/AI_USE_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/AI_USE_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "ai_use_disclosure": "docs/AI_USE_DISCLOSURE_MVP.md"
+  },
+  "packaging_complete": true,
+  "ai_certification_claimed": false,
+  "ai_advice_binding_claimed": false,
+  "external_llm_claimed": false,
+  "output_pii_scanner_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "ai_certification_claimed": "REMAINING",
+    "ai_advice_binding_claimed": "REMAINING",
+    "external_llm_claimed": "REMAINING",
+    "output_pii_scanner_claimed": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage42_as_ai_certification": "NON_CLAIM",
+    "stage300_as_signed_tos": "NON_CLAIM",
+    "ai_certification_claimed_flag": "false",
+    "ai_advice_binding_claimed_flag": "false",
+    "external_llm_claimed_flag": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false",
+    "output_pii_scanner_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "audprb-cert",
+      "title": "Mark AI certification Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audprb-advice",
+      "title": "Mark AI advice binding Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audprb-llm",
+      "title": "Mark external LLM Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audprb-stage42-nonclaim",
+      "title": "Mark Stage 42 A1 as non-claim for AI certification Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audprb-cert-remaining",
+      "title": "AI certification Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 301 B1 AI use disclosure pack RG blocker matrix packaging only. AI certification Completes remain MISSING."
+}

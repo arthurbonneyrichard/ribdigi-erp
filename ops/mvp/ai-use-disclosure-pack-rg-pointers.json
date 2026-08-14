@@ -1,0 +1,61 @@
+{
+  "id": "ai-use-disclosure-pack-rg-pointers",
+  "stage": 301,
+  "pack": "P1",
+  "doc": "docs/AI_USE_DISCLOSURE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/AI_USE_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "ai_use_disclosure": "docs/AI_USE_DISCLOSURE_MVP.md",
+    "tos_aup_pack_remaining_gate": "docs/TOS_AUP_PACK_REMAINING_GATE_MVP.md",
+    "commercial_terms_pack_remaining_gate": "docs/COMMERCIAL_TERMS_PACK_REMAINING_GATE_MVP.md",
+    "ai_provider_boundary": "docs/AI_PROVIDER_BOUNDARY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "ai_certification_claimed": false,
+  "ai_advice_binding_claimed": false,
+  "external_llm_claimed": false,
+  "output_pii_scanner_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "ai_use_disclosure_stage42",
+    "tos_aup_pack_remaining_gate_stage300",
+    "commercial_terms_pack_remaining_gate_stage293",
+    "ai_provider_boundary_stage42",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "audprp-stage42",
+      "title": "Point to Stage 42 A1 AI use disclosure",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audprp-stage300",
+      "title": "Point to Stage 300 ToS/AUP pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audprp-stage293",
+      "title": "Point to Stage 293 commercial terms pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audprp-stage42p1",
+      "title": "Point to Stage 42 P1 AI provider boundary adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audprp-cert-remaining",
+      "title": "AI certification Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 301 P1 AI use disclosure pack RG pointers packaging only. Do not claim AI certification Complete."
+}

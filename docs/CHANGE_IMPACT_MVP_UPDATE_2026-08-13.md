@@ -643,3 +643,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 300 decision (opened after Stage 299 freeze)
 
 **Tenant MVP ToS/AUP Pack Remaining-Gate Index Fidelity** — ToS/AUP pack remaining-gate hub (I1), blocker matrix (B1), Stage 43 T1 / Stage 299 / Stage 293 / Stage 39 A1 pointers with explicit non-claim (P1). Prefixed `TOS_AUP_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 43 T1 `TOS_AUP_MVP.md`). Signed ToS / AUP enforced / legal counsel / clickwrap live / paid billing / go-live Completes remain deferred (Stage 301+; ADR-002 in force). Distinct from Stage 299 MSA addendum pack remaining-gate, Stage 293 commercial terms pack remaining-gate, and Stage 43 T1 ToS/AUP packaging. Open ADR-607 / freeze ADR-608.
+
+## Stage 301 decision (opened after Stage 300 freeze)
+
+**Tenant MVP AI Use Disclosure Pack Remaining-Gate Index Fidelity** — AI use disclosure pack remaining-gate hub (I1), blocker matrix (B1), Stage 42 A1 / Stage 300 / Stage 293 / Stage 42 P1 pointers with explicit non-claim (P1). Prefixed `AI_USE_DISCLOSURE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 42 A1 `AI_USE_DISCLOSURE_MVP.md`). AI certification / AI advice binding / external LLM / output-PII scanner / paid billing / go-live Completes remain deferred (Stage 302+; ADR-002 in force). Distinct from Stage 300 ToS/AUP pack remaining-gate, Stage 293 commercial terms pack remaining-gate, and Stage 42 A1 AI use disclosure packaging. Open ADR-609 / freeze ADR-610.

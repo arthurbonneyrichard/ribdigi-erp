@@ -352,6 +352,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **ToS/AUP pack remaining-gate index (Stage 300):** Status index is `docs/TOS_AUP_PACK_REMAINING_GATE_MVP.md` → blockers `docs/TOS_AUP_PACK_RG_BLOCKERS_MVP.md` → Stage 43/299/293/39 pointers `docs/TOS_AUP_PACK_RG_POINTERS_MVP.md`. Signed ToS Complete and clickwrap live Complete remain MISSING (not claimed). Prefixed `TOS_AUP_PACK_*` remaining-gate docs (≠ Stage 43 T1 `TOS_AUP_MVP.md`).
 
+**AI use disclosure pack remaining-gate index (Stage 301):** Status index is `docs/AI_USE_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/AI_USE_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 42/300/293/42P1 pointers `docs/AI_USE_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. AI certification Complete and external LLM Complete remain MISSING (not claimed). Prefixed `AI_USE_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 42 A1 `AI_USE_DISCLOSURE_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

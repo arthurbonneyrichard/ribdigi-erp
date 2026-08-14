@@ -4224,6 +4224,18 @@ Every feature in every phase must meet:
 
 **Stage 300 exit (2026-08-14):** I1, B1, P1, D1, H300x met — `docs/STAGE_300_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_608_STAGE300_FREEZE.md`. Fidelity: `docs/STAGE_300_FIDELITY.md`.
 
+**Stage 301 open (2026-08-14):** Tenant MVP AI Use Disclosure Pack Remaining-Gate Index Fidelity — `docs/ADR_609_STAGE301_OPEN.md` + `docs/STAGE_301_PLAN.md` (I1 next).
+
+**Stage 301 I1 (2026-08-14):** AI use disclosure pack remaining-gate index hub (`test_stage301_index_i1.py`).
+
+**Stage 301 B1 (2026-08-14):** AI use disclosure pack blocker matrix (`test_stage301_blockers_b1.py`).
+
+**Stage 301 P1 (2026-08-14):** Stage 42 A1 / Stage 300 / Stage 293 / Stage 42 P1 pointers (`test_stage301_pointers_p1.py`).
+
+**Stage 301 D1 (2026-08-14):** AI Use Disclosure Pack Remaining-Gate Index fidelity sync — `docs/STAGE_301_FIDELITY.md` (`test_stage301_fidelity_d1.py`).
+
+**Stage 301 exit (2026-08-14):** I1, B1, P1, D1, H301x met — `docs/STAGE_301_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_610_STAGE301_FREEZE.md`. Fidelity: `docs/STAGE_301_FIDELITY.md`.
+
 
 
 
