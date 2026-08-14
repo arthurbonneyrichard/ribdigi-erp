@@ -1685,7 +1685,7 @@ export default function Page() {
               <tbody>
                 {(selectedInvoice.items || []).map((it) => (
                   <tr key={it.id}>
-                    <td>{it.product_id}</td>
+                    <td>{productName(it.product_id)}</td>
                     <td>{it.quantity}</td>
                     <td>{it.unit_price}</td>
                     <td>{it.tax_rate}</td>
