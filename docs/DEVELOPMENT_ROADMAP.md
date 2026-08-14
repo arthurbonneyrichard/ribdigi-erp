@@ -3936,6 +3936,18 @@ Every feature in every phase must meet:
 
 **Stage 276 exit (2026-08-14):** I1, B1, P1, D1, H276x met — `docs/STAGE_276_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_560_STAGE276_FREEZE.md`. Fidelity: `docs/STAGE_276_FIDELITY.md`.
 
+**Stage 277 open (2026-08-14):** Tenant MVP Soft-Delete Erasure Pack Remaining-Gate Index Fidelity — `docs/ADR_561_STAGE277_OPEN.md` + `docs/STAGE_277_PLAN.md` (I1 next).
+
+**Stage 277 I1 (2026-08-14):** Soft-delete erasure pack remaining-gate index hub (`test_stage277_index_i1.py`).
+
+**Stage 277 B1 (2026-08-14):** Soft-delete erasure pack blocker matrix (`test_stage277_blockers_b1.py`).
+
+**Stage 277 P1 (2026-08-14):** Stage 37 E1 / ADR-003 / Stage 276 / Stage 275 / Stage 183 pointers (`test_stage277_pointers_p1.py`).
+
+**Stage 277 D1 (2026-08-14):** Soft-Delete Erasure Pack Remaining-Gate Index fidelity sync — `docs/STAGE_277_FIDELITY.md` (`test_stage277_fidelity_d1.py`).
+
+**Stage 277 exit (2026-08-14):** I1, B1, P1, D1, H277x met — `docs/STAGE_277_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_562_STAGE277_FREEZE.md`. Fidelity: `docs/STAGE_277_FIDELITY.md`.
+
 
 
 

@@ -31,3 +31,10 @@ Stage 277 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for hard-delete, archival, paid billing, or go-live.
+
+
+## Amendment — Stage 277 opened
+
+Stage 277 opened under **ADR-561** after CONTINUE/NEXT (Tenant MVP Soft-Delete Erasure Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-562**. Stage 276 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 277 runner-up outline was approved and opened (ADR-561); freeze ADR-562. Do not reopen Stage 276 scope.

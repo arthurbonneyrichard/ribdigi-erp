@@ -1449,6 +1449,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] ADR-003 / Stage 275 / Stage 274 / Stage 183 pointers (Stage 276 P1: `test_stage276_pointers_p1.py`, `docs/HARD_DELETE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 276 fidelity sync (D1: `test_stage276_fidelity_d1.py`, `docs/STAGE_276_FIDELITY.md`)
 - [x] Stage 276 exit + freeze (H276x: `test_stage276_exit_h276x.py`, `docs/STAGE_276_EXIT_CRITERIA.md`, ADR-560)
+- [x] Stage 277 track opened (ADR-561: `test_stage277_open.py`, `docs/STAGE_277_PLAN.md`) — Soft-Delete Erasure Pack Remaining-Gate Index; closed under ADR-562
+- [x] Soft-delete erasure pack remaining-gate hub (Stage 277 I1: `test_stage277_index_i1.py`, `docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md`)
+- [x] Soft-delete erasure pack blocker matrix (Stage 277 B1: `test_stage277_blockers_b1.py`, `docs/SOFT_DELETE_ERASURE_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 37 E1 / ADR-003 / Stage 276 / Stage 275 / Stage 183 pointers (Stage 277 P1: `test_stage277_pointers_p1.py`, `docs/SOFT_DELETE_ERASURE_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 277 fidelity sync (D1: `test_stage277_fidelity_d1.py`, `docs/STAGE_277_FIDELITY.md`)
+- [x] Stage 277 exit + freeze (H277x: `test_stage277_exit_h277x.py`, `docs/STAGE_277_EXIT_CRITERIA.md`, ADR-562)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

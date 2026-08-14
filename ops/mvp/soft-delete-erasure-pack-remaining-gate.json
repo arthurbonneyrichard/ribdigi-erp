@@ -1,0 +1,57 @@
+{
+  "id": "soft-delete-erasure-pack-remaining-gate",
+  "stage": 277,
+  "pack": "I1",
+  "doc": "docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SOFT_DELETE_ERASURE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SOFT_DELETE_ERASURE_PACK_RG_POINTERS_MVP.md",
+    "erasure_honesty": "docs/ERASURE_HONESTY_MVP.md",
+    "hard_delete_adr": "docs/ADR_003_USER_DELETE_POLICY.md",
+    "hard_delete_pack_remaining_gate": "docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md",
+    "menu_permissions_pack_remaining_gate": "docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_remaining_gate": "docs/HARD_DELETE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "erasure_complete_claimed": false,
+  "hard_delete_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage37_erasure_honesty": true,
+  "distinct_from_stage276_hard_delete_pack_remaining_gate": true,
+  "distinct_from_stage275_menu_permissions_pack_remaining_gate": true,
+  "distinct_from_stage183_hard_delete_remaining_gate": true,
+  "steps": [
+    {
+      "id": "sdepr-read-blockers",
+      "title": "Read B1 soft-delete erasure pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdepr-follow-pointers",
+      "title": "Follow P1 Stage 37 E1 / ADR-003 / Stage 276 / Stage 275 / Stage 183 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdepr-erasure-missing",
+      "title": "Reaffirm erasure / hard-delete MISSING until archival/anonymize ships (ADR-003)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdepr-no-packaging-as-live",
+      "title": "Do not treat Stage 37 E1 / Stage 276 / Stage 183 as erasure Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdepr-erasure-remaining",
+      "title": "Erasure / hard-delete / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 277 I1 soft-delete erasure pack remaining-gate index packaging only. Do not claim erasure Complete."
+}

@@ -304,6 +304,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Hard delete pack remaining-gate index (Stage 276):** Status index is `docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/HARD_DELETE_PACK_RG_BLOCKERS_MVP.md` → ADR-003/275/274/183 pointers `docs/HARD_DELETE_PACK_RG_POINTERS_MVP.md`. Hard-delete Complete and archival Complete remain MISSING (not claimed; ADR-003). Prefixed `HARD_DELETE_PACK_*` remaining-gate docs (≠ ADR-003 / Stage 183 `HARD_DELETE_*`).
 
+**Soft-delete erasure pack remaining-gate index (Stage 277):** Status index is `docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SOFT_DELETE_ERASURE_PACK_RG_BLOCKERS_MVP.md` → Stage 37/ADR-003/276/275/183 pointers `docs/SOFT_DELETE_ERASURE_PACK_RG_POINTERS_MVP.md`. Erasure Complete and hard-delete Complete remain MISSING (not claimed; ADR-003). Prefixed `SOFT_DELETE_ERASURE_PACK_*` remaining-gate docs (≠ Stage 37 E1 `ERASURE_HONESTY_*`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

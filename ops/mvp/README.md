@@ -1090,6 +1090,12 @@ Authoritative MVP docs:
 - `docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/hard-delete-pack-remaining-gate.json` — Stage 276 I1
 - `docs/HARD_DELETE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/hard-delete-pack-rg-blockers.json` — Stage 276 B1
 - `docs/HARD_DELETE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/hard-delete-pack-rg-pointers.json` — Stage 276 P1
+- `docs/STAGE_277_EXIT_CRITERIA.md` / `docs/ADR_562_STAGE277_FREEZE.md` (`backend/tests/test_stage277_exit_h277x.py`) — Stage 277 H277x
+- `docs/STAGE_277_FIDELITY.md` (`backend/tests/test_stage277_fidelity_d1.py`) — Stage 277 D1
+- `docs/STAGE_277_PLAN.md` (`backend/tests/test_stage277_open.py`) — Stage 277 open (ADR-561)
+- `docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/soft-delete-erasure-pack-remaining-gate.json` — Stage 277 I1
+- `docs/SOFT_DELETE_ERASURE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/soft-delete-erasure-pack-rg-blockers.json` — Stage 277 B1
+- `docs/SOFT_DELETE_ERASURE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/soft-delete-erasure-pack-rg-pointers.json` — Stage 277 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4867,4 +4873,16 @@ H276x met — `docs/STAGE_276_EXIT_CRITERIA.md`, ADR-560. Stages 1–276 frozen 
 ## Stage 276 open
 
 `docs/ADR_559_STAGE276_OPEN.md` + `docs/STAGE_276_PLAN.md` (`test_stage276_open.py`).
+
+## Stage 277 exit
+
+H277x met — `docs/STAGE_277_EXIT_CRITERIA.md`, ADR-562. Stages 1–277 frozen for Stage 277 feature scope.
+
+## Stage 277 D1 — Tenant MVP Soft-Delete Erasure Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_277_FIDELITY.md` (`test_stage277_fidelity_d1.py`). `SOFT_DELETE_ERASURE_PACK_*` remaining-gate index; erasure / hard-delete / go-live still MISSING (ADR-003).
+
+## Stage 277 open
+
+`docs/ADR_561_STAGE277_OPEN.md` + `docs/STAGE_277_PLAN.md` (`test_stage277_open.py`).
 

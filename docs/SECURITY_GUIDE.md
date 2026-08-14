@@ -1612,6 +1612,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 276 P1** | ADR-003 / Stage 275 / Stage 274 / Stage 183 pointers (`test_stage276_pointers_p1.py`) |
 | **Stage 276 D1** | Hard delete pack remaining-gate fidelity — `docs/STAGE_276_FIDELITY.md` (`test_stage276_fidelity_d1.py`) |
 | **Stage 276 H276x** | Exit + freeze — `docs/STAGE_276_EXIT_CRITERIA.md`, ADR-560 (`test_stage276_exit_h276x.py`); Stages 1–276 frozen |
+| **Stage 277 open** | Soft-Delete Erasure Pack Remaining-Gate Index — `docs/STAGE_277_PLAN.md`, ADR-561 (`test_stage277_open.py`) |
+| **Stage 277 I1** | Soft-delete erasure pack remaining-gate index hub (`test_stage277_index_i1.py`) |
+| **Stage 277 B1** | Soft-delete erasure pack blocker matrix (`test_stage277_blockers_b1.py`) |
+| **Stage 277 P1** | Stage 37 E1 / ADR-003 / Stage 276 / Stage 275 / Stage 183 pointers (`test_stage277_pointers_p1.py`) |
+| **Stage 277 D1** | Soft-delete erasure pack remaining-gate fidelity — `docs/STAGE_277_FIDELITY.md` (`test_stage277_fidelity_d1.py`) |
+| **Stage 277 H277x** | Exit + freeze — `docs/STAGE_277_EXIT_CRITERIA.md`, ADR-562 (`test_stage277_exit_h277x.py`); Stages 1–277 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |

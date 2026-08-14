@@ -532,3 +532,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 276 decision (opened after Stage 275 freeze)
 
 **Tenant MVP Hard Delete Pack Remaining-Gate Index Fidelity** — hard delete pack remaining-gate hub (I1), blocker matrix (B1), ADR-003 / Stage 275 / Stage 274 / Stage 183 pointers with explicit non-claim (P1). Prefixed `HARD_DELETE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ ADR-003 decision text / Stage 183 `HARD_DELETE_*`). Hard-delete / archival / paid billing / go-live Completes remain deferred (Stage 277+; ADR-003 / ADR-002 in force). Distinct from Stage 275 menu permissions pack remaining-gate, Stage 274 language i18n pack remaining-gate, ADR-003 decision text, and Stage 183 hard-delete remaining-gate. Open ADR-559 / freeze ADR-560.
+
+
+## Stage 277 decision (opened after Stage 276 freeze)
+
+**Tenant MVP Soft-Delete Erasure Pack Remaining-Gate Index Fidelity** — soft-delete erasure pack remaining-gate hub (I1), blocker matrix (B1), Stage 37 E1 / ADR-003 / Stage 276 / Stage 275 / Stage 183 pointers with explicit non-claim (P1). Prefixed `SOFT_DELETE_ERASURE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 37 E1 `ERASURE_HONESTY_*` / Stage 183 `HARD_DELETE_*`). Erasure / hard-delete / paid billing / go-live Completes remain deferred (Stage 278+; ADR-003 / ADR-002 in force). Distinct from Stage 276 hard delete pack remaining-gate, Stage 275 menu permissions pack remaining-gate, Stage 37 E1 erasure honesty packaging, and Stage 183 hard-delete remaining-gate. Open ADR-561 / freeze ADR-562.
