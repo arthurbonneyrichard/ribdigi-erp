@@ -1828,6 +1828,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 312 P1** | Stage 40 U1 / Stage 311 / Stage 310 / Stage 36 pointers (`test_stage312_pointers_p1.py`) |
 | **Stage 312 D1** | Status uptime pack remaining-gate fidelity — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`) |
 | **Stage 312 H312x** | Exit + freeze — `docs/STAGE_312_EXIT_CRITERIA.md`, ADR-632 (`test_stage312_exit_h312x.py`); Stages 1–312 frozen |
+| **Stage 313 open** | Commercial Liability Pack Remaining-Gate Index — `docs/STAGE_313_PLAN.md`, ADR-633 (`test_stage313_open.py`) |
+| **Stage 313 I1** | Commercial liability pack remaining-gate index hub (`test_stage313_index_i1.py`) |
+| **Stage 313 B1** | Commercial liability pack blocker matrix (`test_stage313_blockers_b1.py`) |
+| **Stage 313 P1** | Stage 77 L1 / Stage 312 / Stage 311 / Stage 310 pointers (`test_stage313_pointers_p1.py`) |
+| **Stage 313 D1** | Commercial liability pack remaining-gate fidelity — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`) |
+| **Stage 313 H313x** | Exit + freeze — `docs/STAGE_313_EXIT_CRITERIA.md`, ADR-634 (`test_stage313_exit_h313x.py`); Stages 1–313 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |

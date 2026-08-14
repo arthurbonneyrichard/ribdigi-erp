@@ -31,3 +31,10 @@ Stage 313 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live status page, uptime SLA, measured uptime, public dashboard, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 313 opened under **ADR-633** after CONTINUE/NEXT (Tenant MVP Commercial Liability Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-634**. Stage 312 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 313 runner-up outline was approved and opened (ADR-633); freeze ADR-634. Do not reopen Stage 312 scope.
+

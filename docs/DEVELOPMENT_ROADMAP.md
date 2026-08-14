@@ -4368,6 +4368,18 @@ Every feature in every phase must meet:
 
 **Stage 312 exit (2026-08-14):** I1, B1, P1, D1, H312x met — `docs/STAGE_312_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_632_STAGE312_FREEZE.md`. Fidelity: `docs/STAGE_312_FIDELITY.md`.
 
+**Stage 313 open (2026-08-14):** Tenant MVP Commercial Liability Pack Remaining-Gate Index Fidelity — `docs/ADR_633_STAGE313_OPEN.md` + `docs/STAGE_313_PLAN.md` (I1 next).
+
+**Stage 313 I1 (2026-08-14):** Commercial liability pack remaining-gate index hub (`test_stage313_index_i1.py`).
+
+**Stage 313 B1 (2026-08-14):** Commercial liability pack blocker matrix (`test_stage313_blockers_b1.py`).
+
+**Stage 313 P1 (2026-08-14):** Stage 77 L1 / Stage 312 / Stage 311 / Stage 310 pointers (`test_stage313_pointers_p1.py`).
+
+**Stage 313 D1 (2026-08-14):** Commercial Liability Pack Remaining-Gate Index fidelity sync — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`).
+
+**Stage 313 exit (2026-08-14):** I1, B1, P1, D1, H313x met — `docs/STAGE_313_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_634_STAGE313_FREEZE.md`. Fidelity: `docs/STAGE_313_FIDELITY.md`.
+
 
 
 

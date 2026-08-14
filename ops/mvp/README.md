@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_313_EXIT_CRITERIA.md` / `docs/ADR_634_STAGE313_FREEZE.md` (`backend/tests/test_stage313_exit_h313x.py`) — Stage 313 H313x
+- `docs/STAGE_313_FIDELITY.md` (`backend/tests/test_stage313_fidelity_d1.py`) — Stage 313 D1
+- `docs/STAGE_313_PLAN.md` (`backend/tests/test_stage313_open.py`) — Stage 313 open (ADR-633)
+- `docs/COMMERCIAL_LIABILITY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-liability-pack-remaining-gate.json` — Stage 313 I1
+- `docs/COMMERCIAL_LIABILITY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-liability-pack-rg-blockers.json` — Stage 313 B1
+- `docs/COMMERCIAL_LIABILITY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-liability-pack-rg-pointers.json` — Stage 313 P1
 - `docs/STAGE_312_EXIT_CRITERIA.md` / `docs/ADR_632_STAGE312_FREEZE.md` (`backend/tests/test_stage312_exit_h312x.py`) — Stage 312 H312x
 - `docs/STAGE_312_FIDELITY.md` (`backend/tests/test_stage312_fidelity_d1.py`) — Stage 312 D1
 - `docs/STAGE_312_PLAN.md` (`backend/tests/test_stage312_open.py`) — Stage 312 open (ADR-631)
@@ -5155,6 +5161,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 313 exit
+
+H313x met — `docs/STAGE_313_EXIT_CRITERIA.md`, ADR-634. Stages 1–313 frozen for Stage 313 feature scope.
+
+## Stage 313 D1 — Tenant MVP Commercial Liability Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`). `COMMERCIAL_LIABILITY_PACK_*` remaining-gate index; liability-cap signed / indemnity / go-live still MISSING.
+
+## Stage 313 open
+
+ADR-633 / `docs/STAGE_313_PLAN.md`.
 
 ## Stage 312 exit
 
