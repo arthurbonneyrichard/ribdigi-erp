@@ -1068,7 +1068,9 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 
 ### 9.3 Recurring Expenses
 **List:** `GET /expenses/recurring`  
-**Create:** `POST /expenses/recurring`
+**Create:** `POST /expenses/recurring`  
+**Update:** `PATCH /expenses/recurring/{id}` `{ "is_active": true|false }` — activate / deactivate schedule  
+**Generate due:** `POST /expenses/recurring/generate` — creates expenses for active schedules with `next_run_at <= now` (also Celery beat `generate_recurring_expenses`)
 
 **Create Recurring:**
 ```json
@@ -1082,7 +1084,7 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 }
 ```
 
-Org dims on templates are copied onto expenses generated from the schedule.
+`frequency` ∈ `daily|weekly|monthly|yearly`. Org dims on templates are copied onto expenses generated from the schedule. Generated expenses omit a forced reference so `expense_numbering` allocates `{PREFIX}-{YYYY}-{NNNN}` (default `EXP`); description is tagged `(recurring)` when needed. Expenses UI: Recurring expenses card (BR-9.5 / BR-9.2 / BR-20.4).
 
 ---
 

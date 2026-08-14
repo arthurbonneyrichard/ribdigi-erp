@@ -130,6 +130,7 @@ from app.schemas import (
     PurchaseInvoiceUpdate,
     PurchaseReturnCreate,
     RecurringExpenseCreate,
+    RecurringExpenseUpdate,
     RefreshRequest,
     SalesInvoiceCreate,
     SalesOrderCreate,
@@ -6983,25 +6984,7 @@ async def list_recurring_expenses(
             .order_by(m.RecurringExpense.created_at.desc())
         )
     ).scalars().all()
-    return env(
-        [
-            {
-                "id": r.id,
-                "category": r.category,
-                "category_id": r.category_id,
-                "description": r.description,
-                "amount": float(r.amount),
-                "frequency": r.frequency,
-                "payment_method": r.payment_method,
-                "payee": r.payee,
-                "branch_id": getattr(r, "branch_id", None),
-                "department_id": getattr(r, "department_id", None),
-                "next_run_at": r.next_run_at,
-                "is_active": r.is_active,
-            }
-            for r in rows
-        ]
-    )
+    return env([expenses_svc.serialize_recurring(r) for r in rows])
 
 
 @api.post("/expenses/recurring")
@@ -7025,7 +7008,29 @@ async def create_recurring_expense(
         department_id=payload.department_id,
     )
     await db.commit()
-    return env({"id": row.id, "next_run_at": row.next_run_at}, "Recurring expense created")
+    return env(expenses_svc.serialize_recurring(row), "Recurring expense created")
+
+
+@api.patch("/expenses/recurring/{recurring_id}")
+async def update_recurring_expense(
+    recurring_id: str,
+    payload: RecurringExpenseUpdate,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    if payload.is_active is None:
+        raise HTTPException(status_code=400, detail="No recurring fields to update")
+    row = await expenses_svc.set_recurring_active(
+        db,
+        tenant_id=claims["tenant_id"],
+        recurring_id=recurring_id,
+        is_active=payload.is_active,
+    )
+    await db.commit()
+    return env(
+        expenses_svc.serialize_recurring(row),
+        "Recurring expense activated" if row.is_active else "Recurring expense deactivated",
+    )
 
 
 @api.post("/expenses/recurring/generate")
@@ -7038,7 +7043,7 @@ async def generate_recurring_expenses(
     )
     await db.commit()
     return env(
-        [expenses_svc.serialize_expense(e) for e in created],
+        [await expenses_svc.serialize_expense_full(db, e) for e in created],
         f"Generated {len(created)} expense(s)",
     )
 

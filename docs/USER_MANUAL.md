@@ -669,13 +669,15 @@ If the expense exceeds your company's approval threshold:
 
 For regular payments like rent or subscriptions:
 
-1. Go to **Expenses → Recurring Expenses → + New**
+1. Go to **Expenses** and open the **Recurring expenses** card
 2. Set:
    - **Frequency:** Daily, Weekly, Monthly, Yearly
-   - **Start Date** and **End Date** (optional)
-   - **Amount** and **Category**
-3. System auto-generates expense entries on schedule
-4. You can skip or modify individual occurrences
+   - **Amount**, **Category**, optional payee / branch / department
+3. Click **Create schedule** — the system stores `next_run_at` and Celery generates due expenses automatically
+4. Use **Generate due now** to run the same job immediately (generated expenses use EXP numbering)
+5. **Deactivate** / **Activate** a schedule from the list when you need to pause it
+
+> Per-occurrence skip/edit and advance notification before generation are not yet available.
 
 ### 7.4 Expense Reports
 

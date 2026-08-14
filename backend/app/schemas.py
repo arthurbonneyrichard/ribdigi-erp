@@ -575,6 +575,10 @@ class RecurringExpenseCreate(BaseModel):
     department_id: str | None = None
 
 
+class RecurringExpenseUpdate(BaseModel):
+    is_active: bool | None = None
+
+
 class ApprovalLevelUpdate(BaseModel):
     min_amount: float = Field(gt=0)
     roles: list[str] = Field(min_length=1)
