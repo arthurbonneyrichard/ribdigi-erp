@@ -149,7 +149,7 @@ export default function Page() {
       if (nextTab === 'customers') path = `/reports/sales/customers${qs()}`;
       if (nextTab === 'stores') path = `/reports/sales/by-store${qs()}`;
       if (nextTab === 'departments') path = `/reports/sales/by-department${qs()}`;
-      if (nextTab === 'inventory') path = '/reports/inventory/low-stock';
+      if (nextTab === 'inventory') path = `/reports/inventory/low-stock${qs()}`;
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
       if (nextTab === 'expenses') path = `/reports/expenses/budget-vs-actual${qs()}`;
       if (nextTab === 'cashflow') path = `/reports/cash-flow${qs()}`;
@@ -170,17 +170,13 @@ export default function Page() {
           returns: returns.data,
         });
       } else if (nextTab === 'inventory') {
-        const whQs = warehouseId ? `?warehouse_id=${encodeURIComponent(warehouseId)}` : '';
-        const days = expiryDays || '30';
-        const expiryQs = new URLSearchParams({ days });
-        if (warehouseId) expiryQs.set('warehouse_id', warehouseId);
         const [balance, valuation, movements, suggestions, transfers, expiry] = await Promise.all([
-          api(`/reports/inventory/balance${whQs}`),
-          api(`/reports/inventory/valuation?method=standard${warehouseId ? `&warehouse_id=${encodeURIComponent(warehouseId)}` : ''}`),
+          api(`/reports/inventory/balance${qs()}`),
+          api(`/reports/inventory/valuation${qs({ method: 'standard' })}`),
           api(`/reports/inventory/movements${qs()}`),
           api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
           api(`/reports/inventory/transfers${qs()}`),
-          api(`/reports/inventory/expiry?${expiryQs}`),
+          api(`/reports/inventory/expiry${qs({ days: expiryDays || '30' })}`),
         ]);
         setData({
           lowStock: r.data,
@@ -1035,6 +1031,13 @@ export default function Page() {
           </div>
           <div className="card" style={{ marginTop: 16 }}>
             <h3>Low stock products ({data.lowStock?.count ?? 0})</h3>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              {data.lowStock?.store_name
+                ? data.lowStock.store_name
+                : data.lowStock?.warehouse_id
+                  ? 'Warehouse filtered'
+                  : 'Company-wide product reorder'}
+            </p>
             <ul>
               {(data.lowStock?.products || []).map((p: any) => (
                 <li key={p.id}>
@@ -1061,7 +1064,13 @@ export default function Page() {
             <h3>Stock valuation (standard cost)</h3>
             <p className="muted">
               Method: {data.valuation?.method || 'standard'}
-              {data.valuation?.warehouse_id ? ' · warehouse filtered' : ' · company stock'}
+              {data.valuation?.store_name
+                ? ` · ${data.valuation.store_name}`
+                : data.valuation?.warehouse_name
+                  ? ` · ${data.valuation.warehouse_name}`
+                  : data.valuation?.warehouse_id
+                    ? ' · warehouse filtered'
+                    : ' · company stock'}
             </p>
             <div className="grid">
               <div>
@@ -1163,6 +1172,11 @@ export default function Page() {
           <p className="muted">
             {data.expiry?.count ?? 0} batches within {data.expiry?.within_days ?? expiryDays} days ·
             expired {data.expiry?.expired_count ?? 0} · qty {data.expiry?.total_quantity ?? 0}
+            {data.expiry?.store_name
+              ? ` · ${data.expiry.store_name}`
+              : data.expiry?.warehouse_name
+                ? ` · ${data.expiry.warehouse_name}`
+                : ''}
           </p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
             <button type="button" onClick={() => download('xlsx', 'inventory_expiry')}>
