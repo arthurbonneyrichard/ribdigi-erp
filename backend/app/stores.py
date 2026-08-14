@@ -675,7 +675,12 @@ async def transfer_history(
 
 
 async def _add_transfer_items(
-    db: AsyncSession, *, tenant_id: str, transfer_id: str, items: list[dict]
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    transfer_id: str,
+    items: list[dict],
+    company_id: str | None = None,
 ) -> None:
     for item in items:
         product_id = item["product_id"]
@@ -692,6 +697,7 @@ async def _add_transfer_items(
         db.add(
             m.StockTransferItem(
                 tenant_id=tenant_id,
+                company_id=company_id or getattr(product, "company_id", None),
                 transfer_id=transfer_id,
                 product_id=product_id,
                 quantity=qty,
@@ -736,7 +742,13 @@ async def create_transfer(
     )
     db.add(transfer)
     await db.flush()
-    await _add_transfer_items(db, tenant_id=tenant_id, transfer_id=transfer.id, items=items)
+    await _add_transfer_items(
+        db,
+        tenant_id=tenant_id,
+        transfer_id=transfer.id,
+        items=items,
+        company_id=company_id,
+    )
     return transfer
 
 
@@ -779,7 +791,13 @@ async def create_warehouse_transfer(
     )
     db.add(transfer)
     await db.flush()
-    await _add_transfer_items(db, tenant_id=tenant_id, transfer_id=transfer.id, items=items)
+    await _add_transfer_items(
+        db,
+        tenant_id=tenant_id,
+        transfer_id=transfer.id,
+        items=items,
+        company_id=company_id,
+    )
     return transfer
 
 

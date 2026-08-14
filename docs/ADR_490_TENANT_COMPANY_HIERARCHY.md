@@ -171,3 +171,10 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Frontend `WorkspaceBrand` shows logo or initials, business type + branch/store subtitle when expanded; tenant/platform contexts do not keep stale company logos. Create-company and company settings support optional logo upload/replace/remove.
 - Print/receipt branding already prefers company logo via `print_branding.tenant_document_brand` when a company logo exists.
 - Remaining PARTIAL: SVG logos remain unsupported by storage allow-list (security); desktop sidebar collapse chrome is optional (component supports `collapsed`); ADR-002/005 and FX tenant-shared remain deferred.
+
+## Phase 20 — Barcode uniques + child-row stamps (2026-08-14)
+
+- Product/variant barcode clash checks and allocation are company-scoped (`barcodes.py`); create/patch/generate APIs pass `company_id`; generate + label resolve assert company ownership (IDOR-safe).
+- Alembic `20260814_0102` adds partial unique indexes `(tenant_id, company_id, barcode) WHERE barcode IS NOT NULL` on `products` and `product_variants`; models mirror company-scoped barcode uniqueness.
+- Child creates stamp `company_id` from parent/product: `ProductBatch`, `WarehouseStock`, `StockReservation`, purchasing line items (PR/PO/GRN/return/invoice), PO amendments, stock transfer items, party contacts, expense/PR approval actions.
+- Remaining PARTIAL: cheque / offline `client_request_id` uniques may still be tenant-wide; bank clearing group rows; ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.

@@ -391,7 +391,10 @@ class UnitOfMeasure(Base):
 
 class Product(Base):
     __tablename__ = "products"
-    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "sku"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "company_id", "sku"),
+        UniqueConstraint("tenant_id", "company_id", "barcode"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -422,7 +425,10 @@ class Product(Base):
 
 class ProductVariant(Base):
     __tablename__ = "product_variants"
-    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "sku"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "company_id", "sku"),
+        UniqueConstraint("tenant_id", "company_id", "barcode"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)

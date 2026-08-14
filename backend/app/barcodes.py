@@ -98,6 +98,7 @@ async def barcode_in_use(
     *,
     tenant_id: str,
     barcode: str,
+    company_id: str | None = None,
     exclude_product_id: str | None = None,
     exclude_variant_id: str | None = None,
 ) -> bool:
@@ -105,6 +106,8 @@ async def barcode_in_use(
         m.Product.tenant_id == tenant_id,
         m.Product.barcode == barcode,
     )
+    if company_id:
+        pstmt = pstmt.where(m.Product.company_id == company_id)
     if exclude_product_id:
         pstmt = pstmt.where(m.Product.id != exclude_product_id)
     if (await db.execute(pstmt.limit(1))).scalar_one_or_none():
@@ -114,6 +117,8 @@ async def barcode_in_use(
         m.ProductVariant.tenant_id == tenant_id,
         m.ProductVariant.barcode == barcode,
     )
+    if company_id:
+        vstmt = vstmt.where(m.ProductVariant.company_id == company_id)
     if exclude_variant_id:
         vstmt = vstmt.where(m.ProductVariant.id != exclude_variant_id)
     return (await db.execute(vstmt.limit(1))).scalar_one_or_none() is not None
@@ -124,6 +129,7 @@ async def assert_barcode_available(
     *,
     tenant_id: str,
     barcode: str | None,
+    company_id: str | None = None,
     exclude_product_id: str | None = None,
     exclude_variant_id: str | None = None,
 ) -> str | None:
@@ -134,6 +140,7 @@ async def assert_barcode_available(
         db,
         tenant_id=tenant_id,
         barcode=code,
+        company_id=company_id,
         exclude_product_id=exclude_product_id,
         exclude_variant_id=exclude_variant_id,
     ):
@@ -146,6 +153,7 @@ async def allocate_barcode(
     *,
     tenant_id: str,
     format: str = "code128",
+    company_id: str | None = None,
     exclude_product_id: str | None = None,
     exclude_variant_id: str | None = None,
 ) -> str:
@@ -158,6 +166,7 @@ async def allocate_barcode(
             db,
             tenant_id=tenant_id,
             barcode=code,
+            company_id=company_id,
             exclude_product_id=exclude_product_id,
             exclude_variant_id=exclude_variant_id,
         ):
@@ -172,18 +181,23 @@ async def assign_product_barcode(
     product_id: str,
     format: str = "code128",
     force: bool = False,
+    company_id: str | None = None,
 ) -> m.Product:
-    product = (
-        await db.execute(
-            select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
-        )
-    ).scalar_one_or_none()
+    stmt = select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Product.company_id == company_id)
+    product = (await db.execute(stmt)).scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     if product.barcode and not force:
         return product
+    scope_company = company_id or getattr(product, "company_id", None)
     product.barcode = await allocate_barcode(
-        db, tenant_id=tenant_id, format=format, exclude_product_id=product.id
+        db,
+        tenant_id=tenant_id,
+        format=format,
+        company_id=scope_company,
+        exclude_product_id=product.id,
     )
     await db.flush()
     return product
@@ -197,29 +211,33 @@ async def assign_variant_barcode(
     variant_id: str,
     format: str = "code128",
     force: bool = False,
+    company_id: str | None = None,
 ) -> m.ProductVariant:
-    product = (
-        await db.execute(
-            select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
-        )
-    ).scalar_one_or_none()
+    pstmt = select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
+    if company_id:
+        pstmt = pstmt.where(m.Product.company_id == company_id)
+    product = (await db.execute(pstmt)).scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
-    variant = (
-        await db.execute(
-            select(m.ProductVariant).where(
-                m.ProductVariant.id == variant_id,
-                m.ProductVariant.tenant_id == tenant_id,
-                m.ProductVariant.product_id == product_id,
-            )
-        )
-    ).scalar_one_or_none()
+    vstmt = select(m.ProductVariant).where(
+        m.ProductVariant.id == variant_id,
+        m.ProductVariant.tenant_id == tenant_id,
+        m.ProductVariant.product_id == product_id,
+    )
+    if company_id:
+        vstmt = vstmt.where(m.ProductVariant.company_id == company_id)
+    variant = (await db.execute(vstmt)).scalar_one_or_none()
     if variant is None:
         raise HTTPException(status_code=404, detail="Variant not found")
     if variant.barcode and not force:
         return variant
+    scope_company = company_id or getattr(variant, "company_id", None) or getattr(product, "company_id", None)
     variant.barcode = await allocate_barcode(
-        db, tenant_id=tenant_id, format=format, exclude_variant_id=variant.id
+        db,
+        tenant_id=tenant_id,
+        format=format,
+        company_id=scope_company,
+        exclude_variant_id=variant.id,
     )
     await db.flush()
     return variant

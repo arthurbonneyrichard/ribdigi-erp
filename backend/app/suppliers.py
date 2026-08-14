@@ -262,7 +262,7 @@ async def add_contact(
     designation: str | None = None,
     is_primary: bool = False,
 ) -> m.PartyContact:
-    await get_supplier(db, tenant_id, supplier_id)
+    party = await get_supplier(db, tenant_id, supplier_id)
     name = (name or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="contact name is required")
@@ -272,6 +272,7 @@ async def add_contact(
             c.is_primary = False
     row = m.PartyContact(
         tenant_id=tenant_id,
+        company_id=getattr(party, "company_id", None),
         party_id=supplier_id,
         name=name,
         email=str(email).strip() if email else None,

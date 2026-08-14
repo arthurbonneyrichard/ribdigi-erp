@@ -674,9 +674,11 @@ async def _record_action(
     actor_id: str | None,
     comment: str | None = None,
 ) -> None:
+    expense = await db.get(m.Expense, expense_id)
     db.add(
         m.ExpenseApprovalAction(
             tenant_id=tenant_id,
+            company_id=getattr(expense, "company_id", None) if expense else None,
             expense_id=expense_id,
             step=step,
             action=action,

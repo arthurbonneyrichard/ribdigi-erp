@@ -6,7 +6,9 @@ import pyotp
 import pytest
 
 from app import models as m
+from app import barcodes as barcode_svc
 from app.rbac import permissions_for_role
+from sqlalchemy import select
 from tests.conftest import auth_headers
 
 
@@ -2137,3 +2139,174 @@ async def test_mutate_idor_exports_and_ops_numbers_company_scoped(client, db_ses
     assert open_a.status_code == 200, open_a.text
     assert open_a.json()["data"]["company_id"] == seed["c1"].id
     assert open_a.json()["data"]["session_number"].startswith("POS-")
+
+
+@pytest.mark.asyncio
+async def test_barcode_uniques_and_child_stamps_company_scoped(client, db_session):
+    """Phase 20: company-scoped barcodes + child row company_id stamps."""
+    ac, seed = client
+    shared_barcode = barcode_svc.generate_ean13()
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="BC20",
+        name="Alpha Barcode B",
+        industry="bakery",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+    headers_b = await _super_headers(ac, seed)
+    headers_b["X-Workspace-Kind"] = "company"
+    headers_b["X-Company-ID"] = c_b.id
+
+    # Same barcode allowed across companies
+    create_a = await ac.post(
+        "/api/v1/products",
+        headers=headers_a,
+        json={
+            "name": "Barcode A Product",
+            "sku": "BC-A-1",
+            "barcode": shared_barcode,
+            "cost_price": 1,
+            "selling_price": 2,
+            "stock_qty": 0,
+        },
+    )
+    assert create_a.status_code == 200, create_a.text
+    prod_a_id = create_a.json()["data"]["id"]
+    assert create_a.json()["data"]["barcode"] == shared_barcode
+
+    create_b = await ac.post(
+        "/api/v1/products",
+        headers=headers_b,
+        json={
+            "name": "Barcode B Product",
+            "sku": "BC-B-1",
+            "barcode": shared_barcode,
+            "cost_price": 1,
+            "selling_price": 2,
+            "stock_qty": 0,
+        },
+    )
+    assert create_b.status_code == 200, create_b.text
+    assert create_b.json()["data"]["barcode"] == shared_barcode
+
+    # Clash within the same company
+    clash = await ac.post(
+        "/api/v1/products",
+        headers=headers_a,
+        json={
+            "name": "Barcode A Clash",
+            "sku": "BC-A-2",
+            "barcode": shared_barcode,
+            "cost_price": 1,
+            "selling_price": 2,
+            "stock_qty": 0,
+        },
+    )
+    assert clash.status_code == 409, clash.text
+
+    # Generate barcode is company-scoped / IDOR-safe
+    gen = await ac.post(
+        f"/api/v1/products/{prod_a_id}/barcode/generate?force=true&format=code128",
+        headers=headers_a,
+    )
+    assert gen.status_code == 200, gen.text
+    assert gen.json()["data"]["barcode"]
+
+    foreign_gen = await ac.post(
+        f"/api/v1/products/{prod_a_id}/barcode/generate?force=true",
+        headers=headers_b,
+    )
+    assert foreign_gen.status_code == 404, foreign_gen.text
+
+    # Labels cannot resolve cross-company product
+    labels = await ac.get(
+        f"/api/v1/products/{prod_a_id}/labels",
+        headers=headers_b,
+    )
+    assert labels.status_code == 404, labels.text
+
+    # Child stamps: batch inbound stamps company_id
+    batch_prod = await ac.post(
+        "/api/v1/products",
+        headers=headers_a,
+        json={
+            "name": "Batch Stamp Product",
+            "sku": "BC-BATCH-1",
+            "cost_price": 1,
+            "selling_price": 2,
+            "stock_qty": 0,
+            "tracks_batches": True,
+        },
+    )
+    assert batch_prod.status_code == 200, batch_prod.text
+    bp_id = batch_prod.json()["data"]["id"]
+
+    stock_in = await ac.post(
+        "/api/v1/inventory/stock-in",
+        headers=headers_a,
+        json={
+            "product_id": bp_id,
+            "quantity": 5,
+            "batch_number": "LOT-20",
+            "notes": "phase20",
+        },
+    )
+    assert stock_in.status_code == 200, stock_in.text
+
+    batch_row = (
+        await db_session.execute(
+            select(m.ProductBatch).where(
+                m.ProductBatch.product_id == bp_id,
+                m.ProductBatch.batch_number == "LOT-20",
+            )
+        )
+    ).scalar_one_or_none()
+    assert batch_row is not None
+    assert batch_row.company_id == seed["c1"].id
+
+    supplier = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="Alpha Supplier P20",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    pr = await ac.post(
+        "/api/v1/purchasing/requests",
+        headers=headers_a,
+        json={
+            "supplier_id": supplier.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
+        },
+    )
+    assert pr.status_code == 200, pr.text
+    pr_id = pr.json()["data"]["id"]
+    pr_item = (
+        await db_session.execute(
+            select(m.PurchaseRequestItem).where(
+                m.PurchaseRequestItem.purchase_request_id == pr_id
+            )
+        )
+    ).scalar_one()
+    assert pr_item.company_id == seed["c1"].id

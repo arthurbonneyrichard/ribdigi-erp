@@ -4191,13 +4191,17 @@ async def add_product(
         brand_id=data.pop("brand_id", None),
         unit_id=data.pop("unit_id", None),
         category_name=data.get("category"),
+        company_id=claims.get("company_id"),
     )
     data["category"] = category_label
     data["category_id"] = category_id
     data["brand_id"] = brand_id
     data["unit_id"] = unit_id
     data["barcode"] = await barcode_svc.assert_barcode_available(
-        db, tenant_id=claims["tenant_id"], barcode=data.get("barcode")
+        db,
+        tenant_id=claims["tenant_id"],
+        barcode=data.get("barcode"),
+        company_id=claims.get("company_id"),
     )
     product = m.Product(
         tenant_id=claims["tenant_id"],
@@ -4330,6 +4334,7 @@ async def patch_product(
                 db,
                 tenant_id=claims["tenant_id"],
                 barcode=value,
+                company_id=claims.get("company_id") or getattr(product, "company_id", None),
                 exclude_product_id=product.id,
             )
         elif key in {"cost_price", "selling_price", "reorder_level", "minimum_stock"} and value is not None:
@@ -5610,12 +5615,24 @@ async def generate_product_barcode(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                *workspace_svc.company_scope_filter(m.Product, claims),
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    workspace_svc.assert_record_company(claims, product)
     product = await barcode_svc.assign_product_barcode(
         db,
         tenant_id=claims["tenant_id"],
         product_id=product_id,
         format=format,
         force=force,
+        company_id=claims.get("company_id") or getattr(product, "company_id", None),
     )
     await audit_svc.record_event(
         db,
@@ -5651,6 +5668,7 @@ async def product_barcode_labels(
     labels = await barcode_labels_svc.resolve_label_targets(
         db,
         tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id"),
         items=[{"product_id": product_id, "copies": copies}],
     )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
@@ -5700,6 +5718,7 @@ async def print_barcode_labels(
     labels = await barcode_labels_svc.resolve_label_targets(
         db,
         tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id"),
         items=[i.model_dump() for i in payload.items],
     )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
@@ -5746,7 +5765,10 @@ async def create_product_variant(
     workspace_svc.assert_record_company(claims, product)
     data = payload.model_dump()
     data["barcode"] = await barcode_svc.assert_barcode_available(
-        db, tenant_id=claims["tenant_id"], barcode=data.get("barcode")
+        db,
+        tenant_id=claims["tenant_id"],
+        barcode=data.get("barcode"),
+        company_id=claims.get("company_id") or getattr(product, "company_id", None),
     )
     variant = await catalog_svc.create_variant(
         db,
@@ -5774,6 +5796,7 @@ async def patch_product_variant(
             db,
             tenant_id=claims["tenant_id"],
             barcode=data["barcode"],
+            company_id=claims.get("company_id") or getattr(product, "company_id", None),
             exclude_variant_id=variant_id,
         )
     variant = await catalog_svc.update_variant(
@@ -5808,6 +5831,8 @@ async def generate_variant_barcode(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     variant = await barcode_svc.assign_variant_barcode(
         db,
         tenant_id=claims["tenant_id"],
@@ -5815,6 +5840,7 @@ async def generate_variant_barcode(
         variant_id=variant_id,
         format=format,
         force=force,
+        company_id=claims.get("company_id") or getattr(product, "company_id", None),
     )
     await audit_svc.record_event(
         db,

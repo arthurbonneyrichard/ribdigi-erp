@@ -41,7 +41,7 @@ async def get_or_create_warehouse_stock(
     warehouse_id: str,
     product_id: str,
 ) -> m.WarehouseStock:
-    await get_warehouse(db, tenant_id, warehouse_id)
+    warehouse = await get_warehouse(db, tenant_id, warehouse_id)
     row = (
         await db.execute(
             select(m.WarehouseStock)
@@ -54,9 +54,18 @@ async def get_or_create_warehouse_stock(
         )
     ).scalar_one_or_none()
     if row:
+        if not getattr(row, "company_id", None):
+            product = await db.get(m.Product, product_id)
+            row.company_id = (
+                getattr(product, "company_id", None)
+                or getattr(warehouse, "company_id", None)
+            )
         return row
+    product = await db.get(m.Product, product_id)
     row = m.WarehouseStock(
         tenant_id=tenant_id,
+        company_id=getattr(product, "company_id", None)
+        or getattr(warehouse, "company_id", None),
         warehouse_id=warehouse_id,
         product_id=product_id,
         quantity=0,
@@ -194,6 +203,7 @@ async def reserve_product_stock(
     now = datetime.utcnow()
     reservation = m.StockReservation(
         tenant_id=tenant_id,
+        company_id=getattr(product, "company_id", None),
         product_id=product_id,
         variant_id=variant_id,
         warehouse_id=warehouse_id,

@@ -474,6 +474,7 @@ async def resolve_label_targets(
     *,
     tenant_id: str,
     items: list[dict[str, Any]],
+    company_id: str | None = None,
 ) -> list[dict[str, Any]]:
     if not items:
         raise HTTPException(status_code=400, detail="At least one label item is required")
@@ -485,11 +486,10 @@ async def resolve_label_targets(
         product_id = item.get("product_id")
         if not product_id:
             raise HTTPException(status_code=400, detail="product_id is required")
-        product = (
-            await db.execute(
-                select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
-            )
-        ).scalar_one_or_none()
+        pstmt = select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
+        if company_id:
+            pstmt = pstmt.where(m.Product.company_id == company_id)
+        product = (await db.execute(pstmt)).scalar_one_or_none()
         if product is None:
             raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
 
@@ -498,15 +498,14 @@ async def resolve_label_targets(
         sku = product.sku
         barcode = product.barcode
         if variant_id:
-            variant = (
-                await db.execute(
-                    select(m.ProductVariant).where(
-                        m.ProductVariant.id == variant_id,
-                        m.ProductVariant.tenant_id == tenant_id,
-                        m.ProductVariant.product_id == product_id,
-                    )
-                )
-            ).scalar_one_or_none()
+            vstmt = select(m.ProductVariant).where(
+                m.ProductVariant.id == variant_id,
+                m.ProductVariant.tenant_id == tenant_id,
+                m.ProductVariant.product_id == product_id,
+            )
+            if company_id:
+                vstmt = vstmt.where(m.ProductVariant.company_id == company_id)
+            variant = (await db.execute(vstmt)).scalar_one_or_none()
             if variant is None:
                 raise HTTPException(status_code=404, detail=f"Variant not found: {variant_id}")
             name = f"{product.name} — {variant.name}"

@@ -214,8 +214,10 @@ async def _record_pr_action(
     actor_id: str | None,
     comment: str | None = None,
 ) -> m.PurchaseRequestApprovalAction:
+    pr = await db.get(m.PurchaseRequest, request_id)
     row = m.PurchaseRequestApprovalAction(
         tenant_id=tenant_id,
+        company_id=getattr(pr, "company_id", None) if pr else None,
         purchase_request_id=request_id,
         step=step,
         action=action,
@@ -523,6 +525,7 @@ async def update_purchase_order(
                 db.add(
                     m.PurchaseOrderItem(
                         tenant_id=tenant_id,
+                        company_id=getattr(po, "company_id", None),
                         purchase_order_id=po.id,
                         product_id=prep["product_id"],
                         quantity=prep["quantity"],
@@ -559,6 +562,7 @@ async def update_purchase_order(
         db.add(
             m.PurchaseOrderAmendment(
                 tenant_id=tenant_id,
+                company_id=getattr(po, "company_id", None),
                 purchase_order_id=po.id,
                 revision=new_revision,
                 reason=reason_clean,
@@ -770,6 +774,7 @@ async def create_purchase_request(
         db.add(
             m.PurchaseRequestItem(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 purchase_request_id=pr.id,
                 product_id=item["product_id"],
                 quantity=item["quantity"],
@@ -1127,6 +1132,7 @@ async def create_purchase_order(
         db.add(
             m.PurchaseOrderItem(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 purchase_order_id=po.id,
                 product_id=prep["product_id"],
                 quantity=prep["quantity"],
@@ -1419,6 +1425,7 @@ async def create_grn(
         db.add(
             m.GoodsReceiptItem(
                 tenant_id=tenant_id,
+                company_id=getattr(grn, "company_id", None) or getattr(po, "company_id", None),
                 goods_receipt_id=grn.id,
                 po_item_id=po_item.id,
                 product_id=po_item.product_id,
@@ -2077,7 +2084,14 @@ async def create_purchase_return(
     db.add(ret)
     await db.flush()
     for line in prepared:
-        db.add(m.PurchaseReturnItem(tenant_id=tenant_id, purchase_return_id=ret.id, **line))
+        db.add(
+            m.PurchaseReturnItem(
+                tenant_id=tenant_id,
+                company_id=getattr(ret, "company_id", None),
+                purchase_return_id=ret.id,
+                **line,
+            )
+        )
     await db.flush()
     return ret
 
@@ -2496,7 +2510,14 @@ async def create_purchase_invoice(
     db.add(inv)
     await db.flush()
     for line in prepared:
-        db.add(m.PurchaseInvoiceItem(tenant_id=tenant_id, purchase_invoice_id=inv.id, **line))
+        db.add(
+            m.PurchaseInvoiceItem(
+                tenant_id=tenant_id,
+                company_id=getattr(inv, "company_id", None),
+                purchase_invoice_id=inv.id,
+                **line,
+            )
+        )
     await db.flush()
     return inv
 

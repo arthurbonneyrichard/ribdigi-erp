@@ -381,6 +381,7 @@ async def stock_in_with_batch(
         if not batch:
             batch = m.ProductBatch(
                 tenant_id=tenant_id,
+                company_id=getattr(product, "company_id", None),
                 product_id=product.id,
                 variant_id=variant.id if variant else None,
                 warehouse_id=warehouse_id,
