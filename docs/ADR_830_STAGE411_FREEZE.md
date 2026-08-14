@@ -31,3 +31,9 @@ Stage 412 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, business-metrics, Business Metrics honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 412 opened under **ADR-831** after CONTINUE/NEXT (Tenant MVP Launch Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-832**. Stage 411 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 411 runner-up outline was approved and opened (ADR-831); freeze ADR-832. Do not reopen Stage 411 scope.
