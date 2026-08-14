@@ -1,0 +1,63 @@
+{
+  "id": "quarterly-pos-ops-review-pack-rg-blockers",
+  "stage": 349,
+  "pack": "B1",
+  "doc": "docs/QUARTERLY_POS_OPS_REVIEW_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/QUARTERLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md",
+    "quarterly_pos_ops_review": "docs/QUARTERLY_POS_OPS_REVIEW_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "live_migration_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "support_sla_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "live_migration_claimed": "REMAINING",
+    "stage178_as_live_quarterly_pos_ops_review": "NON_CLAIM",
+    "stage177_as_live_quarterly_pos_ops_review": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "support_sla_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "live_migration_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "qporprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporprb-sla",
+      "title": "Mark support SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporprb-migration",
+      "title": "Mark live migration Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporprb-stage178-nonclaim",
+      "title": "Mark Stage 178 / Stage 177 as non-claim for live quarterly POS ops review Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporprb-checklist-remaining",
+      "title": "Live quarterly POS ops review Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 349 B1 quarterly POS ops review pack RG blocker matrix packaging only. Live quarterly POS ops review Completes remain MISSING."
+}

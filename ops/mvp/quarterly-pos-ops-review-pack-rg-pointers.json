@@ -1,0 +1,60 @@
+{
+  "id": "quarterly-pos-ops-review-pack-rg-pointers",
+  "stage": 349,
+  "pack": "P1",
+  "doc": "docs/QUARTERLY_POS_OPS_REVIEW_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/QUARTERLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md",
+    "quarterly_pos_ops_review": "docs/QUARTERLY_POS_OPS_REVIEW_MVP.md",
+    "monthly_pos_ops_pointers_pack_remaining_gate": "docs/MONTHLY_POS_OPS_POINTERS_PACK_REMAINING_GATE_MVP.md",
+    "monthly_pos_ops_trends_pack_remaining_gate": "docs/MONTHLY_POS_OPS_TRENDS_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "live_migration_claimed": false,
+  "topics": [
+    "quarterly_pos_ops_review_stage178",
+    "monthly_pos_ops_pointers_pack_remaining_gate_stage348",
+    "monthly_pos_ops_trends_pack_remaining_gate_stage347",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "qporprp-stage178",
+      "title": "Point to Stage 178 quarterly POS ops review packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporprp-stage348",
+      "title": "Point to Stage 348 monthly POS ops pointers pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporprp-stage347",
+      "title": "Point to Stage 347 monthly POS ops trends pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporprp-checklist-remaining",
+      "title": "Live quarterly POS ops review Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 349 P1 quarterly POS ops review pack RG pointers packaging only. Do not claim live quarterly POS ops review Complete."
+}

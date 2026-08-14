@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_349_EXIT_CRITERIA.md` / `docs/ADR_706_STAGE349_FREEZE.md` (`backend/tests/test_stage349_exit_h349x.py`) — Stage 349 H349x
+- `docs/STAGE_349_FIDELITY.md` (`backend/tests/test_stage349_fidelity_d1.py`) — Stage 349 D1
+- `docs/STAGE_349_PLAN.md` (`backend/tests/test_stage349_open.py`) — Stage 349 open (ADR-705)
+- `docs/QUARTERLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/quarterly-pos-ops-review-pack-remaining-gate.json` — Stage 349 I1
+- `docs/QUARTERLY_POS_OPS_REVIEW_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/quarterly-pos-ops-review-pack-rg-blockers.json` — Stage 349 B1
+- `docs/QUARTERLY_POS_OPS_REVIEW_PACK_RG_POINTERS_MVP.md` / `ops/mvp/quarterly-pos-ops-review-pack-rg-pointers.json` — Stage 349 P1
 - `docs/STAGE_348_EXIT_CRITERIA.md` / `docs/ADR_704_STAGE348_FREEZE.md` (`backend/tests/test_stage348_exit_h348x.py`) — Stage 348 H348x
 - `docs/STAGE_348_FIDELITY.md` (`backend/tests/test_stage348_fidelity_d1.py`) — Stage 348 D1
 - `docs/STAGE_348_PLAN.md` (`backend/tests/test_stage348_open.py`) — Stage 348 open (ADR-703)
@@ -5371,6 +5377,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 349 exit
+
+H349x met — `docs/STAGE_349_EXIT_CRITERIA.md`, ADR-706. Stages 1–349 frozen for Stage 349 feature scope.
+
+## Stage 349 D1 — Tenant MVP Quarterly POS Ops Review Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_349_FIDELITY.md` (`test_stage349_fidelity_d1.py`). `QUARTERLY_POS_OPS_REVIEW_PACK_*` remaining-gate index; Offline Complete / support SLA / attestation / live migration / go-live still MISSING.
+
+## Stage 349 open
+
+ADR-705 / `docs/STAGE_349_PLAN.md`.
 
 ## Stage 348 exit
 
