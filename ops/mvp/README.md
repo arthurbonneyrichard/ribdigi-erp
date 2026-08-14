@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_410_EXIT_CRITERIA.md` / `docs/ADR_828_STAGE410_FREEZE.md` (`backend/tests/test_stage410_exit_h410x.py`) — Stage 410 H410x
+- `docs/STAGE_410_FIDELITY.md` (`backend/tests/test_stage410_fidelity_d1.py`) — Stage 410 D1
+- `docs/STAGE_410_PLAN.md` (`backend/tests/test_stage410_open.py`) — Stage 410 open (ADR-827)
+- `docs/ATTESTATION_COMPLETES_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/attestation-completes-honesty-pack-remaining-gate.json` — Stage 410 I1
+- `docs/ATTESTATION_COMPLETES_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/attestation-completes-honesty-pack-rg-blockers.json` — Stage 410 B1
+- `docs/ATTESTATION_COMPLETES_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/attestation-completes-honesty-pack-rg-pointers.json` — Stage 410 P1
 - `docs/STAGE_409_EXIT_CRITERIA.md` / `docs/ADR_826_STAGE409_FREEZE.md` (`backend/tests/test_stage409_exit_h409x.py`) — Stage 409 H409x
 - `docs/STAGE_409_FIDELITY.md` (`backend/tests/test_stage409_fidelity_d1.py`) — Stage 409 D1
 - `docs/STAGE_409_PLAN.md` (`backend/tests/test_stage409_open.py`) — Stage 409 open (ADR-825)
@@ -5737,6 +5743,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 410 exit
+
+H410x met — `docs/STAGE_410_EXIT_CRITERIA.md`, ADR-828. Stages 1–410 frozen for Stage 410 feature scope.
+
+## Stage 410 D1 — Tenant MVP Attestation Completes Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / attestation Completes remain MISSING. See `docs/STAGE_410_FIDELITY.md`.
+
+## Stage 410 open
+
+Opened under ADR-827; plan `docs/STAGE_410_PLAN.md`.
 
 ## Stage 409 exit
 
