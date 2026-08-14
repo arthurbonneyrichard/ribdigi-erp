@@ -82,8 +82,8 @@ export default function OnboardingChecklist({
         }}
         data-testid="onboarding-checklist-restore"
       >
-        <span className="muted" style={{ flex: 1 }}>
-          Getting started checklist was dismissed ({pct}% complete).
+        <span className="muted" style={{ flex: 1, minWidth: 160 }}>
+          Checklist dismissed ({pct}% complete).
         </span>
         <button
           type="button"
