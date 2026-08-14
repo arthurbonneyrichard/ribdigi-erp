@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_303_EXIT_CRITERIA.md` / `docs/ADR_614_STAGE303_FREEZE.md` (`backend/tests/test_stage303_exit_h303x.py`) — Stage 303 H303x
+- `docs/STAGE_303_FIDELITY.md` (`backend/tests/test_stage303_fidelity_d1.py`) — Stage 303 D1
+- `docs/STAGE_303_PLAN.md` (`backend/tests/test_stage303_open.py`) — Stage 303 open (ADR-613)
+- `docs/BILLING_DEFERRED_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/billing-deferred-honesty-pack-remaining-gate.json` — Stage 303 I1
+- `docs/BILLING_DEFERRED_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/billing-deferred-honesty-pack-rg-blockers.json` — Stage 303 B1
+- `docs/BILLING_DEFERRED_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/billing-deferred-honesty-pack-rg-pointers.json` — Stage 303 P1
 - `docs/STAGE_302_EXIT_CRITERIA.md` / `docs/ADR_612_STAGE302_FREEZE.md` (`backend/tests/test_stage302_exit_h302x.py`) — Stage 302 H302x
 - `docs/STAGE_302_FIDELITY.md` (`backend/tests/test_stage302_fidelity_d1.py`) — Stage 302 D1
 - `docs/STAGE_302_PLAN.md` (`backend/tests/test_stage302_open.py`) — Stage 302 open (ADR-611)
@@ -5095,6 +5101,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 303 exit
+
+H303x met — `docs/STAGE_303_EXIT_CRITERIA.md`, ADR-614. Stages 1–303 frozen for Stage 303 feature scope.
+
+## Stage 303 D1 — Tenant MVP Billing Deferred Honesty Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_303_FIDELITY.md` (`test_stage303_fidelity_d1.py`). `BILLING_DEFERRED_HONESTY_PACK_*` remaining-gate index; paid billing / payment provider / go-live still MISSING.
+
+## Stage 303 open
+
+ADR-613 / `docs/STAGE_303_PLAN.md`.
 
 ## Stage 302 exit
 

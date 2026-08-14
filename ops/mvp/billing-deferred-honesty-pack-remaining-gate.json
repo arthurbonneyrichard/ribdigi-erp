@@ -1,0 +1,57 @@
+{
+  "id": "billing-deferred-honesty-pack-remaining-gate",
+  "stage": 303,
+  "pack": "I1",
+  "doc": "docs/BILLING_DEFERRED_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/BILLING_DEFERRED_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/BILLING_DEFERRED_HONESTY_PACK_RG_POINTERS_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "ai_provider_boundary_pack_remaining_gate": "docs/AI_PROVIDER_BOUNDARY_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_pack_remaining_gate": "docs/BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md",
+    "commercial_billing_deferred": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "checkout_success_claimed": false,
+  "deferred_implemented_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage36_billing_deferred_honesty": true,
+  "distinct_from_stage302_ai_provider_boundary_pack_remaining_gate": true,
+  "distinct_from_billing_deferred_pack_remaining_gate": true,
+  "distinct_from_stage76_commercial_billing_deferred": true,
+  "steps": [
+    {
+      "id": "bdhpr-read-blockers",
+      "title": "Read B1 billing deferred honesty pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bdhpr-follow-pointers",
+      "title": "Follow P1 Stage 36 B1 / Stage 302 / prior billing-deferred-pack / Stage 76 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bdhpr-billing-missing",
+      "title": "Reaffirm paid billing / payment provider MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bdhpr-no-packaging-as-live",
+      "title": "Do not treat Stage 36 B1 / prior BILLING_DEFERRED_PACK / Stage 76 as paid billing Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bdhpr-billing-remaining",
+      "title": "Paid billing / payment provider / checkout / deferred implemented / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 303 I1 billing deferred honesty pack remaining-gate index packaging only. Do not claim paid billing Complete."
+}
