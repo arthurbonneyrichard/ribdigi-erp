@@ -529,7 +529,8 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+      <div className="erp-split">
+      <div className="card" style={{ display: 'grid', gap: 8 }}>
         <strong>Document numbering</strong>
         <p className="muted" style={{ margin: 0 }}>
           When reference is left blank on create (including recurring generate), the next
@@ -609,6 +610,8 @@ export default function Page() {
         </div>
       </div>
 
+      </div>
+      <div className="erp-split">
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Category budgets</h3>
         <p className="muted">
@@ -712,7 +715,7 @@ export default function Page() {
           `recurring_expense_due` via Notifications scan-due / Celery. Use <strong>Skip next</strong>{' '}
           to advance `next_run_at` by one period without creating an expense.
         </p>
-        <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+        <div className="erp-form-grid" style={{ marginBottom: 12 }}>
           <select value={recCategoryId} onChange={(e) => setRecCategoryId(e.target.value)}>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
@@ -837,9 +840,10 @@ export default function Page() {
         </table>
       </div>
 
+      </div>
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>New expense</h3>
-        <div style={{ display: 'grid', gap: 8 }}>
+        <div className="erp-form-grid">
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>

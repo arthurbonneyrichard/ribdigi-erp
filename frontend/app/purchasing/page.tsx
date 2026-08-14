@@ -138,7 +138,7 @@ type PurchaseInvoice = {
 };
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('requests');
+  const [tab, setTab] = useState<Tab>('orders');
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [grns, setGrns] = useState<Grn[]>([]);
@@ -1055,6 +1055,7 @@ export default function Page() {
 
       {tab === 'requests' && (
         <>
+          <div className="erp-split">
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Document numbering</h3>
             <p className="muted" style={{ marginBottom: 8 }}>
@@ -1231,9 +1232,10 @@ export default function Page() {
               </button>
             </div>
           </div>
+          </div>
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Create purchase request</h3>
-            <div style={{ display: 'grid', gap: 8 }}>
+            <div className="erp-form-grid">
               <select value={prSupplierId} onChange={(e) => setPrSupplierId(e.target.value)}>
                 <option value="">Preferred supplier (optional)</option>
                 {suppliers.map((s) => (
@@ -1350,9 +1352,12 @@ export default function Page() {
         </>
       )}
 
+      {tab === 'orders' && (
+        <>
+          <div className="erp-split">
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Quick add supplier</h3>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="erp-form-grid">
           <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Supplier name" />
           <input
             value={supplierCode}
@@ -1431,10 +1436,9 @@ export default function Page() {
           />
         ) : null}
       </div>
-
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase order</h3>
-        <div style={{ display: 'grid', gap: 8 }}>
+        <div className="erp-form-grid">
           <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
             <option value="">Select supplier</option>
             {suppliers.map((s) => (
@@ -1481,134 +1485,8 @@ export default function Page() {
           </button>
         </div>
       </div>
+          </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Create purchase invoice from GRN</h3>
-        <div style={{ display: 'grid', gap: 8 }}>
-          <select value={invoiceGrnId} onChange={(e) => setInvoiceGrnId(e.target.value)}>
-            <option value="">Select GRN</option>
-            {grns.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.grn_number}
-              </option>
-            ))}
-          </select>
-          <input
-            value={supplierInvoiceNo}
-            onChange={(e) => setSupplierInvoiceNo(e.target.value)}
-            placeholder="Supplier invoice #"
-          />
-          <input
-            value={grnInvHeaderDiscount}
-            onChange={(e) => setGrnInvHeaderDiscount(e.target.value)}
-            placeholder="Header discount (0 = use PO line discounts)"
-            type="number"
-            min={0}
-            step="0.01"
-          />
-          <span className="muted">
-            From-GRN lines inherit proportional PO discounts; leave header at 0 to mirror them on the
-            invoice total.
-          </span>
-          <button onClick={createInvoiceFromGrn} disabled={!invoiceGrnId}>
-            Draft invoice from GRN
-          </button>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Create manual purchase invoice</h3>
-        <div style={{ display: 'grid', gap: 8 }}>
-          <select value={manualInvSupplierId} onChange={(e) => setManualInvSupplierId(e.target.value)}>
-            <option value="">Select supplier</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <select value={manualInvProductId} onChange={(e) => setManualInvProductId(e.target.value)}>
-            <option value="">Select product</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.sku})
-              </option>
-            ))}
-          </select>
-          <input value={manualInvQty} onChange={(e) => setManualInvQty(e.target.value)} placeholder="Quantity" />
-          <input value={manualInvPrice} onChange={(e) => setManualInvPrice(e.target.value)} placeholder="Unit price" />
-          <input
-            value={manualInvTaxRate}
-            onChange={(e) => setManualInvTaxRate(e.target.value)}
-            placeholder="Tax rate % (blank = auto)"
-          />
-          <input
-            value={manualInvLineDiscount}
-            onChange={(e) => setManualInvLineDiscount(e.target.value)}
-            placeholder="Line discount amount"
-            type="number"
-            min={0}
-            step="0.01"
-          />
-          <input
-            value={manualInvHeaderDiscount}
-            onChange={(e) => setManualInvHeaderDiscount(e.target.value)}
-            placeholder="Header discount amount"
-            type="number"
-            min={0}
-            step="0.01"
-          />
-          <input
-            value={supplierInvoiceNo}
-            onChange={(e) => setSupplierInvoiceNo(e.target.value)}
-            placeholder="Supplier invoice #"
-          />
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} />
-            Reverse charge (self-assess VAT; AP = net)
-          </label>
-          <button onClick={createManualInvoice} disabled={!manualInvSupplierId || !manualInvProductId}>
-            Draft manual invoice
-          </button>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Create purchase return</h3>
-        <div style={{ display: 'grid', gap: 8 }}>
-          <select value={grnId} onChange={(e) => setGrnId(e.target.value)}>
-            <option value="">Select GRN</option>
-            {grns.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.grn_number}
-              </option>
-            ))}
-          </select>
-          <select value={grnItemId} onChange={(e) => setGrnItemId(e.target.value)} disabled={!selectedGrn}>
-            <option value="">Select GRN line</option>
-            {(selectedGrn?.items || []).map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.product_id} (accepted {i.accepted_qty})
-              </option>
-            ))}
-          </select>
-          <select value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
-            <option value="">Select reason</option>
-            <option value="damaged">Damaged</option>
-            <option value="wrong_item">Wrong item</option>
-            <option value="expiry">Expiry</option>
-            <option value="quality">Quality</option>
-            <option value="other">Other</option>
-          </select>
-          <input value={returnQty} onChange={(e) => setReturnQty(e.target.value)} placeholder="Return qty" />
-          <button onClick={createReturn} disabled={!grnId || !grnItemId || !returnReason}>
-            Draft return
-          </button>
-        </div>
-      </div>
-
-      {tab === 'orders' && (
-        <>
           <table className="table">
             <thead>
               <tr>
@@ -1992,6 +1870,98 @@ export default function Page() {
 
       {tab === 'invoices' && (
         <>
+          <div className="erp-split">
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Create purchase invoice from GRN</h3>
+        <div className="erp-form-grid">
+          <select value={invoiceGrnId} onChange={(e) => setInvoiceGrnId(e.target.value)}>
+            <option value="">Select GRN</option>
+            {grns.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.grn_number}
+              </option>
+            ))}
+          </select>
+          <input
+            value={supplierInvoiceNo}
+            onChange={(e) => setSupplierInvoiceNo(e.target.value)}
+            placeholder="Supplier invoice #"
+          />
+          <input
+            value={grnInvHeaderDiscount}
+            onChange={(e) => setGrnInvHeaderDiscount(e.target.value)}
+            placeholder="Header discount (0 = use PO line discounts)"
+            type="number"
+            min={0}
+            step="0.01"
+          />
+          <span className="muted span-2">
+            From-GRN lines inherit proportional PO discounts; leave header at 0 to mirror them on the
+            invoice total.
+          </span>
+          <button onClick={createInvoiceFromGrn} disabled={!invoiceGrnId}>
+            Draft invoice from GRN
+          </button>
+        </div>
+      </div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Create manual purchase invoice</h3>
+        <div className="erp-form-grid">
+          <select value={manualInvSupplierId} onChange={(e) => setManualInvSupplierId(e.target.value)}>
+            <option value="">Select supplier</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <select value={manualInvProductId} onChange={(e) => setManualInvProductId(e.target.value)}>
+            <option value="">Select product</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.sku})
+              </option>
+            ))}
+          </select>
+          <input value={manualInvQty} onChange={(e) => setManualInvQty(e.target.value)} placeholder="Quantity" />
+          <input value={manualInvPrice} onChange={(e) => setManualInvPrice(e.target.value)} placeholder="Unit price" />
+          <input
+            value={manualInvTaxRate}
+            onChange={(e) => setManualInvTaxRate(e.target.value)}
+            placeholder="Tax rate % (blank = auto)"
+          />
+          <input
+            value={manualInvLineDiscount}
+            onChange={(e) => setManualInvLineDiscount(e.target.value)}
+            placeholder="Line discount amount"
+            type="number"
+            min={0}
+            step="0.01"
+          />
+          <input
+            value={manualInvHeaderDiscount}
+            onChange={(e) => setManualInvHeaderDiscount(e.target.value)}
+            placeholder="Header discount amount"
+            type="number"
+            min={0}
+            step="0.01"
+          />
+          <input
+            value={supplierInvoiceNo}
+            onChange={(e) => setSupplierInvoiceNo(e.target.value)}
+            placeholder="Supplier invoice #"
+          />
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} />
+            Reverse charge (self-assess VAT; AP = net)
+          </label>
+          <button onClick={createManualInvoice} disabled={!manualInvSupplierId || !manualInvProductId}>
+            Draft manual invoice
+          </button>
+        </div>
+      </div>
+          </div>
+
           {ocrDraft && ocrFor && (
             <div className="card" style={{ marginBottom: 16 }}>
               <h3>Supplier invoice OCR</h3>
@@ -2218,6 +2188,40 @@ export default function Page() {
       )}
 
       {tab === 'returns' && (
+        <>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Create purchase return</h3>
+        <div className="erp-form-grid">
+          <select value={grnId} onChange={(e) => setGrnId(e.target.value)}>
+            <option value="">Select GRN</option>
+            {grns.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.grn_number}
+              </option>
+            ))}
+          </select>
+          <select value={grnItemId} onChange={(e) => setGrnItemId(e.target.value)} disabled={!selectedGrn}>
+            <option value="">Select GRN line</option>
+            {(selectedGrn?.items || []).map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.product_id} (accepted {i.accepted_qty})
+              </option>
+            ))}
+          </select>
+          <select value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
+            <option value="">Select reason</option>
+            <option value="damaged">Damaged</option>
+            <option value="wrong_item">Wrong item</option>
+            <option value="expiry">Expiry</option>
+            <option value="quality">Quality</option>
+            <option value="other">Other</option>
+          </select>
+          <input value={returnQty} onChange={(e) => setReturnQty(e.target.value)} placeholder="Return qty" />
+          <button onClick={createReturn} disabled={!grnId || !grnItemId || !returnReason}>
+            Draft return
+          </button>
+        </div>
+      </div>
         <table className="table">
           <thead>
             <tr>
@@ -2246,6 +2250,7 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+        </>
       )}
     </Shell>
   );
