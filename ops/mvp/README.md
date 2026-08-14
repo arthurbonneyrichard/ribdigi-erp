@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_395_EXIT_CRITERIA.md` / `docs/ADR_798_STAGE395_FREEZE.md` (`backend/tests/test_stage395_exit_h395x.py`) — Stage 395 H395x
+- `docs/STAGE_395_FIDELITY.md` (`backend/tests/test_stage395_fidelity_d1.py`) — Stage 395 D1
+- `docs/STAGE_395_PLAN.md` (`backend/tests/test_stage395_open.py`) — Stage 395 open (ADR-797)
+- `docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-sync-error-surface-pack-remaining-gate.json` — Stage 395 I1
+- `docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-sync-error-surface-pack-rg-blockers.json` — Stage 395 B1
+- `docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-sync-error-surface-pack-rg-pointers.json` — Stage 395 P1
 - `docs/STAGE_394_EXIT_CRITERIA.md` / `docs/ADR_796_STAGE394_FREEZE.md` (`backend/tests/test_stage394_exit_h394x.py`) — Stage 394 H394x
 - `docs/STAGE_394_FIDELITY.md` (`backend/tests/test_stage394_fidelity_d1.py`) — Stage 394 D1
 - `docs/STAGE_394_PLAN.md` (`backend/tests/test_stage394_open.py`) — Stage 394 open (ADR-795)
@@ -5647,6 +5653,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 395 exit
+
+H395x met — `docs/STAGE_395_EXIT_CRITERIA.md`, ADR-798. Stages 1–395 frozen for Stage 395 feature scope.
+
+## Stage 395 D1 — Tenant MVP Offline Sync Error Surface Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_395_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 395 open
+
+Opened under ADR-797; plan `docs/STAGE_395_PLAN.md`.
 
 ## Stage 394 exit
 

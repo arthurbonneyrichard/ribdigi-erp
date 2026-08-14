@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 395 track opened (ADR-797: `test_stage395_open.py`, `docs/STAGE_395_PLAN.md`) — Offline Sync Error Surface Pack Remaining-Gate Index; closed under ADR-798
+- [x] Offline SYNC ERROR surface pack remaining-gate hub (Stage 395 I1: `test_stage395_index_i1.py`, `docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline SYNC ERROR surface pack blocker matrix (Stage 395 B1: `test_stage395_blockers_b1.py`, `docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (Stage 395 P1: `test_stage395_pointers_p1.py`, `docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 395 fidelity sync (D1: `test_stage395_fidelity_d1.py`, `docs/STAGE_395_FIDELITY.md`)
+- [x] Stage 395 exit + freeze (H395x: `test_stage395_exit_h395x.py`, `docs/STAGE_395_EXIT_CRITERIA.md`, ADR-798)
 - [x] Stage 394 track opened (ADR-795: `test_stage394_open.py`, `docs/STAGE_394_PLAN.md`) — Offline Queue Depth Metrics Pack Remaining-Gate Index; closed under ADR-796
 - [x] Offline queue depth metrics pack remaining-gate hub (Stage 394 I1: `test_stage394_index_i1.py`, `docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline queue depth metrics pack blocker matrix (Stage 394 B1: `test_stage394_blockers_b1.py`, `docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_RG_BLOCKERS_MVP.md`)

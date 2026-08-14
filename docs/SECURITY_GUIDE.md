@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 395 open** | Offline Sync Error Surface Pack Remaining-Gate Index — `docs/STAGE_395_PLAN.md`, ADR-797 (`test_stage395_open.py`) |
+| **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
+| **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
+| **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+| **Stage 395 D1** | Offline SYNC ERROR surface pack remaining-gate fidelity — `docs/STAGE_395_FIDELITY.md` (`test_stage395_fidelity_d1.py`) |
+| **Stage 395 H395x** | Exit + freeze — `docs/STAGE_395_EXIT_CRITERIA.md`, ADR-798 (`test_stage395_exit_h395x.py`); Stages 1–395 frozen |
 | **Stage 394 open** | Offline Queue Depth Metrics Pack Remaining-Gate Index — `docs/STAGE_394_PLAN.md`, ADR-795 (`test_stage394_open.py`) |
 | **Stage 394 I1** | Offline queue depth metrics pack remaining-gate index hub (`test_stage394_index_i1.py`) |
 | **Stage 394 B1** | Offline queue depth metrics pack blocker matrix (`test_stage394_blockers_b1.py`) |

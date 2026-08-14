@@ -31,3 +31,10 @@ Stage 395 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline queue-depth-metrics, queue depth metrics as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 395 opened under **ADR-797** after CONTINUE/NEXT (Tenant MVP Offline Sync Error Surface Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-798**. Stage 394 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 394 runner-up outline was approved and opened (ADR-797); freeze ADR-798. Do not reopen Stage 394 scope.
+

@@ -1,0 +1,67 @@
+{
+  "id": "offline-sync-error-surface-pack-rg-pointers",
+  "stage": 395,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_queue_depth_metrics_pack": "docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "offline_settings_sync_ia_pack": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_sync_error_surface_complete_claimed": false,
+  "sync_error_surface_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section4_offline_sync_error_surface": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_queue_depth_metrics_pack_remaining_gate_stage394": "docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "offline_settings_sync_ia_pack_remaining_gate_stage393": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_sync_error_surface / sync_error_surface / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "osesprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a74 offline SYNC ERROR surface",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osesprp-stage394",
+      "title": "Point to Stage 394 offline queue depth metrics pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osesprp-stage393",
+      "title": "Point to Stage 393 offline Settings Sync IA pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osesprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osesprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osesprp-checklist-remaining",
+      "title": "Offline Complete / offline sync-error-surface Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 395 P1 offline SYNC ERROR surface pack RG pointers packaging only."
+}
