@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 331 track opened (ADR-669: `test_stage331_open.py`, `docs/STAGE_331_PLAN.md`) — Support SLA Boundary Pack Remaining-Gate Index; closed under ADR-670
+- [x] Support SLA boundary pack remaining-gate hub (Stage 331 I1: `test_stage331_index_i1.py`, `docs/SUPPORT_SLA_BOUNDARY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Support SLA boundary pack blocker matrix (Stage 331 B1: `test_stage331_blockers_b1.py`, `docs/SUPPORT_SLA_BOUNDARY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 220 / Stage 330 / Stage 329 / Stage 36 pointers (Stage 331 P1: `test_stage331_pointers_p1.py`, `docs/SUPPORT_SLA_BOUNDARY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 331 fidelity sync (D1: `test_stage331_fidelity_d1.py`, `docs/STAGE_331_FIDELITY.md`)
+- [x] Stage 331 exit + freeze (H331x: `test_stage331_exit_h331x.py`, `docs/STAGE_331_EXIT_CRITERIA.md`, ADR-670)
 - [x] Stage 330 track opened (ADR-667: `test_stage330_open.py`, `docs/STAGE_330_PLAN.md`) — Offline Materials Pack Remaining-Gate Index; closed under ADR-668
 - [x] Offline materials pack remaining-gate hub (Stage 330 I1: `test_stage330_index_i1.py`, `docs/OFFLINE_MATERIALS_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline materials pack blocker matrix (Stage 330 B1: `test_stage330_blockers_b1.py`, `docs/OFFLINE_MATERIALS_PACK_RG_BLOCKERS_MVP.md`)

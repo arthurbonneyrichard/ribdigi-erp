@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 331 open (2026-08-14):** Tenant MVP Support SLA Boundary Pack Remaining-Gate Index Fidelity — `docs/ADR_669_STAGE331_OPEN.md` + `docs/STAGE_331_PLAN.md` (I1 next).
+
+**Stage 331 I1 (2026-08-14):** Support SLA boundary pack remaining-gate index hub (`test_stage331_index_i1.py`).
+
+**Stage 331 B1 (2026-08-14):** Support SLA boundary pack blocker matrix (`test_stage331_blockers_b1.py`).
+
+**Stage 331 P1 (2026-08-14):** Stage 220 / Stage 330 / Stage 329 / Stage 36 pointers (`test_stage331_pointers_p1.py`).
+
+**Stage 331 D1 (2026-08-14):** Support SLA Boundary Pack Remaining-Gate Index fidelity sync — `docs/STAGE_331_FIDELITY.md` (`test_stage331_fidelity_d1.py`).
+
+**Stage 331 exit (2026-08-14):** I1, B1, P1, D1, H331x met — `docs/STAGE_331_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_670_STAGE331_FREEZE.md`. Fidelity: `docs/STAGE_331_FIDELITY.md`.
+
 **Stage 330 open (2026-08-14):** Tenant MVP Offline Materials Pack Remaining-Gate Index Fidelity — `docs/ADR_667_STAGE330_OPEN.md` + `docs/STAGE_330_PLAN.md` (I1 next).
 
 **Stage 330 I1 (2026-08-14):** Offline materials pack remaining-gate index hub (`test_stage330_index_i1.py`).

@@ -1,0 +1,60 @@
+{
+  "id": "support-sla-boundary-pack-rg-pointers",
+  "stage": 331,
+  "pack": "P1",
+  "doc": "docs/SUPPORT_SLA_BOUNDARY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md",
+    "offline_materials_pack_remaining_gate": "docs/OFFLINE_MATERIALS_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_support_sla_boundary_claimed": false,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "helpdesk_saas_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "support_sla_boundary_remaining_gate_stage220",
+    "offline_materials_pack_remaining_gate_stage330",
+    "offline_complete_pack_remaining_gate_stage329",
+    "support_sla_boundary_stage36",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ssbprp-stage220",
+      "title": "Point to Stage 220 support SLA boundary remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbprp-stage330",
+      "title": "Point to Stage 330 Offline materials pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbprp-stage36",
+      "title": "Point to Stage 36 S1 support SLA boundary packaging adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbprp-sla-remaining",
+      "title": "Live support-SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 331 P1 support SLA boundary pack RG pointers packaging only. Do not claim live support-SLA Complete."
+}

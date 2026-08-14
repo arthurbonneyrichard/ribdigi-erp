@@ -1,0 +1,63 @@
+{
+  "id": "support-sla-boundary-pack-rg-blockers",
+  "stage": 331,
+  "pack": "B1",
+  "doc": "docs/SUPPORT_SLA_BOUNDARY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_support_sla_boundary_claimed": false,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "helpdesk_saas_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_support_sla_boundary_claimed": "REMAINING",
+    "support_sla_claimed": "REMAINING",
+    "pagerduty_hosted_claimed": "REMAINING",
+    "helpdesk_saas_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage220_as_live_support_sla": "NON_CLAIM",
+    "stage36_as_live_support_sla": "NON_CLAIM",
+    "live_support_sla_boundary_claimed_flag": "false",
+    "support_sla_claimed_flag": "false",
+    "pagerduty_hosted_claimed_flag": "false",
+    "helpdesk_saas_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ssbprb-boundary",
+      "title": "Mark live support-SLA boundary Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbprb-sla",
+      "title": "Mark support-SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbprb-pagerduty",
+      "title": "Mark PagerDuty hosted Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbprb-stage220-nonclaim",
+      "title": "Mark Stage 220 / Stage 36 as non-claim for live support-SLA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbprb-sla-remaining",
+      "title": "Live support-SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 331 B1 support SLA boundary pack RG blocker matrix packaging only. Live support-SLA Completes remain MISSING."
+}

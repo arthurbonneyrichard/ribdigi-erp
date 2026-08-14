@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_331_EXIT_CRITERIA.md` / `docs/ADR_670_STAGE331_FREEZE.md` (`backend/tests/test_stage331_exit_h331x.py`) — Stage 331 H331x
+- `docs/STAGE_331_FIDELITY.md` (`backend/tests/test_stage331_fidelity_d1.py`) — Stage 331 D1
+- `docs/STAGE_331_PLAN.md` (`backend/tests/test_stage331_open.py`) — Stage 331 open (ADR-669)
+- `docs/SUPPORT_SLA_BOUNDARY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/support-sla-boundary-pack-remaining-gate.json` — Stage 331 I1
+- `docs/SUPPORT_SLA_BOUNDARY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/support-sla-boundary-pack-rg-blockers.json` — Stage 331 B1
+- `docs/SUPPORT_SLA_BOUNDARY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/support-sla-boundary-pack-rg-pointers.json` — Stage 331 P1
 - `docs/STAGE_330_EXIT_CRITERIA.md` / `docs/ADR_668_STAGE330_FREEZE.md` (`backend/tests/test_stage330_exit_h330x.py`) — Stage 330 H330x
 - `docs/STAGE_330_FIDELITY.md` (`backend/tests/test_stage330_fidelity_d1.py`) — Stage 330 D1
 - `docs/STAGE_330_PLAN.md` (`backend/tests/test_stage330_open.py`) — Stage 330 open (ADR-667)
@@ -5263,6 +5269,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 331 exit
+
+H331x met — `docs/STAGE_331_EXIT_CRITERIA.md`, ADR-670. Stages 1–331 frozen for Stage 331 feature scope.
+
+## Stage 331 D1 — Tenant MVP Support SLA Boundary Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_331_FIDELITY.md` (`test_stage331_fidelity_d1.py`). `SUPPORT_SLA_BOUNDARY_PACK_*` remaining-gate index; live support-SLA boundary / support-SLA / PagerDuty hosted / helpdesk SaaS / go-live still MISSING.
+
+## Stage 331 open
+
+ADR-669 / `docs/STAGE_331_PLAN.md`.
 
 ## Stage 330 exit
 

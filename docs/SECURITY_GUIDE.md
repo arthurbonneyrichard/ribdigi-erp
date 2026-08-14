@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 331 open** | Support SLA Boundary Pack Remaining-Gate Index — `docs/STAGE_331_PLAN.md`, ADR-669 (`test_stage331_open.py`) |
+| **Stage 331 I1** | Support SLA boundary pack remaining-gate index hub (`test_stage331_index_i1.py`) |
+| **Stage 331 B1** | Support SLA boundary pack blocker matrix (`test_stage331_blockers_b1.py`) |
+| **Stage 331 P1** | Stage 220 / Stage 330 / Stage 329 / Stage 36 pointers (`test_stage331_pointers_p1.py`) |
+| **Stage 331 D1** | Support SLA boundary pack remaining-gate fidelity — `docs/STAGE_331_FIDELITY.md` (`test_stage331_fidelity_d1.py`) |
+| **Stage 331 H331x** | Exit + freeze — `docs/STAGE_331_EXIT_CRITERIA.md`, ADR-670 (`test_stage331_exit_h331x.py`); Stages 1–331 frozen |
 | **Stage 330 open** | Offline Materials Pack Remaining-Gate Index — `docs/STAGE_330_PLAN.md`, ADR-667 (`test_stage330_open.py`) |
 | **Stage 330 I1** | Offline materials pack remaining-gate index hub (`test_stage330_index_i1.py`) |
 | **Stage 330 B1** | Offline materials pack blocker matrix (`test_stage330_blockers_b1.py`) |
