@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 322 track opened (ADR-651: `test_stage322_open.py`, `docs/STAGE_322_PLAN.md`) — Live Migration Pack Remaining-Gate Index; closed under ADR-652
+- [x] Live migration pack remaining-gate hub (Stage 322 I1: `test_stage322_index_i1.py`, `docs/LIVE_MIGRATION_PACK_REMAINING_GATE_MVP.md`)
+- [x] Live migration pack blocker matrix (Stage 322 B1: `test_stage322_blockers_b1.py`, `docs/LIVE_MIGRATION_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 193 / Stage 321 / Stage 320 / Stage 194 pointers (Stage 322 P1: `test_stage322_pointers_p1.py`, `docs/LIVE_MIGRATION_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 322 fidelity sync (D1: `test_stage322_fidelity_d1.py`, `docs/STAGE_322_FIDELITY.md`)
+- [x] Stage 322 exit + freeze (H322x: `test_stage322_exit_h322x.py`, `docs/STAGE_322_EXIT_CRITERIA.md`, ADR-652)
 - [x] Stage 321 track opened (ADR-649: `test_stage321_open.py`, `docs/STAGE_321_PLAN.md`) — Live DR Pack Remaining-Gate Index; closed under ADR-650
 - [x] Live DR pack remaining-gate hub (Stage 321 I1: `test_stage321_index_i1.py`, `docs/LIVE_DR_PACK_REMAINING_GATE_MVP.md`)
 - [x] Live DR pack blocker matrix (Stage 321 B1: `test_stage321_blockers_b1.py`, `docs/LIVE_DR_PACK_RG_BLOCKERS_MVP.md`)

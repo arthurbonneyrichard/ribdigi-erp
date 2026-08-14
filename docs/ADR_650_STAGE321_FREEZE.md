@@ -31,3 +31,10 @@ Stage 322 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live DR, live backup restore, live PITR drill, live migration, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 322 opened under **ADR-651** after CONTINUE/NEXT (Tenant MVP Live Migration Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-652**. Stage 321 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 322 runner-up outline was approved and opened (ADR-651); freeze ADR-652. Do not reopen Stage 321 scope.
+

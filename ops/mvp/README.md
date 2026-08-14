@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_322_EXIT_CRITERIA.md` / `docs/ADR_652_STAGE322_FREEZE.md` (`backend/tests/test_stage322_exit_h322x.py`) — Stage 322 H322x
+- `docs/STAGE_322_FIDELITY.md` (`backend/tests/test_stage322_fidelity_d1.py`) — Stage 322 D1
+- `docs/STAGE_322_PLAN.md` (`backend/tests/test_stage322_open.py`) — Stage 322 open (ADR-651)
+- `docs/LIVE_MIGRATION_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/live-migration-pack-remaining-gate.json` — Stage 322 I1
+- `docs/LIVE_MIGRATION_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/live-migration-pack-rg-blockers.json` — Stage 322 B1
+- `docs/LIVE_MIGRATION_PACK_RG_POINTERS_MVP.md` / `ops/mvp/live-migration-pack-rg-pointers.json` — Stage 322 P1
 - `docs/STAGE_321_EXIT_CRITERIA.md` / `docs/ADR_650_STAGE321_FREEZE.md` (`backend/tests/test_stage321_exit_h321x.py`) — Stage 321 H321x
 - `docs/STAGE_321_FIDELITY.md` (`backend/tests/test_stage321_fidelity_d1.py`) — Stage 321 D1
 - `docs/STAGE_321_PLAN.md` (`backend/tests/test_stage321_open.py`) — Stage 321 open (ADR-649)
@@ -5209,6 +5215,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 322 exit
+
+H322x met — `docs/STAGE_322_EXIT_CRITERIA.md`, ADR-652. Stages 1–322 frozen for Stage 322 feature scope.
+
+## Stage 322 D1 — Tenant MVP Live Migration Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_322_FIDELITY.md` (`test_stage322_fidelity_d1.py`). `LIVE_MIGRATION_PACK_*` remaining-gate index; live migration / production migrate / go-live still MISSING.
+
+## Stage 322 open
+
+ADR-651 / `docs/STAGE_322_PLAN.md`.
 
 ## Stage 321 exit
 
