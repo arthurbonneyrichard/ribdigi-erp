@@ -1151,9 +1151,9 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Category mapping:** assign rates via `POST|PATCH /catalog/categories` `tax_rate_id` (see §5.1).
 
 ### 12.2 Tax Reports
-**Endpoint:** `GET /reports/tax?from_date=&to_date=&tax_type=vat`
-
----
+**Endpoint:** `GET /reports/tax?from_date=&to_date=&store_id=` — output/input/net VAT summary; optional `store_id` (invoices by invoice store, POS by session store, input via PO/GRN warehouse→store). Response echoes `store_id`/`store_name`.  
+**Filing pack:** `GET /reports/tax/filing?from_date=&to_date=&store_id=&jurisdiction=` — same store scope; export `tax` / `tax_filing` / `tax_filing_gh` pass `store_id`.  
+Tax UI (`/tax`) period controls include store picker.
 
 ## 13. Multi-Store Management
 

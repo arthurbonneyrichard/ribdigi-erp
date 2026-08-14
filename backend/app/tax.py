@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -412,12 +412,17 @@ async def tax_report(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    store_id: str | None = None,
 ) -> dict:
     """Summary VAT/GST output vs input tax for a period."""
-    pack = await tax_filing_pack(db, tenant_id, from_date=from_date, to_date=to_date)
+    pack = await tax_filing_pack(
+        db, tenant_id, from_date=from_date, to_date=to_date, store_id=store_id
+    )
     return {
         "from_date": from_date,
         "to_date": to_date,
+        "store_id": pack.get("store_id"),
+        "store_name": pack.get("store_name"),
         "output_tax": pack["output_tax"],
         "output_tax_invoices": pack["output_tax_invoices"],
         "output_tax_pos": pack["output_tax_pos"],
@@ -440,8 +445,44 @@ async def tax_filing_pack(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    store_id: str | None = None,
 ) -> dict:
-    """Jurisdiction-neutral VAT/GST filing pack: boxes + detailed schedules for export."""
+    """Jurisdiction-neutral VAT/GST filing pack: boxes + detailed schedules for export.
+
+    Optional ``store_id`` scopes:
+    - output invoices by ``SalesInvoice.store_id``
+    - POS by session store
+    - input PIs/POs by PO/GRN warehouse → store
+    """
+    from fastapi import HTTPException
+
+    store_name = None
+    warehouse_ids: list[str] | None = None
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.id == store_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        store_id = store.id
+        store_name = store.name
+        warehouse_ids = [
+            w.id
+            for w in (
+                await db.execute(
+                    select(m.Warehouse).where(
+                        m.Warehouse.tenant_id == tenant_id,
+                        m.Warehouse.store_id == store_id,
+                    )
+                )
+            ).scalars().all()
+        ]
+
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
@@ -450,6 +491,8 @@ async def tax_filing_pack(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_id:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
     invoices = (await db.execute(inv_stmt)).scalars().all()
 
     output_schedule = []
@@ -508,13 +551,25 @@ async def tax_filing_pack(
                 "reverse_charge_tax": round(rc, 2),
                 "gross_amount": round(float(inv.total_amount or 0), 2),
                 "party_id": inv.customer_id,
+                "store_id": inv.store_id,
             }
         )
 
-    pos_stmt = select(m.Transaction).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-    )
+    if store_id:
+        pos_stmt = (
+            select(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.PosSession.store_id == store_id,
+            )
+        )
+    else:
+        pos_stmt = select(m.Transaction).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+        )
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
@@ -546,6 +601,7 @@ async def tax_filing_pack(
                 "reverse_charge_tax": 0.0,
                 "gross_amount": round(float(tx.total or 0), 2),
                 "party_id": tx.party_id,
+                "store_id": store_id,
             }
         )
     taxable_outputs = standard_outputs
@@ -559,6 +615,26 @@ async def tax_filing_pack(
         pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date >= from_date)
     if to_date:
         pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date <= to_date)
+    if store_id is not None:
+        if not warehouse_ids:
+            pi_stmt = pi_stmt.where(m.PurchaseInvoice.id == None)  # noqa: E711
+        else:
+            pi_stmt = (
+                pi_stmt.outerjoin(
+                    m.PurchaseOrder,
+                    m.PurchaseOrder.id == m.PurchaseInvoice.purchase_order_id,
+                )
+                .outerjoin(
+                    m.GoodsReceipt,
+                    m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id,
+                )
+                .where(
+                    or_(
+                        m.PurchaseOrder.warehouse_id.in_(warehouse_ids),
+                        m.GoodsReceipt.warehouse_id.in_(warehouse_ids),
+                    )
+                )
+            )
     purchase_invoices = (await db.execute(pi_stmt)).scalars().all()
 
     input_schedule = []
@@ -601,6 +677,11 @@ async def tax_filing_pack(
             po_stmt = po_stmt.where(m.PurchaseOrder.created_at >= from_date)
         if to_date:
             po_stmt = po_stmt.where(m.PurchaseOrder.created_at <= to_date)
+        if store_id is not None:
+            if not warehouse_ids:
+                po_stmt = po_stmt.where(m.PurchaseOrder.id == None)  # noqa: E711
+            else:
+                po_stmt = po_stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
         orders = (await db.execute(po_stmt)).scalars().all()
         for po in orders:
             tax = float(po.tax_amount or 0)
@@ -694,6 +775,8 @@ async def tax_filing_pack(
         "period": period,
         "from_date": from_date,
         "to_date": to_date,
+        "store_id": store_id,
+        "store_name": store_name,
         "output_tax": output_tax,
         "output_tax_invoices": round(output_invoices, 2),
         "output_tax_pos": round(output_pos, 2),

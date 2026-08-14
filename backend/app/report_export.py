@@ -736,9 +736,13 @@ async def build_report_payload(
             compare=compare,
         )
     if report_type == "tax":
-        return await tax_svc.tax_report(db, tenant_id, from_date=fd, to_date=td)
+        return await tax_svc.tax_report(
+            db, tenant_id, from_date=fd, to_date=td, store_id=store_id or None
+        )
     if report_type == "tax_filing":
-        return await tax_svc.tax_filing_pack(db, tenant_id, from_date=fd, to_date=td)
+        return await tax_svc.tax_filing_pack(
+            db, tenant_id, from_date=fd, to_date=td, store_id=store_id or None
+        )
     if report_type == "tax_filing_gh":
         from app import tax_filings as tax_filings_svc
 
@@ -748,6 +752,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             jurisdiction=jurisdiction or "GH",
+            store_id=store_id or None,
         )
     raise HTTPException(status_code=400, detail="Unhandled report type")
 

@@ -24,6 +24,8 @@ export default function Page() {
   const [filing, setFiling] = useState<any>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [storeId, setStoreId] = useState('');
+  const [stores, setStores] = useState<any[]>([]);
   const [name, setName] = useState('Standard VAT');
   const [rate, setRate] = useState('15');
   const [taxType, setTaxType] = useState('vat');
@@ -39,6 +41,7 @@ export default function Page() {
     const params = new URLSearchParams();
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
+    if (storeId) params.set('store_id', storeId);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -57,6 +60,9 @@ export default function Page() {
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
+    api('/stores')
+      .then((r) => setStores(r.data || []))
+      .catch(() => undefined);
   }, []);
 
   async function createRate() {
@@ -125,6 +131,7 @@ export default function Page() {
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
+      if (storeId) params.set('store_id', storeId);
       if (reportType === 'tax_filing_gh') params.set('jurisdiction', 'GH');
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
@@ -170,6 +177,14 @@ export default function Page() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
           <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+            <option value="">All stores</option>
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code} — {s.name}
+              </option>
+            ))}
+          </select>
           <button
             onClick={() => refresh().catch((err) => setError(err.message))}
           >
@@ -226,7 +241,7 @@ export default function Page() {
           )}
         </div>
         <div className="card">
-          <h3>Tax report</h3>
+          <h3>Tax report{report?.store_name ? ` · ${report.store_name}` : ''}</h3>
           <p>Output tax: {report?.output_tax ?? '—'}</p>
           <p className="muted">
             Invoices {report?.output_tax_invoices ?? 0} · POS {report?.output_tax_pos ?? 0}
@@ -245,6 +260,7 @@ export default function Page() {
         <h3>Filing pack</h3>
         <p className="muted">
           Jurisdiction-neutral boxes + output/input schedules
+          {filing?.store_name ? ` · ${filing.store_name}` : ''}
           {filing?.jurisdiction ? ` · Tenant jurisdiction: ${filing.jurisdiction}` : ''}
           {filing?.tax_registration_number
             ? ` · TIN ${filing.tax_registration_number}`
