@@ -1057,6 +1057,7 @@ async def convert_purchase_request_to_po(
             for i in items
         ],
         purchase_request_id=pr.id,
+        company_id=getattr(pr, "company_id", None),
     )
     pr.status = "converted"
     pr.purchase_order_id = po.id
@@ -1092,6 +1093,9 @@ async def create_purchase_order(
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
     await get_supplier(db, tenant_id, supplier_id)
+    if purchase_request_id and company_id is None:
+        pr = await get_purchase_request(db, tenant_id, purchase_request_id)
+        company_id = getattr(pr, "company_id", None)
 
     prepared = await _prepare_po_lines(db, tenant_id=tenant_id, items=items)
     subtotal = sum(p["line_sub"] for p in prepared)

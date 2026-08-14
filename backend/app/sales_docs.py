@@ -710,6 +710,8 @@ async def create_order(
         quote = await get_quotation(db, tenant_id, quotation_id)
         if quote.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Quotation customer mismatch")
+        if company_id is None:
+            company_id = getattr(quote, "company_id", None)
     resolved_store, resolved_wh = await _resolve_order_warehouse(
         db, tenant_id=tenant_id, store_id=store_id, warehouse_id=warehouse_id
     )
@@ -896,6 +898,7 @@ async def convert_quotation_to_order(
         discount_amount=float(quote.discount_amount or 0),
         notes=quote.notes,
         quotation_id=quote.id,
+        company_id=getattr(quote, "company_id", None),
     )
     quote.status = "converted"
     quote.converted_order_id = order.id
@@ -987,6 +990,7 @@ async def convert_order_to_invoice(
         ],
         discount_amount=float(order.discount_amount or 0),
         notes=order.notes,
+        company_id=getattr(order, "company_id", None),
     )
     invoice.sales_order_id = order.id
     invoice.quotation_id = order.quotation_id
