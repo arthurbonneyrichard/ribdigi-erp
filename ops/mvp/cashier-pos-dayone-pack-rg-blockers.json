@@ -1,0 +1,63 @@
+{
+  "id": "cashier-pos-dayone-pack-rg-blockers",
+  "stage": 358,
+  "pack": "B1",
+  "doc": "docs/CASHIER_POS_DAYONE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CASHIER_POS_DAYONE_PACK_REMAINING_GATE_MVP.md",
+    "cashier_pos_dayone": "docs/CASHIER_POS_DAYONE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_conflict_free_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "support_sla_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "fabricated_conflict_free_claimed": "REMAINING",
+    "stage172_as_live_cashier_pos_dayone": "NON_CLAIM",
+    "stage171_as_live_cashier_pos_dayone": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "support_sla_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "fabricated_conflict_free_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "cpdprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdprb-sla",
+      "title": "Mark support SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdprb-conflict-free",
+      "title": "Mark fabricated conflict-free Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdprb-stage172-nonclaim",
+      "title": "Mark Stage 172 / Stage 171 as non-claim for live cashier POS day-one Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdprb-checklist-remaining",
+      "title": "Live cashier POS day-one Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 358 B1 cashier POS dayone pack RG blocker matrix packaging only. Live cashier POS day-one Completes remain MISSING."
+}

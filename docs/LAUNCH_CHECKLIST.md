@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 358 track opened (ADR-723: `test_stage358_open.py`, `docs/STAGE_358_PLAN.md`) — Cashier POS Dayone Pack Remaining-Gate Index; closed under ADR-724
+- [x] Cashier POS dayone pack remaining-gate hub (Stage 358 I1: `test_stage358_index_i1.py`, `docs/CASHIER_POS_DAYONE_PACK_REMAINING_GATE_MVP.md`)
+- [x] Cashier POS dayone pack blocker matrix (Stage 358 B1: `test_stage358_blockers_b1.py`, `docs/CASHIER_POS_DAYONE_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 172 / Stage 357 / Stage 339 / Stage 329 pointers (Stage 358 P1: `test_stage358_pointers_p1.py`, `docs/CASHIER_POS_DAYONE_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 358 fidelity sync (D1: `test_stage358_fidelity_d1.py`, `docs/STAGE_358_FIDELITY.md`)
+- [x] Stage 358 exit + freeze (H358x: `test_stage358_exit_h358x.py`, `docs/STAGE_358_EXIT_CRITERIA.md`, ADR-724)
 - [x] Stage 357 track opened (ADR-721: `test_stage357_open.py`, `docs/STAGE_357_PLAN.md`) — Cashier Bind Catalog Pack Remaining-Gate Index; closed under ADR-722
 - [x] Cashier bind catalog pack remaining-gate hub (Stage 357 I1: `test_stage357_index_i1.py`, `docs/CASHIER_BIND_CATALOG_PACK_REMAINING_GATE_MVP.md`)
 - [x] Cashier bind catalog pack blocker matrix (Stage 357 B1: `test_stage357_blockers_b1.py`, `docs/CASHIER_BIND_CATALOG_PACK_RG_BLOCKERS_MVP.md`)

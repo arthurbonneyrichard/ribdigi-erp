@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_358_EXIT_CRITERIA.md` / `docs/ADR_724_STAGE358_FREEZE.md` (`backend/tests/test_stage358_exit_h358x.py`) — Stage 358 H358x
+- `docs/STAGE_358_FIDELITY.md` (`backend/tests/test_stage358_fidelity_d1.py`) — Stage 358 D1
+- `docs/STAGE_358_PLAN.md` (`backend/tests/test_stage358_open.py`) — Stage 358 open (ADR-723)
+- `docs/CASHIER_POS_DAYONE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/cashier-pos-dayone-pack-remaining-gate.json` — Stage 358 I1
+- `docs/CASHIER_POS_DAYONE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/cashier-pos-dayone-pack-rg-blockers.json` — Stage 358 B1
+- `docs/CASHIER_POS_DAYONE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/cashier-pos-dayone-pack-rg-pointers.json` — Stage 358 P1
 - `docs/STAGE_357_EXIT_CRITERIA.md` / `docs/ADR_722_STAGE357_FREEZE.md` (`backend/tests/test_stage357_exit_h357x.py`) — Stage 357 H357x
 - `docs/STAGE_357_FIDELITY.md` (`backend/tests/test_stage357_fidelity_d1.py`) — Stage 357 D1
 - `docs/STAGE_357_PLAN.md` (`backend/tests/test_stage357_open.py`) — Stage 357 open (ADR-721)
@@ -5425,6 +5431,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 358 exit
+
+H358x met — `docs/STAGE_358_EXIT_CRITERIA.md`, ADR-724. Stages 1–358 frozen for Stage 358 feature scope.
+
+## Stage 358 D1 — Tenant MVP Cashier POS Dayone Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_358_FIDELITY.md` (`test_stage358_fidelity_d1.py`). `CASHIER_POS_DAYONE_PACK_*` remaining-gate index; Offline Complete / support SLA / attestation / fabricated conflict-free / go-live still MISSING.
+
+## Stage 358 open
+
+ADR-723 / `docs/STAGE_358_PLAN.md`.
 
 ## Stage 357 exit
 

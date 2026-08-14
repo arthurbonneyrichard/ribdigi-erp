@@ -31,3 +31,10 @@ Stage 358 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for cashier bind catalog, Offline Complete, attestation, authoritative offline stock, USB-serial, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 358 opened under **ADR-723** after CONTINUE/NEXT (Tenant MVP Cashier POS Dayone Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-724**. Stage 357 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 358 runner-up outline was approved and opened (ADR-723); freeze ADR-724. Do not reopen Stage 357 scope.
+
