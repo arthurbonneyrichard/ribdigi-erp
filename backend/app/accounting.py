@@ -649,8 +649,9 @@ async def create_liquid_account(
     bank_name: str | None = None,
     account_number: str | None = None,
     bank_branch: str | None = None,
+    company_id: str | None = None,
 ) -> m.Account:
-    await ensure_default_accounts(db, tenant_id)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     kind_norm = (kind or "").strip().lower()
     if kind_norm not in {"cash", "bank"}:
         raise HTTPException(status_code=400, detail="kind must be cash or bank")
@@ -659,11 +660,12 @@ async def create_liquid_account(
     if not code_norm or not name_norm:
         raise HTTPException(status_code=400, detail="code and name are required")
 
-    existing = (
-        await db.execute(
-            select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code_norm)
-        )
-    ).scalar_one_or_none()
+    existing_q = select(m.Account).where(
+        m.Account.tenant_id == tenant_id, m.Account.code == code_norm
+    )
+    if company_id:
+        existing_q = existing_q.where(m.Account.company_id == company_id)
+    existing = (await db.execute(existing_q)).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
 
@@ -674,6 +676,7 @@ async def create_liquid_account(
 
     row = m.Account(
         tenant_id=tenant_id,
+        company_id=company_id,
         code=code_norm,
         name=name_norm,
         account_type="asset",
@@ -702,10 +705,11 @@ async def update_liquid_account(
     bank_branch: str | None = None,
     clear_bank_details: bool | None = None,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> m.Account:
     from app.bank_recon import get_liquid_account
 
-    row = await get_liquid_account(db, tenant_id, account_id)
+    row = await get_liquid_account(db, tenant_id, account_id, company_id=company_id)
     if name is not None:
         name_norm = name.strip()
         if not name_norm:

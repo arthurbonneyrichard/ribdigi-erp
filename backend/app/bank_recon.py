@@ -61,13 +61,21 @@ def journal_line_signed_amount(line: m.JournalEntryLine) -> float:
     return round(float(line.debit or 0) - float(line.credit or 0), 2)
 
 
-async def get_liquid_account(db: AsyncSession, tenant_id: str, account_id: str) -> m.Account:
+async def get_liquid_account(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Account:
     account = (
         await db.execute(
             select(m.Account).where(m.Account.id == account_id, m.Account.tenant_id == tenant_id)
         )
     ).scalar_one_or_none()
     if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if company_id and account.company_id and account.company_id != company_id:
         raise HTTPException(status_code=404, detail="Account not found")
     if not (account.is_cash_account or account.is_bank_account):
         raise HTTPException(
@@ -83,12 +91,15 @@ async def list_liquid_accounts(
     *,
     active_only: bool = False,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> list[m.Account]:
     """Stage 125 L1 — is_active / active_only for honest inactive-only liquid lists."""
     stmt = select(m.Account).where(
         m.Account.tenant_id == tenant_id,
         or_(m.Account.is_cash_account.is_(True), m.Account.is_bank_account.is_(True)),
     )
+    if company_id:
+        stmt = stmt.where(m.Account.company_id == company_id)
     if is_active is not None:
         stmt = stmt.where(m.Account.is_active.is_(bool(is_active)))
     elif active_only:
@@ -96,7 +107,13 @@ async def list_liquid_accounts(
     return list((await db.execute(stmt.order_by(m.Account.code))).scalars().all())
 
 
-async def get_statement(db: AsyncSession, tenant_id: str, statement_id: str) -> m.BankStatement:
+async def get_statement(
+    db: AsyncSession,
+    tenant_id: str,
+    statement_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.BankStatement:
     row = (
         await db.execute(
             select(m.BankStatement).where(
@@ -106,6 +123,8 @@ async def get_statement(db: AsyncSession, tenant_id: str, statement_id: str) -> 
         )
     ).scalar_one_or_none()
     if not row:
+        raise HTTPException(status_code=404, detail="Bank statement not found")
+    if company_id and row.company_id and row.company_id != company_id:
         raise HTTPException(status_code=404, detail="Bank statement not found")
     return row
 
@@ -129,14 +148,18 @@ async def list_statement_lines(
     )
 
 
-async def list_statements(db: AsyncSession, tenant_id: str) -> list[m.BankStatement]:
+async def list_statements(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    company_id: str | None = None,
+) -> list[m.BankStatement]:
+    stmt = select(m.BankStatement).where(m.BankStatement.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.BankStatement.company_id == company_id)
     return list(
         (
-            await db.execute(
-                select(m.BankStatement)
-                .where(m.BankStatement.tenant_id == tenant_id)
-                .order_by(m.BankStatement.created_at.desc())
-            )
+            await db.execute(stmt.order_by(m.BankStatement.created_at.desc()))
         )
         .scalars()
         .all()
@@ -165,10 +188,12 @@ async def create_statement(
     closing_balance: float,
     notes: str | None = None,
     lines: list[dict] | None = None,
+    company_id: str | None = None,
 ) -> m.BankStatement:
-    await get_liquid_account(db, tenant_id, account_id)
+    await get_liquid_account(db, tenant_id, account_id, company_id=company_id)
     stmt = m.BankStatement(
         tenant_id=tenant_id,
+        company_id=company_id,
         account_id=account_id,
         statement_date=_parse_dt(statement_date),
         opening_balance=float(opening_balance or 0),
@@ -186,6 +211,7 @@ async def create_statement(
         db.add(
             m.BankStatementLine(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 statement_id=stmt.id,
                 txn_date=_parse_dt(raw.get("txn_date") or statement_date),
                 amount=amount,
@@ -210,6 +236,7 @@ async def import_statement_from_feed(
     closing_balance: float | None = None,
     statement_date: str | datetime | None = None,
     notes: str | None = None,
+    company_id: str | None = None,
 ) -> tuple[m.BankStatement, dict]:
     """Parse CSV/OFX content and create a bank statement."""
     from app.bank_feed import parse_bank_feed
@@ -253,6 +280,7 @@ async def import_statement_from_feed(
         closing_balance=close_bal,
         notes=" · ".join(note_bits),
         lines=lines,
+        company_id=company_id,
     )
     meta = {
         "format": parsed["format"],

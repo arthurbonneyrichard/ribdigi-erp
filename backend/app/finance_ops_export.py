@@ -156,8 +156,11 @@ async def list_bank_statements(
     *,
     tenant_id: str,
     status: str | None = None,
+    company_id: str | None = None,
 ) -> list[m.BankStatement]:
     q = select(m.BankStatement).where(m.BankStatement.tenant_id == tenant_id)
+    if company_id:
+        q = q.where(m.BankStatement.company_id == company_id)
     status_n = (status or "").strip().lower() or None
     if status_n:
         q = q.where(m.BankStatement.status == status_n)
@@ -170,8 +173,11 @@ async def export_bank_statements_csv(
     *,
     tenant_id: str,
     status: str | None = None,
+    company_id: str | None = None,
 ) -> str:
-    rows = await list_bank_statements(db, tenant_id=tenant_id, status=status)
+    rows = await list_bank_statements(
+        db, tenant_id=tenant_id, status=status, company_id=company_id
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=BANK_STATEMENT_EXPORT_COLUMNS)
     writer.writeheader()

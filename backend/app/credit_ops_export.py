@@ -294,9 +294,12 @@ async def export_customer_outstanding_csv(
     *,
     tenant_id: str,
     customer_id: str,
+    company_id: str | None = None,
 ) -> str:
     """Stage 141 O1 — open AR bills CSV for one customer."""
-    rows = await credit_svc.customer_outstanding_bills(db, tenant_id, customer_id)
+    rows = await credit_svc.customer_outstanding_bills(
+        db, tenant_id, customer_id, company_id=company_id
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=OUTSTANDING_EXPORT_COLUMNS)
     writer.writeheader()
@@ -321,9 +324,12 @@ async def export_supplier_outstanding_csv(
     *,
     tenant_id: str,
     supplier_id: str,
+    company_id: str | None = None,
 ) -> str:
     """Stage 141 O1 — open AP bills CSV for one supplier (flat outstanding list)."""
-    schedule = await credit_svc.supplier_payment_schedule(db, tenant_id, supplier_id)
+    schedule = await credit_svc.supplier_payment_schedule(
+        db, tenant_id, supplier_id, company_id=company_id
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=OUTSTANDING_EXPORT_COLUMNS)
     writer.writeheader()
@@ -356,6 +362,7 @@ async def export_supplier_payment_schedule_csv(
     tenant_id: str,
     supplier_id: str,
     schedule_bucket: str | None = None,
+    company_id: str | None = None,
 ) -> str:
     """Stage 141 P1 — supplier AP payment schedule CSV with optional bucket filter."""
     bucket = (schedule_bucket or "").strip().lower() or None
@@ -364,7 +371,9 @@ async def export_supplier_payment_schedule_csv(
             status_code=400,
             detail="schedule_bucket must be overdue, due_today, upcoming, or unscheduled",
         )
-    schedule = await credit_svc.supplier_payment_schedule(db, tenant_id, supplier_id)
+    schedule = await credit_svc.supplier_payment_schedule(
+        db, tenant_id, supplier_id, company_id=company_id
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PAYMENT_SCHEDULE_EXPORT_COLUMNS)
     writer.writeheader()
@@ -405,9 +414,12 @@ async def export_customer_statement_csv(
     *,
     tenant_id: str,
     customer_id: str,
+    company_id: str | None = None,
 ) -> str:
     """Stage 141 T1 — customer credit statement lines CSV."""
-    data = await credit_svc.customer_statement(db, tenant_id, customer_id)
+    data = await credit_svc.customer_statement(
+        db, tenant_id, customer_id, company_id=company_id
+    )
     party = data.get("customer") or {}
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=STATEMENT_EXPORT_COLUMNS)
@@ -437,9 +449,12 @@ async def export_supplier_statement_csv(
     *,
     tenant_id: str,
     supplier_id: str,
+    company_id: str | None = None,
 ) -> str:
     """Stage 141 T1 — supplier credit statement lines CSV."""
-    data = await credit_svc.supplier_statement(db, tenant_id, supplier_id)
+    data = await credit_svc.supplier_statement(
+        db, tenant_id, supplier_id, company_id=company_id
+    )
     party = data.get("supplier") or {}
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=STATEMENT_EXPORT_COLUMNS)

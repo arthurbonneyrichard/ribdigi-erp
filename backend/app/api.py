@@ -9537,13 +9537,14 @@ async def liquid_accounts(
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
 
-    await ensure_default_accounts(db, claims["tenant_id"])
+    await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     await db.commit()
     rows = await bank_recon_svc.list_liquid_accounts(
         db,
         claims["tenant_id"],
         active_only=active_only,
         is_active=is_active,
+        company_id=claims.get("company_id"),
     )
     return env([bank_recon_svc.serialize_account(r) for r in rows])
 
@@ -9558,13 +9559,14 @@ async def liquid_accounts_export(
     """Stage 125 X1 — liquid cash/bank accounts CSV export (includes bank details)."""
     from app.accounting import ensure_default_accounts
 
-    await ensure_default_accounts(db, claims["tenant_id"])
+    await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     await db.commit()
     text = await liquid_recurring_export_svc.export_liquid_accounts_csv(
         db,
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -9592,6 +9594,7 @@ async def create_liquid_account(
         bank_name=payload.bank_name,
         account_number=payload.account_number,
         bank_branch=payload.bank_branch,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -9631,6 +9634,7 @@ async def update_liquid_account(
         bank_branch=payload.bank_branch,
         clear_bank_details=payload.clear_bank_details,
         is_active=payload.is_active,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(bank_recon_svc.serialize_account(row), "Liquid account updated")
@@ -9855,7 +9859,10 @@ async def list_bank_statements(
             detail="status must be draft, in_progress, or reconciled",
         )
     rows = await finance_ops_export_svc.list_bank_statements(
-        db, tenant_id=claims["tenant_id"], status=status_n
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status_n,
+        company_id=claims.get("company_id"),
     )
     out = []
     for row in rows:
@@ -9878,7 +9885,10 @@ async def bank_statements_export(
             detail="status must be draft, in_progress, or reconciled",
         )
     text = await finance_ops_export_svc.export_bank_statements_csv(
-        db, tenant_id=claims["tenant_id"], status=status_n
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status_n,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -9898,7 +9908,7 @@ async def create_bank_statement(
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
 
-    await ensure_default_accounts(db, claims["tenant_id"])
+    await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     lines_in = payload.get("lines") or []
     stmt = await bank_recon_svc.create_statement(
         db,
@@ -9910,6 +9920,7 @@ async def create_bank_statement(
         closing_balance=float(payload.get("closing_balance") or 0),
         notes=payload.get("notes"),
         lines=lines_in,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -9944,7 +9955,7 @@ async def import_bank_statement(
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
 
-    await ensure_default_accounts(db, claims["tenant_id"])
+    await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     raw = await file.read()
     if not raw:
         raise HTTPException(status_code=400, detail="Empty upload")
@@ -9964,6 +9975,7 @@ async def import_bank_statement(
         closing_balance=closing_balance,
         statement_date=statement_date,
         notes=notes,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -9995,7 +10007,12 @@ async def get_bank_statement(
 ):
     from app import bank_recon as bank_recon_svc
 
-    stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
+    stmt = await bank_recon_svc.get_statement(
+        db,
+        claims["tenant_id"],
+        statement_id,
+        company_id=claims.get("company_id"),
+    )
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], statement_id)
     data = bank_recon_svc.serialize_statement(stmt, lines)
     data["unmatched_book_lines"] = await bank_recon_svc.unmatched_book_lines(
@@ -10030,7 +10047,12 @@ async def clear_bank_statement_group(
         notes=payload.get("notes"),
     )
     await db.commit()
-    stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
+    stmt = await bank_recon_svc.get_statement(
+        db,
+        claims["tenant_id"],
+        statement_id,
+        company_id=claims.get("company_id"),
+    )
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], statement_id)
     data = bank_recon_svc.serialize_statement(stmt, lines)
     data["clear_result"] = result
@@ -10055,7 +10077,12 @@ async def dissolve_bank_clearing_group(
 ):
     from app import bank_recon as bank_recon_svc
 
-    stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
+    stmt = await bank_recon_svc.get_statement(
+        db,
+        claims["tenant_id"],
+        statement_id,
+        company_id=claims.get("company_id"),
+    )
     result = await bank_recon_svc.dissolve_clearing_group(
         db, tenant_id=claims["tenant_id"], group_id=group_id
     )
@@ -10088,7 +10115,12 @@ async def auto_clear_bank_statement(
         date_window_days=int(body.get("date_window_days") or 7),
     )
     await db.commit()
-    stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
+    stmt = await bank_recon_svc.get_statement(
+        db,
+        claims["tenant_id"],
+        statement_id,
+        company_id=claims.get("company_id"),
+    )
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], statement_id)
     data = bank_recon_svc.serialize_statement(stmt, lines)
     data["auto_clear"] = result
@@ -10108,7 +10140,12 @@ async def match_bank_statement_line(
 ):
     from app import bank_recon as bank_recon_svc
 
-    stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
+    stmt = await bank_recon_svc.get_statement(
+        db,
+        claims["tenant_id"],
+        statement_id,
+        company_id=claims.get("company_id"),
+    )
     line = await bank_recon_svc.match_line(
         db,
         tenant_id=claims["tenant_id"],
@@ -10130,7 +10167,12 @@ async def unmatch_bank_statement_line(
 ):
     from app import bank_recon as bank_recon_svc
 
-    stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
+    stmt = await bank_recon_svc.get_statement(
+        db,
+        claims["tenant_id"],
+        statement_id,
+        company_id=claims.get("company_id"),
+    )
     line = await bank_recon_svc.unmatch_line(db, tenant_id=claims["tenant_id"], line_id=line_id)
     if line.statement_id != stmt.id:
         raise HTTPException(status_code=404, detail="Statement line not found")
@@ -10147,7 +10189,12 @@ async def ignore_bank_statement_line(
 ):
     from app import bank_recon as bank_recon_svc
 
-    stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
+    stmt = await bank_recon_svc.get_statement(
+        db,
+        claims["tenant_id"],
+        statement_id,
+        company_id=claims.get("company_id"),
+    )
     line = await bank_recon_svc.ignore_line(db, tenant_id=claims["tenant_id"], line_id=line_id)
     if line.statement_id != stmt.id:
         raise HTTPException(status_code=404, detail="Statement line not found")
@@ -11677,7 +11724,14 @@ async def customer_credit_statement(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await credit_svc.customer_statement(db, claims["tenant_id"], customer_id))
+    return env(
+        await credit_svc.customer_statement(
+            db,
+            claims["tenant_id"],
+            customer_id,
+            company_id=claims.get("company_id"),
+        )
+    )
 
 
 @api.get("/credit/customers/{customer_id}/statement/export")
@@ -11688,7 +11742,10 @@ async def export_customer_credit_statement(
 ):
     """Stage 141 T1 — customer statement lines CSV."""
     text = await credit_ops_export_svc.export_customer_statement_csv(
-        db, tenant_id=claims["tenant_id"], customer_id=customer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=customer_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -11705,7 +11762,14 @@ async def supplier_credit_statement(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await credit_svc.supplier_statement(db, claims["tenant_id"], supplier_id))
+    return env(
+        await credit_svc.supplier_statement(
+            db,
+            claims["tenant_id"],
+            supplier_id,
+            company_id=claims.get("company_id"),
+        )
+    )
 
 
 @api.get("/credit/suppliers/{supplier_id}/statement/export")
@@ -11716,7 +11780,10 @@ async def export_supplier_credit_statement(
 ):
     """Stage 141 T1 — supplier statement lines CSV."""
     text = await credit_ops_export_svc.export_supplier_statement_csv(
-        db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
+        db,
+        tenant_id=claims["tenant_id"],
+        supplier_id=supplier_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -11761,7 +11828,12 @@ async def customer_outstanding(
 ):
     """Stage 8 S2 — open AR bills for Credit UI."""
     return env(
-        await credit_svc.customer_outstanding_bills(db, claims["tenant_id"], customer_id)
+        await credit_svc.customer_outstanding_bills(
+            db,
+            claims["tenant_id"],
+            customer_id,
+            company_id=claims.get("company_id"),
+        )
     )
 
 
@@ -11773,7 +11845,10 @@ async def export_customer_outstanding(
 ):
     """Stage 141 O1 — customer outstanding bills CSV."""
     text = await credit_ops_export_svc.export_customer_outstanding_csv(
-        db, tenant_id=claims["tenant_id"], customer_id=customer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=customer_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -11830,7 +11905,10 @@ async def supplier_outstanding(
     db: AsyncSession = Depends(get_db),
 ):
     schedule = await credit_svc.supplier_payment_schedule(
-        db, claims["tenant_id"], supplier_id
+        db,
+        claims["tenant_id"],
+        supplier_id,
+        company_id=claims.get("company_id"),
     )
     # Flat list kept for existing clients; schedule adds buckets/early-pay.
     out = []
@@ -11860,7 +11938,10 @@ async def export_supplier_outstanding(
 ):
     """Stage 141 O1 — supplier outstanding bills CSV."""
     text = await credit_ops_export_svc.export_supplier_outstanding_csv(
-        db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
+        db,
+        tenant_id=claims["tenant_id"],
+        supplier_id=supplier_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -11879,7 +11960,12 @@ async def supplier_payment_schedule(
 ):
     """Stage 8 S1 / BR-11.2 — upcoming and overdue AP payment schedule."""
     return env(
-        await credit_svc.supplier_payment_schedule(db, claims["tenant_id"], supplier_id)
+        await credit_svc.supplier_payment_schedule(
+            db,
+            claims["tenant_id"],
+            supplier_id,
+            company_id=claims.get("company_id"),
+        )
     )
 
 
@@ -11896,6 +11982,7 @@ async def export_supplier_payment_schedule(
         tenant_id=claims["tenant_id"],
         supplier_id=supplier_id,
         schedule_bucket=schedule_bucket,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,

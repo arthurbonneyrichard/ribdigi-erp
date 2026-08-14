@@ -68,3 +68,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Customer/supplier payment registers (list + CSV) filter by company; payment creates stamp `company_id`.
 - Dashboard MTD P&L uses company scope.
 - Remaining PARTIAL: some outstanding-bill / statement exports and liquid-account helpers may still be tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 7 follow-up (2026-08-14)
+
+- Customer/supplier outstanding bills, statements, and supplier payment schedules (APIs + CSV) filter by workspace `company_id` and reject cross-company party access.
+- Liquid account list/export/create/update are company-scoped; creates stamp `company_id` and use company-scoped uniqueness for account codes.
+- Bank statement list/export/create/import stamp and filter `company_id`; statement GET rejects foreign-company rows.
+- Remaining PARTIAL: bank-connection sync helpers and some adjacent finance tooling may still be tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred.

@@ -697,3 +697,103 @@ async def test_trial_balance_and_payments_company_scoped(client, db_session):
 
     pnl = await ac.get("/api/v1/accounting/profit-loss", headers=headers)
     assert pnl.status_code == 200, pnl.text
+
+
+@pytest.mark.asyncio
+async def test_outstanding_statements_and_liquid_company_scoped(client, db_session):
+    """Company B outstanding/statement lines and liquid/bank rows stay out of company A."""
+    ac, seed = client
+    from datetime import datetime, timedelta
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="STMT",
+        name="Alpha Stmt B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="Stmt B Customer",
+        status="active",
+        credit_limit=0,
+        balance=250,
+    )
+    acct_b = m.Account(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="LIQB",
+        name="Company B Liquid",
+        account_type="asset",
+        balance=100,
+        is_cash_account=True,
+        is_bank_account=False,
+        is_active=True,
+        is_system=False,
+    )
+    db_session.add_all([cust_b, acct_b])
+    await db_session.flush()
+    inv_b = m.SalesInvoice(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        invoice_number="INV-B-STMT",
+        customer_id=cust_b.id,
+        status="posted",
+        total_amount=250,
+        paid_amount=0,
+        due_date=datetime.utcnow() + timedelta(days=7),
+        created_by=seed["super"].id,
+    )
+    db_session.add(inv_b)
+    await db_session.flush()
+    db_session.add(
+        m.BankStatement(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            account_id=acct_b.id,
+            statement_date=datetime.utcnow(),
+            opening_balance=0,
+            closing_balance=100,
+            status="draft",
+            notes="Company B only",
+            created_by=seed["super"].id,
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    outstanding = await ac.get(
+        f"/api/v1/customers/{cust_b.id}/outstanding", headers=headers
+    )
+    assert outstanding.status_code == 404
+
+    statement = await ac.get(
+        f"/api/v1/credit/customers/{cust_b.id}/statement", headers=headers
+    )
+    assert statement.status_code == 404
+
+    liquids = await ac.get("/api/v1/accounting/liquid-accounts", headers=headers)
+    assert liquids.status_code == 200, liquids.text
+    codes = {r.get("code") for r in liquids.json()["data"]}
+    assert "LIQB" not in codes
+
+    banks = await ac.get("/api/v1/accounting/bank-statements", headers=headers)
+    assert banks.status_code == 200, banks.text
+    notes = {r.get("notes") for r in banks.json()["data"]}
+    assert "Company B only" not in notes
+
+    create_liq = await ac.post(
+        "/api/v1/accounting/liquid-accounts",
+        headers=headers,
+        json={"kind": "cash", "code": "LIQA7", "name": "Company A Phase7 Cash"},
+    )
+    assert create_liq.status_code == 200, create_liq.text
+    assert create_liq.json()["data"]["code"] == "LIQA7"
