@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 403 D1 ADR-005 Store Membership Pack Remaining-Gate Index Fidelity — `docs/STAGE_403_FIDELITY.md` (`test_stage403_fidelity_d1.py`); Offline Complete / ADR-005 still MISSING.
 Stage 402 D1 Connectivity Sync Status Pack Remaining-Gate Index Fidelity — `docs/STAGE_402_FIDELITY.md` (`test_stage402_fidelity_d1.py`); Offline Complete still MISSING.
 Stage 401 D1 Permission Alias Map Pack Remaining-Gate Index Fidelity — `docs/STAGE_401_FIDELITY.md` (`test_stage401_fidelity_d1.py`); Offline Complete still MISSING.
 Stage 400 D1 Offline Sync Push Idempotency Pack Remaining-Gate Index Fidelity — `docs/STAGE_400_FIDELITY.md` (`test_stage400_fidelity_d1.py`); Offline Complete still MISSING.

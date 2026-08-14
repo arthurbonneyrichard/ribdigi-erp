@@ -31,3 +31,9 @@ Stage 403 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, connectivity sync-status, sync status as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 403 opened under **ADR-813** after CONTINUE/NEXT (Tenant MVP ADR-005 Store Membership Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-814**. Stage 402 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 402 runner-up outline was approved and opened (ADR-813); freeze ADR-814. Do not reopen Stage 402 scope.

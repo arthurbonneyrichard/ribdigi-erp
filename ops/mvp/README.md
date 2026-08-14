@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_403_EXIT_CRITERIA.md` / `docs/ADR_814_STAGE403_FREEZE.md` (`backend/tests/test_stage403_exit_h403x.py`) — Stage 403 H403x
+- `docs/STAGE_403_FIDELITY.md` (`backend/tests/test_stage403_fidelity_d1.py`) — Stage 403 D1
+- `docs/STAGE_403_PLAN.md` (`backend/tests/test_stage403_open.py`) — Stage 403 open (ADR-813)
+- `docs/ADR005_STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/adr005-store-membership-pack-remaining-gate.json` — Stage 403 I1
+- `docs/ADR005_STORE_MEMBERSHIP_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/adr005-store-membership-pack-rg-blockers.json` — Stage 403 B1
+- `docs/ADR005_STORE_MEMBERSHIP_PACK_RG_POINTERS_MVP.md` / `ops/mvp/adr005-store-membership-pack-rg-pointers.json` — Stage 403 P1
 - `docs/STAGE_402_EXIT_CRITERIA.md` / `docs/ADR_812_STAGE402_FREEZE.md` (`backend/tests/test_stage402_exit_h402x.py`) — Stage 402 H402x
 - `docs/STAGE_402_FIDELITY.md` (`backend/tests/test_stage402_fidelity_d1.py`) — Stage 402 D1
 - `docs/STAGE_402_PLAN.md` (`backend/tests/test_stage402_open.py`) — Stage 402 open (ADR-811)
@@ -5695,6 +5701,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 403 exit
+
+H403x met — `docs/STAGE_403_EXIT_CRITERIA.md`, ADR-814. Stages 1–403 frozen for Stage 403 feature scope.
+
+## Stage 403 D1 — Tenant MVP ADR-005 Store Membership Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_403_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 403 open
+
+Opened under ADR-813; plan `docs/STAGE_403_PLAN.md`.
 
 ## Stage 402 exit
 
