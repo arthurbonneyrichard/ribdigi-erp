@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_347_EXIT_CRITERIA.md` / `docs/ADR_702_STAGE347_FREEZE.md` (`backend/tests/test_stage347_exit_h347x.py`) — Stage 347 H347x
+- `docs/STAGE_347_FIDELITY.md` (`backend/tests/test_stage347_fidelity_d1.py`) — Stage 347 D1
+- `docs/STAGE_347_PLAN.md` (`backend/tests/test_stage347_open.py`) — Stage 347 open (ADR-701)
+- `docs/MONTHLY_POS_OPS_TRENDS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/monthly-pos-ops-trends-pack-remaining-gate.json` — Stage 347 I1
+- `docs/MONTHLY_POS_OPS_TRENDS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/monthly-pos-ops-trends-pack-rg-blockers.json` — Stage 347 B1
+- `docs/MONTHLY_POS_OPS_TRENDS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/monthly-pos-ops-trends-pack-rg-pointers.json` — Stage 347 P1
 - `docs/STAGE_346_EXIT_CRITERIA.md` / `docs/ADR_700_STAGE346_FREEZE.md` (`backend/tests/test_stage346_exit_h346x.py`) — Stage 346 H346x
 - `docs/STAGE_346_FIDELITY.md` (`backend/tests/test_stage346_fidelity_d1.py`) — Stage 346 D1
 - `docs/STAGE_346_PLAN.md` (`backend/tests/test_stage346_open.py`) — Stage 346 open (ADR-699)
@@ -5359,6 +5365,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 347 exit
+
+H347x met — `docs/STAGE_347_EXIT_CRITERIA.md`, ADR-702. Stages 1–347 frozen for Stage 347 feature scope.
+
+## Stage 347 D1 — Tenant MVP Monthly POS Ops Trends Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_347_FIDELITY.md` (`test_stage347_fidelity_d1.py`). `MONTHLY_POS_OPS_TRENDS_PACK_*` remaining-gate index; Offline Complete / Hold SLA / attestation / fabricated trend dashboard / go-live still MISSING.
+
+## Stage 347 open
+
+ADR-701 / `docs/STAGE_347_PLAN.md`.
 
 ## Stage 346 exit
 

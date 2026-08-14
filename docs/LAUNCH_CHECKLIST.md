@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 347 track opened (ADR-701: `test_stage347_open.py`, `docs/STAGE_347_PLAN.md`) — Monthly POS Ops Trends Pack Remaining-Gate Index; closed under ADR-702
+- [x] Monthly POS ops trends pack remaining-gate hub (Stage 347 I1: `test_stage347_index_i1.py`, `docs/MONTHLY_POS_OPS_TRENDS_PACK_REMAINING_GATE_MVP.md`)
+- [x] Monthly POS ops trends pack blocker matrix (Stage 347 B1: `test_stage347_blockers_b1.py`, `docs/MONTHLY_POS_OPS_TRENDS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 177 / Stage 346 / Stage 345 / Stage 329 pointers (Stage 347 P1: `test_stage347_pointers_p1.py`, `docs/MONTHLY_POS_OPS_TRENDS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 347 fidelity sync (D1: `test_stage347_fidelity_d1.py`, `docs/STAGE_347_FIDELITY.md`)
+- [x] Stage 347 exit + freeze (H347x: `test_stage347_exit_h347x.py`, `docs/STAGE_347_EXIT_CRITERIA.md`, ADR-702)
 - [x] Stage 346 track opened (ADR-699: `test_stage346_open.py`, `docs/STAGE_346_PLAN.md`) — Monthly POS Ops Review Pack Remaining-Gate Index; closed under ADR-700
 - [x] Monthly POS ops review pack remaining-gate hub (Stage 346 I1: `test_stage346_index_i1.py`, `docs/MONTHLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md`)
 - [x] Monthly POS ops review pack blocker matrix (Stage 346 B1: `test_stage346_blockers_b1.py`, `docs/MONTHLY_POS_OPS_REVIEW_PACK_RG_BLOCKERS_MVP.md`)

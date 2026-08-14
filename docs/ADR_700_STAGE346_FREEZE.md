@@ -31,3 +31,9 @@ Stage 347 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for monthly POS ops review, Offline Complete, live DR, attestation, fabricated monthly green, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 347 opened under **ADR-701** after CONTINUE/NEXT (Tenant MVP Monthly POS Ops Trends Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-702**. Stage 346 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 347 runner-up outline was approved and opened (ADR-701); freeze ADR-702. Do not reopen Stage 346 scope.

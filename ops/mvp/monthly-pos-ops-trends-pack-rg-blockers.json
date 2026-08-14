@@ -1,0 +1,63 @@
+{
+  "id": "monthly-pos-ops-trends-pack-rg-blockers",
+  "stage": 347,
+  "pack": "B1",
+  "doc": "docs/MONTHLY_POS_OPS_TRENDS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MONTHLY_POS_OPS_TRENDS_PACK_REMAINING_GATE_MVP.md",
+    "monthly_pos_ops_trends": "docs/MONTHLY_POS_OPS_TRENDS_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "hold_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_trend_dashboard_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "hold_sla_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "fabricated_trend_dashboard_claimed": "REMAINING",
+    "stage177_as_live_monthly_pos_ops_trends": "NON_CLAIM",
+    "stage176_as_live_monthly_pos_ops_trends": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "hold_sla_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "fabricated_trend_dashboard_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "mpotprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpotprb-hold-sla",
+      "title": "Mark Hold SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpotprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpotprb-stage177-nonclaim",
+      "title": "Mark Stage 177 / Stage 176 as non-claim for live monthly POS ops trends Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpotprb-checklist-remaining",
+      "title": "Live monthly POS ops trends Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 347 B1 monthly POS ops trends pack RG blocker matrix packaging only. Live monthly POS ops trends Completes remain MISSING."
+}
