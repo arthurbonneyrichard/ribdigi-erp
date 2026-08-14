@@ -145,23 +145,27 @@ def add_to_bucket(buckets: dict[str, float], days: int, amount: float) -> None:
     buckets[key] = round(buckets.get(key, 0.0) + float(amount), 2)
 
 
-async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
+async def ar_aging(
+    db: AsyncSession,
+    tenant_id: str,
+    as_of: datetime | None = None,
+    *,
+    company_id: str | None = None,
+) -> dict:
     as_of = as_of or datetime.utcnow()
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial"]),
-            )
-        )
-    ).scalars().all()
+    inv_q = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "partial"]),
+    )
+    if company_id:
+        inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
+    invoices = (await db.execute(inv_q)).scalars().all()
+    party_q = select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "customer")
+    if company_id:
+        party_q = party_q.where(m.Party.company_id == company_id)
     customers = {
         p.id: p
-        for p in (
-            await db.execute(
-                select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "customer")
-            )
-        ).scalars().all()
+        for p in (await db.execute(party_q)).scalars().all()
     }
 
     by_customer: dict[str, dict] = {}
@@ -217,33 +221,36 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     }
 
 
-async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
+async def ap_aging(
+    db: AsyncSession,
+    tenant_id: str,
+    as_of: datetime | None = None,
+    *,
+    company_id: str | None = None,
+) -> dict:
     as_of = as_of or datetime.utcnow()
-    invoices = (
-        await db.execute(
-            select(m.PurchaseInvoice).where(
-                m.PurchaseInvoice.tenant_id == tenant_id,
-                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
-            )
-        )
-    ).scalars().all()
+    inv_q = select(m.PurchaseInvoice).where(
+        m.PurchaseInvoice.tenant_id == tenant_id,
+        m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+    )
+    if company_id:
+        inv_q = inv_q.where(m.PurchaseInvoice.company_id == company_id)
+    invoices = (await db.execute(inv_q)).scalars().all()
     invoiced_po_ids = {i.purchase_order_id for i in invoices if i.purchase_order_id}
 
-    orders = (
-        await db.execute(
-            select(m.PurchaseOrder).where(
-                m.PurchaseOrder.tenant_id == tenant_id,
-                m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
-            )
-        )
-    ).scalars().all()
+    po_q = select(m.PurchaseOrder).where(
+        m.PurchaseOrder.tenant_id == tenant_id,
+        m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
+    )
+    if company_id:
+        po_q = po_q.where(m.PurchaseOrder.company_id == company_id)
+    orders = (await db.execute(po_q)).scalars().all()
+    party_q = select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
+    if company_id:
+        party_q = party_q.where(m.Party.company_id == company_id)
     suppliers = {
         p.id: p
-        for p in (
-            await db.execute(
-                select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
-            )
-        ).scalars().all()
+        for p in (await db.execute(party_q)).scalars().all()
     }
 
     by_supplier: dict[str, dict] = {}

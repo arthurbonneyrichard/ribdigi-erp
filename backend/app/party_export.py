@@ -53,15 +53,18 @@ def _cell(value) -> str:
     return str(value)
 
 
-async def export_customers_csv(db: AsyncSession, *, tenant_id: str) -> str:
+async def export_customers_csv(
+    db: AsyncSession, *, tenant_id: str, company_id: str | None = None
+) -> str:
     """Stage 119 E1 — export tenant customers as CSV."""
-    rows = (
-        await db.execute(
-            select(m.Party)
-            .where(m.Party.tenant_id == tenant_id, m.Party.kind == "customer")
-            .order_by(m.Party.name)
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.Party)
+        .where(m.Party.tenant_id == tenant_id, m.Party.kind == "customer")
+        .order_by(m.Party.name)
+    )
+    if company_id:
+        stmt = stmt.where(m.Party.company_id == company_id)
+    rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CUSTOMER_EXPORT_COLUMNS)
     writer.writeheader()
@@ -84,15 +87,18 @@ async def export_customers_csv(db: AsyncSession, *, tenant_id: str) -> str:
     return buf.getvalue()
 
 
-async def export_suppliers_csv(db: AsyncSession, *, tenant_id: str) -> str:
+async def export_suppliers_csv(
+    db: AsyncSession, *, tenant_id: str, company_id: str | None = None
+) -> str:
     """Stage 119 E1 — export tenant suppliers as CSV."""
-    rows = (
-        await db.execute(
-            select(m.Party)
-            .where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
-            .order_by(m.Party.name)
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.Party)
+        .where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
+        .order_by(m.Party.name)
+    )
+    if company_id:
+        stmt = stmt.where(m.Party.company_id == company_id)
+    rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=SUPPLIER_EXPORT_COLUMNS)
     writer.writeheader()

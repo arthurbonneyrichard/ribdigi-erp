@@ -54,3 +54,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Critical report aggregations (`sales_daily`, `inventory_valuation`, `purchases_summary`, `expenses_summary`, `/reports/summary`) accept `company_id` from workspace claims.
 - Membership admin API: `GET/POST /companies/{id}/memberships`, `DELETE /companies/{id}/memberships/{user_id}`.
 - Remaining PARTIAL: other report slices (monthly sales, product/customer breakdowns, credit aging, dashboard KPIs) and some legacy exports may still be tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 5 follow-up (2026-08-14)
+
+- Remaining sales/inventory/purchasing report slices accept workspace `company_id` (monthly, by product/customer/salesperson/store, inventory balance/movements/low-stock/expiry, purchases by supplier/pending/returns).
+- Credit AR/AP aging (+ aging CSV) company-scoped; customer/supplier/COA/expense-category CSV exports company-scoped.
+- Company dashboard KPIs, revenue chart series, and expense-by-category slice use company filters (users/roles remain tenant-level).
+- Remaining PARTIAL: accounting P&L / cash-flow / trial-balance and some payment-register exports may still be tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred.

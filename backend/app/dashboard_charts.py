@@ -70,6 +70,7 @@ async def load_revenue_chart_series(
     tenant_id: str,
     now: datetime | None = None,
     store_ids: list[str] | None = None,
+    company_id: str | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Aggregate POS/sale txs + posted invoices into daily (30d) and monthly (12m) series.
 
@@ -96,29 +97,29 @@ async def load_revenue_chart_series(
         }
 
     if store_ids is None:
-        txs = (
-            await db.execute(
-                select(m.Transaction.created_at, m.Transaction.total).where(
-                    m.Transaction.tenant_id == tenant_id,
-                    m.Transaction.tx_type.in_(["sale", "pos_sale"]),
-                    m.Transaction.created_at >= month_horizon,
-                )
-            )
-        ).all()
+        tx_q = select(m.Transaction.created_at, m.Transaction.total).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+            m.Transaction.created_at >= month_horizon,
+        )
+        if company_id:
+            tx_q = tx_q.where(m.Transaction.company_id == company_id)
+        txs = (await db.execute(tx_q)).all()
     else:
-        txs = (
-            await db.execute(
-                select(m.Transaction.created_at, m.Transaction.total)
-                .select_from(m.Transaction)
-                .join(m.PosSession, m.Transaction.session_id == m.PosSession.id)
-                .where(
-                    m.Transaction.tenant_id == tenant_id,
-                    m.Transaction.tx_type.in_(["sale", "pos_sale"]),
-                    m.Transaction.created_at >= month_horizon,
-                    m.PosSession.store_id.in_(store_ids),
-                )
+        tx_q = (
+            select(m.Transaction.created_at, m.Transaction.total)
+            .select_from(m.Transaction)
+            .join(m.PosSession, m.Transaction.session_id == m.PosSession.id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+                m.Transaction.created_at >= month_horizon,
+                m.PosSession.store_id.in_(store_ids),
             )
-        ).all()
+        )
+        if company_id:
+            tx_q = tx_q.where(m.Transaction.company_id == company_id)
+        txs = (await db.execute(tx_q)).all()
     for created_at, total in txs:
         amt = float(total or 0)
         mk = _month_key(created_at)
@@ -136,6 +137,8 @@ async def load_revenue_chart_series(
     ]
     if store_ids is not None:
         inv_filters.append(m.SalesInvoice.store_id.in_(store_ids))
+    if company_id:
+        inv_filters.append(m.SalesInvoice.company_id == company_id)
 
     invs = (
         await db.execute(

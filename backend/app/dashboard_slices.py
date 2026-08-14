@@ -154,19 +154,22 @@ async def expenses_slice(db: AsyncSession, claims: dict) -> dict:
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 
 
-async def expenses_by_category(db: AsyncSession, tenant_id: str) -> list[dict]:
+async def expenses_by_category(
+    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
+) -> list[dict]:
     """Approved expense totals grouped by category name (Stage 84 S1)."""
     cat_name = func.coalesce(m.ExpenseCategory.name, m.Expense.category, "Uncategorized")
-    rows = (
-        await db.execute(
-            select(cat_name.label("category"), func.coalesce(func.sum(m.Expense.amount), 0).label("total"))
-            .select_from(m.Expense)
-            .outerjoin(m.ExpenseCategory, m.ExpenseCategory.id == m.Expense.category_id)
-            .where(m.Expense.tenant_id == tenant_id, m.Expense.status == "approved")
-            .group_by(cat_name)
-            .order_by(func.coalesce(func.sum(m.Expense.amount), 0).desc())
-        )
-    ).all()
+    stmt = (
+        select(cat_name.label("category"), func.coalesce(func.sum(m.Expense.amount), 0).label("total"))
+        .select_from(m.Expense)
+        .outerjoin(m.ExpenseCategory, m.ExpenseCategory.id == m.Expense.category_id)
+        .where(m.Expense.tenant_id == tenant_id, m.Expense.status == "approved")
+        .group_by(cat_name)
+        .order_by(func.coalesce(func.sum(m.Expense.amount), 0).desc())
+    )
+    if company_id:
+        stmt = stmt.where(m.Expense.company_id == company_id)
+    rows = (await db.execute(stmt)).all()
     return [
         {"category": str(row.category or "Uncategorized"), "total": float(row.total or 0)}
         for row in rows
@@ -177,7 +180,9 @@ async def credit_slice(db: AsyncSession, claims: dict) -> dict:
     """AR outstanding summary for credit:read dashboards (Stage 84 S1)."""
     from app import credit as credit_svc
 
-    aging = await credit_svc.ar_aging(db, claims["tenant_id"])
+    aging = await credit_svc.ar_aging(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     total_due = float(aging.get("total_due") or 0)
     payload = {
         **_meta(claims),

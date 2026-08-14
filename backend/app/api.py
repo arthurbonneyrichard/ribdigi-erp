@@ -3116,8 +3116,6 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             clauses.append(model.company_id == cid)
         return clauses
 
-    # NOTE: remaining dashboard body still uses tenant_id == tid in places;
-    # company filter applied to primary sales/product aggregates below via _co where patched.
     expiry_horizon = now + timedelta(days=30)
 
     async def scalar(stmt):
@@ -3125,13 +3123,13 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
 
     sales = await scalar(
         select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-            m.Transaction.tenant_id == tid,
+            *_co(m.Transaction),
             m.Transaction.tx_type.in_(["sale", "pos_sale"]),
         )
     )
     purchases = await scalar(
         select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-            m.Transaction.tenant_id == tid,
+            *_co(m.Transaction),
             m.Transaction.tx_type == "purchase",
         )
     )
@@ -3139,39 +3137,39 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     if float(purchases) == 0:
         purchases = await scalar(
             select(func.coalesce(func.sum(m.PurchaseInvoice.total_amount), 0)).where(
-                m.PurchaseInvoice.tenant_id == tid,
+                *_co(m.PurchaseInvoice),
                 m.PurchaseInvoice.status.in_(["unpaid", "partial", "paid", "overdue"]),
             )
         )
     expenses = await scalar(
         select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
-            m.Expense.tenant_id == tid,
+            *_co(m.Expense),
             m.Expense.status == "approved",
         )
     )
     # Stage 98 Q1 — pending approval queue count (honesty for Pending Expenses deep-link)
     pending_expenses = await scalar(
         select(func.count(m.Expense.id)).where(
-            m.Expense.tenant_id == tid,
+            *_co(m.Expense),
             m.Expense.status == "pending",
         )
     )
-    products = await scalar(select(func.count(m.Product.id)).where(m.Product.tenant_id == tid))
+    products = await scalar(select(func.count(m.Product.id)).where(*_co(m.Product)))
     low = await scalar(
         select(func.count(m.Product.id)).where(
-            m.Product.tenant_id == tid,
+            *_co(m.Product),
             m.Product.stock_qty <= m.Product.reorder_level,
         )
     )
     out_of_stock = await scalar(
         select(func.count(m.Product.id)).where(
-            m.Product.tenant_id == tid,
+            *_co(m.Product),
             m.Product.stock_qty <= 0,
         )
     )
     expiring_batches = await scalar(
         select(func.count(m.ProductBatch.id)).where(
-            m.ProductBatch.tenant_id == tid,
+            *_co(m.ProductBatch),
             m.ProductBatch.expiry_date.is_not(None),
             m.ProductBatch.expiry_date >= now,
             m.ProductBatch.expiry_date <= expiry_horizon,
@@ -3179,21 +3177,21 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         )
     )
     customers = await scalar(
-        select(func.count(m.Party.id)).where(m.Party.tenant_id == tid, m.Party.kind == "customer")
+        select(func.count(m.Party.id)).where(*_co(m.Party), m.Party.kind == "customer")
     )
     suppliers = await scalar(
-        select(func.count(m.Party.id)).where(m.Party.tenant_id == tid, m.Party.kind == "supplier")
+        select(func.count(m.Party.id)).where(*_co(m.Party), m.Party.kind == "supplier")
     )
     daily_revenue = await scalar(
         select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-            m.Transaction.tenant_id == tid,
+            *_co(m.Transaction),
             m.Transaction.tx_type.in_(["sale", "pos_sale"]),
             m.Transaction.created_at >= day_start,
         )
     )
     yesterday_revenue = await scalar(
         select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-            m.Transaction.tenant_id == tid,
+            *_co(m.Transaction),
             m.Transaction.tx_type.in_(["sale", "pos_sale"]),
             m.Transaction.created_at >= yesterday_start,
             m.Transaction.created_at < day_start,
@@ -3201,14 +3199,14 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     )
     monthly_revenue = await scalar(
         select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-            m.Transaction.tenant_id == tid,
+            *_co(m.Transaction),
             m.Transaction.tx_type.in_(["sale", "pos_sale"]),
             m.Transaction.created_at >= month_start,
         )
     )
     prior_month_revenue = await scalar(
         select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-            m.Transaction.tenant_id == tid,
+            *_co(m.Transaction),
             m.Transaction.tx_type.in_(["sale", "pos_sale"]),
             m.Transaction.created_at >= prior_month_start,
             m.Transaction.created_at < month_start,
@@ -3217,14 +3215,14 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     # Also include posted invoice totals for the day/month when POS txs alone understate sales.
     inv_daily = await scalar(
         select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-            m.SalesInvoice.tenant_id == tid,
+            *_co(m.SalesInvoice),
             m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
             m.SalesInvoice.posted_at >= day_start,
         )
     )
     inv_yesterday = await scalar(
         select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-            m.SalesInvoice.tenant_id == tid,
+            *_co(m.SalesInvoice),
             m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
             m.SalesInvoice.posted_at >= yesterday_start,
             m.SalesInvoice.posted_at < day_start,
@@ -3232,14 +3230,14 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     )
     inv_monthly = await scalar(
         select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-            m.SalesInvoice.tenant_id == tid,
+            *_co(m.SalesInvoice),
             m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
             m.SalesInvoice.posted_at >= month_start,
         )
     )
     inv_prior = await scalar(
         select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-            m.SalesInvoice.tenant_id == tid,
+            *_co(m.SalesInvoice),
             m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
             m.SalesInvoice.posted_at >= prior_month_start,
             m.SalesInvoice.posted_at < month_start,
@@ -3260,7 +3258,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         await db.execute(
             select(m.Transaction)
             .where(
-                m.Transaction.tenant_id == tid,
+                *_co(m.Transaction),
                 m.Transaction.tx_type.in_(["sale", "pos_sale"]),
             )
             .order_by(m.Transaction.created_at.desc())
@@ -3271,7 +3269,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         await db.execute(
             select(m.SalesInvoice)
             .where(
-                m.SalesInvoice.tenant_id == tid,
+                *_co(m.SalesInvoice),
                 m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
             )
             .order_by(m.SalesInvoice.posted_at.desc())
@@ -3313,8 +3311,8 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             .join(m.SalesInvoiceItem, m.SalesInvoiceItem.product_id == m.Product.id)
             .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
             .where(
-                m.Product.tenant_id == tid,
-                m.SalesInvoice.tenant_id == tid,
+                *_co(m.Product),
+                *_co(m.SalesInvoice),
                 m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
             )
             .group_by(m.Product.id, m.Product.name, m.Product.sku)
@@ -3340,7 +3338,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     from app.rbac import ROLE_LABELS, has_permission
 
     chart_series = await dashboard_charts_svc.load_revenue_chart_series(
-        db, tenant_id=tid, now=now, store_ids=managed_ids
+        db, tenant_id=tid, now=now, store_ids=managed_ids, company_id=cid
     )
 
     # Tenant user management KPIs (Tenant Admin / users:read only after filter)
@@ -3363,11 +3361,13 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         )
     )
 
-    expenses_by_category = await dashboard_slices_svc.expenses_by_category(db, tid)
-    ar_aging = await credit_svc.ar_aging(db, tid)
+    expenses_by_category = await dashboard_slices_svc.expenses_by_category(
+        db, tid, company_id=cid
+    )
+    ar_aging = await credit_svc.ar_aging(db, tid, company_id=cid)
     ar_total_due = float(ar_aging.get("total_due") or 0)
     # Stage 96 B1 — AP Payables + MTD Profit Summary (real aggregates; no fabricated KPIs)
-    ap_aging = await credit_svc.ap_aging(db, tid)
+    ap_aging = await credit_svc.ap_aging(db, tid, company_id=cid)
     ap_total_due = float(ap_aging.get("total_due") or 0)
     from app import accounting as accounting_svc
 
@@ -3381,7 +3381,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         "total_sales": float(sales) + float(
             await scalar(
                 select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-                    m.SalesInvoice.tenant_id == tid,
+                    *_co(m.SalesInvoice),
                     m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
                 )
             )
@@ -5763,7 +5763,9 @@ async def customers_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 119 E1 — customers CSV export."""
-    text = await party_export_svc.export_customers_csv(db, tenant_id=claims["tenant_id"])
+    text = await party_export_svc.export_customers_csv(
+        db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
+    )
     return Response(
         content=text,
         media_type="text/csv",
@@ -5956,7 +5958,9 @@ async def suppliers_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 119 E1 — suppliers CSV export."""
-    text = await party_export_svc.export_suppliers_csv(db, tenant_id=claims["tenant_id"])
+    text = await party_export_svc.export_suppliers_csv(
+        db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
+    )
     return Response(
         content=text,
         media_type="text/csv",
@@ -8698,6 +8702,7 @@ async def expense_categories_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -9366,6 +9371,7 @@ async def accounts_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -11039,7 +11045,11 @@ async def report_sales_monthly(
     now = datetime.utcnow()
     return env(
         await reports_svc.sales_monthly(
-            db, claims["tenant_id"], year or now.year, month or now.month
+            db,
+            claims["tenant_id"],
+            year or now.year,
+            month or now.month,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11061,6 +11071,7 @@ async def report_sales_products(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             store_id=store_id,
             category_id=category_id,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11080,6 +11091,7 @@ async def report_sales_customers(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             limit=limit,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11097,6 +11109,7 @@ async def report_sales_salesperson(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11114,6 +11127,7 @@ async def report_sales_by_store(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11124,7 +11138,14 @@ async def report_inventory_balance(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await reports_svc.inventory_balance(db, claims["tenant_id"], warehouse_id))
+    return env(
+        await reports_svc.inventory_balance(
+            db,
+            claims["tenant_id"],
+            warehouse_id,
+            company_id=claims.get("company_id"),
+        )
+    )
 
 
 @api.get("/reports/inventory/valuation")
@@ -11160,6 +11181,7 @@ async def report_inventory_movements(
             product_id=product_id,
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11173,7 +11195,11 @@ async def report_low_stock(
 ):
     return env(
         await reports_svc.inventory_low_stock(
-            db, claims["tenant_id"], store_id=store_id, warehouse_id=warehouse_id
+            db,
+            claims["tenant_id"],
+            store_id=store_id,
+            warehouse_id=warehouse_id,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11210,7 +11236,14 @@ async def report_inventory_expiry(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await reports_svc.inventory_expiry(db, claims["tenant_id"], within_days=days))
+    return env(
+        await reports_svc.inventory_expiry(
+            db,
+            claims["tenant_id"],
+            within_days=days,
+            company_id=claims.get("company_id"),
+        )
+    )
 
 
 @api.get("/reports/purchases/summary")
@@ -11246,6 +11279,7 @@ async def report_purchases_suppliers(
             supplier_id=supplier_id,
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11265,6 +11299,7 @@ async def report_purchases_pending_orders(
             supplier_id=supplier_id,
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11284,6 +11319,7 @@ async def report_purchases_returns(
             supplier_id=supplier_id,
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11315,8 +11351,16 @@ async def credit_aging(
     db: AsyncSession = Depends(get_db),
 ):
     if kind == "payable":
-        return env(await credit_svc.ap_aging(db, claims["tenant_id"]))
-    return env(await credit_svc.ar_aging(db, claims["tenant_id"]))
+        return env(
+            await credit_svc.ap_aging(
+                db, claims["tenant_id"], company_id=claims.get("company_id")
+            )
+        )
+    return env(
+        await credit_svc.ar_aging(
+            db, claims["tenant_id"], company_id=claims.get("company_id")
+        )
+    )
 
 
 @api.get("/credit/aging/export")
@@ -11327,7 +11371,10 @@ async def credit_aging_export(
 ):
     """Stage 136 A1 — aging document CSV (party/totals omitted; document rows only)."""
     text = await credit_ops_export_svc.export_aging_csv(
-        db, tenant_id=claims["tenant_id"], kind=kind
+        db,
+        tenant_id=claims["tenant_id"],
+        kind=kind,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -12955,8 +13002,12 @@ async def report(claims=Depends(require_permission("reports", "read")), db: Asyn
     daily = await reports_svc.sales_daily(
         db, claims["tenant_id"], now, company_id=claims.get("company_id")
     )
-    monthly = await reports_svc.sales_monthly(db, claims["tenant_id"], now.year, now.month)
-    low = await reports_svc.inventory_low_stock(db, claims["tenant_id"])
+    monthly = await reports_svc.sales_monthly(
+        db, claims["tenant_id"], now.year, now.month, company_id=claims.get("company_id")
+    )
+    low = await reports_svc.inventory_low_stock(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     expenses = await reports_svc.expenses_summary(
         db, claims["tenant_id"], company_id=claims.get("company_id")
     )

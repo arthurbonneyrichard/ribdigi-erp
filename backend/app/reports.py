@@ -12,6 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 
 
+def apply_company_filter(stmt, column, company_id: str | None):
+    """Optionally narrow a report query to the active company workspace."""
+    if company_id:
+        return stmt.where(column == company_id)
+    return stmt
+
+
 def metric_change_pct(current: float, prior: float) -> float | None:
     """Percent change vs prior; ``None`` when prior is zero (same as sales comparative)."""
     if not prior:
@@ -422,28 +429,31 @@ async def sales_daily(
     }
 
 
-async def sales_monthly(db: AsyncSession, tenant_id: str, year: int, month: int) -> dict:
+async def sales_monthly(
+    db: AsyncSession,
+    tenant_id: str,
+    year: int,
+    month: int,
+    *,
+    company_id: str | None = None,
+) -> dict:
     start, end = month_bounds(year, month)
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
-                m.SalesInvoice.posted_at >= start,
-                m.SalesInvoice.posted_at <= end,
-            )
-        )
-    ).scalars().all()
-    pos = (
-        await db.execute(
-            select(m.Transaction).where(
-                m.Transaction.tenant_id == tenant_id,
-                m.Transaction.tx_type == "pos_sale",
-                m.Transaction.created_at >= start,
-                m.Transaction.created_at <= end,
-            )
-        )
-    ).scalars().all()
+    inv_q = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+        m.SalesInvoice.posted_at >= start,
+        m.SalesInvoice.posted_at <= end,
+    )
+    inv_q = apply_company_filter(inv_q, m.SalesInvoice.company_id, company_id)
+    invoices = (await db.execute(inv_q)).scalars().all()
+    pos_q = select(m.Transaction).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.tx_type == "pos_sale",
+        m.Transaction.created_at >= start,
+        m.Transaction.created_at <= end,
+    )
+    pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    pos = (await db.execute(pos_q)).scalars().all()
 
     by_day: dict[str, float] = defaultdict(float)
     for inv in invoices:
@@ -455,7 +465,9 @@ async def sales_monthly(db: AsyncSession, tenant_id: str, year: int, month: int)
 
     total = sum(by_day.values())
     prev_year, prev_month = (year - 1, month) if month == 1 else (year, month - 1)
-    prev = await sales_monthly_total(db, tenant_id, prev_year, prev_month)
+    prev = await sales_monthly_total(
+        db, tenant_id, prev_year, prev_month, company_id=company_id
+    )
     return {
         "year": year,
         "month": month,
@@ -468,34 +480,31 @@ async def sales_monthly(db: AsyncSession, tenant_id: str, year: int, month: int)
     }
 
 
-async def sales_monthly_total(db: AsyncSession, tenant_id: str, year: int, month: int) -> float:
+async def sales_monthly_total(
+    db: AsyncSession,
+    tenant_id: str,
+    year: int,
+    month: int,
+    *,
+    company_id: str | None = None,
+) -> float:
     start, end = month_bounds(year, month)
-    inv = float(
-        (
-            await db.execute(
-                select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-                    m.SalesInvoice.tenant_id == tenant_id,
-                    m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
-                    m.SalesInvoice.posted_at >= start,
-                    m.SalesInvoice.posted_at <= end,
-                )
-            )
-        ).scalar()
-        or 0
+    inv_q = select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+        m.SalesInvoice.posted_at >= start,
+        m.SalesInvoice.posted_at <= end,
     )
-    pos = float(
-        (
-            await db.execute(
-                select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-                    m.Transaction.tenant_id == tenant_id,
-                    m.Transaction.tx_type == "pos_sale",
-                    m.Transaction.created_at >= start,
-                    m.Transaction.created_at <= end,
-                )
-            )
-        ).scalar()
-        or 0
+    inv_q = apply_company_filter(inv_q, m.SalesInvoice.company_id, company_id)
+    inv = float((await db.execute(inv_q)).scalar() or 0)
+    pos_q = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.tx_type == "pos_sale",
+        m.Transaction.created_at >= start,
+        m.Transaction.created_at <= end,
     )
+    pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    pos = float((await db.execute(pos_q)).scalar() or 0)
     return round(inv + pos, 2)
 
 
@@ -507,6 +516,7 @@ async def sales_by_product(
     to_date: datetime | None = None,
     store_id: str | None = None,
     category_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     if store_id:
         store = (
@@ -538,6 +548,7 @@ async def sales_by_product(
         m.SalesInvoiceItem.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     )
+    stmt = apply_company_filter(stmt, m.SalesInvoice.company_id, company_id)
     if from_date:
         stmt = stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
@@ -571,6 +582,7 @@ async def sales_by_product(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type == "pos_sale",
     )
+    pos_stmt = apply_company_filter(pos_stmt, m.Transaction.company_id, company_id)
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
@@ -622,6 +634,7 @@ async def sales_by_customer(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     limit: int = 50,
+    company_id: str | None = None,
 ) -> dict:
     """Top customers by revenue and purchase frequency (BR-14.1)."""
     limit = max(1, min(int(limit or 50), 200))
@@ -648,6 +661,7 @@ async def sales_by_customer(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial", "paid", "sent", "overdue"]),
     )
+    inv_stmt = apply_company_filter(inv_stmt, m.SalesInvoice.company_id, company_id)
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
@@ -663,6 +677,7 @@ async def sales_by_customer(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type == "pos_sale",
     )
+    pos_stmt = apply_company_filter(pos_stmt, m.Transaction.company_id, company_id)
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
@@ -715,6 +730,7 @@ async def sales_by_salesperson(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Aggregate posted invoices + POS sales by salesperson (invoice created_by / POS session user)."""
 
@@ -746,6 +762,7 @@ async def sales_by_salesperson(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     )
+    inv_stmt = apply_company_filter(inv_stmt, m.SalesInvoice.company_id, company_id)
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
@@ -769,6 +786,7 @@ async def sales_by_salesperson(
             m.Transaction.tx_type == "pos_sale",
         )
     )
+    pos_stmt = apply_company_filter(pos_stmt, m.Transaction.company_id, company_id)
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
@@ -826,6 +844,7 @@ async def sales_by_store(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Aggregate posted invoices + POS sales by store (invoice.store_id / POS session.store_id)."""
 
@@ -853,11 +872,9 @@ async def sales_by_store(
     agg: dict[str, dict] = {}
 
     # Seed active stores so zero-activity locations still appear.
-    stores = (
-        await db.execute(
-            select(m.Store).where(m.Store.tenant_id == tenant_id).order_by(m.Store.name)
-        )
-    ).scalars().all()
+    store_q = select(m.Store).where(m.Store.tenant_id == tenant_id).order_by(m.Store.name)
+    store_q = apply_company_filter(store_q, m.Store.company_id, company_id)
+    stores = (await db.execute(store_q)).scalars().all()
     for store in stores:
         row = _bucket(agg, store.id)
         row["name"] = store.name
@@ -867,6 +884,7 @@ async def sales_by_store(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     )
+    inv_stmt = apply_company_filter(inv_stmt, m.SalesInvoice.company_id, company_id)
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
@@ -890,6 +908,7 @@ async def sales_by_store(
             m.Transaction.tx_type == "pos_sale",
         )
     )
+    pos_stmt = apply_company_filter(pos_stmt, m.Transaction.company_id, company_id)
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
@@ -948,19 +967,25 @@ async def sales_by_store(
     }
 
 
-async def inventory_balance(db: AsyncSession, tenant_id: str, warehouse_id: str | None = None) -> dict:
+async def inventory_balance(
+    db: AsyncSession,
+    tenant_id: str,
+    warehouse_id: str | None = None,
+    *,
+    company_id: str | None = None,
+) -> dict:
     if warehouse_id:
-        rows = (
-            await db.execute(
-                select(m.WarehouseStock, m.Product)
-                .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
-                .where(
-                    m.WarehouseStock.tenant_id == tenant_id,
-                    m.WarehouseStock.warehouse_id == warehouse_id,
-                )
-                .order_by(m.Product.name)
+        stmt = (
+            select(m.WarehouseStock, m.Product)
+            .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+            .where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.warehouse_id == warehouse_id,
             )
-        ).all()
+            .order_by(m.Product.name)
+        )
+        stmt = apply_company_filter(stmt, m.WarehouseStock.company_id, company_id)
+        rows = (await db.execute(stmt)).all()
         items = [
             {
                 "product_id": p.id,
@@ -974,13 +999,11 @@ async def inventory_balance(db: AsyncSession, tenant_id: str, warehouse_id: str 
             for s, p in rows
         ]
     else:
-        products = (
-            await db.execute(
-                select(m.Product)
-                .where(m.Product.tenant_id == tenant_id, m.Product.is_active == True)  # noqa: E712
-                .order_by(m.Product.name)
-            )
-        ).scalars().all()
+        pq = select(m.Product).where(
+            m.Product.tenant_id == tenant_id, m.Product.is_active == True  # noqa: E712
+        ).order_by(m.Product.name)
+        pq = apply_company_filter(pq, m.Product.company_id, company_id)
+        products = (await db.execute(pq)).scalars().all()
         items = [
             {
                 "product_id": p.id,
@@ -1120,8 +1143,10 @@ async def inventory_movements(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     limit: int = 200,
+    company_id: str | None = None,
 ) -> dict:
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
+    stmt = apply_company_filter(stmt, m.StockMovement.company_id, company_id)
     if product_id:
         stmt = stmt.where(m.StockMovement.product_id == product_id)
     if from_date:
@@ -1156,18 +1181,17 @@ async def inventory_low_stock(
     *,
     store_id: str | None = None,
     warehouse_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Product-level and optional store/warehouse reorder breaches."""
     from app.inventory import compute_stock_status
 
-    products = (
-        await db.execute(
-            select(m.Product).where(
-                m.Product.tenant_id == tenant_id,
-                m.Product.is_active == True,  # noqa: E712
-            ).order_by(m.Product.stock_qty.asc())
-        )
-    ).scalars().all()
+    pq = select(m.Product).where(
+        m.Product.tenant_id == tenant_id,
+        m.Product.is_active == True,  # noqa: E712
+    ).order_by(m.Product.stock_qty.asc())
+    pq = apply_company_filter(pq, m.Product.company_id, company_id)
+    products = (await db.execute(pq)).scalars().all()
     product_rows = []
     for p in products:
         qty = float(p.stock_qty or 0)
@@ -1209,6 +1233,7 @@ async def inventory_low_stock(
         )
         .order_by(m.WarehouseStock.quantity.asc())
     )
+    stmt = apply_company_filter(stmt, m.Warehouse.company_id, company_id)
     if wh_filter:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == wh_filter)
     from app.inventory import compute_stock_status, effective_warehouse_thresholds
@@ -1255,11 +1280,12 @@ async def inventory_expiry(
     tenant_id: str,
     *,
     within_days: int = 30,
+    company_id: str | None = None,
 ) -> dict:
     from app import catalog as catalog_svc
 
     batches = await catalog_svc.list_expiring_batches(
-        db, tenant_id, within_days=within_days
+        db, tenant_id, within_days=within_days, company_id=company_id
     )
     return {
         "within_days": within_days,
@@ -1311,11 +1337,13 @@ async def purchases_by_supplier(
     supplier_id: str | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     stmt = select(m.PurchaseOrder, m.Party).join(m.Party, m.Party.id == m.PurchaseOrder.supplier_id).where(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.status != "cancelled",
     )
+    stmt = apply_company_filter(stmt, m.PurchaseOrder.company_id, company_id)
     if supplier_id:
         stmt = stmt.where(m.PurchaseOrder.supplier_id == supplier_id)
     if from_date:
@@ -1346,6 +1374,7 @@ async def purchases_pending_orders(
     supplier_id: str | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """POs not yet fully received — status sent or partially_received."""
     stmt = (
@@ -1357,6 +1386,7 @@ async def purchases_pending_orders(
         )
         .order_by(m.PurchaseOrder.created_at.asc())
     )
+    stmt = apply_company_filter(stmt, m.PurchaseOrder.company_id, company_id)
     if supplier_id:
         stmt = stmt.where(m.PurchaseOrder.supplier_id == supplier_id)
     if from_date:
@@ -1415,6 +1445,7 @@ async def purchases_return_summary(
     supplier_id: str | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Purchase return summary by reason and supplier (BR-14.3)."""
     stmt = (
@@ -1426,6 +1457,7 @@ async def purchases_return_summary(
         )
         .order_by(m.PurchaseReturn.created_at.desc())
     )
+    stmt = apply_company_filter(stmt, m.PurchaseReturn.company_id, company_id)
     if supplier_id:
         stmt = stmt.where(m.PurchaseReturn.supplier_id == supplier_id)
     if from_date:

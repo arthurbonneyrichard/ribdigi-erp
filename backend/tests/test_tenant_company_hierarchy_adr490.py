@@ -566,3 +566,67 @@ async def test_company_membership_assign_and_revoke(client, db_session):
     )
     assert revoked.status_code == 200, revoked.text
     assert revoked.json()["data"]["is_active"] is False
+
+
+@pytest.mark.asyncio
+async def test_credit_aging_and_monthly_sales_company_scoped(client, db_session):
+    """Company B AR / monthly sales must not inflate company A reports."""
+    ac, seed = client
+    from datetime import datetime
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="CRDT",
+        name="Alpha Credit B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="Credit B Customer",
+        status="active",
+        credit_limit=0,
+        balance=500,
+    )
+    db_session.add(cust_b)
+    await db_session.flush()
+    now = datetime.utcnow()
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            invoice_number="INV-CRDT-1",
+            customer_id=cust_b.id,
+            status="posted",
+            subtotal=500,
+            tax_amount=0,
+            total_amount=500,
+            paid_amount=0,
+            posted_at=now,
+            due_date=now,
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    aging = await ac.get("/api/v1/credit/aging", headers=headers)
+    assert aging.status_code == 200, aging.text
+    parties = {p.get("name") for p in aging.json()["data"].get("parties") or []}
+    assert "Credit B Customer" not in parties
+    assert float(aging.json()["data"].get("total_due") or 0) < 500
+
+    monthly = await ac.get("/api/v1/reports/sales/monthly", headers=headers)
+    assert monthly.status_code == 200, monthly.text
+    assert float(monthly.json()["data"].get("total_revenue") or 0) < 500
+
+    customers_csv = await ac.get("/api/v1/customers/export", headers=headers)
+    assert customers_csv.status_code == 200, customers_csv.text
+    assert "Credit B Customer" not in customers_csv.text

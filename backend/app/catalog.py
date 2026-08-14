@@ -299,21 +299,23 @@ async def list_expiring_batches(
     tenant_id: str,
     *,
     within_days: int = 30,
+    company_id: str | None = None,
 ) -> list[m.ProductBatch]:
     within_days = max(0, min(int(within_days), 3650))
     horizon = datetime.utcnow() + timedelta(days=within_days)
-    return (
-        await db.execute(
-            select(m.ProductBatch)
-            .where(
-                m.ProductBatch.tenant_id == tenant_id,
-                m.ProductBatch.quantity > 0,
-                m.ProductBatch.expiry_date.is_not(None),
-                m.ProductBatch.expiry_date <= horizon,
-            )
-            .order_by(m.ProductBatch.expiry_date.asc())
+    stmt = (
+        select(m.ProductBatch)
+        .where(
+            m.ProductBatch.tenant_id == tenant_id,
+            m.ProductBatch.quantity > 0,
+            m.ProductBatch.expiry_date.is_not(None),
+            m.ProductBatch.expiry_date <= horizon,
         )
-    ).scalars().all()
+        .order_by(m.ProductBatch.expiry_date.asc())
+    )
+    if company_id:
+        stmt = stmt.where(m.ProductBatch.company_id == company_id)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def _find_batch(
