@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_359_EXIT_CRITERIA.md` / `docs/ADR_726_STAGE359_FREEZE.md` (`backend/tests/test_stage359_exit_h359x.py`) — Stage 359 H359x
+- `docs/STAGE_359_FIDELITY.md` (`backend/tests/test_stage359_fidelity_d1.py`) — Stage 359 D1
+- `docs/STAGE_359_PLAN.md` (`backend/tests/test_stage359_open.py`) — Stage 359 open (ADR-725)
+- `docs/SHIFT_HANDOVER_SNAPSHOT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/shift-handover-snapshot-pack-remaining-gate.json` — Stage 359 I1
+- `docs/SHIFT_HANDOVER_SNAPSHOT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/shift-handover-snapshot-pack-rg-blockers.json` — Stage 359 B1
+- `docs/SHIFT_HANDOVER_SNAPSHOT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/shift-handover-snapshot-pack-rg-pointers.json` — Stage 359 P1
 - `docs/STAGE_358_EXIT_CRITERIA.md` / `docs/ADR_724_STAGE358_FREEZE.md` (`backend/tests/test_stage358_exit_h358x.py`) — Stage 358 H358x
 - `docs/STAGE_358_FIDELITY.md` (`backend/tests/test_stage358_fidelity_d1.py`) — Stage 358 D1
 - `docs/STAGE_358_PLAN.md` (`backend/tests/test_stage358_open.py`) — Stage 358 open (ADR-723)
@@ -5431,6 +5437,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 359 exit
+
+H359x met — `docs/STAGE_359_EXIT_CRITERIA.md`, ADR-726. Stages 1–359 frozen for Stage 359 feature scope.
+
+## Stage 359 D1 — Tenant MVP Shift Handover Snapshot Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_359_FIDELITY.md` (`test_stage359_fidelity_d1.py`). `SHIFT_HANDOVER_SNAPSHOT_PACK_*` remaining-gate index; Offline Complete / support SLA / attestation / zero-conflict / go-live still MISSING.
+
+## Stage 359 open
+
+ADR-725 / `docs/STAGE_359_PLAN.md`.
 
 ## Stage 358 exit
 

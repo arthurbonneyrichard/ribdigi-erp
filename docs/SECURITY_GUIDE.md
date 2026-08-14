@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 359 open** | Shift Handover Snapshot Pack Remaining-Gate Index — `docs/STAGE_359_PLAN.md`, ADR-725 (`test_stage359_open.py`) |
+| **Stage 359 I1** | Shift handover snapshot pack remaining-gate index hub (`test_stage359_index_i1.py`) |
+| **Stage 359 B1** | Shift handover snapshot pack blocker matrix (`test_stage359_blockers_b1.py`) |
+| **Stage 359 P1** | Stage 175 / Stage 358 / Stage 342 / Stage 329 pointers (`test_stage359_pointers_p1.py`) |
+| **Stage 359 D1** | Shift handover snapshot pack remaining-gate fidelity — `docs/STAGE_359_FIDELITY.md` (`test_stage359_fidelity_d1.py`) |
+| **Stage 359 H359x** | Exit + freeze — `docs/STAGE_359_EXIT_CRITERIA.md`, ADR-726 (`test_stage359_exit_h359x.py`); Stages 1–359 frozen |
 | **Stage 358 open** | Cashier POS Dayone Pack Remaining-Gate Index — `docs/STAGE_358_PLAN.md`, ADR-723 (`test_stage358_open.py`) |
 | **Stage 358 I1** | Cashier POS dayone pack remaining-gate index hub (`test_stage358_index_i1.py`) |
 | **Stage 358 B1** | Cashier POS dayone pack blocker matrix (`test_stage358_blockers_b1.py`) |

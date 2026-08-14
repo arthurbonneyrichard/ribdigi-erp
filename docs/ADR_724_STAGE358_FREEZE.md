@@ -31,3 +31,10 @@ Stage 359 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for cashier POS day-one, Offline Complete, support SLA, attestation, fabricated conflict-free, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 359 opened under **ADR-725** after CONTINUE/NEXT (Tenant MVP Shift Handover Snapshot Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-726**. Stage 358 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 359 runner-up outline was approved and opened (ADR-725); freeze ADR-726. Do not reopen Stage 358 scope.
+
