@@ -581,9 +581,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Digital receipt storage.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Upload receipt images/PDFs
-  - [ ] OCR extraction of amount, date, vendor (AI-assisted)
-  - [ ] Attachment preview and download
+  - [x] Upload receipt images/PDFs (`POST /expenses/{id}/attachment`; Expenses Upload)
+  - [x] OCR extraction of amount, date, vendor (AI-assisted) (`POST /expenses/{id}/ocr-suggest`; Expenses OCR)
+  - [x] Attachment preview and download (`GET /expenses/{id}/attachment`; Expenses **Preview** modal for image/PDF + Download; same Preview on PI + JE attachments)
 
 #### BR-9.5 Recurring Expenses
 - **Description:** Automate regular payments.

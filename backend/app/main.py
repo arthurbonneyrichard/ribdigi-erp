@@ -53,6 +53,8 @@ cors_kwargs = {
         "X-RateLimit-Backend",
         "Retry-After",
         "X-Request-ID",
+        "Content-Disposition",
+        "Content-Type",
     ],
     "max_age": 600,
 }
