@@ -331,7 +331,7 @@ async def notify_warehouse_low_stock_if_needed(
     reorder = float(getattr(stock, "reorder_level", 0) or 0)
     if reorder <= 0 or qty > reorder:
         return None
-    entity_id = f"{stock.warehouse_id}:{product.id}"
+    entity_id = stock.id
     existing = (
         await db.execute(
             select(m.Notification).where(

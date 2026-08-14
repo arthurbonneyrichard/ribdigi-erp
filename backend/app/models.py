@@ -1459,7 +1459,10 @@ class SalesReturnItem(Base):
 
 class PurchaseReturn(Base):
     __tablename__ = "purchase_returns"
-    __table_args__ = (UniqueConstraint("tenant_id", "return_number"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "return_number"),
+        UniqueConstraint("tenant_id", "debit_note_number"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)

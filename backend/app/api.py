@@ -4737,6 +4737,8 @@ async def purchasing_settings(
             "purchase_order_numbering": numbering_settings(tenant, "purchase_order"),
             "grn_numbering": numbering_settings(tenant, "grn"),
             "purchase_invoice_numbering": numbering_settings(tenant, "purchase_invoice"),
+            "purchase_return_numbering": numbering_settings(tenant, "purchase_return"),
+            "debit_note_numbering": numbering_settings(tenant, "debit_note"),
         }
     )
 
@@ -4753,6 +4755,8 @@ async def update_purchasing_settings(
         payload.purchase_order_numbering is None
         and payload.grn_numbering is None
         and payload.purchase_invoice_numbering is None
+        and payload.purchase_return_numbering is None
+        and payload.debit_note_numbering is None
     ):
         raise HTTPException(status_code=400, detail="No numbering fields to update")
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
@@ -4777,12 +4781,28 @@ async def update_purchasing_settings(
             prefix=payload.purchase_invoice_numbering.prefix,
             next_number=payload.purchase_invoice_numbering.next_number,
         )
+    if payload.purchase_return_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "purchase_return",
+            prefix=payload.purchase_return_numbering.prefix,
+            next_number=payload.purchase_return_numbering.next_number,
+        )
+    if payload.debit_note_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "debit_note",
+            prefix=payload.debit_note_numbering.prefix,
+            next_number=payload.debit_note_numbering.next_number,
+        )
     await db.commit()
     return env(
         {
             "purchase_order_numbering": numbering_settings(tenant, "purchase_order"),
             "grn_numbering": numbering_settings(tenant, "grn"),
             "purchase_invoice_numbering": numbering_settings(tenant, "purchase_invoice"),
+            "purchase_return_numbering": numbering_settings(tenant, "purchase_return"),
+            "debit_note_numbering": numbering_settings(tenant, "debit_note"),
         },
         "Purchasing document numbering updated",
     )
