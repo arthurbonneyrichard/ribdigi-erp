@@ -1,0 +1,60 @@
+{
+  "id": "pgbouncer-soak-pack-rg-pointers",
+  "stage": 317,
+  "pack": "P1",
+  "doc": "docs/PGBOUNCER_SOAK_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PGBOUNCER_SOAK_PACK_REMAINING_GATE_MVP.md",
+    "pgbouncer_soak_pack": "docs/PGBOUNCER_SOAK_PACK_MVP.md",
+    "pentest_pack_remaining_gate": "docs/PENTEST_PACK_REMAINING_GATE_MVP.md",
+    "security_scan_pack_remaining_gate": "docs/SECURITY_SCAN_PACK_REMAINING_GATE_MVP.md",
+    "pgbouncer_soak_remaining_gate": "docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_soak_executed": false,
+  "helm_pooler_default_claimed": false,
+  "managed_cloud_pooler_claimed": false,
+  "live_tls_ingress_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "pgbouncer_soak_pack_stage29",
+    "pentest_pack_remaining_gate_stage316",
+    "security_scan_pack_remaining_gate_stage315",
+    "pgbouncer_soak_remaining_gate_stage208",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "psprp-stage29",
+      "title": "Point to Stage 29 B2 PgBouncer soak pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "psprp-stage316",
+      "title": "Point to Stage 316 pen-test pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "psprp-stage315",
+      "title": "Point to Stage 315 security scan pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "psprp-stage208",
+      "title": "Point to Stage 208 PgBouncer soak remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "psprp-soak-remaining",
+      "title": "Live soak executed Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 317 P1 PgBouncer soak pack RG pointers packaging only. Do not claim live soak Complete."
+}

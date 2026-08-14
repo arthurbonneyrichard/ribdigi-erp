@@ -1,0 +1,57 @@
+{
+  "id": "pgbouncer-soak-pack-remaining-gate",
+  "stage": 317,
+  "pack": "I1",
+  "doc": "docs/PGBOUNCER_SOAK_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PGBOUNCER_SOAK_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PGBOUNCER_SOAK_PACK_RG_POINTERS_MVP.md",
+    "pgbouncer_soak_pack": "docs/PGBOUNCER_SOAK_PACK_MVP.md",
+    "pentest_pack_remaining_gate": "docs/PENTEST_PACK_REMAINING_GATE_MVP.md",
+    "security_scan_pack_remaining_gate": "docs/SECURITY_SCAN_PACK_REMAINING_GATE_MVP.md",
+    "pgbouncer_soak_remaining_gate": "docs/PGBOUNCER_SOAK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_soak_executed": false,
+  "helm_pooler_default_claimed": false,
+  "managed_cloud_pooler_claimed": false,
+  "live_tls_ingress_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage29_pgbouncer_soak_pack": true,
+  "distinct_from_stage208_pgbouncer_soak_remaining_gate": true,
+  "distinct_from_stage316_pentest_pack_remaining_gate": true,
+  "distinct_from_stage315_security_scan_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "pspr-read-blockers",
+      "title": "Read B1 PgBouncer soak pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pspr-follow-pointers",
+      "title": "Follow P1 Stage 29 B2 / Stage 316 / Stage 315 / Stage 208 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pspr-soak-missing",
+      "title": "Reaffirm live soak / Helm pooler default MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pspr-no-packaging-as-live",
+      "title": "Do not treat Stage 29 B2 / Stage 208 / Stage 316 as live soak Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pspr-soak-remaining",
+      "title": "Live soak / Helm pooler default / managed cloud pooler / live TLS ingress / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 317 I1 PgBouncer soak pack remaining-gate index packaging only. Do not claim live soak Complete."
+}

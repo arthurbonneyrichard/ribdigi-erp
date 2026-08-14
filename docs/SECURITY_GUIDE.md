@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 317 open** | PgBouncer Soak Pack Remaining-Gate Index — `docs/STAGE_317_PLAN.md`, ADR-641 (`test_stage317_open.py`) |
+| **Stage 317 I1** | PgBouncer soak pack remaining-gate index hub (`test_stage317_index_i1.py`) |
+| **Stage 317 B1** | PgBouncer soak pack blocker matrix (`test_stage317_blockers_b1.py`) |
+| **Stage 317 P1** | Stage 29 B2 / Stage 316 / Stage 315 / Stage 208 pointers (`test_stage317_pointers_p1.py`) |
+| **Stage 317 D1** | PgBouncer soak pack remaining-gate fidelity — `docs/STAGE_317_FIDELITY.md` (`test_stage317_fidelity_d1.py`) |
+| **Stage 317 H317x** | Exit + freeze — `docs/STAGE_317_EXIT_CRITERIA.md`, ADR-642 (`test_stage317_exit_h317x.py`); Stages 1–317 frozen |
 | **Stage 316 open** | Pen-Test Pack Remaining-Gate Index — `docs/STAGE_316_PLAN.md`, ADR-639 (`test_stage316_open.py`) |
 | **Stage 316 I1** | Pen-test pack remaining-gate index hub (`test_stage316_index_i1.py`) |
 | **Stage 316 B1** | Pen-test pack blocker matrix (`test_stage316_blockers_b1.py`) |

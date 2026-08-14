@@ -31,3 +31,10 @@ Stage 317 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for vendor pen-test purchased, live ZAP executed, ZAP CI wired, live soak executed, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 317 opened under **ADR-641** after CONTINUE/NEXT (Tenant MVP PgBouncer Soak Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-642**. Stage 316 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 317 runner-up outline was approved and opened (ADR-641); freeze ADR-642. Do not reopen Stage 316 scope.
+

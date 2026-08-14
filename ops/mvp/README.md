@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_317_EXIT_CRITERIA.md` / `docs/ADR_642_STAGE317_FREEZE.md` (`backend/tests/test_stage317_exit_h317x.py`) — Stage 317 H317x
+- `docs/STAGE_317_FIDELITY.md` (`backend/tests/test_stage317_fidelity_d1.py`) — Stage 317 D1
+- `docs/STAGE_317_PLAN.md` (`backend/tests/test_stage317_open.py`) — Stage 317 open (ADR-641)
+- `docs/PGBOUNCER_SOAK_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/pgbouncer-soak-pack-remaining-gate.json` — Stage 317 I1
+- `docs/PGBOUNCER_SOAK_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/pgbouncer-soak-pack-rg-blockers.json` — Stage 317 B1
+- `docs/PGBOUNCER_SOAK_PACK_RG_POINTERS_MVP.md` / `ops/mvp/pgbouncer-soak-pack-rg-pointers.json` — Stage 317 P1
 - `docs/STAGE_316_EXIT_CRITERIA.md` / `docs/ADR_640_STAGE316_FREEZE.md` (`backend/tests/test_stage316_exit_h316x.py`) — Stage 316 H316x
 - `docs/STAGE_316_FIDELITY.md` (`backend/tests/test_stage316_fidelity_d1.py`) — Stage 316 D1
 - `docs/STAGE_316_PLAN.md` (`backend/tests/test_stage316_open.py`) — Stage 316 open (ADR-639)
@@ -5179,6 +5185,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 317 exit
+
+H317x met — `docs/STAGE_317_EXIT_CRITERIA.md`, ADR-642. Stages 1–317 frozen for Stage 317 feature scope.
+
+## Stage 317 D1 — Tenant MVP PgBouncer Soak Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_317_FIDELITY.md` (`test_stage317_fidelity_d1.py`). `PGBOUNCER_SOAK_PACK_*` remaining-gate index; live soak / Helm pooler default / go-live still MISSING.
+
+## Stage 317 open
+
+ADR-641 / `docs/STAGE_317_PLAN.md`.
 
 ## Stage 316 exit
 
