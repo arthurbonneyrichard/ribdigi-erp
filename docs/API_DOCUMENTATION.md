@@ -855,6 +855,8 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 }
 ```
 
+Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, and `is_reverse_charge`. Header includes `tax_amount` plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Print JSON/PDF includes per-line tax amounts.
+
 ### 7.6 Sales Return
 **List:** `GET /sales/returns`  
 **Create:** `POST /sales/returns`  
