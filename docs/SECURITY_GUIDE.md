@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 369 open** | Sync Conflict UX Pack Remaining-Gate Index — `docs/STAGE_369_PLAN.md`, ADR-745 (`test_stage369_open.py`) |
+| **Stage 369 I1** | Sync conflict UX pack remaining-gate index hub (`test_stage369_index_i1.py`) |
+| **Stage 369 B1** | Sync conflict UX pack blocker matrix (`test_stage369_blockers_b1.py`) |
+| **Stage 369 P1** | Stage 368 / Stage 167 / Stage 164 / Stage 329 pointers (`test_stage369_pointers_p1.py`) |
+| **Stage 369 D1** | Sync conflict UX pack remaining-gate fidelity — `docs/STAGE_369_FIDELITY.md` (`test_stage369_fidelity_d1.py`) |
+| **Stage 369 H369x** | Exit + freeze — `docs/STAGE_369_EXIT_CRITERIA.md`, ADR-746 (`test_stage369_exit_h369x.py`); Stages 1–369 frozen |
 | **Stage 368 open** | Sync Idempotency Replay Pack Remaining-Gate Index — `docs/STAGE_368_PLAN.md`, ADR-743 (`test_stage368_open.py`) |
 | **Stage 368 I1** | Sync idempotency replay pack remaining-gate index hub (`test_stage368_index_i1.py`) |
 | **Stage 368 B1** | Sync idempotency replay pack blocker matrix (`test_stage368_blockers_b1.py`) |

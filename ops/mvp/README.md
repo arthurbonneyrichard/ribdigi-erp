@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_369_EXIT_CRITERIA.md` / `docs/ADR_746_STAGE369_FREEZE.md` (`backend/tests/test_stage369_exit_h369x.py`) — Stage 369 H369x
+- `docs/STAGE_369_FIDELITY.md` (`backend/tests/test_stage369_fidelity_d1.py`) — Stage 369 D1
+- `docs/STAGE_369_PLAN.md` (`backend/tests/test_stage369_open.py`) — Stage 369 open (ADR-745)
+- `docs/SYNC_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/sync-conflict-ux-pack-remaining-gate.json` — Stage 369 I1
+- `docs/SYNC_CONFLICT_UX_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/sync-conflict-ux-pack-rg-blockers.json` — Stage 369 B1
+- `docs/SYNC_CONFLICT_UX_PACK_RG_POINTERS_MVP.md` / `ops/mvp/sync-conflict-ux-pack-rg-pointers.json` — Stage 369 P1
 - `docs/STAGE_368_EXIT_CRITERIA.md` / `docs/ADR_744_STAGE368_FREEZE.md` (`backend/tests/test_stage368_exit_h368x.py`) — Stage 368 H368x
 - `docs/STAGE_368_FIDELITY.md` (`backend/tests/test_stage368_fidelity_d1.py`) — Stage 368 D1
 - `docs/STAGE_368_PLAN.md` (`backend/tests/test_stage368_open.py`) — Stage 368 open (ADR-743)
@@ -5491,6 +5497,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 369 exit
+
+H369x met — `docs/STAGE_369_EXIT_CRITERIA.md`, ADR-746. Stages 1–369 frozen for Stage 369 feature scope.
+
+## Stage 369 D1 — Tenant MVP Sync Conflict UX Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `SYNC_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md` / `SYNC_CONFLICT_UX_PACK_RG_BLOCKERS_MVP.md` / `SYNC_CONFLICT_UX_PACK_RG_POINTERS_MVP.md` ≠ Offline Complete. Source: `CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md` P1.
+
+## Stage 369 open
+
+ADR-745 / `docs/STAGE_369_PLAN.md`.
 
 ## Stage 368 exit
 

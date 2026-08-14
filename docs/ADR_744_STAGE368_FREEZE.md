@@ -31,3 +31,10 @@ Stage 369 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, sync-hardening, duplicate-sale-on-replay, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 369 opened under **ADR-745** after CONTINUE/NEXT (Tenant MVP Sync Conflict UX Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-746**. Stage 368 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 369 runner-up outline was approved and opened (ADR-745); freeze ADR-746. Do not reopen Stage 368 scope.
+
