@@ -1,0 +1,59 @@
+{
+  "id": "shared-schema-tenancy-pack-rg-pointers",
+  "stage": 270,
+  "pack": "P1",
+  "doc": "docs/SHARED_SCHEMA_TENANCY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SHARED_SCHEMA_TENANCY_PACK_REMAINING_GATE_MVP.md",
+    "tenancy_adr": "docs/ADR_001_TENANCY.md",
+    "platform_principal_pack_remaining_gate": "docs/PLATFORM_PRINCIPAL_PACK_REMAINING_GATE_MVP.md",
+    "dual_console_pack_remaining_gate": "docs/DUAL_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "schema_per_tenant_remaining_gate": "docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "schema_per_tenant_claimed": false,
+  "live_multitenant_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "shared_schema_tenancy_adr001",
+    "platform_principal_pack_remaining_gate_stage269",
+    "dual_console_pack_remaining_gate_stage268",
+    "schema_per_tenant_remaining_gate_stage185",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sstprp-adr001",
+      "title": "Point to ADR-001 shared-schema tenancy",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstprp-stage269",
+      "title": "Point to Stage 269 platform principal pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstprp-stage268",
+      "title": "Point to Stage 268 dual console pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstprp-stage185",
+      "title": "Point to Stage 185 schema-per-tenant remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstprp-tenancy-remaining",
+      "title": "Schema-per-tenant Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 270 P1 shared-schema tenancy pack RG pointers packaging only. Do not claim schema-per-tenant Complete."
+}

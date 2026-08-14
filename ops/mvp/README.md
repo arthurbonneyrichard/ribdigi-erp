@@ -1048,6 +1048,12 @@ Authoritative MVP docs:
 - `docs/PLATFORM_PRINCIPAL_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/platform-principal-pack-remaining-gate.json` — Stage 269 I1
 - `docs/PLATFORM_PRINCIPAL_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/platform-principal-pack-rg-blockers.json` — Stage 269 B1
 - `docs/PLATFORM_PRINCIPAL_PACK_RG_POINTERS_MVP.md` / `ops/mvp/platform-principal-pack-rg-pointers.json` — Stage 269 P1
+- `docs/STAGE_270_EXIT_CRITERIA.md` / `docs/ADR_548_STAGE270_FREEZE.md` (`backend/tests/test_stage270_exit_h270x.py`) — Stage 270 H270x
+- `docs/STAGE_270_FIDELITY.md` (`backend/tests/test_stage270_fidelity_d1.py`) — Stage 270 D1
+- `docs/STAGE_270_PLAN.md` (`backend/tests/test_stage270_open.py`) — Stage 270 open (ADR-547)
+- `docs/SHARED_SCHEMA_TENANCY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/shared-schema-tenancy-pack-remaining-gate.json` — Stage 270 I1
+- `docs/SHARED_SCHEMA_TENANCY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/shared-schema-tenancy-pack-rg-blockers.json` — Stage 270 B1
+- `docs/SHARED_SCHEMA_TENANCY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/shared-schema-tenancy-pack-rg-pointers.json` — Stage 270 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4741,4 +4747,16 @@ H269x met — `docs/STAGE_269_EXIT_CRITERIA.md`, ADR-546. Stages 1–269 frozen 
 ## Stage 269 open
 
 `docs/ADR_545_STAGE269_OPEN.md` + `docs/STAGE_269_PLAN.md` (`test_stage269_open.py`).
+
+## Stage 270 exit
+
+H270x met — `docs/STAGE_270_EXIT_CRITERIA.md`, ADR-548. Stages 1–270 frozen for Stage 270 feature scope.
+
+## Stage 270 D1 — Tenant MVP Shared-Schema Tenancy Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_270_FIDELITY.md` (`test_stage270_fidelity_d1.py`). `SHARED_SCHEMA_TENANCY_PACK_*` remaining-gate index; paid billing / schema-per-tenant / go-live still MISSING (ADR-002).
+
+## Stage 270 open
+
+`docs/ADR_547_STAGE270_OPEN.md` + `docs/STAGE_270_PLAN.md` (`test_stage270_open.py`).
 

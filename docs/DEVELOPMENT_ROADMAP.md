@@ -3852,6 +3852,18 @@ Every feature in every phase must meet:
 
 **Stage 269 exit (2026-08-14):** I1, B1, P1, D1, H269x met — `docs/STAGE_269_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_546_STAGE269_FREEZE.md`. Fidelity: `docs/STAGE_269_FIDELITY.md`.
 
+**Stage 270 open (2026-08-14):** Tenant MVP Shared-Schema Tenancy Pack Remaining-Gate Index Fidelity — `docs/ADR_547_STAGE270_OPEN.md` + `docs/STAGE_270_PLAN.md` (I1 next).
+
+**Stage 270 I1 (2026-08-14):** Shared-schema tenancy pack remaining-gate index hub (`test_stage270_index_i1.py`).
+
+**Stage 270 B1 (2026-08-14):** Shared-schema tenancy pack blocker matrix (`test_stage270_blockers_b1.py`).
+
+**Stage 270 P1 (2026-08-14):** ADR-001 / Stage 269 / Stage 268 / Stage 185 pointers (`test_stage270_pointers_p1.py`).
+
+**Stage 270 D1 (2026-08-14):** Shared-Schema Tenancy Pack Remaining-Gate Index fidelity sync — `docs/STAGE_270_FIDELITY.md` (`test_stage270_fidelity_d1.py`).
+
+**Stage 270 exit (2026-08-14):** I1, B1, P1, D1, H270x met — `docs/STAGE_270_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_548_STAGE270_FREEZE.md`. Fidelity: `docs/STAGE_270_FIDELITY.md`.
+
 
 
 

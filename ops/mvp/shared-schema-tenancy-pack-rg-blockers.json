@@ -1,0 +1,61 @@
+{
+  "id": "shared-schema-tenancy-pack-rg-blockers",
+  "stage": 270,
+  "pack": "B1",
+  "doc": "docs/SHARED_SCHEMA_TENANCY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SHARED_SCHEMA_TENANCY_PACK_REMAINING_GATE_MVP.md",
+    "tenancy_adr": "docs/ADR_001_TENANCY.md",
+    "schema_per_tenant_remaining_gate": "docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "schema_per_tenant_claimed": false,
+  "live_multitenant_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "billing_complete": "REMAINING",
+    "schema_per_tenant_complete": "REMAINING",
+    "live_multitenant_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "adr001_as_schema_per_tenant_complete": "NON_CLAIM",
+    "stage185_as_schema_per_tenant_complete": "NON_CLAIM",
+    "billing_complete_claimed": "false",
+    "schema_per_tenant_claimed": "false",
+    "live_multitenant_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "sstprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstprb-schema-per-tenant",
+      "title": "Mark schema-per-tenant Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstprb-multitenant",
+      "title": "Mark live multi-tenant Completes Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstprb-adr001-nonclaim",
+      "title": "Mark ADR-001 as non-claim for schema-per-tenant Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstprb-tenancy-remaining",
+      "title": "Schema-per-tenant Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 270 B1 shared-schema tenancy pack RG blocker matrix packaging only. Schema-per-tenant Completes remain MISSING."
+}

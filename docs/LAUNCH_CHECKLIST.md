@@ -1407,6 +1407,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] ADR-137 / Stage 268 / Stage 267 / Stage 266 pointers (Stage 269 P1: `test_stage269_pointers_p1.py`, `docs/PLATFORM_PRINCIPAL_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 269 fidelity sync (D1: `test_stage269_fidelity_d1.py`, `docs/STAGE_269_FIDELITY.md`)
 - [x] Stage 269 exit + freeze (H269x: `test_stage269_exit_h269x.py`, `docs/STAGE_269_EXIT_CRITERIA.md`, ADR-546)
+- [x] Stage 270 track opened (ADR-547: `test_stage270_open.py`, `docs/STAGE_270_PLAN.md`) — Shared-Schema Tenancy Pack Remaining-Gate Index; closed under ADR-548
+- [x] Shared-schema tenancy pack remaining-gate hub (Stage 270 I1: `test_stage270_index_i1.py`, `docs/SHARED_SCHEMA_TENANCY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Shared-schema tenancy pack blocker matrix (Stage 270 B1: `test_stage270_blockers_b1.py`, `docs/SHARED_SCHEMA_TENANCY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] ADR-001 / Stage 269 / Stage 268 / Stage 185 pointers (Stage 270 P1: `test_stage270_pointers_p1.py`, `docs/SHARED_SCHEMA_TENANCY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 270 fidelity sync (D1: `test_stage270_fidelity_d1.py`, `docs/STAGE_270_FIDELITY.md`)
+- [x] Stage 270 exit + freeze (H270x: `test_stage270_exit_h270x.py`, `docs/STAGE_270_EXIT_CRITERIA.md`, ADR-548)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

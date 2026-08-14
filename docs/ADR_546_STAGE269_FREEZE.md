@@ -31,3 +31,10 @@ Stage 270 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for paid billing, live platform-ops, cross-principal leak, or go-live.
+
+
+## Amendment — Stage 270 opened
+
+Stage 270 opened under **ADR-547** after CONTINUE/NEXT (Tenant MVP Shared-Schema Tenancy Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-548**. Stage 269 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 270 runner-up outline was approved and opened (ADR-547); freeze ADR-548. Do not reopen Stage 269 scope.
