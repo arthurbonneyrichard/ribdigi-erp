@@ -1024,6 +1024,12 @@ Authoritative MVP docs:
 - `docs/POST_LAUNCH_CONTINUITY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-launch-continuity-pack-remaining-gate.json` — Stage 265 I1
 - `docs/POST_LAUNCH_CONTINUITY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-launch-continuity-pack-rg-blockers.json` — Stage 265 B1
 - `docs/POST_LAUNCH_CONTINUITY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-launch-continuity-pack-rg-pointers.json` — Stage 265 P1
+- `docs/STAGE_266_EXIT_CRITERIA.md` / `docs/ADR_540_STAGE266_FREEZE.md` (`backend/tests/test_stage266_exit_h266x.py`) — Stage 266 H266x
+- `docs/STAGE_266_FIDELITY.md` (`backend/tests/test_stage266_fidelity_d1.py`) — Stage 266 D1
+- `docs/STAGE_266_PLAN.md` (`backend/tests/test_stage266_open.py`) — Stage 266 open (ADR-539)
+- `docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/ribdigi-house-console-pack-remaining-gate.json` — Stage 266 I1
+- `docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/ribdigi-house-console-pack-rg-blockers.json` — Stage 266 B1
+- `docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/ribdigi-house-console-pack-rg-pointers.json` — Stage 266 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4669,4 +4675,16 @@ H265x met — `docs/STAGE_265_EXIT_CRITERIA.md`, ADR-538. Stages 1–265 frozen 
 ## Stage 265 open
 
 `docs/ADR_537_STAGE265_OPEN.md` + `docs/STAGE_265_PLAN.md` (`test_stage265_open.py`).
+
+## Stage 266 exit
+
+H266x met — `docs/STAGE_266_EXIT_CRITERIA.md`, ADR-540. Stages 1–266 frozen for Stage 266 feature scope.
+
+## Stage 266 D1 — Tenant MVP Ribdigi House Console Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_266_FIDELITY.md` (`test_stage266_fidelity_d1.py`). `RIBDIGI_HOUSE_CONSOLE_PACK_*` remaining-gate index; paid billing / live subscriptions / go-live still MISSING (ADR-002).
+
+## Stage 266 open
+
+`docs/ADR_539_STAGE266_OPEN.md` + `docs/STAGE_266_PLAN.md` (`test_stage266_open.py`).
 

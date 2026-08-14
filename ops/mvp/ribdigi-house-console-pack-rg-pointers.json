@@ -1,0 +1,60 @@
+{
+  "id": "ribdigi-house-console-pack-rg-pointers",
+  "stage": 266,
+  "pack": "P1",
+  "doc": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "ribdigi_house_console": "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md",
+    "post_launch_continuity_pack_remaining_gate": "docs/POST_LAUNCH_CONTINUITY_PACK_REMAINING_GATE_MVP.md",
+    "production_hypercare_pack_remaining_gate": "docs/PRODUCTION_HYPERCARE_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "ribdigi_house_console_register": "ops/mvp/ribdigi-house-console.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "subscriptions_live_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "ribdigi_house_console_stage68_h1",
+    "post_launch_continuity_pack_remaining_gate_stage265",
+    "production_hypercare_pack_remaining_gate_stage264",
+    "billing_deferred_honesty_stage36",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "rhcprp-stage68",
+      "title": "Point to Stage 68 H1 Ribdigi House console",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcprp-stage265",
+      "title": "Point to Stage 265 post-launch continuity pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcprp-stage264",
+      "title": "Point to Stage 264 production hypercare pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcprp-stage36",
+      "title": "Point to Stage 36 billing-deferred honesty adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcprp-billing-remaining",
+      "title": "Paid billing Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 266 P1 Ribdigi House console pack RG pointers packaging only. Do not claim paid billing Complete."
+}

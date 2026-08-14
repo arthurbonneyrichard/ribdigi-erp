@@ -31,3 +31,10 @@ Stage 266 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for post-launch continuity, customer-success stabilization, handoff, or go-live.
+
+
+## Amendment — Stage 266 opened
+
+Stage 266 opened under **ADR-539** after CONTINUE/NEXT (Tenant MVP Ribdigi House Console Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-540**. Stage 265 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 266 runner-up outline was approved and opened (ADR-539); freeze ADR-540. Do not reopen Stage 265 scope.

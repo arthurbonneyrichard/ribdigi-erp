@@ -3804,6 +3804,18 @@ Every feature in every phase must meet:
 
 **Stage 265 exit (2026-08-14):** I1, B1, P1, D1, H265x met — `docs/STAGE_265_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_538_STAGE265_FREEZE.md`. Fidelity: `docs/STAGE_265_FIDELITY.md`.
 
+**Stage 266 open (2026-08-14):** Tenant MVP Ribdigi House Console Pack Remaining-Gate Index Fidelity — `docs/ADR_539_STAGE266_OPEN.md` + `docs/STAGE_266_PLAN.md` (I1 next).
+
+**Stage 266 I1 (2026-08-14):** Ribdigi House console pack remaining-gate index hub (`test_stage266_index_i1.py`).
+
+**Stage 266 B1 (2026-08-14):** Ribdigi House console pack blocker matrix (`test_stage266_blockers_b1.py`).
+
+**Stage 266 P1 (2026-08-14):** Stage 68 / Stage 265 / Stage 264 / Stage 36 pointers (`test_stage266_pointers_p1.py`).
+
+**Stage 266 D1 (2026-08-14):** Ribdigi House Console Pack Remaining-Gate Index fidelity sync — `docs/STAGE_266_FIDELITY.md` (`test_stage266_fidelity_d1.py`).
+
+**Stage 266 exit (2026-08-14):** I1, B1, P1, D1, H266x met — `docs/STAGE_266_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_540_STAGE266_FREEZE.md`. Fidelity: `docs/STAGE_266_FIDELITY.md`.
+
 
 
 

@@ -1,0 +1,62 @@
+{
+  "id": "ribdigi-house-console-pack-rg-blockers",
+  "stage": 266,
+  "pack": "B1",
+  "doc": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "ribdigi_house_console": "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "ribdigi_house_console_register": "ops/mvp/ribdigi-house-console.json"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "subscriptions_live_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "billing_complete": "REMAINING",
+    "payment_provider_complete": "REMAINING",
+    "subscriptions_live_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage68_h1_as_billing_complete": "NON_CLAIM",
+    "stage36_as_billing_complete": "NON_CLAIM",
+    "billing_complete_claimed": "false",
+    "payment_provider_claimed": "false",
+    "subscriptions_live_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "rhcprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcprb-provider",
+      "title": "Mark payment provider Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcprb-subscriptions",
+      "title": "Mark live subscriptions Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcprb-stage68-nonclaim",
+      "title": "Mark Stage 68 H1 as non-claim for paid billing Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcprb-billing-remaining",
+      "title": "Paid billing Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 266 B1 Ribdigi House console pack RG blocker matrix packaging only. Paid billing Completes remain MISSING."
+}

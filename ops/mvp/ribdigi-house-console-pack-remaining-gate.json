@@ -1,0 +1,57 @@
+{
+  "id": "ribdigi-house-console-pack-remaining-gate",
+  "stage": 266,
+  "pack": "I1",
+  "doc": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_POINTERS_MVP.md",
+    "ribdigi_house_console": "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md",
+    "post_launch_continuity_pack_remaining_gate": "docs/POST_LAUNCH_CONTINUITY_PACK_REMAINING_GATE_MVP.md",
+    "production_hypercare_pack_remaining_gate": "docs/PRODUCTION_HYPERCARE_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "ribdigi_house_console_register": "ops/mvp/ribdigi-house-console.json"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "subscriptions_live_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage68_h1_ribdigi_house_console": true,
+  "distinct_from_stage265_post_launch_continuity_pack_remaining_gate": true,
+  "distinct_from_stage264_production_hypercare_pack_remaining_gate": true,
+  "distinct_from_stage239_operator_handoff_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "rhcpr-read-blockers",
+      "title": "Read B1 Ribdigi House console pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcpr-follow-pointers",
+      "title": "Follow P1 Stage 68 / Stage 265 / Stage 264 / Stage 36 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcpr-billing-missing",
+      "title": "Reaffirm paid billing MISSING until real commercial verification ships (ADR-002)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcpr-no-packaging-as-live",
+      "title": "Do not treat Stage 68 H1 / Stage 265 / Stage 36 as paid billing Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rhcpr-billing-remaining",
+      "title": "Paid billing / payment provider / live subscriptions / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 266 I1 Ribdigi House console pack remaining-gate index packaging only. Do not claim paid billing Complete."
+}

@@ -282,6 +282,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Post-launch continuity pack remaining-gate index (Stage 265):** Status index is `docs/POST_LAUNCH_CONTINUITY_PACK_REMAINING_GATE_MVP.md` → blockers `docs/POST_LAUNCH_CONTINUITY_PACK_RG_BLOCKERS_MVP.md` → Stage 67/264/263/218 pointers `docs/POST_LAUNCH_CONTINUITY_PACK_RG_POINTERS_MVP.md`. Live post-launch continuity Complete and go-live Complete remain MISSING (not claimed). Prefixed `POST_LAUNCH_CONTINUITY_PACK_*` remaining-gate docs (≠ Stage 67 C1 / Stage 218 `POST_LAUNCH_CONTINUITY_*`).
 
+**Ribdigi House console pack remaining-gate index (Stage 266):** Status index is `docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_BLOCKERS_MVP.md` → Stage 68/265/264/36 pointers `docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_POINTERS_MVP.md`. Paid billing Complete and live subscriptions Complete remain MISSING (not claimed; ADR-002). Prefixed `RIBDIGI_HOUSE_CONSOLE_PACK_*` remaining-gate docs (≠ Stage 68 H1).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
