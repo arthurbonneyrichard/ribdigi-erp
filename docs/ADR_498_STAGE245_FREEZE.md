@@ -27,3 +27,9 @@ Stage 245 Tenant MVP First-Tenant Go-Live Pack Remaining-Gate Index Fidelity del
 Stage 246 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 245 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP Business Pilot Pack Remaining-Gate Index Fidelity — single index of business-pilot-pack blockers (packaged Stage 65 P1 controlled business pilot materials non-claim as live pilot Complete) with explicit non-claim. Prefixed `BUSINESS_PILOT_PACK_*` if a prior remaining-gate exists. Distinct from Stage 245 first-tenant go-live pack remaining-gate and Stage 244 first-tenant onboarding pack remaining-gate.
+
+## Amendment — Stage 246 opened
+
+Stage 246 opened under **ADR-499** after CONTINUE/NEXT (Business Pilot Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-500**. Stage 245 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 246 runner-up outline was approved and opened (ADR-499); freeze ADR-500. Do not reopen Stage 245 scope.

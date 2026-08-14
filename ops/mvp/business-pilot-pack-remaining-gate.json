@@ -1,0 +1,58 @@
+{
+  "id": "business-pilot-pack-remaining-gate",
+  "stage": 246,
+  "pack": "I1",
+  "doc": "docs/BUSINESS_PILOT_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/BUSINESS_PILOT_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/BUSINESS_PILOT_PACK_RG_POINTERS_MVP.md",
+    "business_pilot": "docs/BUSINESS_PILOT_MVP.md",
+    "first_tenant_golive_pack_remaining_gate": "docs/FIRST_TENANT_GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_onboarding_pack_remaining_gate": "docs/FIRST_TENANT_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "implementation_onboarding": "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+    "business_pilot_register": "ops/mvp/business-pilot.json"
+  },
+  "packaging_complete": true,
+  "controlled_business_pilot_live_claimed": false,
+  "real_workflow_feedback_claimed": false,
+  "pilot_bugfix_program_live": false,
+  "business_pilot_program_live": false,
+  "go_live_claimed": false,
+  "distinct_from_stage65_p1_business_pilot": true,
+  "distinct_from_stage245_first_tenant_golive_pack_remaining_gate": true,
+  "distinct_from_stage244_first_tenant_onboarding_pack_remaining_gate": true,
+  "distinct_from_stage56_implementation_onboarding": true,
+  "steps": [
+    {
+      "id": "bppr-read-blockers",
+      "title": "Read B1 business pilot pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bppr-follow-pointers",
+      "title": "Follow P1 Stage 65 / Stage 245 / Stage 244 / Stage 56 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bppr-pilot-missing",
+      "title": "Reaffirm live pilot MISSING until a real controlled business pilot succeeds",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bppr-no-packaging-as-live",
+      "title": "Do not treat Stage 65 P1 / Stage 245 as live pilot Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bppr-pilot-remaining",
+      "title": "Live pilot / workflow feedback / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 246 I1 business pilot pack remaining-gate index packaging only. Do not claim live controlled business pilot Complete."
+}

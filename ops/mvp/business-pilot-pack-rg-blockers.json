@@ -1,0 +1,53 @@
+{
+  "id": "business-pilot-pack-rg-blockers",
+  "stage": 246,
+  "pack": "B1",
+  "doc": "docs/BUSINESS_PILOT_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BUSINESS_PILOT_PACK_REMAINING_GATE_MVP.md",
+    "business_pilot": "docs/BUSINESS_PILOT_MVP.md",
+    "first_tenant_golive_pack_remaining_gate": "docs/FIRST_TENANT_GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "business_pilot_register": "ops/mvp/business-pilot.json"
+  },
+  "packaging_complete": true,
+  "controlled_business_pilot_live_claimed": false,
+  "real_workflow_feedback_claimed": false,
+  "pilot_bugfix_program_live": false,
+  "business_pilot_program_live": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_controlled_business_pilot_delivery": "REMAINING",
+    "real_workflow_feedback_complete": "REMAINING",
+    "stage65_p1_as_live_pilot": "NON_CLAIM",
+    "stage245_i1_as_live_pilot": "NON_CLAIM",
+    "controlled_business_pilot_live_claimed": "false",
+    "business_pilot_program_live": "false"
+  },
+  "steps": [
+    {
+      "id": "bpprb-delivery",
+      "title": "Mark live controlled business pilot delivery Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bpprb-feedback",
+      "title": "Mark real workflow feedback Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bpprb-stage65-nonclaim",
+      "title": "Mark Stage 65 P1 as non-claim for live pilot",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bpprb-pilot-remaining",
+      "title": "Live pilot Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 246 B1 business pilot pack RG blocker matrix packaging only. Live controlled business pilot Complete remains MISSING."
+}
