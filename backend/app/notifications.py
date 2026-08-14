@@ -12,7 +12,7 @@ from app import models as m
 
 DEFAULT_PREFERENCES = {
     "low_stock": {"dashboard": True, "email": False, "sms": False},
-    "expense_approval": {"dashboard": True, "email": False, "sms": False},
+    "expense_approval": {"dashboard": True, "email": True, "sms": False},
     "shift_variance": {"dashboard": True, "email": False, "sms": False},
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
@@ -105,6 +105,30 @@ async def channel_enabled(
     return bool(cat.get(channel, True))
 
 
+async def users_for_roles(
+    db: AsyncSession,
+    tenant_id: str,
+    roles: list[str],
+    *,
+    exclude_user_ids: set[str] | None = None,
+) -> list[m.User]:
+    """Active tenant users whose role is in ``roles`` (BR-9.3 approver fan-out)."""
+    cleaned = [str(r).strip() for r in (roles or []) if str(r).strip()]
+    if not cleaned:
+        return []
+    exclude = exclude_user_ids or set()
+    rows = (
+        await db.execute(
+            select(m.User).where(
+                m.User.tenant_id == tenant_id,
+                m.User.is_active == True,  # noqa: E712
+                m.User.role.in_(cleaned),
+            )
+        )
+    ).scalars().all()
+    return [u for u in rows if u.id not in exclude]
+
+
 async def create_notification(
     db: AsyncSession,
     *,
@@ -113,6 +137,8 @@ async def create_notification(
     message: str,
     category: str = "system",
     user_id: str | None = None,
+    roles: list[str] | None = None,
+    exclude_user_ids: set[str] | list[str] | None = None,
     entity_type: str | None = None,
     entity_id: str | None = None,
 ) -> m.Notification | None:
@@ -139,29 +165,40 @@ async def create_notification(
         from app import emailer
         from app import sms as sms_svc
 
+        excluded = {str(x) for x in (exclude_user_ids or []) if x}
+
         async def _recipients_for_channel(channel: str) -> list[m.User]:
             if user_id:
+                if user_id in excluded:
+                    return []
                 if await channel_enabled(
                     db, tenant_id=tenant_id, user_id=user_id, category=category, channel=channel
                 ):
                     user = await db.get(m.User, user_id)
                     return [user] if user else []
                 return []
-            admins = (
-                await db.execute(
-                    select(m.User).where(
-                        m.User.tenant_id == tenant_id,
-                        m.User.is_active == True,  # noqa: E712
-                        m.User.role.in_(["company_admin", "super_admin"]),
-                    )
+            candidates: list[m.User]
+            if roles:
+                candidates = await users_for_roles(
+                    db, tenant_id, roles, exclude_user_ids=excluded
                 )
-            ).scalars().all()
+            else:
+                candidates = (
+                    await db.execute(
+                        select(m.User).where(
+                            m.User.tenant_id == tenant_id,
+                            m.User.is_active == True,  # noqa: E712
+                            m.User.role.in_(["company_admin", "super_admin"]),
+                        )
+                    )
+                ).scalars().all()
+                candidates = [u for u in candidates if u.id not in excluded]
             out: list[m.User] = []
-            for admin in admins:
+            for user in candidates:
                 if await channel_enabled(
-                    db, tenant_id=tenant_id, user_id=admin.id, category=category, channel=channel
+                    db, tenant_id=tenant_id, user_id=user.id, category=category, channel=channel
                 ):
-                    out.append(admin)
+                    out.append(user)
             return out
 
         for admin in await _recipients_for_channel("email"):

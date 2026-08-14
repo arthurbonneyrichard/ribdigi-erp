@@ -569,10 +569,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Control spending through approval workflows.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Configurable approval thresholds (e.g., >$100 requires manager approval)
-  - [ ] Multi-level approval chain
-  - [ ] Approval/rejection with comments
-  - [ ] Email notification to approvers
+  - [x] Configurable approval thresholds (e.g., >$100 requires manager approval) (`expense_approval_matrix` / `expense_approval_threshold`)
+  - [x] Multi-level approval chain (N-level role gates; action log; no self-approve / no duplicate-step actor)
+  - [x] Approval/rejection with comments (`comment` on approve; required `reason` on reject)
+  - [x] Email notification to approvers (current-step matrix roles via `create_notification(..., roles=...)`; default `expense_approval.email=true`; creator excluded; console/SMTP)
 
 #### BR-9.4 Expense Attachments
 - **Description:** Digital receipt storage.

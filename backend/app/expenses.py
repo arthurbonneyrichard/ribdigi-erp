@@ -585,6 +585,8 @@ async def create_expense(
             ),
             entity_type="expense",
             entity_id=expense.id,
+            roles=roles_for_step(levels, 1),
+            exclude_user_ids={user_id} if user_id else None,
         )
     else:
         await _record_action(
@@ -649,6 +651,7 @@ async def approve_expense(
         expense.approval_comment = comment or f"Level {step} approved; awaiting level {step + 1}"
         from app.notifications import create_notification
 
+        next_step = step + 1
         await create_notification(
             db,
             tenant_id=tenant_id,
@@ -656,10 +659,12 @@ async def approve_expense(
             title="Expense Needs Next-Level Approval",
             message=(
                 f"Expense {expense.category} of {float(expense.amount):.2f} passed level {step} "
-                f"and awaits level {step + 1} approval."
+                f"and awaits level {next_step} approval."
             ),
             entity_type="expense",
             entity_id=expense.id,
+            roles=roles_for_step(settings["levels"], next_step),
+            exclude_user_ids={user_id, expense.created_by} - {None},
         )
         await db.flush()
         return expense

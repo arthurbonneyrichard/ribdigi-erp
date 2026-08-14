@@ -987,6 +987,8 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 
 Optional org dims (`branch_id`, `department_id`; BR-9.2). Department must belong to the selected branch when both are set. `PATCH /expenses/{id}` accepts the same fields plus `clear_branch` / `clear_department`. Receipts use separate upload endpoints (not inline attachments on create).
 
+Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_approval` plus email (default on; opt out via notification preferences). Creator is excluded from the email fan-out. Advancing a level re-notifies the next step's roles.
+
 ### 9.3 Recurring Expenses
 **List:** `GET /expenses/recurring`  
 **Create:** `POST /expenses/recurring`
@@ -1257,7 +1259,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Endpoint:** `GET /notifications/settings`  
 **Update:** `PATCH /notifications/settings`
 
-Categories include `low_stock`, `payment_due`, `quotation_expiry` (BR-7.2 — T−1 day before `valid_until`), `purchase_received`, `expense_approval`, `credit_limit`, `shift_variance`, `new_order` (BR-15.1 — emitted on sales order create/confirm), `transfer`, `billing`, `security`, `system`. Each maps to dashboard/email/sms preference channels.
+Categories include `low_stock`, `payment_due`, `quotation_expiry` (BR-7.2 — T−1 day before `valid_until`), `purchase_received`, `expense_approval` (BR-9.3 — default email **on**; role-targeted when expense notify passes `roles`), `credit_limit`, `shift_variance`, `new_order` (BR-15.1 — emitted on sales order create/confirm), `transfer`, `billing`, `security`, `system`. Each maps to dashboard/email/sms preference channels.
 
 ```json
 {
