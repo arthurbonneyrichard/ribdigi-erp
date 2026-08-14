@@ -879,6 +879,7 @@ async def create_clearing_group(
 
     group = m.BankClearingGroup(
         tenant_id=tenant_id,
+        company_id=getattr(stmt, "company_id", None),
         statement_id=statement_id,
         notes=notes,
         created_by=user_id,
@@ -894,6 +895,7 @@ async def create_clearing_group(
         db.add(
             m.BankClearingBookLink(
                 tenant_id=tenant_id,
+                company_id=getattr(stmt, "company_id", None),
                 group_id=group.id,
                 journal_line_id=jl.id,
             )

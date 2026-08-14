@@ -90,6 +90,32 @@ def _cheque_number_from_payment(reference: str | None, payment_number: str) -> s
     return f"CHQ-{payment_number}"[:50]
 
 
+async def assert_cheque_number_available(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    cheque_number: str,
+    direction: str,
+    company_id: str | None = None,
+    exclude_id: str | None = None,
+) -> str:
+    number = (cheque_number or "").strip()
+    if not number:
+        raise HTTPException(status_code=400, detail="cheque_number is required")
+    stmt = select(m.Cheque.id).where(
+        m.Cheque.tenant_id == tenant_id,
+        m.Cheque.cheque_number == number,
+        m.Cheque.direction == direction,
+    )
+    if company_id:
+        stmt = stmt.where(m.Cheque.company_id == company_id)
+    if exclude_id:
+        stmt = stmt.where(m.Cheque.id != exclude_id)
+    if (await db.execute(stmt.limit(1))).scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Cheque number already in use")
+    return number
+
+
 async def create_from_customer_payment(
     db: AsyncSession,
     *,
@@ -102,10 +128,18 @@ async def create_from_customer_payment(
 ) -> m.Cheque | None:
     if not is_cheque_method(payment.payment_method):
         return None
-    number = (cheque_number or _cheque_number_from_payment(payment.reference, payment.payment_number)).strip()
+    company_id = getattr(payment, "company_id", None)
+    number = await assert_cheque_number_available(
+        db,
+        tenant_id=tenant_id,
+        cheque_number=cheque_number
+        or _cheque_number_from_payment(payment.reference, payment.payment_number),
+        direction=RECEIVED,
+        company_id=company_id,
+    )
     row = m.Cheque(
         tenant_id=tenant_id,
-        company_id=getattr(payment, "company_id", None),
+        company_id=company_id,
         direction=RECEIVED,
         status=PENDING,
         cheque_number=number,
@@ -134,10 +168,18 @@ async def create_from_supplier_payment(
 ) -> m.Cheque | None:
     if not is_cheque_method(payment.payment_method):
         return None
-    number = (cheque_number or _cheque_number_from_payment(payment.reference, payment.payment_number)).strip()
+    company_id = getattr(payment, "company_id", None)
+    number = await assert_cheque_number_available(
+        db,
+        tenant_id=tenant_id,
+        cheque_number=cheque_number
+        or _cheque_number_from_payment(payment.reference, payment.payment_number),
+        direction=ISSUED,
+        company_id=company_id,
+    )
     row = m.Cheque(
         tenant_id=tenant_id,
-        company_id=getattr(payment, "company_id", None),
+        company_id=company_id,
         direction=ISSUED,
         status=PENDING,
         cheque_number=number,

@@ -178,3 +178,10 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Alembic `20260814_0102` adds partial unique indexes `(tenant_id, company_id, barcode) WHERE barcode IS NOT NULL` on `products` and `product_variants`; models mirror company-scoped barcode uniqueness.
 - Child creates stamp `company_id` from parent/product: `ProductBatch`, `WarehouseStock`, `StockReservation`, purchasing line items (PR/PO/GRN/return/invoice), PO amendments, stock transfer items, party contacts, expense/PR approval actions.
 - Remaining PARTIAL: cheque / offline `client_request_id` uniques may still be tenant-wide; bank clearing group rows; ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.
+
+## Phase 21 — Cheque / POS idempotency uniques + clearing stamps (2026-08-14)
+
+- Cheque uniqueness is `(tenant_id, company_id, cheque_number, direction)` (Alembic `20260814_0103`); `assert_cheque_number_available` returns 409 within a company while allowing the same number in sibling companies.
+- POS `Transaction.client_request_id` uniqueness is company-scoped (partial unique where key is set); `find_sale_by_client_request_id` / `record_pos_sale` replay only within the active company.
+- `BankClearingGroup` and `BankClearingBookLink` stamp `company_id` from the parent bank statement on multi-line clear-group create.
+- Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.

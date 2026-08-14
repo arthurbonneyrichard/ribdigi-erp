@@ -587,7 +587,7 @@ class PartyContact(Base):
 
 class Transaction(Base):
     __tablename__ = "transactions"
-    __table_args__ = (UniqueConstraint("tenant_id", "client_request_id"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "client_request_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1220,7 +1220,7 @@ class Cheque(Base):
     """Customer (received) or supplier (issued) cheque lifecycle."""
 
     __tablename__ = "cheques"
-    __table_args__ = (UniqueConstraint("tenant_id", "cheque_number", "direction"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "cheque_number", "direction"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)

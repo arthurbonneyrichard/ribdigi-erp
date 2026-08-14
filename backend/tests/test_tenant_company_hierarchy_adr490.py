@@ -2310,3 +2310,270 @@ async def test_barcode_uniques_and_child_stamps_company_scoped(client, db_sessio
         )
     ).scalar_one()
     assert pr_item.company_id == seed["c1"].id
+
+
+@pytest.mark.asyncio
+async def test_cheque_client_request_and_clearing_stamps_company_scoped(client, db_session):
+    """Phase 21: company-scoped cheque/client_request_id uniques + clearing stamps."""
+    from datetime import datetime
+
+    from app import accounting as accounting_svc
+    from app import bank_recon as recon
+    from app import cheques as cheques_svc
+
+    ac, seed = client
+    await accounting_svc.ensure_default_accounts(db_session, seed["t1"].id)
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="UQ21",
+        name="Alpha Unique B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Customer B P21",
+        kind="customer",
+        credit_limit=0,
+        balance=0,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="POS B P21 Widget",
+        sku="P21-B-SKU",
+        cost_price=1,
+        selling_price=10,
+        stock_qty=20,
+        tax_exempt=True,
+        is_active=True,
+    )
+    db_session.add_all([cust_b, prod_b])
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+    headers_b = await _super_headers(ac, seed)
+    headers_b["X-Workspace-Kind"] = "company"
+    headers_b["X-Company-ID"] = c_b.id
+
+    # --- Cheque numbers: same number OK across companies; clash within company ---
+    shared_chq = "CHQ-P21-SHARED"
+
+    async def _invoice_and_cheque(headers, customer_id, product_id, cheque_number):
+        inv = await ac.post(
+            "/api/v1/sales/invoices",
+            headers=headers,
+            json={
+                "customer_id": customer_id,
+                "items": [
+                    {
+                        "product_id": product_id,
+                        "quantity": 1,
+                        "unit_price": 50,
+                        "tax_rate": 0,
+                    }
+                ],
+            },
+        )
+        assert inv.status_code == 200, inv.text
+        invoice_id = inv.json()["data"]["id"]
+        total = float(inv.json()["data"]["total_amount"])
+        posted = await ac.post(f"/api/v1/sales/invoices/{invoice_id}/post", headers=headers)
+        assert posted.status_code == 200, posted.text
+        pay = await ac.post(
+            "/api/v1/sales/payments",
+            headers=headers,
+            json={
+                "customer_id": customer_id,
+                "amount": total,
+                "sales_invoice_id": invoice_id,
+                "payment_method": "cheque",
+                "reference": cheque_number,
+                "cheque_number": cheque_number,
+                "bank_name": "Test Bank",
+            },
+        )
+        return pay
+
+    pay_a = await _invoice_and_cheque(headers_a, seed["party1"].id, seed["p1"].id, shared_chq)
+    assert pay_a.status_code == 200, pay_a.text
+    pay_b = await _invoice_and_cheque(headers_b, cust_b.id, prod_b.id, shared_chq)
+    assert pay_b.status_code == 200, pay_b.text
+
+    # Second cheque in company A with same number must 409
+    inv2 = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers_a,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [
+                {
+                    "product_id": seed["p1"].id,
+                    "quantity": 1,
+                    "unit_price": 25,
+                    "tax_rate": 0,
+                }
+            ],
+        },
+    )
+    assert inv2.status_code == 200, inv2.text
+    await ac.post(f"/api/v1/sales/invoices/{inv2.json()['data']['id']}/post", headers=headers_a)
+    clash = await ac.post(
+        "/api/v1/sales/payments",
+        headers=headers_a,
+        json={
+            "customer_id": seed["party1"].id,
+            "amount": float(inv2.json()["data"]["total_amount"]),
+            "sales_invoice_id": inv2.json()["data"]["id"],
+            "payment_method": "cheque",
+            "reference": shared_chq,
+            "cheque_number": shared_chq,
+        },
+    )
+    assert clash.status_code == 409, clash.text
+
+    listed = await cheques_svc.list_cheques(
+        db_session, seed["t1"].id, direction="received", company_id=seed["c1"].id
+    )
+    assert any(c.cheque_number == shared_chq and c.company_id == seed["c1"].id for c in listed)
+
+    # --- client_request_id: same key OK across companies; replay within company ---
+    seed["p1"].selling_price = 10
+    seed["p1"].stock_qty = 20
+    seed["p1"].reserved_qty = 0
+    seed["p1"].tax_exempt = True
+    seed["p1"].tax_rate_id = None
+    await db_session.commit()
+
+    open_a = await ac.post(
+        "/api/v1/pos/sessions/open", headers=headers_a, json={"opening_cash": 0}
+    )
+    assert open_a.status_code == 200, open_a.text
+    open_b = await ac.post(
+        "/api/v1/pos/sessions/open", headers=headers_b, json={"opening_cash": 0}
+    )
+    assert open_b.status_code == 200, open_b.text
+
+    shared_key = "idem-p21-shared-key"
+    body_a = {
+        "session_id": open_a.json()["data"]["session_id"],
+        "client_request_id": shared_key,
+        "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        "payments": [{"payment_method": "cash", "amount": 10}],
+    }
+    body_b = {
+        "session_id": open_b.json()["data"]["session_id"],
+        "client_request_id": shared_key,
+        "items": [{"product_id": prod_b.id, "quantity": 1}],
+        "payments": [{"payment_method": "cash", "amount": 10}],
+    }
+    sale_a = await ac.post("/api/v1/pos/sales", headers=headers_a, json=body_a)
+    assert sale_a.status_code == 200, sale_a.text
+    sale_b = await ac.post("/api/v1/pos/sales", headers=headers_b, json=body_b)
+    assert sale_b.status_code == 200, sale_b.text
+    assert sale_a.json()["data"]["id"] != sale_b.json()["data"]["id"]
+
+    replay_a = await ac.post("/api/v1/pos/sales", headers=headers_a, json=body_a)
+    assert replay_a.status_code == 200, replay_a.text
+    assert replay_a.json()["data"]["replayed"] is True
+    assert replay_a.json()["data"]["id"] == sale_a.json()["data"]["id"]
+
+    # --- Bank clearing group stamps company_id from statement ---
+    await accounting_svc.ensure_default_accounts(
+        db_session, seed["t1"].id, company_id=seed["c1"].id
+    )
+    cash = await accounting_svc.get_account_by_code(
+        db_session, seed["t1"].id, "1000", company_id=seed["c1"].id
+    )
+    e1 = await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["super"].id,
+        description="P21 Deposit",
+        company_id=seed["c1"].id,
+        lines=[
+            {"account_code": "1000", "debit": 40, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 40},
+        ],
+    )
+    e2 = await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["super"].id,
+        description="P21 Deposit 2",
+        company_id=seed["c1"].id,
+        lines=[
+            {"account_code": "1000", "debit": 60, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 60},
+        ],
+    )
+    jl1 = (
+        await db_session.execute(
+            select(m.JournalEntryLine).where(
+                m.JournalEntryLine.journal_entry_id == e1.id,
+                m.JournalEntryLine.account_id == cash.id,
+            )
+        )
+    ).scalar_one()
+    jl2 = (
+        await db_session.execute(
+            select(m.JournalEntryLine).where(
+                m.JournalEntryLine.journal_entry_id == e2.id,
+                m.JournalEntryLine.account_id == cash.id,
+            )
+        )
+    ).scalar_one()
+    day = datetime.utcnow()
+    stmt = await recon.create_statement(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["super"].id,
+        account_id=cash.id,
+        statement_date=day,
+        opening_balance=0,
+        closing_balance=100,
+        company_id=seed["c1"].id,
+        lines=[
+            {"txn_date": day, "amount": 40, "description": "P21 Part 1"},
+            {"txn_date": day, "amount": 60, "description": "P21 Part 2"},
+        ],
+    )
+    bank_lines = await recon.list_statement_lines(db_session, seed["t1"].id, stmt.id)
+    result = await recon.create_clearing_group(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["super"].id,
+        statement_id=stmt.id,
+        statement_line_ids=[bank_lines[0].id, bank_lines[1].id],
+        journal_line_ids=[jl1.id, jl2.id],
+    )
+    await db_session.commit()
+    assert result["mode"] == "group"
+    group = await db_session.get(m.BankClearingGroup, result["group"]["id"])
+    assert group is not None
+    assert group.company_id == seed["c1"].id
+    links = (
+        await db_session.execute(
+            select(m.BankClearingBookLink).where(
+                m.BankClearingBookLink.group_id == group.id
+            )
+        )
+    ).scalars().all()
+    assert links
+    assert all(link.company_id == seed["c1"].id for link in links)

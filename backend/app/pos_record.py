@@ -19,20 +19,23 @@ from app.schemas import PosSaleCreate
 
 
 async def find_sale_by_client_request_id(
-    db: AsyncSession, tenant_id: str, client_request_id: str
+    db: AsyncSession,
+    tenant_id: str,
+    client_request_id: str,
+    *,
+    company_id: str | None = None,
 ) -> m.Transaction | None:
     key = (client_request_id or "").strip()
     if not key:
         return None
-    return (
-        await db.execute(
-            select(m.Transaction).where(
-                m.Transaction.tenant_id == tenant_id,
-                m.Transaction.client_request_id == key,
-                m.Transaction.tx_type == "pos_sale",
-            )
-        )
-    ).scalar_one_or_none()
+    stmt = select(m.Transaction).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.client_request_id == key,
+        m.Transaction.tx_type == "pos_sale",
+    )
+    if company_id:
+        stmt = stmt.where(m.Transaction.company_id == company_id)
+    return (await db.execute(stmt)).scalar_one_or_none()
 
 
 def serialize_sale_result(tx: m.Transaction) -> dict[str, Any]:
@@ -69,9 +72,6 @@ async def record_pos_sale(
             raise HTTPException(status_code=400, detail="client_request_id must be at least 8 characters")
         if len(client_request_id) > 80:
             raise HTTPException(status_code=400, detail="client_request_id must be at most 80 characters")
-        existing = await find_sale_by_client_request_id(db, claims["tenant_id"], client_request_id)
-        if existing:
-            return serialize_sale_result(existing)
 
     session = await pos_svc.require_open_session(
         db,
@@ -80,6 +80,16 @@ async def record_pos_sale(
         session_id=payload.session_id,
         company_id=claims.get("company_id"),
     )
+    company_id = claims.get("company_id") or getattr(session, "company_id", None)
+    if client_request_id:
+        existing = await find_sale_by_client_request_id(
+            db,
+            claims["tenant_id"],
+            client_request_id,
+            company_id=company_id,
+        )
+        if existing:
+            return serialize_sale_result(existing)
     items = [i.model_dump() for i in payload.items]
     from app.tax import resolve_product_tax
     from app.catalog import resolve_sale_line
