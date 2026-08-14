@@ -241,6 +241,9 @@ export default function Page() {
   const [dnPrefix, setDnPrefix] = useState('DN');
   const [dnNext, setDnNext] = useState('1');
   const [dnPreview, setDnPreview] = useState('');
+  const [spyPrefix, setSpyPrefix] = useState('SPY');
+  const [spyNext, setSpyNext] = useState('1');
+  const [spyPreview, setSpyPreview] = useState('');
 
   async function refresh() {
     const [poRes, prRes, settingsRes, numRes, supRes, prodRes, unitRes, grnRes, invRes, retRes] =
@@ -300,6 +303,12 @@ export default function Page() {
       setDnPrefix(dnNum.prefix || 'DN');
       setDnNext(String(dnNum.next_number ?? 1));
       setDnPreview(dnNum.preview || '');
+    }
+    const spyNum = numRes.data?.supplier_payment_numbering;
+    if (spyNum) {
+      setSpyPrefix(spyNum.prefix || 'SPY');
+      setSpyNext(String(spyNum.next_number ?? 1));
+      setSpyPreview(spyNum.preview || '');
     }
   }
 
@@ -927,6 +936,10 @@ export default function Page() {
             prefix: dnPrefix.trim(),
             next_number: Math.max(1, Number(dnNext) || 1),
           },
+          supplier_payment_numbering: {
+            prefix: spyPrefix.trim(),
+            next_number: Math.max(1, Number(spyNext) || 1),
+          },
         }),
       });
       const poNum = r.data?.purchase_order_numbering;
@@ -965,8 +978,14 @@ export default function Page() {
         setDnNext(String(dnNum.next_number));
         setDnPreview(dnNum.preview);
       }
+      const spyNum = r.data?.supplier_payment_numbering;
+      if (spyNum) {
+        setSpyPrefix(spyNum.prefix);
+        setSpyNext(String(spyNum.next_number));
+        setSpyPreview(spyNum.preview);
+      }
       setMessage(
-        `Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''} / PI ${piNum?.preview || ''} / PREQ ${preqNum?.preview || ''} / PR ${prNum?.preview || ''} / DN ${dnNum?.preview || ''}`.trim()
+        `Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''} / PI ${piNum?.preview || ''} / PREQ ${preqNum?.preview || ''} / PR ${prNum?.preview || ''} / DN ${dnNum?.preview || ''} / SPY ${spyNum?.preview || ''}`.trim()
       );
     } catch (err: any) {
       setError(err.message);
@@ -1136,6 +1155,22 @@ export default function Page() {
                 style={{ width: 90 }}
               />
               <span className="muted">{dnPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+              <span className="muted">SPY</span>
+              <input
+                value={spyPrefix}
+                onChange={(e) => setSpyPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+              />
+              <input
+                value={spyNext}
+                onChange={(e) => setSpyNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+              />
+              <span className="muted">{spyPreview || '—'}</span>
               <button type="button" onClick={savePurchasingNumbering}>
                 Save numbering
               </button>

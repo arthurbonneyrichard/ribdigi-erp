@@ -18,6 +18,7 @@ from app.doc_numbers import (
     next_purchase_invoice_number,
     next_purchase_order_number,
     next_purchase_return_number,
+    next_supplier_payment_number,
 )
 
 
@@ -1186,7 +1187,7 @@ async def record_supplier_payment(
 
     payment = m.SupplierPayment(
         tenant_id=tenant_id,
-        payment_number=f"SPY-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        payment_number=await next_supplier_payment_number(db, tenant_id),
         supplier_id=supplier_id,
         purchase_order_id=primary_po_id,
         purchase_invoice_id=primary_inv.id if primary_inv else purchase_invoice_id,

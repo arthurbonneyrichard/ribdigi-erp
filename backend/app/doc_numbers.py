@@ -84,6 +84,18 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.PurchaseRequest,
         "field": "request_number",
     },
+    "customer_payment": {
+        "default_prefix": "RCP",
+        "storage": "json",
+        "model": m.CustomerPayment,
+        "field": "payment_number",
+    },
+    "supplier_payment": {
+        "default_prefix": "SPY",
+        "storage": "json",
+        "model": m.SupplierPayment,
+        "field": "payment_number",
+    },
 }
 
 # Back-compat aliases
@@ -319,3 +331,11 @@ async def next_sales_order_number(db: AsyncSession, tenant_id: str) -> str:
 
 async def next_purchase_request_number(db: AsyncSession, tenant_id: str) -> str:
     return await next_series_document_number(db, tenant_id, "purchase_request")
+
+
+async def next_customer_payment_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "customer_payment")
+
+
+async def next_supplier_payment_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "supplier_payment")

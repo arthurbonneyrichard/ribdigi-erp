@@ -4686,6 +4686,7 @@ async def sales_settings(
             "sales_order_numbering": numbering_settings(tenant, "sales_order"),
             "sales_return_numbering": numbering_settings(tenant, "sales_return"),
             "credit_note_numbering": numbering_settings(tenant, "credit_note"),
+            "payment_receipt_numbering": numbering_settings(tenant, "customer_payment"),
         }
     )
 
@@ -4736,12 +4737,20 @@ async def update_sales_settings(
             prefix=payload.credit_note_numbering.prefix,
             next_number=payload.credit_note_numbering.next_number,
         )
+    if payload.payment_receipt_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "customer_payment",
+            prefix=payload.payment_receipt_numbering.prefix,
+            next_number=payload.payment_receipt_numbering.next_number,
+        )
     if (
         inv is None
         and payload.quotation_numbering is None
         and payload.sales_order_numbering is None
         and payload.sales_return_numbering is None
         and payload.credit_note_numbering is None
+        and payload.payment_receipt_numbering is None
     ):
         raise HTTPException(status_code=400, detail="No numbering fields to update")
     await db.commit()
@@ -4752,6 +4761,7 @@ async def update_sales_settings(
             "sales_order_numbering": numbering_settings(tenant, "sales_order"),
             "sales_return_numbering": numbering_settings(tenant, "sales_return"),
             "credit_note_numbering": numbering_settings(tenant, "credit_note"),
+            "payment_receipt_numbering": numbering_settings(tenant, "customer_payment"),
         },
         "Sales document numbering updated",
     )
@@ -4773,6 +4783,7 @@ async def purchasing_settings(
             "purchase_request_numbering": numbering_settings(tenant, "purchase_request"),
             "purchase_return_numbering": numbering_settings(tenant, "purchase_return"),
             "debit_note_numbering": numbering_settings(tenant, "debit_note"),
+            "supplier_payment_numbering": numbering_settings(tenant, "supplier_payment"),
         }
     )
 
@@ -4792,6 +4803,7 @@ async def update_purchasing_settings(
         and payload.purchase_request_numbering is None
         and payload.purchase_return_numbering is None
         and payload.debit_note_numbering is None
+        and payload.supplier_payment_numbering is None
     ):
         raise HTTPException(status_code=400, detail="No numbering fields to update")
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
@@ -4837,6 +4849,13 @@ async def update_purchasing_settings(
             prefix=payload.debit_note_numbering.prefix,
             next_number=payload.debit_note_numbering.next_number,
         )
+    if payload.supplier_payment_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "supplier_payment",
+            prefix=payload.supplier_payment_numbering.prefix,
+            next_number=payload.supplier_payment_numbering.next_number,
+        )
     await db.commit()
     return env(
         {
@@ -4846,6 +4865,7 @@ async def update_purchasing_settings(
             "purchase_request_numbering": numbering_settings(tenant, "purchase_request"),
             "purchase_return_numbering": numbering_settings(tenant, "purchase_return"),
             "debit_note_numbering": numbering_settings(tenant, "debit_note"),
+            "supplier_payment_numbering": numbering_settings(tenant, "supplier_payment"),
         },
         "Purchasing document numbering updated",
     )
