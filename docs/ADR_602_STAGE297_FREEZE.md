@@ -31,3 +31,9 @@ Stage 298 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for customer assurance, assurance, evidence chain live, commercial acceptance, paid billing, or go-live.
+
+## Amendment — Stage 298 opened
+
+Stage 298 opened under **ADR-603** after CONTINUE/NEXT (Tenant MVP DPA Subprocessor Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-604**. Stage 297 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 298 runner-up outline was approved and opened (ADR-603); freeze ADR-604. Do not reopen Stage 297 scope.

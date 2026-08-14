@@ -346,6 +346,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Commercial assurance pack remaining-gate index (Stage 297):** Status index is `docs/COMMERCIAL_ASSURANCE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/COMMERCIAL_ASSURANCE_PACK_RG_BLOCKERS_MVP.md` → Stage 73/296/295/73E1 pointers `docs/COMMERCIAL_ASSURANCE_PACK_RG_POINTERS_MVP.md`. Customer assurance Complete and evidence chain live Complete remain MISSING (not claimed). Prefixed `COMMERCIAL_ASSURANCE_PACK_*` remaining-gate docs (≠ Stage 73 A1 `COMMERCIAL_ASSURANCE_MVP.md`).
 
+**DPA subprocessor pack remaining-gate index (Stage 298):** Status index is `docs/DPA_SUBPROCESSOR_PACK_REMAINING_GATE_MVP.md` → blockers `docs/DPA_SUBPROCESSOR_PACK_RG_BLOCKERS_MVP.md` → Stage 39/297/292/77 pointers `docs/DPA_SUBPROCESSOR_PACK_RG_POINTERS_MVP.md`. Signed DPA Complete and subprocessor register live Complete remain MISSING (not claimed). Prefixed `DPA_SUBPROCESSOR_PACK_*` remaining-gate docs (≠ Stage 39 P1 `DPA_SUBPROCESSOR_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

@@ -1,0 +1,61 @@
+{
+  "id": "dpa-subprocessor-pack-rg-pointers",
+  "stage": 298,
+  "pack": "P1",
+  "doc": "docs/DPA_SUBPROCESSOR_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DPA_SUBPROCESSOR_PACK_REMAINING_GATE_MVP.md",
+    "dpa_subprocessor": "docs/DPA_SUBPROCESSOR_MVP.md",
+    "commercial_assurance_pack_remaining_gate": "docs/COMMERCIAL_ASSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_dpa_pack_remaining_gate": "docs/COMMERCIAL_DPA_PACK_REMAINING_GATE_MVP.md",
+    "commercial_dpa": "docs/COMMERCIAL_DPA_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "dpa_signed_claimed": false,
+  "subprocessor_register_live": false,
+  "legal_counsel_claimed": false,
+  "contract_execution_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "dpa_subprocessor_stage39",
+    "commercial_assurance_pack_remaining_gate_stage297",
+    "commercial_dpa_pack_remaining_gate_stage292",
+    "commercial_dpa_stage77",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "dsprp-stage39",
+      "title": "Point to Stage 39 P1 DPA subprocessor",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsprp-stage297",
+      "title": "Point to Stage 297 commercial assurance pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsprp-stage292",
+      "title": "Point to Stage 292 commercial DPA pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsprp-stage77",
+      "title": "Point to Stage 77 A1 commercial DPA adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsprp-dpa-remaining",
+      "title": "Signed DPA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 298 P1 DPA subprocessor pack RG pointers packaging only. Do not claim signed DPA Complete."
+}

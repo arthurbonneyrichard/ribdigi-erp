@@ -4188,6 +4188,18 @@ Every feature in every phase must meet:
 
 **Stage 297 exit (2026-08-14):** I1, B1, P1, D1, H297x met — `docs/STAGE_297_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_602_STAGE297_FREEZE.md`. Fidelity: `docs/STAGE_297_FIDELITY.md`.
 
+**Stage 298 open (2026-08-14):** Tenant MVP DPA Subprocessor Pack Remaining-Gate Index Fidelity — `docs/ADR_603_STAGE298_OPEN.md` + `docs/STAGE_298_PLAN.md` (I1 next).
+
+**Stage 298 I1 (2026-08-14):** DPA subprocessor pack remaining-gate index hub (`test_stage298_index_i1.py`).
+
+**Stage 298 B1 (2026-08-14):** DPA subprocessor pack blocker matrix (`test_stage298_blockers_b1.py`).
+
+**Stage 298 P1 (2026-08-14):** Stage 39 P1 / Stage 297 / Stage 292 / Stage 77 A1 pointers (`test_stage298_pointers_p1.py`).
+
+**Stage 298 D1 (2026-08-14):** DPA Subprocessor Pack Remaining-Gate Index fidelity sync — `docs/STAGE_298_FIDELITY.md` (`test_stage298_fidelity_d1.py`).
+
+**Stage 298 exit (2026-08-14):** I1, B1, P1, D1, H298x met — `docs/STAGE_298_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_604_STAGE298_FREEZE.md`. Fidelity: `docs/STAGE_298_FIDELITY.md`.
+
 
 
 

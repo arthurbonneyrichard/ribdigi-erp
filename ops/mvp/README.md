@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_298_EXIT_CRITERIA.md` / `docs/ADR_604_STAGE298_FREEZE.md` (`backend/tests/test_stage298_exit_h298x.py`) — Stage 298 H298x
+- `docs/STAGE_298_FIDELITY.md` (`backend/tests/test_stage298_fidelity_d1.py`) — Stage 298 D1
+- `docs/STAGE_298_PLAN.md` (`backend/tests/test_stage298_open.py`) — Stage 298 open (ADR-603)
+- `docs/DPA_SUBPROCESSOR_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/dpa-subprocessor-pack-remaining-gate.json` — Stage 298 I1
+- `docs/DPA_SUBPROCESSOR_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/dpa-subprocessor-pack-rg-blockers.json` — Stage 298 B1
+- `docs/DPA_SUBPROCESSOR_PACK_RG_POINTERS_MVP.md` / `ops/mvp/dpa-subprocessor-pack-rg-pointers.json` — Stage 298 P1
 - `docs/STAGE_297_EXIT_CRITERIA.md` / `docs/ADR_602_STAGE297_FREEZE.md` (`backend/tests/test_stage297_exit_h297x.py`) — Stage 297 H297x
 - `docs/STAGE_297_FIDELITY.md` (`backend/tests/test_stage297_fidelity_d1.py`) — Stage 297 D1
 - `docs/STAGE_297_PLAN.md` (`backend/tests/test_stage297_open.py`) — Stage 297 open (ADR-601)
@@ -5065,6 +5071,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 298 exit
+
+H298x met — `docs/STAGE_298_EXIT_CRITERIA.md`, ADR-604. Stages 1–298 frozen for Stage 298 feature scope.
+
+## Stage 298 D1 — Tenant MVP DPA Subprocessor Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_298_FIDELITY.md` (`test_stage298_fidelity_d1.py`). `DPA_SUBPROCESSOR_PACK_*` remaining-gate index; signed DPA / subprocessor register live / go-live still MISSING.
+
+## Stage 298 open
+
+`docs/ADR_603_STAGE298_OPEN.md` + `docs/STAGE_298_PLAN.md` (`test_stage298_open.py`).
 
 ## Stage 297 exit
 

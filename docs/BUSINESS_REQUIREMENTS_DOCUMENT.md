@@ -1014,6 +1014,7 @@ Stage 294 D1 — `docs/STAGE_294_FIDELITY.md` (`test_stage294_fidelity_d1.py`); 
 Stage 295 D1 — `docs/STAGE_295_FIDELITY.md` (`test_stage295_fidelity_d1.py`); Stage 295 I1 / B1 / P1.
 Stage 296 D1 — `docs/STAGE_296_FIDELITY.md` (`test_stage296_fidelity_d1.py`); Stage 296 I1 / B1 / P1.
 Stage 297 D1 — `docs/STAGE_297_FIDELITY.md` (`test_stage297_fidelity_d1.py`); Stage 297 I1 / B1 / P1.
+Stage 298 D1 — `docs/STAGE_298_FIDELITY.md` (`test_stage298_fidelity_d1.py`); Stage 298 I1 / B1 / P1.
 Stage 213 D1 — `docs/STAGE_213_FIDELITY.md` (`test_stage213_fidelity_d1.py`); Stage 213 I1 / B1 / P1.
 Stage 212 D1 — `docs/STAGE_212_FIDELITY.md` (`test_stage212_fidelity_d1.py`); Stage 212 I1 / B1 / P1.
 Stage 211 D1 — `docs/STAGE_211_FIDELITY.md` (`test_stage211_fidelity_d1.py`); Stage 211 I1 / B1 / P1.
@@ -1895,6 +1896,7 @@ Stage 294 D1 Commercial Security Contact Pack Remaining-Gate Index fidelity — 
 Stage 295 D1 Commercial Support Pack Remaining-Gate Index fidelity — `docs/STAGE_295_FIDELITY.md` (`test_stage295_fidelity_d1.py`); Stage 295 I1 commercial support pack remaining-gate hub; Stage 295 B1 blocker matrix; Stage 295 P1 Stage 74/294/293/36 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 296 D1 Commercial Status Pack Remaining-Gate Index fidelity — `docs/STAGE_296_FIDELITY.md` (`test_stage296_fidelity_d1.py`); Stage 296 I1 commercial status pack remaining-gate hub; Stage 296 B1 blocker matrix; Stage 296 P1 Stage 74/295/294/40 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 297 D1 Commercial Assurance Pack Remaining-Gate Index fidelity — `docs/STAGE_297_FIDELITY.md` (`test_stage297_fidelity_d1.py`); Stage 297 I1 commercial assurance pack remaining-gate hub; Stage 297 B1 blocker matrix; Stage 297 P1 Stage 73/296/295/73E1 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 298 D1 DPA Subprocessor Pack Remaining-Gate Index fidelity — `docs/STAGE_298_FIDELITY.md` (`test_stage298_fidelity_d1.py`); Stage 298 I1 DPA subprocessor pack remaining-gate hub; Stage 298 B1 blocker matrix; Stage 298 P1 Stage 39/297/292/77 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 213 D1 Attestation Pack Remaining-Gate Index fidelity — `docs/STAGE_213_FIDELITY.md` (`test_stage213_fidelity_d1.py`); Stage 213 I1 attestation pack remaining-gate hub; Stage 213 B1 blocker matrix; Stage 213 P1 Stage 30 A1/212/187 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 212 D1 Evidence Ledger Remaining-Gate Index fidelity — `docs/STAGE_212_FIDELITY.md` (`test_stage212_fidelity_d1.py`); Stage 212 I1 evidence ledger remaining-gate hub; Stage 212 B1 blocker matrix; Stage 212 P1 Stage 30/211 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 211 D1 Incident Pack Remaining-Gate Index fidelity — `docs/STAGE_211_FIDELITY.md` (`test_stage211_fidelity_d1.py`); Stage 211 I1 incident remaining-gate hub; Stage 211 B1 blocker matrix; Stage 211 P1 Stage 30/210 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
