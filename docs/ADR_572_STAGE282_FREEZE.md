@@ -31,3 +31,10 @@ Stage 283 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for backlog closed, deferred ADR implemented, paid billing, or go-live.
+
+
+## Amendment — Stage 283 opened
+
+Stage 283 opened under **ADR-573** after CONTINUE/NEXT (Tenant MVP Release Notes Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-574**. Stage 282 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 283 runner-up outline was approved and opened (ADR-573); freeze ADR-574. Do not reopen Stage 282 scope.

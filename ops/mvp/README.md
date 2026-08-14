@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_283_EXIT_CRITERIA.md` / `docs/ADR_574_STAGE283_FREEZE.md` (`backend/tests/test_stage283_exit_h283x.py`) — Stage 283 H283x
+- `docs/STAGE_283_FIDELITY.md` (`backend/tests/test_stage283_fidelity_d1.py`) — Stage 283 D1
+- `docs/STAGE_283_PLAN.md` (`backend/tests/test_stage283_open.py`) — Stage 283 open (ADR-573)
+- `docs/RELEASE_NOTES_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/release-notes-pack-remaining-gate.json` — Stage 283 I1
+- `docs/RELEASE_NOTES_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/release-notes-pack-rg-blockers.json` — Stage 283 B1
+- `docs/RELEASE_NOTES_PACK_RG_POINTERS_MVP.md` / `ops/mvp/release-notes-pack-rg-pointers.json` — Stage 283 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4975,4 +4981,16 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 283 exit
+
+H283x met — `docs/STAGE_283_EXIT_CRITERIA.md`, ADR-574. Stages 1–283 frozen for Stage 283 feature scope.
+
+## Stage 283 D1 — Tenant MVP Release Notes Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_283_FIDELITY.md` (`test_stage283_fidelity_d1.py`). `RELEASE_NOTES_PACK_*` remaining-gate index; production live / §7 signed / go-live still MISSING.
+
+## Stage 283 open
+
+`docs/ADR_573_STAGE283_OPEN.md` + `docs/STAGE_283_PLAN.md` (`test_stage283_open.py`).
 

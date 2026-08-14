@@ -1,0 +1,60 @@
+{
+  "id": "release-notes-pack-rg-blockers",
+  "stage": 283,
+  "pack": "B1",
+  "doc": "docs/RELEASE_NOTES_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RELEASE_NOTES_PACK_REMAINING_GATE_MVP.md",
+    "release_notes": "docs/RELEASE_NOTES_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_live_claimed": false,
+  "section_7_signed_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "production_live": "REMAINING",
+    "section_7_signed": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage32_as_production_live": "NON_CLAIM",
+    "stage282_as_backlog_closed": "NON_CLAIM",
+    "production_live_claimed": "false",
+    "section_7_signed_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "rnprb-production",
+      "title": "Mark production live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnprb-section7",
+      "title": "Mark \u00a77 signed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnprb-stage32-nonclaim",
+      "title": "Mark Stage 32 N1 as non-claim for production live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnprb-production-remaining",
+      "title": "Production live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 283 B1 release notes pack RG blocker matrix packaging only. Production live Completes remain MISSING."
+}
