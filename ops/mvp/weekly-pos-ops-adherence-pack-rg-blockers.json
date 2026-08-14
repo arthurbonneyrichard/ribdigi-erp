@@ -1,0 +1,63 @@
+{
+  "id": "weekly-pos-ops-adherence-pack-rg-blockers",
+  "stage": 343,
+  "pack": "B1",
+  "doc": "docs/WEEKLY_POS_OPS_ADHERENCE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/WEEKLY_POS_OPS_ADHERENCE_PACK_REMAINING_GATE_MVP.md",
+    "weekly_pos_ops_adherence": "docs/WEEKLY_POS_OPS_ADHERENCE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_adherence_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "support_sla_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "fabricated_adherence_claimed": "REMAINING",
+    "stage176_as_live_weekly_pos_ops_adherence": "NON_CLAIM",
+    "stage175_as_live_weekly_pos_ops_adherence": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "support_sla_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "fabricated_adherence_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "wpoaprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wpoaprb-sla",
+      "title": "Mark support SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wpoaprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wpoaprb-stage176-nonclaim",
+      "title": "Mark Stage 176 / Stage 175 as non-claim for live weekly POS ops adherence Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wpoaprb-checklist-remaining",
+      "title": "Live weekly POS ops adherence Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 343 B1 weekly POS ops adherence pack RG blocker matrix packaging only. Live weekly POS ops adherence Completes remain MISSING."
+}

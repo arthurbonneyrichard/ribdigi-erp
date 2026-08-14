@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 343 open (2026-08-14):** Tenant MVP Weekly POS Ops Adherence Pack Remaining-Gate Index Fidelity — `docs/ADR_693_STAGE343_OPEN.md` + `docs/STAGE_343_PLAN.md` (I1 next).
+
+**Stage 343 I1 (2026-08-14):** Weekly POS ops adherence pack remaining-gate index hub (`test_stage343_index_i1.py`).
+
+**Stage 343 B1 (2026-08-14):** Weekly POS ops adherence pack blocker matrix (`test_stage343_blockers_b1.py`).
+
+**Stage 343 P1 (2026-08-14):** Stage 176 / Stage 342 / Stage 341 / Stage 329 pointers (`test_stage343_pointers_p1.py`).
+
+**Stage 343 D1 (2026-08-14):** Weekly POS Ops Adherence Pack Remaining-Gate Index fidelity sync — `docs/STAGE_343_FIDELITY.md` (`test_stage343_fidelity_d1.py`).
+
+**Stage 343 exit (2026-08-14):** I1, B1, P1, D1, H343x met — `docs/STAGE_343_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_694_STAGE343_FREEZE.md`. Fidelity: `docs/STAGE_343_FIDELITY.md`.
+
 **Stage 342 open (2026-08-14):** Tenant MVP Shift Handover Checklist Pack Remaining-Gate Index Fidelity — `docs/ADR_691_STAGE342_OPEN.md` + `docs/STAGE_342_PLAN.md` (I1 next).
 
 **Stage 342 I1 (2026-08-14):** Shift handover checklist pack remaining-gate index hub (`test_stage342_index_i1.py`).

@@ -31,3 +31,9 @@ Stage 343 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for shift handover checklist, Offline Complete, live DR, attestation, fabricated shift-handed green, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 343 opened under **ADR-693** after CONTINUE/NEXT (Tenant MVP Weekly POS Ops Adherence Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-694**. Stage 342 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 343 runner-up outline was approved and opened (ADR-693); freeze ADR-694. Do not reopen Stage 342 scope.

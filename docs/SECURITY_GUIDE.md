@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 343 open** | Weekly POS Ops Adherence Pack Remaining-Gate Index — `docs/STAGE_343_PLAN.md`, ADR-693 (`test_stage343_open.py`) |
+| **Stage 343 I1** | Weekly POS ops adherence pack remaining-gate index hub (`test_stage343_index_i1.py`) |
+| **Stage 343 B1** | Weekly POS ops adherence pack blocker matrix (`test_stage343_blockers_b1.py`) |
+| **Stage 343 P1** | Stage 176 / Stage 342 / Stage 341 / Stage 329 pointers (`test_stage343_pointers_p1.py`) |
+| **Stage 343 D1** | Weekly POS ops adherence pack remaining-gate fidelity — `docs/STAGE_343_FIDELITY.md` (`test_stage343_fidelity_d1.py`) |
+| **Stage 343 H343x** | Exit + freeze — `docs/STAGE_343_EXIT_CRITERIA.md`, ADR-694 (`test_stage343_exit_h343x.py`); Stages 1–343 frozen |
 | **Stage 342 open** | Shift Handover Checklist Pack Remaining-Gate Index — `docs/STAGE_342_PLAN.md`, ADR-691 (`test_stage342_open.py`) |
 | **Stage 342 I1** | Shift handover checklist pack remaining-gate index hub (`test_stage342_index_i1.py`) |
 | **Stage 342 B1** | Shift handover checklist pack blocker matrix (`test_stage342_blockers_b1.py`) |

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_343_EXIT_CRITERIA.md` / `docs/ADR_694_STAGE343_FREEZE.md` (`backend/tests/test_stage343_exit_h343x.py`) — Stage 343 H343x
+- `docs/STAGE_343_FIDELITY.md` (`backend/tests/test_stage343_fidelity_d1.py`) — Stage 343 D1
+- `docs/STAGE_343_PLAN.md` (`backend/tests/test_stage343_open.py`) — Stage 343 open (ADR-693)
+- `docs/WEEKLY_POS_OPS_ADHERENCE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/weekly-pos-ops-adherence-pack-remaining-gate.json` — Stage 343 I1
+- `docs/WEEKLY_POS_OPS_ADHERENCE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/weekly-pos-ops-adherence-pack-rg-blockers.json` — Stage 343 B1
+- `docs/WEEKLY_POS_OPS_ADHERENCE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/weekly-pos-ops-adherence-pack-rg-pointers.json` — Stage 343 P1
 - `docs/STAGE_342_EXIT_CRITERIA.md` / `docs/ADR_692_STAGE342_FREEZE.md` (`backend/tests/test_stage342_exit_h342x.py`) — Stage 342 H342x
 - `docs/STAGE_342_FIDELITY.md` (`backend/tests/test_stage342_fidelity_d1.py`) — Stage 342 D1
 - `docs/STAGE_342_PLAN.md` (`backend/tests/test_stage342_open.py`) — Stage 342 open (ADR-691)
@@ -5335,6 +5341,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 343 exit
+
+H343x met — `docs/STAGE_343_EXIT_CRITERIA.md`, ADR-694. Stages 1–343 frozen for Stage 343 feature scope.
+
+## Stage 343 D1 — Tenant MVP Weekly POS Ops Adherence Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_343_FIDELITY.md` (`test_stage343_fidelity_d1.py`). `WEEKLY_POS_OPS_ADHERENCE_PACK_*` remaining-gate index; Offline Complete / support SLA / attestation / fabricated 100% adherence / go-live still MISSING.
+
+## Stage 343 open
+
+ADR-693 / `docs/STAGE_343_PLAN.md`.
 
 ## Stage 342 exit
 
