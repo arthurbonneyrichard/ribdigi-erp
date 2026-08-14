@@ -7972,6 +7972,7 @@ async def list_purchase_order_amendments(
     db: AsyncSession = Depends(get_db),
 ):
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    workspace_svc.assert_record_company(claims, po)
     assert_record_access(claims, po.created_by)
     rows = await purchasing_svc.list_po_amendments(db, claims["tenant_id"], po_id)
     return env([purchasing_svc.serialize_po_amendment(r) for r in rows])
@@ -9619,6 +9620,7 @@ async def expense_ocr_suggest(
     from app import expense_ocr as ocr_svc
 
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
     result = await ocr_svc.suggest_for_expense(
         db, tenant_id=claims["tenant_id"], expense_id=expense_id
@@ -9640,6 +9642,7 @@ async def expense_ocr_apply(
             detail="confirm must be true to apply OCR suggestions",
         )
     existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, existing)
     assert_record_access(claims, existing.created_by)
     expense = await expenses_svc.update_expense(
         db,
@@ -9697,6 +9700,7 @@ async def upload_expense_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
@@ -9736,6 +9740,7 @@ async def download_expense_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
     if not expense.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
@@ -9756,6 +9761,7 @@ async def delete_expense_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
     if not expense.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
@@ -9782,6 +9788,8 @@ async def approve_expense(
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, existing)
     expense = await expenses_svc.approve_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -9804,6 +9812,8 @@ async def reject_expense(
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, existing)
     expense = await expenses_svc.reject_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -9823,6 +9833,7 @@ async def delete_expense(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
     if expense.status == "approved":
         raise HTTPException(status_code=409, detail="Approved expenses cannot be deleted")
@@ -10551,6 +10562,12 @@ async def clear_bank_statement_group(
     """Clear N bank lines against M book lines when totals match."""
     from app import bank_recon as bank_recon_svc
 
+    await bank_recon_svc.get_statement(
+        db,
+        claims["tenant_id"],
+        statement_id,
+        company_id=claims.get("company_id"),
+    )
     result = await bank_recon_svc.create_clearing_group(
         db,
         tenant_id=claims["tenant_id"],
@@ -10559,6 +10576,7 @@ async def clear_bank_statement_group(
         statement_line_ids=list(payload.get("statement_line_ids") or []),
         journal_line_ids=list(payload.get("journal_line_ids") or []),
         notes=payload.get("notes"),
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     stmt = await bank_recon_svc.get_statement(
@@ -10598,7 +10616,11 @@ async def dissolve_bank_clearing_group(
         company_id=claims.get("company_id"),
     )
     result = await bank_recon_svc.dissolve_clearing_group(
-        db, tenant_id=claims["tenant_id"], group_id=group_id
+        db,
+        tenant_id=claims["tenant_id"],
+        group_id=group_id,
+        statement_id=statement_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], statement_id)
@@ -10621,12 +10643,19 @@ async def auto_clear_bank_statement(
     from app import bank_recon as bank_recon_svc
 
     body = payload or {}
+    await bank_recon_svc.get_statement(
+        db,
+        claims["tenant_id"],
+        statement_id,
+        company_id=claims.get("company_id"),
+    )
     result = await bank_recon_svc.apply_auto_matches(
         db,
         tenant_id=claims["tenant_id"],
         statement_id=statement_id,
         min_confidence=str(body.get("min_confidence") or "high"),
         date_window_days=int(body.get("date_window_days") or 7),
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     stmt = await bank_recon_svc.get_statement(
@@ -10725,7 +10754,10 @@ async def complete_bank_statement(
     from app import bank_recon as bank_recon_svc
 
     stmt = await bank_recon_svc.complete_statement(
-        db, tenant_id=claims["tenant_id"], statement_id=statement_id
+        db,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], stmt.id)
@@ -12224,6 +12256,7 @@ async def invoice_early_discount_quote(
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     ep = credit_svc.early_pay_settings(tenant)
     inv = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
+    workspace_svc.assert_record_company(claims, inv)
     quote = credit_svc.invoice_early_discount(
         inv,
         pct=ep["early_pay_discount_pct"],
@@ -12240,6 +12273,7 @@ async def purchase_invoice_early_discount_quote(
 ):
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    workspace_svc.assert_record_company(claims, inv)
     supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], inv.supplier_id)
     ep = credit_svc.resolve_early_pay_settings(tenant, supplier)
     quote = credit_svc.purchase_invoice_early_discount(

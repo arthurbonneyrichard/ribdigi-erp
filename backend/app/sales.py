@@ -127,6 +127,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
     )
     return {
         "id": invoice.id,
+        "company_id": getattr(invoice, "company_id", None),
         "invoice_number": invoice.invoice_number,
         "customer_id": invoice.customer_id,
         "store_id": invoice.store_id,

@@ -185,3 +185,12 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - POS `Transaction.client_request_id` uniqueness is company-scoped (partial unique where key is set); `find_sale_by_client_request_id` / `record_pos_sale` replay only within the active company.
 - `BankClearingGroup` and `BankClearingBookLink` stamp `company_id` from the parent bank statement on multi-line clear-group create.
 - Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.
+
+## Phase 22 — Expense/bank IDOR, transfer stamps, serialize parity (2026-08-14)
+
+- Expense approve/reject/delete/OCR/attachment routes call `assert_record_company` so sibling-company expenses cannot be mutated or downloaded.
+- Bank statement clear-group / auto-clear / complete / dissolve gate on company-scoped statement (and dissolve asserts statement/group ownership).
+- PO amendments list and credit early-discount quotes assert record company ownership.
+- Stock transfer ship/receive/cancel stamp `StockMovement.company_id`; lazy default warehouse and transfer-ship notifications stamp `company_id`.
+- Serialize helpers expose `company_id` for cheques, expenses, bank statements/lines/groups, warehouses/transfers, COA/journals, sales invoices, and POS sale results.
+- Remaining PARTIAL: broader notification scan company filters; remaining serialize peers (PR/PO/GRN/holds/products); ADR-002/005 and FX/API-keys deferred by design.

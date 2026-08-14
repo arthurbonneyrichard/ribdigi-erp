@@ -42,6 +42,7 @@ def serialize_sale_result(tx: m.Transaction) -> dict[str, Any]:
     payload = tx.payload or {}
     return {
         "id": tx.id,
+        "company_id": getattr(tx, "company_id", None),
         "reference": tx.reference,
         "session_id": tx.session_id,
         "party_id": tx.party_id,

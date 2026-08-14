@@ -206,6 +206,7 @@ async def ensure_default_accounts(
 def serialize_coa_account(account: m.Account) -> dict:
     return {
         "id": account.id,
+        "company_id": getattr(account, "company_id", None),
         "code": account.code,
         "name": account.name,
         "account_type": account.account_type,
@@ -1306,6 +1307,7 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
     ).scalars().all()
     return {
         "id": entry.id,
+        "company_id": getattr(entry, "company_id", None),
         "entry_number": entry.entry_number,
         "entry_date": entry.entry_date,
         "reference": entry.reference,

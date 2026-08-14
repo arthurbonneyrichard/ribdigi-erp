@@ -2577,3 +2577,198 @@ async def test_cheque_client_request_and_clearing_stamps_company_scoped(client, 
     ).scalars().all()
     assert links
     assert all(link.company_id == seed["c1"].id for link in links)
+
+
+@pytest.mark.asyncio
+async def test_expense_bank_idor_and_transfer_stamps_company_scoped(client, db_session):
+    """Phase 22: expense/bank mutate IDOR + transfer movement company stamps."""
+    from datetime import datetime
+
+    from app import accounting as accounting_svc
+    from app import bank_recon as recon
+
+    ac, seed = client
+    await accounting_svc.ensure_default_accounts(
+        db_session, seed["t1"].id, company_id=seed["c1"].id
+    )
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="IDOR22",
+        name="Alpha IDOR B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+    exp_b = m.Expense(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        category="ops",
+        description="Company B expense",
+        amount=25,
+        status="pending",
+        created_by=seed["super"].id,
+        approval_step=1,
+        approval_steps_required=1,
+    )
+    db_session.add(exp_b)
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+    headers_b = await _super_headers(ac, seed)
+    headers_b["X-Workspace-Kind"] = "company"
+    headers_b["X-Company-ID"] = c_b.id
+
+    # Company A cannot approve/reject/delete company B expense
+    for method, path in (
+        ("post", f"/api/v1/expenses/{exp_b.id}/approve"),
+        ("post", f"/api/v1/expenses/{exp_b.id}/reject"),
+        ("delete", f"/api/v1/expenses/{exp_b.id}"),
+        ("get", f"/api/v1/expenses/{exp_b.id}/attachment"),
+    ):
+        if method == "post" and path.endswith("/reject"):
+            r = await ac.post(path, headers=headers_a, json={"reason": "nope"})
+        elif method == "post":
+            r = await getattr(ac, method)(path, headers=headers_a, json={})
+        else:
+            r = await getattr(ac, method)(path, headers=headers_a)
+        assert r.status_code == 404, (path, r.status_code, r.text)
+
+    # Bank statement complete IDOR: create statement in B, mutate from A
+    await accounting_svc.ensure_default_accounts(
+        db_session, seed["t1"].id, company_id=c_b.id
+    )
+    cash_b = await accounting_svc.get_account_by_code(
+        db_session, seed["t1"].id, "1000", company_id=c_b.id
+    )
+    day = datetime.utcnow()
+    stmt_b = await recon.create_statement(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["super"].id,
+        account_id=cash_b.id,
+        statement_date=day,
+        opening_balance=0,
+        closing_balance=0,
+        company_id=c_b.id,
+        lines=[],
+    )
+    await db_session.commit()
+    complete = await ac.post(
+        f"/api/v1/accounting/bank-statements/{stmt_b.id}/complete",
+        headers=headers_a,
+    )
+    assert complete.status_code == 404, complete.text
+    auto = await ac.post(
+        f"/api/v1/accounting/bank-statements/{stmt_b.id}/auto-clear",
+        headers=headers_a,
+        json={},
+    )
+    assert auto.status_code == 404, auto.text
+
+    # Transfer ship stamps StockMovement.company_id
+    store_from = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="From Store P22",
+        code="P22F",
+        is_active=True,
+    )
+    store_to = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="To Store P22",
+        code="P22T",
+        is_active=True,
+    )
+    db_session.add_all([store_from, store_to])
+    await db_session.flush()
+    wh_from = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store_from.id,
+        name="From WH",
+        code="P22WF",
+        is_active=True,
+    )
+    wh_to = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store_to.id,
+        name="To WH",
+        code="P22WT",
+        is_active=True,
+    )
+    db_session.add_all([wh_from, wh_to])
+    await db_session.flush()
+    seed["p1"].stock_qty = 10
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            warehouse_id=wh_from.id,
+            product_id=seed["p1"].id,
+            quantity=10,
+        )
+    )
+    transfer = m.StockTransfer(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        transfer_number="TR-P22-1",
+        from_store_id=store_from.id,
+        to_store_id=store_to.id,
+        from_warehouse_id=wh_from.id,
+        to_warehouse_id=wh_to.id,
+        status="requested",
+        created_by=seed["super"].id,
+    )
+    db_session.add(transfer)
+    await db_session.flush()
+    db_session.add(
+        m.StockTransferItem(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            transfer_id=transfer.id,
+            product_id=seed["p1"].id,
+            quantity=2,
+        )
+    )
+    await db_session.commit()
+
+    ship = await ac.post(
+        f"/api/v1/stores/transfers/{transfer.id}/ship",
+        headers=headers_a,
+    )
+    assert ship.status_code == 200, ship.text
+    move = (
+        await db_session.execute(
+            select(m.StockMovement).where(
+                m.StockMovement.reference_id == transfer.id,
+                m.StockMovement.movement_type == "transfer_out",
+            )
+        )
+    ).scalar_one()
+    assert move.company_id == seed["c1"].id
+
+    # Serialize company_id on expense create in company A
+    created = await ac.post(
+        "/api/v1/expenses",
+        headers=headers_a,
+        json={"category": "ops", "description": "P22 expense", "amount": 12},
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["data"].get("company_id") == seed["c1"].id

@@ -59,6 +59,7 @@ async def warehouse_for_store(db: AsyncSession, tenant_id: str, store_id: str) -
     store = await get_store(db, tenant_id, store_id)
     wh = m.Warehouse(
         tenant_id=tenant_id,
+        company_id=getattr(store, "company_id", None),
         store_id=store.id,
         name=f"{store.name} Warehouse",
         code=f"WH-{store.code}",
@@ -217,6 +218,7 @@ async def update_store(
 def serialize_warehouse(row: m.Warehouse) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "store_id": row.store_id,
         "name": row.name,
         "code": row.code,
@@ -548,6 +550,7 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
         to_manager_id = getattr(to_store, "manager_id", None) if to_store else None
     return {
         "id": transfer.id,
+        "company_id": getattr(transfer, "company_id", None),
         "transfer_number": transfer.transfer_number,
         "from_store_id": transfer.from_store_id,
         "to_store_id": transfer.to_store_id,
@@ -919,6 +922,7 @@ async def ship_transfer(
         db.add(
             m.StockMovement(
                 tenant_id=tenant_id,
+                company_id=getattr(transfer, "company_id", None),
                 product_id=item.product_id,
                 warehouse_id=transfer.from_warehouse_id,
                 movement_type="transfer_out",
@@ -946,6 +950,7 @@ async def ship_transfer(
         message=f"Transfer {transfer.transfer_number} shipped and awaits receipt.",
         entity_type="stock_transfer",
         entity_id=transfer.id,
+        company_id=getattr(transfer, "company_id", None),
     )
     await db.flush()
     return transfer
@@ -986,6 +991,7 @@ async def receive_transfer(
         db.add(
             m.StockMovement(
                 tenant_id=tenant_id,
+                company_id=getattr(transfer, "company_id", None),
                 product_id=item.product_id,
                 warehouse_id=transfer.to_warehouse_id,
                 movement_type="transfer_in",
@@ -1035,6 +1041,7 @@ async def cancel_transfer(
             db.add(
                 m.StockMovement(
                     tenant_id=tenant_id,
+                    company_id=getattr(transfer, "company_id", None),
                     product_id=item.product_id,
                     warehouse_id=transfer.from_warehouse_id,
                     movement_type="transfer_cancel",

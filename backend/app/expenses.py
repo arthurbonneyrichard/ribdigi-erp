@@ -562,6 +562,7 @@ def serialize_expense(expense: m.Expense, actions: list[m.ExpenseApprovalAction]
     required = int(getattr(expense, "approval_steps_required", 1) or 1)
     return {
         "id": expense.id,
+        "company_id": getattr(expense, "company_id", None),
         "category_id": expense.category_id,
         "category": expense.category,
         "description": expense.description,

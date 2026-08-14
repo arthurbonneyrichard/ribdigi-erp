@@ -20,6 +20,7 @@ def serialize_account(account: m.Account) -> dict:
 def serialize_line(line: m.BankStatementLine) -> dict:
     return {
         "id": line.id,
+        "company_id": getattr(line, "company_id", None),
         "statement_id": line.statement_id,
         "txn_date": line.txn_date,
         "amount": float(line.amount),
@@ -39,6 +40,7 @@ def serialize_statement(stmt: m.BankStatement, lines: list[m.BankStatementLine] 
     ignored = sum(1 for ln in rows if ln.status == "ignored")
     return {
         "id": stmt.id,
+        "company_id": getattr(stmt, "company_id", None),
         "account_id": stmt.account_id,
         "statement_date": stmt.statement_date,
         "opening_balance": float(stmt.opening_balance or 0),
@@ -498,8 +500,14 @@ async def ignore_line(db: AsyncSession, *, tenant_id: str, line_id: str) -> m.Ba
     return line
 
 
-async def complete_statement(db: AsyncSession, *, tenant_id: str, statement_id: str) -> m.BankStatement:
-    stmt = await get_statement(db, tenant_id, statement_id)
+async def complete_statement(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    statement_id: str,
+    company_id: str | None = None,
+) -> m.BankStatement:
+    stmt = await get_statement(db, tenant_id, statement_id, company_id=company_id)
     if stmt.status == "reconciled":
         return stmt
     lines = await list_statement_lines(db, tenant_id, statement_id)
@@ -646,8 +654,10 @@ async def apply_auto_matches(
     statement_id: str,
     min_confidence: str = "high",
     date_window_days: int = 7,
+    company_id: str | None = None,
 ) -> dict:
     """Persist suggestions at or above min_confidence (high > medium > low)."""
+    await get_statement(db, tenant_id, statement_id, company_id=company_id)
     order = {"high": 3, "medium": 2, "low": 1}
     floor = order.get((min_confidence or "high").lower(), 3)
     suggestions = await auto_match_suggestions(
@@ -700,6 +710,7 @@ def serialize_clearing_group(
 ) -> dict:
     return {
         "id": group.id,
+        "company_id": getattr(group, "company_id", None),
         "statement_id": group.statement_id,
         "notes": group.notes,
         "created_by": group.created_by,
@@ -787,9 +798,10 @@ async def create_clearing_group(
     statement_line_ids: list[str],
     journal_line_ids: list[str],
     notes: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Match N bank lines to M book lines when signed totals are equal."""
-    stmt = await get_statement(db, tenant_id, statement_id)
+    stmt = await get_statement(db, tenant_id, statement_id, company_id=company_id)
     if stmt.status == "reconciled":
         raise HTTPException(status_code=409, detail="Statement is already reconciled")
 
@@ -917,7 +929,12 @@ async def create_clearing_group(
 
 
 async def dissolve_clearing_group(
-    db: AsyncSession, *, tenant_id: str, group_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    group_id: str,
+    statement_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     group = (
         await db.execute(
@@ -929,7 +946,13 @@ async def dissolve_clearing_group(
     ).scalar_one_or_none()
     if not group:
         raise HTTPException(status_code=404, detail="Clearing group not found")
-    stmt = await get_statement(db, tenant_id, group.statement_id)
+    if statement_id and group.statement_id != statement_id:
+        raise HTTPException(status_code=404, detail="Clearing group not found")
+    if company_id and group.company_id and group.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Clearing group not found")
+    stmt = await get_statement(
+        db, tenant_id, group.statement_id, company_id=company_id
+    )
     if stmt.status == "reconciled":
         raise HTTPException(status_code=409, detail="Statement is already reconciled")
 

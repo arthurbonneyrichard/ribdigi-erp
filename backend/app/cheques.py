@@ -27,6 +27,7 @@ CANCELLED = "cancelled"
 def serialize_cheque(row: m.Cheque) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "direction": row.direction,
         "status": row.status,
         "cheque_number": row.cheque_number,
