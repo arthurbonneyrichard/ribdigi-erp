@@ -31,3 +31,9 @@ Stage 259 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for steady-state ops, commercial acceptance, first commercial day, or go-live.
+
+## Amendment — Stage 259 opened
+
+Stage 259 opened under **ADR-525** after CONTINUE/NEXT (Tenant MVP First Commercial Day Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-526**. Stage 258 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 259 runner-up outline was approved and opened (ADR-525); freeze ADR-526. Do not reopen Stage 258 scope.

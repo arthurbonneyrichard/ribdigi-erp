@@ -1,0 +1,60 @@
+{
+  "id": "first-commercial-day-pack-rg-pointers",
+  "stage": 259,
+  "pack": "P1",
+  "doc": "docs/FIRST_COMMERCIAL_DAY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_COMMERCIAL_DAY_PACK_REMAINING_GATE_MVP.md",
+    "first_commercial_day": "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+    "steady_state_ops_pack_remaining_gate": "docs/STEADY_STATE_OPS_PACK_REMAINING_GATE_MVP.md",
+    "commercial_acceptance_pack_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_PACK_REMAINING_GATE_MVP.md",
+    "first_commercial_day_remaining_gate": "docs/FIRST_COMMERCIAL_DAY_REMAINING_GATE_MVP.md",
+    "first_commercial_day_register": "ops/mvp/first-commercial-day.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "first_commercial_day_claimed": false,
+  "steady_state_ops_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "first_commercial_day_stage70_f1",
+    "steady_state_ops_pack_remaining_gate_stage258",
+    "commercial_acceptance_pack_remaining_gate_stage257",
+    "first_commercial_day_remaining_gate_stage199",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "fcdprp-stage70",
+      "title": "Point to Stage 70 F1 first commercial day",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdprp-stage258",
+      "title": "Point to Stage 258 steady-state ops pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdprp-stage257",
+      "title": "Point to Stage 257 commercial acceptance pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdprp-stage199",
+      "title": "Point to Stage 199 first commercial day remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdprp-first-day-remaining",
+      "title": "First commercial day live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 259 P1 first commercial day pack RG pointers packaging only. Do not claim first commercial day live Complete."
+}

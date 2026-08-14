@@ -449,3 +449,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Steady-State Ops Pack Remaining-Gate Index Fidelity** — steady-state ops pack remaining-gate hub (I1), blocker matrix (B1), Stage 71 / Stage 257 / Stage 256 / Stage 198 pointers with explicit non-claim (P1). Prefixed `STEADY_STATE_OPS_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 71 S1 / Stage 198 `STEADY_STATE_OPS_*`). Steady-state ops / first commercial day / go-live / commercial acceptance Completes remain deferred (Stage 259+). Distinct from Stage 257 commercial acceptance pack remaining-gate, Stage 256 commercial packaging archive pack remaining-gate, Stage 198 steady-state ops remaining-gate, and Stage 71 S1 steady-state ops packaging. Open ADR-523 / freeze ADR-524.
 
+## Stage 259 decision (opened after Stage 258 freeze)
+
+**Tenant MVP First Commercial Day Pack Remaining-Gate Index Fidelity** — first commercial day pack remaining-gate hub (I1), blocker matrix (B1), Stage 70 / Stage 258 / Stage 257 / Stage 199 pointers with explicit non-claim (P1). Prefixed `FIRST_COMMERCIAL_DAY_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 70 F1 / Stage 199 `FIRST_COMMERCIAL_DAY_*`). First commercial day / steady-state ops / go-live / commercial acceptance Completes remain deferred (Stage 260+). Distinct from Stage 258 steady-state ops pack remaining-gate, Stage 257 commercial acceptance pack remaining-gate, Stage 199 first commercial day remaining-gate, and Stage 70 F1 first commercial day packaging. Open ADR-525 / freeze ADR-526.
+
