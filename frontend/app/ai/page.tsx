@@ -111,9 +111,8 @@ export default function Page() {
         );
         setA(
           [
-            `created_count=${r.data?.created_count ?? created.length}`,
-            nums ? `requests: ${nums}` : '',
-            skipped.length ? `skipped=${skipped.length}` : '',
+            `Draft purchase request(s) created: ${nums || created.length}`,
+            skipped.length ? `Skipped ${skipped.length} line(s)` : '',
           ]
             .filter(Boolean)
             .join('\n')
