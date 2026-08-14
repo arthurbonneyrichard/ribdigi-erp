@@ -27,3 +27,9 @@ Stage 248 Tenant MVP Release Pipeline Pack Remaining-Gate Index Fidelity deliver
 Stage 249 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 248 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP MVP Declaration Pack Remaining-Gate Index Fidelity — single index of mvp-declaration-pack blockers (packaged Stage 31 MVP declaration materials non-claim as signed declaration / go-live Complete) with explicit non-claim. Prefixed `MVP_DECLARATION_PACK_*` if a prior remaining-gate exists. Distinct from Stage 248 release pipeline pack remaining-gate and Stage 230 launch cert pack remaining-gate.
+
+## Amendment — Stage 249 opened
+
+Stage 249 opened under **ADR-505** after CONTINUE/NEXT (MVP Declaration Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-506**. Stage 248 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 249 runner-up outline was approved and opened (ADR-505); freeze ADR-506. Do not reopen Stage 248 scope.

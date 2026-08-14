@@ -3599,3 +3599,15 @@ Every feature in every phase must meet:
 **Stage 248 D1 (2026-08-14):** Release Pipeline Pack Remaining-Gate Index fidelity sync — `docs/STAGE_248_FIDELITY.md` (`test_stage248_fidelity_d1.py`).
 
 **Stage 248 exit (2026-08-14):** I1, B1, P1, D1, H248x met — `docs/STAGE_248_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_504_STAGE248_FREEZE.md`. Fidelity: `docs/STAGE_248_FIDELITY.md`.
+
+**Stage 249 open (2026-08-14):** Tenant MVP MVP Declaration Pack Remaining-Gate Index Fidelity — `docs/ADR_505_STAGE249_OPEN.md` + `docs/STAGE_249_PLAN.md` (I1 next).
+
+**Stage 249 I1 (2026-08-14):** MVP declaration pack remaining-gate index hub (`test_stage249_index_i1.py`).
+
+**Stage 249 B1 (2026-08-14):** MVP declaration pack blocker matrix (`test_stage249_blockers_b1.py`).
+
+**Stage 249 P1 (2026-08-14):** Stage 31 / Stage 248 / Stage 230 / Stage 213 pointers (`test_stage249_pointers_p1.py`).
+
+**Stage 249 D1 (2026-08-14):** MVP Declaration Pack Remaining-Gate Index fidelity sync — `docs/STAGE_249_FIDELITY.md` (`test_stage249_fidelity_d1.py`).
+
+**Stage 249 exit (2026-08-14):** I1, B1, P1, D1, H249x met — `docs/STAGE_249_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_506_STAGE249_FREEZE.md`. Fidelity: `docs/STAGE_249_FIDELITY.md`.

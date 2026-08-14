@@ -1,0 +1,57 @@
+{
+  "id": "mvp-declaration-pack-remaining-gate",
+  "stage": 249,
+  "pack": "I1",
+  "doc": "docs/MVP_DECLARATION_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/MVP_DECLARATION_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/MVP_DECLARATION_PACK_RG_POINTERS_MVP.md",
+    "mvp_declaration": "docs/MVP_DECLARATION_MVP.md",
+    "release_pipeline_pack_remaining_gate": "docs/RELEASE_PIPELINE_PACK_REMAINING_GATE_MVP.md",
+    "launch_cert_pack_remaining_gate": "docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md",
+    "attestation_pack_remaining_gate": "docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration_register": "ops/mvp/mvp-declaration.json"
+  },
+  "packaging_complete": true,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "sections_1_3_verified": false,
+  "distinct_from_stage31_c1_mvp_declaration": true,
+  "distinct_from_stage248_release_pipeline_pack_remaining_gate": true,
+  "distinct_from_stage230_launch_cert_pack_remaining_gate": true,
+  "distinct_from_stage213_attestation_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "mdpr-read-blockers",
+      "title": "Read B1 MVP declaration pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdpr-follow-pointers",
+      "title": "Follow P1 Stage 31 / Stage 248 / Stage 230 / Stage 213 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdpr-decl-missing",
+      "title": "Reaffirm go-live / section 7 / attestation MISSING until real verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdpr-no-packaging-as-live",
+      "title": "Do not treat Stage 31 C1 / Stage 230 / Stage 213 as go-live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdpr-decl-remaining",
+      "title": "Go-live / section 7 / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 249 I1 MVP declaration pack remaining-gate index packaging only. Do not claim go-live or section 7 Complete."
+}

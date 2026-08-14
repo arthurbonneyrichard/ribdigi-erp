@@ -408,3 +408,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 248 decision (opened after Stage 247 freeze)
 
 **Tenant MVP Release Pipeline Pack Remaining-Gate Index Fidelity** — release pipeline pack remaining-gate hub (I1), blocker matrix (B1), Stage 65 / Stage 247 / Stage 246 / Stage 229 pointers with explicit non-claim (P1). Prefixed `RELEASE_PIPELINE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 65 R1 `RELEASE_PIPELINE_*`). Signed MVP RC / live release pipeline Completes remain deferred (Stage 249+). Distinct from Stage 247 implementation onboarding pack remaining-gate, Stage 246 business pilot pack remaining-gate, Stage 229 staging GHA pack remaining-gate, and Stage 65 R1 release pipeline packaging. Open ADR-503 / freeze ADR-504.
+
+## Stage 249 decision (opened after Stage 248 freeze)
+
+**Tenant MVP MVP Declaration Pack Remaining-Gate Index Fidelity** — MVP declaration pack remaining-gate hub (I1), blocker matrix (B1), Stage 31 / Stage 248 / Stage 230 / Stage 213 pointers with explicit non-claim (P1). Prefixed `MVP_DECLARATION_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 31 C1 `MVP_DECLARATION_*`). Go-live / section 7 / attestation Completes remain deferred (Stage 250+). Distinct from Stage 248 release pipeline pack remaining-gate, Stage 230 launch cert pack remaining-gate, Stage 213 attestation pack remaining-gate, and Stage 31 C1 MVP declaration packaging. Open ADR-505 / freeze ADR-506.

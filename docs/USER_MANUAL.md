@@ -248,6 +248,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Release pipeline pack remaining-gate index (Stage 248):** Status index is `docs/RELEASE_PIPELINE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/RELEASE_PIPELINE_PACK_RG_BLOCKERS_MVP.md` → Stage 65/247/246/229 pointers `docs/RELEASE_PIPELINE_PACK_RG_POINTERS_MVP.md`. Signed MVP Release Candidate Complete and live release pipeline Complete remain MISSING (not claimed). Prefixed `RELEASE_PIPELINE_PACK_*` remaining-gate docs (≠ Stage 65 R1 `RELEASE_PIPELINE_*`).
 
+**MVP declaration pack remaining-gate index (Stage 249):** Status index is `docs/MVP_DECLARATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/MVP_DECLARATION_PACK_RG_BLOCKERS_MVP.md` → Stage 31/248/230/213 pointers `docs/MVP_DECLARATION_PACK_RG_POINTERS_MVP.md`. Go-live Complete, section 7 signed Complete, and attestation Complete remain MISSING (not claimed). Prefixed `MVP_DECLARATION_PACK_*` remaining-gate docs (≠ Stage 31 C1 `MVP_DECLARATION_*`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

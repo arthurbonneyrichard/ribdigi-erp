@@ -1,0 +1,60 @@
+{
+  "id": "mvp-declaration-pack-rg-pointers",
+  "stage": 249,
+  "pack": "P1",
+  "doc": "docs/MVP_DECLARATION_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MVP_DECLARATION_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration": "docs/MVP_DECLARATION_MVP.md",
+    "release_pipeline_pack_remaining_gate": "docs/RELEASE_PIPELINE_PACK_REMAINING_GATE_MVP.md",
+    "launch_cert_pack_remaining_gate": "docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md",
+    "attestation_pack_remaining_gate": "docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration_register": "ops/mvp/mvp-declaration.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "sections_1_3_verified": false,
+  "topics": [
+    "mvp_declaration_stage31_c1",
+    "release_pipeline_pack_remaining_gate_stage248",
+    "launch_cert_pack_remaining_gate_stage230",
+    "attestation_pack_remaining_gate_stage213",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "mdprp-stage31",
+      "title": "Point to Stage 31 C1 MVP declaration",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdprp-stage248",
+      "title": "Point to Stage 248 release pipeline pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdprp-stage230",
+      "title": "Point to Stage 230 launch cert pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdprp-stage213",
+      "title": "Point to Stage 213 attestation pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdprp-decl-remaining",
+      "title": "Go-live / section 7 / attestation Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 249 P1 MVP declaration pack RG pointers packaging only. Do not claim go-live or section 7 Complete."
+}
