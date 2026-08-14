@@ -76,6 +76,9 @@ export default function Page() {
   const [expenseAccounts, setExpenseAccounts] = useState<any[]>([]);
   const [accountDrafts, setAccountDrafts] = useState<Record<string, string>>({});
   const [budgetDrafts, setBudgetDrafts] = useState<Record<string, string>>({});
+  const [expPrefix, setExpPrefix] = useState('EXP');
+  const [expNext, setExpNext] = useState('1');
+  const [expPreview, setExpPreview] = useState('');
 
   async function refresh() {
     const [exp, cats, settings, liquid, st, br, dep, accounts] = await Promise.all([
@@ -101,6 +104,12 @@ export default function Page() {
     setThreshold(settings.data?.expense_approval_threshold ?? 100);
     setL2Threshold(settings.data?.expense_l2_threshold ?? 1000);
     setLevels(settings.data?.levels || []);
+    const num = settings.data?.expense_numbering;
+    if (num) {
+      setExpPrefix(num.prefix || 'EXP');
+      setExpNext(String(num.next_number ?? 1));
+      setExpPreview(num.preview || '');
+    }
     const drafts: Record<string, string> = {};
     const acctDrafts: Record<string, string> = {};
     for (const c of cats.data || []) {
@@ -364,6 +373,31 @@ export default function Page() {
     }
   }
 
+  async function saveExpenseNumbering() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/expenses/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          expense_numbering: {
+            prefix: expPrefix.trim(),
+            next_number: Math.max(1, Number(expNext) || 1),
+          },
+        }),
+      });
+      const num = r.data?.expense_numbering;
+      if (num) {
+        setExpPrefix(num.prefix || 'EXP');
+        setExpNext(String(num.next_number ?? 1));
+        setExpPreview(num.preview || '');
+      }
+      setMessage(`Numbering saved — ${num?.preview || ''}`.trim());
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   function updateLevel(idx: number, patch: Partial<(typeof levels)[0]>) {
     setLevels((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   }
@@ -396,6 +430,33 @@ export default function Page() {
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+        <strong>Document numbering</strong>
+        <p className="muted" style={{ margin: 0 }}>
+          When reference is left blank on create, the next EXP-YYYY-NNNN is assigned automatically.
+          Explicit vendor references are kept as entered.
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Expense</span>
+          <input
+            value={expPrefix}
+            onChange={(e) => setExpPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={expNext}
+            onChange={(e) => setExpNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <span className="muted">{expPreview || '—'}</span>
+          <button type="button" onClick={saveExpenseNumbering}>
+            Save numbering
+          </button>
+        </div>
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Approval matrix</h3>

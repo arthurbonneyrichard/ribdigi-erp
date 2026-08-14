@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.doc_numbers import next_expense_number
 
 DEFAULT_CATEGORIES = [
     ("RENT", "Rent"),
@@ -569,6 +570,10 @@ async def create_expense(
             outflow=True,
         )
 
+    ref = (reference or "").strip() or None
+    if not ref:
+        ref = await next_expense_number(db, tenant_id)
+
     expense = m.Expense(
         tenant_id=tenant_id,
         category_id=cat_id,
@@ -578,7 +583,7 @@ async def create_expense(
         expense_date=expense_date or datetime.utcnow(),
         payment_method=payment_method or "cash",
         liquid_account_id=liquid_account_id,
-        reference=reference,
+        reference=ref,
         payee=payee,
         store_id=resolved_store,
         branch_id=resolved_branch,
