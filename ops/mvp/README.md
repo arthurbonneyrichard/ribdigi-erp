@@ -834,6 +834,12 @@ Authoritative MVP docs:
 - `docs/LOAD_CAPACITY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/load-capacity-pack-remaining-gate.json` — Stage 234 I1
 - `docs/LOAD_CAPACITY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/load-capacity-pack-rg-blockers.json` — Stage 234 B1
 - `docs/LOAD_CAPACITY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/load-capacity-pack-rg-pointers.json` — Stage 234 P1
+- `docs/STAGE_235_EXIT_CRITERIA.md` / `docs/ADR_477_STAGE235_FREEZE.md` (`backend/tests/test_stage235_exit_h235x.py`) — Stage 235 H235x
+- `docs/STAGE_235_FIDELITY.md` (`backend/tests/test_stage235_fidelity_d1.py`) — Stage 235 D1
+- `docs/STAGE_235_PLAN.md` (`backend/tests/test_stage235_open.py`) — Stage 235 open (ADR-476)
+- `docs/EVIDENCE_LEDGER_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/evidence-ledger-pack-remaining-gate.json` — Stage 235 I1
+- `docs/EVIDENCE_LEDGER_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/evidence-ledger-pack-rg-blockers.json` — Stage 235 B1
+- `docs/EVIDENCE_LEDGER_PACK_RG_POINTERS_MVP.md` / `ops/mvp/evidence-ledger-pack-rg-pointers.json` — Stage 235 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4107,4 +4113,16 @@ H234x met — `docs/STAGE_234_EXIT_CRITERIA.md`, ADR-475. Stages 1–234 frozen 
 ## Stage 234 open
 
 `docs/ADR_474_STAGE234_OPEN.md` + `docs/STAGE_234_PLAN.md` (`test_stage234_open.py`).
+
+## Stage 235 exit
+
+H235x met — `docs/STAGE_235_EXIT_CRITERIA.md`, ADR-477. Stages 1–235 frozen for Stage 235 feature scope.
+
+## Stage 235 D1 — Tenant MVP Evidence Ledger Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_235_FIDELITY.md` (`test_stage235_fidelity_d1.py`). `EVIDENCE_LEDGER_PACK_*` remaining-gate index; live go-live evidence still MISSING.
+
+## Stage 235 open
+
+`docs/ADR_476_STAGE235_OPEN.md` + `docs/STAGE_235_PLAN.md` (`test_stage235_open.py`).
 

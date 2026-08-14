@@ -1197,6 +1197,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 26 / Stage 28 / Stage 224 / Stage 223 pointers (Stage 234 P1: `test_stage234_pointers_p1.py`, `docs/LOAD_CAPACITY_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 234 fidelity sync (D1: `test_stage234_fidelity_d1.py`, `docs/STAGE_234_FIDELITY.md`)
 - [x] Stage 234 exit + freeze (H234x: `test_stage234_exit_h234x.py`, `docs/STAGE_234_EXIT_CRITERIA.md`, ADR-475)
+- [x] Stage 235 track opened (ADR-476: `test_stage235_open.py`, `docs/STAGE_235_PLAN.md`) — Evidence Ledger Pack Remaining-Gate Index; closed under ADR-477
+- [x] Evidence ledger pack remaining-gate hub (Stage 235 I1: `test_stage235_index_i1.py`, `docs/EVIDENCE_LEDGER_PACK_REMAINING_GATE_MVP.md`)
+- [x] Evidence ledger pack blocker matrix (Stage 235 B1: `test_stage235_blockers_b1.py`, `docs/EVIDENCE_LEDGER_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 30 / Stage 212 / Stage 234 pointers (Stage 235 P1: `test_stage235_pointers_p1.py`, `docs/EVIDENCE_LEDGER_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 235 fidelity sync (D1: `test_stage235_fidelity_d1.py`, `docs/STAGE_235_FIDELITY.md`)
+- [x] Stage 235 exit + freeze (H235x: `test_stage235_exit_h235x.py`, `docs/STAGE_235_EXIT_CRITERIA.md`, ADR-477)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

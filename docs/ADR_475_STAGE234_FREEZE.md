@@ -24,6 +24,6 @@ Stage 234 Tenant MVP Load Capacity Pack Remaining-Gate Index Fidelity delivered 
 
 ## Next stage
 
-Stage 235 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 234 feature scope remains frozen.
+Stage 235 opened under **ADR-476** after CONTINUE/NEXT (Evidence Ledger Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-477**. Stage 234 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Evidence Ledger Pack Remaining-Gate Index Fidelity — single index of evidence-ledger blockers (packaged Stage 30 L1 evidence-ledger materials non-claim as live go-live evidence Complete) with explicit non-claim. Prefixed `EVIDENCE_LEDGER_PACK_*` if a prior `EVIDENCE_LEDGER_*` remaining-gate exists. Distinct from Stage 234 load capacity pack remaining-gate and Stage 233 WAL offsite remaining-gate.
+**Amendment (2026-08-14):** Stage 235 runner-up outline was approved and opened (ADR-476); freeze ADR-477. Do not reopen Stage 234 scope.

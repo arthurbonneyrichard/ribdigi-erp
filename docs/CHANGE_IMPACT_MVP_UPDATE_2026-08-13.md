@@ -353,3 +353,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Load Capacity Pack Remaining-Gate Index Fidelity** — load capacity pack remaining-gate hub (I1), blocker matrix (B1), Stage 26 / Stage 28 / Stage 224 / Stage 223 pointers with explicit non-claim (P1). Prefixed `LOAD_CAPACITY_PACK_*` (≠ Stage 224 `LOAD_CAPACITY_*`, ≠ Stage 223 `LOAD_CERT_PACK_*`). Certified 1000-VU Completes remain deferred (Stage 235+). Distinct from Stage 224/223/225 load remaining-gates and Stage 233 WAL offsite remaining-gate.
 
+## Stage 235 decision (opened after Stage 234 freeze)
+
+**Tenant MVP Evidence Ledger Pack Remaining-Gate Index Fidelity** — evidence ledger pack remaining-gate hub (I1), blocker matrix (B1), Stage 30 / Stage 212 / Stage 234 pointers with explicit non-claim (P1). Prefixed `EVIDENCE_LEDGER_PACK_*` (≠ Stage 212 `EVIDENCE_LEDGER_*`). Live go-live evidence Completes remain deferred (Stage 236+). Distinct from Stage 212 evidence ledger remaining-gate and Stage 234 load capacity pack remaining-gate.
+
