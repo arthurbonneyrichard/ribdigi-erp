@@ -1,0 +1,63 @@
+{
+  "id": "data-retention-return-pack-rg-blockers",
+  "stage": 309,
+  "pack": "B1",
+  "doc": "docs/DATA_RETENTION_RETURN_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DATA_RETENTION_RETURN_PACK_REMAINING_GATE_MVP.md",
+    "data_retention_return": "docs/DATA_RETENTION_RETURN_MVP.md"
+  },
+  "packaging_complete": true,
+  "data_return_portal_claimed": false,
+  "hot_audit_purge_claimed": false,
+  "contract_exit_return_live": false,
+  "offboarding_workflow_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "data_return_portal_claimed": "REMAINING",
+    "hot_audit_purge_claimed": "REMAINING",
+    "contract_exit_return_live": "REMAINING",
+    "offboarding_workflow_claimed": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage45_as_data_return_portal": "NON_CLAIM",
+    "stage308_as_measured_rto": "NON_CLAIM",
+    "data_return_portal_claimed_flag": "false",
+    "hot_audit_purge_claimed_flag": "false",
+    "contract_exit_return_live_flag": "false",
+    "offboarding_workflow_claimed_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "drrpb-portal",
+      "title": "Mark data-return portal Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrpb-purge",
+      "title": "Mark hot audit purge Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrpb-exit",
+      "title": "Mark contract-exit return live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrpb-stage45-nonclaim",
+      "title": "Mark Stage 45 T1 as non-claim for data-return portal Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrpb-portal-remaining",
+      "title": "Data-return portal Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 309 B1 data retention return pack RG blocker matrix packaging only. Data-return portal Completes remain MISSING."
+}

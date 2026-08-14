@@ -31,3 +31,10 @@ Stage 309 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for measured RTO, measured RPO, multi-region failover, RTO/RPO SLA live, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 309 opened under **ADR-625** after CONTINUE/NEXT (Tenant MVP Data Retention Return Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-626**. Stage 308 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 309 runner-up outline was approved and opened (ADR-625); freeze ADR-626. Do not reopen Stage 308 scope.
+

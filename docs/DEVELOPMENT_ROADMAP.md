@@ -4320,6 +4320,18 @@ Every feature in every phase must meet:
 
 **Stage 308 exit (2026-08-14):** I1, B1, P1, D1, H308x met — `docs/STAGE_308_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_624_STAGE308_FREEZE.md`. Fidelity: `docs/STAGE_308_FIDELITY.md`.
 
+**Stage 309 open (2026-08-14):** Tenant MVP Data Retention Return Pack Remaining-Gate Index Fidelity — `docs/ADR_625_STAGE309_OPEN.md` + `docs/STAGE_309_PLAN.md` (I1 next).
+
+**Stage 309 I1 (2026-08-14):** Data retention return pack remaining-gate index hub (`test_stage309_index_i1.py`).
+
+**Stage 309 B1 (2026-08-14):** Data retention return pack blocker matrix (`test_stage309_blockers_b1.py`).
+
+**Stage 309 P1 (2026-08-14):** Stage 45 T1 / Stage 308 / Stage 307 / Stage 186 pointers (`test_stage309_pointers_p1.py`).
+
+**Stage 309 D1 (2026-08-14):** Data Retention Return Pack Remaining-Gate Index fidelity sync — `docs/STAGE_309_FIDELITY.md` (`test_stage309_fidelity_d1.py`).
+
+**Stage 309 exit (2026-08-14):** I1, B1, P1, D1, H309x met — `docs/STAGE_309_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_626_STAGE309_FREEZE.md`. Fidelity: `docs/STAGE_309_FIDELITY.md`.
+
 
 
 
