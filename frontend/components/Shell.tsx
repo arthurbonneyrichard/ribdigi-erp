@@ -49,6 +49,31 @@ const tenantNavSpec: NavEntry[] = [
     href: '/security',
     modules: ['security'],
   },
+  { kind: 'link', label: 'Backup', href: '/backup#schedule', modules: ['backup'] },
+  {
+    kind: 'link',
+    label: 'Backup & Restore',
+    href: '/backup#restore',
+    modules: ['backup'],
+  },
+  {
+    kind: 'link',
+    label: 'Backup History',
+    href: '/backup#history',
+    modules: ['backup'],
+  },
+  {
+    kind: 'link',
+    label: 'Completed Backups',
+    href: '/backup?backup_status=completed#history',
+    modules: ['backup'],
+  },
+  {
+    kind: 'link',
+    label: 'Failed Backups',
+    href: '/backup?backup_status=failed#history',
+    modules: ['backup'],
+  },
 ];
 
 /** Stage 95 N1/P1 — leaf discoverability; Stage 162 N1 — approved expandable parents (§37). */
@@ -1864,31 +1889,6 @@ const userMgmtLinks: NavLink[] = [
     modules: ['audit'],
   },
   { kind: 'link', label: 'Activity', href: '/activity', modules: ['audit'] },
-  { kind: 'link', label: 'Backup', href: '/backup#schedule', modules: ['backup'] },
-  {
-    kind: 'link',
-    label: 'Backup & Restore',
-    href: '/backup#restore',
-    modules: ['backup'],
-  },
-  {
-    kind: 'link',
-    label: 'Backup History',
-    href: '/backup#history',
-    modules: ['backup'],
-  },
-  {
-    kind: 'link',
-    label: 'Completed Backups',
-    href: '/backup?backup_status=completed#history',
-    modules: ['backup'],
-  },
-  {
-    kind: 'link',
-    label: 'Failed Backups',
-    href: '/backup?backup_status=failed#history',
-    modules: ['backup'],
-  },
   { kind: 'link', label: 'Security', href: '/security', modules: ['security'] },
   {
     kind: 'link',
@@ -2288,7 +2288,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             link.modules.includes('tenant_dashboard') ||
             link.modules.includes('company') ||
             link.modules.includes('users') ||
-            link.modules.includes('security')));
+            link.modules.includes('security') ||
+            link.modules.includes('backup')));
 
   const dashboardLink =
     principal !== 'platform' && workspaceKind !== 'tenant'

@@ -20,9 +20,11 @@ async def _mgr(ac):
 
 async def _super(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
+    headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
+    headers["X-Workspace-Kind"] = "tenant"
+    return headers
 
 
 @pytest.mark.asyncio
@@ -120,6 +122,7 @@ async def test_backup_operations_are_tenant_scoped(client, db_session, tmp_path,
 
     ac, seed = client
     headers = await _super(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     created = await ac.post(
         "/api/v1/backup",

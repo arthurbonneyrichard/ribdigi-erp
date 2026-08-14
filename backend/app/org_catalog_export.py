@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 
 BRANCH_EXPORT_COLUMNS = [
+    "company_id",
     "code",
     "name",
     "address",
@@ -22,6 +23,7 @@ BRANCH_EXPORT_COLUMNS = [
 ]
 
 DEPARTMENT_EXPORT_COLUMNS = [
+    "company_id",
     "code",
     "name",
     "branch_id",
@@ -79,8 +81,11 @@ async def export_branches_csv(
     tenant_id: str,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = select(m.Branch).where(m.Branch.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Branch.company_id == company_id)
     stmt = _apply_active_filter(
         stmt, m.Branch.is_active, is_active=is_active, active_only=active_only
     )
@@ -91,6 +96,7 @@ async def export_branches_csv(
     for row in rows:
         writer.writerow(
             {
+                "company_id": _cell(getattr(row, "company_id", None)),
                 "code": _cell(row.code),
                 "name": _cell(row.name),
                 "address": _cell(row.address),
@@ -110,8 +116,11 @@ async def export_departments_csv(
     branch_id: str | None = None,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = select(m.Department).where(m.Department.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Department.company_id == company_id)
     if branch_id:
         stmt = stmt.where(m.Department.branch_id == branch_id)
     stmt = _apply_active_filter(
@@ -124,6 +133,7 @@ async def export_departments_csv(
     for row in rows:
         writer.writerow(
             {
+                "company_id": _cell(getattr(row, "company_id", None)),
                 "code": _cell(row.code),
                 "name": _cell(row.name),
                 "branch_id": _cell(row.branch_id),

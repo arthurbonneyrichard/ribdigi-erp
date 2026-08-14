@@ -13,9 +13,11 @@ from tests.conftest import auth_headers
 
 async def _admin(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
+    headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
+    headers["X-Workspace-Kind"] = "tenant"
+    return headers
 
 
 @pytest.mark.asyncio
@@ -31,6 +33,7 @@ async def test_backup_restore_media_roundtrip(client, db_session, tmp_path, monk
     monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(backup_dir))
 
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
     tenant_id = seed["t1"].id
     product_id = seed["p1"].id
 

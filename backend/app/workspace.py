@@ -19,6 +19,7 @@ TENANT_WORKSPACE_MODULES = frozenset(
         "billing",
         "security",
         "users",  # tenant-level user roster / membership mgmt only when explicitly gated
+        "backup",  # full-tenant dump — never from company workspace (ADR-490 phase 14)
     }
 )
 
@@ -38,7 +39,6 @@ COMPANY_OPERATIONAL_MODULES = frozenset(
         "warehouse",
         "company",  # company settings (legacy path reused under company context)
         "ai",
-        "backup",
         "tax",
         "notifications",
         "activity",
@@ -267,6 +267,24 @@ async def resolve_workspace(
     )
 
 
+def assert_tenant_workspace(claims: dict) -> None:
+    """Full-tenant admin actions (e.g. backup dump/restore) require tenant workspace."""
+    if claims.get("principal") == "platform":
+        return
+    kind = claims.get("workspace_kind") or "tenant"
+    if kind != "tenant":
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "TENANT_WORKSPACE_REQUIRED",
+                "message": (
+                    "This action requires the tenant workspace. "
+                    "Switch out of company context first."
+                ),
+            },
+        )
+
+
 def assert_module_workspace(claims: dict, module: str) -> None:
     """Enforce tenant vs company workspace for a module."""
     if claims.get("principal") == "platform":
@@ -284,7 +302,7 @@ def assert_module_workspace(claims: dict, module: str) -> None:
                     ),
                 },
             )
-    if module in {"tenant_dashboard", "companies", "subscription"} and kind != "tenant":
+    if module in {"tenant_dashboard", "companies", "subscription", "backup"} and kind != "tenant":
         # Allow read of companies list from either context for switcher; create stays tenant-gated in routes.
         if module == "companies":
             return

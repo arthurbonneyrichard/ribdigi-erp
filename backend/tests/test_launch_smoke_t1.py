@@ -96,8 +96,9 @@ async def test_launch_expense_to_journal_tb_pnl_and_backup_drill(
     monkeypatch.setattr("app.backup.settings.BACKUP_ENCRYPTION_KEY", "")
     monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(tmp_path))
 
+    backup_h = {**super_h, "X-Workspace-Kind": "tenant"}
     backup = await ac.post(
-        "/api/v1/backup", headers=super_h, json={"notes": "s18-t1-launch-smoke"}
+        "/api/v1/backup", headers=backup_h, json={"notes": "s18-t1-launch-smoke"}
     )
     assert backup.status_code == 200, backup.text
     backup_id = backup.json()["data"]["id"]
@@ -105,7 +106,7 @@ async def test_launch_expense_to_journal_tb_pnl_and_backup_drill(
 
     verify = await ac.post(
         f"/api/v1/backup/{backup_id}/verify",
-        headers=super_h,
+        headers=backup_h,
         json={"sample_limit": 25},
     )
     assert verify.status_code == 200, verify.text
@@ -113,7 +114,7 @@ async def test_launch_expense_to_journal_tb_pnl_and_backup_drill(
 
     dry = await ac.post(
         f"/api/v1/backup/{backup_id}/restore",
-        headers=super_h,
+        headers=backup_h,
         json={"dry_run": True},
     )
     assert dry.status_code == 200, dry.text
@@ -124,7 +125,7 @@ async def test_launch_expense_to_journal_tb_pnl_and_backup_drill(
     # Guard: accidental apply without RESTORE text is blocked
     blocked = await ac.post(
         f"/api/v1/backup/{backup_id}/restore",
-        headers=super_h,
+        headers=backup_h,
         json={"dry_run": False, "confirm": True, "confirm_text": "YES"},
     )
     assert blocked.status_code == 400

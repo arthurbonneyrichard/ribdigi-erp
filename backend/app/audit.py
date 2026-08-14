@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -50,6 +50,7 @@ def serialize_audit(row: m.AuditLog) -> dict:
     return {
         "id": row.id,
         "user_id": row.user_id,
+        "company_id": getattr(row, "company_id", None),
         "module": row.module or "system",
         "action": row.action,
         "entity": row.entity,
@@ -91,6 +92,7 @@ async def record_event(
     module: str = "system",
     ip_address: str | None = None,
     user_agent: str | None = None,
+    company_id: str | None = None,
 ) -> m.AuditLog:
     created_at = datetime.utcnow()
     details = details or {}
@@ -108,6 +110,7 @@ async def record_event(
     integrity = compute_integrity_hash(prev, payload)
     row = m.AuditLog(
         tenant_id=tenant_id,
+        company_id=company_id,
         user_id=user_id,
         module=module,
         action=action,
@@ -136,6 +139,7 @@ async def query_logs(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     limit: int = 200,
+    company_id: str | None = None,
 ) -> list[m.AuditLog]:
     stmt = select(m.AuditLog).where(m.AuditLog.tenant_id == tenant_id)
     if user_id:
@@ -150,6 +154,11 @@ async def query_logs(
         stmt = stmt.where(m.AuditLog.created_at >= from_date)
     if to_date:
         stmt = stmt.where(m.AuditLog.created_at <= to_date)
+    # Company workspace: company-scoped rows plus null-company auth/system events.
+    if company_id:
+        stmt = stmt.where(
+            or_(m.AuditLog.company_id == company_id, m.AuditLog.company_id.is_(None))
+        )
     stmt = stmt.order_by(m.AuditLog.created_at.desc()).limit(min(limit, 1000))
     return (await db.execute(stmt)).scalars().all()
 
@@ -207,6 +216,7 @@ def to_csv(rows: list[m.AuditLog]) -> str:
         [
             "created_at",
             "user_id",
+            "company_id",
             "module",
             "action",
             "entity",
@@ -221,6 +231,7 @@ def to_csv(rows: list[m.AuditLog]) -> str:
             [
                 row.created_at.isoformat() if row.created_at else "",
                 row.user_id or "",
+                getattr(row, "company_id", None) or "",
                 row.module or "",
                 row.action,
                 row.entity,

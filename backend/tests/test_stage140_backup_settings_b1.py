@@ -14,15 +14,18 @@ ROOT = Path(__file__).resolve().parents[2]
 
 async def _super(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
+    headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
+    headers["X-Workspace-Kind"] = "tenant"
+    return headers
 
 
 @pytest.mark.asyncio
 async def test_backup_settings_export_csv(client):
     ac, seed = client
     headers = await _super(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     patched = await ac.patch(
         "/api/v1/backup/settings",

@@ -12,9 +12,11 @@ from tests.conftest import auth_headers
 
 async def _admin(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
+    headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
+    headers["X-Workspace-Kind"] = "tenant"
+    return headers
 
 
 @pytest.mark.asyncio
@@ -25,6 +27,7 @@ async def test_backup_restore_drill_with_proof(client, db_session, tmp_path, mon
     monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(tmp_path))
 
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
     product = seed["p1"]
     original_name = product.name
     original_stock = float(product.stock_qty)
@@ -111,6 +114,7 @@ async def test_verify_detects_drift_before_restore(client, db_session, tmp_path,
     monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(tmp_path))
 
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
     created = await ac.post("/api/v1/backup", headers=headers, json={})
     assert created.status_code == 200, created.text
     backup_id = created.json()["data"]["id"]

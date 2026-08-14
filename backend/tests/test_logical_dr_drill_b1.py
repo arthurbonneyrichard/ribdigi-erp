@@ -28,9 +28,11 @@ PLAN = ROOT / "docs" / "STAGE_23_PLAN.md"
 
 async def _admin(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
+    headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
+    headers["X-Workspace-Kind"] = "tenant"
+    return headers
 
 
 def _patch_backup_dir(monkeypatch, tmp_path):
@@ -47,6 +49,7 @@ async def test_logical_dr_drill_end_to_end_with_evidence(
     ac, seed = client
     _patch_backup_dir(monkeypatch, tmp_path)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
     product = seed["p1"]
     original_name = product.name
     original_stock = float(product.stock_qty)
@@ -159,6 +162,7 @@ async def test_foreign_tenant_backup_restore_and_verify_404(
     await db_session.commit()
 
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
     for path, body in (
         (f"/api/v1/backup/{foreign.id}/restore", {"dry_run": True}),
         (f"/api/v1/backup/{foreign.id}/verify", {}),

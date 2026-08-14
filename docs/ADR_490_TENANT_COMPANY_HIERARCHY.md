@@ -122,3 +122,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Stores/warehouses CSV exports filter by company; store/warehouse GET/PATCH reject cross-company IDs.
 - **FX exchange-rate catalog remains tenant-shared by design** for MVP (shared base currency / rates); company-specific FX catalogs deferred.
 - Remaining PARTIAL: audit-log list stamping, branches/departments org units, backup gating to tenant workspace; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 14 follow-up (2026-08-14)
+
+- Audit log `record_event` stamps optional `company_id`; HTTP mutation middleware stamps verified `request.state.company_id`; list/export filter by company (null-company auth/system events remain visible). Chain verify / cold archive stay tenant-wide.
+- Branches and departments list/export/create/update stamp and filter by workspace `company_id`; creates require company workspace; serialize/export include `company_id`.
+- Backup APIs require **tenant workspace** (removed from company-operational modules); company workspace cannot create/list/restore full-tenant dumps. Frontend backup nav moved to tenant workspace and page switches context on load.
+- Remaining PARTIAL: branch/department unique keys remain `(tenant_id, code)` (not company-scoped); ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared.

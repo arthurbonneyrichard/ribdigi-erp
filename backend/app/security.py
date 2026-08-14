@@ -411,6 +411,7 @@ def require_permission(module: str, action: str = "read"):
             "tenant",
             "security",
             "users",
+            "backup",
         }:
             if is_tenant_admin_like(role) or has_permission(role, module, action, overrides=overrides):
                 return claims

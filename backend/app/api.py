@@ -2515,7 +2515,11 @@ async def list_branches(
 ):
     """Stage 122 O1 — active_only / is_active for honest inactive-only branch lists."""
     rows = await org_units_svc.list_branches(
-        db, claims["tenant_id"], active_only=active_only, is_active=is_active
+        db,
+        claims["tenant_id"],
+        active_only=active_only,
+        is_active=is_active,
+        company_id=claims.get("company_id"),
     )
     return env([org_units_svc.serialize_branch(r) for r in rows])
 
@@ -2533,6 +2537,7 @@ async def branches_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -2557,11 +2562,13 @@ async def create_branch(
         phone=payload.phone,
         email=str(payload.email) if payload.email is not None else None,
         manager_id=payload.manager_id,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
+        company_id=claims.get("company_id"),
         module="users",
         action="branch_created",
         entity="branch",
@@ -2591,11 +2598,13 @@ async def update_branch(
         manager_id=payload.manager_id,
         clear_manager=payload.clear_manager,
         is_active=payload.is_active,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
+        company_id=claims.get("company_id"),
         module="users",
         action="branch_updated",
         entity="branch",
@@ -2621,6 +2630,7 @@ async def list_departments(
         branch_id=branch_id,
         active_only=active_only,
         is_active=is_active,
+        company_id=claims.get("company_id"),
     )
     return env([org_units_svc.serialize_department(r) for r in rows])
 
@@ -2640,6 +2650,7 @@ async def departments_export(
         branch_id=branch_id,
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -2662,11 +2673,13 @@ async def create_department(
         name=payload.name,
         branch_id=payload.branch_id,
         head_user_id=payload.head_user_id,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
+        company_id=claims.get("company_id"),
         module="users",
         action="department_created",
         entity="department",
@@ -2695,11 +2708,13 @@ async def update_department(
         head_user_id=payload.head_user_id,
         clear_head=payload.clear_head,
         is_active=payload.is_active,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
+        company_id=claims.get("company_id"),
         module="users",
         action="department_updated",
         entity="department",
@@ -13598,6 +13613,7 @@ async def audit_logs(
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         limit=limit,
+        company_id=claims.get("company_id"),
     )
     return env([audit_svc.serialize_audit(r) for r in rows])
 
@@ -13626,6 +13642,7 @@ async def audit_logs_export(
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         limit=1000,
+        company_id=claims.get("company_id"),
     )
     chronological = list(reversed(rows))
     fmt = (format or "csv").strip().lower()
@@ -14404,6 +14421,7 @@ async def backup_settings_get(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    workspace_svc.assert_tenant_workspace(claims)
     row = await backup_svc.get_or_create_settings(db, claims["tenant_id"])
     await db.commit()
     return env(backup_svc.serialize_settings(row))
@@ -14415,6 +14433,7 @@ async def backup_settings_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 140 B1 — backup schedule settings CSV (no archive bytes / credentials)."""
+    workspace_svc.assert_tenant_workspace(claims)
     text = await ops_settings_export_svc.export_backup_settings_csv(
         db, tenant_id=claims["tenant_id"]
     )
@@ -14434,6 +14453,7 @@ async def backup_settings_patch(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    workspace_svc.assert_tenant_workspace(claims)
     row = await backup_svc.update_settings(
         db,
         claims["tenant_id"],
@@ -14453,6 +14473,7 @@ async def backup_list(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 129 B1 — optional status filter for backup job history."""
+    workspace_svc.assert_tenant_workspace(claims)
     status_n = (status or "").strip().lower() or None
     rows = await admin_ops_export_svc.list_backup_jobs(
         db, tenant_id=claims["tenant_id"], status=status_n
@@ -14467,6 +14488,7 @@ async def backup_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 129 B1 — backup job metadata CSV (archive bytes not included)."""
+    workspace_svc.assert_tenant_workspace(claims)
     status_n = (status or "").strip().lower() or None
     text = await admin_ops_export_svc.export_backup_jobs_csv(
         db, tenant_id=claims["tenant_id"], status=status_n
@@ -14485,6 +14507,7 @@ async def backup_create(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    workspace_svc.assert_tenant_workspace(claims)
     backup_svc.ensure_backup_dir_writable()
     notes = (payload or {}).get("notes")
     job = await backup_svc.create_backup(
@@ -14515,6 +14538,7 @@ async def backup_run_due(
     db: AsyncSession = Depends(get_db),
 ):
     """Run a backup when schedule is enabled and due (manual/cron trigger)."""
+    workspace_svc.assert_tenant_workspace(claims)
     result = await backup_svc.run_scheduled_backup_if_due(
         db, tenant_id=claims["tenant_id"], user_id=claims.get("sub")
     )
@@ -14530,6 +14554,7 @@ async def backup_get(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    workspace_svc.assert_tenant_workspace(claims)
     job = await backup_svc.get_backup(db, claims["tenant_id"], backup_id)
     return env(backup_svc.serialize_job(job))
 
@@ -14541,6 +14566,7 @@ async def backup_download(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    workspace_svc.assert_tenant_workspace(claims)
     job = await backup_svc.get_backup(db, claims["tenant_id"], backup_id)
     data = await backup_svc.read_backup_bytes(job)
     await audit_svc.record_event(
@@ -14575,6 +14601,7 @@ async def backup_verify(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 5 B1 — decrypt backup and prove field match against live tenant data."""
+    workspace_svc.assert_tenant_workspace(claims)
     body = payload or {}
     sample_limit = int(body.get("sample_limit") or 100)
     sample_limit = max(1, min(sample_limit, 500))
@@ -14613,6 +14640,7 @@ async def backup_restore(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    workspace_svc.assert_tenant_workspace(claims)
     body = payload or {}
     dry_run = bool(body.get("dry_run", True))
     confirm = bool(body.get("confirm", False))

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { setWorkspaceContext } from '../../lib/workspaceContext';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -32,6 +33,8 @@ export default function Page() {
   }
 
   useEffect(() => {
+    // ADR-490 phase 14 — full-tenant backup requires tenant workspace.
+    setWorkspaceContext('tenant');
     const params = new URLSearchParams(window.location.search);
     const bs = (params.get('backup_status') || '').trim().toLowerCase();
     if (bs) setBackupStatusFilter(bs);

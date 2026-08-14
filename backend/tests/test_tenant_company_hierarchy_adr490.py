@@ -1528,3 +1528,117 @@ async def test_dashboard_catalog_meta_alerts_company_scoped(client, db_session):
         json={"name": "Hijack Store B"},
     )
     assert foreign_store.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_audit_org_units_backup_company_scoped(client, db_session, tmp_path, monkeypatch):
+    """Phase 14: audit/org-unit company isolation; backup requires tenant workspace."""
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="ORG14",
+        name="Alpha Org B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    branch_b = m.Branch(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="BRB14",
+        name="Company B Only Branch",
+        is_active=True,
+    )
+    dept_b = m.Department(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="DEPB14",
+        name="Company B Only Dept",
+        is_active=True,
+    )
+    db_session.add_all([branch_b, dept_b])
+    db_session.add(
+        m.AuditLog(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            user_id=seed["u1"].id,
+            module="sales",
+            action="secret_b",
+            entity="invoice",
+            entity_id=None,
+            details={"note": "company-b-only"},
+        )
+    )
+    db_session.add(
+        m.AuditLog(
+            tenant_id=seed["t1"].id,
+            company_id=None,
+            user_id=seed["u1"].id,
+            module="security",
+            action="login_failed",
+            entity="auth",
+            entity_id=None,
+            details={"note": "null-company-auth"},
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    # Company workspace cannot dump backups.
+    monkeypatch.setattr("app.backup.settings.BACKUP_DIR", str(tmp_path))
+    monkeypatch.setattr("app.backup.settings.BACKUP_ENCRYPTION_KEY", "")
+    monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(tmp_path))
+    denied_backup = await ac.get("/api/v1/backup", headers=headers)
+    assert denied_backup.status_code == 403
+    assert denied_backup.json()["detail"]["code"] == "TENANT_WORKSPACE_REQUIRED"
+
+    audits = await ac.get("/api/v1/audit-logs", headers=headers)
+    assert audits.status_code == 200, audits.text
+    actions = {r.get("action") for r in audits.json()["data"]}
+    assert "secret_b" not in actions
+    assert "login_failed" in actions
+
+    branches = await ac.get("/api/v1/branches", headers=headers)
+    assert branches.status_code == 200, branches.text
+    branch_names = {r.get("name") for r in branches.json()["data"]}
+    assert "Company B Only Branch" not in branch_names
+
+    created_branch = await ac.post(
+        "/api/v1/branches",
+        headers=headers,
+        json={"code": "BRA14", "name": "Company A Phase14 Branch"},
+    )
+    assert created_branch.status_code == 200, created_branch.text
+    assert created_branch.json()["data"]["company_id"] == seed["c1"].id
+
+    depts = await ac.get("/api/v1/departments", headers=headers)
+    assert depts.status_code == 200, depts.text
+    dept_names = {r.get("name") for r in depts.json()["data"]}
+    assert "Company B Only Dept" not in dept_names
+
+    created_dept = await ac.post(
+        "/api/v1/departments",
+        headers=headers,
+        json={"code": "DEPA14", "name": "Company A Phase14 Dept"},
+    )
+    assert created_dept.status_code == 200, created_dept.text
+    assert created_dept.json()["data"]["company_id"] == seed["c1"].id
+
+    foreign_branch = await ac.patch(
+        f"/api/v1/branches/{branch_b.id}",
+        headers=headers,
+        json={"name": "Hijack Branch B"},
+    )
+    assert foreign_branch.status_code == 404
+
+    # Tenant workspace can list backups.
+    tenant_h = await _super_headers(ac, seed)
+    tenant_h["X-Workspace-Kind"] = "tenant"
+    listed = await ac.get("/api/v1/backup", headers=tenant_h)
+    assert listed.status_code == 200, listed.text

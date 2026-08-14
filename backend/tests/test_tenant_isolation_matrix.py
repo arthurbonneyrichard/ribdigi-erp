@@ -233,6 +233,7 @@ async def test_backup_isolation(client, db_session, tmp_path, monkeypatch):
     await db_session.commit()
 
     headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
     missing = await ac.get(f"/api/v1/backup/{job.id}", headers=headers)
     assert missing.status_code == 404
 

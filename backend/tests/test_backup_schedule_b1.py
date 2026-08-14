@@ -14,9 +14,11 @@ from tests.conftest import auth_headers
 
 async def _admin(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
+    headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
+    headers["X-Workspace-Kind"] = "tenant"
+    return headers
 
 
 def _patch_backup_dir(monkeypatch, tmp_path):
@@ -31,6 +33,7 @@ async def test_backup_settings_schedule_daily_weekly(client, tmp_path, monkeypat
     ac, seed = client
     _patch_backup_dir(monkeypatch, tmp_path)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     got = await ac.get("/api/v1/backup/settings", headers=headers)
     assert got.status_code == 200, got.text
@@ -71,6 +74,7 @@ async def test_scheduled_run_due_and_skip_reasons(client, db_session, tmp_path, 
     ac, seed = client
     _patch_backup_dir(monkeypatch, tmp_path)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     disabled = await ac.post("/api/v1/backup/run-due", headers=headers)
     assert disabled.status_code == 200, disabled.text
@@ -109,6 +113,7 @@ async def test_retention_prune_keeps_last_n(client, db_session, tmp_path, monkey
     ac, seed = client
     _patch_backup_dir(monkeypatch, tmp_path)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     await ac.patch(
         "/api/v1/backup/settings",
@@ -152,6 +157,7 @@ async def test_backup_failure_notifies_admin_no_fake_success(
     ac, seed = client
     _patch_backup_dir(monkeypatch, tmp_path)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     def _boom(*_a, **_k):
         raise RuntimeError("simulated encrypt failure")
@@ -201,6 +207,7 @@ async def test_scheduled_failure_returns_failed_reason_and_notifies(
     ac, seed = client
     _patch_backup_dir(monkeypatch, tmp_path)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     await ac.patch(
         "/api/v1/backup/settings",
@@ -245,6 +252,7 @@ async def test_restore_dry_run_and_verify_still_green(client, tmp_path, monkeypa
     ac, seed = client
     _patch_backup_dir(monkeypatch, tmp_path)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     created = await ac.post("/api/v1/backup", headers=headers, json={"notes": "b1-green"})
     assert created.status_code == 200, created.text
@@ -274,6 +282,7 @@ async def test_weekly_gap_skips_until_due(client, db_session, tmp_path, monkeypa
     ac, seed = client
     _patch_backup_dir(monkeypatch, tmp_path)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     await ac.patch(
         "/api/v1/backup/settings",

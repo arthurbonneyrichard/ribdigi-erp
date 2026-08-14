@@ -25,9 +25,11 @@ def _read(rel: str) -> str:
 
 async def _admin(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
+    headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
+    headers["X-Workspace-Kind"] = "tenant"
+    return headers
 
 
 def _patch_backup_dir(monkeypatch, tmp_path):
@@ -59,6 +61,7 @@ async def test_offsite_disabled_skips_upload(client, tmp_path, monkeypatch):
     put = MagicMock()
     monkeypatch.setattr(backup_svc, "_backup_offsite_s3_client", lambda: MagicMock(put_object=put))
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     created = await ac.post("/api/v1/backup", headers=headers, json={"notes": "local-only"})
     assert created.status_code == 200, created.text
@@ -75,6 +78,7 @@ async def test_offsite_enabled_uploads_to_s3(client, tmp_path, monkeypatch):
     _patch_backup_dir(monkeypatch, tmp_path)
     _enable_offsite(monkeypatch)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     put_calls: list[dict] = []
 
@@ -107,6 +111,7 @@ async def test_offsite_upload_failure_no_fake_success(
     _patch_backup_dir(monkeypatch, tmp_path)
     _enable_offsite(monkeypatch)
     headers = await _admin(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
 
     client_mock = MagicMock()
     client_mock.put_object.side_effect = RuntimeError("simulated S3 outage")
