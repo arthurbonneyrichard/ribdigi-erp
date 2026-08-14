@@ -557,6 +557,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Predefined categories (Rent, Utilities, Salaries, Transportation, Marketing, etc.)
   - [x] Custom category creation
   - [x] Category-based budget allocation (`budget_amount` monthly; `PATCH /expenses/categories/{id}`; Expenses UI)
+  - [x] Soft-deactivate without data loss (`is_active=false` via `PATCH /expenses/categories/{id}`; Expenses **Deactivate** / **Activate**; inactive blocked on new expense/recurring create)
 
 #### BR-9.2 Expense Entry
 - **Description:** Record business expenses.

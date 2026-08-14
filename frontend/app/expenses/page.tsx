@@ -13,6 +13,7 @@ type Category = {
   code: string;
   name: string;
   budget_amount: number;
+  is_active?: boolean;
   account_id?: string | null;
   account_code?: string | null;
   account_name?: string | null;
@@ -140,7 +141,8 @@ export default function Page() {
       setExpPreview(num.preview || '');
     }
     if (!recCategoryId && (cats.data || []).length) {
-      setRecCategoryId(cats.data[0].id);
+      const firstActive = (cats.data || []).find((c: any) => c.is_active !== false);
+      setRecCategoryId((firstActive || cats.data[0]).id);
     }
     const drafts: Record<string, string> = {};
     const acctDrafts: Record<string, string> = {};
@@ -150,7 +152,10 @@ export default function Page() {
     }
     setBudgetDrafts(drafts);
     setAccountDrafts(acctDrafts);
-    if (!categoryId && cats.data?.length) setCategoryId(cats.data[0].id);
+    if (!categoryId && cats.data?.length) {
+      const firstActive = cats.data.find((c: any) => c.is_active !== false);
+      setCategoryId((firstActive || cats.data[0]).id);
+    }
   }
 
   useEffect(() => {
@@ -204,6 +209,31 @@ export default function Page() {
         `Saved ${r.data.name}: budget ${r.data.budget_amount}/mo` +
           (r.data.account_code ? ` · GL ${r.data.account_code}` : ' · GL default 6000')
       );
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setCategoryActive(cat: Category, is_active: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/expenses/categories/${cat.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active }),
+      });
+      setMessage(
+        is_active
+          ? `Category ${r.data.code} activated`
+          : `Category ${r.data.code} deactivated (history retained)`,
+      );
+      // If current pickers point at deactivated category, switch to another active one
+      if (!is_active) {
+        const next = categories.find((c) => c.id !== cat.id && c.is_active !== false);
+        if (categoryId === cat.id && next) setCategoryId(next.id);
+        if (recCategoryId === cat.id && next) setRecCategoryId(next.id);
+      }
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -797,6 +827,7 @@ export default function Page() {
               <th>Name</th>
               <th>Monthly budget</th>
               <th>GL account</th>
+              <th>Active</th>
               <th></th>
             </tr>
           </thead>
@@ -804,7 +835,14 @@ export default function Page() {
             {categories.map((c) => (
               <tr key={c.id}>
                 <td>{c.code}</td>
-                <td>{c.name}</td>
+                <td>
+                  {c.name}
+                  {c.is_active === false ? (
+                    <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                      [inactive]
+                    </span>
+                  ) : null}
+                </td>
                 <td>
                   <input
                     value={budgetDrafts[c.id] ?? String(c.budget_amount ?? 0)}
@@ -829,9 +867,21 @@ export default function Page() {
                     ))}
                   </select>
                 </td>
-                <td>
+                <td>{c.is_active === false ? 'no' : 'yes'}</td>
+                <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <button type="button" onClick={() => saveCategoryBudget(c)}>
                     Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryActive(c, c.is_active === false)}
+                    title={
+                      c.is_active === false
+                        ? 'Reactivate category for new expenses'
+                        : 'Soft-deactivate without deleting history'
+                    }
+                  >
+                    {c.is_active === false ? 'Activate' : 'Deactivate'}
                   </button>
                 </td>
               </tr>
@@ -856,11 +906,14 @@ export default function Page() {
         ) : null}
         <div className="erp-form-grid" style={{ marginBottom: 12 }}>
           <select value={recCategoryId} onChange={(e) => setRecCategoryId(e.target.value)}>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
+            {categories
+              .filter((c) => c.is_active !== false || c.id === recCategoryId)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.is_active === false ? ' (inactive)' : ''}
+                </option>
+              ))}
           </select>
           <input
             value={recAmount}
@@ -1003,13 +1056,16 @@ export default function Page() {
         <h3>New expense</h3>
         <div className="erp-form-grid">
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.account_code ? ` · GL ${c.account_code}` : ''}
-                {c.budget_amount ? ` · budget ${c.budget_amount}` : ''}
-              </option>
-            ))}
+            {categories
+              .filter((c) => c.is_active !== false || c.id === categoryId)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.account_code ? ` · GL ${c.account_code}` : ''}
+                  {c.budget_amount ? ` · budget ${c.budget_amount}` : ''}
+                  {c.is_active === false ? ' (inactive)' : ''}
+                </option>
+              ))}
           </select>
           <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
           <input value={payee} onChange={(e) => setPayee(e.target.value)} placeholder="Payee" />
