@@ -586,6 +586,7 @@ class ExpenseThresholdUpdate(BaseModel):
     expense_approval_threshold: float | None = Field(default=None, gt=0)
     expense_l2_threshold: float | None = Field(default=None, gt=0)
     levels: list[ApprovalLevelUpdate] | None = None
+    expense_numbering: DocumentNumberingFields | None = None
 
 
 class StoreCreate(BaseModel):

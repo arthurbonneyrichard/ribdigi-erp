@@ -6914,7 +6914,12 @@ async def expense_settings(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await expenses_svc.get_approval_settings(db, claims["tenant_id"]))
+    from app.doc_numbers import numbering_settings
+
+    data = await expenses_svc.get_approval_settings(db, claims["tenant_id"])
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    data["expense_numbering"] = numbering_settings(tenant, "expense")
+    return env(data)
 
 
 @api.patch("/expenses/settings")
@@ -6923,23 +6928,47 @@ async def update_expense_settings(
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.doc_numbers import apply_numbering_update, numbering_settings
+
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
-    if payload.levels is None and payload.expense_approval_threshold is None and payload.expense_l2_threshold is None:
+    if (
+        payload.levels is None
+        and payload.expense_approval_threshold is None
+        and payload.expense_l2_threshold is None
+        and payload.expense_numbering is None
+    ):
         raise HTTPException(status_code=400, detail="No settings fields provided")
-    levels_payload = None
-    if payload.levels is not None:
-        levels_payload = [lvl.model_dump() for lvl in payload.levels]
-    data = await expenses_svc.update_approval_settings(
-        db,
-        tenant,
-        expense_approval_threshold=payload.expense_approval_threshold,
-        expense_l2_threshold=payload.expense_l2_threshold,
-        levels=levels_payload,
-    )
+    data = None
+    if (
+        payload.levels is not None
+        or payload.expense_approval_threshold is not None
+        or payload.expense_l2_threshold is not None
+    ):
+        levels_payload = None
+        if payload.levels is not None:
+            levels_payload = [lvl.model_dump() for lvl in payload.levels]
+        data = await expenses_svc.update_approval_settings(
+            db,
+            tenant,
+            expense_approval_threshold=payload.expense_approval_threshold,
+            expense_l2_threshold=payload.expense_l2_threshold,
+            levels=levels_payload,
+        )
+    else:
+        data = await expenses_svc.get_approval_settings(db, claims["tenant_id"])
+    if payload.expense_numbering is not None:
+        # Numbering can be updated by expense writers; approve gate already covers admins.
+        apply_numbering_update(
+            tenant,
+            "expense",
+            prefix=payload.expense_numbering.prefix,
+            next_number=payload.expense_numbering.next_number,
+        )
+    data["expense_numbering"] = numbering_settings(tenant, "expense")
     await db.commit()
-    return env(data, "Expense approval settings updated")
+    return env(data, "Expense settings updated")
 
 
 @api.get("/expenses/recurring")

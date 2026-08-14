@@ -560,7 +560,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Record business expenses.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Expense date, category, amount, payment method, reference number
+  - [x] Expense date, category, amount, payment method, reference number (`reference` auto-allocated via tenant series `GET|PATCH /expenses/settings` → `expense_numbering` when omitted; `{PREFIX}-{YYYY}-{NNNN}` default `EXP`; explicit vendor refs preserved; Expenses Document numbering UI)
   - [ ] Payee name
   - [ ] Description/notes
   - [x] Assign to branch/department (`branch_id` / `department_id` on expenses + recurring; Expenses UI; Alembic `20260813_0091`)
@@ -995,7 +995,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt, journal, POS sale/shift, stock transfer/count numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP; `GET|PATCH /accounting/settings` for JE; `GET|PATCH /pos/settings` for POS sale + SHIFT session; `GET|PATCH /inventory/settings` for TR + SC)
+  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt, journal, POS sale/shift, stock transfer/count, expense numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP; `GET|PATCH /accounting/settings` for JE; `GET|PATCH /pos/settings` for POS sale + SHIFT session; `GET|PATCH /inventory/settings` for TR + SC; `GET|PATCH /expenses/settings` for EXP)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)
