@@ -1321,11 +1321,15 @@ export default function Page() {
           <input
             value={grnInvHeaderDiscount}
             onChange={(e) => setGrnInvHeaderDiscount(e.target.value)}
-            placeholder="Header discount amount"
+            placeholder="Header discount (0 = use PO line discounts)"
             type="number"
             min={0}
             step="0.01"
           />
+          <span className="muted">
+            From-GRN lines inherit proportional PO discounts; leave header at 0 to mirror them on the
+            invoice total.
+          </span>
           <button onClick={createInvoiceFromGrn} disabled={!invoiceGrnId}>
             Draft invoice from GRN
           </button>

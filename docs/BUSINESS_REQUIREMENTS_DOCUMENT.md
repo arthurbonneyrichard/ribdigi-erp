@@ -441,7 +441,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] Create invoice from GRN or manually
   - [ ] Invoice number, date, due date
-  - [x] Line items with quantity, rate, tax, discount (`items[].discount` + header `discount_amount` on create; Purchasing create + detail UI; tax before line discount)
+  - [x] Line items with quantity, rate, tax, discount (`items[].discount` + header `discount_amount` on create; from-GRN inherits proportional PO line discount; Purchasing create + detail UI; tax before line discount)
   - [ ] Attach supplier invoice document (PDF/image)
   - [x] Status: Draft, Approved (`unpaid`), Paid, Partially Paid, Overdue, Cancelled (`POST /purchasing/invoices/{id}/cancel`; `can_cancel` when unpaid with zero payments; Purchasing Cancel invoice UI)
   - [ ] Auto-update Accounts Payable
