@@ -674,7 +674,7 @@ If the expense exceeds your company's approval threshold:
 
 1. Expense status becomes **Pending Approval**
 2. Approver (usually Store Manager or Company Admin) receives notification
-3. Approver reviews and clicks **Approve** or **Reject** with comments
+3. Approver reviews — use **Edit** on pending (or rejected) rows to fix amount/payee/description/reference before deciding — then clicks **Approve** or **Reject** with comments
 4. Approved expenses are posted to accounting automatically
 
 ### 7.3 Recurring Expenses
@@ -690,7 +690,7 @@ For regular payments like rent or subscriptions:
 5. **Skip next** advances `next_run_at` by one period without creating an expense (e.g. skip a holiday cycle)
 6. **Deactivate** / **Activate** a schedule from the list when you need to pause it
 
-> Advance notifications (category `recurring_expense_due`) fire about one day before `next_run_at` via Notifications → Scan due / Celery. Editing a single occurrence’s amount/payee remains deferred.
+> Advance notifications (category `recurring_expense_due`) fire about one day before `next_run_at` via Notifications → Scan due / Celery. To change one occurrence’s amount/payee: **Generate due**, then **Edit** that pending expense before approve. Changing the recurring schedule’s default amount still requires a new schedule (template PATCH deferred).
 
 ### 7.4 Expense Reports
 
