@@ -797,7 +797,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Automated alerts for business events.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [x] **Low Stock:** When product reaches reorder level (`low_stock` scan / alerts)
+  - [x] **Low Stock:** When product reaches reorder level (`low_stock` scan / alerts; emails inventory_officer + store_manager + admins)
   - [x] **New Orders:** When sales order is created (`new_order` on create + confirm; preferences channel)
   - [x] **Purchase Received:** When GRN is approved (`purchase_received` on GRN post)
   - [x] **Payment Due:** When invoice/bill approaches due date (`payment_due` scan)
