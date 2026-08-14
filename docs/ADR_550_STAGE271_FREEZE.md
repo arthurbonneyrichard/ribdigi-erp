@@ -31,3 +31,10 @@ Stage 272 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for paid billing, payment provider, checkout success, or go-live.
+
+
+## Amendment — Stage 272 opened
+
+Stage 272 opened under **ADR-551** after CONTINUE/NEXT (Tenant MVP Subscription Renewal Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-552**. Stage 271 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 272 runner-up outline was approved and opened (ADR-551); freeze ADR-552. Do not reopen Stage 271 scope.

@@ -1419,6 +1419,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] ADR-002 / Stage 36 / Stage 270 / Stage 269 / Stage 266 pointers (Stage 271 P1: `test_stage271_pointers_p1.py`, `docs/BILLING_DEFERRED_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 271 fidelity sync (D1: `test_stage271_fidelity_d1.py`, `docs/STAGE_271_FIDELITY.md`)
 - [x] Stage 271 exit + freeze (H271x: `test_stage271_exit_h271x.py`, `docs/STAGE_271_EXIT_CRITERIA.md`, ADR-550)
+- [x] Stage 272 track opened (ADR-551: `test_stage272_open.py`, `docs/STAGE_272_PLAN.md`) — Subscription Renewal Pack Remaining-Gate Index; closed under ADR-552
+- [x] Subscription renewal pack remaining-gate hub (Stage 272 I1: `test_stage272_index_i1.py`, `docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md`)
+- [x] Subscription renewal pack blocker matrix (Stage 272 B1: `test_stage272_blockers_b1.py`, `docs/SUBSCRIPTION_RENEWAL_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 52 / Stage 271 / Stage 36 / ADR-002 pointers (Stage 272 P1: `test_stage272_pointers_p1.py`, `docs/SUBSCRIPTION_RENEWAL_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 272 fidelity sync (D1: `test_stage272_fidelity_d1.py`, `docs/STAGE_272_FIDELITY.md`)
+- [x] Stage 272 exit + freeze (H272x: `test_stage272_exit_h272x.py`, `docs/STAGE_272_EXIT_CRITERIA.md`, ADR-552)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

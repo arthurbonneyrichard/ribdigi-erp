@@ -1060,6 +1060,12 @@ Authoritative MVP docs:
 - `docs/BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/billing-deferred-pack-remaining-gate.json` — Stage 271 I1
 - `docs/BILLING_DEFERRED_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/billing-deferred-pack-rg-blockers.json` — Stage 271 B1
 - `docs/BILLING_DEFERRED_PACK_RG_POINTERS_MVP.md` / `ops/mvp/billing-deferred-pack-rg-pointers.json` — Stage 271 P1
+- `docs/STAGE_272_EXIT_CRITERIA.md` / `docs/ADR_552_STAGE272_FREEZE.md` (`backend/tests/test_stage272_exit_h272x.py`) — Stage 272 H272x
+- `docs/STAGE_272_FIDELITY.md` (`backend/tests/test_stage272_fidelity_d1.py`) — Stage 272 D1
+- `docs/STAGE_272_PLAN.md` (`backend/tests/test_stage272_open.py`) — Stage 272 open (ADR-551)
+- `docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/subscription-renewal-pack-remaining-gate.json` — Stage 272 I1
+- `docs/SUBSCRIPTION_RENEWAL_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/subscription-renewal-pack-rg-blockers.json` — Stage 272 B1
+- `docs/SUBSCRIPTION_RENEWAL_PACK_RG_POINTERS_MVP.md` / `ops/mvp/subscription-renewal-pack-rg-pointers.json` — Stage 272 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4777,4 +4783,16 @@ H271x met — `docs/STAGE_271_EXIT_CRITERIA.md`, ADR-550. Stages 1–271 frozen 
 ## Stage 271 open
 
 `docs/ADR_549_STAGE271_OPEN.md` + `docs/STAGE_271_PLAN.md` (`test_stage271_open.py`).
+
+## Stage 272 exit
+
+H272x met — `docs/STAGE_272_EXIT_CRITERIA.md`, ADR-552. Stages 1–272 frozen for Stage 272 feature scope.
+
+## Stage 272 D1 — Tenant MVP Subscription Renewal Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_272_FIDELITY.md` (`test_stage272_fidelity_d1.py`). `SUBSCRIPTION_RENEWAL_PACK_*` remaining-gate index; paid billing / live subscriptions / go-live still MISSING (ADR-002).
+
+## Stage 272 open
+
+`docs/ADR_551_STAGE272_OPEN.md` + `docs/STAGE_272_PLAN.md` (`test_stage272_open.py`).
 
