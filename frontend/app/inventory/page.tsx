@@ -16,7 +16,8 @@ type Tab =
   | 'movements'
   | 'adjust'
   | 'stockout'
-  | 'whstock';
+  | 'whstock'
+  | 'transfers';
 
 type ImportReportRow = {
   line: number;
@@ -210,6 +211,11 @@ export default function Page() {
   const [whReorderProductId, setWhReorderProductId] = useState('');
   const [whReorderLevel, setWhReorderLevel] = useState('0');
   const [whReorderQty, setWhReorderQty] = useState('0');
+  const [transfers, setTransfers] = useState<any[]>([]);
+  const [xferFromWh, setXferFromWh] = useState('');
+  const [xferToWh, setXferToWh] = useState('');
+  const [xferQty, setXferQty] = useState('1');
+  const [xferNotes, setXferNotes] = useState('');
 
   async function refresh() {
     const [p, e, c, b, u, w, sc, os, rates] = await Promise.all([
@@ -237,6 +243,10 @@ export default function Page() {
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
     if (!stockWarehouseId && w.data?.length) setStockWarehouseId(w.data[0].id);
     if (!whStockWarehouseId && w.data?.length) setWhStockWarehouseId(w.data[0].id);
+    const linked = (w.data || []).filter((x: any) => x.store_id);
+    if (!xferFromWh && linked[0]) setXferFromWh(linked[0].id);
+    if (!xferToWh && linked[1]) setXferToWh(linked[1].id);
+    else if (!xferToWh && linked[0]) setXferToWh(linked[0].id);
   }
 
   async function refreshSelected(id: string) {
@@ -344,6 +354,85 @@ export default function Page() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, whStockWarehouseId, whStockIncludeZero]);
+
+  async function loadTransfers() {
+    setError('');
+    try {
+      const r = await api('/inventory/stock-transfers');
+      setTransfers(r.data || []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  useEffect(() => {
+    if (tab === 'transfers') {
+      loadTransfers().catch((err) => setError(err.message));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  async function createWarehouseTransfer() {
+    setError('');
+    setMessage('');
+    if (!xferFromWh || !xferToWh) {
+      setError('Select source and destination warehouses');
+      return;
+    }
+    if (xferFromWh === xferToWh) {
+      setError('Source and destination warehouses must differ');
+      return;
+    }
+    if (!selectedId) {
+      setError('Select a product');
+      return;
+    }
+    const qty = Number(xferQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setError('Quantity must be positive');
+      return;
+    }
+    try {
+      const r = await api('/inventory/stock-transfers', {
+        method: 'POST',
+        body: JSON.stringify({
+          from_warehouse_id: xferFromWh,
+          to_warehouse_id: xferToWh,
+          submit: true,
+          notes: xferNotes.trim() || null,
+          items: [{ product_id: selectedId, quantity: qty }],
+        }),
+      });
+      setMessage(
+        `Transfer ${r.data.transfer_number} requested` +
+          (r.data.approval_steps_required <= 1
+            ? ' (single approval — same store)'
+            : ' (dual approval)')
+      );
+      setXferNotes('');
+      await loadTransfers();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function transferAct(id: string, action: string) {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/inventory/stock-transfers/${id}/${action}`, { method: 'POST' });
+      setMessage(r.message || `Transfer ${action} ok`);
+      await loadTransfers();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function warehouseLabel(id: string | null | undefined) {
+    if (!id) return '—';
+    const w = warehouses.find((x) => x.id === id);
+    return w ? w.name || w.code || id.slice(0, 8) : id.slice(0, 8);
+  }
 
   async function saveWarehouseReorder() {
     setError('');
@@ -1074,8 +1163,8 @@ export default function Page() {
     <Shell>
       <h1>Inventory</h1>
       <p className="muted">
-        Products, catalog, variants, batches, stock out, warehouse stock, expiry, stock counts,
-        movements &amp; adjustments
+        Products, catalog, variants, batches, stock out, warehouse stock, transfers, expiry, stock
+        counts, movements &amp; adjustments
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -1091,6 +1180,7 @@ export default function Page() {
             ['opening', 'Opening stock'],
             ['stockout', 'Stock Out'],
             ['whstock', 'Warehouse stock'],
+            ['transfers', 'Transfers'],
             ['expiry', 'Expiring'],
             ['counts', 'Stock counts'],
             ['movements', 'Movements'],
@@ -2507,6 +2597,146 @@ export default function Page() {
                 <tr>
                   <td colSpan={7} className="muted">
                     No warehouse stock rows
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'transfers' && (
+        <>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 560 }}>
+            <h3>Warehouse transfer (BR-5.2 / BR-5.4)</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Move stock between warehouses with a transfer note and approval. Same-store warehouse
+              pairs need one approval; different stores need dual manager approval. Warehouses must
+              be linked to a store. Uses the product selected above.
+            </p>
+            <p className="muted">
+              Selected:{' '}
+              {selected ? `${selected.name} (${selected.sku}) — on-hand ${selected.stock_qty}` : 'none'}
+            </p>
+            <label className="muted">From warehouse</label>
+            <select value={xferFromWh} onChange={(e) => setXferFromWh(e.target.value)}>
+              <option value="">Select source</option>
+              {warehouses
+                .filter((w) => w.store_id)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name || w.code} ({w.code})
+                  </option>
+                ))}
+            </select>
+            <label className="muted">To warehouse</label>
+            <select value={xferToWh} onChange={(e) => setXferToWh(e.target.value)}>
+              <option value="">Select destination</option>
+              {warehouses
+                .filter((w) => w.store_id)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name || w.code} ({w.code})
+                  </option>
+                ))}
+            </select>
+            <label className="muted">Quantity</label>
+            <input value={xferQty} onChange={(e) => setXferQty(e.target.value)} placeholder="1" />
+            <label className="muted">Notes (optional)</label>
+            <input
+              value={xferNotes}
+              onChange={(e) => setXferNotes(e.target.value)}
+              placeholder="Transfer note"
+            />
+            <button
+              type="button"
+              onClick={createWarehouseTransfer}
+              disabled={!selectedId || !xferFromWh || !xferToWh}
+            >
+              Create &amp; request
+            </button>
+          </div>
+
+          <h3>Transfers</h3>
+          <p className="muted">
+            Approve → ship (deducts source) → receive (credits destination). Cancel restores in-transit
+            stock.
+          </p>
+          <button type="button" onClick={() => loadTransfers()} style={{ marginBottom: 8 }}>
+            Refresh
+          </button>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>From WH</th>
+                <th>To WH</th>
+                <th>Status</th>
+                <th>Approval</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.transfer_number}</td>
+                  <td>{warehouseLabel(t.from_warehouse_id)}</td>
+                  <td>{warehouseLabel(t.to_warehouse_id)}</td>
+                  <td>{t.status}</td>
+                  <td>
+                    {t.status === 'requested'
+                      ? t.fully_approved
+                        ? 'Ready to ship'
+                        : t.approval_steps_required <= 1
+                          ? 'Awaiting approval'
+                          : t.awaiting_approval === 'dest'
+                            ? 'Awaiting dest'
+                            : 'Awaiting source'
+                      : '—'}
+                  </td>
+                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {t.status === 'draft' && (
+                      <button type="button" onClick={() => transferAct(t.id, 'submit')}>
+                        Submit
+                      </button>
+                    )}
+                    {t.status === 'requested' && !t.fully_approved && (
+                      <>
+                        <button type="button" onClick={() => transferAct(t.id, 'approve')}>
+                          Approve
+                          {t.approval_steps_required > 1
+                            ? t.awaiting_approval === 'dest'
+                              ? ' dest'
+                              : ' source'
+                            : ''}
+                        </button>
+                        <button type="button" onClick={() => transferAct(t.id, 'reject')}>
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {t.can_ship && (
+                      <button type="button" onClick={() => transferAct(t.id, 'ship')}>
+                        Ship
+                      </button>
+                    )}
+                    {t.status === 'in_transit' && (
+                      <button type="button" onClick={() => transferAct(t.id, 'receive')}>
+                        Receive
+                      </button>
+                    )}
+                    {['draft', 'requested', 'in_transit'].includes(t.status) && (
+                      <button type="button" onClick={() => transferAct(t.id, 'cancel')}>
+                        Cancel
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {transfers.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No transfers yet
                   </td>
                 </tr>
               )}

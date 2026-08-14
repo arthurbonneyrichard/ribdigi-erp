@@ -357,7 +357,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Stock In:** Record incoming stock with reference (purchase order, transfer, adjustment), quantity, batch, expiry, warehouse (`POST /inventory/stock-in` + Inventory Batches UI warehouse/variant/notes; Opening stock variant optional)
   - [x] **Stock Out:** Record outgoing stock with reference (sales, transfer, adjustment, damage), quantity, warehouse (`POST /inventory/stock-out` requires `reference_type` ∈ sale|transfer|adjustment|damage|internal|other + optional `reference_id`/`warehouse_id`/`variant_id`/`batch_id`; Inventory Stock Out tab; FEFO when batch omitted)
   - [x] **Stock Adjustment:** Correct stock discrepancies with reason (damage, theft, expiry, found, lost) (`POST /inventory/adjust/{product_id}` requires coded `reason`; `stock_movements.reason`; optional `warehouse_id`; Inventory Adjust tab; movements `reason=` filter)
-  - [ ] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow
+  - [x] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow (`POST /inventory/stock-transfers` accepts `from_warehouse_id`/`to_warehouse_id`; same-store = 1-step approval, inter-store = dual; ship/receive; Inventory Transfers tab; aliases under `/inventory/stock-transfers*`)
   - [x] **Opening Stock:** Initialize stock levels for new products or fiscal year start (`POST /inventory/opening-stock`, optional equity journal)
   - [x] **Stock Count:** Physical count reconciliation with system stock; variance report generation (`GET|POST /inventory/stock-counts` + complete posts variances; `GET /reports/inventory/stock-counts` variance report + export `inventory_stock_counts`; Reports Inventory panel)
 
@@ -376,7 +376,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] **View stock levels per warehouse** (`GET /inventory/warehouse-stock?warehouse_id=`; Inventory Warehouse stock tab; `inventory:read`)
   - [x] **Warehouse-specific reorder levels** (`PUT /inventory/warehouse-stock/reorder`; Inventory Warehouse stock tab; also `PUT /stores/{id}/reorder-policy`)
-  - [ ] Transfer stock between warehouses
+  - [x] **Transfer stock between warehouses** (`POST /inventory/stock-transfers` with warehouse IDs; approve → ship → receive; Inventory Transfers tab)
   - [x] Warehouse-wise stock valuation (`/reports/inventory/valuation?warehouse_id=`)
 
 #### BR-5.5 Low Stock Management

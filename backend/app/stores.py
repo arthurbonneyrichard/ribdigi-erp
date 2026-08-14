@@ -352,14 +352,14 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
     items = await list_transfer_items(db, transfer.tenant_id, transfer.id)
     step = int(getattr(transfer, "approval_step", 0) or 0)
     required = int(getattr(transfer, "approval_steps_required", 2) or 2)
-    fully_approved = bool(
-        getattr(transfer, "source_approved_by", None)
-        and getattr(transfer, "dest_approved_by", None)
-    )
+    fully_approved = _transfer_fully_approved(transfer)
     can_ship = transfer.status == "requested" and fully_approved
     awaiting = None
     if transfer.status == "requested" and not fully_approved:
-        awaiting = "source" if step <= 1 else "dest"
+        if required <= 1:
+            awaiting = "source"
+        else:
+            awaiting = "source" if step <= 1 else "dest"
     return {
         "id": transfer.id,
         "transfer_number": transfer.transfer_number,
@@ -402,21 +402,52 @@ async def create_transfer(
     *,
     tenant_id: str,
     user_id: str,
-    from_store_id: str,
-    to_store_id: str,
     items: list[dict],
+    from_store_id: str | None = None,
+    to_store_id: str | None = None,
+    from_warehouse_id: str | None = None,
+    to_warehouse_id: str | None = None,
     notes: str | None = None,
     submit: bool = False,
 ) -> m.StockTransfer:
-    if from_store_id == to_store_id:
-        raise HTTPException(status_code=400, detail="Source and destination stores must differ")
     if not items:
         raise HTTPException(status_code=400, detail="Transfer requires at least one item")
 
-    await get_store(db, tenant_id, from_store_id)
-    await get_store(db, tenant_id, to_store_id)
-    from_wh = await warehouse_for_store(db, tenant_id, from_store_id)
-    to_wh = await warehouse_for_store(db, tenant_id, to_store_id)
+    from app.warehouses import get_warehouse
+
+    if from_warehouse_id and to_warehouse_id:
+        from_wh = await get_warehouse(db, tenant_id, from_warehouse_id)
+        to_wh = await get_warehouse(db, tenant_id, to_warehouse_id)
+        if from_wh.id == to_wh.id:
+            raise HTTPException(
+                status_code=400, detail="Source and destination warehouses must differ"
+            )
+        if not from_wh.store_id or not to_wh.store_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Both warehouses must be linked to a store for transfers",
+            )
+        from_store_id = from_wh.store_id
+        to_store_id = to_wh.store_id
+        await get_store(db, tenant_id, from_store_id)
+        await get_store(db, tenant_id, to_store_id)
+    elif from_store_id and to_store_id:
+        if from_store_id == to_store_id:
+            raise HTTPException(
+                status_code=400, detail="Source and destination stores must differ"
+            )
+        await get_store(db, tenant_id, from_store_id)
+        await get_store(db, tenant_id, to_store_id)
+        from_wh = await warehouse_for_store(db, tenant_id, from_store_id)
+        to_wh = await warehouse_for_store(db, tenant_id, to_store_id)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide from_store_id/to_store_id or from_warehouse_id/to_warehouse_id",
+        )
+
+    same_store = from_store_id == to_store_id
+    steps_required = 1 if same_store else 2
 
     transfer = m.StockTransfer(
         tenant_id=tenant_id,
@@ -429,7 +460,7 @@ async def create_transfer(
         notes=notes,
         created_by=user_id,
         approval_step=1 if submit else 0,
-        approval_steps_required=2,
+        approval_steps_required=steps_required,
     )
     db.add(transfer)
     await db.flush()
@@ -464,7 +495,11 @@ async def submit_transfer(db: AsyncSession, *, tenant_id: str, transfer_id: str)
         raise HTTPException(status_code=409, detail=f"Cannot submit transfer in status {transfer.status}")
     transfer.status = "requested"
     transfer.approval_step = 1
-    transfer.approval_steps_required = 2
+    # keep approval_steps_required (1 for same-store WH, 2 for inter-store)
+    if not transfer.approval_steps_required:
+        transfer.approval_steps_required = (
+            1 if transfer.from_store_id == transfer.to_store_id else 2
+        )
     transfer.source_approved_by = None
     transfer.source_approved_at = None
     transfer.dest_approved_by = None
@@ -476,6 +511,9 @@ async def submit_transfer(db: AsyncSession, *, tenant_id: str, transfer_id: str)
 
 
 def _transfer_fully_approved(transfer: m.StockTransfer) -> bool:
+    required = int(getattr(transfer, "approval_steps_required", 2) or 2)
+    if required <= 1:
+        return bool(transfer.source_approved_by)
     return bool(transfer.source_approved_by and transfer.dest_approved_by)
 
 
@@ -520,6 +558,7 @@ async def approve_transfer(
 
     step = int(transfer.approval_step or 1)
     now = datetime.utcnow()
+    required = int(transfer.approval_steps_required or 2)
     if step <= 1 and not transfer.source_approved_by:
         await _assert_may_approve_store(
             db,
@@ -531,19 +570,32 @@ async def approve_transfer(
         )
         transfer.source_approved_by = user_id
         transfer.source_approved_at = now
-        transfer.approval_step = 2
         from app.notifications import create_notification
 
-        await create_notification(
-            db,
-            tenant_id=tenant_id,
-            category="transfer",
-            title="Transfer needs destination approval",
-            message=f"Transfer {transfer.transfer_number} passed source approval.",
-            entity_type="stock_transfer",
-            entity_id=transfer.id,
-        )
-    elif not transfer.dest_approved_by:
+        if required <= 1:
+            # Same-store warehouse transfer: single approval unlocks ship
+            transfer.approval_step = required
+            await create_notification(
+                db,
+                tenant_id=tenant_id,
+                category="transfer",
+                title="Transfer approved for shipping",
+                message=f"Transfer {transfer.transfer_number} is approved and ready to ship.",
+                entity_type="stock_transfer",
+                entity_id=transfer.id,
+            )
+        else:
+            transfer.approval_step = 2
+            await create_notification(
+                db,
+                tenant_id=tenant_id,
+                category="transfer",
+                title="Transfer needs destination approval",
+                message=f"Transfer {transfer.transfer_number} passed source approval.",
+                entity_type="stock_transfer",
+                entity_id=transfer.id,
+            )
+    elif required > 1 and not transfer.dest_approved_by:
         await _assert_may_approve_store(
             db,
             tenant_id=tenant_id,
@@ -559,7 +611,7 @@ async def approve_transfer(
             )
         transfer.dest_approved_by = user_id
         transfer.dest_approved_at = now
-        transfer.approval_step = int(transfer.approval_steps_required or 2)
+        transfer.approval_step = required
         from app.notifications import create_notification
 
         await create_notification(
@@ -615,10 +667,13 @@ async def ship_transfer(
     if transfer.status not in TRANSFER_SHIPPABLE:
         raise HTTPException(status_code=409, detail=f"Cannot ship transfer in status {transfer.status}")
     if not _transfer_fully_approved(transfer):
-        raise HTTPException(
-            status_code=409,
-            detail="Transfer requires source and destination manager approval before shipping",
+        required = int(transfer.approval_steps_required or 2)
+        detail = (
+            "Transfer requires approval before shipping"
+            if required <= 1
+            else "Transfer requires source and destination manager approval before shipping"
         )
+        raise HTTPException(status_code=409, detail=detail)
     items = await list_transfer_items(db, tenant_id, transfer_id)
     for item in items:
         await allocate_unlocated_stock(
