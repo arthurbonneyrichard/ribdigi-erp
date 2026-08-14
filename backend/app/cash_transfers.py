@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.accounting import ensure_default_accounts, get_account_by_code, post_journal_entry
+from app.doc_numbers import next_cash_transfer_number
 
 TRANSFER_KINDS = frozenset({"transfer", "deposit", "withdrawal"})
 ACCOUNT_TYPES = frozenset({"asset", "liability", "equity", "income", "expense"})
@@ -247,13 +248,17 @@ async def create_transfer(
     if notes:
         description = f"{description}: {notes.strip()[:120]}"
 
+    ref = (reference or "").strip() or None
+    if ref is None:
+        ref = await next_cash_transfer_number(db, tenant_id)
+
     transfer = m.CashTransfer(
         tenant_id=tenant_id,
         kind=kind_key,
         from_account_id=from_account_id,
         to_account_id=to_account_id,
         amount=amt,
-        reference=(reference or "").strip() or None,
+        reference=ref,
         notes=(notes or "").strip() or None,
         created_by=user_id,
         created_at=datetime.utcnow(),
@@ -266,7 +271,7 @@ async def create_transfer(
         tenant_id=tenant_id,
         user_id=user_id,
         description=description,
-        reference=transfer.reference or f"XFER-{transfer.id[:8]}",
+        reference=transfer.reference,
         source_type="cash_transfer",
         source_id=transfer.id,
         lines=[

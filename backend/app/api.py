@@ -8006,7 +8006,12 @@ async def accounting_settings(
     from app.doc_numbers import numbering_settings
 
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    return env({"journal_numbering": numbering_settings(tenant, "journal_entry")})
+    return env(
+        {
+            "journal_numbering": numbering_settings(tenant, "journal_entry"),
+            "cash_transfer_numbering": numbering_settings(tenant, "cash_transfer"),
+        }
+    )
 
 
 @api.patch("/accounting/settings")
@@ -8017,18 +8022,29 @@ async def update_accounting_settings(
 ):
     from app.doc_numbers import apply_numbering_update, numbering_settings
 
-    if payload.journal_numbering is None:
+    if payload.journal_numbering is None and payload.cash_transfer_numbering is None:
         raise HTTPException(status_code=400, detail="No numbering fields to update")
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    apply_numbering_update(
-        tenant,
-        "journal_entry",
-        prefix=payload.journal_numbering.prefix,
-        next_number=payload.journal_numbering.next_number,
-    )
+    if payload.journal_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "journal_entry",
+            prefix=payload.journal_numbering.prefix,
+            next_number=payload.journal_numbering.next_number,
+        )
+    if payload.cash_transfer_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "cash_transfer",
+            prefix=payload.cash_transfer_numbering.prefix,
+            next_number=payload.cash_transfer_numbering.next_number,
+        )
     await db.commit()
     return env(
-        {"journal_numbering": numbering_settings(tenant, "journal_entry")},
+        {
+            "journal_numbering": numbering_settings(tenant, "journal_entry"),
+            "cash_transfer_numbering": numbering_settings(tenant, "cash_transfer"),
+        },
         "Accounting document numbering updated",
     )
 

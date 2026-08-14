@@ -1126,6 +1126,8 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 - `POST /accounting/transfers` `{ "kind": "transfer|deposit|withdrawal", "from_account_id", "to_account_id", "amount", "reference", "notes" }`  
 - `GET /accounting/transfers/{id}`  
 
+**Numbering:** `GET|PATCH /accounting/settings` exposes `cash_transfer_numbering` alongside `journal_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `XFER`) when `reference` is omitted; explicit references are kept. Journal line `reference` uses the same value (BR-10.3 / BR-20.4).
+
 `transfer` requires two distinct liquid accounts (Dr destination / Cr source).  
 `deposit` credits Owner's Equity `3000` into a liquid account; `withdrawal` is the reverse.
 
