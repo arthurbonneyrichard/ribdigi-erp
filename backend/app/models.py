@@ -491,6 +491,9 @@ class ExpenseCategory(Base):
     name: Mapped[str] = mapped_column(String(120))
     budget_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    account_id: Mapped[str | None] = mapped_column(
+        ForeignKey("accounts.id"), nullable=True, index=True
+    )
 
 
 class Expense(Base):

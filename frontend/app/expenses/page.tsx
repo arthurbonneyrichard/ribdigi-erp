@@ -6,7 +6,15 @@ import { api } from '../../lib/api';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-type Category = { id: string; code: string; name: string; budget_amount: number };
+type Category = {
+  id: string;
+  code: string;
+  name: string;
+  budget_amount: number;
+  account_id?: string | null;
+  account_code?: string | null;
+  account_name?: string | null;
+};
 type Expense = {
   id: string;
   category: string;
@@ -61,30 +69,41 @@ export default function Page() {
   const [newCatCode, setNewCatCode] = useState('');
   const [newCatName, setNewCatName] = useState('');
   const [newCatBudget, setNewCatBudget] = useState('0');
+  const [newCatAccountId, setNewCatAccountId] = useState('');
+  const [expenseAccounts, setExpenseAccounts] = useState<any[]>([]);
+  const [accountDrafts, setAccountDrafts] = useState<Record<string, string>>({});
   const [budgetDrafts, setBudgetDrafts] = useState<Record<string, string>>({});
 
   async function refresh() {
-    const [exp, cats, settings, liquid, br, dep] = await Promise.all([
+    const [exp, cats, settings, liquid, br, dep, accounts] = await Promise.all([
       api('/expenses'),
       api('/expenses/categories'),
       api('/expenses/settings'),
       api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
+      api('/accounting/accounts').catch(() => ({ data: [] })),
     ]);
     setRows(exp.data || []);
     setCategories(cats.data || []);
     setLiquidAccounts(liquid.data || []);
     setBranches(br.data || []);
     setDepartments(dep.data || []);
+    const glExpense = (accounts.data || []).filter(
+      (a: any) => String(a.account_type || '').toLowerCase() === 'expense'
+    );
+    setExpenseAccounts(glExpense);
     setThreshold(settings.data?.expense_approval_threshold ?? 100);
     setL2Threshold(settings.data?.expense_l2_threshold ?? 1000);
     setLevels(settings.data?.levels || []);
     const drafts: Record<string, string> = {};
+    const acctDrafts: Record<string, string> = {};
     for (const c of cats.data || []) {
       drafts[c.id] = String(c.budget_amount ?? 0);
+      acctDrafts[c.id] = c.account_id || '';
     }
     setBudgetDrafts(drafts);
+    setAccountDrafts(acctDrafts);
     if (!categoryId && cats.data?.length) setCategoryId(cats.data[0].id);
   }
 
@@ -102,14 +121,20 @@ export default function Page() {
           code: newCatCode.trim(),
           name: newCatName.trim(),
           budget_amount: Number(newCatBudget) || 0,
+          account_id: newCatAccountId || null,
         }),
       });
       setNewCatCode('');
       setNewCatName('');
       setNewCatBudget('0');
+      setNewCatAccountId('');
       setCategoryId(r.data.id);
       await refresh();
-      setMessage(`Category ${r.data.code} created (budget ${r.data.budget_amount})`);
+      setMessage(
+        `Category ${r.data.code} created` +
+          (r.data.account_code ? ` → GL ${r.data.account_code}` : '') +
+          ` (budget ${r.data.budget_amount})`
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -119,11 +144,20 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
+      const accountId = accountDrafts[cat.id] || '';
+      const payload: Record<string, unknown> = {
+        budget_amount: Number(budgetDrafts[cat.id]) || 0,
+      };
+      if (accountId) payload.account_id = accountId;
+      else payload.clear_account = true;
       const r = await api(`/expenses/categories/${cat.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ budget_amount: Number(budgetDrafts[cat.id]) || 0 }),
+        body: JSON.stringify(payload),
       });
-      setMessage(`Budget for ${r.data.name} set to ${r.data.budget_amount}/mo`);
+      setMessage(
+        `Saved ${r.data.name}: budget ${r.data.budget_amount}/mo` +
+          (r.data.account_code ? ` · GL ${r.data.account_code}` : ' · GL default 6000')
+      );
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -409,7 +443,10 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Category budgets</h3>
-        <p className="muted">Monthly budgets scale to the report period (Net 30 days = 1×).</p>
+        <p className="muted">
+          Monthly budgets scale to the report period (Net 30 days = 1×). Optional GL posts approved
+          spend to that expense account (default 6000).
+        </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <input
             value={newCatCode}
@@ -429,6 +466,18 @@ export default function Page() {
             placeholder="Monthly budget"
             style={{ width: 120 }}
           />
+          <select
+            value={newCatAccountId}
+            onChange={(e) => setNewCatAccountId(e.target.value)}
+            title="GL expense account"
+          >
+            <option value="">GL: default 6000</option>
+            {expenseAccounts.map((a: any) => (
+              <option key={a.id} value={a.id}>
+                {a.code} — {a.name}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={createCategory}
@@ -443,6 +492,7 @@ export default function Page() {
               <th>Code</th>
               <th>Name</th>
               <th>Monthly budget</th>
+              <th>GL account</th>
               <th></th>
             </tr>
           </thead>
@@ -459,6 +509,21 @@ export default function Page() {
                     }
                     style={{ width: 110 }}
                   />
+                </td>
+                <td>
+                  <select
+                    value={accountDrafts[c.id] ?? ''}
+                    onChange={(e) =>
+                      setAccountDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
+                    }
+                  >
+                    <option value="">Default 6000</option>
+                    {expenseAccounts.map((a: any) => (
+                      <option key={a.id} value={a.id}>
+                        {a.code} — {a.name}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td>
                   <button type="button" onClick={() => saveCategoryBudget(c)}>
@@ -478,6 +543,7 @@ export default function Page() {
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
+                {c.account_code ? ` · GL ${c.account_code}` : ''}
                 {c.budget_amount ? ` · budget ${c.budget_amount}` : ''}
               </option>
             ))}

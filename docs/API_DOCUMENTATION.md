@@ -954,8 +954,8 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 
 ### 9.1 Expense Categories
 **List:** `GET /expenses/categories`  
-**Create:** `POST /expenses/categories` — body `{ code, name, budget_amount? }`; response includes `budget_amount` / `is_active`  
-**Update:** `PATCH /expenses/categories/{category_id}` — partial `{ name?, budget_amount?, is_active? }` (monthly budget; BR-9.1)
+**Create:** `POST /expenses/categories` — body `{ code, name, budget_amount?, account_id? }`; response includes `budget_amount` / `is_active` / `account_id` / `account_code` / `account_name`  
+**Update:** `PATCH /expenses/categories/{category_id}` — partial `{ name?, budget_amount?, is_active?, account_id?, clear_account? }` (monthly budget; optional expense-type GL for auto-post; BR-9.1 / BR-9.2). Approved expenses debit the category GL (else default `6000`).
 
 ### 9.2 Expenses
 **List:** `GET /expenses`  

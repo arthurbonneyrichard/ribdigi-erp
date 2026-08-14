@@ -180,14 +180,41 @@ def scale_monthly_budget(budget_monthly: float, period_days: int) -> float:
     return float(budget_monthly or 0) * (days / 30.0)
 
 
-def serialize_category(cat: m.ExpenseCategory) -> dict:
+def serialize_category(cat: m.ExpenseCategory, account: m.Account | None = None) -> dict:
     return {
         "id": cat.id,
         "code": cat.code,
         "name": cat.name,
         "budget_amount": float(cat.budget_amount or 0),
         "is_active": bool(cat.is_active),
+        "account_id": getattr(cat, "account_id", None),
+        "account_code": account.code if account else None,
+        "account_name": account.name if account else None,
     }
+
+
+async def resolve_expense_category_account(
+    db: AsyncSession, tenant_id: str, account_id: str | None
+) -> m.Account | None:
+    """Validate optional GL link: must be a tenant expense-type account."""
+    if not account_id:
+        return None
+    account = (
+        await db.execute(
+            select(m.Account).where(
+                m.Account.id == account_id,
+                m.Account.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if (account.account_type or "").lower() != "expense":
+        raise HTTPException(
+            status_code=400,
+            detail="Expense category GL must be an expense-type account",
+        )
+    return account
 
 
 async def get_category(
@@ -214,6 +241,8 @@ async def update_category(
     name: str | None = None,
     budget_amount: float | None = None,
     is_active: bool | None = None,
+    account_id: str | None = None,
+    clear_account: bool = False,
 ) -> m.ExpenseCategory:
     cat = await get_category(db, tenant_id, category_id)
     if name is not None:
@@ -225,6 +254,11 @@ async def update_category(
         cat.budget_amount = float(budget_amount)
     if is_active is not None:
         cat.is_active = bool(is_active)
+    if clear_account:
+        cat.account_id = None
+    elif account_id is not None:
+        account = await resolve_expense_category_account(db, tenant_id, account_id)
+        cat.account_id = account.id if account else None
     await db.flush()
     return cat
 
