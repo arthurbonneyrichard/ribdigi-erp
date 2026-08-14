@@ -31,3 +31,10 @@ Stage 338 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for FAQ offline POS, Offline Complete, hosted KB SaaS, attestation, fabricated FAQ SLA, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 338 opened under **ADR-683** after CONTINUE/NEXT (Tenant MVP Troubleshooting Index Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-684**. Stage 337 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 338 runner-up outline was approved and opened (ADR-683); freeze ADR-684. Do not reopen Stage 337 scope.
+

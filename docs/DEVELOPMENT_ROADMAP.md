@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 338 open (2026-08-14):** Tenant MVP Troubleshooting Index Pack Remaining-Gate Index Fidelity — `docs/ADR_683_STAGE338_OPEN.md` + `docs/STAGE_338_PLAN.md` (I1 next).
+
+**Stage 338 I1 (2026-08-14):** Troubleshooting index pack remaining-gate index hub (`test_stage338_index_i1.py`).
+
+**Stage 338 B1 (2026-08-14):** Troubleshooting index pack blocker matrix (`test_stage338_blockers_b1.py`).
+
+**Stage 338 P1 (2026-08-14):** Stage 171 / Stage 337 / Stage 336 / Stage 329 pointers (`test_stage338_pointers_p1.py`).
+
+**Stage 338 D1 (2026-08-14):** Troubleshooting Index Pack Remaining-Gate Index fidelity sync — `docs/STAGE_338_FIDELITY.md` (`test_stage338_fidelity_d1.py`).
+
+**Stage 338 exit (2026-08-14):** I1, B1, P1, D1, H338x met — `docs/STAGE_338_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_684_STAGE338_FREEZE.md`. Fidelity: `docs/STAGE_338_FIDELITY.md`.
+
 **Stage 337 open (2026-08-14):** Tenant MVP FAQ Offline POS Pack Remaining-Gate Index Fidelity — `docs/ADR_681_STAGE337_OPEN.md` + `docs/STAGE_337_PLAN.md` (I1 next).
 
 **Stage 337 I1 (2026-08-14):** FAQ offline POS pack remaining-gate index hub (`test_stage337_index_i1.py`).
