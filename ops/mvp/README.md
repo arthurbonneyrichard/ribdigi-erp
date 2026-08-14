@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_407_EXIT_CRITERIA.md` / `docs/ADR_822_STAGE407_FREEZE.md` (`backend/tests/test_stage407_exit_h407x.py`) — Stage 407 H407x
+- `docs/STAGE_407_FIDELITY.md` (`backend/tests/test_stage407_fidelity_d1.py`) — Stage 407 D1
+- `docs/STAGE_407_PLAN.md` (`backend/tests/test_stage407_open.py`) — Stage 407 open (ADR-821)
+- `docs/OFFLINE_ACCEPTANCE_PATH_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-acceptance-path-pack-remaining-gate.json` — Stage 407 I1
+- `docs/OFFLINE_ACCEPTANCE_PATH_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-acceptance-path-pack-rg-blockers.json` — Stage 407 B1
+- `docs/OFFLINE_ACCEPTANCE_PATH_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-acceptance-path-pack-rg-pointers.json` — Stage 407 P1
 - `docs/STAGE_406_EXIT_CRITERIA.md` / `docs/ADR_820_STAGE406_FREEZE.md` (`backend/tests/test_stage406_exit_h406x.py`) — Stage 406 H406x
 - `docs/STAGE_406_FIDELITY.md` (`backend/tests/test_stage406_fidelity_d1.py`) — Stage 406 D1
 - `docs/STAGE_406_PLAN.md` (`backend/tests/test_stage406_open.py`) — Stage 406 open (ADR-819)
@@ -5719,6 +5725,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 407 exit
+
+H407x met — `docs/STAGE_407_EXIT_CRITERIA.md`, ADR-822. Stages 1–407 frozen for Stage 407 feature scope.
+
+## Stage 407 D1 — Tenant MVP Offline Acceptance Path Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Offline acceptance-path Completes remain MISSING. See `docs/STAGE_407_FIDELITY.md`.
+
+## Stage 407 open
+
+Opened under ADR-821; plan `docs/STAGE_407_PLAN.md`.
 
 ## Stage 406 exit
 
