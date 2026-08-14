@@ -31,3 +31,10 @@ Stage 274 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for store-membership, `users.store_id`, paid billing, or go-live.
+
+
+## Amendment — Stage 274 opened
+
+Stage 274 opened under **ADR-555** after CONTINUE/NEXT (Tenant MVP Language I18n Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-556**. Stage 273 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 274 runner-up outline was approved and opened (ADR-555); freeze ADR-556. Do not reopen Stage 273 scope.

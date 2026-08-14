@@ -1072,6 +1072,12 @@ Authoritative MVP docs:
 - `docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/store-membership-pack-remaining-gate.json` — Stage 273 I1
 - `docs/STORE_MEMBERSHIP_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/store-membership-pack-rg-blockers.json` — Stage 273 B1
 - `docs/STORE_MEMBERSHIP_PACK_RG_POINTERS_MVP.md` / `ops/mvp/store-membership-pack-rg-pointers.json` — Stage 273 P1
+- `docs/STAGE_274_EXIT_CRITERIA.md` / `docs/ADR_556_STAGE274_FREEZE.md` (`backend/tests/test_stage274_exit_h274x.py`) — Stage 274 H274x
+- `docs/STAGE_274_FIDELITY.md` (`backend/tests/test_stage274_fidelity_d1.py`) — Stage 274 D1
+- `docs/STAGE_274_PLAN.md` (`backend/tests/test_stage274_open.py`) — Stage 274 open (ADR-555)
+- `docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/language-i18n-pack-remaining-gate.json` — Stage 274 I1
+- `docs/LANGUAGE_I18N_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/language-i18n-pack-rg-blockers.json` — Stage 274 B1
+- `docs/LANGUAGE_I18N_PACK_RG_POINTERS_MVP.md` / `ops/mvp/language-i18n-pack-rg-pointers.json` — Stage 274 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4813,4 +4819,16 @@ H273x met — `docs/STAGE_273_EXIT_CRITERIA.md`, ADR-554. Stages 1–273 frozen 
 ## Stage 273 open
 
 `docs/ADR_553_STAGE273_OPEN.md` + `docs/STAGE_273_PLAN.md` (`test_stage273_open.py`).
+
+## Stage 274 exit
+
+H274x met — `docs/STAGE_274_EXIT_CRITERIA.md`, ADR-556. Stages 1–274 frozen for Stage 274 feature scope.
+
+## Stage 274 D1 — Tenant MVP Language I18n Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_274_FIDELITY.md` (`test_stage274_fidelity_d1.py`). `LANGUAGE_I18N_PACK_*` remaining-gate index; multi-language / non-English packs / go-live still MISSING (ADR-006).
+
+## Stage 274 open
+
+`docs/ADR_555_STAGE274_OPEN.md` + `docs/STAGE_274_PLAN.md` (`test_stage274_open.py`).
 

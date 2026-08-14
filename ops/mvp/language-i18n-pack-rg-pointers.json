@@ -1,0 +1,59 @@
+{
+  "id": "language-i18n-pack-rg-pointers",
+  "stage": 274,
+  "pack": "P1",
+  "doc": "docs/LANGUAGE_I18N_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md",
+    "language_i18n_adr": "docs/ADR_006_LANGUAGE_I18N.md",
+    "store_membership_pack_remaining_gate": "docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "subscription_renewal_pack_remaining_gate": "docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md",
+    "i18n_remaining_gate": "docs/I18N_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "multilang_complete_claimed": false,
+  "non_english_packs_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "language_i18n_adr006",
+    "store_membership_pack_remaining_gate_stage273",
+    "subscription_renewal_pack_remaining_gate_stage272",
+    "i18n_remaining_gate_stage184",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "liprp-adr006",
+      "title": "Point to ADR-006 language i18n",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprp-stage273",
+      "title": "Point to Stage 273 store membership pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprp-stage272",
+      "title": "Point to Stage 272 subscription renewal pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprp-stage184",
+      "title": "Point to Stage 184 i18n remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprp-multilang-remaining",
+      "title": "Multi-language Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 274 P1 language i18n pack RG pointers packaging only. Do not claim multi-language Complete."
+}

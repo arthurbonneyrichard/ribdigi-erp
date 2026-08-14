@@ -298,6 +298,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Store membership pack remaining-gate index (Stage 273):** Status index is `docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md` → blockers `docs/STORE_MEMBERSHIP_PACK_RG_BLOCKERS_MVP.md` → ADR-005/272/271/182 pointers `docs/STORE_MEMBERSHIP_PACK_RG_POINTERS_MVP.md`. Live store-membership Complete and `users.store_id` Complete remain MISSING (not claimed; ADR-005). Prefixed `STORE_MEMBERSHIP_PACK_*` remaining-gate docs (≠ ADR-005 / Stage 182 `MEMBERSHIP_*`).
 
+**Language i18n pack remaining-gate index (Stage 274):** Status index is `docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md` → blockers `docs/LANGUAGE_I18N_PACK_RG_BLOCKERS_MVP.md` → ADR-006/273/272/184 pointers `docs/LANGUAGE_I18N_PACK_RG_POINTERS_MVP.md`. Multi-language Complete and non-English locale packs Complete remain MISSING (not claimed; ADR-006). Prefixed `LANGUAGE_I18N_PACK_*` remaining-gate docs (≠ ADR-006 / Stage 184 `I18N_*`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
