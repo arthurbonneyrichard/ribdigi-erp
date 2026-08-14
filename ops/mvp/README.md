@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_394_EXIT_CRITERIA.md` / `docs/ADR_796_STAGE394_FREEZE.md` (`backend/tests/test_stage394_exit_h394x.py`) — Stage 394 H394x
+- `docs/STAGE_394_FIDELITY.md` (`backend/tests/test_stage394_fidelity_d1.py`) — Stage 394 D1
+- `docs/STAGE_394_PLAN.md` (`backend/tests/test_stage394_open.py`) — Stage 394 open (ADR-795)
+- `docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-queue-depth-metrics-pack-remaining-gate.json` — Stage 394 I1
+- `docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-queue-depth-metrics-pack-rg-blockers.json` — Stage 394 B1
+- `docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-queue-depth-metrics-pack-rg-pointers.json` — Stage 394 P1
 - `docs/STAGE_393_EXIT_CRITERIA.md` / `docs/ADR_794_STAGE393_FREEZE.md` (`backend/tests/test_stage393_exit_h393x.py`) — Stage 393 H393x
 - `docs/STAGE_393_FIDELITY.md` (`backend/tests/test_stage393_fidelity_d1.py`) — Stage 393 D1
 - `docs/STAGE_393_PLAN.md` (`backend/tests/test_stage393_open.py`) — Stage 393 open (ADR-793)
@@ -5641,6 +5647,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 394 exit
+
+H394x met — `docs/STAGE_394_EXIT_CRITERIA.md`, ADR-796. Stages 1–394 frozen for Stage 394 feature scope.
+
+## Stage 394 D1 — Tenant MVP Offline Queue Depth Metrics Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_394_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 394 open
+
+Opened under ADR-795; plan `docs/STAGE_394_PLAN.md`.
 
 ## Stage 393 exit
 

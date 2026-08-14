@@ -1,0 +1,67 @@
+{
+  "id": "offline-queue-depth-metrics-pack-rg-pointers",
+  "stage": 394,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_settings_sync_ia_pack": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_queue_ui_pack": "docs/OFFLINE_QUEUE_UI_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_queue_depth_metrics_complete_claimed": false,
+  "queue_depth_metrics_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_offline_queue_depth_metrics": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_settings_sync_ia_pack_remaining_gate_stage393": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_queue_ui_pack_remaining_gate_stage385": "docs/OFFLINE_QUEUE_UI_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_queue_depth_metrics / queue_depth_metrics / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "oqdmprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 offline queue depth metrics",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmprp-stage393",
+      "title": "Point to Stage 393 offline Settings Sync IA pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmprp-stage385",
+      "title": "Point to Stage 385 offline queue UI pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmprp-checklist-remaining",
+      "title": "Offline Complete / offline queue-depth-metrics Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 394 P1 offline queue depth metrics pack RG pointers packaging only."
+}
