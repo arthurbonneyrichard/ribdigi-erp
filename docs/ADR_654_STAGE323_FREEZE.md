@@ -31,3 +31,10 @@ Stage 324 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for first-tenant onboarded, live onboarding success, first paying tenant, demo tenant, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 324 opened under **ADR-655** after CONTINUE/NEXT (Tenant MVP Customer Assurance Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-656**. Stage 323 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 324 runner-up outline was approved and opened (ADR-655); freeze ADR-656. Do not reopen Stage 323 scope.
+

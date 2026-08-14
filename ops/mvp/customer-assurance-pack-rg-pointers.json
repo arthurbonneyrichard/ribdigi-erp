@@ -1,0 +1,60 @@
+{
+  "id": "customer-assurance-pack-rg-pointers",
+  "stage": 324,
+  "pack": "P1",
+  "doc": "docs/CUSTOMER_ASSURANCE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CUSTOMER_ASSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "customer_assurance_remaining_gate": "docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md",
+    "first_tenant_live_onboarding_pack_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "live_migration_pack_remaining_gate": "docs/LIVE_MIGRATION_PACK_REMAINING_GATE_MVP.md",
+    "residual_risk_remaining_gate": "docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "assurance_claimed": false,
+  "evidence_chain_live_claimed": false,
+  "residual_risks_closed_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "customer_assurance_remaining_gate_stage195",
+    "first_tenant_live_onboarding_pack_remaining_gate_stage323",
+    "live_migration_pack_remaining_gate_stage322",
+    "residual_risk_remaining_gate_stage196",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "casprp-stage195",
+      "title": "Point to Stage 195 customer assurance remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "casprp-stage323",
+      "title": "Point to Stage 323 first-tenant live onboarding pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "casprp-stage322",
+      "title": "Point to Stage 322 live migration pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "casprp-stage196",
+      "title": "Point to Stage 196 residual risk remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "casprp-assurance-remaining",
+      "title": "Live customer assurance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 324 P1 customer assurance pack RG pointers packaging only. Do not claim live customer assurance Complete."
+}

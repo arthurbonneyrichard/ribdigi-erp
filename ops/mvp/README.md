@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_324_EXIT_CRITERIA.md` / `docs/ADR_656_STAGE324_FREEZE.md` (`backend/tests/test_stage324_exit_h324x.py`) — Stage 324 H324x
+- `docs/STAGE_324_FIDELITY.md` (`backend/tests/test_stage324_fidelity_d1.py`) — Stage 324 D1
+- `docs/STAGE_324_PLAN.md` (`backend/tests/test_stage324_open.py`) — Stage 324 open (ADR-655)
+- `docs/CUSTOMER_ASSURANCE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/customer-assurance-pack-remaining-gate.json` — Stage 324 I1
+- `docs/CUSTOMER_ASSURANCE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/customer-assurance-pack-rg-blockers.json` — Stage 324 B1
+- `docs/CUSTOMER_ASSURANCE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/customer-assurance-pack-rg-pointers.json` — Stage 324 P1
 - `docs/STAGE_323_EXIT_CRITERIA.md` / `docs/ADR_654_STAGE323_FREEZE.md` (`backend/tests/test_stage323_exit_h323x.py`) — Stage 323 H323x
 - `docs/STAGE_323_FIDELITY.md` (`backend/tests/test_stage323_fidelity_d1.py`) — Stage 323 D1
 - `docs/STAGE_323_PLAN.md` (`backend/tests/test_stage323_open.py`) — Stage 323 open (ADR-653)
@@ -5221,6 +5227,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 324 exit
+
+H324x met — `docs/STAGE_324_EXIT_CRITERIA.md`, ADR-656. Stages 1–324 frozen for Stage 324 feature scope.
+
+## Stage 324 D1 — Tenant MVP Customer Assurance Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_324_FIDELITY.md` (`test_stage324_fidelity_d1.py`). `CUSTOMER_ASSURANCE_PACK_*` remaining-gate index; customer assurance / assurance / evidence-chain-live / residual-risks-closed / go-live still MISSING.
+
+## Stage 324 open
+
+ADR-655 / `docs/STAGE_324_PLAN.md`.
 
 ## Stage 323 exit
 
