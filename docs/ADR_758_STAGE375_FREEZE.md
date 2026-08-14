@@ -31,3 +31,10 @@ Stage 376 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline gateway-approval, pending-verification as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 376 opened under **ADR-759** after CONTINUE/NEXT (Tenant MVP Offline Price Version Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-760**. Stage 375 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 375 runner-up outline was approved and opened (ADR-759); freeze ADR-760. Do not reopen Stage 375 scope.
+

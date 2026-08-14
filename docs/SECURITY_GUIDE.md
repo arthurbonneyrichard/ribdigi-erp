@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 376 open** | Offline Price Version Pack Remaining-Gate Index — `docs/STAGE_376_PLAN.md`, ADR-759 (`test_stage376_open.py`) |
+| **Stage 376 I1** | Offline price version pack remaining-gate index hub (`test_stage376_index_i1.py`) |
+| **Stage 376 B1** | Offline price version pack blocker matrix (`test_stage376_blockers_b1.py`) |
+| **Stage 376 P1** | Stage 375 / Stage 164 / Stage 329 / CHANGE_IMPACT pointers (`test_stage376_pointers_p1.py`) |
+| **Stage 376 D1** | Offline price version pack remaining-gate fidelity — `docs/STAGE_376_FIDELITY.md` (`test_stage376_fidelity_d1.py`) |
+| **Stage 376 H376x** | Exit + freeze — `docs/STAGE_376_EXIT_CRITERIA.md`, ADR-760 (`test_stage376_exit_h376x.py`); Stages 1–376 frozen |
 | **Stage 375 open** | Offline Payment Rules Pack Remaining-Gate Index — `docs/STAGE_375_PLAN.md`, ADR-757 (`test_stage375_open.py`) |
 | **Stage 375 I1** | Offline payment rules pack remaining-gate index hub (`test_stage375_index_i1.py`) |
 | **Stage 375 B1** | Offline payment rules pack blocker matrix (`test_stage375_blockers_b1.py`) |
