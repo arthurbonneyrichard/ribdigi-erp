@@ -31,3 +31,9 @@ Stage 292 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for privacy notice live, cookie consent live, security contact live, commercial support, paid billing, or go-live.
+
+## Amendment — Stage 292 opened
+
+Stage 292 opened under **ADR-591** after CONTINUE/NEXT (Tenant MVP Commercial DPA Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-592**. Stage 291 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 292 runner-up outline was approved and opened (ADR-591); freeze ADR-592. Do not reopen Stage 291 scope.

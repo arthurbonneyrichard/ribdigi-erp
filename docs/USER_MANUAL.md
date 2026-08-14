@@ -334,6 +334,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Commercial privacy notice pack remaining-gate index (Stage 291):** Status index is `docs/COMMERCIAL_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/COMMERCIAL_PRIVACY_NOTICE_PACK_RG_BLOCKERS_MVP.md` → Stage 75/290/289/75C1 pointers `docs/COMMERCIAL_PRIVACY_NOTICE_PACK_RG_POINTERS_MVP.md`. Privacy notice live Complete and cookie consent live Complete remain MISSING (not claimed). Prefixed `COMMERCIAL_PRIVACY_NOTICE_PACK_*` remaining-gate docs (≠ Stage 75 P1 `COMMERCIAL_PRIVACY_NOTICE_MVP.md`).
 
+**Commercial DPA pack remaining-gate index (Stage 292):** Status index is `docs/COMMERCIAL_DPA_PACK_REMAINING_GATE_MVP.md` → blockers `docs/COMMERCIAL_DPA_PACK_RG_BLOCKERS_MVP.md` → Stage 77/291/290/39 pointers `docs/COMMERCIAL_DPA_PACK_RG_POINTERS_MVP.md`. Signed DPA Complete and subprocessor register live Complete remain MISSING (not claimed). Prefixed `COMMERCIAL_DPA_PACK_*` remaining-gate docs (≠ Stage 77 A1 `COMMERCIAL_DPA_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
