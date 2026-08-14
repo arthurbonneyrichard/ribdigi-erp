@@ -825,7 +825,8 @@ class PurchaseReturnItemCreate(BaseModel):
 
 class PurchaseReturnCreate(BaseModel):
     goods_receipt_id: str
-    reason: str = "other"
+    # Required coded reason (BR-6.6); no silent default to "other"
+    reason: str
     notes: str | None = None
     items: list[PurchaseReturnItemCreate] = Field(min_length=1)
 

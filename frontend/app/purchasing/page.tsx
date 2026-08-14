@@ -199,7 +199,7 @@ export default function Page() {
   const [grnId, setGrnId] = useState('');
   const [grnItemId, setGrnItemId] = useState('');
   const [returnQty, setReturnQty] = useState('1');
-  const [returnReason, setReturnReason] = useState('other');
+  const [returnReason, setReturnReason] = useState('');
   const [invoiceGrnId, setInvoiceGrnId] = useState('');
   const [supplierInvoiceNo, setSupplierInvoiceNo] = useState('');
   const [manualInvSupplierId, setManualInvSupplierId] = useState('');
@@ -594,6 +594,11 @@ export default function Page() {
 
   async function createReturn() {
     setError('');
+    setMessage('');
+    if (!returnReason.trim()) {
+      setError('Select a return reason');
+      return;
+    }
     try {
       const r = await api('/purchasing/returns', {
         method: 'POST',
@@ -604,6 +609,7 @@ export default function Page() {
         }),
       });
       setMessage(`Return ${r.data.return_number} drafted`);
+      setReturnReason('');
       setTab('returns');
       await refresh();
     } catch (err: any) {
@@ -1403,6 +1409,7 @@ export default function Page() {
             ))}
           </select>
           <select value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
+            <option value="">Select reason</option>
             <option value="damaged">Damaged</option>
             <option value="wrong_item">Wrong item</option>
             <option value="expiry">Expiry</option>
@@ -1410,7 +1417,7 @@ export default function Page() {
             <option value="other">Other</option>
           </select>
           <input value={returnQty} onChange={(e) => setReturnQty(e.target.value)} placeholder="Return qty" />
-          <button onClick={createReturn} disabled={!grnId || !grnItemId}>
+          <button onClick={createReturn} disabled={!grnId || !grnItemId || !returnReason}>
             Draft return
           </button>
         </div>
