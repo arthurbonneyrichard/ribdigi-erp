@@ -197,7 +197,17 @@ async def _barcode_exists(db: AsyncSession, tenant_id: str, barcode: str) -> boo
             )
         )
     ).scalar_one_or_none()
-    return hit is not None
+    if hit:
+        return True
+    vhit = (
+        await db.execute(
+            select(m.ProductVariant.id).where(
+                m.ProductVariant.tenant_id == tenant_id,
+                m.ProductVariant.barcode == barcode,
+            )
+        )
+    ).scalar_one_or_none()
+    return vhit is not None
 
 
 async def validate_import_rows(

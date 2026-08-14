@@ -157,6 +157,7 @@ export default function Page() {
   const [variantColor, setVariantColor] = useState('');
   const [variantFlavor, setVariantFlavor] = useState('');
   const [variantDosage, setVariantDosage] = useState('');
+  const [variantBarcode, setVariantBarcode] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
   const [mfgDate, setMfgDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
@@ -728,6 +729,58 @@ export default function Page() {
     }
   }
 
+  async function generateVariantBarcode(variantId: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      const r = await api(
+        `/products/${selectedId}/variants/${variantId}/barcode/generate?force=true&symbology=${encodeURIComponent(barcodeSymbology)}`,
+        { method: 'POST', body: '{}' }
+      );
+      setMessage(
+        `Variant barcode set to ${r.data?.barcode} (${r.data?.symbology || barcodeSymbology})`
+      );
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function printVariantBarcodeLabel(variantId: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const copies = Math.max(1, Math.min(40, Number(labelCopies) || 1));
+      const res = await fetch(
+        `${apiBase}/products/${selectedId}/variants/${variantId}/barcode/label?copies=${copies}&symbology=${encodeURIComponent(barcodeSymbology)}`,
+        {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+          },
+        }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Label failed');
+      }
+      const html = await res.text();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank', 'noopener,noreferrer,width=720,height=640');
+      if (!w) {
+        URL.revokeObjectURL(url);
+        throw new Error('Pop-up blocked — allow pop-ups to print labels');
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      setMessage('Variant barcode label opened — use Print labels');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function addVariant() {
     setError('');
     try {
@@ -736,6 +789,7 @@ export default function Page() {
         body: JSON.stringify({
           name: variantName,
           sku: variantSku.trim() || null,
+          barcode: variantBarcode.trim() || null,
           size: variantSize.trim() || null,
           color: variantColor.trim() || null,
           flavor: variantFlavor.trim() || null,
@@ -745,6 +799,7 @@ export default function Page() {
       setMessage(`Variant ${r.data.sku} created`);
       setVariantName('');
       setVariantSku('');
+      setVariantBarcode('');
       setVariantSize('');
       setVariantColor('');
       setVariantFlavor('');
@@ -1528,12 +1583,20 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Add variant</h3>
-            <p className="muted">Size, color, flavor, dosage (pharmacy) with unique SKUs (BR-5.1).</p>
+            <p className="muted">
+              Size, color, flavor, dosage (pharmacy) with unique SKUs and barcodes (BR-5.1). Use the
+              product symbology picker above for Generate / Print on each row.
+            </p>
             <input value={variantName} onChange={(e) => setVariantName(e.target.value)} placeholder="Name" />
             <input
               value={variantSku}
               onChange={(e) => setVariantSku(e.target.value)}
               placeholder="SKU (auto if blank)"
+            />
+            <input
+              value={variantBarcode}
+              onChange={(e) => setVariantBarcode(e.target.value)}
+              placeholder="Barcode (optional)"
             />
             <input value={variantSize} onChange={(e) => setVariantSize(e.target.value)} placeholder="Size (optional)" />
             <input value={variantColor} onChange={(e) => setVariantColor(e.target.value)} placeholder="Color (optional)" />
@@ -1556,6 +1619,7 @@ export default function Page() {
               <tr>
                 <th>Name</th>
                 <th>SKU</th>
+                <th>Barcode</th>
                 <th>Size</th>
                 <th>Color</th>
                 <th>Flavor</th>
@@ -1571,6 +1635,7 @@ export default function Page() {
                 <tr key={v.id}>
                   <td>{v.name}</td>
                   <td>{v.sku}</td>
+                  <td>{v.barcode || '—'}</td>
                   <td>{v.size || '—'}</td>
                   <td>{v.color || '—'}</td>
                   <td>{v.flavor || '—'}</td>
@@ -1588,7 +1653,13 @@ export default function Page() {
                     />
                   </td>
                   <td>{v.is_active ? 'yes' : 'no'}</td>
-                  <td>
+                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button type="button" onClick={() => generateVariantBarcode(v.id)}>
+                      Generate
+                    </button>
+                    <button type="button" onClick={() => printVariantBarcodeLabel(v.id)}>
+                      Label
+                    </button>
                     {v.is_active && (
                       <button type="button" onClick={() => deactivateVariant(v.id)}>
                         Deactivate

@@ -3210,27 +3210,14 @@ async def product_barcode_generate(
     if product.barcode and not force:
         return env(catalog_meta_svc.serialize_product(product), "Barcode already set")
 
-    candidate = None
-    for i in range(0, 50):
-        try_code = barcodes_svc.suggest_barcode(
-            product.sku, symbology=sym, seed=f"{product.id}:{product.sku}", attempt=i
-        )
-        try_code = barcodes_svc.normalize_barcode(try_code, symbology=sym)
-        assert try_code
-        clash = (
-            await db.execute(
-                select(m.Product).where(
-                    m.Product.tenant_id == claims["tenant_id"],
-                    m.Product.barcode == try_code,
-                    m.Product.id != product.id,
-                )
-            )
-        ).scalar_one_or_none()
-        if not clash:
-            candidate = try_code
-            break
-    else:
-        raise HTTPException(status_code=409, detail="Could not allocate a unique barcode")
+    candidate = await barcodes_svc.allocate_unique_barcode(
+        db,
+        tenant_id=claims["tenant_id"],
+        sku=product.sku,
+        symbology=sym,
+        seed=f"{product.id}:{product.sku}",
+        exclude_product_id=product.id,
+    )
 
     product.barcode = candidate
     await audit_svc.record_event(
@@ -3662,6 +3649,125 @@ async def patch_product_variant(
     )
     await db.commit()
     return env(catalog_svc.serialize_variant(variant), "Variant updated")
+
+
+@api.post("/products/{product_id}/variants/{variant_id}/barcode/generate")
+async def variant_barcode_generate(
+    product_id: str,
+    variant_id: str,
+    force: bool = False,
+    symbology: str = "code128",
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Assign a barcode to a product variant (Code128 / EAN-13 / UPC-A)."""
+    sym = barcodes_svc.normalize_symbology(symbology)
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    variant = await catalog_svc.get_variant(db, claims["tenant_id"], variant_id)
+    if variant.product_id != product.id:
+        raise HTTPException(status_code=404, detail="Variant not found")
+    if variant.barcode and not force:
+        out = catalog_svc.serialize_variant(variant)
+        out["symbology"] = barcodes_svc.detect_symbology(variant.barcode)
+        return env(out, "Barcode already set")
+
+    candidate = await barcodes_svc.allocate_unique_barcode(
+        db,
+        tenant_id=claims["tenant_id"],
+        sku=variant.sku,
+        symbology=sym,
+        seed=f"{variant.id}:{variant.sku}",
+        exclude_variant_id=variant.id,
+    )
+    variant.barcode = candidate
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="variant_barcode_generate",
+        entity="product_variant",
+        entity_id=variant.id,
+        details={
+            "barcode": variant.barcode,
+            "sku": variant.sku,
+            "product_id": product.id,
+            "symbology": sym,
+        },
+    )
+    await db.commit()
+    await db.refresh(variant)
+    out = catalog_svc.serialize_variant(variant)
+    out["symbology"] = sym
+    return env(out, "Barcode generated")
+
+
+@api.get("/products/{product_id}/variants/{variant_id}/barcode.png")
+async def variant_barcode_png(
+    product_id: str,
+    variant_id: str,
+    symbology: str | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    variant = await catalog_svc.get_variant(db, claims["tenant_id"], variant_id)
+    if variant.product_id != product.id:
+        raise HTTPException(status_code=404, detail="Variant not found")
+    code = variant.barcode or variant.sku
+    if not code:
+        raise HTTPException(status_code=404, detail="No barcode or SKU available")
+    sym = (
+        barcodes_svc.normalize_symbology(symbology)
+        if symbology
+        else barcodes_svc.detect_symbology(str(code))
+    )
+    png = barcodes_svc.render_barcode_png(str(code), symbology=sym)
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Content-Disposition": f'inline; filename="barcode-{variant.sku}.png"'},
+    )
+
+
+@api.get("/products/{product_id}/variants/{variant_id}/barcode/label")
+async def variant_barcode_label(
+    product_id: str,
+    variant_id: str,
+    copies: int = 1,
+    symbology: str | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    import base64
+
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    variant = await catalog_svc.get_variant(db, claims["tenant_id"], variant_id)
+    if variant.product_id != product.id:
+        raise HTTPException(status_code=404, detail="Variant not found")
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    code = variant.barcode or variant.sku
+    if not code:
+        raise HTTPException(status_code=404, detail="No barcode or SKU available")
+    sym = (
+        barcodes_svc.normalize_symbology(symbology)
+        if symbology
+        else barcodes_svc.detect_symbology(str(code))
+    )
+    png = barcodes_svc.render_barcode_png(str(code), symbology=sym)
+    data_uri = "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+    page = barcodes_svc.label_html(
+        company_name=(tenant.company_name if tenant else "RIBDIGI ERP"),
+        product_name=f"{product.name} / {variant.name}",
+        sku=variant.sku,
+        barcode_value=str(code),
+        price=float(variant.selling_price or product.selling_price or 0),
+        currency=(tenant.currency if tenant else "GHS"),
+        png_data_uri=data_uri,
+        copies=copies,
+        symbology=sym,
+    )
+    return Response(content=page, media_type="text/html; charset=utf-8")
 
 
 @api.delete("/products/{product_id}/variants/{variant_id}")
