@@ -1036,6 +1036,12 @@ Authoritative MVP docs:
 - `docs/TENANT_COMPANY_CONSOLE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/tenant-company-console-pack-remaining-gate.json` — Stage 267 I1
 - `docs/TENANT_COMPANY_CONSOLE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/tenant-company-console-pack-rg-blockers.json` — Stage 267 B1
 - `docs/TENANT_COMPANY_CONSOLE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/tenant-company-console-pack-rg-pointers.json` — Stage 267 P1
+- `docs/STAGE_268_EXIT_CRITERIA.md` / `docs/ADR_544_STAGE268_FREEZE.md` (`backend/tests/test_stage268_exit_h268x.py`) — Stage 268 H268x
+- `docs/STAGE_268_FIDELITY.md` (`backend/tests/test_stage268_fidelity_d1.py`) — Stage 268 D1
+- `docs/STAGE_268_PLAN.md` (`backend/tests/test_stage268_open.py`) — Stage 268 open (ADR-543)
+- `docs/DUAL_CONSOLE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/dual-console-pack-remaining-gate.json` — Stage 268 I1
+- `docs/DUAL_CONSOLE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/dual-console-pack-rg-blockers.json` — Stage 268 B1
+- `docs/DUAL_CONSOLE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/dual-console-pack-rg-pointers.json` — Stage 268 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4705,4 +4711,16 @@ H267x met — `docs/STAGE_267_EXIT_CRITERIA.md`, ADR-542. Stages 1–267 frozen 
 ## Stage 267 open
 
 `docs/ADR_541_STAGE267_OPEN.md` + `docs/STAGE_267_PLAN.md` (`test_stage267_open.py`).
+
+## Stage 268 exit
+
+H268x met — `docs/STAGE_268_EXIT_CRITERIA.md`, ADR-544. Stages 1–268 frozen for Stage 268 feature scope.
+
+## Stage 268 D1 — Tenant MVP Dual Console Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_268_FIDELITY.md` (`test_stage268_fidelity_d1.py`). `DUAL_CONSOLE_PACK_*` remaining-gate index; paid billing / live dual-console / go-live still MISSING (ADR-002).
+
+## Stage 268 open
+
+`docs/ADR_543_STAGE268_OPEN.md` + `docs/STAGE_268_PLAN.md` (`test_stage268_open.py`).
 

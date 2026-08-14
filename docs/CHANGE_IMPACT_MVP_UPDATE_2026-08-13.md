@@ -487,3 +487,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 267 decision (opened after Stage 266 freeze)
 
 **Tenant MVP Tenant Company Console Pack Remaining-Gate Index Fidelity** — tenant company console pack remaining-gate hub (I1), blocker matrix (B1), Stage 68 / Stage 266 / Stage 265 / Stage 36 pointers with explicit non-claim (P1). Prefixed `TENANT_COMPANY_CONSOLE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 68 T1). Live paid billing / tenant module re-Complete / demo tenant / go-live Completes remain deferred (Stage 268+; ADR-002 in force). Distinct from Stage 266 Ribdigi House console pack remaining-gate, Stage 265 post-launch continuity pack remaining-gate, Stage 68 T1 packaging, and Stage 239 operator handoff pack remaining-gate. Open ADR-541 / freeze ADR-542.
+
+
+## Stage 268 decision (opened after Stage 267 freeze)
+
+**Tenant MVP Dual Console Pack Remaining-Gate Index Fidelity** — dual console pack remaining-gate hub (I1), blocker matrix (B1), Stage 68 / Stage 267 / Stage 266 / ADR-137 pointers with explicit non-claim (P1). Prefixed `DUAL_CONSOLE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 68 H1/T1 / fidelity). Live paid billing / live dual-console / cross-principal leak / go-live Completes remain deferred (Stage 269+; ADR-002 in force). Distinct from Stage 267 tenant company console pack remaining-gate, Stage 266 Ribdigi House console pack remaining-gate, and Stage 68 H1/T1 packaging. Open ADR-543 / freeze ADR-544.
