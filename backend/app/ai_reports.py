@@ -22,6 +22,7 @@ from app.report_export import (
     export_report,
     flatten_report,
 )
+from app.reports import apply_company_filter
 
 # Ordered: first match wins for specificity
 REPORT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
@@ -264,7 +265,7 @@ def parse_prompt(prompt: str, *, format: str | None = None, now: datetime | None
 
 
 def serialize_template(row: m.AiReportTemplate) -> dict:
-    return {
+    out = {
         "id": row.id,
         "name": row.name,
         "prompt": row.prompt,
@@ -275,6 +276,9 @@ def serialize_template(row: m.AiReportTemplate) -> dict:
         "updated_at": row.updated_at,
         "user_id": row.user_id,
     }
+    if getattr(row, "company_id", None):
+        out["company_id"] = row.company_id
+    return out
 
 
 def _preview_rows(rows: list[dict], limit: int = 25) -> list[dict]:
@@ -297,9 +301,10 @@ async def generate_from_prompt(
     prompt: str,
     format: str | None = None,
     template_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     if template_id:
-        tmpl = await get_template(db, tenant_id, template_id)
+        tmpl = await get_template(db, tenant_id, template_id, company_id=company_id)
         prompt = tmpl.prompt
         format = format or tmpl.format
 
@@ -309,7 +314,9 @@ async def generate_from_prompt(
         raise HTTPException(status_code=400, detail=f"Unsupported report type: {report_type}")
 
     kwargs = dict(parsed["params"])
-    payload = await build_report_payload(db, tenant_id, report_type, **kwargs)
+    payload = await build_report_payload(
+        db, tenant_id, report_type, company_id=company_id, **kwargs
+    )
     rows, lines, title = flatten_report(report_type, payload)
 
     return {
@@ -336,9 +343,10 @@ async def export_from_prompt(
     prompt: str,
     format: str | None = None,
     template_id: str | None = None,
+    company_id: str | None = None,
 ) -> tuple[bytes, str, str]:
     if template_id:
-        tmpl = await get_template(db, tenant_id, template_id)
+        tmpl = await get_template(db, tenant_id, template_id, company_id=company_id)
         prompt = tmpl.prompt
         format = format or tmpl.format
     parsed = parse_prompt(prompt, format=format)
@@ -347,6 +355,7 @@ async def export_from_prompt(
         tenant_id,
         parsed["report_type"],
         parsed["format"],
+        company_id=company_id,
         **parsed["params"],
     )
 
@@ -356,8 +365,10 @@ async def list_templates(
     tenant_id: str,
     *,
     user_id: str | None = None,
+    company_id: str | None = None,
 ) -> list[m.AiReportTemplate]:
     q = select(m.AiReportTemplate).where(m.AiReportTemplate.tenant_id == tenant_id)
+    q = apply_company_filter(q, m.AiReportTemplate.company_id, company_id)
     if user_id:
         q = q.where(
             (m.AiReportTemplate.user_id == user_id) | (m.AiReportTemplate.user_id.is_(None))
@@ -366,15 +377,19 @@ async def list_templates(
     return list((await db.execute(q)).scalars().all())
 
 
-async def get_template(db: AsyncSession, tenant_id: str, template_id: str) -> m.AiReportTemplate:
-    row = (
-        await db.execute(
-            select(m.AiReportTemplate).where(
-                m.AiReportTemplate.id == template_id,
-                m.AiReportTemplate.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+async def get_template(
+    db: AsyncSession,
+    tenant_id: str,
+    template_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.AiReportTemplate:
+    stmt = select(m.AiReportTemplate).where(
+        m.AiReportTemplate.id == template_id,
+        m.AiReportTemplate.tenant_id == tenant_id,
+    )
+    stmt = apply_company_filter(stmt, m.AiReportTemplate.company_id, company_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Report template not found")
     return row
@@ -388,6 +403,7 @@ async def save_template(
     name: str,
     prompt: str,
     format: str | None = None,
+    company_id: str | None = None,
 ) -> m.AiReportTemplate:
     name = (name or "").strip()
     if len(name) < 2:
@@ -395,6 +411,7 @@ async def save_template(
     parsed = parse_prompt(prompt, format=format)
     row = m.AiReportTemplate(
         tenant_id=tenant_id,
+        company_id=company_id,
         user_id=user_id,
         name=name[:120],
         prompt=parsed["prompt"],
@@ -407,7 +424,13 @@ async def save_template(
     return row
 
 
-async def delete_template(db: AsyncSession, tenant_id: str, template_id: str) -> None:
-    row = await get_template(db, tenant_id, template_id)
+async def delete_template(
+    db: AsyncSession,
+    tenant_id: str,
+    template_id: str,
+    *,
+    company_id: str | None = None,
+) -> None:
+    row = await get_template(db, tenant_id, template_id, company_id=company_id)
     await db.delete(row)
     await db.flush()

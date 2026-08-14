@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.reports import apply_company_filter
 
 POSTED = frozenset({"posted", "sent", "partial", "paid", "overdue"})
 
@@ -84,30 +85,27 @@ async def customer_intelligence(
     tenant_id: str,
     *,
     lookback_days: int = 180,
+    company_id: str | None = None,
 ) -> dict:
     lookback_days = max(30, min(int(lookback_days), 730))
     now = datetime.utcnow()
     since = now - timedelta(days=lookback_days)
 
-    customers = (
-        await db.execute(
-            select(m.Party).where(
-                m.Party.tenant_id == tenant_id,
-                m.Party.kind == "customer",
-                m.Party.status == "active",
-            )
-        )
-    ).scalars().all()
+    party_stmt = select(m.Party).where(
+        m.Party.tenant_id == tenant_id,
+        m.Party.kind == "customer",
+        m.Party.status == "active",
+    )
+    party_stmt = apply_company_filter(party_stmt, m.Party.company_id, company_id)
+    customers = (await db.execute(party_stmt)).scalars().all()
 
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(list(POSTED)),
-                m.SalesInvoice.created_at >= since,
-            )
-        )
-    ).scalars().all()
+    inv_stmt = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(list(POSTED)),
+        m.SalesInvoice.created_at >= since,
+    )
+    inv_stmt = apply_company_filter(inv_stmt, m.SalesInvoice.company_id, company_id)
+    invoices = (await db.execute(inv_stmt)).scalars().all()
 
     by_cust: dict[str, dict] = {}
     for inv in invoices:
@@ -181,20 +179,19 @@ async def assist_customer(
     *,
     customer_id: str | None = None,
     query: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     q = (query or "").strip()
-    intel = await customer_intelligence(db, tenant_id)
+    intel = await customer_intelligence(db, tenant_id, company_id=company_id)
 
     if customer_id:
-        party = (
-            await db.execute(
-                select(m.Party).where(
-                    m.Party.id == customer_id,
-                    m.Party.tenant_id == tenant_id,
-                    m.Party.kind == "customer",
-                )
-            )
-        ).scalar_one_or_none()
+        party_stmt = select(m.Party).where(
+            m.Party.id == customer_id,
+            m.Party.tenant_id == tenant_id,
+            m.Party.kind == "customer",
+        )
+        party_stmt = apply_company_filter(party_stmt, m.Party.company_id, company_id)
+        party = (await db.execute(party_stmt)).scalar_one_or_none()
         if not party:
             raise HTTPException(status_code=404, detail="Customer not found")
         profile = next((c for c in intel["best_customers"] + intel["churn_risks"] if c["customer_id"] == customer_id), None)

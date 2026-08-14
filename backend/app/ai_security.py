@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -58,22 +58,28 @@ async def scan_security_alerts(
     *,
     lookback_hours: int = 72,
     notify: bool = False,
+    company_id: str | None = None,
 ) -> dict:
     lookback_hours = max(6, min(int(lookback_hours), 168))
     now = datetime.utcnow()
     since = now - timedelta(hours=lookback_hours)
     history_since = now - timedelta(days=30)
 
-    logs = (
-        await db.execute(
-            select(m.AuditLog)
-            .where(
-                m.AuditLog.tenant_id == tenant_id,
-                m.AuditLog.created_at >= history_since,
-            )
-            .order_by(m.AuditLog.created_at.desc())
+    stmt = (
+        select(m.AuditLog)
+        .where(
+            m.AuditLog.tenant_id == tenant_id,
+            m.AuditLog.created_at >= history_since,
         )
-    ).scalars().all()
+        .order_by(m.AuditLog.created_at.desc())
+    )
+    # Company workspace: include company-scoped rows plus tenant-wide (null company)
+    # auth/security events so login failures remain visible.
+    if company_id:
+        stmt = stmt.where(
+            or_(m.AuditLog.company_id == company_id, m.AuditLog.company_id.is_(None))
+        )
+    logs = (await db.execute(stmt)).scalars().all()
 
     recent = [e for e in logs if e.created_at and e.created_at >= since]
     alerts: list[dict] = []
@@ -363,6 +369,7 @@ async def scan_security_alerts(
                 message=a["detail"],
                 entity_type=a.get("entity_type"),
                 entity_id=a.get("entity_id"),
+                company_id=company_id,
             )
             notifications_created += 1
         await db.flush()

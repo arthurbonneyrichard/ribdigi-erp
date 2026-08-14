@@ -14558,6 +14558,7 @@ async def ai_chat(
         user_id=claims["sub"],
         claims=claims,
         message=message,
+        company_id=claims.get("company_id"),
     )
     await ai_guard_svc.audit_ai_event(
         db,
@@ -14584,6 +14585,7 @@ async def ai_chat_history(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         limit=limit,
+        company_id=claims.get("company_id"),
     )
     return env({"items": items})
 
@@ -14600,6 +14602,7 @@ async def ai_chat_history_export(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         limit=limit,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -15063,6 +15066,7 @@ async def ai_security_alerts(
         claims["tenant_id"],
         lookback_hours=lookback_hours,
         notify=notify,
+        company_id=claims.get("company_id"),
     )
     if notify and data.get("notifications_created"):
         await db.commit()
@@ -15077,7 +15081,10 @@ async def ai_security_alerts_export(
 ):
     """Stage 145 S1 — AI security alerts CSV."""
     text = await ai_ops_export_svc.export_security_alerts_csv(
-        db, tenant_id=claims["tenant_id"], lookback_hours=lookback_hours
+        db,
+        tenant_id=claims["tenant_id"],
+        lookback_hours=lookback_hours,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -15107,7 +15114,9 @@ async def ai_reports_generate(
     fmt = (payload or {}).get("format")
     template_id = (payload or {}).get("template_id")
     if not prompt and template_id:
-        tmpl = await ai_reports_svc.get_template(db, claims["tenant_id"], template_id)
+        tmpl = await ai_reports_svc.get_template(
+            db, claims["tenant_id"], template_id, company_id=claims.get("company_id")
+        )
         prompt = tmpl.prompt
         fmt = fmt or tmpl.format
     prompt = await ai_guard_svc.require_safe_ai_prompt(
@@ -15126,6 +15135,7 @@ async def ai_reports_generate(
             prompt=prompt,
             format=fmt,
             template_id=template_id,
+            company_id=claims.get("company_id"),
         )
         await ai_guard_svc.audit_ai_event(
             db,
@@ -15148,6 +15158,7 @@ async def ai_reports_generate(
         prompt=prompt,
         format=fmt,
         template_id=template_id,
+        company_id=claims.get("company_id"),
     )
     await ai_guard_svc.audit_ai_event(
         db,
@@ -15174,7 +15185,10 @@ async def ai_report_templates_list(
     from app import ai_reports as ai_reports_svc
 
     rows = await ai_reports_svc.list_templates(
-        db, claims["tenant_id"], user_id=claims.get("sub")
+        db,
+        claims["tenant_id"],
+        user_id=claims.get("sub"),
+        company_id=claims.get("company_id"),
     )
     return env([ai_reports_svc.serialize_template(r) for r in rows])
 
@@ -15186,7 +15200,10 @@ async def ai_report_templates_export(
 ):
     """Stage 145 T1 — AI report templates CSV."""
     text = await ai_ops_export_svc.export_report_templates_csv(
-        db, tenant_id=claims["tenant_id"], user_id=claims.get("sub")
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -15220,6 +15237,7 @@ async def ai_report_templates_create(
         name=str((payload or {}).get("name") or ""),
         prompt=prompt,
         format=(payload or {}).get("format"),
+        company_id=claims.get("company_id"),
     )
     await ai_guard_svc.audit_ai_event(
         db,
@@ -15243,7 +15261,9 @@ async def ai_report_templates_delete(
 ):
     from app import ai_reports as ai_reports_svc
 
-    await ai_reports_svc.delete_template(db, claims["tenant_id"], template_id)
+    await ai_reports_svc.delete_template(
+        db, claims["tenant_id"], template_id, company_id=claims.get("company_id")
+    )
     await db.commit()
     return env({"id": template_id}, "Report template deleted")
 
@@ -15274,6 +15294,7 @@ async def ai_customer_assist(
         claims["tenant_id"],
         customer_id=body.get("customer_id"),
         query=query,
+        company_id=claims.get("company_id"),
     )
     await ai_guard_svc.audit_ai_event(
         db,
@@ -15299,7 +15320,10 @@ async def ai_customers_insights(
     from app import ai_customers as ai_customers_svc
 
     data = await ai_customers_svc.customer_intelligence(
-        db, claims["tenant_id"], lookback_days=lookback_days
+        db,
+        claims["tenant_id"],
+        lookback_days=lookback_days,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -15312,7 +15336,10 @@ async def ai_customers_insights_export(
 ):
     """Stage 148 I1 — customer insights CSV."""
     text = await ai_ops_export_svc.export_customer_insights_csv(
-        db, tenant_id=claims["tenant_id"], lookback_days=lookback_days
+        db,
+        tenant_id=claims["tenant_id"],
+        lookback_days=lookback_days,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -15337,6 +15364,7 @@ async def ai_documents_analyze(
         claims["tenant_id"],
         upload=file,
         document_type=document_type,
+        company_id=claims.get("company_id"),
     )
     filename = getattr(file, "filename", None) or ""
     await ai_guard_svc.audit_ai_event(
@@ -15368,6 +15396,7 @@ async def ai_documents_analyze_export(
         tenant_id=claims["tenant_id"],
         upload=file,
         document_type=document_type,
+        company_id=claims.get("company_id"),
     )
     filename = getattr(file, "filename", None) or ""
     await ai_guard_svc.audit_ai_event(

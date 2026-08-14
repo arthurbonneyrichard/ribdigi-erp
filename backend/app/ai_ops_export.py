@@ -305,10 +305,15 @@ async def export_security_alerts_csv(
     *,
     tenant_id: str,
     lookback_hours: int = 72,
+    company_id: str | None = None,
 ) -> str:
     """Stage 145 S1 — AI security alert rows (audit-derived; no secrets)."""
     data = await ai_security_svc.scan_security_alerts(
-        db, tenant_id, lookback_hours=lookback_hours, notify=False
+        db,
+        tenant_id,
+        lookback_hours=lookback_hours,
+        notify=False,
+        company_id=company_id,
     )
     lookback = data.get("lookback_hours")
     buf = io.StringIO()
@@ -337,9 +342,12 @@ async def export_report_templates_csv(
     *,
     tenant_id: str,
     user_id: str | None = None,
+    company_id: str | None = None,
 ) -> str:
     """Stage 145 T1 — saved AI report templates CSV."""
-    rows = await ai_reports_svc.list_templates(db, tenant_id, user_id=user_id)
+    rows = await ai_reports_svc.list_templates(
+        db, tenant_id, user_id=user_id, company_id=company_id
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=REPORT_TEMPLATE_EXPORT_COLUMNS)
     writer.writeheader()
@@ -922,10 +930,15 @@ async def export_chat_history_csv(
     tenant_id: str,
     user_id: str,
     limit: int = 50,
+    company_id: str | None = None,
 ) -> str:
     """Stage 148 C1 — current-user AI chat history CSV (no structured payload dump)."""
     items = await ai_chat_svc.list_history(
-        db, tenant_id=tenant_id, user_id=user_id, limit=limit
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        limit=limit,
+        company_id=company_id,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CHAT_HISTORY_EXPORT_COLUMNS)
@@ -948,10 +961,11 @@ async def export_customer_insights_csv(
     *,
     tenant_id: str,
     lookback_days: int = 180,
+    company_id: str | None = None,
 ) -> str:
     """Stage 148 I1 — customer intelligence multi-section CSV."""
     data = await ai_customers_svc.customer_intelligence(
-        db, tenant_id, lookback_days=lookback_days
+        db, tenant_id, lookback_days=lookback_days, company_id=company_id
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CUSTOMER_INSIGHTS_EXPORT_COLUMNS)
@@ -1208,6 +1222,7 @@ async def export_document_analyze_csv(
     tenant_id: str,
     upload: UploadFile,
     document_type: str = "receipt",
+    company_id: str | None = None,
 ) -> str:
     """Stage 149 A1 — document analyze result CSV."""
     data = await ai_documents_svc.analyze_document(
@@ -1215,5 +1230,6 @@ async def export_document_analyze_csv(
         tenant_id,
         upload=upload,
         document_type=document_type,
+        company_id=company_id,
     )
     return document_analyze_result_to_csv(data)

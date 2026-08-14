@@ -104,3 +104,11 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Report schedules (list/create/export/get/update/delete/run) stamp and filter by company; scheduled exports pass `company_id` into report builders.
 - Notifications list/unread/export filter by company; creates accept `company_id`.
 - Remaining PARTIAL: AI chat history/templates/customers/documents/security may still be tenant-wide; FX may stay tenant-shared; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 12 follow-up (2026-08-14)
+
+- AI chat helpers/history stamp and filter by workspace `company_id`; draft PO create stamps company.
+- AI report templates CRUD/export and NL report generate/export pass `company_id` into report builders.
+- Customer intelligence/assist and document OCR matching filter parties/products/categories by company.
+- Security alert scan prefers company-scoped audit rows (null-company auth events remain visible); notify stamps company.
+- Remaining PARTIAL: FX may stay tenant-shared by design; ADR-002 billing and ADR-005 store membership remain deferred.

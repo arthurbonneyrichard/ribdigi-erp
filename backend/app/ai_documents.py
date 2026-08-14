@@ -17,6 +17,7 @@ from app import expense_ocr as expense_ocr_svc
 from app import models as m
 from app import storage as storage_svc
 from app.ai_expenses import suggest_category_from_text
+from app.reports import apply_company_filter
 
 
 def _norm(text: str | None) -> str:
@@ -29,20 +30,19 @@ async def _match_party(
     *,
     kind: str,
     payee: str | None,
+    company_id: str | None = None,
 ) -> dict | None:
     if not payee:
         return None
     needle = _norm(payee)
     if len(needle) < 2:
         return None
-    parties = (
-        await db.execute(
-            select(m.Party).where(
-                m.Party.tenant_id == tenant_id,
-                m.Party.kind == kind,
-            )
-        )
-    ).scalars().all()
+    stmt = select(m.Party).where(
+        m.Party.tenant_id == tenant_id,
+        m.Party.kind == kind,
+    )
+    stmt = apply_company_filter(stmt, m.Party.company_id, company_id)
+    parties = (await db.execute(stmt)).scalars().all()
     exact = [p for p in parties if _norm(p.name) == needle]
     if exact:
         p = exact[0]
@@ -58,15 +58,14 @@ async def _match_products(
     db: AsyncSession,
     tenant_id: str,
     text: str,
+    company_id: str | None = None,
 ) -> list[dict]:
-    products = (
-        await db.execute(
-            select(m.Product).where(
-                m.Product.tenant_id == tenant_id,
-                m.Product.is_active == True,  # noqa: E712
-            )
-        )
-    ).scalars().all()
+    stmt = select(m.Product).where(
+        m.Product.tenant_id == tenant_id,
+        m.Product.is_active == True,  # noqa: E712
+    )
+    stmt = apply_company_filter(stmt, m.Product.company_id, company_id)
+    products = (await db.execute(stmt)).scalars().all()
     hay = _norm(text)
     hits = []
     for p in products:
@@ -91,6 +90,7 @@ async def analyze_document(
     *,
     upload: UploadFile,
     document_type: str = "receipt",
+    company_id: str | None = None,
 ) -> dict:
     doc_type = (document_type or "receipt").strip().lower()
     if doc_type not in {"receipt", "expense", "invoice", "purchase_order", "purchase", "po"}:
@@ -118,11 +118,9 @@ async def analyze_document(
     discrepancies: list[dict] = []
 
     # Category suggestion for receipts/expenses
-    cats = (
-        await db.execute(
-            select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
-        )
-    ).scalars().all()
+    cat_stmt = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
+    cat_stmt = apply_company_filter(cat_stmt, m.ExpenseCategory.company_id, company_id)
+    cats = (await db.execute(cat_stmt)).scalars().all()
     text_blob = " ".join(
         filter(
             None,
@@ -142,7 +140,7 @@ async def analyze_document(
     matches: dict = {"party": None, "products": []}
     if doc_type in {"invoice", "purchase", "purchase_order", "po"}:
         matches["party"] = await _match_party(
-            db, tenant_id, kind="supplier", payee=fields.get("payee")
+            db, tenant_id, kind="supplier", payee=fields.get("payee"), company_id=company_id
         )
         if fields.get("payee") and not matches["party"]:
             discrepancies.append(
@@ -154,15 +152,17 @@ async def analyze_document(
             )
     else:
         matches["party"] = await _match_party(
-            db, tenant_id, kind="supplier", payee=fields.get("payee")
+            db, tenant_id, kind="supplier", payee=fields.get("payee"), company_id=company_id
         )
         # also try customer for credit notes / receipts from buyers — rare
         if not matches["party"]:
             matches["party"] = await _match_party(
-                db, tenant_id, kind="customer", payee=fields.get("payee")
+                db, tenant_id, kind="customer", payee=fields.get("payee"), company_id=company_id
             )
 
-    matches["products"] = await _match_products(db, tenant_id, text_blob)
+    matches["products"] = await _match_products(
+        db, tenant_id, text_blob, company_id=company_id
+    )
 
     if fields.get("amount") is None:
         discrepancies.append(

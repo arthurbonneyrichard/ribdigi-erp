@@ -1257,3 +1257,118 @@ async def test_ai_ops_and_schedules_company_scoped(client, db_session):
     assert created.status_code == 200, created.text
     assert created.json()["data"]["company_id"] == seed["c1"].id
     assert created.json()["data"]["name"] == "Company A Phase11 Schedule"
+
+
+@pytest.mark.asyncio
+async def test_ai_chat_templates_customers_company_scoped(client, db_session):
+    """Company B chat history, templates, and customer insights must not leak into A."""
+    ac, seed = client
+    from datetime import datetime
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="AI12",
+        name="Alpha AI Chat B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    party_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="AI12 B Only Customer",
+        kind="customer",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add(party_b)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            customer_id=party_b.id,
+            invoice_number="INV-AI12-B-ONLY",
+            status="posted",
+            subtotal=400,
+            tax_amount=0,
+            total_amount=400,
+            posted_at=datetime.utcnow(),
+            created_at=datetime.utcnow(),
+        )
+    )
+    db_session.add(
+        m.AiQuery(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            user_id=seed["super"].id,
+            role="super_admin",
+            message="secret company B chat",
+            answer="Company B only answer marker AI12-B-CHAT",
+            intent="help",
+        )
+    )
+    db_session.add(
+        m.AiReportTemplate(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            user_id=seed["super"].id,
+            name="Company B Only Template AI12",
+            prompt="Show me sales daily",
+            report_type="sales_daily",
+            format="csv",
+            params={},
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    history = await ac.get("/api/v1/ai/chat/history", headers=headers)
+    assert history.status_code == 200, history.text
+    blob = history.text
+    assert "AI12-B-CHAT" not in blob
+    assert "secret company B chat" not in blob
+
+    templates = await ac.get("/api/v1/ai/reports/templates", headers=headers)
+    assert templates.status_code == 200, templates.text
+    names = {r.get("name") for r in templates.json()["data"]}
+    assert "Company B Only Template AI12" not in names
+
+    created_tmpl = await ac.post(
+        "/api/v1/ai/reports/templates",
+        headers=headers,
+        json={
+            "name": "Company A Phase12 Template",
+            "prompt": "Show me sales daily",
+            "format": "csv",
+        },
+    )
+    assert created_tmpl.status_code == 200, created_tmpl.text
+    assert created_tmpl.json()["data"]["company_id"] == seed["c1"].id
+
+    chat = await ac.post(
+        "/api/v1/ai/chat",
+        headers=headers,
+        json={"message": "How many customers do I have?"},
+    )
+    assert chat.status_code == 200, chat.text
+    assert chat.json()["data"].get("company_id") == seed["c1"].id
+    # History should now include company A stamped turn and still exclude B
+    history2 = await ac.get("/api/v1/ai/chat/history", headers=headers)
+    assert history2.status_code == 200
+    assert "AI12-B-CHAT" not in history2.text
+    items = history2.json()["data"].get("items") or []
+    assert any("customers" in (i.get("message") or "").lower() for i in items)
+
+    insights = await ac.get("/api/v1/ai/customers/insights", headers=headers)
+    assert insights.status_code == 200, insights.text
+    assert "AI12 B Only Customer" not in insights.text
+    names_c = {
+        c.get("name") for c in (insights.json()["data"].get("best_customers") or [])
+    }
+    assert "AI12 B Only Customer" not in names_c

@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.rbac import has_permission
+from app.reports import apply_company_filter
 
 POSTED_INVOICE_STATUSES = frozenset({"posted", "sent", "partial", "paid", "overdue"})
 
@@ -81,30 +82,33 @@ def _parse_po_request(message: str) -> tuple[float | None, str | None]:
     return None, None
 
 
-async def _top_product(db: AsyncSession, tenant_id: str) -> dict:
+async def _top_product(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> dict:
     month_ago = datetime.utcnow() - timedelta(days=30)
-    row = (
-        await db.execute(
-            select(
-                m.Product.id,
-                m.Product.name,
-                m.Product.sku,
-                func.coalesce(func.sum(m.SalesInvoiceItem.quantity), 0).label("qty"),
-                func.coalesce(func.sum(m.SalesInvoiceItem.line_total), 0).label("revenue"),
-            )
-            .join(m.SalesInvoiceItem, m.SalesInvoiceItem.product_id == m.Product.id)
-            .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
-            .where(
-                m.Product.tenant_id == tenant_id,
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
-                m.SalesInvoice.created_at >= month_ago,
-            )
-            .group_by(m.Product.id, m.Product.name, m.Product.sku)
-            .order_by(func.coalesce(func.sum(m.SalesInvoiceItem.line_total), 0).desc())
-            .limit(1)
+    stmt = (
+        select(
+            m.Product.id,
+            m.Product.name,
+            m.Product.sku,
+            func.coalesce(func.sum(m.SalesInvoiceItem.quantity), 0).label("qty"),
+            func.coalesce(func.sum(m.SalesInvoiceItem.line_total), 0).label("revenue"),
         )
-    ).first()
+        .join(m.SalesInvoiceItem, m.SalesInvoiceItem.product_id == m.Product.id)
+        .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
+        .where(
+            m.Product.tenant_id == tenant_id,
+            m.SalesInvoice.tenant_id == tenant_id,
+            m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
+            m.SalesInvoice.created_at >= month_ago,
+        )
+        .group_by(m.Product.id, m.Product.name, m.Product.sku)
+        .order_by(func.coalesce(func.sum(m.SalesInvoiceItem.line_total), 0).desc())
+        .limit(1)
+    )
+    stmt = apply_company_filter(stmt, m.Product.company_id, company_id)
+    stmt = apply_company_filter(stmt, m.SalesInvoice.company_id, company_id)
+    row = (await db.execute(stmt)).first()
     if not row:
         return {
             "answer": "No posted sales in the last 30 days, so I cannot rank a top product yet.",
@@ -125,53 +129,49 @@ async def _top_product(db: AsyncSession, tenant_id: str) -> dict:
     }
 
 
-async def _sales_month(db: AsyncSession, tenant_id: str) -> dict:
+async def _sales_month(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> dict:
     month_ago = datetime.utcnow() - timedelta(days=30)
-    total = float(
-        (
-            await db.execute(
-                select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-                    m.SalesInvoice.tenant_id == tenant_id,
-                    m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
-                    m.SalesInvoice.created_at >= month_ago,
-                )
-            )
-        ).scalar_one()
-        or 0
+    total_stmt = select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
+        m.SalesInvoice.created_at >= month_ago,
     )
-    count = int(
-        (
-            await db.execute(
-                select(func.count())
-                .select_from(m.SalesInvoice)
-                .where(
-                    m.SalesInvoice.tenant_id == tenant_id,
-                    m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
-                    m.SalesInvoice.created_at >= month_ago,
-                )
-            )
-        ).scalar_one()
-        or 0
+    total_stmt = apply_company_filter(total_stmt, m.SalesInvoice.company_id, company_id)
+    total = float((await db.execute(total_stmt)).scalar_one() or 0)
+    count_stmt = (
+        select(func.count())
+        .select_from(m.SalesInvoice)
+        .where(
+            m.SalesInvoice.tenant_id == tenant_id,
+            m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
+            m.SalesInvoice.created_at >= month_ago,
+        )
     )
+    count_stmt = apply_company_filter(count_stmt, m.SalesInvoice.company_id, company_id)
+    count = int((await db.execute(count_stmt)).scalar_one() or 0)
     return {
         "answer": f"Sales in the last 30 days: {total:.2f} across {count} posted invoice(s).",
         "data": {"total": total, "invoice_count": count},
     }
 
 
-async def _low_stock(db: AsyncSession, tenant_id: str) -> dict:
-    rows = (
-        await db.execute(
-            select(m.Product)
-            .where(
-                m.Product.tenant_id == tenant_id,
-                m.Product.is_active == True,  # noqa: E712
-                m.Product.stock_qty <= m.Product.reorder_level,
-            )
-            .order_by(m.Product.stock_qty.asc())
-            .limit(10)
+async def _low_stock(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> dict:
+    stmt = (
+        select(m.Product)
+        .where(
+            m.Product.tenant_id == tenant_id,
+            m.Product.is_active == True,  # noqa: E712
+            m.Product.stock_qty <= m.Product.reorder_level,
         )
-    ).scalars().all()
+        .order_by(m.Product.stock_qty.asc())
+        .limit(10)
+    )
+    stmt = apply_company_filter(stmt, m.Product.company_id, company_id)
+    rows = (await db.execute(stmt)).scalars().all()
     if not rows:
         return {"answer": "No products are currently at or below reorder level.", "data": {"items": []}}
     lines = [f"- {p.name} ({p.sku}): stock {float(p.stock_qty)}, reorder {float(p.reorder_level)}" for p in rows]
@@ -192,44 +192,48 @@ async def _low_stock(db: AsyncSession, tenant_id: str) -> dict:
     }
 
 
-async def _expenses(db: AsyncSession, tenant_id: str) -> dict:
+async def _expenses(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> dict:
     month_ago = datetime.utcnow() - timedelta(days=30)
-    total = float(
-        (
-            await db.execute(
-                select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
-                    m.Expense.tenant_id == tenant_id,
-                    m.Expense.status == "approved",
-                    m.Expense.expense_date >= month_ago,
-                )
-            )
-        ).scalar_one()
-        or 0
+    stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
+        m.Expense.tenant_id == tenant_id,
+        m.Expense.status == "approved",
+        m.Expense.expense_date >= month_ago,
     )
+    stmt = apply_company_filter(stmt, m.Expense.company_id, company_id)
+    total = float((await db.execute(stmt)).scalar_one() or 0)
     return {
         "answer": f"Approved expenses in the last 30 days total {total:.2f}.",
         "data": {"total": total},
     }
 
 
-async def _customers(db: AsyncSession, tenant_id: str) -> dict:
-    count = int(
-        (
-            await db.execute(
-                select(func.count())
-                .select_from(m.Party)
-                .where(
-                    m.Party.tenant_id == tenant_id,
-                    m.Party.kind == "customer",
-                )
-            )
-        ).scalar_one()
-        or 0
+async def _customers(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> dict:
+    stmt = (
+        select(func.count())
+        .select_from(m.Party)
+        .where(
+            m.Party.tenant_id == tenant_id,
+            m.Party.kind == "customer",
+        )
     )
+    stmt = apply_company_filter(stmt, m.Party.company_id, company_id)
+    count = int((await db.execute(stmt)).scalar_one() or 0)
     return {"answer": f"You have {count} customer(s) on file.", "data": {"count": count}}
 
 
-async def _create_po(db: AsyncSession, *, tenant_id: str, user_id: str, claims: dict, message: str) -> dict:
+async def _create_po(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    claims: dict,
+    message: str,
+    company_id: str | None = None,
+) -> dict:
     if not _can(claims, "purchasing", "write"):
         return {
             "answer": "Creating a purchase order requires purchasing write permission for your role.",
@@ -245,15 +249,17 @@ async def _create_po(db: AsyncSession, *, tenant_id: str, user_id: str, claims: 
             "data": {},
         }
     frag = name_frag.strip()
-    product = (
-        await db.execute(
-            select(m.Product).where(
-                m.Product.tenant_id == tenant_id,
-                m.Product.is_active == True,  # noqa: E712
-                (m.Product.name.ilike(f"%{frag}%")) | (m.Product.sku.ilike(f"%{frag}%")),
-            ).limit(5)
+    product_stmt = (
+        select(m.Product)
+        .where(
+            m.Product.tenant_id == tenant_id,
+            m.Product.is_active == True,  # noqa: E712
+            (m.Product.name.ilike(f"%{frag}%")) | (m.Product.sku.ilike(f"%{frag}%")),
         )
-    ).scalars().all()
+        .limit(5)
+    )
+    product_stmt = apply_company_filter(product_stmt, m.Product.company_id, company_id)
+    product = (await db.execute(product_stmt)).scalars().all()
     if not product:
         return {
             "answer": f"I could not find an active product matching '{frag}'.",
@@ -266,28 +272,28 @@ async def _create_po(db: AsyncSession, *, tenant_id: str, user_id: str, claims: 
             "data": {"candidates": [{"id": p.id, "name": p.name, "sku": p.sku} for p in product]},
         }
     prod = product[0]
-    supplier = (
-        await db.execute(
+    supplier_stmt = (
+        select(m.Party)
+        .where(
+            m.Party.tenant_id == tenant_id,
+            m.Party.kind == "supplier",
+            m.Party.status == "active",
+        )
+        .order_by(m.Party.name)
+        .limit(1)
+    )
+    supplier_stmt = apply_company_filter(supplier_stmt, m.Party.company_id, company_id)
+    supplier = (await db.execute(supplier_stmt)).scalar_one_or_none()
+    if not supplier:
+        # fallback without status filter
+        fallback_stmt = (
             select(m.Party)
-            .where(
-                m.Party.tenant_id == tenant_id,
-                m.Party.kind == "supplier",
-                m.Party.status == "active",
-            )
+            .where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
             .order_by(m.Party.name)
             .limit(1)
         )
-    ).scalar_one_or_none()
-    if not supplier:
-        # fallback without status filter
-        supplier = (
-            await db.execute(
-                select(m.Party)
-                .where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
-                .order_by(m.Party.name)
-                .limit(1)
-            )
-        ).scalar_one_or_none()
+        fallback_stmt = apply_company_filter(fallback_stmt, m.Party.company_id, company_id)
+        supplier = (await db.execute(fallback_stmt)).scalar_one_or_none()
     if not supplier:
         return {
             "answer": "No supplier is set up yet. Add a supplier first, then ask me again.",
@@ -309,6 +315,7 @@ async def _create_po(db: AsyncSession, *, tenant_id: str, user_id: str, claims: 
             }
         ],
         notes=f"Created via AI chat: {message[:200]}",
+        company_id=company_id if company_id is not None else claims.get("company_id"),
     )
     return {
         "answer": (
@@ -332,7 +339,9 @@ async def handle_chat(
     user_id: str,
     claims: dict,
     message: str,
+    company_id: str | None = None,
 ) -> dict:
+    company_id = company_id if company_id is not None else claims.get("company_id")
     msg = (message or "").strip()
     intent = detect_intent(msg)
     data: dict = {}
@@ -346,19 +355,19 @@ async def handle_chat(
         if not _can(claims, "sales", "read") and not _can(claims, "dashboard", "read"):
             answer = "You do not have permission to view sales data."
         else:
-            out = await _top_product(db, tenant_id)
+            out = await _top_product(db, tenant_id, company_id=company_id)
             answer, data = out["answer"], out["data"]
     elif intent == "sales_month":
         if not _can(claims, "sales", "read") and not _can(claims, "dashboard", "read"):
             answer = "You do not have permission to view sales data."
         else:
-            out = await _sales_month(db, tenant_id)
+            out = await _sales_month(db, tenant_id, company_id=company_id)
             answer, data = out["answer"], out["data"]
     elif intent == "low_stock":
         if not _can(claims, "inventory", "read"):
             answer = "You do not have permission to view inventory."
         else:
-            out = await _low_stock(db, tenant_id)
+            out = await _low_stock(db, tenant_id, company_id=company_id)
             answer, data = out["answer"], out["data"]
     elif intent == "stockout_prediction":
         if not _can(claims, "ai", "read"):
@@ -367,7 +376,11 @@ async def handle_chat(
             from app import ai_inventory as ai_inventory_svc
 
             pred = await ai_inventory_svc.predict_low_stock(
-                db, tenant_id, at_risk_only=True, horizon_days=14
+                db,
+                tenant_id,
+                at_risk_only=True,
+                horizon_days=14,
+                company_id=company_id,
             )
             if not pred["at_risk_count"]:
                 answer = "No products are predicted to stock out within 14 days."
@@ -382,7 +395,7 @@ async def handle_chat(
         if not _can(claims, "expenses", "read") and not _can(claims, "dashboard", "read"):
             answer = "You do not have permission to view expenses."
         else:
-            out = await _expenses(db, tenant_id)
+            out = await _expenses(db, tenant_id, company_id=company_id)
             answer, data = out["answer"], out["data"]
     elif intent == "customers":
         if not _can(claims, "sales", "read") and not _can(claims, "credit", "read") and not _can(
@@ -390,7 +403,7 @@ async def handle_chat(
         ):
             answer = "You do not have permission to view customers."
         else:
-            out = await _customers(db, tenant_id)
+            out = await _customers(db, tenant_id, company_id=company_id)
             answer, data = out["answer"], out["data"]
     elif intent == "insights":
         if not _can(claims, "ai", "read"):
@@ -398,7 +411,9 @@ async def handle_chat(
         else:
             from app import ai_insights as ai_insights_svc
 
-            insights = await ai_insights_svc.generate_insights(db, tenant_id)
+            insights = await ai_insights_svc.generate_insights(
+                db, tenant_id, company_id=company_id
+            )
             cards = insights["insights"][:5]
             if not cards:
                 answer = insights["summaries"][0]
@@ -409,7 +424,12 @@ async def handle_chat(
             data = {"cards": cards}
     elif intent == "create_po":
         out = await _create_po(
-            db, tenant_id=tenant_id, user_id=user_id, claims=claims, message=msg
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            claims=claims,
+            message=msg,
+            company_id=company_id,
         )
         answer, data = out["answer"], out["data"]
     else:
@@ -419,6 +439,7 @@ async def handle_chat(
 
     row = m.AiQuery(
         tenant_id=tenant_id,
+        company_id=company_id,
         user_id=user_id,
         role=claims.get("role"),
         message=msg,
@@ -430,6 +451,7 @@ async def handle_chat(
     await db.flush()
     return {
         "id": row.id,
+        "company_id": company_id,
         "intent": intent,
         "answer": answer,
         "reply": answer,
@@ -445,34 +467,25 @@ async def list_history(
     tenant_id: str,
     user_id: str,
     limit: int = 50,
+    company_id: str | None = None,
 ) -> list[dict]:
     limit = max(1, min(int(limit), 100))
-    rows = (
-        await db.execute(
-            select(m.AiQuery)
-            .where(
-                m.AiQuery.tenant_id == tenant_id,
-                m.AiQuery.user_id == user_id,
-            )
-            .order_by(m.AiQuery.created_at.desc())
-            .limit(limit)
+    stmt = (
+        select(m.AiQuery)
+        .where(
+            m.AiQuery.tenant_id == tenant_id,
+            m.AiQuery.user_id == user_id,
         )
-    ).scalars().all()
-    return [
-        {
-            "id": r.id,
-            "message": r.message,
-            "answer": r.answer,
-            "intent": r.intent,
-            "data": r.payload or {},
-            "created_at": r.created_at,
-        }
-        for r in rows
-    ]
+        .order_by(m.AiQuery.created_at.desc())
+        .limit(limit)
+    )
+    stmt = apply_company_filter(stmt, m.AiQuery.company_id, company_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    return [serialize_query(r) for r in rows]
 
 
 def serialize_query(row: m.AiQuery) -> dict:
-    return {
+    out = {
         "id": row.id,
         "message": row.message,
         "answer": row.answer,
@@ -480,3 +493,6 @@ def serialize_query(row: m.AiQuery) -> dict:
         "data": row.payload or {},
         "created_at": row.created_at,
     }
+    if getattr(row, "company_id", None):
+        out["company_id"] = row.company_id
+    return out
