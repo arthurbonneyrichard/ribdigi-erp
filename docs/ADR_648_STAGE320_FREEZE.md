@@ -31,3 +31,10 @@ Stage 321 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live backup restore, E2E smoke executed, live PITR drill, demo tenant, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 321 opened under **ADR-649** after CONTINUE/NEXT (Tenant MVP Live DR Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-650**. Stage 320 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 321 runner-up outline was approved and opened (ADR-649); freeze ADR-650. Do not reopen Stage 320 scope.
+

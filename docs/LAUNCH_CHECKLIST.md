@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 321 track opened (ADR-649: `test_stage321_open.py`, `docs/STAGE_321_PLAN.md`) — Live DR Pack Remaining-Gate Index; closed under ADR-650
+- [x] Live DR pack remaining-gate hub (Stage 321 I1: `test_stage321_index_i1.py`, `docs/LIVE_DR_PACK_REMAINING_GATE_MVP.md`)
+- [x] Live DR pack blocker matrix (Stage 321 B1: `test_stage321_blockers_b1.py`, `docs/LIVE_DR_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 192 / Stage 320 / Stage 319 / Stage 193 pointers (Stage 321 P1: `test_stage321_pointers_p1.py`, `docs/LIVE_DR_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 321 fidelity sync (D1: `test_stage321_fidelity_d1.py`, `docs/STAGE_321_FIDELITY.md`)
+- [x] Stage 321 exit + freeze (H321x: `test_stage321_exit_h321x.py`, `docs/STAGE_321_EXIT_CRITERIA.md`, ADR-650)
 - [x] Stage 320 track opened (ADR-647: `test_stage320_open.py`, `docs/STAGE_320_PLAN.md`) — E2E Backup Restore Pack Remaining-Gate Index; closed under ADR-648
 - [x] E2E backup restore pack remaining-gate hub (Stage 320 I1: `test_stage320_index_i1.py`, `docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md`)
 - [x] E2E backup restore pack blocker matrix (Stage 320 B1: `test_stage320_blockers_b1.py`, `docs/E2E_BACKUP_RESTORE_PACK_RG_BLOCKERS_MVP.md`)

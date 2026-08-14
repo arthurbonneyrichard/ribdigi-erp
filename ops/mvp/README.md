@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_321_EXIT_CRITERIA.md` / `docs/ADR_650_STAGE321_FREEZE.md` (`backend/tests/test_stage321_exit_h321x.py`) — Stage 321 H321x
+- `docs/STAGE_321_FIDELITY.md` (`backend/tests/test_stage321_fidelity_d1.py`) — Stage 321 D1
+- `docs/STAGE_321_PLAN.md` (`backend/tests/test_stage321_open.py`) — Stage 321 open (ADR-649)
+- `docs/LIVE_DR_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/live-dr-pack-remaining-gate.json` — Stage 321 I1
+- `docs/LIVE_DR_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/live-dr-pack-rg-blockers.json` — Stage 321 B1
+- `docs/LIVE_DR_PACK_RG_POINTERS_MVP.md` / `ops/mvp/live-dr-pack-rg-pointers.json` — Stage 321 P1
 - `docs/STAGE_320_EXIT_CRITERIA.md` / `docs/ADR_648_STAGE320_FREEZE.md` (`backend/tests/test_stage320_exit_h320x.py`) — Stage 320 H320x
 - `docs/STAGE_320_FIDELITY.md` (`backend/tests/test_stage320_fidelity_d1.py`) — Stage 320 D1
 - `docs/STAGE_320_PLAN.md` (`backend/tests/test_stage320_open.py`) — Stage 320 open (ADR-647)
@@ -5203,6 +5209,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 321 exit
+
+H321x met — `docs/STAGE_321_EXIT_CRITERIA.md`, ADR-650. Stages 1–321 frozen for Stage 321 feature scope.
+
+## Stage 321 D1 — Tenant MVP Live DR Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_321_FIDELITY.md` (`test_stage321_fidelity_d1.py`). `LIVE_DR_PACK_*` remaining-gate index; live DR / live PITR / go-live still MISSING.
+
+## Stage 321 open
+
+ADR-649 / `docs/STAGE_321_PLAN.md`.
 
 ## Stage 320 exit
 

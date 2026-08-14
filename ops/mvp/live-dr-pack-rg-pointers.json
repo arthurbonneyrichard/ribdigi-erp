@@ -1,0 +1,60 @@
+{
+  "id": "live-dr-pack-rg-pointers",
+  "stage": 321,
+  "pack": "P1",
+  "doc": "docs/LIVE_DR_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_DR_PACK_REMAINING_GATE_MVP.md",
+    "live_dr_remaining_gate": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "backup_restore_drill_honesty_pack_remaining_gate": "docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "live_migration_remaining_gate": "docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_dr_claimed": false,
+  "live_backup_restore_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "live_migration_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "live_dr_remaining_gate_stage192",
+    "e2e_backup_restore_pack_remaining_gate_stage320",
+    "backup_restore_drill_honesty_pack_remaining_gate_stage319",
+    "live_migration_remaining_gate_stage193",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ldprp-stage192",
+      "title": "Point to Stage 192 live DR remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ldprp-stage320",
+      "title": "Point to Stage 320 E2E backup restore pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ldprp-stage319",
+      "title": "Point to Stage 319 backup restore drill honesty pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ldprp-stage193",
+      "title": "Point to Stage 193 live migration remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ldprp-dr-remaining",
+      "title": "Live DR Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 321 P1 live DR pack RG pointers packaging only. Do not claim live DR Complete."
+}
