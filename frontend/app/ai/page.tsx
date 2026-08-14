@@ -15,6 +15,8 @@ export default function Page() {
   const [draftPrBusy, setDraftPrBusy] = useState(false);
   const [lastAtRisk, setLastAtRisk] = useState<any[]>([]);
   const [includeOpenPr, setIncludeOpenPr] = useState(false);
+  const [lastDocExtract, setLastDocExtract] = useState<any | null>(null);
+  const [draftExpenseBusy, setDraftExpenseBusy] = useState(false);
 
   async function go() {
     setError('');
@@ -231,16 +233,19 @@ export default function Page() {
   async function analyzeDocument(file: File) {
     setError('');
     setMessage('');
+    setLastDocExtract(null);
     try {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('document_type', 'auto');
       const r = await api('/ai/documents/analyze', { method: 'POST', body: fd });
       const d = r.data || {};
+      setLastDocExtract(d);
       setA(
         [
           `type=${d.document_type} engine=${d.engine} conf=${d.confidence}`,
           `amount=${d.extracted?.amount} date=${d.extracted?.expense_date} payee=${d.extracted?.payee} ref=${d.extracted?.reference}`,
+          `category=${d.extracted?.category || d.category_suggestion?.category || '—'}`,
           `party_matches=${(d.matches?.parties || []).length} po_matches=${(d.matches?.purchase_orders || []).length}`,
           `discrepancies=${(d.discrepancies || []).map((x: any) => x.code).join(',') || 'none'}`,
           d.apply_hint || '',
@@ -248,6 +253,44 @@ export default function Page() {
       );
     } catch (err: any) {
       setError(err.message || 'Unable to analyze document');
+    }
+  }
+
+  async function createDraftExpenseFromDoc() {
+    if (!lastDocExtract?.extracted) {
+      setError('Analyze a receipt/invoice first');
+      return;
+    }
+    const ex = lastDocExtract.extracted;
+    if (ex.amount == null || Number(ex.amount) <= 0) {
+      setError('Extracted amount is missing — cannot create draft expense');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setDraftExpenseBusy(true);
+    try {
+      const r = await api('/ai/documents/create-expense', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: Number(ex.amount),
+          payee: ex.payee || null,
+          description: ex.description || null,
+          reference: ex.reference || null,
+          expense_date: ex.expense_date || null,
+          category_id: ex.category_id || lastDocExtract.category_suggestion?.category_id || null,
+          category: ex.category || lastDocExtract.category_suggestion?.category || null,
+          payment_method: 'cash',
+        }),
+      });
+      const exp = r.data?.expense || r.data;
+      setMessage(
+        `Draft expense ${exp?.reference || exp?.id || ''} created (${exp?.status || 'pending'}) — open Expenses to review/approve.`
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to create draft expense');
+    } finally {
+      setDraftExpenseBusy(false);
     }
   }
 
@@ -281,6 +324,14 @@ export default function Page() {
               }}
             />
           </label>
+          <button
+            type="button"
+            onClick={createDraftExpenseFromDoc}
+            disabled={draftExpenseBusy || !lastDocExtract?.extracted?.amount}
+            title="Creates a pending expense from the last Analyze document result (requires expenses:write)"
+          >
+            {draftExpenseBusy ? 'Creating draft expense…' : 'Create draft expense'}
+          </button>
           <button onClick={loadInsights}>Load insights</button>
           <button onClick={loadInventoryPredictions} disabled={predBusy}>
             {predBusy ? 'Loading predictions…' : 'Inventory predictions'}
@@ -311,7 +362,9 @@ export default function Page() {
           Inventory predictions lists at-risk SKUs (14-day window). <strong>Create draft PR(s)</strong> turns
           those lines into draft purchase requests — open{' '}
           <Link href="/purchasing">Purchasing → Requests</Link> to submit. Requires purchasing write
-          permission.
+          permission. After <strong>Analyze document</strong>, <strong>Create draft expense</strong> turns
+          the extracted amount/payee/category into a pending expense — open{' '}
+          <Link href="/expenses">Expenses</Link> to review (requires expenses write).
         </p>
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
         {message && <p style={{ color: '#166534' }}>{message}</p>}

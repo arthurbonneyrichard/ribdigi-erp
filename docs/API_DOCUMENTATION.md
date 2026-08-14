@@ -1491,7 +1491,9 @@ Also accepts structured `{ "report_type": "sales", "period": "last_month", "form
 }
 ```
 
-Form fields: `file` (required), `document_type` (`receipt`|`invoice`|`purchase_order`|`auto`), optional `expected_amount`. Returns extracted fields, party/PO matches, and discrepancy flags. Suggest-only — see `docs/AI_DOCUMENT_MVP.md`.
+Form fields: `file` (required), `document_type` (`receipt`|`invoice`|`purchase_order`|`auto`), optional `expected_amount`. Returns extracted fields, party/PO matches, and discrepancy flags. Analyze is suggest-only — see `docs/AI_DOCUMENT_MVP.md`.
+
+**Create draft expense:** `POST /ai/documents/create-expense` — JSON body `{ amount, payee?, description?, reference?, category_id?, category?, expense_date?, payment_method? }` (`expenses:write`). Creates a normal pending/auto-approved expense from reviewed OCR fields (defaults category to MISC when omitted); AI UI **Create draft expense**.
 
 ### 16.9 AI Customer Assistant
 **Endpoint:** `POST /ai/customer/assist`
