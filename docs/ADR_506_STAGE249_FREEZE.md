@@ -31,3 +31,9 @@ Stage 250 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for §7 signature, go-live, attestation, or Sections 1–3 verification.
+
+## Amendment — Stage 250 opened
+
+Stage 250 opened under **ADR-507** after CONTINUE/NEXT (MVP Gate Matrix Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-508**. Stage 249 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 250 runner-up outline was approved and opened (ADR-507); freeze ADR-508. Do not reopen Stage 249 scope.

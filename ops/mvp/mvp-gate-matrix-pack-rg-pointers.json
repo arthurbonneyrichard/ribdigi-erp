@@ -1,0 +1,60 @@
+{
+  "id": "mvp-gate-matrix-pack-rg-pointers",
+  "stage": 250,
+  "pack": "P1",
+  "doc": "docs/MVP_GATE_MATRIX_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MVP_GATE_MATRIX_PACK_REMAINING_GATE_MVP.md",
+    "mvp_gate_matrix": "docs/MVP_GATE_MATRIX_MVP.md",
+    "mvp_declaration_pack_remaining_gate": "docs/MVP_DECLARATION_PACK_REMAINING_GATE_MVP.md",
+    "release_pipeline_pack_remaining_gate": "docs/RELEASE_PIPELINE_PACK_REMAINING_GATE_MVP.md",
+    "evidence_ledger_pack_remaining_gate": "docs/EVIDENCE_LEDGER_PACK_REMAINING_GATE_MVP.md",
+    "gate_matrix_register": "ops/mvp/gate-matrix.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "gates_closed_claimed": false,
+  "topics": [
+    "mvp_gate_matrix_stage31_g1",
+    "mvp_declaration_pack_remaining_gate_stage249",
+    "release_pipeline_pack_remaining_gate_stage248",
+    "evidence_ledger_pack_remaining_gate_stage235",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "mgmprp-stage31",
+      "title": "Point to Stage 31 G1 MVP gate matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgmprp-stage249",
+      "title": "Point to Stage 249 MVP declaration pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgmprp-stage248",
+      "title": "Point to Stage 248 release pipeline pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgmprp-stage235",
+      "title": "Point to Stage 235 evidence ledger pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgmprp-gates-remaining",
+      "title": "Gates closed / go-live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 250 P1 MVP gate matrix pack RG pointers packaging only. Do not claim gates closed or go-live Complete."
+}

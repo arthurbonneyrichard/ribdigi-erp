@@ -928,6 +928,12 @@ Authoritative MVP docs:
 - `docs/MVP_DECLARATION_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/mvp-declaration-pack-remaining-gate.json` — Stage 249 I1
 - `docs/MVP_DECLARATION_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/mvp-declaration-pack-rg-blockers.json` — Stage 249 B1
 - `docs/MVP_DECLARATION_PACK_RG_POINTERS_MVP.md` / `ops/mvp/mvp-declaration-pack-rg-pointers.json` — Stage 249 P1
+- `docs/STAGE_250_EXIT_CRITERIA.md` / `docs/ADR_508_STAGE250_FREEZE.md` (`backend/tests/test_stage250_exit_h250x.py`) — Stage 250 H250x
+- `docs/STAGE_250_FIDELITY.md` (`backend/tests/test_stage250_fidelity_d1.py`) — Stage 250 D1
+- `docs/STAGE_250_PLAN.md` (`backend/tests/test_stage250_open.py`) — Stage 250 open (ADR-507)
+- `docs/MVP_GATE_MATRIX_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/mvp-gate-matrix-pack-remaining-gate.json` — Stage 250 I1
+- `docs/MVP_GATE_MATRIX_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/mvp-gate-matrix-pack-rg-blockers.json` — Stage 250 B1
+- `docs/MVP_GATE_MATRIX_PACK_RG_POINTERS_MVP.md` / `ops/mvp/mvp-gate-matrix-pack-rg-pointers.json` — Stage 250 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4381,4 +4387,16 @@ H249x met — `docs/STAGE_249_EXIT_CRITERIA.md`, ADR-506. Stages 1–249 frozen 
 ## Stage 249 open
 
 `docs/ADR_505_STAGE249_OPEN.md` + `docs/STAGE_249_PLAN.md` (`test_stage249_open.py`).
+
+## Stage 250 exit
+
+H250x met — `docs/STAGE_250_EXIT_CRITERIA.md`, ADR-508. Stages 1–250 frozen for Stage 250 feature scope.
+
+## Stage 250 D1 — Tenant MVP MVP Gate Matrix Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_250_FIDELITY.md` (`test_stage250_fidelity_d1.py`). `MVP_GATE_MATRIX_PACK_*` remaining-gate index; gates closed / go-live / section 7 / attestation still MISSING.
+
+## Stage 250 open
+
+`docs/ADR_507_STAGE250_OPEN.md` + `docs/STAGE_250_PLAN.md` (`test_stage250_open.py`).
 
