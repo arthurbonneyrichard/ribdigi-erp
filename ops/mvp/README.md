@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_428_EXIT_CRITERIA.md` / `docs/ADR_864_STAGE428_FREEZE.md` (`backend/tests/test_stage428_exit_h428x.py`) — Stage 428 H428x
+- `docs/STAGE_428_FIDELITY.md` (`backend/tests/test_stage428_fidelity_d1.py`) — Stage 428 D1
+- `docs/STAGE_428_PLAN.md` (`backend/tests/test_stage428_open.py`) — Stage 428 open (ADR-863)
+- `docs/INCIDENT_PACK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/incident-pack-honesty-pack-remaining-gate.json` — Stage 428 I1
+- `docs/INCIDENT_PACK_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/incident-pack-honesty-pack-rg-blockers.json` — Stage 428 B1
+- `docs/INCIDENT_PACK_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/incident-pack-honesty-pack-rg-pointers.json` — Stage 428 P1
 - `docs/STAGE_427_EXIT_CRITERIA.md` / `docs/ADR_862_STAGE427_FREEZE.md` (`backend/tests/test_stage427_exit_h427x.py`) — Stage 427 H427x
 - `docs/STAGE_427_FIDELITY.md` (`backend/tests/test_stage427_fidelity_d1.py`) — Stage 427 D1
 - `docs/STAGE_427_PLAN.md` (`backend/tests/test_stage427_open.py`) — Stage 427 open (ADR-861)
@@ -5845,6 +5851,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 428 exit
+
+H428x met — `docs/STAGE_428_EXIT_CRITERIA.md`, ADR-864. Stages 1–428 frozen for Stage 428 feature scope.
+
+## Stage 428 D1 — Tenant MVP Incident Pack Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Incident Pack honesty / go-live Completes remain MISSING. See `docs/STAGE_428_FIDELITY.md`.
+
+## Stage 428 open
+
+Opened under ADR-863; plan `docs/STAGE_428_PLAN.md`.
 
 ## Stage 427 exit
 

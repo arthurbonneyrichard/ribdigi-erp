@@ -31,3 +31,9 @@ Stage 428 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Evidence Ledger, Evidence Ledger honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 428 opened under **ADR-863** after CONTINUE/NEXT (Tenant MVP Incident Pack Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-864**. Stage 427 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 427 runner-up outline was approved and opened (ADR-863); freeze ADR-864. Do not reopen Stage 427 scope.
