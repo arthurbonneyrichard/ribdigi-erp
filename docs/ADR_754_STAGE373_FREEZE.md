@@ -31,3 +31,10 @@ Stage 374 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, sync-dashboard-widget, live device-sync-widget, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 374 opened under **ADR-755** after CONTINUE/NEXT (Tenant MVP Device Offline Registry Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-756**. Stage 373 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 374 runner-up outline was approved and opened (ADR-755); freeze ADR-756. Do not reopen Stage 373 scope.
+

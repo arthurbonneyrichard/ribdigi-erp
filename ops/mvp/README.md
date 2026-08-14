@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_374_EXIT_CRITERIA.md` / `docs/ADR_756_STAGE374_FREEZE.md` (`backend/tests/test_stage374_exit_h374x.py`) — Stage 374 H374x
+- `docs/STAGE_374_FIDELITY.md` (`backend/tests/test_stage374_fidelity_d1.py`) — Stage 374 D1
+- `docs/STAGE_374_PLAN.md` (`backend/tests/test_stage374_open.py`) — Stage 374 open (ADR-755)
+- `docs/DEVICE_OFFLINE_REGISTRY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/device-offline-registry-pack-remaining-gate.json` — Stage 374 I1
+- `docs/DEVICE_OFFLINE_REGISTRY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/device-offline-registry-pack-rg-blockers.json` — Stage 374 B1
+- `docs/DEVICE_OFFLINE_REGISTRY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/device-offline-registry-pack-rg-pointers.json` — Stage 374 P1
 - `docs/STAGE_373_EXIT_CRITERIA.md` / `docs/ADR_754_STAGE373_FREEZE.md` (`backend/tests/test_stage373_exit_h373x.py`) — Stage 373 H373x
 - `docs/STAGE_373_FIDELITY.md` (`backend/tests/test_stage373_fidelity_d1.py`) — Stage 373 D1
 - `docs/STAGE_373_PLAN.md` (`backend/tests/test_stage373_open.py`) — Stage 373 open (ADR-753)
@@ -5521,6 +5527,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 374 exit
+
+H374x met — `docs/STAGE_374_EXIT_CRITERIA.md`, ADR-756. Stages 1–374 frozen for Stage 374 feature scope.
+
+## Stage 374 D1 — Tenant MVP Device Offline Registry Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `DEVICE_OFFLINE_REGISTRY_PACK_REMAINING_GATE_MVP.md` / `DEVICE_OFFLINE_REGISTRY_PACK_RG_BLOCKERS_MVP.md` / `DEVICE_OFFLINE_REGISTRY_PACK_RG_POINTERS_MVP.md` ≠ Offline Complete. Source: `CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md` §16.
+
+## Stage 374 open
+
+ADR-755 / `docs/STAGE_374_PLAN.md`.
 
 ## Stage 373 exit
 

@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 374 open** | Device Offline Registry Pack Remaining-Gate Index — `docs/STAGE_374_PLAN.md`, ADR-755 (`test_stage374_open.py`) |
+| **Stage 374 I1** | Device offline registry pack remaining-gate index hub (`test_stage374_index_i1.py`) |
+| **Stage 374 B1** | Device offline registry pack blocker matrix (`test_stage374_blockers_b1.py`) |
+| **Stage 374 P1** | Stage 373 / Stage 164 / Stage 329 / CHANGE_IMPACT pointers (`test_stage374_pointers_p1.py`) |
+| **Stage 374 D1** | Device offline registry pack remaining-gate fidelity — `docs/STAGE_374_FIDELITY.md` (`test_stage374_fidelity_d1.py`) |
+| **Stage 374 H374x** | Exit + freeze — `docs/STAGE_374_EXIT_CRITERIA.md`, ADR-756 (`test_stage374_exit_h374x.py`); Stages 1–374 frozen |
 | **Stage 373 open** | Offline Sync Dashboard Widget Pack Remaining-Gate Index — `docs/STAGE_373_PLAN.md`, ADR-753 (`test_stage373_open.py`) |
 | **Stage 373 I1** | Offline sync dashboard widget pack remaining-gate index hub (`test_stage373_index_i1.py`) |
 | **Stage 373 B1** | Offline sync dashboard widget pack blocker matrix (`test_stage373_blockers_b1.py`) |

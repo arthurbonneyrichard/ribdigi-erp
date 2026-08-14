@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 374 track opened (ADR-755: `test_stage374_open.py`, `docs/STAGE_374_PLAN.md`) — Device Offline Registry Pack Remaining-Gate Index; closed under ADR-756
+- [x] Device offline registry pack remaining-gate hub (Stage 374 I1: `test_stage374_index_i1.py`, `docs/DEVICE_OFFLINE_REGISTRY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Device offline registry pack blocker matrix (Stage 374 B1: `test_stage374_blockers_b1.py`, `docs/DEVICE_OFFLINE_REGISTRY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 373 / Stage 164 / Stage 329 / CHANGE_IMPACT pointers (Stage 374 P1: `test_stage374_pointers_p1.py`, `docs/DEVICE_OFFLINE_REGISTRY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 374 fidelity sync (D1: `test_stage374_fidelity_d1.py`, `docs/STAGE_374_FIDELITY.md`)
+- [x] Stage 374 exit + freeze (H374x: `test_stage374_exit_h374x.py`, `docs/STAGE_374_EXIT_CRITERIA.md`, ADR-756)
 - [x] Stage 373 track opened (ADR-753: `test_stage373_open.py`, `docs/STAGE_373_PLAN.md`) — Offline Sync Dashboard Widget Pack Remaining-Gate Index; closed under ADR-754
 - [x] Offline sync dashboard widget pack remaining-gate hub (Stage 373 I1: `test_stage373_index_i1.py`, `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline sync dashboard widget pack blocker matrix (Stage 373 B1: `test_stage373_blockers_b1.py`, `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_RG_BLOCKERS_MVP.md`)
