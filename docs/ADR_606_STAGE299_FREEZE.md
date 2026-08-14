@@ -31,3 +31,9 @@ Stage 300 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for signed MSA, security exhibit signed, legal counsel, contract execution, paid billing, or go-live.
+
+## Amendment — Stage 300 opened
+
+Stage 300 opened under **ADR-607** after CONTINUE/NEXT (Tenant MVP ToS/AUP Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-608**. Stage 299 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 300 runner-up outline was approved and opened (ADR-607); freeze ADR-608. Do not reopen Stage 299 scope.

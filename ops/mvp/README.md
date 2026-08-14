@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_300_EXIT_CRITERIA.md` / `docs/ADR_608_STAGE300_FREEZE.md` (`backend/tests/test_stage300_exit_h300x.py`) — Stage 300 H300x
+- `docs/STAGE_300_FIDELITY.md` (`backend/tests/test_stage300_fidelity_d1.py`) — Stage 300 D1
+- `docs/STAGE_300_PLAN.md` (`backend/tests/test_stage300_open.py`) — Stage 300 open (ADR-607)
+- `docs/TOS_AUP_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/tos-aup-pack-remaining-gate.json` — Stage 300 I1
+- `docs/TOS_AUP_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/tos-aup-pack-rg-blockers.json` — Stage 300 B1
+- `docs/TOS_AUP_PACK_RG_POINTERS_MVP.md` / `ops/mvp/tos-aup-pack-rg-pointers.json` — Stage 300 P1
 - `docs/STAGE_299_EXIT_CRITERIA.md` / `docs/ADR_606_STAGE299_FREEZE.md` (`backend/tests/test_stage299_exit_h299x.py`) — Stage 299 H299x
 - `docs/STAGE_299_FIDELITY.md` (`backend/tests/test_stage299_fidelity_d1.py`) — Stage 299 D1
 - `docs/STAGE_299_PLAN.md` (`backend/tests/test_stage299_open.py`) — Stage 299 open (ADR-605)
@@ -5077,6 +5083,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 300 exit
+
+H300x met — `docs/STAGE_300_EXIT_CRITERIA.md`, ADR-608. Stages 1–300 frozen for Stage 300 feature scope.
+
+## Stage 300 D1 — Tenant MVP ToS/AUP Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_300_FIDELITY.md` (`test_stage300_fidelity_d1.py`). `TOS_AUP_PACK_*` remaining-gate index; signed ToS / clickwrap live / go-live still MISSING.
+
+## Stage 300 open
+
+`docs/ADR_607_STAGE300_OPEN.md` + `docs/STAGE_300_PLAN.md` (`test_stage300_open.py`).
 
 ## Stage 299 exit
 

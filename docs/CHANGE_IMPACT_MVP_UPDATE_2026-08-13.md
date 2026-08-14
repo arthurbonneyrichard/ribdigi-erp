@@ -639,3 +639,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 299 decision (opened after Stage 298 freeze)
 
 **Tenant MVP MSA Addendum Pack Remaining-Gate Index Fidelity** — MSA addendum pack remaining-gate hub (I1), blocker matrix (B1), Stage 39 A1 / Stage 298 / Stage 293 / Stage 39 P1 pointers with explicit non-claim (P1). Prefixed `MSA_ADDENDUM_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 39 A1 `MSA_ADDENDUM_MVP.md`). Signed MSA / security exhibit signed / legal counsel / contract execution / paid billing / go-live Completes remain deferred (Stage 300+; ADR-002 in force). Distinct from Stage 298 DPA subprocessor pack remaining-gate, Stage 293 commercial terms pack remaining-gate, and Stage 39 A1 MSA addendum packaging. Open ADR-605 / freeze ADR-606.
+
+## Stage 300 decision (opened after Stage 299 freeze)
+
+**Tenant MVP ToS/AUP Pack Remaining-Gate Index Fidelity** — ToS/AUP pack remaining-gate hub (I1), blocker matrix (B1), Stage 43 T1 / Stage 299 / Stage 293 / Stage 39 A1 pointers with explicit non-claim (P1). Prefixed `TOS_AUP_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 43 T1 `TOS_AUP_MVP.md`). Signed ToS / AUP enforced / legal counsel / clickwrap live / paid billing / go-live Completes remain deferred (Stage 301+; ADR-002 in force). Distinct from Stage 299 MSA addendum pack remaining-gate, Stage 293 commercial terms pack remaining-gate, and Stage 43 T1 ToS/AUP packaging. Open ADR-607 / freeze ADR-608.
