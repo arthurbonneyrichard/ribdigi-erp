@@ -1,0 +1,57 @@
+{
+  "id": "monthly-pos-ops-pointers-pack-remaining-gate",
+  "stage": 348,
+  "pack": "I1",
+  "doc": "docs/MONTHLY_POS_OPS_POINTERS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/MONTHLY_POS_OPS_POINTERS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/MONTHLY_POS_OPS_POINTERS_PACK_RG_POINTERS_MVP.md",
+    "monthly_pos_ops_pointers": "docs/MONTHLY_POS_OPS_POINTERS_MVP.md",
+    "monthly_pos_ops_trends_pack_remaining_gate": "docs/MONTHLY_POS_OPS_TRENDS_PACK_REMAINING_GATE_MVP.md",
+    "monthly_pos_ops_review_pack_remaining_gate": "docs/MONTHLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "risks_closed_claimed": false,
+  "distinct_from_stage177_monthly_pos_ops_pointers": true,
+  "distinct_from_stage347_monthly_pos_ops_trends_pack_remaining_gate": true,
+  "distinct_from_stage346_monthly_pos_ops_review_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "mpoppr-read-blockers",
+      "title": "Read B1 monthly POS ops pointers pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpoppr-follow-pointers",
+      "title": "Follow P1 Stage 177 / Stage 347 / Stage 346 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpoppr-checklist-missing",
+      "title": "Reaffirm live monthly POS ops pointers / Offline Complete / live DR / attestation / residual risks closed MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpoppr-no-packaging-as-live",
+      "title": "Do not treat Stage 177 / Stage 176 / Stage 347 / Stage 346 / Stage 329 as live monthly POS ops pointers Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpoppr-checklist-remaining",
+      "title": "Offline Complete / live DR / attestation / residual risks closed / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 348 I1 monthly POS ops pointers pack remaining-gate index packaging only. Do not claim live monthly POS ops pointers Complete."
+}

@@ -31,3 +31,9 @@ Stage 348 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for monthly POS ops trends, Offline Complete, Hold SLA, attestation, fabricated trend dashboard, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 348 opened under **ADR-703** after CONTINUE/NEXT (Tenant MVP Monthly POS Ops Pointers Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-704**. Stage 347 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 348 runner-up outline was approved and opened (ADR-703); freeze ADR-704. Do not reopen Stage 347 scope.

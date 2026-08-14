@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_348_EXIT_CRITERIA.md` / `docs/ADR_704_STAGE348_FREEZE.md` (`backend/tests/test_stage348_exit_h348x.py`) — Stage 348 H348x
+- `docs/STAGE_348_FIDELITY.md` (`backend/tests/test_stage348_fidelity_d1.py`) — Stage 348 D1
+- `docs/STAGE_348_PLAN.md` (`backend/tests/test_stage348_open.py`) — Stage 348 open (ADR-703)
+- `docs/MONTHLY_POS_OPS_POINTERS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/monthly-pos-ops-pointers-pack-remaining-gate.json` — Stage 348 I1
+- `docs/MONTHLY_POS_OPS_POINTERS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/monthly-pos-ops-pointers-pack-rg-blockers.json` — Stage 348 B1
+- `docs/MONTHLY_POS_OPS_POINTERS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/monthly-pos-ops-pointers-pack-rg-pointers.json` — Stage 348 P1
 - `docs/STAGE_347_EXIT_CRITERIA.md` / `docs/ADR_702_STAGE347_FREEZE.md` (`backend/tests/test_stage347_exit_h347x.py`) — Stage 347 H347x
 - `docs/STAGE_347_FIDELITY.md` (`backend/tests/test_stage347_fidelity_d1.py`) — Stage 347 D1
 - `docs/STAGE_347_PLAN.md` (`backend/tests/test_stage347_open.py`) — Stage 347 open (ADR-701)
@@ -5365,6 +5371,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 348 exit
+
+H348x met — `docs/STAGE_348_EXIT_CRITERIA.md`, ADR-704. Stages 1–348 frozen for Stage 348 feature scope.
+
+## Stage 348 D1 — Tenant MVP Monthly POS Ops Pointers Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_348_FIDELITY.md` (`test_stage348_fidelity_d1.py`). `MONTHLY_POS_OPS_POINTERS_PACK_*` remaining-gate index; Offline Complete / live DR / attestation / residual risks closed / go-live still MISSING.
+
+## Stage 348 open
+
+ADR-703 / `docs/STAGE_348_PLAN.md`.
 
 ## Stage 347 exit
 
