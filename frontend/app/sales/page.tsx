@@ -96,6 +96,12 @@ export default function Page() {
   const [qtPrefix, setQtPrefix] = useState('QT');
   const [qtNext, setQtNext] = useState('1');
   const [qtPreview, setQtPreview] = useState('');
+  const [srPrefix, setSrPrefix] = useState('SR');
+  const [srNext, setSrNext] = useState('1');
+  const [srPreview, setSrPreview] = useState('');
+  const [cnPrefix, setCnPrefix] = useState('CN');
+  const [cnNext, setCnNext] = useState('1');
+  const [cnPreview, setCnPreview] = useState('');
   const [fmt, setFmt] = useState<FormatPrefs | null>(null);
 
   async function refresh() {
@@ -134,6 +140,18 @@ export default function Page() {
       setQtPrefix(qt.prefix || 'QT');
       setQtNext(String(qt.next_number ?? 1));
       setQtPreview(qt.preview || '');
+    }
+    const sr = settingsRes.data?.sales_return_numbering;
+    if (sr) {
+      setSrPrefix(sr.prefix || 'SR');
+      setSrNext(String(sr.next_number ?? 1));
+      setSrPreview(sr.preview || '');
+    }
+    const cn = settingsRes.data?.credit_note_numbering;
+    if (cn) {
+      setCnPrefix(cn.prefix || 'CN');
+      setCnNext(String(cn.next_number ?? 1));
+      setCnPreview(cn.preview || '');
     }
   }
 
@@ -307,6 +325,14 @@ export default function Page() {
             prefix: qtPrefix.trim(),
             next_number: Math.max(1, Number(qtNext) || 1),
           },
+          sales_return_numbering: {
+            prefix: srPrefix.trim(),
+            next_number: Math.max(1, Number(srNext) || 1),
+          },
+          credit_note_numbering: {
+            prefix: cnPrefix.trim(),
+            next_number: Math.max(1, Number(cnNext) || 1),
+          },
         }),
       });
       const numbering = r.data?.invoice_numbering;
@@ -321,8 +347,20 @@ export default function Page() {
         setQtNext(String(qt.next_number));
         setQtPreview(qt.preview);
       }
+      const sr = r.data?.sales_return_numbering;
+      if (sr) {
+        setSrPrefix(sr.prefix);
+        setSrNext(String(sr.next_number));
+        setSrPreview(sr.preview);
+      }
+      const cn = r.data?.credit_note_numbering;
+      if (cn) {
+        setCnPrefix(cn.prefix);
+        setCnNext(String(cn.next_number));
+        setCnPreview(cn.preview);
+      }
       setMessage(
-        `Numbering saved — invoice ${numbering?.preview || ''} / quotation ${qt?.preview || ''}`.trim(),
+        `Numbering saved — INV ${numbering?.preview || ''} / QT ${qt?.preview || ''} / SR ${sr?.preview || ''} / CN ${cn?.preview || ''}`.trim(),
       );
     } catch (err: any) {
       setError(err.message);
@@ -519,6 +557,38 @@ export default function Page() {
             style={{ width: 90 }}
           />
           <span className="muted">{qtPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Return</span>
+          <input
+            value={srPrefix}
+            onChange={(e) => setSrPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={srNext}
+            onChange={(e) => setSrNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <span className="muted">{srPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Credit note</span>
+          <input
+            value={cnPrefix}
+            onChange={(e) => setCnPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={cnNext}
+            onChange={(e) => setCnNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <span className="muted">{cnPreview || '—'}</span>
           <button type="button" onClick={saveInvoiceNumbering}>
             Save numbering
           </button>

@@ -170,6 +170,63 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
     assert posted.json()["data"]["debit_note_number"] == f"DN-{year}-0006"
     assert posted.json()["data"]["status"] == "posted"
 
+    # Sales return + credit note numbering (BR-7.5 / BR-20.4)
+    sales_num = await ac.patch(
+        "/api/v1/sales/settings",
+        headers=admin,
+        json={
+            "sales_return_numbering": {"prefix": "SR", "next_number": 8},
+            "credit_note_numbering": {"prefix": "CN", "next_number": 11},
+        },
+    )
+    assert sales_num.status_code == 200, sales_num.text
+    assert sales_num.json()["data"]["sales_return_numbering"]["preview"] == f"SR-{year}-0008"
+    assert sales_num.json()["data"]["credit_note_numbering"]["preview"] == f"CN-{year}-0011"
+
+    cust = await ac.post(
+        "/api/v1/customers",
+        headers=admin,
+        json={"name": "SR Num Co", "email": "srnum@example.com"},
+    )
+    assert cust.status_code == 200, cust.text
+    sinv = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=admin,
+        json={
+            "customer_id": cust.json()["data"]["id"],
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 20}],
+        },
+    )
+    assert sinv.status_code == 200, sinv.text
+    sinv_id = sinv.json()["data"]["id"]
+    sinv_posted = await ac.post(f"/api/v1/sales/invoices/{sinv_id}/post", headers=admin)
+    assert sinv_posted.status_code == 200, sinv_posted.text
+    from app import models as m
+
+    product = await db_session.get(m.Product, seed["p1"].id)
+    product.stock_qty = float(product.stock_qty or 0) + 5
+    await db_session.commit()
+
+    sret = await ac.post(
+        "/api/v1/sales/returns",
+        headers=admin,
+        json={
+            "sales_invoice_id": sinv_id,
+            "reason": "damaged",
+            "restock": True,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert sret.status_code == 200, sret.text
+    assert sret.json()["data"]["return_number"] == f"SR-{year}-0008"
+    sposted = await ac.post(
+        f"/api/v1/sales/returns/{sret.json()['data']['id']}/post",
+        headers=admin,
+        json={"settlement_method": "adjust"},
+    )
+    assert sposted.status_code == 200, sposted.text
+    assert sposted.json()["data"]["credit_note_number"] == f"CN-{year}-0011"
+
     # Counter advanced for next GRN
     assert await next_grn_number(db_session, seed["t1"].id) == f"GRN-{year}-0010"
     await db_session.commit()
