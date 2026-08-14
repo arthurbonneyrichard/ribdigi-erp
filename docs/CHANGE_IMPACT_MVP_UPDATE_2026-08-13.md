@@ -372,3 +372,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 239 decision (opened after Stage 238 freeze)
 
 **Tenant MVP Operator Handoff Pack Remaining-Gate Index Fidelity** — operator handoff pack remaining-gate hub (I1), blocker matrix (B1), Stage 32 / Stage 217 / Stage 238 pointers with explicit non-claim (P1). Prefixed `OPERATOR_HANDOFF_PACK_*` (≠ Stage 217 `OPERATOR_HANDOFF_*`). Live operator handoff Completes remain deferred (Stage 240+). Distinct from Stage 217 operator handoff remaining-gate and Stage 238 knowledge base pack remaining-gate.
+
+## Stage 240 decision (opened after Stage 239 freeze)
+
+**Tenant MVP Knowledge Transfer Pack Remaining-Gate Index Fidelity** — knowledge transfer pack remaining-gate hub (I1), blocker matrix (B1), Stage 33 / Stage 216 / Stage 239 pointers with explicit non-claim (P1). Prefixed `KNOWLEDGE_TRANSFER_PACK_*` (≠ Stage 216 `KNOWLEDGE_TRANSFER_*`). Live knowledge-transfer Completes remain deferred (Stage 241+). Distinct from Stage 216 knowledge transfer remaining-gate and Stage 239 operator handoff pack remaining-gate.

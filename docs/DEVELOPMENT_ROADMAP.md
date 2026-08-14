@@ -3491,3 +3491,15 @@ Every feature in every phase must meet:
 **Stage 239 D1 (2026-08-14):** Operator Handoff Pack Remaining-Gate Index fidelity sync — `docs/STAGE_239_FIDELITY.md` (`test_stage239_fidelity_d1.py`).
 
 **Stage 239 exit (2026-08-14):** I1, B1, P1, D1, H239x met — `docs/STAGE_239_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_485_STAGE239_FREEZE.md`. Fidelity: `docs/STAGE_239_FIDELITY.md`.
+
+**Stage 240 open (2026-08-14):** Tenant MVP Knowledge Transfer Pack Remaining-Gate Index Fidelity — `docs/ADR_486_STAGE240_OPEN.md` + `docs/STAGE_240_PLAN.md` (I1 next).
+
+**Stage 240 I1 (2026-08-14):** Knowledge transfer pack remaining-gate index hub (`test_stage240_index_i1.py`).
+
+**Stage 240 B1 (2026-08-14):** Knowledge transfer pack blocker matrix (`test_stage240_blockers_b1.py`).
+
+**Stage 240 P1 (2026-08-14):** Stage 33 / Stage 216 / Stage 239 pointers (`test_stage240_pointers_p1.py`).
+
+**Stage 240 D1 (2026-08-14):** Knowledge Transfer Pack Remaining-Gate Index fidelity sync — `docs/STAGE_240_FIDELITY.md` (`test_stage240_fidelity_d1.py`).
+
+**Stage 240 exit (2026-08-14):** I1, B1, P1, D1, H240x met — `docs/STAGE_240_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_487_STAGE240_FREEZE.md`. Fidelity: `docs/STAGE_240_FIDELITY.md`.

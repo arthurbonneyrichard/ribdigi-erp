@@ -27,3 +27,9 @@ Stage 239 Tenant MVP Operator Handoff Pack Remaining-Gate Index Fidelity deliver
 Stage 240 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 239 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP Knowledge Transfer Pack Remaining-Gate Index Fidelity — single index of knowledge-transfer-pack blockers (packaged Stage 33 T1 knowledge-transfer materials non-claim as live knowledge-transfer Complete) with explicit non-claim. Prefixed `KNOWLEDGE_TRANSFER_PACK_*` if a prior `KNOWLEDGE_TRANSFER_*` remaining-gate exists. Distinct from Stage 239 operator handoff pack remaining-gate and Stage 238 knowledge base pack remaining-gate.
+
+## Amendment — Stage 240 opened
+
+Stage 240 opened under **ADR-486** after CONTINUE/NEXT (Knowledge Transfer Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-487**. Stage 239 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 240 runner-up outline was approved and opened (ADR-486); freeze ADR-487. Do not reopen Stage 239 scope.
