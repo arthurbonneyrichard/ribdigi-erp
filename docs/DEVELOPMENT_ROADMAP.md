@@ -3924,6 +3924,18 @@ Every feature in every phase must meet:
 
 **Stage 275 exit (2026-08-14):** I1, B1, P1, D1, H275x met — `docs/STAGE_275_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_558_STAGE275_FREEZE.md`. Fidelity: `docs/STAGE_275_FIDELITY.md`.
 
+**Stage 276 open (2026-08-14):** Tenant MVP Hard Delete Pack Remaining-Gate Index Fidelity — `docs/ADR_559_STAGE276_OPEN.md` + `docs/STAGE_276_PLAN.md` (I1 next).
+
+**Stage 276 I1 (2026-08-14):** Hard delete pack remaining-gate index hub (`test_stage276_index_i1.py`).
+
+**Stage 276 B1 (2026-08-14):** Hard delete pack blocker matrix (`test_stage276_blockers_b1.py`).
+
+**Stage 276 P1 (2026-08-14):** ADR-003 / Stage 275 / Stage 274 / Stage 183 pointers (`test_stage276_pointers_p1.py`).
+
+**Stage 276 D1 (2026-08-14):** Hard Delete Pack Remaining-Gate Index fidelity sync — `docs/STAGE_276_FIDELITY.md` (`test_stage276_fidelity_d1.py`).
+
+**Stage 276 exit (2026-08-14):** I1, B1, P1, D1, H276x met — `docs/STAGE_276_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_560_STAGE276_FREEZE.md`. Fidelity: `docs/STAGE_276_FIDELITY.md`.
+
 
 
 

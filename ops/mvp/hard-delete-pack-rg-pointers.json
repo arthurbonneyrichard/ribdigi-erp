@@ -1,0 +1,59 @@
+{
+  "id": "hard-delete-pack-rg-pointers",
+  "stage": 276,
+  "pack": "P1",
+  "doc": "docs/HARD_DELETE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_adr": "docs/ADR_003_USER_DELETE_POLICY.md",
+    "menu_permissions_pack_remaining_gate": "docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md",
+    "language_i18n_pack_remaining_gate": "docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_remaining_gate": "docs/HARD_DELETE_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "hard_delete_complete_claimed": false,
+  "archival_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "hard_delete_adr003",
+    "menu_permissions_pack_remaining_gate_stage275",
+    "language_i18n_pack_remaining_gate_stage274",
+    "hard_delete_remaining_gate_stage183",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "hdprp-adr003",
+      "title": "Point to ADR-003 user delete policy",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdprp-stage275",
+      "title": "Point to Stage 275 menu permissions pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdprp-stage274",
+      "title": "Point to Stage 274 language i18n pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdprp-stage183",
+      "title": "Point to Stage 183 hard-delete remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdprp-hard-delete-remaining",
+      "title": "Hard-delete Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 276 P1 hard delete pack RG pointers packaging only. Do not claim hard-delete Complete."
+}

@@ -302,6 +302,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Menu permissions pack remaining-gate index (Stage 275):** Status index is `docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md` → blockers `docs/MENU_PERMISSIONS_PACK_RG_BLOCKERS_MVP.md` → ADR-004/274/273/31 pointers `docs/MENU_PERMISSIONS_PACK_RG_POINTERS_MVP.md`. Dynamic menu Complete and fine-grained submenu flags Complete remain MISSING (not claimed; ADR-004). Prefixed `MENU_PERMISSIONS_PACK_*` remaining-gate docs (≠ ADR-004 decision text).
 
+**Hard delete pack remaining-gate index (Stage 276):** Status index is `docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/HARD_DELETE_PACK_RG_BLOCKERS_MVP.md` → ADR-003/275/274/183 pointers `docs/HARD_DELETE_PACK_RG_POINTERS_MVP.md`. Hard-delete Complete and archival Complete remain MISSING (not claimed; ADR-003). Prefixed `HARD_DELETE_PACK_*` remaining-gate docs (≠ ADR-003 / Stage 183 `HARD_DELETE_*`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

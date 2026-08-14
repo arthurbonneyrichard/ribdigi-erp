@@ -527,3 +527,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 275 decision (opened after Stage 274 freeze)
 
 **Tenant MVP Menu Permissions Pack Remaining-Gate Index Fidelity** — menu permissions pack remaining-gate hub (I1), blocker matrix (B1), ADR-004 / Stage 274 / Stage 273 / Stage 31 pointers with explicit non-claim (P1). Prefixed `MENU_PERMISSIONS_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ ADR-004 decision text). Dynamic menu / fine-grained submenu flags / paid billing / go-live Completes remain deferred (Stage 276+; ADR-004 / ADR-002 in force). Distinct from Stage 274 language i18n pack remaining-gate, Stage 273 store membership pack remaining-gate, ADR-004 decision text, and Stage 31 deferred ADR register. Open ADR-557 / freeze ADR-558.
+
+
+## Stage 276 decision (opened after Stage 275 freeze)
+
+**Tenant MVP Hard Delete Pack Remaining-Gate Index Fidelity** — hard delete pack remaining-gate hub (I1), blocker matrix (B1), ADR-003 / Stage 275 / Stage 274 / Stage 183 pointers with explicit non-claim (P1). Prefixed `HARD_DELETE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ ADR-003 decision text / Stage 183 `HARD_DELETE_*`). Hard-delete / archival / paid billing / go-live Completes remain deferred (Stage 277+; ADR-003 / ADR-002 in force). Distinct from Stage 275 menu permissions pack remaining-gate, Stage 274 language i18n pack remaining-gate, ADR-003 decision text, and Stage 183 hard-delete remaining-gate. Open ADR-559 / freeze ADR-560.

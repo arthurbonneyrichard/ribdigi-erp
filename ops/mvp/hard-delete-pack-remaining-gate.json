@@ -1,0 +1,56 @@
+{
+  "id": "hard-delete-pack-remaining-gate",
+  "stage": 276,
+  "pack": "I1",
+  "doc": "docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/HARD_DELETE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/HARD_DELETE_PACK_RG_POINTERS_MVP.md",
+    "hard_delete_adr": "docs/ADR_003_USER_DELETE_POLICY.md",
+    "menu_permissions_pack_remaining_gate": "docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md",
+    "language_i18n_pack_remaining_gate": "docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_remaining_gate": "docs/HARD_DELETE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "hard_delete_complete_claimed": false,
+  "archival_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_adr003_user_delete_policy": true,
+  "distinct_from_stage183_hard_delete_remaining_gate": true,
+  "distinct_from_stage275_menu_permissions_pack_remaining_gate": true,
+  "distinct_from_stage274_language_i18n_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "hdpr-read-blockers",
+      "title": "Read B1 hard delete pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdpr-follow-pointers",
+      "title": "Follow P1 ADR-003 / Stage 275 / Stage 274 / Stage 183 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdpr-hard-delete-missing",
+      "title": "Reaffirm hard-delete / archival MISSING until archival/anonymize ships (ADR-003)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdpr-no-packaging-as-live",
+      "title": "Do not treat ADR-003 / Stage 183 / Stage 275 as hard-delete Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdpr-hard-delete-remaining",
+      "title": "Hard-delete / archival / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 276 I1 hard delete pack remaining-gate index packaging only. Do not claim hard-delete Complete."
+}

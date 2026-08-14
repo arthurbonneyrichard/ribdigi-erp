@@ -31,3 +31,10 @@ Stage 276 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for dynamic menu, fine-grained submenu flags, paid billing, or go-live.
+
+
+## Amendment — Stage 276 opened
+
+Stage 276 opened under **ADR-559** after CONTINUE/NEXT (Tenant MVP Hard Delete Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-560**. Stage 275 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 276 runner-up outline was approved and opened (ADR-559); freeze ADR-560. Do not reopen Stage 275 scope.

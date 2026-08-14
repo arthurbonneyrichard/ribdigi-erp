@@ -1084,6 +1084,12 @@ Authoritative MVP docs:
 - `docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/menu-permissions-pack-remaining-gate.json` — Stage 275 I1
 - `docs/MENU_PERMISSIONS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/menu-permissions-pack-rg-blockers.json` — Stage 275 B1
 - `docs/MENU_PERMISSIONS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/menu-permissions-pack-rg-pointers.json` — Stage 275 P1
+- `docs/STAGE_276_EXIT_CRITERIA.md` / `docs/ADR_560_STAGE276_FREEZE.md` (`backend/tests/test_stage276_exit_h276x.py`) — Stage 276 H276x
+- `docs/STAGE_276_FIDELITY.md` (`backend/tests/test_stage276_fidelity_d1.py`) — Stage 276 D1
+- `docs/STAGE_276_PLAN.md` (`backend/tests/test_stage276_open.py`) — Stage 276 open (ADR-559)
+- `docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/hard-delete-pack-remaining-gate.json` — Stage 276 I1
+- `docs/HARD_DELETE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/hard-delete-pack-rg-blockers.json` — Stage 276 B1
+- `docs/HARD_DELETE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/hard-delete-pack-rg-pointers.json` — Stage 276 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4849,4 +4855,16 @@ H275x met — `docs/STAGE_275_EXIT_CRITERIA.md`, ADR-558. Stages 1–275 frozen 
 ## Stage 275 open
 
 `docs/ADR_557_STAGE275_OPEN.md` + `docs/STAGE_275_PLAN.md` (`test_stage275_open.py`).
+
+## Stage 276 exit
+
+H276x met — `docs/STAGE_276_EXIT_CRITERIA.md`, ADR-560. Stages 1–276 frozen for Stage 276 feature scope.
+
+## Stage 276 D1 — Tenant MVP Hard Delete Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_276_FIDELITY.md` (`test_stage276_fidelity_d1.py`). `HARD_DELETE_PACK_*` remaining-gate index; hard-delete / archival / go-live still MISSING (ADR-003).
+
+## Stage 276 open
+
+`docs/ADR_559_STAGE276_OPEN.md` + `docs/STAGE_276_PLAN.md` (`test_stage276_open.py`).
 
