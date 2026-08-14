@@ -567,3 +567,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 283 decision (opened after Stage 282 freeze)
 
 **Tenant MVP Release Notes Pack Remaining-Gate Index Fidelity** — release notes pack remaining-gate hub (I1), blocker matrix (B1), Stage 32 N1 / Stage 282 / Stage 281 / Stage 31 C1 pointers with explicit non-claim (P1). Prefixed `RELEASE_NOTES_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 32 N1 `RELEASE_NOTES_MVP.md`). Production live / §7 signed / paid billing / go-live Completes remain deferred (Stage 284+; ADR-002 in force). Distinct from Stage 282 post-MVP backlog pack remaining-gate, Stage 281 residual risk pack remaining-gate, and Stage 32 N1 release notes packaging. Open ADR-573 / freeze ADR-574.
+
+
+## Stage 284 decision (opened after Stage 283 freeze)
+
+**Tenant MVP Acceptance Archive Pack Remaining-Gate Index Fidelity** — acceptance archive pack remaining-gate hub (I1), blocker matrix (B1), Stage 32 A1 / Stage 283 / Stage 282 / Stage 31 C1 pointers with explicit non-claim (P1). Prefixed `ACCEPTANCE_ARCHIVE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 32 A1 `ACCEPTANCE_ARCHIVE_MVP.md`). Archive live / §7 signed / attestation / live runs / paid billing / go-live Completes remain deferred (Stage 285+; ADR-002 in force). Distinct from Stage 283 release notes pack remaining-gate, Stage 282 post-MVP backlog pack remaining-gate, Stage 256 `COMMERCIAL_PACKAGING_ARCHIVE_PACK_*`, and Stage 32 A1 acceptance archive packaging. Open ADR-575 / freeze ADR-576.

@@ -28,6 +28,12 @@ Stage 284 requires CONTINUE/NEXT with a distinct product outline after this free
 
 **Runner-up outline (not opened):** Tenant MVP Acceptance Archive Pack Remaining-Gate Index Fidelity — single index of acceptance-archive-pack blockers (packaged Stage 32 / acceptance archive materials non-claim as archive-live / go-live Completes) with explicit non-claim. Prefixed `ACCEPTANCE_ARCHIVE_PACK_*` if a prior remaining-gate exists. Distinct from Stage 283 release notes pack remaining-gate, Stage 282 post-MVP backlog pack remaining-gate, and `ACCEPTANCE_ARCHIVE_MVP.md` packaging. Source: `ACCEPTANCE_ARCHIVE_MVP.md`.
 
+## Amendment — Stage 284 opened
+
+Stage 284 opened under **ADR-575** after CONTINUE/NEXT (Tenant MVP Acceptance Archive Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-576**. Stage 283 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 284 runner-up outline was approved and opened (ADR-575); freeze ADR-576. Do not reopen Stage 283 scope.
+
 ## Non-claims
 
 Packaging ≠ live Completes for production live, §7 signed, paid billing, or go-live.

@@ -4020,6 +4020,18 @@ Every feature in every phase must meet:
 
 **Stage 283 exit (2026-08-14):** I1, B1, P1, D1, H283x met — `docs/STAGE_283_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_574_STAGE283_FREEZE.md`. Fidelity: `docs/STAGE_283_FIDELITY.md`.
 
+**Stage 284 open (2026-08-14):** Tenant MVP Acceptance Archive Pack Remaining-Gate Index Fidelity — `docs/ADR_575_STAGE284_OPEN.md` + `docs/STAGE_284_PLAN.md` (I1 next).
+
+**Stage 284 I1 (2026-08-14):** Acceptance archive pack remaining-gate index hub (`test_stage284_index_i1.py`).
+
+**Stage 284 B1 (2026-08-14):** Acceptance archive pack blocker matrix (`test_stage284_blockers_b1.py`).
+
+**Stage 284 P1 (2026-08-14):** Stage 32 A1 / Stage 283 / Stage 282 / Stage 31 C1 pointers (`test_stage284_pointers_p1.py`).
+
+**Stage 284 D1 (2026-08-14):** Acceptance Archive Pack Remaining-Gate Index fidelity sync — `docs/STAGE_284_FIDELITY.md` (`test_stage284_fidelity_d1.py`).
+
+**Stage 284 exit (2026-08-14):** I1, B1, P1, D1, H284x met — `docs/STAGE_284_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_576_STAGE284_FREEZE.md`. Fidelity: `docs/STAGE_284_FIDELITY.md`.
+
 
 
 
