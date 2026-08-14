@@ -1305,6 +1305,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 31 / Stage 251 / Stage 250 / Stage 235 pointers (Stage 252 P1: `test_stage252_pointers_p1.py`, `docs/OPERATOR_REMAINING_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 252 fidelity sync (D1: `test_stage252_fidelity_d1.py`, `docs/STAGE_252_FIDELITY.md`)
 - [x] Stage 252 exit + freeze (H252x: `test_stage252_exit_h252x.py`, `docs/STAGE_252_EXIT_CRITERIA.md`, ADR-512)
+- [x] Stage 253 track opened (ADR-513: `test_stage253_open.py`, `docs/STAGE_253_PLAN.md`) — Assurance Evidence Pack Remaining-Gate Index; closed under ADR-514
+- [x] Assurance evidence pack remaining-gate hub (Stage 253 I1: `test_stage253_index_i1.py`, `docs/ASSURANCE_EVIDENCE_PACK_REMAINING_GATE_MVP.md`)
+- [x] Assurance evidence pack blocker matrix (Stage 253 B1: `test_stage253_blockers_b1.py`, `docs/ASSURANCE_EVIDENCE_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 34 / Stage 252 / Stage 251 / Stage 195 pointers (Stage 253 P1: `test_stage253_pointers_p1.py`, `docs/ASSURANCE_EVIDENCE_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 253 fidelity sync (D1: `test_stage253_fidelity_d1.py`, `docs/STAGE_253_FIDELITY.md`)
+- [x] Stage 253 exit + freeze (H253x: `test_stage253_exit_h253x.py`, `docs/STAGE_253_EXIT_CRITERIA.md`, ADR-514)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

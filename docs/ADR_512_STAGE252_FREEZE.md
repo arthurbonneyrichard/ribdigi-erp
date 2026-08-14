@@ -31,3 +31,9 @@ Stage 253 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for operator runs, attestation, §7 signature, Sections 1–3 verification, or go-live.
+
+## Amendment — Stage 253 opened
+
+Stage 253 opened under **ADR-513** after CONTINUE/NEXT (Assurance Evidence Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-514**. Stage 252 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 253 runner-up outline was approved and opened (ADR-513); freeze ADR-514. Do not reopen Stage 252 scope.

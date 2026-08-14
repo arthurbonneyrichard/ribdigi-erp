@@ -1,0 +1,62 @@
+{
+  "id": "assurance-evidence-pack-rg-blockers",
+  "stage": 253,
+  "pack": "B1",
+  "doc": "docs/ASSURANCE_EVIDENCE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ASSURANCE_EVIDENCE_PACK_REMAINING_GATE_MVP.md",
+    "assurance_evidence": "docs/ASSURANCE_EVIDENCE_MVP.md",
+    "customer_assurance_remaining_gate": "docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md",
+    "assurance_evidence_register": "ops/mvp/assurance-evidence.json"
+  },
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "customer_assurance_complete": "REMAINING",
+    "attestation_complete": "REMAINING",
+    "section_7_signed_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage34_a1_as_assurance_complete": "NON_CLAIM",
+    "stage195_as_assurance_complete": "NON_CLAIM",
+    "customer_assurance_claimed": "false",
+    "attestation_claimed": "false",
+    "section_7_signed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "aeprb-assurance",
+      "title": "Mark customer assurance Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aeprb-attestation",
+      "title": "Mark attestation Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aeprb-s7",
+      "title": "Mark section 7 signed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aeprb-stage34-nonclaim",
+      "title": "Mark Stage 34 A1 as non-claim for customer assurance Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aeprb-assurance-remaining",
+      "title": "Customer assurance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 253 B1 assurance evidence pack RG blocker matrix packaging only. Customer assurance Completes remain MISSING."
+}

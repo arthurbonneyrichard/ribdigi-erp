@@ -424,3 +424,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 252 decision (opened after Stage 251 freeze)
 
 **Tenant MVP Operator Remaining Pack Remaining-Gate Index Fidelity** — operator remaining pack remaining-gate hub (I1), blocker matrix (B1), Stage 31 / Stage 251 / Stage 250 / Stage 235 pointers with explicit non-claim (P1). Prefixed `OPERATOR_REMAINING_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 31 O1 `OPERATOR_REMAINING_*`). Live operator runs / attestation / section 7 / Sections 1–3 Completes remain deferred (Stage 253+). Distinct from Stage 251 deferred ADR register pack remaining-gate, Stage 250 gate matrix pack remaining-gate, Stage 235 evidence ledger pack remaining-gate, and Stage 31 O1 operator remaining packaging. Open ADR-511 / freeze ADR-512.
+
+## Stage 253 decision (opened after Stage 252 freeze)
+
+**Tenant MVP Assurance Evidence Pack Remaining-Gate Index Fidelity** — assurance evidence pack remaining-gate hub (I1), blocker matrix (B1), Stage 34 / Stage 252 / Stage 251 / Stage 195 pointers with explicit non-claim (P1). Prefixed `ASSURANCE_EVIDENCE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 34 A1 `ASSURANCE_EVIDENCE_*`). Customer assurance / attestation / section 7 / go-live Completes remain deferred (Stage 254+). Distinct from Stage 252 operator remaining pack remaining-gate, Stage 251 deferred ADR register pack remaining-gate, Stage 195 customer assurance remaining-gate, and Stage 34 A1 assurance evidence packaging. Open ADR-513 / freeze ADR-514.

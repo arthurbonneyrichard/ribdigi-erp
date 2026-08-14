@@ -946,6 +946,12 @@ Authoritative MVP docs:
 - `docs/OPERATOR_REMAINING_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/operator-remaining-pack-remaining-gate.json` — Stage 252 I1
 - `docs/OPERATOR_REMAINING_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/operator-remaining-pack-rg-blockers.json` — Stage 252 B1
 - `docs/OPERATOR_REMAINING_PACK_RG_POINTERS_MVP.md` / `ops/mvp/operator-remaining-pack-rg-pointers.json` — Stage 252 P1
+- `docs/STAGE_253_EXIT_CRITERIA.md` / `docs/ADR_514_STAGE253_FREEZE.md` (`backend/tests/test_stage253_exit_h253x.py`) — Stage 253 H253x
+- `docs/STAGE_253_FIDELITY.md` (`backend/tests/test_stage253_fidelity_d1.py`) — Stage 253 D1
+- `docs/STAGE_253_PLAN.md` (`backend/tests/test_stage253_open.py`) — Stage 253 open (ADR-513)
+- `docs/ASSURANCE_EVIDENCE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/assurance-evidence-pack-remaining-gate.json` — Stage 253 I1
+- `docs/ASSURANCE_EVIDENCE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/assurance-evidence-pack-rg-blockers.json` — Stage 253 B1
+- `docs/ASSURANCE_EVIDENCE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/assurance-evidence-pack-rg-pointers.json` — Stage 253 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4435,4 +4441,16 @@ H252x met — `docs/STAGE_252_EXIT_CRITERIA.md`, ADR-512. Stages 1–252 frozen 
 ## Stage 252 open
 
 `docs/ADR_511_STAGE252_OPEN.md` + `docs/STAGE_252_PLAN.md` (`test_stage252_open.py`).
+
+## Stage 253 exit
+
+H253x met — `docs/STAGE_253_EXIT_CRITERIA.md`, ADR-514. Stages 1–253 frozen for Stage 253 feature scope.
+
+## Stage 253 D1 — Tenant MVP Assurance Evidence Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_253_FIDELITY.md` (`test_stage253_fidelity_d1.py`). `ASSURANCE_EVIDENCE_PACK_*` remaining-gate index; customer assurance / attestation still MISSING.
+
+## Stage 253 open
+
+`docs/ADR_513_STAGE253_OPEN.md` + `docs/STAGE_253_PLAN.md` (`test_stage253_open.py`).
 

@@ -1,0 +1,57 @@
+{
+  "id": "assurance-evidence-pack-remaining-gate",
+  "stage": 253,
+  "pack": "I1",
+  "doc": "docs/ASSURANCE_EVIDENCE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/ASSURANCE_EVIDENCE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/ASSURANCE_EVIDENCE_PACK_RG_POINTERS_MVP.md",
+    "assurance_evidence": "docs/ASSURANCE_EVIDENCE_MVP.md",
+    "operator_remaining_pack_remaining_gate": "docs/OPERATOR_REMAINING_PACK_REMAINING_GATE_MVP.md",
+    "deferred_adr_register_pack_remaining_gate": "docs/DEFERRED_ADR_REGISTER_PACK_REMAINING_GATE_MVP.md",
+    "customer_assurance_remaining_gate": "docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md",
+    "assurance_evidence_register": "ops/mvp/assurance-evidence.json"
+  },
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage34_a1_assurance_evidence": true,
+  "distinct_from_stage252_operator_remaining_pack_remaining_gate": true,
+  "distinct_from_stage251_deferred_adr_register_pack_remaining_gate": true,
+  "distinct_from_stage195_customer_assurance_remaining_gate": true,
+  "steps": [
+    {
+      "id": "aepr-read-blockers",
+      "title": "Read B1 assurance evidence pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aepr-follow-pointers",
+      "title": "Follow P1 Stage 34 / Stage 252 / Stage 251 / Stage 195 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aepr-assurance-missing",
+      "title": "Reaffirm customer assurance MISSING until real procurement / ops verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aepr-no-packaging-as-live",
+      "title": "Do not treat Stage 34 A1 / Stage 252 / Stage 195 as customer assurance Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aepr-assurance-remaining",
+      "title": "Customer assurance / attestation / section 7 / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 253 I1 assurance evidence pack remaining-gate index packaging only. Do not claim customer assurance Complete."
+}
