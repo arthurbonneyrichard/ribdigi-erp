@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_411_EXIT_CRITERIA.md` / `docs/ADR_830_STAGE411_FREEZE.md` (`backend/tests/test_stage411_exit_h411x.py`) — Stage 411 H411x
+- `docs/STAGE_411_FIDELITY.md` (`backend/tests/test_stage411_fidelity_d1.py`) — Stage 411 D1
+- `docs/STAGE_411_PLAN.md` (`backend/tests/test_stage411_open.py`) — Stage 411 open (ADR-829)
+- `docs/BUSINESS_METRICS_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/business-metrics-honesty-pack-remaining-gate.json` — Stage 411 I1
+- `docs/BUSINESS_METRICS_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/business-metrics-honesty-pack-rg-blockers.json` — Stage 411 B1
+- `docs/BUSINESS_METRICS_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/business-metrics-honesty-pack-rg-pointers.json` — Stage 411 P1
 - `docs/STAGE_410_EXIT_CRITERIA.md` / `docs/ADR_828_STAGE410_FREEZE.md` (`backend/tests/test_stage410_exit_h410x.py`) — Stage 410 H410x
 - `docs/STAGE_410_FIDELITY.md` (`backend/tests/test_stage410_fidelity_d1.py`) — Stage 410 D1
 - `docs/STAGE_410_PLAN.md` (`backend/tests/test_stage410_open.py`) — Stage 410 open (ADR-827)
@@ -5743,6 +5749,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 411 exit
+
+H411x met — `docs/STAGE_411_EXIT_CRITERIA.md`, ADR-830. Stages 1–411 frozen for Stage 411 feature scope.
+
+## Stage 411 D1 — Tenant MVP Business Metrics Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / business-metrics Completes remain MISSING. See `docs/STAGE_411_FIDELITY.md`.
+
+## Stage 411 open
+
+Opened under ADR-829; plan `docs/STAGE_411_PLAN.md`.
 
 ## Stage 410 exit
 

@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 411 track opened (ADR-829: `test_stage411_open.py`, `docs/STAGE_411_PLAN.md`) — Business Metrics Honesty Pack Remaining-Gate Index; closed under ADR-830
+- [x] Business Metrics honesty pack remaining-gate hub (Stage 411 I1: `test_stage411_index_i1.py`, `docs/BUSINESS_METRICS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Business Metrics honesty pack blocker matrix (Stage 411 B1: `test_stage411_blockers_b1.py`, `docs/BUSINESS_METRICS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 410 / Stage 409 / Stage 392 / CHANGE_IMPACT pointers (Stage 411 P1: `test_stage411_pointers_p1.py`, `docs/BUSINESS_METRICS_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 411 fidelity sync (D1: `test_stage411_fidelity_d1.py`, `docs/STAGE_411_FIDELITY.md`)
+- [x] Stage 411 exit + freeze (H411x: `test_stage411_exit_h411x.py`, `docs/STAGE_411_EXIT_CRITERIA.md`, ADR-830)
 - [x] Stage 410 track opened (ADR-827: `test_stage410_open.py`, `docs/STAGE_410_PLAN.md`) — Attestation Completes Honesty Pack Remaining-Gate Index; closed under ADR-828
 - [x] Attestation Completes honesty pack remaining-gate hub (Stage 410 I1: `test_stage410_index_i1.py`, `docs/ATTESTATION_COMPLETES_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Attestation Completes honesty pack blocker matrix (Stage 410 B1: `test_stage410_blockers_b1.py`, `docs/ATTESTATION_COMPLETES_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

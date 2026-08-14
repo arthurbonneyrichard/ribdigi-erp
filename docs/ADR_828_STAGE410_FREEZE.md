@@ -31,3 +31,9 @@ Stage 411 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, attestation Completes, Attestation Completes honesty, or go-live.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 411 opened under **ADR-829** after CONTINUE/NEXT (Tenant MVP Business Metrics Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-830**. Stage 410 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 410 runner-up outline was approved and opened (ADR-829); freeze ADR-830. Do not reopen Stage 410 scope.
