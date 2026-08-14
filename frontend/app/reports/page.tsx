@@ -771,7 +771,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {(data.customers || []).map((c: any) => (
+              {(Array.isArray(data.customers) ? data.customers : []).map((c: any) => (
                 <tr key={c.customer_id || c.name}>
                   <td>
                     {c.name}
