@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_314_EXIT_CRITERIA.md` / `docs/ADR_636_STAGE314_FREEZE.md` (`backend/tests/test_stage314_exit_h314x.py`) — Stage 314 H314x
+- `docs/STAGE_314_FIDELITY.md` (`backend/tests/test_stage314_fidelity_d1.py`) — Stage 314 D1
+- `docs/STAGE_314_PLAN.md` (`backend/tests/test_stage314_open.py`) — Stage 314 open (ADR-635)
+- `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/sbom-disclosure-pack-remaining-gate.json` — Stage 314 I1
+- `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/sbom-disclosure-pack-rg-blockers.json` — Stage 314 B1
+- `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/sbom-disclosure-pack-rg-pointers.json` — Stage 314 P1
 - `docs/STAGE_313_EXIT_CRITERIA.md` / `docs/ADR_634_STAGE313_FREEZE.md` (`backend/tests/test_stage313_exit_h313x.py`) — Stage 313 H313x
 - `docs/STAGE_313_FIDELITY.md` (`backend/tests/test_stage313_fidelity_d1.py`) — Stage 313 D1
 - `docs/STAGE_313_PLAN.md` (`backend/tests/test_stage313_open.py`) — Stage 313 open (ADR-633)
@@ -5161,6 +5167,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 314 exit
+
+H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636. Stages 1–314 frozen for Stage 314 feature scope.
+
+## Stage 314 D1 — Tenant MVP SBOM Disclosure Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`). `SBOM_DISCLOSURE_PACK_*` remaining-gate index; live SBOM pipeline / Cosign / go-live still MISSING.
+
+## Stage 314 open
+
+ADR-635 / `docs/STAGE_314_PLAN.md`.
 
 ## Stage 313 exit
 

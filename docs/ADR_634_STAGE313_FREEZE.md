@@ -31,3 +31,10 @@ Stage 314 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for liability-cap signed, indemnity signed, legal counsel, contract liability live, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 314 opened under **ADR-635** after CONTINUE/NEXT (Tenant MVP SBOM Disclosure Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-636**. Stage 313 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 314 runner-up outline was approved and opened (ADR-635); freeze ADR-636. Do not reopen Stage 313 scope.
+
