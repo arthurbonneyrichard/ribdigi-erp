@@ -1325,6 +1325,30 @@ async def _returned_qty_by_grn_item(
 
 async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> dict:
     items = await list_purchase_return_items(db, ret.tenant_id, ret.id)
+    serialized_items = []
+    discount_total = 0.0
+    for i in items:
+        qty = float(i.quantity)
+        unit = float(i.unit_price)
+        rate = float(i.tax_rate or 0)
+        line_net = round(qty * unit, 2)
+        line_tax = round(line_net * (rate / 100.0), 2)
+        line_total = float(i.line_total)
+        # Discount baked into line_total at create (no separate column)
+        disc = max(round(line_net + line_tax - line_total, 2), 0.0)
+        discount_total += disc
+        serialized_items.append(
+            {
+                "id": i.id,
+                "goods_receipt_item_id": i.goods_receipt_item_id,
+                "product_id": i.product_id,
+                "quantity": qty,
+                "unit_price": unit,
+                "tax_rate": rate,
+                "discount": disc,
+                "line_total": line_total,
+            }
+        )
     return {
         "id": ret.id,
         "return_number": ret.return_number,
@@ -1337,22 +1361,12 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
         "reason": ret.reason,
         "subtotal": float(ret.subtotal),
         "tax_amount": float(ret.tax_amount),
+        "discount_amount": round(discount_total, 2),
         "total_amount": float(ret.total_amount),
         "notes": ret.notes,
         "posted_at": ret.posted_at,
         "created_at": ret.created_at,
-        "items": [
-            {
-                "id": i.id,
-                "goods_receipt_item_id": i.goods_receipt_item_id,
-                "product_id": i.product_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "line_total": float(i.line_total),
-            }
-            for i in items
-        ],
+        "items": serialized_items,
     }
 
 
@@ -1388,6 +1402,7 @@ async def create_purchase_return(
 
     subtotal = 0.0
     tax_total = 0.0
+    discount_total = 0.0
     prepared: list[dict] = []
     for raw in items:
         grn_item_id = raw.get("goods_receipt_item_id")
@@ -1413,11 +1428,21 @@ async def create_purchase_return(
             raise HTTPException(status_code=400, detail="GRN line missing PO item")
         unit = float(po_item.unit_price)
         rate = float(po_item.tax_rate or 0)
+        ordered = float(po_item.quantity or 0)
+        line_disc_po = float(getattr(po_item, "discount", 0) or 0)
+        disc = 0.0
+        if ordered > 1e-9 and line_disc_po > 0:
+            disc = round(line_disc_po * (qty / ordered), 2)
+            merch = qty * unit
+            if disc > merch + 1e-9:
+                disc = round(max(merch, 0), 2)
         line_net = round(qty * unit, 2)
         line_tax = round(line_net * (rate / 100.0), 2)
-        line_total = round(line_net + line_tax, 2)
+        # Tax before discount (match PO/PI); bake discount into line_total
+        line_total = round(max(line_net + line_tax - disc, 0), 2)
         subtotal += line_net
         tax_total += line_tax
+        discount_total += disc
         prepared.append(
             {
                 "goods_receipt_item_id": grn_item.id,
@@ -1441,7 +1466,7 @@ async def create_purchase_return(
         reason=reason,
         subtotal=round(subtotal, 2),
         tax_amount=round(tax_total, 2),
-        total_amount=round(subtotal + tax_total, 2),
+        total_amount=round(max(subtotal + tax_total - discount_total, 0), 2),
         notes=notes,
         created_by=user_id,
     )

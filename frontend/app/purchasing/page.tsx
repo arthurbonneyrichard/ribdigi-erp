@@ -95,6 +95,9 @@ type PurchaseReturn = {
   status: string;
   reason: string;
   total_amount: number;
+  discount_amount?: number;
+  subtotal?: number;
+  tax_amount?: number;
 };
 type PurchaseInvoice = {
   id: string;
@@ -2045,6 +2048,7 @@ export default function Page() {
               <th>Debit note</th>
               <th>Reason</th>
               <th>Status</th>
+              <th>Discount</th>
               <th>Total</th>
               <th>Actions</th>
             </tr>
@@ -2056,6 +2060,7 @@ export default function Page() {
                 <td>{r.debit_note_number || '—'}</td>
                 <td>{r.reason}</td>
                 <td>{r.status}</td>
+                <td>{r.discount_amount ?? 0}</td>
                 <td>{r.total_amount}</td>
                 <td>
                   {r.status === 'draft' && <button onClick={() => postReturn(r.id)}>Post</button>}

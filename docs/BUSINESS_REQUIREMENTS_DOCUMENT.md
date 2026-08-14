@@ -454,7 +454,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Record return reason (damaged, wrong item, expiry, quality issue) (`reason` required on `POST /purchasing/returns` ∈ damaged|wrong_item|expiry|quality|other; no silent default; Purchasing Select reason UI)
   - [ ] Deduct returned quantity from inventory
   - [ ] Generate debit note
-  - [ ] Update supplier balance
+  - [x] Update supplier balance (post credits AP using return `total_amount`, which inherits proportional PO line discount: `accepted return_qty / ordered × PO discount`; tax before discount; Purchasing Returns Discount column)
 
 ---
 
