@@ -1,0 +1,60 @@
+{
+  "id": "encryption-kms-pack-rg-pointers",
+  "stage": 307,
+  "pack": "P1",
+  "doc": "docs/ENCRYPTION_KMS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ENCRYPTION_KMS_PACK_REMAINING_GATE_MVP.md",
+    "encryption_kms": "docs/ENCRYPTION_KMS_MVP.md",
+    "data_residency_pack_remaining_gate": "docs/DATA_RESIDENCY_PACK_REMAINING_GATE_MVP.md",
+    "data_residency": "docs/DATA_RESIDENCY_MVP.md",
+    "erasure_honesty_pack_remaining_gate": "docs/ERASURE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "hsm_claimed": false,
+  "vault_saas_live": false,
+  "customer_managed_keys_claimed": false,
+  "mtls_mesh_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "encryption_kms_stage44",
+    "data_residency_pack_remaining_gate_stage306",
+    "data_residency_stage44",
+    "erasure_honesty_pack_remaining_gate_stage305",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ekprp-stage44",
+      "title": "Point to Stage 44 E1 encryption KMS",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ekprp-stage306",
+      "title": "Point to Stage 306 data residency pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ekprp-stage44r1",
+      "title": "Point to Stage 44 R1 data residency adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ekprp-stage305",
+      "title": "Point to Stage 305 erasure honesty pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ekprp-hsm-remaining",
+      "title": "HSM Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 307 P1 encryption KMS pack RG pointers packaging only. Do not claim HSM Complete."
+}

@@ -1,0 +1,63 @@
+{
+  "id": "encryption-kms-pack-rg-blockers",
+  "stage": 307,
+  "pack": "B1",
+  "doc": "docs/ENCRYPTION_KMS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ENCRYPTION_KMS_PACK_REMAINING_GATE_MVP.md",
+    "encryption_kms": "docs/ENCRYPTION_KMS_MVP.md"
+  },
+  "packaging_complete": true,
+  "hsm_claimed": false,
+  "vault_saas_live": false,
+  "customer_managed_keys_claimed": false,
+  "mtls_mesh_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "hsm_claimed": "REMAINING",
+    "vault_saas_live": "REMAINING",
+    "customer_managed_keys_claimed": "REMAINING",
+    "mtls_mesh_claimed": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage44_as_hsm": "NON_CLAIM",
+    "stage306_as_multi_region": "NON_CLAIM",
+    "hsm_claimed_flag": "false",
+    "vault_saas_live_flag": "false",
+    "customer_managed_keys_claimed_flag": "false",
+    "mtls_mesh_claimed_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ekprb-hsm",
+      "title": "Mark HSM Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ekprb-vault",
+      "title": "Mark Vault SaaS live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ekprb-cmk",
+      "title": "Mark customer-managed keys Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ekprb-stage44-nonclaim",
+      "title": "Mark Stage 44 E1 as non-claim for HSM Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ekprb-hsm-remaining",
+      "title": "HSM Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 307 B1 encryption KMS pack RG blocker matrix packaging only. HSM Completes remain MISSING."
+}

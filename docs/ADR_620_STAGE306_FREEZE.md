@@ -31,3 +31,9 @@ Stage 307 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for multi-region residency, schema-per-tenant, GDPR residency cert, customer region pinning live, or go-live.
+
+## Amendment — Stage 307 opened
+
+Stage 307 opened under **ADR-621** after CONTINUE/NEXT (Tenant MVP Encryption KMS Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-622**. Stage 306 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 307 runner-up outline was approved and opened (ADR-621); freeze ADR-622. Do not reopen Stage 306 scope.

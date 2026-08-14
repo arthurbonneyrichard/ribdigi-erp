@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_307_EXIT_CRITERIA.md` / `docs/ADR_622_STAGE307_FREEZE.md` (`backend/tests/test_stage307_exit_h307x.py`) — Stage 307 H307x
+- `docs/STAGE_307_FIDELITY.md` (`backend/tests/test_stage307_fidelity_d1.py`) — Stage 307 D1
+- `docs/STAGE_307_PLAN.md` (`backend/tests/test_stage307_open.py`) — Stage 307 open (ADR-621)
+- `docs/ENCRYPTION_KMS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/encryption-kms-pack-remaining-gate.json` — Stage 307 I1
+- `docs/ENCRYPTION_KMS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/encryption-kms-pack-rg-blockers.json` — Stage 307 B1
+- `docs/ENCRYPTION_KMS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/encryption-kms-pack-rg-pointers.json` — Stage 307 P1
 - `docs/STAGE_306_EXIT_CRITERIA.md` / `docs/ADR_620_STAGE306_FREEZE.md` (`backend/tests/test_stage306_exit_h306x.py`) — Stage 306 H306x
 - `docs/STAGE_306_FIDELITY.md` (`backend/tests/test_stage306_fidelity_d1.py`) — Stage 306 D1
 - `docs/STAGE_306_PLAN.md` (`backend/tests/test_stage306_open.py`) — Stage 306 open (ADR-619)
@@ -5119,6 +5125,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 307 exit
+
+H307x met — `docs/STAGE_307_EXIT_CRITERIA.md`, ADR-622. Stages 1–307 frozen for Stage 307 feature scope.
+
+## Stage 307 D1 — Tenant MVP Encryption KMS Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_307_FIDELITY.md` (`test_stage307_fidelity_d1.py`). `ENCRYPTION_KMS_PACK_*` remaining-gate index; HSM / customer-managed keys / go-live still MISSING.
+
+## Stage 307 open
+
+ADR-621 / `docs/STAGE_307_PLAN.md`.
 
 ## Stage 306 exit
 

@@ -1792,6 +1792,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 306 P1** | Stage 44 R1 / Stage 305 / Stage 44 E1 / Stage 37 P1 pointers (`test_stage306_pointers_p1.py`) |
 | **Stage 306 D1** | Data residency pack remaining-gate fidelity — `docs/STAGE_306_FIDELITY.md` (`test_stage306_fidelity_d1.py`) |
 | **Stage 306 H306x** | Exit + freeze — `docs/STAGE_306_EXIT_CRITERIA.md`, ADR-620 (`test_stage306_exit_h306x.py`); Stages 1–306 frozen |
+| **Stage 307 open** | Encryption KMS Pack Remaining-Gate Index — `docs/STAGE_307_PLAN.md`, ADR-621 (`test_stage307_open.py`) |
+| **Stage 307 I1** | Encryption KMS pack remaining-gate index hub (`test_stage307_index_i1.py`) |
+| **Stage 307 B1** | Encryption KMS pack blocker matrix (`test_stage307_blockers_b1.py`) |
+| **Stage 307 P1** | Stage 44 E1 / Stage 306 / Stage 44 R1 / Stage 305 pointers (`test_stage307_pointers_p1.py`) |
+| **Stage 307 D1** | Encryption KMS pack remaining-gate fidelity — `docs/STAGE_307_FIDELITY.md` (`test_stage307_fidelity_d1.py`) |
+| **Stage 307 H307x** | Exit + freeze — `docs/STAGE_307_EXIT_CRITERIA.md`, ADR-622 (`test_stage307_exit_h307x.py`); Stages 1–307 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |

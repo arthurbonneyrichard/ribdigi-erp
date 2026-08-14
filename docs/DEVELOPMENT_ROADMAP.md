@@ -4296,6 +4296,18 @@ Every feature in every phase must meet:
 
 **Stage 306 exit (2026-08-14):** I1, B1, P1, D1, H306x met — `docs/STAGE_306_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_620_STAGE306_FREEZE.md`. Fidelity: `docs/STAGE_306_FIDELITY.md`.
 
+**Stage 307 open (2026-08-14):** Tenant MVP Encryption KMS Pack Remaining-Gate Index Fidelity — `docs/ADR_621_STAGE307_OPEN.md` + `docs/STAGE_307_PLAN.md` (I1 next).
+
+**Stage 307 I1 (2026-08-14):** Encryption KMS pack remaining-gate index hub (`test_stage307_index_i1.py`).
+
+**Stage 307 B1 (2026-08-14):** Encryption KMS pack blocker matrix (`test_stage307_blockers_b1.py`).
+
+**Stage 307 P1 (2026-08-14):** Stage 44 E1 / Stage 306 / Stage 44 R1 / Stage 305 pointers (`test_stage307_pointers_p1.py`).
+
+**Stage 307 D1 (2026-08-14):** Encryption KMS Pack Remaining-Gate Index fidelity sync — `docs/STAGE_307_FIDELITY.md` (`test_stage307_fidelity_d1.py`).
+
+**Stage 307 exit (2026-08-14):** I1, B1, P1, D1, H307x met — `docs/STAGE_307_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_622_STAGE307_FREEZE.md`. Fidelity: `docs/STAGE_307_FIDELITY.md`.
+
 
 
 
