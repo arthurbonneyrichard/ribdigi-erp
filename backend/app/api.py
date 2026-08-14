@@ -71,6 +71,7 @@ from app.schemas import (
     SalesSettingsUpdate,
     PurchasingNumberingUpdate,
     AccountingSettingsUpdate,
+    PosSettingsUpdate,
     DocumentNumberingFields,
     PrintBrandingUpdate,
     EmailVerifyConfirm,
@@ -6281,6 +6282,41 @@ async def pos_session_report(
 ):
     session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
     return env(await pos_svc.shift_report(db, session))
+
+
+@api.get("/pos/settings")
+async def pos_settings(
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.doc_numbers import numbering_settings
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env({"pos_sale_numbering": numbering_settings(tenant, "pos_sale")})
+
+
+@api.patch("/pos/settings")
+async def update_pos_settings(
+    payload: PosSettingsUpdate,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.doc_numbers import apply_numbering_update, numbering_settings
+
+    if payload.pos_sale_numbering is None:
+        raise HTTPException(status_code=400, detail="No numbering fields to update")
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    apply_numbering_update(
+        tenant,
+        "pos_sale",
+        prefix=payload.pos_sale_numbering.prefix,
+        next_number=payload.pos_sale_numbering.next_number,
+    )
+    await db.commit()
+    return env(
+        {"pos_sale_numbering": numbering_settings(tenant, "pos_sale")},
+        "POS document numbering updated",
+    )
 
 
 @api.post("/pos/sales")
