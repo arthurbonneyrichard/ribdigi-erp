@@ -679,7 +679,7 @@ async def create_sales_invoice(
     from app.document_numbering import allocate_document_number
 
     invoice_number = await allocate_document_number(
-        db, tenant_id=tenant_id, doc_key="sales_invoice"
+        db, tenant_id=tenant_id, doc_key="sales_invoice", company_id=company_id
     )
     invoice = m.SalesInvoice(
         tenant_id=tenant_id,

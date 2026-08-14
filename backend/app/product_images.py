@@ -50,21 +50,30 @@ def serialize_image(row: m.ProductImage) -> dict:
     }
 
 
-async def _get_product(db: AsyncSession, tenant_id: str, product_id: str) -> m.Product:
-    product = (
-        await db.execute(
-            select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
-        )
-    ).scalar_one_or_none()
+async def _get_product(
+    db: AsyncSession,
+    tenant_id: str,
+    product_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Product:
+    stmt = select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Product.company_id == company_id)
+    product = (await db.execute(stmt)).scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
 
 async def list_product_images(
-    db: AsyncSession, *, tenant_id: str, product_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+    company_id: str | None = None,
 ) -> list[m.ProductImage]:
-    await _get_product(db, tenant_id, product_id)
+    await _get_product(db, tenant_id, product_id, company_id=company_id)
     result = await db.execute(
         select(m.ProductImage)
         .where(
@@ -85,11 +94,14 @@ async def add_product_image(
     content_type: str | None = None,
     original_filename: str | None = None,
     is_primary: bool = False,
+    company_id: str | None = None,
 ) -> m.ProductImage:
-    product = await _get_product(db, tenant_id, product_id)
+    product = await _get_product(db, tenant_id, product_id, company_id=company_id)
     storage_key = storage_svc.validate_key(storage_key, tenant_id=tenant_id)
 
-    images = await list_product_images(db, tenant_id=tenant_id, product_id=product_id)
+    images = await list_product_images(
+        db, tenant_id=tenant_id, product_id=product_id, company_id=company_id
+    )
     if len(images) >= MAX_PRODUCT_IMAGES:
         raise HTTPException(
             status_code=400,
@@ -107,6 +119,7 @@ async def add_product_image(
 
     row = m.ProductImage(
         tenant_id=tenant_id,
+        company_id=company_id or getattr(product, "company_id", None),
         product_id=product_id,
         storage_key=storage_key,
         content_type=content_type,
@@ -128,12 +141,15 @@ async def set_primary_product_image(
     tenant_id: str,
     product_id: str,
     image_id: str,
+    company_id: str | None = None,
 ) -> m.ProductImage:
-    product = await _get_product(db, tenant_id, product_id)
+    product = await _get_product(db, tenant_id, product_id, company_id=company_id)
     target = await db.get(m.ProductImage, image_id)
     if target is None or target.tenant_id != tenant_id or target.product_id != product_id:
         raise HTTPException(status_code=404, detail="Product image not found")
-    images = await list_product_images(db, tenant_id=tenant_id, product_id=product_id)
+    images = await list_product_images(
+        db, tenant_id=tenant_id, product_id=product_id, company_id=company_id
+    )
     for img in images:
         img.is_primary = img.id == image_id
     product.image_url = target.storage_key
@@ -148,8 +164,9 @@ async def delete_product_image(
     product_id: str,
     image_id: str,
     delete_storage: bool = True,
+    company_id: str | None = None,
 ) -> None:
-    product = await _get_product(db, tenant_id, product_id)
+    product = await _get_product(db, tenant_id, product_id, company_id=company_id)
     target = await db.get(m.ProductImage, image_id)
     if target is None or target.tenant_id != tenant_id or target.product_id != product_id:
         raise HTTPException(status_code=404, detail="Product image not found")
@@ -157,7 +174,9 @@ async def delete_product_image(
     storage_key = target.storage_key
     await db.delete(target)
     await db.flush()
-    remaining = await list_product_images(db, tenant_id=tenant_id, product_id=product_id)
+    remaining = await list_product_images(
+        db, tenant_id=tenant_id, product_id=product_id, company_id=company_id
+    )
     if was_primary:
         if remaining:
             remaining[0].is_primary = True
@@ -172,13 +191,19 @@ async def delete_product_image(
 
 
 async def delete_primary_product_image(
-    db: AsyncSession, *, tenant_id: str, product_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+    company_id: str | None = None,
 ) -> m.Product:
     """Legacy helper for DELETE /products/{id}/image."""
-    product = await _get_product(db, tenant_id, product_id)
+    product = await _get_product(db, tenant_id, product_id, company_id=company_id)
     if not product.image_url:
         raise HTTPException(status_code=404, detail="Product image not found")
-    images = await list_product_images(db, tenant_id=tenant_id, product_id=product_id)
+    images = await list_product_images(
+        db, tenant_id=tenant_id, product_id=product_id, company_id=company_id
+    )
     primary = next((img for img in images if img.is_primary), None)
     if primary is None and images:
         primary = images[0]
@@ -189,6 +214,7 @@ async def delete_primary_product_image(
             product_id=product_id,
             image_id=primary.id,
             delete_storage=True,
+            company_id=company_id,
         )
     else:
         storage_svc.delete_key(product.image_url, tenant_id=tenant_id)
@@ -203,9 +229,12 @@ async def export_product_images_csv(
     *,
     tenant_id: str,
     product_id: str,
+    company_id: str | None = None,
 ) -> str:
     """Stage 156 G1 — per-product image metadata CSV (no binary payloads)."""
-    rows = await list_product_images(db, tenant_id=tenant_id, product_id=product_id)
+    rows = await list_product_images(
+        db, tenant_id=tenant_id, product_id=product_id, company_id=company_id
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PRODUCT_IMAGE_EXPORT_COLUMNS)
     writer.writeheader()

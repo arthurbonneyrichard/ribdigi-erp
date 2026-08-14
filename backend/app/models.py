@@ -147,6 +147,8 @@ class Company(Base):
     logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    # ADR-490 phase 16 — per-company document number series (falls back to tenant JSON).
+    document_numbering: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -999,7 +1001,7 @@ class PurchaseRequestItem(Base):
 
 class PurchaseOrder(Base):
     __tablename__ = "purchase_orders"
-    __table_args__ = (UniqueConstraint("tenant_id", "po_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "po_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1060,7 +1062,7 @@ class PurchaseOrderAmendment(Base):
 
 class GoodsReceipt(Base):
     __tablename__ = "goods_receipts"
-    __table_args__ = (UniqueConstraint("tenant_id", "grn_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "grn_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1096,7 +1098,7 @@ class GoodsReceiptItem(Base):
 
 class SalesInvoice(Base):
     __tablename__ = "sales_invoices"
-    __table_args__ = (UniqueConstraint("tenant_id", "invoice_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "invoice_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1486,7 +1488,7 @@ class WebAuthnChallenge(Base):
 
 class SalesQuotation(Base):
     __tablename__ = "sales_quotations"
-    __table_args__ = (UniqueConstraint("tenant_id", "quotation_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "quotation_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1527,7 +1529,7 @@ class SalesQuotationItem(Base):
 
 class SalesOrder(Base):
     __tablename__ = "sales_orders"
-    __table_args__ = (UniqueConstraint("tenant_id", "order_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "order_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1573,7 +1575,7 @@ class SalesOrderItem(Base):
 
 class SalesReturn(Base):
     __tablename__ = "sales_returns"
-    __table_args__ = (UniqueConstraint("tenant_id", "return_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "return_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1612,7 +1614,7 @@ class SalesReturnItem(Base):
 
 class PurchaseReturn(Base):
     __tablename__ = "purchase_returns"
-    __table_args__ = (UniqueConstraint("tenant_id", "return_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "return_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1652,7 +1654,7 @@ class PurchaseReturnItem(Base):
 
 class PurchaseInvoice(Base):
     __tablename__ = "purchase_invoices"
-    __table_args__ = (UniqueConstraint("tenant_id", "invoice_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "invoice_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)

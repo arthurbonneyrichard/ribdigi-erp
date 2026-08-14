@@ -80,10 +80,14 @@ async def _prepare_lines(
     return round(subtotal, 2), round(tax_total, 2), prepared
 
 
-async def _allocate(db: AsyncSession, tenant_id: str, doc_key: str) -> str:
+async def _allocate(
+    db: AsyncSession, tenant_id: str, doc_key: str, *, company_id: str | None = None
+) -> str:
     from app.document_numbering import allocate_document_number
 
-    return await allocate_document_number(db, tenant_id=tenant_id, doc_key=doc_key)
+    return await allocate_document_number(
+        db, tenant_id=tenant_id, doc_key=doc_key, company_id=company_id
+    )
 
 
 # --- Quotations ---
@@ -421,7 +425,7 @@ async def create_quotation(
     quote = m.SalesQuotation(
         tenant_id=tenant_id,
         company_id=company_id,
-        quotation_number=await _allocate(db, tenant_id, "sales_quotation"),
+        quotation_number=await _allocate(db, tenant_id, "sales_quotation", company_id=company_id),
         customer_id=customer_id,
         status="draft",
         subtotal=subtotal,
@@ -721,7 +725,7 @@ async def create_order(
     order = m.SalesOrder(
         tenant_id=tenant_id,
         company_id=company_id,
-        order_number=await _allocate(db, tenant_id, "sales_order"),
+        order_number=await _allocate(db, tenant_id, "sales_order", company_id=company_id),
         customer_id=customer_id,
         quotation_id=quotation_id,
         store_id=resolved_store,
@@ -1132,7 +1136,7 @@ async def create_return(
     ret = m.SalesReturn(
         tenant_id=tenant_id,
         company_id=company_id or getattr(invoice, "company_id", None),
-        return_number=await _allocate(db, tenant_id, "sales_return"),
+        return_number=await _allocate(db, tenant_id, "sales_return", company_id=company_id or getattr(invoice, "company_id", None)),
         customer_id=invoice.customer_id,
         sales_invoice_id=invoice.id,
         status="draft",
@@ -1236,7 +1240,7 @@ async def post_return(
 
     ret.status = "posted"
     ret.posted_at = datetime.utcnow()
-    ret.credit_note_number = await _allocate(db, tenant_id, "sales_credit_note")
+    ret.credit_note_number = await _allocate(db, tenant_id, "sales_credit_note", company_id=getattr(ret, "company_id", None))
 
     from app.accounting import post_sales_return_journal
 

@@ -1784,3 +1784,151 @@ async def test_company_scoped_uniques_and_product_idor(client, db_session):
         },
     )
     assert bad_store.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_document_numbering_and_nested_product_idor(client, db_session):
+    """Phase 16: per-company doc series; nested product / stock-count IDOR."""
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="DOC16",
+        name="Alpha Docs B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+        document_numbering={
+            "sales_invoice": {"prefix": "BINV", "include_year": False, "pad": 4, "next_number": 1}
+        },
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Docs B Product",
+        sku="DOC16-B",
+        cost_price=1,
+        selling_price=2,
+        stock_qty=5,
+        is_active=True,
+    )
+    wh_b = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Docs B Warehouse",
+        code="WH-DOC16B",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add_all([prod_b, wh_b])
+    await db_session.flush()
+    count_b = m.StockCount(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        count_number="SC-B-16",
+        status="draft",
+        warehouse_id=wh_b.id,
+    )
+    db_session.add(count_b)
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    headers_b = await _super_headers(ac, seed)
+    headers_b["X-Workspace-Kind"] = "company"
+    headers_b["X-Company-ID"] = c_b.id
+
+    # Configure company A series without affecting B preview.
+    patch_a = await ac.patch(
+        "/api/v1/tenants/me",
+        headers=headers_a,
+        json={
+            "document_numbering": {
+                "sales_invoice": {
+                    "prefix": "AINV",
+                    "include_year": False,
+                    "pad": 4,
+                    "next_number": 1,
+                }
+            }
+        },
+    )
+    assert patch_a.status_code == 200, patch_a.text
+    assert patch_a.json()["data"]["document_numbering_scope"] == "company"
+    assert patch_a.json()["data"]["document_numbering"]["sales_invoice"]["prefix"] == "AINV"
+
+    me_b = await ac.get("/api/v1/tenants/me", headers=headers_b)
+    assert me_b.status_code == 200, me_b.text
+    assert me_b.json()["data"]["document_numbering"]["sales_invoice"]["prefix"] == "BINV"
+
+    # Independent invoice numbers per company.
+    cust_a = await ac.post(
+        "/api/v1/customers",
+        headers=headers_a,
+        json={"name": "Doc Cust A"},
+    )
+    assert cust_a.status_code == 200, cust_a.text
+    inv_a = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers_a,
+        json={
+            "customer_id": cust_a.json()["data"]["id"],
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert inv_a.status_code == 200, inv_a.text
+    assert inv_a.json()["data"]["invoice_number"].startswith("AINV-")
+
+    cust_b = await ac.post(
+        "/api/v1/customers",
+        headers=headers_b,
+        json={"name": "Doc Cust B"},
+    )
+    assert cust_b.status_code == 200, cust_b.text
+    # Need a product in company B for invoice lines
+    prod_b_create = await ac.post(
+        "/api/v1/products",
+        headers=headers_b,
+        json={"name": "Docs B Line Product", "sku": "DOC16-BL", "selling_price": 3, "cost_price": 1},
+    )
+    assert prod_b_create.status_code == 200, prod_b_create.text
+    inv_b = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers_b,
+        json={
+            "customer_id": cust_b.json()["data"]["id"],
+            "items": [
+                {"product_id": prod_b_create.json()["data"]["id"], "quantity": 1, "unit_price": 3}
+            ],
+        },
+    )
+    assert inv_b.status_code == 200, inv_b.text
+    assert inv_b.json()["data"]["invoice_number"].startswith("BINV-")
+    # Same sequence start allowed across companies
+    assert inv_a.json()["data"]["invoice_number"].endswith("0001")
+    assert inv_b.json()["data"]["invoice_number"].endswith("0001")
+
+    # Nested product IDOR
+    assert (await ac.get(f"/api/v1/products/{prod_b.id}/images", headers=headers_a)).status_code == 404
+    assert (await ac.get(f"/api/v1/products/{prod_b.id}/batches", headers=headers_a)).status_code == 404
+    assert (
+        await ac.get(f"/api/v1/products/{prod_b.id}/warehouse-stock", headers=headers_a)
+    ).status_code == 404
+
+    # Stock count IDOR
+    assert (
+        await ac.get(f"/api/v1/inventory/stock-counts/{count_b.id}", headers=headers_a)
+    ).status_code == 404

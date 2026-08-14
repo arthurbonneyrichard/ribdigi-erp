@@ -1103,7 +1103,7 @@ async def create_purchase_order(
     po = m.PurchaseOrder(
         tenant_id=tenant_id,
         company_id=company_id,
-        po_number=await allocate_document_number(db, tenant_id=tenant_id, doc_key="purchase_order"),
+        po_number=await allocate_document_number(db, tenant_id=tenant_id, doc_key="purchase_order", company_id=company_id),
         supplier_id=supplier_id,
         warehouse_id=warehouse_id,
         status="draft",
@@ -1312,7 +1312,7 @@ async def create_grn(
     grn = m.GoodsReceipt(
         tenant_id=tenant_id,
         company_id=company_id or getattr(po, "company_id", None),
-        grn_number=await allocate_document_number(db, tenant_id=tenant_id, doc_key="goods_receipt"),
+        grn_number=await allocate_document_number(db, tenant_id=tenant_id, doc_key="goods_receipt", company_id=company_id or getattr(po, "company_id", None)),
         purchase_order_id=po.id,
         supplier_id=po.supplier_id,
         warehouse_id=warehouse_id or po.warehouse_id,
@@ -2053,7 +2053,10 @@ async def create_purchase_return(
         tenant_id=tenant_id,
         company_id=company_id or getattr(grn, "company_id", None),
         return_number=await allocate_document_number(
-            db, tenant_id=tenant_id, doc_key="purchase_return"
+            db,
+            tenant_id=tenant_id,
+            doc_key="purchase_return",
+            company_id=company_id or getattr(grn, "company_id", None),
         ),
         supplier_id=grn.supplier_id,
         purchase_order_id=grn.purchase_order_id,
@@ -2144,7 +2147,10 @@ async def post_purchase_return(
     from app.document_numbering import allocate_document_number
 
     ret.debit_note_number = await allocate_document_number(
-        db, tenant_id=tenant_id, doc_key="purchase_debit_note"
+        db,
+        tenant_id=tenant_id,
+        doc_key="purchase_debit_note",
+        company_id=getattr(ret, "company_id", None),
     )
 
     from app.accounting import post_purchase_return_journal
@@ -2455,7 +2461,12 @@ async def create_purchase_invoice(
         tenant_id=tenant_id,
         company_id=company_id or (getattr(grn, "company_id", None) if grn else None) or (getattr(po, "company_id", None) if po else None),
         invoice_number=await allocate_document_number(
-            db, tenant_id=tenant_id, doc_key="purchase_invoice"
+            db,
+            tenant_id=tenant_id,
+            doc_key="purchase_invoice",
+            company_id=company_id
+            or (getattr(grn, "company_id", None) if grn else None)
+            or (getattr(po, "company_id", None) if po else None),
         ),
         supplier_id=supplier_id,
         purchase_order_id=purchase_order_id or (po.id if po else None),

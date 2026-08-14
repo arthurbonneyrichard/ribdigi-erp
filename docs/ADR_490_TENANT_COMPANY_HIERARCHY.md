@@ -137,3 +137,11 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Product GET/PATCH and variant create/patch reject cross-company IDs; product SKU clash checks are company-scoped; catalog meta FK resolve respects company.
 - Store create uniqueness + branch assignment verify company; notification mark-read / mark-unread / mark-all-read filter by company (null-company notes remain visible).
 - Remaining PARTIAL: document number series still tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.
+
+## Phase 16 follow-up (2026-08-14)
+
+- Document numbering series move to `Company.document_numbering` (Alembic `20260814_0099`); allocate locks the company row; DOC_KEY uniques are `(tenant_id, company_id, …)`.
+- `GET/PATCH /tenants/me` (and document-settings export) use active company series when in company workspace; tenant JSON remains legacy fallback/seed.
+- Nested product surfaces (images, batches, warehouse-stock) reject cross-company product IDs; product images stamp `company_id`.
+- Stock count and stock transfer by-id + lifecycle paths filter by workspace `company_id`.
+- Remaining PARTIAL: print templates still tenant-level; ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.

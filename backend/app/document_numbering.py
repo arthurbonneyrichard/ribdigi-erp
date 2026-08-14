@@ -1,4 +1,8 @@
-"""Tenant-configurable document number prefix + series (BR-7.4 / BR-20.4)."""
+"""Company-configurable document number prefix + series (BR-7.4 / BR-20.4 / ADR-490).
+
+Series live on `Company.document_numbering`. Tenant JSON remains a legacy fallback
+for backfill and single-company tenants without a company context.
+"""
 
 from __future__ import annotations
 
@@ -104,15 +108,52 @@ async def get_tenant_for_numbering(db: AsyncSession, tenant_id: str) -> m.Tenant
     return tenant
 
 
+async def get_company_for_numbering(
+    db: AsyncSession, *, tenant_id: str, company_id: str
+) -> m.Company:
+    company = (
+        await db.execute(
+            select(m.Company)
+            .where(
+                m.Company.id == company_id,
+                m.Company.tenant_id == tenant_id,
+            )
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    return company
+
+
 async def allocate_document_number(
     db: AsyncSession,
     *,
     tenant_id: str,
     doc_key: str,
     when: datetime | None = None,
+    company_id: str | None = None,
 ) -> str:
     if doc_key not in DOC_KEYS:
         raise HTTPException(status_code=400, detail=f"Unknown document type: {doc_key}")
+
+    if company_id:
+        company = await get_company_for_numbering(db, tenant_id=tenant_id, company_id=company_id)
+        raw = getattr(company, "document_numbering", None)
+        if not raw:
+            # Seed from tenant legacy series once so existing counters continue.
+            tenant = await db.get(m.Tenant, tenant_id)
+            raw = getattr(tenant, "document_numbering", None) if tenant else None
+        cfg = normalize_document_numbering(raw)
+        series = cfg[doc_key]
+        number = int(series["next_number"])
+        doc_number = format_document_number(series, number=number, when=when)
+        series["next_number"] = number + 1
+        cfg[doc_key] = series
+        company.document_numbering = cfg
+        await db.flush()
+        return doc_number
+
     tenant = await get_tenant_for_numbering(db, tenant_id)
     cfg = normalize_document_numbering(getattr(tenant, "document_numbering", None))
     series = cfg[doc_key]
@@ -143,3 +184,16 @@ def merge_document_numbering(existing: dict | None, patch: dict | None) -> dict:
         merged.update(value)
         base[key] = _normalize_series(merged, DEFAULTS[key])
     return base
+
+
+def numbering_source_for_serialize(
+    tenant: m.Tenant, company: m.Company | None = None
+) -> dict | None:
+    """Prefer company series when a company workspace is active."""
+    if company is not None:
+        raw = getattr(company, "document_numbering", None)
+        if raw:
+            return raw
+        # Fall back to tenant defaults until company series is first written.
+        return getattr(tenant, "document_numbering", None)
+    return getattr(tenant, "document_numbering", None)

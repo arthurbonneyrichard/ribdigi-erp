@@ -169,12 +169,21 @@ async def export_document_settings_csv(
     db: AsyncSession,
     *,
     tenant_id: str,
+    company_id: str | None = None,
 ) -> str:
+    from app.document_numbering import numbering_source_for_serialize
+
     tenant = (
         await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
     ).scalar_one()
-    numbering = normalize_document_numbering(getattr(tenant, "document_numbering", None))
-    previews = preview_document_numbering(getattr(tenant, "document_numbering", None))
+    company = None
+    if company_id:
+        company = await db.get(m.Company, company_id)
+        if not company or company.tenant_id != tenant_id:
+            company = None
+    raw = numbering_source_for_serialize(tenant, company)
+    numbering = normalize_document_numbering(raw)
+    previews = preview_document_numbering(raw)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=DOCUMENT_SETTINGS_EXPORT_COLUMNS)
     writer.writeheader()

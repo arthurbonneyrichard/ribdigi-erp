@@ -10,7 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.config import settings
-from app.document_numbering import normalize_document_numbering, preview_document_numbering, merge_document_numbering
+from app.document_numbering import (
+    normalize_document_numbering,
+    preview_document_numbering,
+    merge_document_numbering,
+    numbering_source_for_serialize,
+)
 from app.platform_const import PLATFORM_TENANT_ID
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
@@ -84,7 +89,8 @@ def is_read_only(tenant: m.Tenant) -> bool:
     return tenant.status == "grace"
 
 
-def serialize_tenant(tenant: m.Tenant) -> dict:
+def serialize_tenant(tenant: m.Tenant, *, company: m.Company | None = None) -> dict:
+    numbering_raw = numbering_source_for_serialize(tenant, company)
     now = datetime.utcnow()
     days_left = None
     if tenant.status == "trial":
@@ -140,12 +146,10 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "grace_days": int(settings.TRIAL_GRACE_DAYS),
         "logo_url": tenant.logo_url,
         "has_logo": bool(tenant.logo_url),
-        "document_numbering": normalize_document_numbering(
-            getattr(tenant, "document_numbering", None)
-        ),
-        "document_numbering_preview": preview_document_numbering(
-            getattr(tenant, "document_numbering", None)
-        ),
+        "document_numbering": normalize_document_numbering(numbering_raw),
+        "document_numbering_preview": preview_document_numbering(numbering_raw),
+        "document_numbering_scope": "company" if company is not None else "tenant",
+        "document_numbering_company_id": company.id if company is not None else None,
         "invoice_print_template": getattr(tenant, "invoice_print_template", None) or "a4",
         "receipt_print_template": getattr(tenant, "receipt_print_template", None) or "thermal_80",
         "document_header": getattr(tenant, "document_header", None),
@@ -405,6 +409,7 @@ async def update_profile(
     tax_registration_number: str | None = None,
     tax_filing_period: str | None = None,
     document_numbering: dict | None = None,
+    document_numbering_company: m.Company | None = None,
     invoice_print_template: str | None = None,
     receipt_print_template: str | None = None,
     document_header: str | None = None,
@@ -473,9 +478,18 @@ async def update_profile(
             raise HTTPException(status_code=400, detail="tax_filing_period must be monthly or quarterly")
         tenant.tax_filing_period = period
     if document_numbering is not None:
-        tenant.document_numbering = merge_document_numbering(
-            getattr(tenant, "document_numbering", None), document_numbering
-        )
+        if document_numbering_company is not None:
+            # Seed from tenant if company series empty so merges preserve counters.
+            existing = getattr(document_numbering_company, "document_numbering", None)
+            if not existing:
+                existing = getattr(tenant, "document_numbering", None)
+            document_numbering_company.document_numbering = merge_document_numbering(
+                existing, document_numbering
+            )
+        else:
+            tenant.document_numbering = merge_document_numbering(
+                getattr(tenant, "document_numbering", None), document_numbering
+            )
     if invoice_print_template is not None:
         from app.sales import INVOICE_PRINT_TEMPLATES
 

@@ -452,8 +452,13 @@ async def tenant_me(
     tenant = await tenants_svc.ensure_trial_state(db, tenant)
     if tenant.status == "suspended":
         raise HTTPException(status_code=403, detail="Tenant is suspended")
+    company = None
+    if claims.get("company_id"):
+        company = await db.get(m.Company, claims["company_id"])
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
     await db.commit()
-    return env(tenants_svc.serialize_tenant(tenant))
+    return env(tenants_svc.serialize_tenant(tenant, company=company))
 
 
 @api.get("/tenants/me/export")
@@ -482,7 +487,7 @@ async def tenant_document_settings_export(
 ):
     """Stage 128 N1 — document numbering + print template settings CSV (no secrets)."""
     text = await session_passkey_doc_export_svc.export_document_settings_csv(
-        db, tenant_id=claims["tenant_id"]
+        db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
     )
     return Response(
         content=text,
@@ -529,6 +534,11 @@ async def tenant_me_update(
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     previous_plan = (getattr(tenant, "plan_code", None) or "trial").strip().lower()
+    numbering_company = None
+    if claims.get("company_id") and payload.document_numbering is not None:
+        numbering_company = await db.get(m.Company, claims["company_id"])
+        if not numbering_company or numbering_company.tenant_id != claims["tenant_id"]:
+            raise HTTPException(status_code=404, detail="Company not found")
     tenant = await tenants_svc.update_profile(
         db,
         tenant,
@@ -549,6 +559,7 @@ async def tenant_me_update(
             if payload.document_numbering is not None
             else None
         ),
+        document_numbering_company=numbering_company,
         invoice_print_template=payload.invoice_print_template,
         receipt_print_template=payload.receipt_print_template,
         document_header=payload.document_header,
@@ -597,7 +608,12 @@ async def tenant_me_update(
             },
         )
     await db.commit()
-    data = tenants_svc.serialize_tenant(tenant)
+    company = numbering_company
+    if company is None and claims.get("company_id"):
+        company = await db.get(m.Company, claims["company_id"])
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
+    data = tenants_svc.serialize_tenant(tenant, company=company)
     msg = "Company profile updated"
     if payload.plan_code is not None and new_plan != previous_plan:
         msg = "Plan metadata updated (billing deferred; no payment processed)"
@@ -4606,6 +4622,7 @@ async def product_image_upload(
     db: AsyncSession = Depends(get_db),
 ):
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="product_images",
@@ -4621,6 +4638,7 @@ async def product_image_upload(
         content_type=stored.content_type,
         original_filename=stored.original_filename,
         is_primary=True,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     await db.refresh(product)
@@ -4637,12 +4655,13 @@ async def product_image_get(
         await db.execute(
             select(m.Product).where(
                 m.Product.id == product_id,
-                m.Product.tenant_id == claims["tenant_id"],
+                *workspace_svc.company_scope_filter(m.Product, claims),
             )
         )
     ).scalar_one_or_none()
     if not product or not product.image_url:
         raise HTTPException(status_code=404, detail="Product image not found")
+    workspace_svc.assert_record_company(claims, product)
     return storage_svc.media_response(product.image_url, tenant_id=claims["tenant_id"])
 
 
@@ -4653,7 +4672,10 @@ async def product_image_delete(
     db: AsyncSession = Depends(get_db),
 ):
     product = await product_images_svc.delete_primary_product_image(
-        db, tenant_id=claims["tenant_id"], product_id=product_id
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_product(product), "Product image removed")
@@ -4666,7 +4688,10 @@ async def product_images_list(
     db: AsyncSession = Depends(get_db),
 ):
     rows = await product_images_svc.list_product_images(
-        db, tenant_id=claims["tenant_id"], product_id=product_id
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        company_id=claims.get("company_id"),
     )
     return env([product_images_svc.serialize_image(r) for r in rows])
 
@@ -4679,7 +4704,10 @@ async def product_images_export(
 ):
     """Stage 156 G1 — per-product image metadata CSV (no binary payloads)."""
     text = await product_images_svc.export_product_images_csv(
-        db, tenant_id=claims["tenant_id"], product_id=product_id
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -4715,6 +4743,7 @@ async def product_images_upload(
         content_type=stored.content_type,
         original_filename=stored.original_filename,
         is_primary=False,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(product_images_svc.serialize_image(row), "Product image added")
@@ -4735,6 +4764,7 @@ async def product_images_patch(
         tenant_id=claims["tenant_id"],
         product_id=product_id,
         image_id=image_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(product_images_svc.serialize_image(row), "Primary image updated")
@@ -4752,6 +4782,7 @@ async def product_images_delete(
         tenant_id=claims["tenant_id"],
         product_id=product_id,
         image_id=image_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(None, "Product image removed")
@@ -4935,12 +4966,13 @@ async def product_warehouse_stock(
         await db.execute(
             select(m.Product).where(
                 m.Product.id == product_id,
-                m.Product.tenant_id == claims["tenant_id"],
+                *workspace_svc.company_scope_filter(m.Product, claims),
             )
         )
     ).scalar_one_or_none()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    workspace_svc.assert_record_company(claims, product)
     rows = (
         await db.execute(
             select(m.WarehouseStock, m.Warehouse)
@@ -5090,7 +5122,7 @@ async def get_stock_count(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    count = await stock_counts_svc.get_count(db, claims["tenant_id"], count_id)
+    count = await stock_counts_svc.get_count(db, claims["tenant_id"], count_id, company_id=claims.get("company_id"))
     return env(await stock_counts_svc.serialize_count(db, count))
 
 
@@ -5103,7 +5135,8 @@ async def stock_count_variance_report(
 ):
     """BR-5.2 — export completed count variance (CSV or PDF)."""
     report = await stock_counts_svc.build_variance_report(
-        db, tenant_id=claims["tenant_id"], count_id=count_id
+        db, tenant_id=claims["tenant_id"], count_id=count_id,
+        company_id=claims.get("company_id"),
     )
     fmt = (format or "csv").strip().lower()
     safe_num = "".join(c if c.isalnum() or c in "-_" else "_" for c in report["count_number"])
@@ -5142,6 +5175,7 @@ async def patch_stock_count_items(
         tenant_id=claims["tenant_id"],
         count_id=count_id,
         items=[i.model_dump() for i in payload.items],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stock_counts_svc.serialize_count(db, count), "Count lines updated")
@@ -5158,6 +5192,7 @@ async def complete_stock_count(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         count_id=count_id,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -5180,7 +5215,8 @@ async def cancel_stock_count(
     db: AsyncSession = Depends(get_db),
 ):
     count = await stock_counts_svc.cancel_count(
-        db, tenant_id=claims["tenant_id"], count_id=count_id
+        db, tenant_id=claims["tenant_id"], count_id=count_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stock_counts_svc.serialize_count(db, count), "Stock count cancelled")
@@ -5635,7 +5671,8 @@ async def list_product_batches(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     rows = await catalog_svc.list_batches(db, claims["tenant_id"], product_id=product_id)
     return env([catalog_svc.serialize_batch(b) for b in rows])
 
@@ -12978,7 +13015,7 @@ async def get_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     # Transfers are operationally shared (ship/receive); record scope is not applied.
-    transfer = await stores_svc.get_transfer(db, claims["tenant_id"], transfer_id)
+    transfer = await stores_svc.get_transfer(db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id"))
     return env(await stores_svc.serialize_transfer(db, transfer))
 
 
@@ -12989,7 +13026,8 @@ async def submit_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.submit_transfer(
-        db, tenant_id=claims["tenant_id"], transfer_id=transfer_id
+        db, tenant_id=claims["tenant_id"], transfer_id=transfer_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer requested")
@@ -13007,6 +13045,7 @@ async def ship_transfer(
         user_id=claims["sub"],
         transfer_id=transfer_id,
         role=claims.get("role") or "",
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer shipped")
@@ -13024,6 +13063,7 @@ async def receive_transfer(
         user_id=claims["sub"],
         transfer_id=transfer_id,
         role=claims.get("role") or "",
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer received")
@@ -13036,7 +13076,8 @@ async def cancel_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.cancel_transfer(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")
@@ -13275,7 +13316,8 @@ async def submit_inventory_stock_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.submit_transfer(
-        db, tenant_id=claims["tenant_id"], transfer_id=transfer_id
+        db, tenant_id=claims["tenant_id"], transfer_id=transfer_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer submitted")
@@ -13293,6 +13335,7 @@ async def ship_inventory_stock_transfer(
         user_id=claims["sub"],
         transfer_id=transfer_id,
         role=claims.get("role") or "",
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer shipped")
@@ -13310,6 +13353,7 @@ async def receive_inventory_stock_transfer(
         user_id=claims["sub"],
         transfer_id=transfer_id,
         role=claims.get("role") or "",
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer received")
@@ -13322,7 +13366,8 @@ async def cancel_inventory_stock_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.cancel_transfer(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")

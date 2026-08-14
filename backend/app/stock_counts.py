@@ -26,15 +26,20 @@ async def get_warehouse(db: AsyncSession, tenant_id: str, warehouse_id: str) -> 
     return wh
 
 
-async def get_count(db: AsyncSession, tenant_id: str, count_id: str) -> m.StockCount:
-    row = (
-        await db.execute(
-            select(m.StockCount).where(
-                m.StockCount.id == count_id,
-                m.StockCount.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+async def get_count(
+    db: AsyncSession,
+    tenant_id: str,
+    count_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.StockCount:
+    stmt = select(m.StockCount).where(
+        m.StockCount.id == count_id,
+        m.StockCount.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.StockCount.company_id == company_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Stock count not found")
     return row
@@ -246,8 +251,9 @@ async def update_count_items(
     tenant_id: str,
     count_id: str,
     items: list[dict],
+    company_id: str | None = None,
 ) -> m.StockCount:
-    count = await get_count(db, tenant_id, count_id)
+    count = await get_count(db, tenant_id, count_id, company_id=company_id)
     if count.status != "draft":
         raise HTTPException(status_code=409, detail=f"Cannot update count in status {count.status}")
     if not items:
@@ -280,8 +286,9 @@ async def complete_count(
     tenant_id: str,
     user_id: str | None,
     count_id: str,
+    company_id: str | None = None,
 ) -> m.StockCount:
-    count = await get_count(db, tenant_id, count_id)
+    count = await get_count(db, tenant_id, count_id, company_id=company_id)
     if count.status != "draft":
         raise HTTPException(status_code=409, detail=f"Cannot complete count in status {count.status}")
 
@@ -328,8 +335,9 @@ async def cancel_count(
     *,
     tenant_id: str,
     count_id: str,
+    company_id: str | None = None,
 ) -> m.StockCount:
-    count = await get_count(db, tenant_id, count_id)
+    count = await get_count(db, tenant_id, count_id, company_id=company_id)
     if count.status != "draft":
         raise HTTPException(status_code=409, detail=f"Cannot cancel count in status {count.status}")
     count.status = "cancelled"
@@ -355,9 +363,10 @@ async def build_variance_report(
     *,
     tenant_id: str,
     count_id: str,
+    company_id: str | None = None,
 ) -> dict:
     """BR-5.2 variance report for a completed stock count."""
-    count = await get_count(db, tenant_id, count_id)
+    count = await get_count(db, tenant_id, count_id, company_id=company_id)
     if count.status != "completed":
         raise HTTPException(
             status_code=409,

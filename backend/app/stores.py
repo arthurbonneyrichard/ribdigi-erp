@@ -489,15 +489,20 @@ async def set_store_reorder_policy(
     }
 
 
-async def get_transfer(db: AsyncSession, tenant_id: str, transfer_id: str) -> m.StockTransfer:
-    row = (
-        await db.execute(
-            select(m.StockTransfer).where(
-                m.StockTransfer.id == transfer_id,
-                m.StockTransfer.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+async def get_transfer(
+    db: AsyncSession,
+    tenant_id: str,
+    transfer_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.StockTransfer:
+    stmt = select(m.StockTransfer).where(
+        m.StockTransfer.id == transfer_id,
+        m.StockTransfer.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.StockTransfer.company_id == company_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Transfer not found")
     return row
@@ -775,8 +780,10 @@ async def create_warehouse_transfer(
     return transfer
 
 
-async def submit_transfer(db: AsyncSession, *, tenant_id: str, transfer_id: str) -> m.StockTransfer:
-    transfer = await get_transfer(db, tenant_id, transfer_id)
+async def submit_transfer(
+    db: AsyncSession, *, tenant_id: str, transfer_id: str, company_id: str | None = None
+) -> m.StockTransfer:
+    transfer = await get_transfer(db, tenant_id, transfer_id, company_id=company_id)
     if transfer.status not in TRANSFER_SUBMITTABLE:
         raise HTTPException(status_code=409, detail=f"Cannot submit transfer in status {transfer.status}")
     transfer.status = "requested"
@@ -858,8 +865,9 @@ async def ship_transfer(
     user_id: str,
     transfer_id: str,
     role: str = "company_admin",
+    company_id: str | None = None,
 ) -> m.StockTransfer:
-    transfer = await get_transfer(db, tenant_id, transfer_id)
+    transfer = await get_transfer(db, tenant_id, transfer_id, company_id=company_id)
     if transfer.status not in TRANSFER_SHIPPABLE:
         raise HTTPException(status_code=409, detail=f"Cannot ship transfer in status {transfer.status}")
     await assert_inter_store_manager_action(
@@ -929,8 +937,9 @@ async def receive_transfer(
     user_id: str,
     transfer_id: str,
     role: str = "company_admin",
+    company_id: str | None = None,
 ) -> m.StockTransfer:
-    transfer = await get_transfer(db, tenant_id, transfer_id)
+    transfer = await get_transfer(db, tenant_id, transfer_id, company_id=company_id)
     if transfer.status not in TRANSFER_RECEIVABLE:
         raise HTTPException(status_code=409, detail=f"Cannot receive transfer in status {transfer.status}")
     await assert_inter_store_manager_action(
@@ -978,9 +987,14 @@ async def receive_transfer(
 
 
 async def cancel_transfer(
-    db: AsyncSession, *, tenant_id: str, user_id: str, transfer_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    transfer_id: str,
+    company_id: str | None = None,
 ) -> m.StockTransfer:
-    transfer = await get_transfer(db, tenant_id, transfer_id)
+    transfer = await get_transfer(db, tenant_id, transfer_id, company_id=company_id)
     if transfer.status not in TRANSFER_CANCELLABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel transfer in status {transfer.status}")
 
