@@ -59,6 +59,7 @@ type PurchaseOrder = {
   delivery_address?: string | null;
   revision_no?: number;
   can_amend?: boolean;
+  can_cancel?: boolean;
   amendments?: PoAmendment[];
   emailed_at?: string | null;
   emailed_to?: string | null;
@@ -342,6 +343,19 @@ export default function Page() {
           ? `Re-emailed ${r.data.po_number} to ${to}${mode}`
           : `Emailed ${r.data.po_number} to ${to}${mode}`,
       );
+      await refresh();
+      setSelected(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function cancelPo(po: PurchaseOrder) {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/purchasing/orders/${po.id}/cancel`, { method: 'POST' });
+      setMessage(r.message || `Cancelled ${r.data?.po_number || po.po_number}`);
       await refresh();
       setSelected(r.data);
     } catch (err: any) {
@@ -1294,6 +1308,11 @@ export default function Page() {
                     {(o.status === 'sent' || o.status === 'partially_received') && (
                       <button onClick={() => receiveAll(o)}>Receive all</button>
                     )}
+                    {o.can_cancel && (
+                      <button type="button" onClick={() => cancelPo(o)}>
+                        Cancel
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -1306,6 +1325,16 @@ export default function Page() {
                 {selected.delivery_address ? ` · Ship to: ${selected.delivery_address}` : ''}
                 {selected.revision_no ? ` · rev.${selected.revision_no}` : ''}
               </h3>
+              {selected.can_cancel && (
+                <p style={{ marginTop: 0 }}>
+                  <button type="button" onClick={() => cancelPo(selected)}>
+                    Cancel PO
+                  </button>
+                  <span className="muted" style={{ marginLeft: 8 }}>
+                    Allowed while draft/sent with no receipts (BR-6.3).
+                  </span>
+                </p>
+              )}
               {selected.emailed_to && (
                 <p style={{ marginTop: 0, color: '#475569', fontSize: 14 }}>
                   Last emailed to {selected.emailed_to}

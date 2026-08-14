@@ -755,7 +755,9 @@ Optional `delivery_address` is stored on the PO, returned on GET/list/serialize,
 
 Omit `tax_rate` on a line to auto-resolve **product → category (parents) → tenant default** (same as sales; BR-12.2). Explicit `tax_rate` (including `0`) wins. Resolved `%` is snapshotted on the PO/PI line.
 
-**Status Flow:** `draft` → `sent` → `partially_received` → `received` → `cancelled`
+**Status Flow:** `draft` → `sent` → `partially_received` → `received` (Fully Received); branch to `cancelled`
+
+**Cancel:** `POST /purchasing/orders/{po_id}/cancel` — allowed for draft/sent with no receipts; blocked after any `received_qty` or when already `received`/`cancelled`. Serialize includes `can_cancel`. Purchasing Orders UI Cancel button (BR-6.3).
 
 ### 6.4 Goods Received Note (GRN)
 **List:** `GET /purchases/grn`  
