@@ -1,0 +1,60 @@
+{
+  "id": "commercial-evidence-chain-pack-rg-pointers",
+  "stage": 254,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_EVIDENCE_CHAIN_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_EVIDENCE_CHAIN_PACK_REMAINING_GATE_MVP.md",
+    "commercial_evidence_chain": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md",
+    "assurance_evidence_pack_remaining_gate": "docs/ASSURANCE_EVIDENCE_PACK_REMAINING_GATE_MVP.md",
+    "operator_remaining_pack_remaining_gate": "docs/OPERATOR_REMAINING_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration_pack_remaining_gate": "docs/MVP_DECLARATION_PACK_REMAINING_GATE_MVP.md",
+    "commercial_evidence_chain_register": "ops/mvp/commercial-evidence-chain.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "evidence_chain_live_claimed": false,
+  "customer_assurance_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "topics": [
+    "commercial_evidence_chain_stage73_e1",
+    "assurance_evidence_pack_remaining_gate_stage253",
+    "operator_remaining_pack_remaining_gate_stage252",
+    "mvp_declaration_pack_remaining_gate_stage249",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cecprp-stage73",
+      "title": "Point to Stage 73 E1 commercial evidence chain",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cecprp-stage253",
+      "title": "Point to Stage 253 assurance evidence pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cecprp-stage252",
+      "title": "Point to Stage 252 operator remaining pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cecprp-stage249",
+      "title": "Point to Stage 249 MVP declaration pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cecprp-chain-remaining",
+      "title": "Evidence chain live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 254 P1 commercial evidence chain pack RG pointers packaging only. Do not claim evidence chain live Complete."
+}

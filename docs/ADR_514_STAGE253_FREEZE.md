@@ -31,3 +31,9 @@ Stage 254 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for customer assurance, attestation, §7 signature, or go-live.
+
+## Amendment — Stage 254 opened
+
+Stage 254 opened under **ADR-515** after CONTINUE/NEXT (Commercial Evidence Chain Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-516**. Stage 253 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 254 runner-up outline was approved and opened (ADR-515); freeze ADR-516. Do not reopen Stage 253 scope.

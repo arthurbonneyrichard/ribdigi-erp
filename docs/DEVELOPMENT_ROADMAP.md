@@ -3660,6 +3660,19 @@ Every feature in every phase must meet:
 
 **Stage 253 exit (2026-08-14):** I1, B1, P1, D1, H253x met — `docs/STAGE_253_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_514_STAGE253_FREEZE.md`. Fidelity: `docs/STAGE_253_FIDELITY.md`.
 
+**Stage 254 open (2026-08-14):** Tenant MVP Commercial Evidence Chain Pack Remaining-Gate Index Fidelity — `docs/ADR_515_STAGE254_OPEN.md` + `docs/STAGE_254_PLAN.md` (I1 next).
+
+**Stage 254 I1 (2026-08-14):** Commercial evidence chain pack remaining-gate index hub (`test_stage254_index_i1.py`).
+
+**Stage 254 B1 (2026-08-14):** Commercial evidence chain pack blocker matrix (`test_stage254_blockers_b1.py`).
+
+**Stage 254 P1 (2026-08-14):** Stage 73 / Stage 253 / Stage 252 / Stage 249 pointers (`test_stage254_pointers_p1.py`).
+
+**Stage 254 D1 (2026-08-14):** Commercial Evidence Chain Pack Remaining-Gate Index fidelity sync — `docs/STAGE_254_FIDELITY.md` (`test_stage254_fidelity_d1.py`).
+
+**Stage 254 exit (2026-08-14):** I1, B1, P1, D1, H254x met — `docs/STAGE_254_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_516_STAGE254_FREEZE.md`. Fidelity: `docs/STAGE_254_FIDELITY.md`.
+
+
 
 
 
