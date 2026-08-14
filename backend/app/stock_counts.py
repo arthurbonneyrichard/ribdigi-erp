@@ -200,6 +200,7 @@ async def create_count(
     warehouse_id: str,
     notes: str | None = None,
     product_ids: list[str] | None = None,
+    company_id: str | None = None,
 ) -> m.StockCount:
     await get_warehouse(db, tenant_id, warehouse_id)
     ids = await _resolve_product_ids(
@@ -208,6 +209,7 @@ async def create_count(
 
     count = m.StockCount(
         tenant_id=tenant_id,
+        company_id=company_id,
         warehouse_id=warehouse_id,
         count_number=f"SC-{datetime.utcnow():%Y%m%d%H%M%S%f}",
         status="draft",
@@ -227,6 +229,7 @@ async def create_count(
         db.add(
             m.StockCountItem(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 stock_count_id=count.id,
                 product_id=product_id,
                 expected_qty=float(stock.quantity or 0),

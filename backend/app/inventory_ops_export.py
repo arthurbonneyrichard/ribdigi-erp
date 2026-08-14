@@ -228,6 +228,7 @@ async def export_movements_csv(
     movement_type: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
+    company_id: str | None = None,
 ) -> str:
     if movement_type:
         key = movement_type.strip().lower()
@@ -249,6 +250,7 @@ async def export_movements_csv(
         from_dt=reports_svc.parse_date(from_date),
         to_dt=reports_svc.parse_date(to_date, end_of_day=True),
         limit=500,
+        company_id=company_id,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=MOVEMENT_EXPORT_COLUMNS)

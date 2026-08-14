@@ -566,6 +566,7 @@ async def list_transfers_filtered(
     to_date: datetime | None = None,
     scope: str = "all",
     limit: int = 100,
+    company_id: str | None = None,
 ) -> list[m.StockTransfer]:
     """Filtered stock transfer list (inter-store + warehouse) for ops and reports."""
     scope_key = (scope or "all").strip().lower()
@@ -576,6 +577,8 @@ async def list_transfers_filtered(
         )
     lim = max(1, min(int(limit or 100), 500))
     stmt = select(m.StockTransfer).where(m.StockTransfer.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.StockTransfer.company_id == company_id)
     if status:
         stmt = stmt.where(m.StockTransfer.status == status.strip().lower())
     if store_id:
@@ -687,6 +690,7 @@ async def create_transfer(
     items: list[dict],
     notes: str | None = None,
     submit: bool = False,
+    company_id: str | None = None,
 ) -> m.StockTransfer:
     if from_store_id == to_store_id:
         raise HTTPException(status_code=400, detail="Source and destination stores must differ")
@@ -700,6 +704,7 @@ async def create_transfer(
 
     transfer = m.StockTransfer(
         tenant_id=tenant_id,
+        company_id=company_id,
         transfer_number=await next_transfer_number(db, tenant_id),
         from_store_id=from_store_id,
         to_store_id=to_store_id,
@@ -725,6 +730,7 @@ async def create_warehouse_transfer(
     items: list[dict],
     notes: str | None = None,
     submit: bool = False,
+    company_id: str | None = None,
 ) -> m.StockTransfer:
     """Inter-warehouse transfer (Stage 2); stores optional/null."""
     from app.inventory import get_warehouse
@@ -739,6 +745,7 @@ async def create_warehouse_transfer(
 
     transfer = m.StockTransfer(
         tenant_id=tenant_id,
+        company_id=company_id or getattr(from_wh, "company_id", None),
         transfer_number=await next_transfer_number(db, tenant_id),
         from_store_id=from_wh.store_id,
         to_store_id=to_wh.store_id,

@@ -4727,6 +4727,7 @@ async def movements(
         from_dt=reports_svc.parse_date(from_date),
         to_dt=reports_svc.parse_date(to_date, end_of_day=True),
         limit=200,
+        company_id=claims.get("company_id"),
     )
     return env(rows)
 
@@ -4750,6 +4751,7 @@ async def export_movements_csv(
         movement_type=movement_type,
         from_date=from_date,
         to_date=to_date,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -4852,7 +4854,10 @@ async def list_stock_counts(
     """Stage 130 S1 — optional status filter for stock-count list honesty."""
     status_n = (status or "").strip().lower() or None
     rows = await ops_lifecycle_export_svc.list_stock_counts(
-        db, tenant_id=claims["tenant_id"], status=status_n
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status_n,
+        company_id=claims.get("company_id"),
     )
     out = []
     for row in rows:
@@ -4871,7 +4876,10 @@ async def stock_counts_export(
     """Stage 130 S1 — stock-count list CSV (header metadata; not variance lines)."""
     status_n = (status or "").strip().lower() or None
     text = await ops_lifecycle_export_svc.export_stock_counts_csv(
-        db, tenant_id=claims["tenant_id"], status=status_n
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status_n,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -4895,6 +4903,7 @@ async def create_stock_count(
         warehouse_id=payload.warehouse_id,
         notes=payload.notes,
         product_ids=payload.product_ids,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -6413,6 +6422,7 @@ async def create_quotation(
         notes=payload.notes,
         valid_days=payload.valid_days,
         items=[i.model_dump() for i in payload.items],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation created")
@@ -6425,6 +6435,7 @@ async def get_quotation(
     db: AsyncSession = Depends(get_db),
 ):
     quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
+    workspace_svc.assert_record_company(claims, quote)
     assert_record_access(claims, quote.created_by)
     return env(await sales_docs_svc.serialize_quotation(db, quote))
 
@@ -6681,6 +6692,7 @@ async def create_sales_order(
         delivery_date=payload.delivery_date,
         delivery_address=payload.delivery_address,
         items=[i.model_dump() for i in payload.items],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Sales order created")
@@ -6693,6 +6705,7 @@ async def get_sales_order(
     db: AsyncSession = Depends(get_db),
 ):
     order = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    workspace_svc.assert_record_company(claims, order)
     assert_record_access(claims, order.created_by)
     return env(await sales_docs_svc.serialize_order(db, order))
 
@@ -6882,6 +6895,7 @@ async def create_sales_return(
         restock=payload.restock,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await sales_docs_svc.serialize_return(db, ret), "Sales return created as draft")
@@ -6894,6 +6908,7 @@ async def get_sales_return(
     db: AsyncSession = Depends(get_db),
 ):
     ret = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
+    workspace_svc.assert_record_company(claims, ret)
     assert_record_access(claims, ret.created_by)
     return env(await sales_docs_svc.serialize_return(db, ret))
 
@@ -7184,6 +7199,7 @@ async def create_purchase_request(
         required_date=payload.required_date,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await purchasing_svc.serialize_pr(db, pr), "Purchase request created")
@@ -7196,6 +7212,7 @@ async def get_purchase_request(
     db: AsyncSession = Depends(get_db),
 ):
     pr = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
+    workspace_svc.assert_record_company(claims, pr)
     assert_record_access(claims, pr.created_by)
     return env(await purchasing_svc.serialize_pr(db, pr))
 
@@ -7597,6 +7614,7 @@ async def create_grn(
         warehouse_id=payload.warehouse_id,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await purchasing_svc.serialize_grn(db, grn), "GRN posted and stock updated")
@@ -7609,6 +7627,7 @@ async def get_grn(
     db: AsyncSession = Depends(get_db),
 ):
     grn = await purchasing_svc.get_grn(db, claims["tenant_id"], grn_id)
+    workspace_svc.assert_record_company(claims, grn)
     assert_record_access(claims, grn.created_by)
     return env(await purchasing_svc.serialize_grn(db, grn))
 
@@ -7668,6 +7687,7 @@ async def create_purchase_return(
         reason=payload.reason,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await purchasing_svc.serialize_purchase_return(db, ret), "Purchase return created as draft")
@@ -7680,6 +7700,7 @@ async def get_purchase_return(
     db: AsyncSession = Depends(get_db),
 ):
     ret = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
+    workspace_svc.assert_record_company(claims, ret)
     assert_record_access(claims, ret.created_by)
     return env(await purchasing_svc.serialize_purchase_return(db, ret))
 
@@ -7811,6 +7832,7 @@ async def create_purchase_invoice(
         currency=payload.currency,
         exchange_rate=payload.exchange_rate,
         items=[i.model_dump() for i in payload.items] if payload.items else None,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await purchasing_svc.serialize_purchase_invoice(db, inv), "Purchase invoice drafted")
@@ -7823,6 +7845,7 @@ async def get_purchase_invoice(
     db: AsyncSession = Depends(get_db),
 ):
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    workspace_svc.assert_record_company(claims, inv)
     assert_record_access(claims, inv.created_by)
     return env(await purchasing_svc.serialize_purchase_invoice(db, inv))
 
@@ -12424,6 +12447,7 @@ async def list_transfers(
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         scope=scope,
         limit=limit,
+        company_id=claims.get("company_id"),
     )
     return env([await stores_svc.serialize_transfer(db, t) for t in rows])
 
@@ -12443,6 +12467,7 @@ async def export_stores_transfers_csv(
         status=status,
         store_id=store_id,
         scope=scope,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -12468,6 +12493,7 @@ async def create_transfer(
         items=[i.model_dump() for i in payload.items],
         notes=payload.notes,
         submit=payload.submit,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer created")
@@ -12699,6 +12725,7 @@ async def list_inventory_stock_transfers(
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         scope=scope,
         limit=limit,
+        company_id=claims.get("company_id"),
     )
     return env([await stores_svc.serialize_transfer(db, row) for row in rows])
 
@@ -12718,6 +12745,7 @@ async def export_inventory_stock_transfers_csv(
         status=status,
         store_id=store_id,
         scope=scope,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -12743,6 +12771,7 @@ async def create_inventory_stock_transfer(
         items=[i.model_dump() for i in payload.items],
         notes=payload.notes,
         submit=payload.submit,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,

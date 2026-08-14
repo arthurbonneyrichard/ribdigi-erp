@@ -405,6 +405,7 @@ async def create_quotation(
     discount_amount: float = 0,
     notes: str | None = None,
     valid_days: int = 14,
+    company_id: str | None = None,
 ) -> m.SalesQuotation:
     await get_customer(db, tenant_id, customer_id)
     from app.customers import customer_group_discount_percent
@@ -419,6 +420,7 @@ async def create_quotation(
         raise HTTPException(status_code=400, detail="Total cannot be negative")
     quote = m.SalesQuotation(
         tenant_id=tenant_id,
+        company_id=company_id,
         quotation_number=await _allocate(db, tenant_id, "sales_quotation"),
         customer_id=customer_id,
         status="draft",
@@ -433,7 +435,7 @@ async def create_quotation(
     db.add(quote)
     await db.flush()
     for line, _ in prepared:
-        db.add(m.SalesQuotationItem(tenant_id=tenant_id, quotation_id=quote.id, **line))
+        db.add(m.SalesQuotationItem(tenant_id=tenant_id, company_id=company_id, quotation_id=quote.id, **line))
     await db.flush()
     return quote
 
@@ -697,6 +699,7 @@ async def create_order(
     warehouse_id: str | None = None,
     delivery_date: datetime | None = None,
     delivery_address: str | None = None,
+    company_id: str | None = None,
 ) -> m.SalesOrder:
     customer = await get_customer(db, tenant_id, customer_id)
     if quotation_id:
@@ -717,6 +720,7 @@ async def create_order(
     address = (delivery_address or "").strip() or (customer.address or None)
     order = m.SalesOrder(
         tenant_id=tenant_id,
+        company_id=company_id,
         order_number=await _allocate(db, tenant_id, "sales_order"),
         customer_id=customer_id,
         quotation_id=quotation_id,
@@ -735,7 +739,7 @@ async def create_order(
     db.add(order)
     await db.flush()
     for line, _ in prepared:
-        db.add(m.SalesOrderItem(tenant_id=tenant_id, sales_order_id=order.id, **line))
+        db.add(m.SalesOrderItem(tenant_id=tenant_id, company_id=company_id, sales_order_id=order.id, **line))
     await db.flush()
 
     from app.notifications import create_notification
@@ -1075,6 +1079,7 @@ async def create_return(
     reason: str = "other",
     restock: bool = True,
     notes: str | None = None,
+    company_id: str | None = None,
 ) -> m.SalesReturn:
     if reason not in RETURN_REASONS:
         raise HTTPException(status_code=400, detail=f"reason must be one of {sorted(RETURN_REASONS)}")
@@ -1126,6 +1131,7 @@ async def create_return(
 
     ret = m.SalesReturn(
         tenant_id=tenant_id,
+        company_id=company_id or getattr(invoice, "company_id", None),
         return_number=await _allocate(db, tenant_id, "sales_return"),
         customer_id=invoice.customer_id,
         sales_invoice_id=invoice.id,
@@ -1141,7 +1147,7 @@ async def create_return(
     db.add(ret)
     await db.flush()
     for line in prepared:
-        db.add(m.SalesReturnItem(tenant_id=tenant_id, sales_return_id=ret.id, **line))
+        db.add(m.SalesReturnItem(tenant_id=tenant_id, company_id=ret.company_id, sales_return_id=ret.id, **line))
     await db.flush()
     return ret
 

@@ -717,6 +717,7 @@ async def create_purchase_request(
     department: str | None = None,
     required_date: datetime | None = None,
     notes: str | None = None,
+    company_id: str | None = None,
 ) -> m.PurchaseRequest:
     if not items:
         raise HTTPException(status_code=400, detail="Purchase request requires at least one line item")
@@ -751,6 +752,7 @@ async def create_purchase_request(
 
     pr = m.PurchaseRequest(
         tenant_id=tenant_id,
+        company_id=company_id,
         request_number=f"PR-{datetime.utcnow():%Y%m%d%H%M%S%f}",
         supplier_id=supplier_id,
         warehouse_id=warehouse_id,
@@ -1293,6 +1295,7 @@ async def create_grn(
     warehouse_id: str | None = None,
     notes: str | None = None,
     post_supplier_balance: bool = True,
+    company_id: str | None = None,
 ) -> m.GoodsReceipt:
     if not items:
         raise HTTPException(status_code=400, detail="GRN requires at least one line item")
@@ -1308,6 +1311,7 @@ async def create_grn(
 
     grn = m.GoodsReceipt(
         tenant_id=tenant_id,
+        company_id=company_id or getattr(po, "company_id", None),
         grn_number=await allocate_document_number(db, tenant_id=tenant_id, doc_key="goods_receipt"),
         purchase_order_id=po.id,
         supplier_id=po.supplier_id,
@@ -1978,6 +1982,7 @@ async def create_purchase_return(
     items: list[dict],
     reason: str = "other",
     notes: str | None = None,
+    company_id: str | None = None,
 ) -> m.PurchaseReturn:
     if reason not in PURCHASE_RETURN_REASONS:
         raise HTTPException(
@@ -2044,6 +2049,7 @@ async def create_purchase_return(
 
     ret = m.PurchaseReturn(
         tenant_id=tenant_id,
+        company_id=company_id or getattr(grn, "company_id", None),
         return_number=await allocate_document_number(
             db, tenant_id=tenant_id, doc_key="purchase_return"
         ),
@@ -2368,6 +2374,7 @@ async def create_purchase_invoice(
     is_reverse_charge: bool = False,
     currency: str | None = None,
     exchange_rate: float | None = None,
+    company_id: str | None = None,
 ) -> m.PurchaseInvoice:
     grn = None
     po = None
@@ -2444,6 +2451,7 @@ async def create_purchase_invoice(
 
     inv = m.PurchaseInvoice(
         tenant_id=tenant_id,
+        company_id=company_id or (getattr(grn, "company_id", None) if grn else None) or (getattr(po, "company_id", None) if po else None),
         invoice_number=await allocate_document_number(
             db, tenant_id=tenant_id, doc_key="purchase_invoice"
         ),

@@ -400,6 +400,7 @@ async def transfer_warehouse_stock(
     db.add(
         m.StockMovement(
             tenant_id=tenant_id,
+            company_id=getattr(product, "company_id", None),
             product_id=product_id,
             warehouse_id=from_warehouse_id,
             movement_type="transfer_out",
@@ -422,6 +423,7 @@ async def transfer_warehouse_stock(
     db.add(
         m.StockMovement(
             tenant_id=tenant_id,
+            company_id=getattr(product, "company_id", None),
             product_id=product_id,
             warehouse_id=to_warehouse_id,
             movement_type="transfer_in",
@@ -480,8 +482,11 @@ async def list_movements_serialized(
     from_dt=None,
     to_dt=None,
     limit: int = 200,
+    company_id: str | None = None,
 ) -> list[dict]:
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.StockMovement.company_id == company_id)
     if product_id:
         stmt = stmt.where(m.StockMovement.product_id == product_id)
     if warehouse_id:
@@ -606,6 +611,7 @@ async def apply_stock_change(
     allow_negative: bool = False,
     variant_id: str | None = None,
     batch_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.Product:
     if quantity_delta == 0:
         raise HTTPException(status_code=400, detail="Stock quantity change cannot be zero")
@@ -670,6 +676,7 @@ async def apply_stock_change(
             )
     movement = m.StockMovement(
         tenant_id=tenant_id,
+        company_id=company_id or getattr(product, "company_id", None),
         product_id=product.id,
         variant_id=variant_id,
         batch_id=batch_id,

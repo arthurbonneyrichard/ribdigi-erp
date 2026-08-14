@@ -286,3 +286,102 @@ async def test_finance_list_blocked_in_tenant_workspace(client):
         r = await ac.get(path, headers=headers)
         assert r.status_code == 403, path
         assert r.json()["detail"]["code"] == "COMPANY_WORKSPACE_REQUIRED"
+
+
+@pytest.mark.asyncio
+async def test_docs_stock_lists_company_scoped(client, db_session):
+    """Quotations and stock transfers from company B must not appear in company A lists."""
+    ac, seed = client
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="ELEC",
+        name="Alpha Electronics",
+        industry="electronics",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    cust = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="Electronics Customer",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add(cust)
+    await db_session.flush()
+    wh_b = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Electronics WH",
+        code="WH-ELEC",
+        is_active=True,
+    )
+    db_session.add(wh_b)
+    await db_session.flush()
+    db_session.add_all(
+        [
+            m.SalesQuotation(
+                tenant_id=seed["t1"].id,
+                company_id=c_b.id,
+                quotation_number="Q-ELEC-1",
+                customer_id=cust.id,
+                status="draft",
+                subtotal=10,
+                tax_amount=0,
+                total_amount=10,
+                created_by=seed["super"].id,
+            ),
+            m.StockTransfer(
+                tenant_id=seed["t1"].id,
+                company_id=c_b.id,
+                transfer_number="TR-ELEC-1",
+                from_warehouse_id=wh_b.id,
+                to_warehouse_id=wh_b.id,
+                status="draft",
+                created_by=seed["super"].id,
+            ),
+            m.StockCount(
+                tenant_id=seed["t1"].id,
+                company_id=c_b.id,
+                count_number="SC-ELEC-1",
+                status="draft",
+                warehouse_id=wh_b.id,
+                created_by=seed["super"].id,
+            ),
+            m.StockMovement(
+                tenant_id=seed["t1"].id,
+                company_id=c_b.id,
+                product_id=seed["p1"].id,
+                movement_type="adjustment",
+                quantity=1,
+                quantity_before=0,
+                quantity_after=1,
+                notes="elec-only-move",
+                created_by=seed["super"].id,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    quotes = await ac.get("/api/v1/sales/quotations", headers=headers)
+    assert quotes.status_code == 200, quotes.text
+    assert all(r.get("quotation_number") != "Q-ELEC-1" for r in quotes.json()["data"])
+
+    transfers = await ac.get("/api/v1/inventory/stock-transfers", headers=headers)
+    assert transfers.status_code == 200, transfers.text
+    assert all(r.get("transfer_number") != "TR-ELEC-1" for r in transfers.json()["data"])
+
+    counts = await ac.get("/api/v1/inventory/stock-counts", headers=headers)
+    assert counts.status_code == 200, counts.text
+    assert all(r.get("count_number") != "SC-ELEC-1" for r in counts.json()["data"])
+
+    moves = await ac.get("/api/v1/inventory/movements", headers=headers)
+    assert moves.status_code == 200, moves.text
+    assert not any(r.get("notes") == "elec-only-move" for r in moves.json()["data"])

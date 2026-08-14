@@ -40,4 +40,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Operational **list** endpoints for sales docs, purchasing, expenses, COA, journals, customers/suppliers, stores, and warehouses apply `company_scope_filter`.
 - Matching **creates** stamp `company_id` for invoices, expenses, parties, POs, stores/warehouses, and catalog rows.
 - Unique keys for accounts, expense/product categories, brands, units, warehouses, products, and customer groups are company-scoped (`20260814_0097`).
-- Remaining PARTIAL: some purchasing/sales document creates (quotations/returns/GRNs), stock movement helpers, and export CSVs still need full company stamping/filtering.
+
+## Phase 3 follow-up (2026-08-14)
+
+- Sales quotations/orders/returns and purchasing PR/GRN/returns/invoices stamp `company_id` on create; GETs use `assert_record_company`.
+- Stock movements, stock transfers, and stock counts are company-filtered on list/export; creates stamp `company_id`.
+- Sales/purchase invoice CSV exports apply company scope.
+- Remaining PARTIAL: some report aggregations and legacy export routes may still be tenant-only; journal create stamping and recurring-expense helpers can go further.

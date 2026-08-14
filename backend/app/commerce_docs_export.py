@@ -106,9 +106,11 @@ async def export_sales_invoices_csv(
     claims: dict,
     status: str | None = None,
 ) -> str:
+    from app import workspace as workspace_svc
+
     stmt = (
         select(m.SalesInvoice)
-        .where(m.SalesInvoice.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.SalesInvoice, claims))
         .order_by(m.SalesInvoice.created_at.desc())
         .limit(500)
     )
@@ -141,9 +143,11 @@ async def export_purchase_invoices_csv(
     claims: dict,
     status: str | None = None,
 ) -> str:
+    from app import workspace as workspace_svc
+
     stmt = (
         select(m.PurchaseInvoice)
-        .where(m.PurchaseInvoice.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.PurchaseInvoice, claims))
         .order_by(m.PurchaseInvoice.created_at.desc())
         .limit(500)
     )
@@ -178,6 +182,7 @@ async def export_stock_transfers_csv(
     status: str | None = None,
     store_id: str | None = None,
     scope: str = "all",
+    company_id: str | None = None,
 ) -> str:
     status_n = (status or "").strip().lower() or None
     if status_n and status_n not in TRANSFER_STATUSES:
@@ -192,6 +197,7 @@ async def export_stock_transfers_csv(
         store_id=store_id,
         scope=scope or "all",
         limit=500,
+        company_id=company_id,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=STOCK_TRANSFER_EXPORT_COLUMNS)
