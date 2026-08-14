@@ -76,6 +76,7 @@ export default function Page() {
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
+  const [groupDiscountDrafts, setGroupDiscountDrafts] = useState<Record<string, string>>({});
   const [useGroupPrice, setUseGroupPrice] = useState(true);
   const [productId, setProductId] = useState('');
   const [variantId, setVariantId] = useState('');
@@ -141,6 +142,9 @@ export default function Page() {
       setStoreId(ctxStoreId);
     }
     setGroups(groupRes.data || []);
+    setGroupDiscountDrafts(
+      Object.fromEntries((groupRes.data || []).map((g: any) => [g.id, String(g.discount_percent ?? 0)]))
+    );
     if (tenantRes.data) setFmt(tenantRes.data);
     const numbering = settingsRes.data?.invoice_numbering;
     if (numbering) {
@@ -308,6 +312,35 @@ export default function Page() {
       setNewGroupDiscount('0');
       await refresh();
       setMessage('Customer group created');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setGroupActive(group: { id: string; name: string }, is_active: boolean) {
+    setError('');
+    try {
+      await api(`/customers/groups/${group.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active }),
+      });
+      await refresh();
+      setMessage(is_active ? `Group ${group.name} activated` : `Group ${group.name} deactivated`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveGroupDiscount(group: { id: string; name: string }) {
+    setError('');
+    try {
+      const pct = Number(groupDiscountDrafts[group.id] ?? 0);
+      await api(`/customers/groups/${group.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ discount_percent: pct }),
+      });
+      await refresh();
+      setMessage(`Group ${group.name} discount updated`);
     } catch (err: any) {
       setError(err.message);
     }
@@ -691,27 +724,60 @@ export default function Page() {
         <div className="card">
           <h3>Customer</h3>
           <div className="erp-stack" style={{ marginBottom: 0 }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gap: 8 }}>
           <strong>Customer groups</strong>
-          {groups.map((g) => (
-            <span key={g.id} className="muted">
-              {g.name} (−{g.discount_percent}%)
-            </span>
-          ))}
-          <input
-            value={newGroupName}
-            onChange={(e) => setNewGroupName(e.target.value)}
-            placeholder="New group name"
-          />
-          <input
-            value={newGroupDiscount}
-            onChange={(e) => setNewGroupDiscount(e.target.value)}
-            placeholder="Discount %"
-            style={{ width: 100 }}
-          />
-          <button type="button" onClick={createGroup}>
-            Add group
-          </button>
+          <p className="muted" style={{ margin: 0 }}>
+            Soft-deactivate hides a group from assign/create pickers; existing customers keep the link
+            but pricing ignores inactive groups until reassigned or reactivated.
+          </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+            {groups.map((g) => (
+              <li
+                key={g.id}
+                style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
+              >
+                <span>
+                  {g.code} — {g.name}
+                  {g.is_active === false ? ' [inactive]' : ''}
+                </span>
+                <input
+                  value={groupDiscountDrafts[g.id] ?? String(g.discount_percent ?? 0)}
+                  onChange={(e) =>
+                    setGroupDiscountDrafts((prev) => ({ ...prev, [g.id]: e.target.value }))
+                  }
+                  placeholder="Discount %"
+                  style={{ width: 90 }}
+                  title="Discount percent"
+                  aria-label={`${g.name} discount percent`}
+                />
+                <button type="button" onClick={() => saveGroupDiscount(g)}>
+                  Save discount
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGroupActive(g, g.is_active === false)}
+                >
+                  {g.is_active === false ? 'Activate' : 'Deactivate'}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <input
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder="New group name"
+            />
+            <input
+              value={newGroupDiscount}
+              onChange={(e) => setNewGroupDiscount(e.target.value)}
+              placeholder="Discount %"
+              style={{ width: 100 }}
+            />
+            <button type="button" onClick={createGroup}>
+              Add group
+            </button>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>

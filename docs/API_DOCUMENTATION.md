@@ -867,11 +867,11 @@ List supports optional `?status=active|inactive`. Party `code` is unique per ten
 ### 7.2 Customer Groups
 **List:** `GET /customers/groups` (seeds Retail / Wholesale / VIP defaults)  
 **Create:** `POST /customers/groups`  
-**Update:** `PATCH /customers/groups/{group_id}`  
-**Assign on customer:** `POST /customers` / `PATCH /customers/{customer_id}` with `customer_group_id`  
+**Update:** `PATCH /customers/groups/{group_id}` — `{ name?, discount_percent?, is_active? }` (soft-deactivate via `is_active=false`; Sales UI **Activate** / **Deactivate** + **Save discount**)  
+**Assign on customer:** `POST /customers` / `PATCH /customers/{customer_id}` with `customer_group_id` (inactive group → 400)  
 **Preview price:** `GET /products/{product_id}/price?customer_id=&variant_id=`
 
-When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is used and the customer group's `discount_percent` is applied. An explicit `unit_price` is treated as a cashier override.
+When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is used and the customer group's `discount_percent` is applied (active groups only). An explicit `unit_price` is treated as a cashier override.
 
 ### 7.3 Quotations
 **List:** `GET /sales/quotations`  
