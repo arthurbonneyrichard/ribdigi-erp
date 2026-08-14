@@ -483,7 +483,7 @@ export default function Page() {
             />
           </>
         )}
-        {(tab === 'pnl' || tab === 'stores' || tab === 'sales' || tab === 'customers' || tab === 'expenses' || tab === 'cashflow') && (
+        {(tab === 'pnl' || tab === 'stores' || tab === 'sales' || tab === 'customers' || tab === 'expenses' || tab === 'cashflow' || tab === 'salesperson') && (
           <>
             {(tab === 'pnl' || tab === 'stores' || tab === 'expenses' || tab === 'cashflow') && (
               <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
@@ -686,7 +686,7 @@ export default function Page() {
         <>
           <div className="grid">
             <div className="card">
-              <div className="muted">Total revenue</div>
+              <div className="muted">Total revenue{data.store_name ? ` · ${data.store_name}` : ''}</div>
               <div className="kpi">{data.total_revenue ?? 0}</div>
             </div>
             <div className="card">
