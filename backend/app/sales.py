@@ -624,6 +624,7 @@ async def send_sales_invoice(
         currency=currency,
         customer_name=customer.name,
         invoice=payload,
+        tenant=tenant,
     )
     if not result.sent:
         if result.mode == "disabled":

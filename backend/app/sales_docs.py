@@ -223,6 +223,7 @@ async def send_quotation(
         currency=currency,
         customer_name=customer.name,
         quotation=payload,
+        tenant=tenant,
     )
     if not result.sent:
         if result.mode == "disabled":

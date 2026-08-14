@@ -1100,10 +1100,11 @@ Go to **Settings → Templates** to customize:
 
 ### 15.4 Email Settings
 
-Go to **Settings → Email** to configure:
-- SMTP server for sending emails
-- Default sender name and email
-- Email templates for invoices, quotations, and notifications
+Go to **Company → Email / SMTP** to configure tenant SMTP (overrides process env when host + from email are set):
+- SMTP host, port, username, and password (password is stored encrypted; leave blank on save to keep the current password)
+- STARTTLS or SSL
+- Default sender name and from email
+- **Send test email to me** to verify delivery (console mode when SMTP is unset)
 
 ---
 

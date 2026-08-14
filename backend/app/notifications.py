@@ -209,10 +209,15 @@ async def create_notification(
                     out.append(user)
             return out
 
+        tenant = await db.get(m.Tenant, tenant_id)
         for admin in await _recipients_for_channel("email"):
             if admin.email:
                 await emailer.send_notification_email(
-                    to=admin.email, title=title, message=message, category=category
+                    to=admin.email,
+                    title=title,
+                    message=message,
+                    category=category,
+                    tenant=tenant,
                 )
         for admin in await _recipients_for_channel("sms"):
             phone = getattr(admin, "phone", None)
