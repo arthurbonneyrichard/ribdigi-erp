@@ -1096,6 +1096,12 @@ Authoritative MVP docs:
 - `docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/soft-delete-erasure-pack-remaining-gate.json` — Stage 277 I1
 - `docs/SOFT_DELETE_ERASURE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/soft-delete-erasure-pack-rg-blockers.json` — Stage 277 B1
 - `docs/SOFT_DELETE_ERASURE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/soft-delete-erasure-pack-rg-pointers.json` — Stage 277 P1
+- `docs/STAGE_278_EXIT_CRITERIA.md` / `docs/ADR_564_STAGE278_FREEZE.md` (`backend/tests/test_stage278_exit_h278x.py`) — Stage 278 H278x
+- `docs/STAGE_278_FIDELITY.md` (`backend/tests/test_stage278_fidelity_d1.py`) — Stage 278 D1
+- `docs/STAGE_278_PLAN.md` (`backend/tests/test_stage278_open.py`) — Stage 278 open (ADR-563)
+- `docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/data-portability-pack-remaining-gate.json` — Stage 278 I1
+- `docs/DATA_PORTABILITY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/data-portability-pack-rg-blockers.json` — Stage 278 B1
+- `docs/DATA_PORTABILITY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/data-portability-pack-rg-pointers.json` — Stage 278 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4885,4 +4891,16 @@ H277x met — `docs/STAGE_277_EXIT_CRITERIA.md`, ADR-562. Stages 1–277 frozen 
 ## Stage 277 open
 
 `docs/ADR_561_STAGE277_OPEN.md` + `docs/STAGE_277_PLAN.md` (`test_stage277_open.py`).
+
+## Stage 278 exit
+
+H278x met — `docs/STAGE_278_EXIT_CRITERIA.md`, ADR-564. Stages 1–278 frozen for Stage 278 feature scope.
+
+## Stage 278 D1 — Tenant MVP Data Portability Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_278_FIDELITY.md` (`test_stage278_fidelity_d1.py`). `DATA_PORTABILITY_PACK_*` remaining-gate index; GDPR / DSAR / go-live still MISSING.
+
+## Stage 278 open
+
+`docs/ADR_563_STAGE278_OPEN.md` + `docs/STAGE_278_PLAN.md` (`test_stage278_open.py`).
 

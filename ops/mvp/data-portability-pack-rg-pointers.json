@@ -1,0 +1,59 @@
+{
+  "id": "data-portability-pack-rg-pointers",
+  "stage": 278,
+  "pack": "P1",
+  "doc": "docs/DATA_PORTABILITY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md",
+    "data_portability": "docs/DATA_PORTABILITY_MVP.md",
+    "soft_delete_erasure_pack_remaining_gate": "docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_pack_remaining_gate": "docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md",
+    "erasure_honesty": "docs/ERASURE_HONESTY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "gdpr_complete_claimed": false,
+  "dsar_portal_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "data_portability_stage37",
+    "soft_delete_erasure_pack_remaining_gate_stage277",
+    "hard_delete_pack_remaining_gate_stage276",
+    "erasure_honesty_stage37",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "dpprp-stage37",
+      "title": "Point to Stage 37 P1 data portability",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dpprp-stage277",
+      "title": "Point to Stage 277 soft-delete erasure pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dpprp-stage276",
+      "title": "Point to Stage 276 hard delete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dpprp-stage37e1",
+      "title": "Point to Stage 37 E1 erasure honesty adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dpprp-gdpr-remaining",
+      "title": "GDPR Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 278 P1 data portability pack RG pointers packaging only. Do not claim GDPR Complete."
+}

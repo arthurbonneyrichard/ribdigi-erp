@@ -3948,6 +3948,18 @@ Every feature in every phase must meet:
 
 **Stage 277 exit (2026-08-14):** I1, B1, P1, D1, H277x met — `docs/STAGE_277_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_562_STAGE277_FREEZE.md`. Fidelity: `docs/STAGE_277_FIDELITY.md`.
 
+**Stage 278 open (2026-08-14):** Tenant MVP Data Portability Pack Remaining-Gate Index Fidelity — `docs/ADR_563_STAGE278_OPEN.md` + `docs/STAGE_278_PLAN.md` (I1 next).
+
+**Stage 278 I1 (2026-08-14):** Data portability pack remaining-gate index hub (`test_stage278_index_i1.py`).
+
+**Stage 278 B1 (2026-08-14):** Data portability pack blocker matrix (`test_stage278_blockers_b1.py`).
+
+**Stage 278 P1 (2026-08-14):** Stage 37 P1 / Stage 277 / Stage 276 / Stage 37 E1 pointers (`test_stage278_pointers_p1.py`).
+
+**Stage 278 D1 (2026-08-14):** Data Portability Pack Remaining-Gate Index fidelity sync — `docs/STAGE_278_FIDELITY.md` (`test_stage278_fidelity_d1.py`).
+
+**Stage 278 exit (2026-08-14):** I1, B1, P1, D1, H278x met — `docs/STAGE_278_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_564_STAGE278_FREEZE.md`. Fidelity: `docs/STAGE_278_FIDELITY.md`.
+
 
 
 

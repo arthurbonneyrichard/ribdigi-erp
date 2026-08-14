@@ -1,0 +1,56 @@
+{
+  "id": "data-portability-pack-remaining-gate",
+  "stage": 278,
+  "pack": "I1",
+  "doc": "docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/DATA_PORTABILITY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/DATA_PORTABILITY_PACK_RG_POINTERS_MVP.md",
+    "data_portability": "docs/DATA_PORTABILITY_MVP.md",
+    "soft_delete_erasure_pack_remaining_gate": "docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_pack_remaining_gate": "docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md",
+    "erasure_honesty": "docs/ERASURE_HONESTY_MVP.md"
+  },
+  "packaging_complete": true,
+  "gdpr_complete_claimed": false,
+  "dsar_portal_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage37_data_portability": true,
+  "distinct_from_stage277_soft_delete_erasure_pack_remaining_gate": true,
+  "distinct_from_stage276_hard_delete_pack_remaining_gate": true,
+  "distinct_from_stage37_erasure_honesty": true,
+  "steps": [
+    {
+      "id": "dppr-read-blockers",
+      "title": "Read B1 data portability pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dppr-follow-pointers",
+      "title": "Follow P1 Stage 37 P1 / Stage 277 / Stage 276 / Stage 37 E1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dppr-gdpr-missing",
+      "title": "Reaffirm GDPR / live DSAR MISSING until real DSAR portal / certification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dppr-no-packaging-as-live",
+      "title": "Do not treat Stage 37 P1 / Stage 277 / Stage 276 as GDPR Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dppr-gdpr-remaining",
+      "title": "GDPR / DSAR / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 278 I1 data portability pack remaining-gate index packaging only. Do not claim GDPR Complete."
+}

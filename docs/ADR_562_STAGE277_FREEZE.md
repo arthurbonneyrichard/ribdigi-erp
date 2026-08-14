@@ -31,3 +31,10 @@ Stage 278 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for erasure, hard-delete, paid billing, or go-live.
+
+
+## Amendment — Stage 278 opened
+
+Stage 278 opened under **ADR-563** after CONTINUE/NEXT (Tenant MVP Data Portability Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-564**. Stage 277 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 278 runner-up outline was approved and opened (ADR-563); freeze ADR-564. Do not reopen Stage 277 scope.
