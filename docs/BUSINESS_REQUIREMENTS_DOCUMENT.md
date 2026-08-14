@@ -407,7 +407,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Internal requisition for goods.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [x] Create PR with product, quantity, preferred supplier, required date, requesting department
+  - [x] Create PR with product, quantity, preferred supplier, required date, requesting department (`request_number` via tenant series `GET|PATCH /purchasing/settings` → `purchase_request_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `PREQ`; Purchasing Document numbering UI)
   - [x] PR approval workflow (Inventory Officer → Store Manager → Company Admin)
   - [x] Status tracking: Draft, Pending, Approved, Rejected, Converted to PO
   - [x] Convert approved PR to Purchase Order with one click
@@ -994,7 +994,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, purchase return, debit note, quotation, sales order, sales return, credit note numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PR/DN; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN)
+  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, quotation, sales order, sales return, credit note numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)

@@ -710,6 +710,8 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 **Approve:** `POST /purchases/requests/{request_id}/approve`  
 **Reject:** `POST /purchases/requests/{request_id}/reject`
 
+**Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_request_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `PREQ`) — not a daily `R{yymmdd}-NNN` stamp (BR-6.2 / BR-20.4).
+
 **Create Request:**
 ```json
 {
