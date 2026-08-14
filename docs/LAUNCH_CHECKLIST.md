@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 417 track opened (ADR-841: `test_stage417_open.py`, `docs/STAGE_417_PLAN.md`) — Staging GHA Honesty Pack Remaining-Gate Index; closed under ADR-842
+- [x] Staging GHA honesty pack remaining-gate hub (Stage 417 I1: `test_stage417_index_i1.py`, `docs/STAGING_GHA_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Staging GHA honesty pack blocker matrix (Stage 417 B1: `test_stage417_blockers_b1.py`, `docs/STAGING_GHA_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 416 / Stage 415 / Stage 392 / CHANGE_IMPACT pointers (Stage 417 P1: `test_stage417_pointers_p1.py`, `docs/STAGING_GHA_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 417 fidelity sync (D1: `test_stage417_fidelity_d1.py`, `docs/STAGE_417_FIDELITY.md`)
+- [x] Stage 417 exit + freeze (H417x: `test_stage417_exit_h417x.py`, `docs/STAGE_417_EXIT_CRITERIA.md`, ADR-842)
 - [x] Stage 416 track opened (ADR-839: `test_stage416_open.py`, `docs/STAGE_416_PLAN.md`) — Release Pipeline Honesty Pack Remaining-Gate Index; closed under ADR-840
 - [x] Release Pipeline honesty pack remaining-gate hub (Stage 416 I1: `test_stage416_index_i1.py`, `docs/RELEASE_PIPELINE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Release Pipeline honesty pack blocker matrix (Stage 416 B1: `test_stage416_blockers_b1.py`, `docs/RELEASE_PIPELINE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

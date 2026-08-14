@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_417_EXIT_CRITERIA.md` / `docs/ADR_842_STAGE417_FREEZE.md` (`backend/tests/test_stage417_exit_h417x.py`) — Stage 417 H417x
+- `docs/STAGE_417_FIDELITY.md` (`backend/tests/test_stage417_fidelity_d1.py`) — Stage 417 D1
+- `docs/STAGE_417_PLAN.md` (`backend/tests/test_stage417_open.py`) — Stage 417 open (ADR-841)
+- `docs/STAGING_GHA_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/staging-gha-honesty-pack-remaining-gate.json` — Stage 417 I1
+- `docs/STAGING_GHA_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/staging-gha-honesty-pack-rg-blockers.json` — Stage 417 B1
+- `docs/STAGING_GHA_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/staging-gha-honesty-pack-rg-pointers.json` — Stage 417 P1
 - `docs/STAGE_416_EXIT_CRITERIA.md` / `docs/ADR_840_STAGE416_FREEZE.md` (`backend/tests/test_stage416_exit_h416x.py`) — Stage 416 H416x
 - `docs/STAGE_416_FIDELITY.md` (`backend/tests/test_stage416_fidelity_d1.py`) — Stage 416 D1
 - `docs/STAGE_416_PLAN.md` (`backend/tests/test_stage416_open.py`) — Stage 416 open (ADR-839)
@@ -5779,6 +5785,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 417 exit
+
+H417x met — `docs/STAGE_417_EXIT_CRITERIA.md`, ADR-842. Stages 1–417 frozen for Stage 417 feature scope.
+
+## Stage 417 D1 — Tenant MVP Staging GHA Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Staging GHA honesty / go-live Completes remain MISSING. See `docs/STAGE_417_FIDELITY.md`.
+
+## Stage 417 open
+
+Opened under ADR-841; plan `docs/STAGE_417_PLAN.md`.
 
 ## Stage 416 exit
 

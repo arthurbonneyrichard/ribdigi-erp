@@ -31,3 +31,9 @@ Stage 417 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, signed-RC, Release Pipeline honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 417 opened under **ADR-841** after CONTINUE/NEXT (Tenant MVP Staging GHA Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-842**. Stage 416 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 416 runner-up outline was approved and opened (ADR-841); freeze ADR-842. Do not reopen Stage 416 scope.
