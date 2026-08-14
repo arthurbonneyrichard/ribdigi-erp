@@ -31,3 +31,10 @@ Stage 310 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for data-return portal, hot audit purge, contract-exit return live, offboarding workflow, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 310 opened under **ADR-627** after CONTINUE/NEXT (Tenant MVP Liability Indemnity Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-628**. Stage 309 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 310 runner-up outline was approved and opened (ADR-627); freeze ADR-628. Do not reopen Stage 309 scope.
+

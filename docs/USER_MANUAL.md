@@ -370,6 +370,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Data retention return pack remaining-gate index (Stage 309):** Status index is `docs/DATA_RETENTION_RETURN_PACK_REMAINING_GATE_MVP.md` → blockers `docs/DATA_RETENTION_RETURN_PACK_RG_BLOCKERS_MVP.md` → Stage 45/308/307/186 pointers `docs/DATA_RETENTION_RETURN_PACK_RG_POINTERS_MVP.md`. Data-return portal Complete and offboarding workflow Complete remain MISSING (not claimed). Prefixed `DATA_RETENTION_RETURN_PACK_*` remaining-gate docs (≠ Stage 45 T1 `DATA_RETENTION_RETURN_MVP.md`).
 
+**Liability indemnity pack remaining-gate index (Stage 310):** Status index is `docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md` → blockers `docs/LIABILITY_INDEMNITY_PACK_RG_BLOCKERS_MVP.md` → Stage 46/309/308/46W1 pointers `docs/LIABILITY_INDEMNITY_PACK_RG_POINTERS_MVP.md`. Signed liability-cap Complete and indemnity signed Complete remain MISSING (not claimed). Prefixed `LIABILITY_INDEMNITY_PACK_*` remaining-gate docs (≠ Stage 46 L1 `LIABILITY_INDEMNITY_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

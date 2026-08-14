@@ -1,0 +1,57 @@
+{
+  "id": "liability-indemnity-pack-remaining-gate",
+  "stage": 310,
+  "pack": "I1",
+  "doc": "docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LIABILITY_INDEMNITY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LIABILITY_INDEMNITY_PACK_RG_POINTERS_MVP.md",
+    "liability_indemnity": "docs/LIABILITY_INDEMNITY_MVP.md",
+    "data_retention_return_pack_remaining_gate": "docs/DATA_RETENTION_RETURN_PACK_REMAINING_GATE_MVP.md",
+    "rto_rpo_pack_remaining_gate": "docs/RTO_RPO_PACK_REMAINING_GATE_MVP.md",
+    "service_credit_warranty": "docs/SERVICE_CREDIT_WARRANTY_MVP.md"
+  },
+  "packaging_complete": true,
+  "liability_cap_claimed": false,
+  "indemnity_signed_claimed": false,
+  "legal_counsel_claimed": false,
+  "contract_liability_live": false,
+  "go_live_claimed": false,
+  "distinct_from_stage46_liability_indemnity": true,
+  "distinct_from_stage309_data_retention_return_pack_remaining_gate": true,
+  "distinct_from_stage308_rto_rpo_pack_remaining_gate": true,
+  "distinct_from_stage46_service_credit_warranty": true,
+  "steps": [
+    {
+      "id": "lipr-read-blockers",
+      "title": "Read B1 liability indemnity pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lipr-follow-pointers",
+      "title": "Follow P1 Stage 46 L1 / Stage 309 / Stage 308 / Stage 46 W1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lipr-cap-missing",
+      "title": "Reaffirm signed liability-cap / indemnity MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lipr-no-packaging-as-live",
+      "title": "Do not treat Stage 46 L1 / Stage 309 / Stage 308 as signed liability-cap Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lipr-cap-remaining",
+      "title": "Signed liability-cap / indemnity / counsel / contract liability / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 310 I1 liability indemnity pack remaining-gate index packaging only. Do not claim signed liability-cap Complete."
+}

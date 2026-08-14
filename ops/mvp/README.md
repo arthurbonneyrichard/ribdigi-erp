@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_310_EXIT_CRITERIA.md` / `docs/ADR_628_STAGE310_FREEZE.md` (`backend/tests/test_stage310_exit_h310x.py`) — Stage 310 H310x
+- `docs/STAGE_310_FIDELITY.md` (`backend/tests/test_stage310_fidelity_d1.py`) — Stage 310 D1
+- `docs/STAGE_310_PLAN.md` (`backend/tests/test_stage310_open.py`) — Stage 310 open (ADR-627)
+- `docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/liability-indemnity-pack-remaining-gate.json` — Stage 310 I1
+- `docs/LIABILITY_INDEMNITY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/liability-indemnity-pack-rg-blockers.json` — Stage 310 B1
+- `docs/LIABILITY_INDEMNITY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/liability-indemnity-pack-rg-pointers.json` — Stage 310 P1
 - `docs/STAGE_309_EXIT_CRITERIA.md` / `docs/ADR_626_STAGE309_FREEZE.md` (`backend/tests/test_stage309_exit_h309x.py`) — Stage 309 H309x
 - `docs/STAGE_309_FIDELITY.md` (`backend/tests/test_stage309_fidelity_d1.py`) — Stage 309 D1
 - `docs/STAGE_309_PLAN.md` (`backend/tests/test_stage309_open.py`) — Stage 309 open (ADR-625)
@@ -5137,6 +5143,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 310 exit
+
+H310x met — `docs/STAGE_310_EXIT_CRITERIA.md`, ADR-628. Stages 1–310 frozen for Stage 310 feature scope.
+
+## Stage 310 D1 — Tenant MVP Liability Indemnity Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_310_FIDELITY.md` (`test_stage310_fidelity_d1.py`). `LIABILITY_INDEMNITY_PACK_*` remaining-gate index; signed liability-cap / indemnity / go-live still MISSING.
+
+## Stage 310 open
+
+ADR-627 / `docs/STAGE_310_PLAN.md`.
 
 ## Stage 309 exit
 
