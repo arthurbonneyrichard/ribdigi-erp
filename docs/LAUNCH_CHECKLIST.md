@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 423 track opened (ADR-853: `test_stage423_open.py`, `docs/STAGE_423_PLAN.md`) — Grafana Honesty Pack Remaining-Gate Index; closed under ADR-854
+- [x] Grafana honesty pack remaining-gate hub (Stage 423 I1: `test_stage423_index_i1.py`, `docs/GRAFANA_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Grafana honesty pack blocker matrix (Stage 423 B1: `test_stage423_blockers_b1.py`, `docs/GRAFANA_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 422 / Stage 421 / Stage 392 / CHANGE_IMPACT pointers (Stage 423 P1: `test_stage423_pointers_p1.py`, `docs/GRAFANA_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 423 fidelity sync (D1: `test_stage423_fidelity_d1.py`, `docs/STAGE_423_FIDELITY.md`)
+- [x] Stage 423 exit + freeze (H423x: `test_stage423_exit_h423x.py`, `docs/STAGE_423_EXIT_CRITERIA.md`, ADR-854)
 - [x] Stage 422 track opened (ADR-851: `test_stage422_open.py`, `docs/STAGE_422_PLAN.md`) — Load Cert Honesty Pack Remaining-Gate Index; closed under ADR-852
 - [x] Load Cert honesty pack remaining-gate hub (Stage 422 I1: `test_stage422_index_i1.py`, `docs/LOAD_CERT_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Load Cert honesty pack blocker matrix (Stage 422 B1: `test_stage422_blockers_b1.py`, `docs/LOAD_CERT_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

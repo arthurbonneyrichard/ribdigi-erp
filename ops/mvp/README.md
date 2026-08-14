@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_423_EXIT_CRITERIA.md` / `docs/ADR_854_STAGE423_FREEZE.md` (`backend/tests/test_stage423_exit_h423x.py`) — Stage 423 H423x
+- `docs/STAGE_423_FIDELITY.md` (`backend/tests/test_stage423_fidelity_d1.py`) — Stage 423 D1
+- `docs/STAGE_423_PLAN.md` (`backend/tests/test_stage423_open.py`) — Stage 423 open (ADR-853)
+- `docs/GRAFANA_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/grafana-honesty-pack-remaining-gate.json` — Stage 423 I1
+- `docs/GRAFANA_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/grafana-honesty-pack-rg-blockers.json` — Stage 423 B1
+- `docs/GRAFANA_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/grafana-honesty-pack-rg-pointers.json` — Stage 423 P1
 - `docs/STAGE_422_EXIT_CRITERIA.md` / `docs/ADR_852_STAGE422_FREEZE.md` (`backend/tests/test_stage422_exit_h422x.py`) — Stage 422 H422x
 - `docs/STAGE_422_FIDELITY.md` (`backend/tests/test_stage422_fidelity_d1.py`) — Stage 422 D1
 - `docs/STAGE_422_PLAN.md` (`backend/tests/test_stage422_open.py`) — Stage 422 open (ADR-851)
@@ -5815,6 +5821,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 423 exit
+
+H423x met — `docs/STAGE_423_EXIT_CRITERIA.md`, ADR-854. Stages 1–423 frozen for Stage 423 feature scope.
+
+## Stage 423 D1 — Tenant MVP Grafana Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Grafana honesty / go-live Completes remain MISSING. See `docs/STAGE_423_FIDELITY.md`.
+
+## Stage 423 open
+
+Opened under ADR-853; plan `docs/STAGE_423_PLAN.md`.
 
 ## Stage 422 exit
 

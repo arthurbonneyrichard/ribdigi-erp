@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 423 Grafana Honesty Pack remaining-gate — `docs/GRAFANA_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/GRAFANA_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 28 `GRAFANA_PACK_*` ≠ grafana / go-live Completes).
 Stage 422 Load Cert Honesty Pack remaining-gate — `docs/LOAD_CERT_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/LOAD_CERT_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 28 `LOAD_CERT_PACK_*` ≠ load-cert / go-live Completes).
 Stage 421 PgBouncer Soak Honesty Pack remaining-gate — `docs/PGBOUNCER_SOAK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/PGBOUNCER_SOAK_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 29 `PGBOUNCER_SOAK_PACK_*` ≠ soak / go-live Completes).
 Stage 420 Pentest Honesty Pack remaining-gate — `docs/PENTEST_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/PENTEST_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 29 `PENTEST_PACK_*` ≠ pentest / go-live Completes).
