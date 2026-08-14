@@ -940,6 +940,12 @@ Authoritative MVP docs:
 - `docs/DEFERRED_ADR_REGISTER_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/deferred-adr-register-pack-remaining-gate.json` — Stage 251 I1
 - `docs/DEFERRED_ADR_REGISTER_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/deferred-adr-register-pack-rg-blockers.json` — Stage 251 B1
 - `docs/DEFERRED_ADR_REGISTER_PACK_RG_POINTERS_MVP.md` / `ops/mvp/deferred-adr-register-pack-rg-pointers.json` — Stage 251 P1
+- `docs/STAGE_252_EXIT_CRITERIA.md` / `docs/ADR_512_STAGE252_FREEZE.md` (`backend/tests/test_stage252_exit_h252x.py`) — Stage 252 H252x
+- `docs/STAGE_252_FIDELITY.md` (`backend/tests/test_stage252_fidelity_d1.py`) — Stage 252 D1
+- `docs/STAGE_252_PLAN.md` (`backend/tests/test_stage252_open.py`) — Stage 252 open (ADR-511)
+- `docs/OPERATOR_REMAINING_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/operator-remaining-pack-remaining-gate.json` — Stage 252 I1
+- `docs/OPERATOR_REMAINING_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/operator-remaining-pack-rg-blockers.json` — Stage 252 B1
+- `docs/OPERATOR_REMAINING_PACK_RG_POINTERS_MVP.md` / `ops/mvp/operator-remaining-pack-rg-pointers.json` — Stage 252 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4417,4 +4423,16 @@ H251x met — `docs/STAGE_251_EXIT_CRITERIA.md`, ADR-510. Stages 1–251 frozen 
 ## Stage 251 open
 
 `docs/ADR_509_STAGE251_OPEN.md` + `docs/STAGE_251_PLAN.md` (`test_stage251_open.py`).
+
+## Stage 252 exit
+
+H252x met — `docs/STAGE_252_EXIT_CRITERIA.md`, ADR-512. Stages 1–252 frozen for Stage 252 feature scope.
+
+## Stage 252 D1 — Tenant MVP Operator Remaining Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_252_FIDELITY.md` (`test_stage252_fidelity_d1.py`). `OPERATOR_REMAINING_PACK_*` remaining-gate index; live operator runs / attestation still MISSING.
+
+## Stage 252 open
+
+`docs/ADR_511_STAGE252_OPEN.md` + `docs/STAGE_252_PLAN.md` (`test_stage252_open.py`).
 

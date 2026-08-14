@@ -31,3 +31,9 @@ Stage 252 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for deferred ADR implementation, paid billing, schema-per-tenant, i18n packs, or go-live.
+
+## Amendment — Stage 252 opened
+
+Stage 252 opened under **ADR-511** after CONTINUE/NEXT (Operator Remaining Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-512**. Stage 251 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 252 runner-up outline was approved and opened (ADR-511); freeze ADR-512. Do not reopen Stage 251 scope.
