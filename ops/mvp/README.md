@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_289_EXIT_CRITERIA.md` / `docs/ADR_586_STAGE289_FREEZE.md` (`backend/tests/test_stage289_exit_h289x.py`) — Stage 289 H289x
+- `docs/STAGE_289_FIDELITY.md` (`backend/tests/test_stage289_fidelity_d1.py`) — Stage 289 D1
+- `docs/STAGE_289_PLAN.md` (`backend/tests/test_stage289_open.py`) — Stage 289 open (ADR-585)
+- `docs/CHANGE_GOVERNANCE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/change-governance-pack-remaining-gate.json` — Stage 289 I1
+- `docs/CHANGE_GOVERNANCE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/change-governance-pack-rg-blockers.json` — Stage 289 B1
+- `docs/CHANGE_GOVERNANCE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/change-governance-pack-rg-pointers.json` — Stage 289 P1
 - `docs/STAGE_288_EXIT_CRITERIA.md` / `docs/ADR_584_STAGE288_FREEZE.md` (`backend/tests/test_stage288_exit_h288x.py`) — Stage 288 H288x
 - `docs/STAGE_288_FIDELITY.md` (`backend/tests/test_stage288_fidelity_d1.py`) — Stage 288 D1
 - `docs/STAGE_288_PLAN.md` (`backend/tests/test_stage288_open.py`) — Stage 288 open (ADR-583)
@@ -5011,6 +5017,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 289 exit
+
+H289x met — `docs/STAGE_289_EXIT_CRITERIA.md`, ADR-586. Stages 1–289 frozen for Stage 289 feature scope.
+
+## Stage 289 D1 — Tenant MVP Change Governance Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_289_FIDELITY.md` (`test_stage289_fidelity_d1.py`). `CHANGE_GOVERNANCE_PACK_*` remaining-gate index; public change calendar / maintenance portal / go-live still MISSING.
+
+## Stage 289 open
+
+`docs/ADR_585_STAGE289_OPEN.md` + `docs/STAGE_289_PLAN.md` (`test_stage289_open.py`).
 
 ## Stage 288 exit
 

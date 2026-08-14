@@ -4080,6 +4080,18 @@ Every feature in every phase must meet:
 
 **Stage 288 exit (2026-08-14):** I1, B1, P1, D1, H288x met — `docs/STAGE_288_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_584_STAGE288_FREEZE.md`. Fidelity: `docs/STAGE_288_FIDELITY.md`.
 
+**Stage 289 open (2026-08-14):** Tenant MVP Change Governance Pack Remaining-Gate Index Fidelity — `docs/ADR_585_STAGE289_OPEN.md` + `docs/STAGE_289_PLAN.md` (I1 next).
+
+**Stage 289 I1 (2026-08-14):** Change governance pack remaining-gate index hub (`test_stage289_index_i1.py`).
+
+**Stage 289 B1 (2026-08-14):** Change governance pack blocker matrix (`test_stage289_blockers_b1.py`).
+
+**Stage 289 P1 (2026-08-14):** Stage 41 C1 / Stage 288 / Stage 285 / Stage 29 pointers (`test_stage289_pointers_p1.py`).
+
+**Stage 289 D1 (2026-08-14):** Change Governance Pack Remaining-Gate Index fidelity sync — `docs/STAGE_289_FIDELITY.md` (`test_stage289_fidelity_d1.py`).
+
+**Stage 289 exit (2026-08-14):** I1, B1, P1, D1, H289x met — `docs/STAGE_289_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_586_STAGE289_FREEZE.md`. Fidelity: `docs/STAGE_289_FIDELITY.md`.
+
 
 
 

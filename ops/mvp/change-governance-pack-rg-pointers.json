@@ -1,0 +1,61 @@
+{
+  "id": "change-governance-pack-rg-pointers",
+  "stage": 289,
+  "pack": "P1",
+  "doc": "docs/CHANGE_GOVERNANCE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CHANGE_GOVERNANCE_PACK_REMAINING_GATE_MVP.md",
+    "change_governance": "docs/CHANGE_GOVERNANCE_MVP.md",
+    "cyber_insurance_pack_remaining_gate": "docs/CYBER_INSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "accessibility_statement_pack_remaining_gate": "docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "change_calendar_live": false,
+  "maintenance_portal_claimed": false,
+  "customer_change_notices_live": false,
+  "ops_changelog_saas_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "change_governance_stage41",
+    "cyber_insurance_pack_remaining_gate_stage288",
+    "accessibility_statement_pack_remaining_gate_stage285",
+    "cutover_pack_stage29",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cgprp-stage41",
+      "title": "Point to Stage 41 C1 change governance",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgprp-stage288",
+      "title": "Point to Stage 288 cyber insurance pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgprp-stage285",
+      "title": "Point to Stage 285 accessibility statement pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgprp-stage29",
+      "title": "Point to Stage 29 cutover pack adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgprp-calendar-remaining",
+      "title": "Public change calendar Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 289 P1 change governance pack RG pointers packaging only. Do not claim public change calendar Complete."
+}

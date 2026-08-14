@@ -1,0 +1,66 @@
+{
+  "id": "change-governance-pack-rg-blockers",
+  "stage": 289,
+  "pack": "B1",
+  "doc": "docs/CHANGE_GOVERNANCE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CHANGE_GOVERNANCE_PACK_REMAINING_GATE_MVP.md",
+    "change_governance": "docs/CHANGE_GOVERNANCE_MVP.md"
+  },
+  "packaging_complete": true,
+  "change_calendar_live": false,
+  "maintenance_portal_claimed": false,
+  "customer_change_notices_live": false,
+  "ops_changelog_saas_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "change_calendar_live": "REMAINING",
+    "maintenance_portal": "REMAINING",
+    "customer_change_notices_live": "REMAINING",
+    "ops_changelog_saas": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage41_as_change_calendar": "NON_CLAIM",
+    "stage288_as_coi_issued": "NON_CLAIM",
+    "change_calendar_live_claimed": "false",
+    "maintenance_portal_claimed": "false",
+    "customer_change_notices_live_claimed": "false",
+    "ops_changelog_saas_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cgprb-calendar",
+      "title": "Mark public change calendar Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgprb-portal",
+      "title": "Mark live maintenance portal Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgprb-notices",
+      "title": "Mark customer change notices Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgprb-stage41-nonclaim",
+      "title": "Mark Stage 41 C1 as non-claim for public change calendar Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgprb-calendar-remaining",
+      "title": "Public change calendar Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 289 B1 change governance pack RG blocker matrix packaging only. Public change calendar Completes remain MISSING."
+}

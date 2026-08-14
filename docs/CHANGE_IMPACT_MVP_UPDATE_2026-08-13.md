@@ -592,3 +592,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 288 decision (opened after Stage 287 freeze)
 
 **Tenant MVP Cyber Insurance Pack Remaining-Gate Index Fidelity** — cyber insurance pack remaining-gate hub (I1), blocker matrix (B1), Stage 47 I1 / Stage 287 / Stage 286 / Stage 46 pointers with explicit non-claim (P1). Prefixed `CYBER_INSURANCE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 47 I1 `CYBER_INSURANCE_MVP.md`). Issued COI / live cyber insurance / broker attestation / insurance certificate / paid billing / go-live Completes remain deferred (Stage 289+; ADR-002 in force). Distinct from Stage 287 vuln disclosure pack remaining-gate, Stage 286 breach notification pack remaining-gate, and Stage 47 I1 cyber insurance packaging. Open ADR-583 / freeze ADR-584.
+
+
+## Stage 289 decision (opened after Stage 288 freeze)
+
+**Tenant MVP Change Governance Pack Remaining-Gate Index Fidelity** — change governance pack remaining-gate hub (I1), blocker matrix (B1), Stage 41 C1 / Stage 288 / Stage 285 / Stage 29 pointers with explicit non-claim (P1). Prefixed `CHANGE_GOVERNANCE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 41 C1 `CHANGE_GOVERNANCE_MVP.md`). Public change calendar / maintenance portal / customer change notices / ops changelog SaaS / paid billing / go-live Completes remain deferred (Stage 290+; ADR-002 in force). Distinct from Stage 288 cyber insurance pack remaining-gate, Stage 285 accessibility statement pack remaining-gate, and Stage 41 C1 change governance packaging. Open ADR-585 / freeze ADR-586.

@@ -28,6 +28,12 @@ Stage 289 requires CONTINUE/NEXT with a distinct product outline after this free
 
 **Runner-up outline (not opened):** Tenant MVP Change Governance Pack Remaining-Gate Index Fidelity — single index of change-governance-pack blockers (packaged Stage 41 C1 change governance materials non-claim as change-board / maintenance-window Completes) with explicit non-claim. Prefixed `CHANGE_GOVERNANCE_PACK_*` if a prior remaining-gate exists. Distinct from Stage 288 cyber insurance pack remaining-gate, Stage 285 accessibility statement pack remaining-gate, and `CHANGE_GOVERNANCE_MVP.md` packaging. Source: `CHANGE_GOVERNANCE_MVP.md`.
 
+## Amendment — Stage 289 opened
+
+Stage 289 opened under **ADR-585** after CONTINUE/NEXT (Tenant MVP Change Governance Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-586**. Stage 288 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 289 runner-up outline was approved and opened (ADR-585); freeze ADR-586. Do not reopen Stage 288 scope.
+
 ## Non-claims
 
 Packaging ≠ live Completes for issued COI, live cyber insurance, broker attestation, insurance certificate, paid billing, or go-live.

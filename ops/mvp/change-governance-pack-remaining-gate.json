@@ -1,0 +1,58 @@
+{
+  "id": "change-governance-pack-remaining-gate",
+  "stage": 289,
+  "pack": "I1",
+  "doc": "docs/CHANGE_GOVERNANCE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/CHANGE_GOVERNANCE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/CHANGE_GOVERNANCE_PACK_RG_POINTERS_MVP.md",
+    "change_governance": "docs/CHANGE_GOVERNANCE_MVP.md",
+    "cyber_insurance_pack_remaining_gate": "docs/CYBER_INSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "accessibility_statement_pack_remaining_gate": "docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md"
+  },
+  "packaging_complete": true,
+  "change_calendar_live": false,
+  "maintenance_portal_claimed": false,
+  "customer_change_notices_live": false,
+  "ops_changelog_saas_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage41_change_governance": true,
+  "distinct_from_stage288_cyber_insurance_pack_remaining_gate": true,
+  "distinct_from_stage285_accessibility_statement_pack_remaining_gate": true,
+  "distinct_from_stage29_cutover_pack": true,
+  "steps": [
+    {
+      "id": "cgpr-read-blockers",
+      "title": "Read B1 change governance pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgpr-follow-pointers",
+      "title": "Follow P1 Stage 41 C1 / Stage 288 / Stage 285 / Stage 29 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgpr-calendar-missing",
+      "title": "Reaffirm public change calendar / maintenance portal MISSING until real portals ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgpr-no-packaging-as-calendar",
+      "title": "Do not treat Stage 41 C1 / Stage 288 / Stage 285 as public change calendar Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgpr-calendar-remaining",
+      "title": "Public change calendar / maintenance portal / notices / changelog SaaS / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 289 I1 change governance pack remaining-gate index packaging only. Do not claim public change calendar Complete."
+}

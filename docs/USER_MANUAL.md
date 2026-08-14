@@ -328,6 +328,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Cyber insurance pack remaining-gate index (Stage 288):** Status index is `docs/CYBER_INSURANCE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/CYBER_INSURANCE_PACK_RG_BLOCKERS_MVP.md` → Stage 47/287/286/46 pointers `docs/CYBER_INSURANCE_PACK_RG_POINTERS_MVP.md`. Issued COI Complete and live cyber insurance Complete remain MISSING (not claimed). Prefixed `CYBER_INSURANCE_PACK_*` remaining-gate docs (≠ Stage 47 I1 `CYBER_INSURANCE_MVP.md`).
 
+**Change governance pack remaining-gate index (Stage 289):** Status index is `docs/CHANGE_GOVERNANCE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/CHANGE_GOVERNANCE_PACK_RG_BLOCKERS_MVP.md` → Stage 41/288/285/29 pointers `docs/CHANGE_GOVERNANCE_PACK_RG_POINTERS_MVP.md`. Public change calendar Complete and live maintenance portal Complete remain MISSING (not claimed). Prefixed `CHANGE_GOVERNANCE_PACK_*` remaining-gate docs (≠ Stage 41 C1 `CHANGE_GOVERNANCE_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
