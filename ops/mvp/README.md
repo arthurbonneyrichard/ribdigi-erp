@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_354_EXIT_CRITERIA.md` / `docs/ADR_716_STAGE354_FREEZE.md` (`backend/tests/test_stage354_exit_h354x.py`) — Stage 354 H354x
+- `docs/STAGE_354_FIDELITY.md` (`backend/tests/test_stage354_fidelity_d1.py`) — Stage 354 D1
+- `docs/STAGE_354_PLAN.md` (`backend/tests/test_stage354_open.py`) — Stage 354 open (ADR-715)
+- `docs/STORE_OPEN_HEALTH_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/store-open-health-pack-remaining-gate.json` — Stage 354 I1
+- `docs/STORE_OPEN_HEALTH_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/store-open-health-pack-rg-blockers.json` — Stage 354 B1
+- `docs/STORE_OPEN_HEALTH_PACK_RG_POINTERS_MVP.md` / `ops/mvp/store-open-health-pack-rg-pointers.json` — Stage 354 P1
 - `docs/STAGE_353_EXIT_CRITERIA.md` / `docs/ADR_714_STAGE353_FREEZE.md` (`backend/tests/test_stage353_exit_h353x.py`) — Stage 353 H353x
 - `docs/STAGE_353_FIDELITY.md` (`backend/tests/test_stage353_fidelity_d1.py`) — Stage 353 D1
 - `docs/STAGE_353_PLAN.md` (`backend/tests/test_stage353_open.py`) — Stage 353 open (ADR-713)
@@ -5401,6 +5407,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 354 exit
+
+H354x met — `docs/STAGE_354_EXIT_CRITERIA.md`, ADR-716. Stages 1–354 frozen for Stage 354 feature scope.
+
+## Stage 354 D1 — Tenant MVP Store Open Health Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_354_FIDELITY.md` (`test_stage354_fidelity_d1.py`). `STORE_OPEN_HEALTH_PACK_*` remaining-gate index; Offline Complete / support SLA / attestation / zero-conflict / go-live still MISSING.
+
+## Stage 354 open
+
+ADR-715 / `docs/STAGE_354_PLAN.md`.
 
 ## Stage 353 exit
 

@@ -1,0 +1,60 @@
+{
+  "id": "store-open-health-pack-rg-pointers",
+  "stage": 354,
+  "pack": "P1",
+  "doc": "docs/STORE_OPEN_HEALTH_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_OPEN_HEALTH_PACK_REMAINING_GATE_MVP.md",
+    "store_open_health": "docs/STORE_OPEN_HEALTH_MVP.md",
+    "store_close_drain_pack_remaining_gate": "docs/STORE_CLOSE_DRAIN_PACK_REMAINING_GATE_MVP.md",
+    "store_open_checklist_pack_remaining_gate": "docs/STORE_OPEN_CHECKLIST_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "zero_conflict_claimed": false,
+  "topics": [
+    "store_open_health_stage173",
+    "store_close_drain_pack_remaining_gate_stage353",
+    "store_open_checklist_pack_remaining_gate_stage340",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sohprp-stage173",
+      "title": "Point to Stage 173 store-open health packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohprp-stage353",
+      "title": "Point to Stage 353 store close drain pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohprp-stage340",
+      "title": "Point to Stage 340 store open checklist pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohprp-checklist-remaining",
+      "title": "Live store-open health Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 354 P1 store open health pack RG pointers packaging only. Do not claim live store-open health Complete."
+}

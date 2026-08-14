@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 354 track opened (ADR-715: `test_stage354_open.py`, `docs/STAGE_354_PLAN.md`) — Store Open Health Pack Remaining-Gate Index; closed under ADR-716
+- [x] Store open health pack remaining-gate hub (Stage 354 I1: `test_stage354_index_i1.py`, `docs/STORE_OPEN_HEALTH_PACK_REMAINING_GATE_MVP.md`)
+- [x] Store open health pack blocker matrix (Stage 354 B1: `test_stage354_blockers_b1.py`, `docs/STORE_OPEN_HEALTH_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 173 / Stage 353 / Stage 340 / Stage 329 pointers (Stage 354 P1: `test_stage354_pointers_p1.py`, `docs/STORE_OPEN_HEALTH_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 354 fidelity sync (D1: `test_stage354_fidelity_d1.py`, `docs/STAGE_354_FIDELITY.md`)
+- [x] Stage 354 exit + freeze (H354x: `test_stage354_exit_h354x.py`, `docs/STAGE_354_EXIT_CRITERIA.md`, ADR-716)
 - [x] Stage 353 track opened (ADR-713: `test_stage353_open.py`, `docs/STAGE_353_PLAN.md`) — Store Close Drain Pack Remaining-Gate Index; closed under ADR-714
 - [x] Store close drain pack remaining-gate hub (Stage 353 I1: `test_stage353_index_i1.py`, `docs/STORE_CLOSE_DRAIN_PACK_REMAINING_GATE_MVP.md`)
 - [x] Store close drain pack blocker matrix (Stage 353 B1: `test_stage353_blockers_b1.py`, `docs/STORE_CLOSE_DRAIN_PACK_RG_BLOCKERS_MVP.md`)

@@ -31,3 +31,10 @@ Stage 354 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for store-close drain, Offline Complete, support SLA, attestation, empty queue, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 354 opened under **ADR-715** after CONTINUE/NEXT (Tenant MVP Store Open Health Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-716**. Stage 353 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 354 runner-up outline was approved and opened (ADR-715); freeze ADR-716. Do not reopen Stage 353 scope.
+
