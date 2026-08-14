@@ -31,3 +31,10 @@ Stage 377 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline price-version, cached-sale-price-retained as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 377 opened under **ADR-761** after CONTINUE/NEXT (Tenant MVP Offline Catalog TTL Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-762**. Stage 376 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 376 runner-up outline was approved and opened (ADR-761); freeze ADR-762. Do not reopen Stage 376 scope.
+

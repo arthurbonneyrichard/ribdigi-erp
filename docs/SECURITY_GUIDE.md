@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 377 open** | Offline Catalog TTL Pack Remaining-Gate Index — `docs/STAGE_377_PLAN.md`, ADR-761 (`test_stage377_open.py`) |
+| **Stage 377 I1** | Offline catalog TTL pack remaining-gate index hub (`test_stage377_index_i1.py`) |
+| **Stage 377 B1** | Offline catalog TTL pack blocker matrix (`test_stage377_blockers_b1.py`) |
+| **Stage 377 P1** | Stage 376 / Stage 164 / Stage 329 / CHANGE_IMPACT pointers (`test_stage377_pointers_p1.py`) |
+| **Stage 377 D1** | Offline catalog TTL pack remaining-gate fidelity — `docs/STAGE_377_FIDELITY.md` (`test_stage377_fidelity_d1.py`) |
+| **Stage 377 H377x** | Exit + freeze — `docs/STAGE_377_EXIT_CRITERIA.md`, ADR-762 (`test_stage377_exit_h377x.py`); Stages 1–377 frozen |
 | **Stage 376 open** | Offline Price Version Pack Remaining-Gate Index — `docs/STAGE_376_PLAN.md`, ADR-759 (`test_stage376_open.py`) |
 | **Stage 376 I1** | Offline price version pack remaining-gate index hub (`test_stage376_index_i1.py`) |
 | **Stage 376 B1** | Offline price version pack blocker matrix (`test_stage376_blockers_b1.py`) |
