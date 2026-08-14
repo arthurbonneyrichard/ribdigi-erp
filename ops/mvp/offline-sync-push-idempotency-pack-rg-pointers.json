@@ -1,0 +1,67 @@
+{
+  "id": "offline-sync-push-idempotency-pack-rg-pointers",
+  "stage": 400,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_conflict_ux_pack": "docs/OFFLINE_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md",
+    "offline_offline_status_pack": "docs/OFFLINE_OFFLINE_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_sync_push_idempotency_complete_claimed": false,
+  "sync_push_idempotency_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_offline_sync_push_idempotency": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_conflict_ux_pack_remaining_gate_stage399": "docs/OFFLINE_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md",
+    "offline_offline_status_pack_remaining_gate_stage398": "docs/OFFLINE_OFFLINE_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_sync_push_idempotency / sync_push_idempotency / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "ospiprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 offline sync push/idempotency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospiprp-stage399",
+      "title": "Point to Stage 399 offline conflict UX pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospiprp-stage398",
+      "title": "Point to Stage 398 offline OFFLINE status pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospiprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospiprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospiprp-checklist-remaining",
+      "title": "Offline Complete / offline sync-push-idempotency Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 400 P1 offline sync push/idempotency pack RG pointers packaging only."
+}

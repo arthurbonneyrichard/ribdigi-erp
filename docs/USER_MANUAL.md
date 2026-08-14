@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 400 Offline Sync Push Idempotency Pack remaining-gate — `docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_REMAINING_GATE_MVP.md` / `docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_RG_BLOCKERS_MVP.md` (packaging only; sync push/idempotency ≠ Offline Complete).
 Stage 399 Offline Conflict UX Pack remaining-gate — `docs/OFFLINE_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md` / `docs/OFFLINE_CONFLICT_UX_PACK_RG_BLOCKERS_MVP.md` (packaging only; conflict UX ≠ Offline Complete).
 Stage 398 Offline Offline Status Pack remaining-gate — `docs/OFFLINE_OFFLINE_STATUS_PACK_REMAINING_GATE_MVP.md` / `docs/OFFLINE_OFFLINE_STATUS_PACK_RG_BLOCKERS_MVP.md` (packaging only; OFFLINE status ≠ Offline Complete).
 Stage 397 Offline Online Status Pack remaining-gate — `docs/OFFLINE_ONLINE_STATUS_PACK_REMAINING_GATE_MVP.md` / `docs/OFFLINE_ONLINE_STATUS_PACK_RG_BLOCKERS_MVP.md` (packaging only; ONLINE status ≠ Offline Complete).

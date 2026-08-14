@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 400 track opened (ADR-807: `test_stage400_open.py`, `docs/STAGE_400_PLAN.md`) — Offline Sync Push Idempotency Pack Remaining-Gate Index; closed under ADR-808
+- [x] Offline sync push/idempotency pack remaining-gate hub (Stage 400 I1: `test_stage400_index_i1.py`, `docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline sync push/idempotency pack blocker matrix (Stage 400 B1: `test_stage400_blockers_b1.py`, `docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 399 / Stage 398 / Stage 392 / CHANGE_IMPACT pointers (Stage 400 P1: `test_stage400_pointers_p1.py`, `docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 400 fidelity sync (D1: `test_stage400_fidelity_d1.py`, `docs/STAGE_400_FIDELITY.md`)
+- [x] Stage 400 exit + freeze (H400x: `test_stage400_exit_h400x.py`, `docs/STAGE_400_EXIT_CRITERIA.md`, ADR-808)
 - [x] Stage 399 track opened (ADR-805: `test_stage399_open.py`, `docs/STAGE_399_PLAN.md`) — Offline Conflict UX Pack Remaining-Gate Index; closed under ADR-806
 - [x] Offline conflict UX pack remaining-gate hub (Stage 399 I1: `test_stage399_index_i1.py`, `docs/OFFLINE_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline conflict UX pack blocker matrix (Stage 399 B1: `test_stage399_blockers_b1.py`, `docs/OFFLINE_CONFLICT_UX_PACK_RG_BLOCKERS_MVP.md`)
