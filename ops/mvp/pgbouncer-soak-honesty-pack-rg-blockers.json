@@ -1,0 +1,77 @@
+{
+  "id": "pgbouncer-soak-honesty-pack-rg-blockers",
+  "stage": 421,
+  "pack": "B1",
+  "doc": "docs/PGBOUNCER_SOAK_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PGBOUNCER_SOAK_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "pgbouncer_soak_pack_remaining_gate": "docs/PGBOUNCER_SOAK_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "pgbouncer_soak_honesty_complete_claimed": false,
+  "pgbouncer_soak_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "pgbouncer_soak_honesty_complete_claimed": "REMAINING",
+    "pgbouncer_soak_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_pgbouncer_soak_honesty": "NON_CLAIM",
+    "stage29_pgbouncer_soak_pack_as_soak_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "pgbouncer_soak_honesty_complete_claimed_flag": "false",
+    "pgbouncer_soak_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "pgsohrb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pgsohrb-honesty",
+      "title": "Mark PgBouncer Soak honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pgsohrb-as-golive",
+      "title": "Mark PgBouncer soak as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pgsohrb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pgsohrb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pgsohrb-stage29-nonclaim",
+      "title": "Mark Stage 29 PGBOUNCER_SOAK_PACK as non-claim for soak Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pgsohrb-checklist-remaining",
+      "title": "Offline Complete / PgBouncer soak / PgBouncer Soak honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 421 B1 PgBouncer Soak Honesty Pack RG blocker matrix packaging only."
+}

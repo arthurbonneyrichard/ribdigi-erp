@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 421 D1 (2026-08-14):** PgBouncer Soak Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_421_FIDELITY.md` (`test_stage421_fidelity_d1.py`). Open ADR: `docs/ADR_849_STAGE421_OPEN.md`; plan `docs/STAGE_421_PLAN.md`.
+
+**Stage 421 exit (2026-08-14):** I1, B1, P1, D1, H421x met — `docs/STAGE_421_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_850_STAGE421_FREEZE.md`. Fidelity: `docs/STAGE_421_FIDELITY.md`.
+
 **Stage 420 D1 (2026-08-14):** Pentest Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_420_FIDELITY.md` (`test_stage420_fidelity_d1.py`). Open ADR: `docs/ADR_847_STAGE420_OPEN.md`; plan `docs/STAGE_420_PLAN.md`.
 
 **Stage 420 exit (2026-08-14):** I1, B1, P1, D1, H420x met — `docs/STAGE_420_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_848_STAGE420_FREEZE.md`. Fidelity: `docs/STAGE_420_FIDELITY.md`.

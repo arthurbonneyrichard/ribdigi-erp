@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 421 PgBouncer Soak Honesty Pack remaining-gate — `docs/PGBOUNCER_SOAK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/PGBOUNCER_SOAK_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 29 `PGBOUNCER_SOAK_PACK_*` ≠ soak / go-live Completes).
 Stage 420 Pentest Honesty Pack remaining-gate — `docs/PENTEST_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/PENTEST_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 29 `PENTEST_PACK_*` ≠ pentest / go-live Completes).
 Stage 419 TLS Ingress Honesty Pack remaining-gate — `docs/TLS_INGRESS_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/TLS_INGRESS_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 29 `TLS_INGRESS_PACK_*` ≠ TLS / go-live Completes).
 Stage 418 Cutover Honesty Pack remaining-gate — `docs/CUTOVER_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/CUTOVER_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 29 `CUTOVER_PACK_*` ≠ cutover / go-live Completes).

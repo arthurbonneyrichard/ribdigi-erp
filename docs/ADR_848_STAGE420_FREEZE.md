@@ -31,3 +31,9 @@ Stage 421 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, pentest, Pentest honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 421 opened under **ADR-849** after CONTINUE/NEXT (Tenant MVP PgBouncer Soak Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-850**. Stage 420 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 420 runner-up outline was approved and opened (ADR-849); freeze ADR-850. Do not reopen Stage 420 scope.
