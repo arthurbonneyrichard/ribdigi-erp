@@ -1317,12 +1317,14 @@ async def inventory_movements(
     warehouse_id: str | None = None,
     store_id: str | None = None,
     movement_type: str | None = None,
+    created_by: str | None = None,
     limit: int = 200,
 ) -> dict:
     """Stock movement history (BR-14.2 / BR-5.3).
 
-    Optional ``warehouse_id`` / ``store_id`` (via warehouse store link) and
-    ``movement_type`` filters.
+    Optional ``warehouse_id`` / ``store_id`` (via warehouse store link),
+    ``movement_type``, and ``created_by`` filters. Each row includes product
+    sku/name and acting user attribution (immutable audit trail).
     """
     (
         warehouse_id,
@@ -1335,6 +1337,8 @@ async def inventory_movements(
     )
     if movement_type:
         movement_type = movement_type.strip().lower()
+    if created_by:
+        created_by = created_by.strip() or None
 
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
     if product_id:
@@ -1345,6 +1349,8 @@ async def inventory_movements(
         stmt = stmt.where(m.StockMovement.created_at <= to_date)
     if movement_type:
         stmt = stmt.where(m.StockMovement.movement_type == movement_type)
+    if created_by:
+        stmt = stmt.where(m.StockMovement.created_by == created_by)
     if warehouse_ids is not None:
         if not warehouse_ids:
             stmt = stmt.where(m.StockMovement.id == None)  # noqa: E711
@@ -1352,17 +1358,46 @@ async def inventory_movements(
             stmt = stmt.where(m.StockMovement.warehouse_id.in_(warehouse_ids))
     stmt = stmt.order_by(m.StockMovement.created_at.desc()).limit(limit)
     rows = (await db.execute(stmt)).scalars().all()
-    return {
-        "count": len(rows),
-        "warehouse_id": warehouse_id,
-        "warehouse_name": warehouse_name,
-        "store_id": store_id,
-        "store_name": store_name,
-        "movement_type": movement_type,
-        "movements": [
+
+    product_ids = {r.product_id for r in rows if r.product_id}
+    user_ids = {r.created_by for r in rows if r.created_by}
+    products_by_id: dict[str, m.Product] = {}
+    users_by_id: dict[str, m.User] = {}
+    if product_ids:
+        products_by_id = {
+            p.id: p
+            for p in (
+                await db.execute(
+                    select(m.Product).where(
+                        m.Product.tenant_id == tenant_id,
+                        m.Product.id.in_(product_ids),
+                    )
+                )
+            ).scalars().all()
+        }
+    if user_ids:
+        users_by_id = {
+            u.id: u
+            for u in (
+                await db.execute(
+                    select(m.User).where(
+                        m.User.tenant_id == tenant_id,
+                        m.User.id.in_(user_ids),
+                    )
+                )
+            ).scalars().all()
+        }
+
+    movements = []
+    for r in rows:
+        product = products_by_id.get(r.product_id)
+        user = users_by_id.get(r.created_by) if r.created_by else None
+        movements.append(
             {
                 "id": r.id,
                 "product_id": r.product_id,
+                "product_sku": product.sku if product else None,
+                "product_name": product.name if product else None,
                 "warehouse_id": r.warehouse_id,
                 "movement_type": r.movement_type,
                 "quantity": float(r.quantity),
@@ -1370,10 +1405,23 @@ async def inventory_movements(
                 "quantity_after": float(r.quantity_after),
                 "reference_type": r.reference_type,
                 "reference_id": r.reference_id,
+                "notes": r.notes,
+                "created_by": r.created_by,
+                "created_by_name": user.full_name if user else None,
+                "created_by_email": user.email if user else None,
                 "created_at": r.created_at,
             }
-            for r in rows
-        ],
+        )
+
+    return {
+        "count": len(movements),
+        "warehouse_id": warehouse_id,
+        "warehouse_name": warehouse_name,
+        "store_id": store_id,
+        "store_name": store_name,
+        "movement_type": movement_type,
+        "created_by": created_by,
+        "movements": movements,
     }
 
 

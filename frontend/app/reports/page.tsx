@@ -1112,9 +1112,11 @@ export default function Page() {
               <thead>
                 <tr>
                   <th>When</th>
+                  <th>Product</th>
                   <th>Type</th>
                   <th>Qty</th>
                   <th>Before → after</th>
+                  <th>User</th>
                   <th>Ref</th>
                 </tr>
               </thead>
@@ -1122,11 +1124,19 @@ export default function Page() {
                 {(data.movements?.movements || []).slice(0, 25).map((mv: any) => (
                   <tr key={mv.id}>
                     <td>{mv.created_at ? String(mv.created_at).slice(0, 19) : '—'}</td>
+                    <td>
+                      {mv.product_sku || mv.product_name
+                        ? `${mv.product_sku || ''}${mv.product_name ? ` ${mv.product_name}` : ''}`.trim()
+                        : mv.product_id
+                          ? String(mv.product_id).slice(0, 8)
+                          : '—'}
+                    </td>
                     <td>{mv.movement_type}</td>
                     <td>{mv.quantity}</td>
                     <td>
                       {mv.quantity_before} → {mv.quantity_after}
                     </td>
+                    <td>{mv.created_by_name || mv.created_by_email || '—'}</td>
                     <td>
                       {mv.reference_type || '—'}
                       {mv.reference_id ? ` ${String(mv.reference_id).slice(0, 8)}…` : ''}
@@ -1135,7 +1145,7 @@ export default function Page() {
                 ))}
                 {!data.movements?.movements?.length && (
                   <tr>
-                    <td colSpan={5} className="muted">
+                    <td colSpan={7} className="muted">
                       No stock movements
                     </td>
                   </tr>
