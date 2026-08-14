@@ -31,3 +31,9 @@ Stage 422 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, PgBouncer soak, PgBouncer Soak honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 422 opened under **ADR-851** after CONTINUE/NEXT (Tenant MVP Load Cert Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-852**. Stage 421 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 421 runner-up outline was approved and opened (ADR-851); freeze ADR-852. Do not reopen Stage 421 scope.
