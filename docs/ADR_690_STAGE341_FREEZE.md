@@ -31,3 +31,9 @@ Stage 342 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for store close checklist, Offline Complete, live DR, attestation, fabricated store-closed green, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 342 opened under **ADR-691** after CONTINUE/NEXT (Tenant MVP Shift Handover Checklist Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-692**. Stage 341 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 342 runner-up outline was approved and opened (ADR-691); freeze ADR-692. Do not reopen Stage 341 scope.

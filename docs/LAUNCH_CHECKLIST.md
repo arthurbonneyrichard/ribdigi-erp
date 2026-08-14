@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 342 track opened (ADR-691: `test_stage342_open.py`, `docs/STAGE_342_PLAN.md`) — Shift Handover Checklist Pack Remaining-Gate Index; closed under ADR-692
+- [x] Shift handover checklist pack remaining-gate hub (Stage 342 I1: `test_stage342_index_i1.py`, `docs/SHIFT_HANDOVER_CHECKLIST_PACK_REMAINING_GATE_MVP.md`)
+- [x] Shift handover checklist pack blocker matrix (Stage 342 B1: `test_stage342_blockers_b1.py`, `docs/SHIFT_HANDOVER_CHECKLIST_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 175 / Stage 341 / Stage 340 / Stage 329 pointers (Stage 342 P1: `test_stage342_pointers_p1.py`, `docs/SHIFT_HANDOVER_CHECKLIST_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 342 fidelity sync (D1: `test_stage342_fidelity_d1.py`, `docs/STAGE_342_FIDELITY.md`)
+- [x] Stage 342 exit + freeze (H342x: `test_stage342_exit_h342x.py`, `docs/STAGE_342_EXIT_CRITERIA.md`, ADR-692)
 - [x] Stage 341 track opened (ADR-689: `test_stage341_open.py`, `docs/STAGE_341_PLAN.md`) — Store Close Checklist Pack Remaining-Gate Index; closed under ADR-690
 - [x] Store close checklist pack remaining-gate hub (Stage 341 I1: `test_stage341_index_i1.py`, `docs/STORE_CLOSE_CHECKLIST_PACK_REMAINING_GATE_MVP.md`)
 - [x] Store close checklist pack blocker matrix (Stage 341 B1: `test_stage341_blockers_b1.py`, `docs/STORE_CLOSE_CHECKLIST_PACK_RG_BLOCKERS_MVP.md`)

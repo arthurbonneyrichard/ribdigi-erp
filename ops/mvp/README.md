@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_342_EXIT_CRITERIA.md` / `docs/ADR_692_STAGE342_FREEZE.md` (`backend/tests/test_stage342_exit_h342x.py`) — Stage 342 H342x
+- `docs/STAGE_342_FIDELITY.md` (`backend/tests/test_stage342_fidelity_d1.py`) — Stage 342 D1
+- `docs/STAGE_342_PLAN.md` (`backend/tests/test_stage342_open.py`) — Stage 342 open (ADR-691)
+- `docs/SHIFT_HANDOVER_CHECKLIST_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/shift-handover-checklist-pack-remaining-gate.json` — Stage 342 I1
+- `docs/SHIFT_HANDOVER_CHECKLIST_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/shift-handover-checklist-pack-rg-blockers.json` — Stage 342 B1
+- `docs/SHIFT_HANDOVER_CHECKLIST_PACK_RG_POINTERS_MVP.md` / `ops/mvp/shift-handover-checklist-pack-rg-pointers.json` — Stage 342 P1
 - `docs/STAGE_341_EXIT_CRITERIA.md` / `docs/ADR_690_STAGE341_FREEZE.md` (`backend/tests/test_stage341_exit_h341x.py`) — Stage 341 H341x
 - `docs/STAGE_341_FIDELITY.md` (`backend/tests/test_stage341_fidelity_d1.py`) — Stage 341 D1
 - `docs/STAGE_341_PLAN.md` (`backend/tests/test_stage341_open.py`) — Stage 341 open (ADR-689)
@@ -5329,6 +5335,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 342 exit
+
+H342x met — `docs/STAGE_342_EXIT_CRITERIA.md`, ADR-692. Stages 1–342 frozen for Stage 342 feature scope.
+
+## Stage 342 D1 — Tenant MVP Shift Handover Checklist Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_342_FIDELITY.md` (`test_stage342_fidelity_d1.py`). `SHIFT_HANDOVER_CHECKLIST_PACK_*` remaining-gate index; Offline Complete / live DR / attestation / fabricated shift-handed green / go-live still MISSING.
+
+## Stage 342 open
+
+ADR-691 / `docs/STAGE_342_PLAN.md`.
 
 ## Stage 341 exit
 
