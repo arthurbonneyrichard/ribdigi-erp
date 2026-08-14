@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_386_EXIT_CRITERIA.md` / `docs/ADR_780_STAGE386_FREEZE.md` (`backend/tests/test_stage386_exit_h386x.py`) — Stage 386 H386x
+- `docs/STAGE_386_FIDELITY.md` (`backend/tests/test_stage386_fidelity_d1.py`) — Stage 386 D1
+- `docs/STAGE_386_PLAN.md` (`backend/tests/test_stage386_open.py`) — Stage 386 open (ADR-779)
+- `docs/OFFLINE_HOLD_EXPIRY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-hold-expiry-pack-remaining-gate.json` — Stage 386 I1
+- `docs/OFFLINE_HOLD_EXPIRY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-hold-expiry-pack-rg-blockers.json` — Stage 386 B1
+- `docs/OFFLINE_HOLD_EXPIRY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-hold-expiry-pack-rg-pointers.json` — Stage 386 P1
 - `docs/STAGE_385_EXIT_CRITERIA.md` / `docs/ADR_778_STAGE385_FREEZE.md` (`backend/tests/test_stage385_exit_h385x.py`) — Stage 385 H385x
 - `docs/STAGE_385_FIDELITY.md` (`backend/tests/test_stage385_fidelity_d1.py`) — Stage 385 D1
 - `docs/STAGE_385_PLAN.md` (`backend/tests/test_stage385_open.py`) — Stage 385 open (ADR-777)
@@ -5593,6 +5599,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 386 exit
+
+H386x met — `docs/STAGE_386_EXIT_CRITERIA.md`, ADR-780. Stages 1–386 frozen for Stage 386 feature scope.
+
+## Stage 386 D1 — Tenant MVP Offline Hold Expiry Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_386_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 386 open
+
+Opened under ADR-779; plan `docs/STAGE_386_PLAN.md`.
 
 ## Stage 385 exit
 

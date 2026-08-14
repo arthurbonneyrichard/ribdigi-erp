@@ -31,3 +31,10 @@ Stage 386 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline queue-UI, sync-queue-UI as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 386 opened under **ADR-779** after CONTINUE/NEXT (Tenant MVP Offline Hold Expiry Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-780**. Stage 385 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 385 runner-up outline was approved and opened (ADR-779); freeze ADR-780. Do not reopen Stage 385 scope.
+

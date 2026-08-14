@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 386 track opened (ADR-779: `test_stage386_open.py`, `docs/STAGE_386_PLAN.md`) — Offline Hold Expiry Pack Remaining-Gate Index; closed under ADR-780
+- [x] Offline hold expiry pack remaining-gate hub (Stage 386 I1: `test_stage386_index_i1.py`, `docs/OFFLINE_HOLD_EXPIRY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline hold expiry pack blocker matrix (Stage 386 B1: `test_stage386_blockers_b1.py`, `docs/OFFLINE_HOLD_EXPIRY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 385 / Stage 378 / Stage 167 / CHANGE_IMPACT pointers (Stage 386 P1: `test_stage386_pointers_p1.py`, `docs/OFFLINE_HOLD_EXPIRY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 386 fidelity sync (D1: `test_stage386_fidelity_d1.py`, `docs/STAGE_386_FIDELITY.md`)
+- [x] Stage 386 exit + freeze (H386x: `test_stage386_exit_h386x.py`, `docs/STAGE_386_EXIT_CRITERIA.md`, ADR-780)
 - [x] Stage 385 track opened (ADR-777: `test_stage385_open.py`, `docs/STAGE_385_PLAN.md`) — Offline Queue UI Pack Remaining-Gate Index; closed under ADR-778
 - [x] Offline queue UI pack remaining-gate hub (Stage 385 I1: `test_stage385_index_i1.py`, `docs/OFFLINE_QUEUE_UI_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline queue UI pack blocker matrix (Stage 385 B1: `test_stage385_blockers_b1.py`, `docs/OFFLINE_QUEUE_UI_PACK_RG_BLOCKERS_MVP.md`)

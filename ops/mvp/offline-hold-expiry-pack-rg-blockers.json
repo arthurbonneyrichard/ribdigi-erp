@@ -1,0 +1,69 @@
+{
+  "id": "offline-hold-expiry-pack-rg-blockers",
+  "stage": 386,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_HOLD_EXPIRY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_HOLD_EXPIRY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage167_fidelity": "docs/STAGE_167_FIDELITY.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_hold_expiry_complete_claimed": false,
+  "hold_expiry_cleanup_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_hold_expiry_complete_claimed": "REMAINING",
+    "hold_expiry_cleanup_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage167_as_offline_hold_expiry": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_hold_expiry_complete_claimed_flag": "false",
+    "hold_expiry_cleanup_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "oheprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprb-hold-expiry",
+      "title": "Mark offline hold-expiry Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprb-cleanup",
+      "title": "Mark hold-expiry cleanup Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprb-stage167-nonclaim",
+      "title": "Mark Stage 167 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprb-checklist-remaining",
+      "title": "Offline Complete / offline hold-expiry Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 386 B1 offline hold expiry pack RG blocker matrix packaging only."
+}
