@@ -31,3 +31,9 @@ Stage 363 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live purchase-stock, E2E smoke, demo tenant, PO Kanban, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 363 opened under **ADR-733** after CONTINUE/NEXT (Tenant MVP E2E Users RBAC Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-734**. Stage 362 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 363 runner-up outline was approved and opened (ADR-733); freeze ADR-734. Do not reopen Stage 362 scope.

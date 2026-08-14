@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_363_EXIT_CRITERIA.md` / `docs/ADR_734_STAGE363_FREEZE.md` (`backend/tests/test_stage363_exit_h363x.py`) — Stage 363 H363x
+- `docs/STAGE_363_FIDELITY.md` (`backend/tests/test_stage363_fidelity_d1.py`) — Stage 363 D1
+- `docs/STAGE_363_PLAN.md` (`backend/tests/test_stage363_open.py`) — Stage 363 open (ADR-733)
+- `docs/E2E_USERS_RBAC_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/e2e-users-rbac-pack-remaining-gate.json` — Stage 363 I1
+- `docs/E2E_USERS_RBAC_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/e2e-users-rbac-pack-rg-blockers.json` — Stage 363 B1
+- `docs/E2E_USERS_RBAC_PACK_RG_POINTERS_MVP.md` / `ops/mvp/e2e-users-rbac-pack-rg-pointers.json` — Stage 363 P1
 - `docs/STAGE_362_EXIT_CRITERIA.md` / `docs/ADR_732_STAGE362_FREEZE.md` (`backend/tests/test_stage362_exit_h362x.py`) — Stage 362 H362x
 - `docs/STAGE_362_FIDELITY.md` (`backend/tests/test_stage362_fidelity_d1.py`) — Stage 362 D1
 - `docs/STAGE_362_PLAN.md` (`backend/tests/test_stage362_open.py`) — Stage 362 open (ADR-731)
@@ -5455,6 +5461,16 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 363 exit
+
+H363x met — `docs/STAGE_363_EXIT_CRITERIA.md`, ADR-734. Stages 1–363 frozen for Stage 363 feature scope.
+
+## Stage 363 D1 — Tenant MVP E2E Users RBAC Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_363_FIDELITY.md` (`test_stage363_fidelity_d1.py`). `E2E_USERS_RBAC_PACK_*` remaining-gate index; live user provisioning / E2E smoke / demo tenant / store membership / go-live still MISSING.
+
+## Stage 363 open
 
 ## Stage 362 exit
 
