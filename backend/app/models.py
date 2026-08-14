@@ -949,7 +949,7 @@ class PurchaseRequest(Base):
     """Internal requisition; approved requests convert to draft purchase orders."""
 
     __tablename__ = "purchase_requests"
-    __table_args__ = (UniqueConstraint("tenant_id", "request_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "request_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1159,7 +1159,7 @@ class SalesInvoiceItem(Base):
 
 class CustomerPayment(Base):
     __tablename__ = "customer_payments"
-    __table_args__ = (UniqueConstraint("tenant_id", "payment_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "payment_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1184,7 +1184,7 @@ class CustomerPayment(Base):
 
 class SupplierPayment(Base):
     __tablename__ = "supplier_payments"
-    __table_args__ = (UniqueConstraint("tenant_id", "payment_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "payment_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1248,7 +1248,7 @@ class PosSession(Base):
     """Cashier shift / POS session with cash reconciliation."""
 
     __tablename__ = "pos_sessions"
-    __table_args__ = (UniqueConstraint("tenant_id", "session_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "session_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1291,7 +1291,7 @@ class PosPayment(Base):
 
 class JournalEntry(Base):
     __tablename__ = "journal_entries"
-    __table_args__ = (UniqueConstraint("tenant_id", "entry_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "entry_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1329,7 +1329,7 @@ class JournalEntryLine(Base):
 
 class StockTransfer(Base):
     __tablename__ = "stock_transfers"
-    __table_args__ = (UniqueConstraint("tenant_id", "transfer_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "transfer_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1366,7 +1366,7 @@ class StockCount(Base):
     """Physical inventory count session for a warehouse."""
 
     __tablename__ = "stock_counts"
-    __table_args__ = (UniqueConstraint("tenant_id", "count_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "count_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)

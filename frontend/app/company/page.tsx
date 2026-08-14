@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 import { formatDate } from '../../lib/format';
 
 export default function Page() {
@@ -105,10 +105,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenantId = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/tenants/me/logo`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) {
         setLogoPreview(null);
@@ -362,10 +359,7 @@ export default function Page() {
               form.append('file', file);
               const res = await fetch(`${apiBase}/tenants/me/logo`, {
                 method: 'POST',
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
-                },
+                headers: authHeaders(),
                 body: form,
               });
               const body = await res.json().catch(() => ({}));
@@ -742,10 +736,7 @@ export default function Page() {
               const url = `${apiBase}/tenants/me/print-templates/preview?kind=invoice&format=html&template=${tpl}`;
               const w = window.open('', '_blank');
               fetch(url, {
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  ...(ten ? { 'X-Tenant-ID': ten } : {}),
-                },
+                headers: authHeaders(),
               })
                 .then(async (res) => {
                   if (!res.ok) throw new Error('Invoice preview failed');
@@ -775,10 +766,7 @@ export default function Page() {
               const url = `${apiBase}/tenants/me/print-templates/preview?kind=receipt&format=html&template=${tpl}`;
               const w = window.open('', '_blank');
               fetch(url, {
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  ...(ten ? { 'X-Tenant-ID': ten } : {}),
-                },
+                headers: authHeaders(),
               })
                 .then(async (res) => {
                   if (!res.ok) throw new Error('Receipt preview failed');
@@ -1530,10 +1518,7 @@ export default function Page() {
                       ? '?is_active=false'
                       : '';
                 const res = await fetch(`${apiBase}/branches/export${qs}`, {
-                  headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                  },
+                  headers: authHeaders(),
                 });
                 if (!res.ok) throw new Error('Branches export failed');
                 const blob = await res.blob();
@@ -1592,10 +1577,7 @@ export default function Page() {
                       ? '?is_active=false'
                       : '';
                 const res = await fetch(`${apiBase}/departments/export${qs}`, {
-                  headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                  },
+                  headers: authHeaders(),
                 });
                 if (!res.ok) throw new Error('Departments export failed');
                 const blob = await res.blob();

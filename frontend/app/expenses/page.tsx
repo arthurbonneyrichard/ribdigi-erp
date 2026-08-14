@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -324,10 +324,7 @@ export default function Page() {
       form.append('file', file);
       const res = await fetch(`${apiBase}/expenses/${id}/attachment`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -345,10 +342,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/expenses/${id}/attachment`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -634,10 +628,7 @@ export default function Page() {
               if (filterDepartmentId) qs.set('department_id', filterDepartmentId);
               const q = qs.toString();
               const res = await fetch(`${apiBase}/expenses/export${q ? `?${q}` : ''}`, {
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                },
+                headers: authHeaders(),
               });
               if (!res.ok) throw new Error('Expenses export failed');
               const blob = await res.blob();
@@ -716,10 +707,7 @@ export default function Page() {
                       ? '?is_active=false'
                       : '';
                 const res = await fetch(`${apiBase}/expenses/categories/export${qs}`, {
-                  headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                  },
+                  headers: authHeaders(),
                 });
                 if (!res.ok) throw new Error('Expense categories export failed');
                 const blob = await res.blob();
@@ -747,10 +735,7 @@ export default function Page() {
                 const token = localStorage.getItem('token');
                 const tenant = localStorage.getItem('tenant');
                 const res = await fetch(`${apiBase}/expenses/budgets/export`, {
-                  headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                  },
+                  headers: authHeaders(),
                 });
                 if (!res.ok) throw new Error('Expense budgets export failed');
                 const blob = await res.blob();
@@ -1161,10 +1146,7 @@ export default function Page() {
                 const token = localStorage.getItem('token');
                 const tenant = localStorage.getItem('tenant');
                 const res = await fetch(`${apiBase}/expenses/settings/export`, {
-                  headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                  },
+                  headers: authHeaders(),
                 });
                 if (!res.ok) throw new Error('Expense settings export failed');
                 const blob = await res.blob();

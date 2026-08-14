@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -232,10 +232,7 @@ export default function Page() {
       const tenant = localStorage.getItem('tenant');
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const res = await fetch(`${apiBase}/customers/export`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Customer export failed');
       const blob = await res.blob();
@@ -262,10 +259,7 @@ export default function Page() {
         ? `?status=${encodeURIComponent(invoiceStatusFilter)}`
         : '';
       const res = await fetch(`${apiBase}/sales/invoices/export${qs}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Invoice export failed');
       const blob = await res.blob();
@@ -293,10 +287,7 @@ export default function Page() {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const qs = status ? `?status=${encodeURIComponent(status)}` : '';
       const res = await fetch(`${apiBase}/sales/${kind}/export${qs}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error(`${kind} export failed`);
       const blob = await res.blob();
@@ -566,10 +557,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/customers/${id}/history/export`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Customer history CSV export failed');
       const blob = await res.blob();
@@ -732,10 +720,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}${path}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -847,10 +832,7 @@ export default function Page() {
                         ? '?is_active=false'
                         : '';
                   const res = await fetch(`${apiBase}/customers/groups/export${qs}`, {
-                    headers: {
-                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                    },
+                    headers: authHeaders(),
                   });
                   if (!res.ok) throw new Error('Customer groups export failed');
                   const blob = await res.blob();

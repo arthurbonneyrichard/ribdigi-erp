@@ -3932,6 +3932,7 @@ async def products_import(
         user_id=claims["sub"],
         content=content,
         dry_run=dry_run,
+        company_id=claims.get("company_id"),
     )
     if not dry_run and result["valid_rows"]:
         await audit_svc.record_event(
@@ -3990,6 +3991,7 @@ async def stock_import(
         user_id=claims["sub"],
         content=content,
         dry_run=dry_run,
+        company_id=claims.get("company_id"),
     )
     if not dry_run and result["valid_rows"]:
         await audit_svc.record_event(
@@ -6574,6 +6576,7 @@ async def send_sales_invoice(
 ):
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     invoice, delivery = await sales_svc.send_sales_invoice(
         db,
         tenant_id=claims["tenant_id"],
@@ -6596,6 +6599,7 @@ async def post_sales_invoice(
 ):
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
     invoice = await sales_svc.post_sales_invoice(
         db,
@@ -6632,6 +6636,7 @@ async def cancel_sales_invoice(
 ):
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     invoice = await sales_svc.cancel_sales_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
@@ -6826,6 +6831,7 @@ async def send_quotation(
 ):
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     quote, delivery = await sales_docs_svc.send_quotation(
         db, claims["tenant_id"], quotation_id, to=to
     )
@@ -6853,6 +6859,7 @@ async def accept_quotation(
 ):
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     quote = await sales_docs_svc.accept_quotation(db, claims["tenant_id"], quotation_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation accepted")
@@ -6866,6 +6873,7 @@ async def reject_quotation(
 ):
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     quote = await sales_docs_svc.reject_quotation(db, claims["tenant_id"], quotation_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation rejected")
@@ -6879,6 +6887,7 @@ async def convert_quotation_order(
 ):
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     order = await sales_docs_svc.convert_quotation_to_order(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
     )
@@ -6898,6 +6907,7 @@ async def convert_quotation_invoice(
 ):
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     invoice = await sales_docs_svc.convert_quotation_to_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
     )
@@ -7003,6 +7013,7 @@ async def patch_sales_order(
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     fields = payload.model_dump(exclude_unset=True)
     order = await sales_docs_svc.update_order(
         db,
@@ -7027,6 +7038,7 @@ async def confirm_sales_order(
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     order = await sales_docs_svc.confirm_order(
         db, claims["tenant_id"], order_id, user_id=claims["sub"]
     )
@@ -7042,6 +7054,7 @@ async def process_sales_order(
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     order = await sales_docs_svc.advance_order_status(
         db,
         tenant_id=claims["tenant_id"],
@@ -7061,6 +7074,7 @@ async def ship_sales_order(
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     order = await sales_docs_svc.advance_order_status(
         db,
         tenant_id=claims["tenant_id"],
@@ -7080,6 +7094,7 @@ async def deliver_sales_order(
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     order = await sales_docs_svc.advance_order_status(
         db,
         tenant_id=claims["tenant_id"],
@@ -7099,6 +7114,7 @@ async def cancel_sales_order(
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     order = await sales_docs_svc.cancel_order(
         db, claims["tenant_id"], order_id, user_id=claims["sub"]
     )
@@ -7114,6 +7130,7 @@ async def convert_order_invoice(
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     invoice = await sales_docs_svc.convert_order_to_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], order_id=order_id
     )
@@ -7313,6 +7330,7 @@ async def post_sales_return(
 ):
     existing = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     ret = await sales_docs_svc.post_return(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], return_id=return_id
     )
@@ -7517,6 +7535,7 @@ async def submit_purchase_request(
 ):
     existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     pr = await purchasing_svc.submit_purchase_request(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
@@ -7582,6 +7601,7 @@ async def cancel_purchase_request(
 ):
     existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     pr = await purchasing_svc.cancel_purchase_request(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
@@ -7597,6 +7617,7 @@ async def convert_purchase_request(
 ):
     existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     pr, po = await purchasing_svc.convert_purchase_request_to_po(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
@@ -7707,6 +7728,7 @@ async def patch_purchase_order(
 ):
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     data = payload.model_dump(exclude_unset=True)
     po = await purchasing_svc.update_purchase_order(
         db,
@@ -7737,6 +7759,7 @@ async def amend_purchase_order(
 ):
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     data = payload.model_dump(exclude_unset=True)
     po = await purchasing_svc.amend_purchase_order(
         db,
@@ -7798,6 +7821,7 @@ async def send_purchase_order(
 ):
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     po, delivery = await purchasing_svc.send_purchase_order(
         db,
         tenant_id=claims["tenant_id"],
@@ -7855,6 +7879,7 @@ async def cancel_purchase_order(
 ):
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     po = await purchasing_svc.cancel_purchase_order(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id
     )
@@ -8064,6 +8089,7 @@ async def post_purchase_return(
 ):
     existing = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     ret = await purchasing_svc.post_purchase_return(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], return_id=return_id
     )
@@ -8173,6 +8199,7 @@ async def patch_purchase_invoice(
 
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     inv = await purchase_ocr_svc.update_purchase_invoice_draft(
         db,
         tenant_id=claims["tenant_id"],
@@ -8275,6 +8302,7 @@ async def approve_purchase_invoice(
 ):
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     inv = await purchasing_svc.approve_purchase_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
@@ -8290,6 +8318,7 @@ async def cancel_purchase_invoice(
 ):
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     inv = await purchasing_svc.cancel_purchase_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
@@ -9358,6 +9387,7 @@ async def patch_expense(
 ):
     existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     expense = await expenses_svc.update_expense(
         db,
         tenant_id=claims["tenant_id"],

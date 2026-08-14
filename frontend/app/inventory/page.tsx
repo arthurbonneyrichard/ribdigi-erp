@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
 
 type Tab =
@@ -394,10 +394,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}${path}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error(`${filename} export failed`);
       const blob = await res.blob();
@@ -659,10 +656,7 @@ export default function Page() {
       const res = await fetch(
         `${apiBase}/inventory/stock-counts/${countId}/variance-report?format=${format}`,
         {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-          },
+          headers: authHeaders(),
         },
       );
       if (!res.ok) {
@@ -905,10 +899,7 @@ export default function Page() {
         : `${apiBase}/products/${selectedId}/images`;
       const res = await fetch(path, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -1020,10 +1011,7 @@ export default function Page() {
       const res = await fetch(
         `${apiBase}/products/${selectedId}/labels?format=${format}&copies=${copies}&code_type=${codeType}`,
         {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-          },
+          headers: authHeaders(),
         },
       );
       if (!res.ok) {
@@ -1076,10 +1064,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/products/import/template`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Template download failed');
       const blob = await res.blob();
@@ -1101,10 +1086,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/products/export`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Product export failed');
       const blob = await res.blob();
@@ -1129,10 +1111,7 @@ export default function Page() {
       form.append('file', file);
       const res = await fetch(`${apiBase}/products/import?dry_run=${dryRun}`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -1151,10 +1130,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/inventory/stock/import/template`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Stock template download failed');
       const blob = await res.blob();
@@ -1178,10 +1154,7 @@ export default function Page() {
       form.append('file', file);
       const res = await fetch(`${apiBase}/inventory/stock/import?dry_run=${dryRun}`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -1867,10 +1840,7 @@ export default function Page() {
                               form.append('file', file);
                               const res = await fetch(`${apiBase}/catalog/brands/${b.id}/logo`, {
                                 method: 'POST',
-                                headers: {
-                                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                                  ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                                },
+                                headers: authHeaders(),
                                 body: form,
                               });
                               const body = await res.json().catch(() => ({}));
@@ -2092,10 +2062,7 @@ export default function Page() {
                   }
                   const q = qs.toString();
                   const res = await fetch(`${apiBase}/products/variants/export${q ? `?${q}` : ''}`, {
-                    headers: {
-                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                    },
+                    headers: authHeaders(),
                   });
                   if (!res.ok) throw new Error('Variants export failed');
                   const blob = await res.blob();

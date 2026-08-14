@@ -26,12 +26,13 @@ def normalize_payment_method(method: str | None) -> str:
     return "other"
 
 
-async def next_session_number(db: AsyncSession, tenant_id: str) -> str:
-    count = len(
-        (
-            await db.execute(select(m.PosSession.id).where(m.PosSession.tenant_id == tenant_id))
-        ).scalars().all()
-    )
+async def next_session_number(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> str:
+    stmt = select(m.PosSession.id).where(m.PosSession.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.PosSession.company_id == company_id)
+    count = len((await db.execute(stmt)).scalars().all())
     return f"POS-{datetime.utcnow():%Y%m%d}-{count + 1:04d}"
 
 
@@ -135,7 +136,7 @@ async def open_session(
         company_id=company_id,
         store_id=store_id,
         user_id=user_id,
-        session_number=await next_session_number(db, tenant_id),
+        session_number=await next_session_number(db, tenant_id, company_id),
         status="open",
         opening_cash=cash,
         expected_cash=cash,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -354,10 +354,7 @@ export default function Page() {
       form.append('file', file);
       const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -377,10 +374,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -569,10 +563,7 @@ export default function Page() {
       if (closing !== '' && closing != null) qs.set('closing_balance', String(Number(closing)));
       const res = await fetch(`${apiBase}/accounting/bank-statements/import?${qs}`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -1094,10 +1085,7 @@ export default function Page() {
                             ? '?active_only=false'
                             : '';
                     const res = await fetch(`${apiBase}/accounting/accounts/export${qs}`, {
-                      headers: {
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                        ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                      },
+                      headers: authHeaders(),
                     });
                     if (!res.ok) throw new Error('Accounts export failed');
                     const blob = await res.blob();
@@ -1188,10 +1176,7 @@ export default function Page() {
                             q ? `?${q}` : ''
                           }`,
                           {
-                            headers: {
-                              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                              ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                            },
+                            headers: authHeaders(),
                           },
                         );
                         if (!res.ok) throw new Error('Account ledger export failed');

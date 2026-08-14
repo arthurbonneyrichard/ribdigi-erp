@@ -2039,8 +2039,101 @@ async def test_print_templates_and_search_history_company_scoped(client, db_sess
 
     # History for company-A customer must not list sibling company docs if any shared id edge.
     hist = await ac.get(
-        f"/api/v1/customers/{seed['cust1'].id}/history",
+        f"/api/v1/customers/{seed['party1'].id}/history",
         headers=headers_a,
     )
     assert hist.status_code == 200, hist.text
     assert "invoices" in hist.json()["data"]
+
+
+@pytest.mark.asyncio
+async def test_mutate_idor_exports_and_ops_numbers_company_scoped(client, db_session):
+    """Phase 18: mutate IDOR, pipeline export scope, company-local session numbers."""
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="OPS18",
+        name="Alpha Ops B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+    party_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Ops B Customer",
+        kind="customer",
+        credit_limit=0,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Ops B Product",
+        sku="OPS18-B",
+        cost_price=1,
+        selling_price=5,
+        stock_qty=10,
+        is_active=True,
+    )
+    db_session.add_all([party_b, prod_b])
+    await db_session.flush()
+    quote_b = m.SalesQuotation(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        quotation_number="QT-OPS18-B",
+        customer_id=party_b.id,
+        status="draft",
+        subtotal=5,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=5,
+        created_by=seed["super"].id,
+    )
+    db_session.add(quote_b)
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    headers_b = await _super_headers(ac, seed)
+    headers_b["X-Workspace-Kind"] = "company"
+    headers_b["X-Company-ID"] = c_b.id
+
+    # Cross-company mutate IDOR
+    send = await ac.post(
+        f"/api/v1/sales/quotations/{quote_b.id}/send",
+        headers=headers_a,
+    )
+    assert send.status_code == 404, send.text
+
+    # Export from A must not include B quotation number
+    export_a = await ac.get("/api/v1/sales/quotations/export", headers=headers_a)
+    assert export_a.status_code == 200, export_a.text
+    assert "QT-OPS18-B" not in export_a.text
+
+    export_b = await ac.get("/api/v1/sales/quotations/export", headers=headers_b)
+    assert export_b.status_code == 200, export_b.text
+    assert "QT-OPS18-B" in export_b.text
+
+    # Company-local POS session numbering
+    open_a = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers_a,
+        json={"opening_cash": 0},
+    )
+    assert open_a.status_code == 200, open_a.text
+    assert open_a.json()["data"]["company_id"] == seed["c1"].id
+    assert open_a.json()["data"]["session_number"].startswith("POS-")

@@ -156,24 +156,20 @@ def parse_product_csv(content: str) -> list[dict[str, str]]:
     return rows
 
 
-async def _lookup_code_maps(db: AsyncSession, tenant_id: str) -> tuple[dict[str, m.ProductCategory], dict[str, m.Brand], dict[str, m.UnitOfMeasure]]:
-    await catalog_meta_svc.ensure_default_catalog(db, tenant_id)
-    cats = {
-        c.code.upper(): c
-        for c in (
-            await db.execute(select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id))
-        ).scalars().all()
-    }
-    brands = {
-        b.code.upper(): b
-        for b in (await db.execute(select(m.Brand).where(m.Brand.tenant_id == tenant_id))).scalars().all()
-    }
-    units = {
-        u.code.upper(): u
-        for u in (
-            await db.execute(select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id))
-        ).scalars().all()
-    }
+async def _lookup_code_maps(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> tuple[dict[str, m.ProductCategory], dict[str, m.Brand], dict[str, m.UnitOfMeasure]]:
+    await catalog_meta_svc.ensure_default_catalog(db, tenant_id, company_id=company_id)
+    cat_q = select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
+    brand_q = select(m.Brand).where(m.Brand.tenant_id == tenant_id)
+    unit_q = select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id)
+    if company_id:
+        cat_q = cat_q.where(m.ProductCategory.company_id == company_id)
+        brand_q = brand_q.where(m.Brand.company_id == company_id)
+        unit_q = unit_q.where(m.UnitOfMeasure.company_id == company_id)
+    cats = {c.code.upper(): c for c in (await db.execute(cat_q)).scalars().all()}
+    brands = {b.code.upper(): b for b in (await db.execute(brand_q)).scalars().all()}
+    units = {u.code.upper(): u for u in (await db.execute(unit_q)).scalars().all()}
     return cats, brands, units
 
 
@@ -184,40 +180,28 @@ async def import_products_csv(
     user_id: str,
     content: str,
     dry_run: bool = True,
+    company_id: str | None = None,
 ) -> dict[str, Any]:
     rows = parse_product_csv(content)
-    cats, brands, units = await _lookup_code_maps(db, tenant_id)
+    cats, brands, units = await _lookup_code_maps(db, tenant_id=tenant_id, company_id=company_id)
 
-    existing_skus = set(
-        (
-            await db.execute(select(m.Product.sku).where(m.Product.tenant_id == tenant_id))
-        ).scalars().all()
+    sku_q = select(m.Product.sku).where(m.Product.tenant_id == tenant_id)
+    barcode_q = select(m.Product.barcode).where(
+        m.Product.tenant_id == tenant_id,
+        m.Product.barcode.is_not(None),
     )
-    existing_barcodes = {
-        b
-        for b in (
-            await db.execute(
-                select(m.Product.barcode).where(
-                    m.Product.tenant_id == tenant_id,
-                    m.Product.barcode.is_not(None),
-                )
-            )
-        ).scalars().all()
-        if b
-    }
+    variant_barcode_q = select(m.ProductVariant.barcode).where(
+        m.ProductVariant.tenant_id == tenant_id,
+        m.ProductVariant.barcode.is_not(None),
+    )
+    if company_id:
+        sku_q = sku_q.where(m.Product.company_id == company_id)
+        barcode_q = barcode_q.where(m.Product.company_id == company_id)
+        variant_barcode_q = variant_barcode_q.where(m.ProductVariant.company_id == company_id)
+    existing_skus = set((await db.execute(sku_q)).scalars().all())
+    existing_barcodes = {b for b in (await db.execute(barcode_q)).scalars().all() if b}
     existing_barcodes.update(
-        {
-            b
-            for b in (
-                await db.execute(
-                    select(m.ProductVariant.barcode).where(
-                        m.ProductVariant.tenant_id == tenant_id,
-                        m.ProductVariant.barcode.is_not(None),
-                    )
-                )
-            ).scalars().all()
-            if b
-        }
+        {b for b in (await db.execute(variant_barcode_q)).scalars().all() if b}
     )
 
     seen_skus: set[str] = set()
@@ -310,7 +294,13 @@ async def import_products_csv(
     if not dry_run and valid_rows:
         for data in valid_rows:
             opening = float(data.pop("stock_qty") or 0)
-            product = m.Product(tenant_id=tenant_id, stock_qty=0, is_active=True, **data)
+            product = m.Product(
+                tenant_id=tenant_id,
+                company_id=company_id,
+                stock_qty=0,
+                is_active=True,
+                **data,
+            )
             db.add(product)
             await db.flush()
             if opening > 0:

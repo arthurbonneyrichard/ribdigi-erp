@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 import {
   getSelectedStoreId,
   setSelectedStoreId,
@@ -226,10 +226,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}${path}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error(`${filename} export failed`);
       const blob = await res.blob();
@@ -687,10 +684,7 @@ export default function Page() {
                   const token = localStorage.getItem('token');
                   const tenant = localStorage.getItem('tenant');
                   const res = await fetch(`${apiBase}/stores/transfers/export${qs}`, {
-                    headers: {
-                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                    },
+                    headers: authHeaders(),
                   });
                   if (!res.ok) throw new Error('Stores transfers export failed');
                   const blob = await res.blob();

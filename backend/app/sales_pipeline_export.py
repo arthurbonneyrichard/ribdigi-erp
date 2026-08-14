@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import sales_docs as sales_docs_svc
 from app.rbac import apply_created_by_scope
+from app import workspace as workspace_svc
 from app.session_passkey_doc_export import _cell
 
 QUOTATION_EXPORT_COLUMNS = [
@@ -83,7 +84,7 @@ async def export_quotations_csv(
 ) -> str:
     stmt = (
         select(m.SalesQuotation)
-        .where(m.SalesQuotation.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.SalesQuotation, claims))
         .order_by(m.SalesQuotation.created_at.desc())
         .limit(500)
     )
@@ -115,7 +116,7 @@ async def export_orders_csv(
 ) -> str:
     stmt = (
         select(m.SalesOrder)
-        .where(m.SalesOrder.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.SalesOrder, claims))
         .order_by(m.SalesOrder.created_at.desc())
         .limit(500)
     )
@@ -147,7 +148,7 @@ async def export_returns_csv(
 ) -> str:
     stmt = (
         select(m.SalesReturn)
-        .where(m.SalesReturn.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.SalesReturn, claims))
         .order_by(m.SalesReturn.created_at.desc())
         .limit(500)
     )

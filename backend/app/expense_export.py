@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import expenses as expenses_svc
 from app import models as m
 from app.rbac import apply_created_by_scope
+from app import workspace as workspace_svc
 
 EXPENSE_EXPORT_COLUMNS = [
     "expense_date",
@@ -65,7 +66,7 @@ async def export_expenses_csv(
     """Stage 120 X1 — export tenant expenses (record-scope aware)."""
     stmt = (
         select(m.Expense)
-        .where(m.Expense.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.Expense, claims))
         .order_by(m.Expense.created_at.desc())
     )
     if store_id:

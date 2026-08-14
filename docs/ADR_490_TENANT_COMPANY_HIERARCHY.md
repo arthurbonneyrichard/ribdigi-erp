@@ -153,3 +153,12 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Print routes (invoice/quotation/credit note/PO/debit note) assert company record ownership and brand from the company (or claims) context.
 - Global search, party history (+ export), and legacy `/sales`/`/purchases` transaction list/create stamp and filter by workspace `company_id`.
 - Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.
+
+## Phase 18 follow-up (2026-08-14)
+
+- Lifecycle mutate endpoints (send/post/cancel/convert/confirm/ship/… for sales, purchasing, expenses) call `assert_record_company` so cross-company IDOR cannot mutate sibling docs.
+- Sales/purchasing pipeline CSV exports and expense CSV export apply `company_scope_filter`.
+- Ops number uniques (customer/supplier payments, POS sessions, journal entries, stock transfers/counts, purchase requests) are `(tenant_id, company_id, …)` via Alembic `20260814_0101`; session/transfer counters count within company.
+- Product/stock CSV import stamps and filters by workspace `company_id`.
+- Frontend `authHeaders()` sends workspace headers on raw download/fetch paths across sales, purchasing, inventory, expenses, accounting, credit, POS, stores, reports, tax, and company settings.
+- Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design; barcode uniqueness and some child-row stamps remain secondary.

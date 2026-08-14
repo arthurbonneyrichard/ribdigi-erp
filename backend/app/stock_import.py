@@ -105,22 +105,22 @@ async def import_stock_csv(
     user_id: str,
     content: str,
     dry_run: bool = True,
+    company_id: str | None = None,
 ) -> dict[str, Any]:
     rows = parse_stock_csv(content)
 
-    products = list(
-        (await db.execute(select(m.Product).where(m.Product.tenant_id == tenant_id))).scalars().all()
-    )
+    prod_q = select(m.Product).where(m.Product.tenant_id == tenant_id)
+    wh_q = select(m.Warehouse).where(m.Warehouse.tenant_id == tenant_id)
+    if company_id:
+        prod_q = prod_q.where(m.Product.company_id == company_id)
+        wh_q = wh_q.where(m.Warehouse.company_id == company_id)
+    products = list((await db.execute(prod_q)).scalars().all())
     by_sku = {str(p.sku).strip().upper(): p for p in products if p.sku}
     by_barcode = {str(p.barcode).strip(): p for p in products if p.barcode}
 
     warehouses = {
         w.code.upper(): w
-        for w in (
-            await db.execute(select(m.Warehouse).where(m.Warehouse.tenant_id == tenant_id))
-        )
-        .scalars()
-        .all()
+        for w in (await db.execute(wh_q)).scalars().all()
     }
 
     errors: list[dict[str, Any]] = []

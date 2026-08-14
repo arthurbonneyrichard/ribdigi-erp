@@ -19,12 +19,13 @@ TRANSFER_CANCELLABLE = {"draft", "requested", "in_transit"}
 TRANSFER_HISTORY_SCOPES = frozenset({"all", "inter_store", "warehouse"})
 
 
-async def next_transfer_number(db: AsyncSession, tenant_id: str) -> str:
-    count = len(
-        (
-            await db.execute(select(m.StockTransfer.id).where(m.StockTransfer.tenant_id == tenant_id))
-        ).scalars().all()
-    )
+async def next_transfer_number(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> str:
+    stmt = select(m.StockTransfer.id).where(m.StockTransfer.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.StockTransfer.company_id == company_id)
+    count = len((await db.execute(stmt)).scalars().all())
     return f"TR-{datetime.utcnow():%Y%m%d}-{count + 1:04d}"
 
 
@@ -724,7 +725,7 @@ async def create_transfer(
     transfer = m.StockTransfer(
         tenant_id=tenant_id,
         company_id=company_id,
-        transfer_number=await next_transfer_number(db, tenant_id),
+        transfer_number=await next_transfer_number(db, tenant_id, company_id),
         from_store_id=from_store_id,
         to_store_id=to_store_id,
         from_warehouse_id=from_wh.id,
@@ -765,7 +766,9 @@ async def create_warehouse_transfer(
     transfer = m.StockTransfer(
         tenant_id=tenant_id,
         company_id=company_id or getattr(from_wh, "company_id", None),
-        transfer_number=await next_transfer_number(db, tenant_id),
+        transfer_number=await next_transfer_number(
+            db, tenant_id, company_id or getattr(from_wh, "company_id", None)
+        ),
         from_store_id=from_wh.store_id,
         to_store_id=to_wh.store_id,
         from_warehouse_id=from_wh.id,

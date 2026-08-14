@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -398,10 +398,7 @@ export default function Page() {
       }
       Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
       const res = await fetch(`${base}/reports/export?${params}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -658,10 +655,7 @@ export default function Page() {
                 if (branchId) params.set('branch_id', branchId);
                 const qs = params.toString() ? `?${params}` : '';
                 const res = await fetch(`${base}/reports/profit-loss/export${qs}`, {
-                  headers: {
-                    Authorization: token ? `Bearer ${token}` : '',
-                    'X-Tenant-ID': tenant || '',
-                  },
+                  headers: authHeaders(),
                 });
                 if (!res.ok) throw new Error(await res.text());
                 const blob = await res.blob();
@@ -695,10 +689,7 @@ export default function Page() {
                 if (branchId) params.set('branch_id', branchId);
                 const qs = params.toString() ? `?${params}` : '';
                 const res = await fetch(`${base}/reports/cash-flow/export${qs}`, {
-                  headers: {
-                    Authorization: token ? `Bearer ${token}` : '',
-                    'X-Tenant-ID': tenant || '',
-                  },
+                  headers: authHeaders(),
                 });
                 if (!res.ok) throw new Error(await res.text());
                 const blob = await res.blob();
@@ -731,10 +722,7 @@ export default function Page() {
                 if (branchId) params.set('branch_id', branchId);
                 const qs = params.toString() ? `?${params}` : '';
                 const res = await fetch(`${base}/reports/balance-sheet/export${qs}`, {
-                  headers: {
-                    Authorization: token ? `Bearer ${token}` : '',
-                    'X-Tenant-ID': tenant || '',
-                  },
+                  headers: authHeaders(),
                 });
                 if (!res.ok) throw new Error(await res.text());
                 const blob = await res.blob();
@@ -766,10 +754,7 @@ export default function Page() {
                 if (toDate) params.set('to_date', toDate);
                 const qs = params.toString() ? `?${params}` : '';
                 const res = await fetch(`${base}/reports/tax/export${qs}`, {
-                  headers: {
-                    Authorization: token ? `Bearer ${token}` : '',
-                    'X-Tenant-ID': tenant || '',
-                  },
+                  headers: authHeaders(),
                 });
                 if (!res.ok) throw new Error(await res.text());
                 const blob = await res.blob();
@@ -805,10 +790,7 @@ export default function Page() {
                   if (toDate) params.set('as_of_date', toDate);
                   const qs = params.toString() ? `?${params}` : '';
                   const res = await fetch(`${base}/reports/trial-balance/export${qs}`, {
-                    headers: {
-                      Authorization: token ? `Bearer ${token}` : '',
-                      'X-Tenant-ID': tenant || '',
-                    },
+                    headers: authHeaders(),
                   });
                   if (!res.ok) throw new Error(await res.text());
                   const blob = await res.blob();

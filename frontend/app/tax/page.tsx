@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -258,10 +258,7 @@ export default function Page() {
       if (reportType === 'tax_filing_ke') params.set('jurisdiction', 'KE');
       if (reportType === 'tax_filing_ng') params.set('jurisdiction', 'NG');
       const res = await fetch(`${base}/reports/export?${params}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -585,10 +582,7 @@ export default function Page() {
               const token = localStorage.getItem('token');
               const tenant = localStorage.getItem('tenant');
               const res = await fetch(`${base}/tax/rates/export`, {
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                },
+                headers: authHeaders(),
               });
               if (!res.ok) throw new Error('Tax rates export failed');
               const blob = await res.blob();

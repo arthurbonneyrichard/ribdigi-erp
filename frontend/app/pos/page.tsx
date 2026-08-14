@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 import {
   DEFAULT_CATALOG_TTL_MS,
   getOfflineCatalogFreshness,
@@ -63,10 +63,7 @@ async function downloadReceiptPdf(saleId: string, paper: string) {
   const token = localStorage.getItem('token');
   const tenant = localStorage.getItem('tenant');
   const res = await fetch(`${apiBase}/pos/sales/${saleId}/receipt?format=pdf&paper=${paper}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-    },
+    headers: authHeaders(),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -199,10 +196,7 @@ export default function Page() {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}${path}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

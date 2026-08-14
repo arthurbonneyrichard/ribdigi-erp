@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -122,13 +122,8 @@ export default function Page() {
   async function downloadCreditExport(path: string, filename: string, okMessage: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token') || '';
-      const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}${path}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) {
         setError(await res.text());

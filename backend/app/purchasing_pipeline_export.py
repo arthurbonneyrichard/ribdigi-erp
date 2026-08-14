@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import purchasing as purchasing_svc
 from app.rbac import apply_created_by_scope
+from app import workspace as workspace_svc
 from app.session_passkey_doc_export import _cell
 
 PR_EXPORT_COLUMNS = [
@@ -105,7 +106,7 @@ async def export_purchase_requests_csv(
 ) -> str:
     stmt = (
         select(m.PurchaseRequest)
-        .where(m.PurchaseRequest.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.PurchaseRequest, claims))
         .order_by(m.PurchaseRequest.created_at.desc())
         .limit(500)
     )
@@ -137,7 +138,7 @@ async def export_purchase_orders_csv(
 ) -> str:
     stmt = (
         select(m.PurchaseOrder)
-        .where(m.PurchaseOrder.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.PurchaseOrder, claims))
         .order_by(m.PurchaseOrder.created_at.desc())
         .limit(500)
     )
@@ -172,7 +173,7 @@ async def export_grns_csv(
 ) -> str:
     stmt = (
         select(m.GoodsReceipt)
-        .where(m.GoodsReceipt.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.GoodsReceipt, claims))
         .order_by(m.GoodsReceipt.created_at.desc())
         .limit(500)
     )
@@ -201,7 +202,7 @@ async def export_purchase_returns_csv(
 ) -> str:
     stmt = (
         select(m.PurchaseReturn)
-        .where(m.PurchaseReturn.tenant_id == tenant_id)
+        .where(*workspace_svc.company_scope_filter(m.PurchaseReturn, claims))
         .order_by(m.PurchaseReturn.created_at.desc())
         .limit(500)
     )
@@ -231,8 +232,10 @@ async def export_po_amendments_csv(
     """Stage 154 A1 — purchase order amendment history CSV."""
     po = await purchasing_svc.get_po(db, tenant_id, po_id)
     from app.rbac import assert_record_access
+    from app import workspace as workspace_svc
 
     assert_record_access(claims, po.created_by)
+    workspace_svc.assert_record_company(claims, po)
     rows = await purchasing_svc.list_po_amendments(db, tenant_id, po_id)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PO_AMENDMENT_EXPORT_COLUMNS)
