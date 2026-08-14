@@ -1174,8 +1174,9 @@ async def create_recurring(
     department_id: str | None = None,
     start_date: datetime | None = None,
     end_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> m.RecurringExpense:
-    await ensure_default_categories(db, tenant_id)
+    await ensure_default_categories(db, tenant_id, company_id=company_id)
     cat_id, cat_name = await resolve_category(
         db, tenant_id, category_id=category_id, category=category
     )
@@ -1185,6 +1186,7 @@ async def create_recurring(
     start = start_date or datetime.utcnow()
     row = m.RecurringExpense(
         tenant_id=tenant_id,
+        company_id=company_id,
         category_id=cat_id,
         category=cat_name,
         description=description or "",
@@ -1208,6 +1210,7 @@ async def create_recurring(
 def serialize_recurring(row: m.RecurringExpense) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "category": row.category,
         "category_id": row.category_id,
         "description": row.description,
@@ -1234,9 +1237,12 @@ async def list_recurring(
     *,
     active_only: bool = False,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> list[m.RecurringExpense]:
     """Stage 125 R1 — is_active / active_only for honest paused-only recurring lists."""
     stmt = select(m.RecurringExpense).where(m.RecurringExpense.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.RecurringExpense.company_id == company_id)
     if is_active is not None:
         stmt = stmt.where(m.RecurringExpense.is_active.is_(bool(is_active)))
     elif active_only:
@@ -1321,17 +1327,17 @@ async def generate_due_recurring(
     *,
     tenant_id: str,
     user_id: str,
+    company_id: str | None = None,
 ) -> list[m.Expense]:
     now = datetime.utcnow()
-    rows = (
-        await db.execute(
-            select(m.RecurringExpense).where(
-                m.RecurringExpense.tenant_id == tenant_id,
-                m.RecurringExpense.is_active == True,  # noqa: E712
-                m.RecurringExpense.next_run_at <= now,
-            )
-        )
-    ).scalars().all()
+    stmt = select(m.RecurringExpense).where(
+        m.RecurringExpense.tenant_id == tenant_id,
+        m.RecurringExpense.is_active == True,  # noqa: E712
+        m.RecurringExpense.next_run_at <= now,
+    )
+    if company_id:
+        stmt = stmt.where(m.RecurringExpense.company_id == company_id)
+    rows = (await db.execute(stmt)).scalars().all()
     created: list[m.Expense] = []
     for row in rows:
         if row.end_date and row.end_date < now:
@@ -1362,6 +1368,7 @@ async def generate_due_recurring(
             department_id=getattr(row, "department_id", None),
             reference=f"REC-{row.id[:8]}",
             expense_date=now,
+            company_id=getattr(row, "company_id", None) or company_id,
         )
         created.append(expense)
         _clear_occurrence_overrides(row)

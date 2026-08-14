@@ -2129,6 +2129,81 @@ async def create_company(
     )
 
 
+@api.get("/companies/{company_id}/memberships")
+async def list_company_memberships(
+    company_id: str,
+    claims=Depends(require_permission("companies", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List user↔company memberships (tenant account admin)."""
+    rows = await companies_svc.list_company_memberships(
+        db, tenant_id=claims["tenant_id"], company_id=company_id
+    )
+    return env(rows)
+
+
+@api.post("/companies/{company_id}/memberships")
+async def assign_company_membership(
+    company_id: str,
+    payload: dict,
+    claims=Depends(require_permission("companies", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Assign or reactivate a user on a company (does not grant tenant-wide ops)."""
+    user_id = (payload or {}).get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    role = (payload or {}).get("role") or "cashier"
+    row = await companies_svc.assign_company_membership(
+        db,
+        tenant_id=claims["tenant_id"],
+        company_id=company_id,
+        user_id=user_id,
+        role=role,
+    )
+    user = await db.get(m.User, user_id)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="companies",
+        action="membership_assign",
+        entity="user_company_membership",
+        entity_id=row.id,
+        details={"company_id": company_id, "member_user_id": user_id, "role": row.role},
+    )
+    await db.commit()
+    return env(companies_svc.serialize_membership(row, user=user), "Membership assigned")
+
+
+@api.delete("/companies/{company_id}/memberships/{user_id}")
+async def revoke_company_membership(
+    company_id: str,
+    user_id: str,
+    claims=Depends(require_permission("companies", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Deactivate a user's company membership (ops access revoked)."""
+    row = await companies_svc.revoke_company_membership(
+        db,
+        tenant_id=claims["tenant_id"],
+        company_id=company_id,
+        user_id=user_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="companies",
+        action="membership_revoke",
+        entity="user_company_membership",
+        entity_id=row.id,
+        details={"company_id": company_id, "member_user_id": user_id},
+    )
+    await db.commit()
+    return env(companies_svc.serialize_membership(row), "Membership revoked")
+
+
 @api.get("/tenant/dashboard")
 async def tenant_dashboard(
     claims=Depends(require_permission("tenant_dashboard", "read")),
@@ -8791,6 +8866,7 @@ async def list_recurring_expenses(
         claims["tenant_id"],
         active_only=active_only,
         is_active=is_active,
+        company_id=claims.get("company_id"),
     )
     return env([expenses_svc.serialize_recurring(r) for r in rows])
 
@@ -8808,6 +8884,7 @@ async def expenses_recurring_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -8835,6 +8912,7 @@ async def create_recurring_expense(
         payee=payload.payee,
         store_id=payload.store_id,
         department_id=payload.department_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(expenses_svc.serialize_recurring(row), "Recurring expense created")
@@ -8862,6 +8940,7 @@ async def update_recurring_expense(
         payment_method=payload.payment_method,
         payee=payload.payee,
     )
+    workspace_svc.assert_record_company(claims, row)
     await db.commit()
     return env(expenses_svc.serialize_recurring(row), "Recurring expense updated")
 
@@ -8872,7 +8951,10 @@ async def generate_recurring_expenses(
     db: AsyncSession = Depends(get_db),
 ):
     created = await expenses_svc.generate_due_recurring(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(
@@ -9371,6 +9453,7 @@ async def create_coa_account(
         name=payload.name,
         account_type=payload.account_type,
         parent_id=payload.parent_id,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -10237,6 +10320,7 @@ async def export_journal_entries_csv(
         tenant_id=claims["tenant_id"],
         status=None if status_filter == "all" else status_filter,
         store_id=store_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -10265,6 +10349,7 @@ async def get_journal(
     ).scalar_one_or_none()
     if not entry:
         raise HTTPException(status_code=404, detail="Journal entry not found")
+    workspace_svc.assert_record_company(claims, entry)
     return env(await accounting_svc.serialize_journal(db, entry))
 
 
@@ -10284,6 +10369,7 @@ async def create_journal(
         reference=payload.reference,
         store_id=payload.store_id,
         lines=[ln.model_dump() for ln in payload.lines],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await accounting_svc.serialize_journal(db, entry), "Journal entry posted")
@@ -10933,7 +11019,14 @@ async def report_sales_daily(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await reports_svc.sales_daily(db, claims["tenant_id"], reports_svc.parse_date(date)))
+    return env(
+        await reports_svc.sales_daily(
+            db,
+            claims["tenant_id"],
+            reports_svc.parse_date(date),
+            company_id=claims.get("company_id"),
+        )
+    )
 
 
 @api.get("/reports/sales/monthly")
@@ -11047,6 +11140,7 @@ async def report_inventory_valuation(
             claims["tenant_id"],
             warehouse_id=warehouse_id,
             store_id=store_id,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11132,6 +11226,7 @@ async def report_purchases_summary(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -11208,6 +11303,7 @@ async def report_expenses_summary(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             category_id=category_id,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -12856,10 +12952,14 @@ async def cancel_inventory_stock_transfer(
 async def report(claims=Depends(require_permission("reports", "read")), db: AsyncSession = Depends(get_db)):
     dash = await dashboard(claims, db)
     now = datetime.utcnow()
-    daily = await reports_svc.sales_daily(db, claims["tenant_id"], now)
+    daily = await reports_svc.sales_daily(
+        db, claims["tenant_id"], now, company_id=claims.get("company_id")
+    )
     monthly = await reports_svc.sales_monthly(db, claims["tenant_id"], now.year, now.month)
     low = await reports_svc.inventory_low_stock(db, claims["tenant_id"])
-    expenses = await reports_svc.expenses_summary(db, claims["tenant_id"])
+    expenses = await reports_svc.expenses_summary(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     return env(
         {
             **(dash.get("data") if isinstance(dash, dict) and "data" in dash else {}),

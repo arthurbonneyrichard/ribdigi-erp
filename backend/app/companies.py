@@ -221,3 +221,126 @@ async def count(
     if active_only and hasattr(model, "is_active"):
         q = q.where(model.is_active.is_(True))
     return int((await db.execute(q)).scalar_one() or 0)
+
+
+async def get_company(
+    db: AsyncSession, *, tenant_id: str, company_id: str
+) -> m.Company:
+    co = (
+        await db.execute(
+            select(m.Company).where(
+                m.Company.id == company_id, m.Company.tenant_id == tenant_id
+            )
+        )
+    ).scalar_one_or_none()
+    if not co:
+        raise HTTPException(status_code=404, detail="Company not found")
+    return co
+
+
+def serialize_membership(row: m.UserCompanyMembership, *, user: m.User | None = None) -> dict:
+    return {
+        "id": row.id,
+        "tenant_id": row.tenant_id,
+        "company_id": row.company_id,
+        "user_id": row.user_id,
+        "role": row.role,
+        "is_active": bool(row.is_active),
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "user_email": user.email if user else None,
+        "user_full_name": user.full_name if user else None,
+        "user_role": user.role if user else None,
+    }
+
+
+async def list_company_memberships(
+    db: AsyncSession, *, tenant_id: str, company_id: str
+) -> list[dict]:
+    await get_company(db, tenant_id=tenant_id, company_id=company_id)
+    rows = (
+        await db.execute(
+            select(m.UserCompanyMembership, m.User)
+            .join(m.User, m.User.id == m.UserCompanyMembership.user_id)
+            .where(
+                m.UserCompanyMembership.tenant_id == tenant_id,
+                m.UserCompanyMembership.company_id == company_id,
+            )
+            .order_by(m.User.email)
+        )
+    ).all()
+    return [serialize_membership(mem, user=user) for mem, user in rows]
+
+
+async def assign_company_membership(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    company_id: str,
+    user_id: str,
+    role: str = "cashier",
+) -> m.UserCompanyMembership:
+    await get_company(db, tenant_id=tenant_id, company_id=company_id)
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    role_norm = (role or "cashier").strip().lower()
+    perms = permissions_for_role(role_norm)
+    if not perms:
+        raise HTTPException(status_code=400, detail=f"Unsupported membership role: {role_norm}")
+
+    existing = (
+        await db.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.tenant_id == tenant_id,
+                m.UserCompanyMembership.user_id == user_id,
+                m.UserCompanyMembership.company_id == company_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing:
+        existing.role = role_norm
+        existing.permissions = perms
+        existing.is_active = True
+        await db.flush()
+        return existing
+
+    row = m.UserCompanyMembership(
+        tenant_id=tenant_id,
+        user_id=user_id,
+        company_id=company_id,
+        role=role_norm,
+        permissions=perms,
+        is_active=True,
+    )
+    db.add(row)
+    await db.flush()
+    return row
+
+
+async def revoke_company_membership(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    company_id: str,
+    user_id: str,
+) -> m.UserCompanyMembership:
+    await get_company(db, tenant_id=tenant_id, company_id=company_id)
+    row = (
+        await db.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.tenant_id == tenant_id,
+                m.UserCompanyMembership.user_id == user_id,
+                m.UserCompanyMembership.company_id == company_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    row.is_active = False
+    await db.flush()
+    return row

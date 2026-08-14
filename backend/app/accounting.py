@@ -143,12 +143,24 @@ async def resolve_settlement_gl(
     return liquid_gl_for_payment_method(payment_method)
 
 
-async def get_account_by_code(db: AsyncSession, tenant_id: str, code: str) -> m.Account:
-    account = (
-        await db.execute(
-            select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code)
-        )
-    ).scalar_one_or_none()
+async def get_account_by_code(
+    db: AsyncSession, tenant_id: str, code: str, *, company_id: str | None = None
+) -> m.Account:
+    q = select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code)
+    if company_id:
+        account = (
+            await db.execute(q.where(m.Account.company_id == company_id))
+        ).scalar_one_or_none()
+        if account:
+            return account
+        # Legacy / pre-scope rows: allow null company_id accounts for the same code.
+        account = (
+            await db.execute(q.where(m.Account.company_id.is_(None)))
+        ).scalar_one_or_none()
+        if account:
+            return account
+        raise HTTPException(status_code=400, detail=f"Account code {code} not found for tenant")
+    account = (await db.execute(q.limit(1))).scalar_one_or_none()
     if not account:
         raise HTTPException(status_code=400, detail=f"Account code {code} not found for tenant")
     return account
@@ -389,8 +401,9 @@ async def create_coa_account(
     name: str,
     account_type: str,
     parent_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.Account:
-    await ensure_default_accounts(db, tenant_id)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     type_norm = (account_type or "").strip().lower()
     if type_norm not in ACCOUNT_TYPES:
         raise HTTPException(
@@ -402,11 +415,12 @@ async def create_coa_account(
     if not code_norm or not name_norm:
         raise HTTPException(status_code=400, detail="code and name are required")
 
-    existing = (
-        await db.execute(
-            select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code_norm)
-        )
-    ).scalar_one_or_none()
+    existing_q = select(m.Account).where(
+        m.Account.tenant_id == tenant_id, m.Account.code == code_norm
+    )
+    if company_id:
+        existing_q = existing_q.where(m.Account.company_id == company_id)
+    existing = (await db.execute(existing_q)).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
 
@@ -416,6 +430,7 @@ async def create_coa_account(
 
     row = m.Account(
         tenant_id=tenant_id,
+        company_id=company_id,
         code=code_norm,
         name=name_norm,
         account_type=type_norm,
@@ -1151,6 +1166,7 @@ async def post_journal_entry(
     source_type: str | None = None,
     source_id: str | None = None,
     store_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.JournalEntry:
     if len(lines) < 2:
         raise HTTPException(status_code=400, detail="Journal entry requires at least two lines")
@@ -1186,6 +1202,7 @@ async def post_journal_entry(
 
     entry = m.JournalEntry(
         tenant_id=tenant_id,
+        company_id=company_id,
         entry_number=f"JE-{datetime.utcnow():%Y%m%d%H%M%S%f}",
         reference=reference,
         description=description,
@@ -1211,14 +1228,24 @@ async def post_journal_entry(
                     )
                 )
             ).scalar_one_or_none()
+            if (
+                account
+                and company_id
+                and account.company_id
+                and account.company_id != company_id
+            ):
+                account = None
         else:
-            account = await get_account_by_code(db, tenant_id, line["account_code"])
+            account = await get_account_by_code(
+                db, tenant_id, line["account_code"], company_id=company_id
+            )
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
 
         db.add(
             m.JournalEntryLine(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 journal_entry_id=entry.id,
                 account_id=account.id,
                 debit=line["debit"],

@@ -107,6 +107,7 @@ async def list_journals(
     tenant_id: str,
     status: str | None = None,
     store_id: str | None = None,
+    company_id: str | None = None,
     limit: int = 100,
 ) -> list[m.JournalEntry]:
     stmt = (
@@ -115,6 +116,8 @@ async def list_journals(
         .order_by(m.JournalEntry.created_at.desc())
         .limit(min(max(limit, 1), 200))
     )
+    if company_id:
+        stmt = stmt.where(m.JournalEntry.company_id == company_id)
     if store_id:
         stmt = stmt.where(m.JournalEntry.store_id == store_id)
     status_n = (status or "").strip().lower() or None
@@ -129,9 +132,15 @@ async def export_journals_csv(
     tenant_id: str,
     status: str | None = None,
     store_id: str | None = None,
+    company_id: str | None = None,
 ) -> str:
     rows = await list_journals(
-        db, tenant_id=tenant_id, status=status, store_id=store_id, limit=200
+        db,
+        tenant_id=tenant_id,
+        status=status,
+        store_id=store_id,
+        company_id=company_id,
+        limit=200,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=JOURNAL_EXPORT_COLUMNS)

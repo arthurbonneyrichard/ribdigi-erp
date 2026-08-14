@@ -385,3 +385,184 @@ async def test_docs_stock_lists_company_scoped(client, db_session):
     moves = await ac.get("/api/v1/inventory/movements", headers=headers)
     assert moves.status_code == 200, moves.text
     assert not any(r.get("notes") == "elec-only-move" for r in moves.json()["data"])
+
+
+@pytest.mark.asyncio
+async def test_journal_and_recurring_stamp_and_isolate(client, db_session):
+    """Journal/recurring creates stamp company_id; company B rows stay out of company A lists."""
+    ac, seed = client
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="FINB",
+        name="Alpha Finance B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.JournalEntry(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            entry_number="JE-FINB-1",
+            description="Company B only journal",
+            total_debit=10,
+            total_credit=10,
+            status="posted",
+            created_by=seed["super"].id,
+        )
+    )
+    db_session.add(
+        m.RecurringExpense(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            category="Rent",
+            description="Company B rent",
+            amount=100,
+            frequency="monthly",
+            payment_method="bank_transfer",
+            is_active=True,
+            created_by=seed["super"].id,
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    # Ensure default COA exists for company A, then post a balanced journal.
+    accounts = await ac.get("/api/v1/accounting/accounts", headers=headers)
+    assert accounts.status_code == 200, accounts.text
+    codes = {a["code"]: a["id"] for a in accounts.json()["data"]}
+    assert "1000" in codes and "4000" in codes
+
+    posted = await ac.post(
+        "/api/v1/accounting/journal-entries",
+        headers=headers,
+        json={
+            "description": "Company A journal",
+            "lines": [
+                {"account_id": codes["1000"], "debit": 5, "credit": 0},
+                {"account_id": codes["4000"], "debit": 0, "credit": 5},
+            ],
+        },
+    )
+    assert posted.status_code == 200, posted.text
+    assert posted.json()["data"]["description"] == "Company A journal"
+
+    journals = await ac.get("/api/v1/accounting/journal-entries", headers=headers)
+    assert journals.status_code == 200, journals.text
+    descs = {r.get("description") for r in journals.json()["data"]}
+    assert "Company A journal" in descs
+    assert "Company B only journal" not in descs
+
+    recurring = await ac.get("/api/v1/expenses/recurring", headers=headers)
+    assert recurring.status_code == 200, recurring.text
+    assert all(r.get("description") != "Company B rent" for r in recurring.json()["data"])
+
+    create_rec = await ac.post(
+        "/api/v1/expenses/recurring",
+        headers=headers,
+        json={
+            "amount": 25,
+            "frequency": "monthly",
+            "description": "Company A utilities",
+            "category": "Utilities",
+        },
+    )
+    assert create_rec.status_code == 200, create_rec.text
+    assert create_rec.json()["data"]["company_id"] == seed["c1"].id
+
+
+@pytest.mark.asyncio
+async def test_reports_sales_daily_company_scoped(client, db_session):
+    ac, seed = client
+    from datetime import datetime
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="RPTB",
+        name="Alpha Report B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="Report B Customer",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add(cust_b)
+    await db_session.flush()
+    now = datetime.utcnow()
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            invoice_number="INV-RPTB-1",
+            customer_id=cust_b.id,
+            status="posted",
+            subtotal=999,
+            tax_amount=0,
+            total_amount=999,
+            posted_at=now,
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    r = await ac.get("/api/v1/reports/sales/daily", headers=headers)
+    assert r.status_code == 200, r.text
+    assert float(r.json()["data"]["total_revenue"] or 0) < 999
+
+
+@pytest.mark.asyncio
+async def test_company_membership_assign_and_revoke(client, db_session):
+    ac, seed = client
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="MEMB",
+        name="Alpha Membership Co",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
+
+    listed = await ac.get(f"/api/v1/companies/{c_b.id}/memberships", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert listed.json()["data"] == []
+
+    assigned = await ac.post(
+        f"/api/v1/companies/{c_b.id}/memberships",
+        headers=headers,
+        json={"user_id": seed["u1"].id, "role": "cashier"},
+    )
+    assert assigned.status_code == 200, assigned.text
+    assert assigned.json()["data"]["user_id"] == seed["u1"].id
+    assert assigned.json()["data"]["is_active"] is True
+
+    listed2 = await ac.get(f"/api/v1/companies/{c_b.id}/memberships", headers=headers)
+    assert listed2.status_code == 200
+    assert any(r["user_id"] == seed["u1"].id for r in listed2.json()["data"])
+
+    revoked = await ac.delete(
+        f"/api/v1/companies/{c_b.id}/memberships/{seed['u1'].id}",
+        headers=headers,
+    )
+    assert revoked.status_code == 200, revoked.text
+    assert revoked.json()["data"]["is_active"] is False

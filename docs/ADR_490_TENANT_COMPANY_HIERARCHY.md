@@ -47,3 +47,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Stock movements, stock transfers, and stock counts are company-filtered on list/export; creates stamp `company_id`.
 - Sales/purchase invoice CSV exports apply company scope.
 - Remaining PARTIAL: some report aggregations and legacy export routes may still be tenant-only; journal create stamping and recurring-expense helpers can go further.
+
+## Phase 4 follow-up (2026-08-14)
+
+- Journal create / COA create / recurring expense create stamp `company_id`; recurring list/export/generate are company-scoped; journal GET uses `assert_record_company`; journal CSV export filters by company.
+- Critical report aggregations (`sales_daily`, `inventory_valuation`, `purchases_summary`, `expenses_summary`, `/reports/summary`) accept `company_id` from workspace claims.
+- Membership admin API: `GET/POST /companies/{id}/memberships`, `DELETE /companies/{id}/memberships/{user_id}`.
+- Remaining PARTIAL: other report slices (monthly sales, product/customer breakdowns, credit aging, dashboard KPIs) and some legacy exports may still be tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred.

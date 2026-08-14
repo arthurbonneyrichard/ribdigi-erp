@@ -353,28 +353,30 @@ def resolve_report_period(
 
 
 async def _sales_totals_for_bounds(
-    db: AsyncSession, tenant_id: str, start: datetime, end: datetime
+    db: AsyncSession,
+    tenant_id: str,
+    start: datetime,
+    end: datetime,
+    *,
+    company_id: str | None = None,
 ) -> dict:
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
-                m.SalesInvoice.posted_at >= start,
-                m.SalesInvoice.posted_at <= end,
-            )
-        )
-    ).scalars().all()
-    pos = (
-        await db.execute(
-            select(m.Transaction).where(
-                m.Transaction.tenant_id == tenant_id,
-                m.Transaction.tx_type == "pos_sale",
-                m.Transaction.created_at >= start,
-                m.Transaction.created_at <= end,
-            )
-        )
-    ).scalars().all()
+    inv_q = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
+        m.SalesInvoice.posted_at >= start,
+        m.SalesInvoice.posted_at <= end,
+    )
+    pos_q = select(m.Transaction).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.tx_type == "pos_sale",
+        m.Transaction.created_at >= start,
+        m.Transaction.created_at <= end,
+    )
+    if company_id:
+        inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
+        pos_q = pos_q.where(m.Transaction.company_id == company_id)
+    invoices = (await db.execute(inv_q)).scalars().all()
+    pos = (await db.execute(pos_q)).scalars().all()
     invoice_total = sum(float(i.total_amount or 0) for i in invoices)
     invoice_tax = sum(float(i.tax_amount or 0) for i in invoices)
     invoice_discount = sum(float(i.discount_amount or 0) for i in invoices)
@@ -393,12 +395,22 @@ async def _sales_totals_for_bounds(
     }
 
 
-async def sales_daily(db: AsyncSession, tenant_id: str, date: datetime | None = None) -> dict:
+async def sales_daily(
+    db: AsyncSession,
+    tenant_id: str,
+    date: datetime | None = None,
+    *,
+    company_id: str | None = None,
+) -> dict:
     day = date or datetime.utcnow()
     start, end = day_bounds(day)
-    current = await _sales_totals_for_bounds(db, tenant_id, start, end)
+    current = await _sales_totals_for_bounds(
+        db, tenant_id, start, end, company_id=company_id
+    )
     prev_start, prev_end = day_bounds(start - timedelta(days=1))
-    previous = await _sales_totals_for_bounds(db, tenant_id, prev_start, prev_end)
+    previous = await _sales_totals_for_bounds(
+        db, tenant_id, prev_start, prev_end, company_id=company_id
+    )
     prev_rev = float(previous["total_revenue"] or 0)
     cur_rev = float(current["total_revenue"] or 0)
     return {
@@ -995,6 +1007,7 @@ async def inventory_valuation(
     *,
     warehouse_id: str | None = None,
     store_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Stock valuation at standard cost: quantity × product.cost_price (Stage 9 R2).
 
@@ -1014,6 +1027,8 @@ async def inventory_valuation(
         .where(m.WarehouseStock.tenant_id == tenant_id)
         .order_by(m.Warehouse.code, m.Product.name)
     )
+    if company_id:
+        stmt = stmt.where(m.Warehouse.company_id == company_id)
     if resolved_warehouse_id:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == resolved_warehouse_id)
     rows = (await db.execute(stmt)).all()
@@ -1259,11 +1274,14 @@ async def purchases_summary(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     stmt = select(m.PurchaseOrder).where(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.status != "cancelled",
     )
+    if company_id:
+        stmt = stmt.where(m.PurchaseOrder.company_id == company_id)
     if from_date:
         stmt = stmt.where(m.PurchaseOrder.created_at >= from_date)
     if to_date:
@@ -1490,11 +1508,14 @@ async def expenses_summary(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     category_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     stmt = select(m.Expense).where(
         m.Expense.tenant_id == tenant_id,
         m.Expense.status == "approved",
     )
+    if company_id:
+        stmt = stmt.where(m.Expense.company_id == company_id)
     if category_id:
         stmt = stmt.where(m.Expense.category_id == category_id)
     if from_date:
