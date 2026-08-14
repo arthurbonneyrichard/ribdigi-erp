@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_294_EXIT_CRITERIA.md` / `docs/ADR_596_STAGE294_FREEZE.md` (`backend/tests/test_stage294_exit_h294x.py`) — Stage 294 H294x
+- `docs/STAGE_294_FIDELITY.md` (`backend/tests/test_stage294_fidelity_d1.py`) — Stage 294 D1
+- `docs/STAGE_294_PLAN.md` (`backend/tests/test_stage294_open.py`) — Stage 294 open (ADR-595)
+- `docs/COMMERCIAL_SECURITY_CONTACT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-security-contact-pack-remaining-gate.json` — Stage 294 I1
+- `docs/COMMERCIAL_SECURITY_CONTACT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-security-contact-pack-rg-blockers.json` — Stage 294 B1
+- `docs/COMMERCIAL_SECURITY_CONTACT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-security-contact-pack-rg-pointers.json` — Stage 294 P1
 - `docs/STAGE_293_EXIT_CRITERIA.md` / `docs/ADR_594_STAGE293_FREEZE.md` (`backend/tests/test_stage293_exit_h293x.py`) — Stage 293 H293x
 - `docs/STAGE_293_FIDELITY.md` (`backend/tests/test_stage293_fidelity_d1.py`) — Stage 293 D1
 - `docs/STAGE_293_PLAN.md` (`backend/tests/test_stage293_open.py`) — Stage 293 open (ADR-593)
@@ -5041,6 +5047,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 294 exit
+
+H294x met — `docs/STAGE_294_EXIT_CRITERIA.md`, ADR-596. Stages 1–294 frozen for Stage 294 feature scope.
+
+## Stage 294 D1 — Tenant MVP Commercial Security Contact Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_294_FIDELITY.md` (`test_stage294_fidelity_d1.py`). `COMMERCIAL_SECURITY_CONTACT_PACK_*` remaining-gate index; security contact live / commercial support / go-live still MISSING.
+
+## Stage 294 open
+
+`docs/ADR_595_STAGE294_OPEN.md` + `docs/STAGE_294_PLAN.md` (`test_stage294_open.py`).
 
 ## Stage 293 exit
 

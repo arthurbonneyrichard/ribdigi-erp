@@ -31,3 +31,9 @@ Stage 294 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for signed ToS, AUP enforced, clickwrap live, legal counsel, paid billing, or go-live.
+
+## Amendment — Stage 294 opened
+
+Stage 294 opened under **ADR-595** after CONTINUE/NEXT (Tenant MVP Commercial Security Contact Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-596**. Stage 293 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 294 runner-up outline was approved and opened (ADR-595); freeze ADR-596. Do not reopen Stage 293 scope.

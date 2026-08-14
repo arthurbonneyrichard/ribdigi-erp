@@ -1,0 +1,66 @@
+{
+  "id": "commercial-security-contact-pack-rg-blockers",
+  "stage": 294,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_SECURITY_CONTACT_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_SECURITY_CONTACT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_security_contact": "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md"
+  },
+  "packaging_complete": true,
+  "security_contact_live_claimed": false,
+  "breach_drill_claimed": false,
+  "vuln_disclosure_live_claimed": false,
+  "commercial_support_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "security_contact_live_claimed": "REMAINING",
+    "breach_drill_claimed": "REMAINING",
+    "vuln_disclosure_live_claimed": "REMAINING",
+    "commercial_support_claimed": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage75_as_security_contact_live": "NON_CLAIM",
+    "stage293_as_signed_tos": "NON_CLAIM",
+    "security_contact_live_claimed_flag": "false",
+    "breach_drill_claimed_flag": "false",
+    "vuln_disclosure_live_claimed_flag": "false",
+    "commercial_support_claimed_flag": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cscprb-contact",
+      "title": "Mark security contact live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cscprb-breach",
+      "title": "Mark breach drill Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cscprb-vuln",
+      "title": "Mark vuln disclosure live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cscprb-stage75-nonclaim",
+      "title": "Mark Stage 75 C1 as non-claim for security contact live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cscprb-contact-remaining",
+      "title": "Security contact live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 294 B1 commercial security contact pack RG blocker matrix packaging only. Security contact live Completes remain MISSING."
+}

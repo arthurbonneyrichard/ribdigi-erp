@@ -1714,6 +1714,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 293 P1** | Stage 76 T1 / Stage 292 / Stage 291 / Stage 39 pointers (`test_stage293_pointers_p1.py`) |
 | **Stage 293 D1** | Commercial terms pack remaining-gate fidelity — `docs/STAGE_293_FIDELITY.md` (`test_stage293_fidelity_d1.py`) |
 | **Stage 293 H293x** | Exit + freeze — `docs/STAGE_293_EXIT_CRITERIA.md`, ADR-594 (`test_stage293_exit_h293x.py`); Stages 1–293 frozen |
+| **Stage 294 open** | Commercial Security Contact Pack Remaining-Gate Index — `docs/STAGE_294_PLAN.md`, ADR-595 (`test_stage294_open.py`) |
+| **Stage 294 I1** | Commercial security contact pack remaining-gate index hub (`test_stage294_index_i1.py`) |
+| **Stage 294 B1** | Commercial security contact pack blocker matrix (`test_stage294_blockers_b1.py`) |
+| **Stage 294 P1** | Stage 75 C1 / Stage 293 / Stage 292 / Stage 38 pointers (`test_stage294_pointers_p1.py`) |
+| **Stage 294 D1** | Commercial security contact pack remaining-gate fidelity — `docs/STAGE_294_FIDELITY.md` (`test_stage294_fidelity_d1.py`) |
+| **Stage 294 H294x** | Exit + freeze — `docs/STAGE_294_EXIT_CRITERIA.md`, ADR-596 (`test_stage294_exit_h294x.py`); Stages 1–294 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |
