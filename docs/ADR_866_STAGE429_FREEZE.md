@@ -31,3 +31,10 @@ Stage 430 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Support Runbook, Support Runbook honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 430 opened under **ADR-867** after CONTINUE/NEXT (Tenant MVP Attestation Pack Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-868**. Stage 429 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 429 runner-up outline was approved and opened (ADR-867); freeze ADR-868. Do not reopen Stage 429 scope.
+
