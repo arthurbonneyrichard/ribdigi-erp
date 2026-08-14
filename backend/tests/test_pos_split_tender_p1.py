@@ -27,7 +27,9 @@ async def test_split_tender_records_payments_and_session_buckets(client, db_sess
     headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
     sid = await _open_shift(ac, headers)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(
+        db_session, tenant_id, company_id=seed["c1"].id
+    )
     seed["p1"].selling_price = 100
     seed["p1"].tax_rate_id = None
     await db_session.commit()
@@ -76,8 +78,12 @@ async def test_split_tender_records_payments_and_session_buckets(client, db_sess
             select(m.JournalEntryLine).where(m.JournalEntryLine.journal_entry_id == je.id)
         )
     ).scalars().all()
-    cash = await accounting_svc.get_account_by_code(db_session, tenant_id, "1000")
-    bank = await accounting_svc.get_account_by_code(db_session, tenant_id, "1010")
+    cash = await accounting_svc.get_account_by_code(
+        db_session, tenant_id, "1000", company_id=seed["c1"].id
+    )
+    bank = await accounting_svc.get_account_by_code(
+        db_session, tenant_id, "1010", company_id=seed["c1"].id
+    )
     by_acct = {ln.account_id: float(ln.debit or 0) for ln in lines if float(ln.debit or 0) > 0}
     assert by_acct.get(cash.id) == 40
     assert by_acct.get(bank.id) == 60
