@@ -687,9 +687,10 @@ For regular payments like rent or subscriptions:
    - **Amount**, **Category**, optional payee / branch / department
 3. Click **Create schedule** — the system stores `next_run_at` and Celery generates due expenses automatically
 4. Use **Generate due now** to run the same job immediately (generated expenses use EXP numbering)
-5. **Deactivate** / **Activate** a schedule from the list when you need to pause it
+5. **Skip next** advances `next_run_at` by one period without creating an expense (e.g. skip a holiday cycle)
+6. **Deactivate** / **Activate** a schedule from the list when you need to pause it
 
-> Advance notifications (category `recurring_expense_due`) fire about one day before `next_run_at` via Notifications → Scan due / Celery. Per-occurrence skip/edit is not yet available.
+> Advance notifications (category `recurring_expense_due`) fire about one day before `next_run_at` via Notifications → Scan due / Celery. Editing a single occurrence’s amount/payee remains deferred.
 
 ### 7.4 Expense Reports
 

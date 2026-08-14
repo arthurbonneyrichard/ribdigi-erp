@@ -285,6 +285,24 @@ export default function Page() {
     }
   }
 
+  async function skipNextRecurring(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/expenses/recurring/${id}/skip-next`, {
+        method: 'POST',
+        body: '{}',
+      });
+      const next = r.data?.next_run_at
+        ? String(r.data.next_run_at).replace('T', ' ').slice(0, 19)
+        : '—';
+      setMessage(r.message ? `${r.message} → next ${next}` : `Skipped; next run ${next}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function approve(id: string) {
     setError('');
     try {
@@ -686,8 +704,8 @@ export default function Page() {
         <p className="muted">
           Schedules auto-generate due expenses (Celery + manual Generate). Generated entries use the
           EXP-YYYY-NNNN series when reference is blank. Advance notify (T−1) uses category
-          `recurring_expense_due` via Notifications scan-due / Celery. Per-occurrence skip remains
-          out of scope for MVP.
+          `recurring_expense_due` via Notifications scan-due / Celery. Use <strong>Skip next</strong>{' '}
+          to advance `next_run_at` by one period without creating an expense.
         </p>
         <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
           <select value={recCategoryId} onChange={(e) => setRecCategoryId(e.target.value)}>
@@ -795,7 +813,12 @@ export default function Page() {
                   {r.next_run_at ? String(r.next_run_at).replace('T', ' ').slice(0, 19) : '—'}
                 </td>
                 <td>{r.is_active ? 'yes' : 'no'}</td>
-                <td>
+                <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {r.is_active ? (
+                    <button type="button" onClick={() => skipNextRecurring(r.id)}>
+                      Skip next
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => setRecurringActive(r.id, !r.is_active)}

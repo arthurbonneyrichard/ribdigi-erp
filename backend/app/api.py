@@ -7033,6 +7033,25 @@ async def update_recurring_expense(
     )
 
 
+@api.post("/expenses/recurring/{recurring_id}/skip-next")
+async def skip_next_recurring_expense(
+    recurring_id: str,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Skip the next occurrence: advance next_run_at by one period (no expense created)."""
+    row = await expenses_svc.skip_next_recurring(
+        db,
+        tenant_id=claims["tenant_id"],
+        recurring_id=recurring_id,
+    )
+    await db.commit()
+    msg = "Next occurrence skipped"
+    if not row.is_active:
+        msg = "Next occurrence skipped; schedule ended past end_date"
+    return env(expenses_svc.serialize_recurring(row), msg)
+
+
 @api.post("/expenses/recurring/generate")
 async def generate_recurring_expenses(
     claims=Depends(require_permission("expenses", "write")),
