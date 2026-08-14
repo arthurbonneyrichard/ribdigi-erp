@@ -639,6 +639,7 @@ class InventoryFefoSettingsUpdate(BaseModel):
     fefo_strict_warehouse: bool | None = None
     stock_transfer_numbering: DocumentNumberingFields | None = None
     stock_count_numbering: DocumentNumberingFields | None = None
+    opening_stock_numbering: DocumentNumberingFields | None = None
 
 
 class WarehouseCreate(BaseModel):

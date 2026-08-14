@@ -9809,6 +9809,7 @@ async def inventory_settings(
             "fefo_strict_warehouse": bool(getattr(tenant, "fefo_strict_warehouse", False)),
             "stock_transfer_numbering": numbering_settings(tenant, "stock_transfer"),
             "stock_count_numbering": numbering_settings(tenant, "stock_count"),
+            "opening_stock_numbering": numbering_settings(tenant, "opening_stock"),
         }
     )
 
@@ -9826,6 +9827,7 @@ async def update_inventory_settings(
         payload.fefo_strict_warehouse is None
         and payload.stock_transfer_numbering is None
         and payload.stock_count_numbering is None
+        and payload.opening_stock_numbering is None
     ):
         raise HTTPException(status_code=400, detail="No inventory settings to update")
     if payload.fefo_strict_warehouse is not None:
@@ -9844,12 +9846,20 @@ async def update_inventory_settings(
             prefix=payload.stock_count_numbering.prefix,
             next_number=payload.stock_count_numbering.next_number,
         )
+    if payload.opening_stock_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "opening_stock",
+            prefix=payload.opening_stock_numbering.prefix,
+            next_number=payload.opening_stock_numbering.next_number,
+        )
     await db.commit()
     return env(
         {
             "fefo_strict_warehouse": bool(getattr(tenant, "fefo_strict_warehouse", False)),
             "stock_transfer_numbering": numbering_settings(tenant, "stock_transfer"),
             "stock_count_numbering": numbering_settings(tenant, "stock_count"),
+            "opening_stock_numbering": numbering_settings(tenant, "opening_stock"),
         },
         "Inventory settings updated",
     )

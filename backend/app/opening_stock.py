@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -11,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.catalog import stock_in_with_batch
+from app.doc_numbers import next_opening_stock_number
 
 
 async def post_opening_stock(
@@ -27,7 +27,9 @@ async def post_opening_stock(
         raise HTTPException(status_code=400, detail="Opening stock requires at least one line")
 
     entry_id = str(uuid.uuid4())
-    ref_label = (reference or "").strip() or f"OS-{datetime.utcnow():%Y%m%d%H%M%S}"
+    ref_label = (reference or "").strip() or None
+    if ref_label is None:
+        ref_label = await next_opening_stock_number(db, tenant_id)
     results: list[dict] = []
     inventory_value = 0.0
 

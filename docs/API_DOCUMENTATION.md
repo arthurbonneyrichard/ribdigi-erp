@@ -621,6 +621,14 @@ Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a s
 }
 ```
 
+### 5.6a Opening Stock
+**Create:** `POST /inventory/opening-stock`  
+**List movements:** `GET /inventory/opening-stock`
+
+Multi-line go-live / fiscal-year stock init with optional warehouse/batch/unit/`unit_cost` and optional Dr 1200 / Cr 3000 journal (`post_journal`).
+
+**Numbering:** `GET|PATCH /inventory/settings` exposes `opening_stock_numbering` alongside `stock_transfer_numbering` / `stock_count_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `OS`) when `reference` is omitted; explicit references are kept. Allocated label is returned on the response, stored on the audit event, and used as the journal `reference` when a GL entry is posted (BR-5.2 / BR-20.4).
+
 ### 5.7 Stock Movement History
 **Endpoint:** `GET /inventory/movements?product_id=&warehouse_id=&store_id=&movement_type=&created_by=&reason=&from_date=&to_date=`
 
