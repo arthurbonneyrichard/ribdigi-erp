@@ -517,6 +517,22 @@ Barcodes are unique across **products and variants** in the tenant (409 on clash
 ```json
 {
   "product_id": "prod_001",
+  "quantity": 12,
+  "warehouse_id": "wh_001",
+  "variant_id": "var_001",
+  "unit_id": "unit_001",
+  "notes": "Receive to main warehouse",
+  "batch_number": "LOT-001",
+  "manufacturing_date": "2026-01-01T00:00:00",
+  "expiry_date": "2026-12-31T00:00:00"
+}
+```
+
+Optional `warehouse_id` / `variant_id` / `notes` (BR-5.2). Inventory Batches UI sends these; batch row persists warehouse + variant. Opening stock lines also accept `variant_id`.
+
+```json
+{
+  "product_id": "prod_001",
   "variant_id": "var_001",
   "warehouse_id": "wh_001",
   "quantity": 100,
