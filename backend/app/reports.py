@@ -323,13 +323,29 @@ async def sales_by_customer(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    store_id: str | None = None,
     limit: int | None = None,
 ) -> dict:
     """Aggregate posted invoices + POS sales by customer (BR-14.1).
 
     Ranked by revenue (top customers). Frequency = sale_count.
     Walk-in / missing party buckets as ``customer_id=null`` / name Walk-in.
+    Optional ``store_id`` scopes invoices by ``SalesInvoice.store_id`` and POS by session store.
     """
+
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.id == store_id,
+                    m.Store.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not store:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail="Store not found")
 
     def _bucket(agg: dict[str, dict], customer_id: str | None) -> dict:
         key = customer_id or "walk_in"
@@ -363,6 +379,8 @@ async def sales_by_customer(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_id:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.customer_id)
         total = float(inv.total_amount or 0)
@@ -382,6 +400,11 @@ async def sales_by_customer(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    if store_id:
+        pos_stmt = pos_stmt.join(m.PosSession, m.PosSession.id == m.Transaction.session_id).where(
+            m.PosSession.tenant_id == tenant_id,
+            m.PosSession.store_id == store_id,
+        )
     for tx in (await db.execute(pos_stmt)).scalars().all():
         row = _bucket(agg, tx.party_id)
         total = float(tx.total or 0)
@@ -424,6 +447,7 @@ async def sales_by_customer(
     return {
         "from_date": from_date,
         "to_date": to_date,
+        "store_id": store_id,
         "customers": customers,
         "total_revenue": round(sum(c["revenue"] for c in customers), 2),
         "total_sales": sum(c["sale_count"] for c in customers),

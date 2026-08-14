@@ -483,7 +483,7 @@ export default function Page() {
             />
           </>
         )}
-        {(tab === 'pnl' || tab === 'stores' || tab === 'sales' || tab === 'expenses' || tab === 'cashflow') && (
+        {(tab === 'pnl' || tab === 'stores' || tab === 'sales' || tab === 'customers' || tab === 'expenses' || tab === 'cashflow') && (
           <>
             {(tab === 'pnl' || tab === 'stores' || tab === 'expenses' || tab === 'cashflow') && (
               <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
@@ -739,6 +739,10 @@ export default function Page() {
 
       {tab === 'customers' && data && (
         <>
+          <p className="muted">
+            Top customers by revenue (invoices + POS)
+            {data.store_id ? ` · store ${String(data.store_id).slice(0, 8)}…` : ''}
+          </p>
           <div className="grid">
             <div className="card">
               <div className="muted">Total revenue</div>
@@ -767,7 +771,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {(data.customers || []).map((c: any) => (
+              {(Array.isArray(data.customers) ? data.customers : []).map((c: any) => (
                 <tr key={c.customer_id || c.name}>
                   <td>
                     {c.name}
