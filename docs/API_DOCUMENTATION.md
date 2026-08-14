@@ -1781,6 +1781,8 @@ Stage 233 D1 — `docs/STAGE_233_FIDELITY.md` (`test_stage233_fidelity_d1.py`): 
 Stage 234 D1 — `docs/STAGE_234_FIDELITY.md` (`test_stage234_fidelity_d1.py`): load capacity pack remaining-gate index packaging only — blocker matrix / Stage 26/28/224/223 pointers; no new public API Completes; certified 1000-VU remains deferred.
 
 Stage 235 D1 — `docs/STAGE_235_FIDELITY.md` (`test_stage235_fidelity_d1.py`): evidence ledger pack remaining-gate index packaging only — blocker matrix / Stage 30/212/234 pointers; no new public API Completes; live go-live evidence remains deferred.
+
+Stage 236 D1 — `docs/STAGE_236_FIDELITY.md` (`test_stage236_fidelity_d1.py`): support runbook pack remaining-gate index packaging only — blocker matrix / Stage 30/214/235 pointers; no new public API Completes; live support SLA remains deferred.
 Stage 213 D1 — `docs/STAGE_213_FIDELITY.md` (`test_stage213_fidelity_d1.py`): attestation pack remaining-gate index packaging only — blocker matrix / Stage 30 A1/212/187 pointers; no new public API Completes; live attestation remains deferred.
 Stage 212 D1 — `docs/STAGE_212_FIDELITY.md` (`test_stage212_fidelity_d1.py`): evidence ledger remaining-gate index packaging only — blocker matrix / Stage 30/211 pointers; no new public API Completes; live evidence-ledger remains deferred.
 Stage 211 D1 — `docs/STAGE_211_FIDELITY.md` (`test_stage211_fidelity_d1.py`): incident remaining-gate index packaging only — blocker matrix / Stage 30/210 pointers; no new public API Completes; live incident-response remains deferred.

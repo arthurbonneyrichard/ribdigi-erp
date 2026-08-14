@@ -840,6 +840,12 @@ Authoritative MVP docs:
 - `docs/EVIDENCE_LEDGER_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/evidence-ledger-pack-remaining-gate.json` — Stage 235 I1
 - `docs/EVIDENCE_LEDGER_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/evidence-ledger-pack-rg-blockers.json` — Stage 235 B1
 - `docs/EVIDENCE_LEDGER_PACK_RG_POINTERS_MVP.md` / `ops/mvp/evidence-ledger-pack-rg-pointers.json` — Stage 235 P1
+- `docs/STAGE_236_EXIT_CRITERIA.md` / `docs/ADR_479_STAGE236_FREEZE.md` (`backend/tests/test_stage236_exit_h236x.py`) — Stage 236 H236x
+- `docs/STAGE_236_FIDELITY.md` (`backend/tests/test_stage236_fidelity_d1.py`) — Stage 236 D1
+- `docs/STAGE_236_PLAN.md` (`backend/tests/test_stage236_open.py`) — Stage 236 open (ADR-478)
+- `docs/SUPPORT_RUNBOOK_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/support-runbook-pack-remaining-gate.json` — Stage 236 I1
+- `docs/SUPPORT_RUNBOOK_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/support-runbook-pack-rg-blockers.json` — Stage 236 B1
+- `docs/SUPPORT_RUNBOOK_PACK_RG_POINTERS_MVP.md` / `ops/mvp/support-runbook-pack-rg-pointers.json` — Stage 236 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4125,4 +4131,16 @@ H235x met — `docs/STAGE_235_EXIT_CRITERIA.md`, ADR-477. Stages 1–235 frozen 
 ## Stage 235 open
 
 `docs/ADR_476_STAGE235_OPEN.md` + `docs/STAGE_235_PLAN.md` (`test_stage235_open.py`).
+
+## Stage 236 exit
+
+H236x met — `docs/STAGE_236_EXIT_CRITERIA.md`, ADR-479. Stages 1–236 frozen for Stage 236 feature scope.
+
+## Stage 236 D1 — Tenant MVP Support Runbook Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_236_FIDELITY.md` (`test_stage236_fidelity_d1.py`). `SUPPORT_RUNBOOK_PACK_*` remaining-gate index; live support SLA still MISSING.
+
+## Stage 236 open
+
+`docs/ADR_478_STAGE236_OPEN.md` + `docs/STAGE_236_PLAN.md` (`test_stage236_open.py`).
 

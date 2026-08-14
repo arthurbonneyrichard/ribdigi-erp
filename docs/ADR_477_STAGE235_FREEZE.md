@@ -24,6 +24,6 @@ Stage 235 Tenant MVP Evidence Ledger Pack Remaining-Gate Index Fidelity delivere
 
 ## Next stage
 
-Stage 236 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 235 feature scope remains frozen.
+Stage 236 opened under **ADR-478** after CONTINUE/NEXT (Support Runbook Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-479**. Stage 235 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Support Runbook Pack Remaining-Gate Index Fidelity — single index of support-runbook blockers (packaged Stage 30 S1 support-runbook materials non-claim as live support SLA Complete) with explicit non-claim. Prefixed `SUPPORT_RUNBOOK_PACK_*` if a prior `SUPPORT_RUNBOOK_*` / `SUPPORT_SLA_*` remaining-gate exists. Distinct from Stage 235 evidence ledger pack remaining-gate and Stage 234 load capacity pack remaining-gate.
+**Amendment (2026-08-14):** Stage 236 runner-up outline was approved and opened (ADR-478); freeze ADR-479. Do not reopen Stage 235 scope.

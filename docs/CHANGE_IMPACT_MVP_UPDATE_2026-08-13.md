@@ -357,3 +357,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Evidence Ledger Pack Remaining-Gate Index Fidelity** — evidence ledger pack remaining-gate hub (I1), blocker matrix (B1), Stage 30 / Stage 212 / Stage 234 pointers with explicit non-claim (P1). Prefixed `EVIDENCE_LEDGER_PACK_*` (≠ Stage 212 `EVIDENCE_LEDGER_*`). Live go-live evidence Completes remain deferred (Stage 236+). Distinct from Stage 212 evidence ledger remaining-gate and Stage 234 load capacity pack remaining-gate.
 
+## Stage 236 decision (opened after Stage 235 freeze)
+
+**Tenant MVP Support Runbook Pack Remaining-Gate Index Fidelity** — support runbook pack remaining-gate hub (I1), blocker matrix (B1), Stage 30 / Stage 214 / Stage 235 pointers with explicit non-claim (P1). Prefixed `SUPPORT_RUNBOOK_PACK_*` (≠ Stage 214 `SUPPORT_RUNBOOK_*` / Stage 188 `SUPPORT_SLA_*` / Stage 220 `SUPPORT_SLA_BOUNDARY_*`). Live support SLA Completes remain deferred (Stage 237+). Distinct from Stage 214 support runbook remaining-gate and Stage 235 evidence ledger pack remaining-gate.
+
