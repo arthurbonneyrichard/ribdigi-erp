@@ -623,7 +623,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Create cash accounts (petty cash, main cash)
   - [x] Create bank accounts with bank name, account number, branch
-  - [x] Record deposits, withdrawals, transfers between accounts
+  - [x] Record deposits, withdrawals, transfers between accounts (`reference` via tenant series `GET|PATCH /accounting/settings` → `cash_transfer_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `XFER` when omitted; Accounting Document numbering Transfer/XFER row)
   - [x] Bank reconciliation (system balance vs statement)
   - [x] Cheque management (issue, deposit, bounce tracking)
 
@@ -995,7 +995,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt, journal, POS sale/shift, stock transfer/count, expense numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP; `GET|PATCH /accounting/settings` for JE; `GET|PATCH /pos/settings` for POS sale + SHIFT session; `GET|PATCH /inventory/settings` for TR + SC; `GET|PATCH /expenses/settings` for EXP)
+  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt, journal, cash/bank transfer, POS sale/shift, stock transfer/count, expense numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP; `GET|PATCH /accounting/settings` for JE + XFER; `GET|PATCH /pos/settings` for POS sale + SHIFT session; `GET|PATCH /inventory/settings` for TR + SC; `GET|PATCH /expenses/settings` for EXP)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)

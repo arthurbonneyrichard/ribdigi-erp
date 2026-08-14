@@ -132,6 +132,12 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.Expense,
         "field": "reference",
     },
+    "cash_transfer": {
+        "default_prefix": "XFER",
+        "storage": "json",
+        "model": m.CashTransfer,
+        "field": "reference",
+    },
 }
 
 # Back-compat aliases
@@ -291,6 +297,10 @@ async def next_stock_count_number(db: AsyncSession, tenant_id: str) -> str:
 
 async def next_expense_number(db: AsyncSession, tenant_id: str) -> str:
     return await next_series_document_number(db, tenant_id, "expense")
+
+
+async def next_cash_transfer_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "cash_transfer")
 
 
 async def next_series_document_number(db: AsyncSession, tenant_id: str, kind: str) -> str:

@@ -990,6 +990,7 @@ class PurchasingNumberingUpdate(BaseModel):
 
 class AccountingSettingsUpdate(BaseModel):
     journal_numbering: DocumentNumberingFields | None = None
+    cash_transfer_numbering: DocumentNumberingFields | None = None
 
 
 class PosSettingsUpdate(BaseModel):
