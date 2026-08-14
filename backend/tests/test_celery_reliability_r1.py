@@ -23,6 +23,7 @@ EXPECTED_HANDLERS = {
     "scan_low_stock",
     "scan_payment_due",
     "scan_quotation_expiry",
+    "scan_recurring_expense_due",
     "generate_recurring_expenses",
     "run_due_backups",
     "scan_trial_lifecycle",

@@ -589,7 +589,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Set frequency (daily, weekly, monthly, yearly) — `POST /expenses/recurring`; Expenses → Recurring UI
   - [x] Auto-generate expense entries — Celery `generate_recurring_expenses` + `POST /expenses/recurring/generate`; allocates `EXP-YYYY-NNNN` via expense numbering when blank; Expenses UI Generate due
-  - [ ] Notification before auto-generation
+  - [x] Notification before auto-generation — category `recurring_expense_due` T−1 on `next_run_at` via Celery `scan_recurring_expense_due` + `POST /notifications/scan-due`; Notifications preferences
   - [ ] Skip or modify individual occurrences (deactivate schedule via `PATCH /expenses/recurring/{id}` is supported; per-occurrence skip/edit is not)
 
 ---

@@ -28,6 +28,13 @@ def scan_quotation_expiry() -> dict:
     return jobs_svc.run_async(jobs_svc.job_scan_quotation_expiry())
 
 
+@celery.task(name="app.tasks.scan_recurring_expense_due")
+def scan_recurring_expense_due() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_scan_recurring_expense_due())
+
+
 @celery.task(name="app.tasks.generate_recurring_expenses")
 def generate_recurring_expenses() -> dict:
     if not settings.CELERY_ENABLED:

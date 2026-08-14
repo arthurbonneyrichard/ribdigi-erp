@@ -1201,7 +1201,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 **Payment Schedule:** `GET /suppliers/{supplier_id}/payment-schedule` — open purchase invoices + uninvoiced POs sorted by `due_date` ascending; each row includes `balance_due`, `days_until_due`, `days_overdue`, optional `early_discount` quote when tenant early-pay settings apply. Response also has `total_due`, `upcoming_count`, `overdue_count`. Requires `credit:read`.
 
-**Due notifications:** Celery / `POST /notifications/scan-due` runs `scan_payment_due` for both AR sales invoices and AP purchase invoices within the horizon (default 3 days), creating `payment_due` notifications (`entity_type=purchase_invoice` for bills), and `scan_quotation_expiry` for draft/sent quotations with `valid_until` within 1 day (category `quotation_expiry`, `entity_type=sales_quotation`).
+**Due notifications:** Celery / `POST /notifications/scan-due` runs `scan_payment_due` for both AR sales invoices and AP purchase invoices within the horizon (default 3 days), creating `payment_due` notifications (`entity_type=purchase_invoice` for bills), `scan_quotation_expiry` for draft/sent quotations with `valid_until` within 1 day (category `quotation_expiry`, `entity_type=sales_quotation`), and `scan_recurring_expense_due` for active recurring schedules with `next_run_at` within 1 day (category `recurring_expense_due`, `entity_type=recurring_expense`; BR-9.5).
 
 **Record Payment:** `POST /suppliers/{supplier_id}/payments`
 
@@ -1341,7 +1341,7 @@ Tax UI (`/tax`) period controls include store picker.
 **Endpoint:** `GET /notifications/settings`  
 **Update:** `PATCH /notifications/settings`
 
-Categories include `low_stock` (BR-5.5 — default email **on**; emails `inventory_officer` + `store_manager` + admins via `roles`), `payment_due`, `quotation_expiry` (BR-7.2 — T−1 day before `valid_until`), `purchase_received`, `expense_approval` (BR-9.3 — default email **on**; role-targeted when expense notify passes `roles`), `credit_limit`, `shift_variance`, `new_order` (BR-15.1 — emitted on sales order create/confirm), `transfer`, `billing`, `security`, `system`. Each maps to dashboard/email/sms preference channels.
+Categories include `low_stock` (BR-5.5 — default email **on**; emails `inventory_officer` + `store_manager` + admins via `roles`), `payment_due`, `quotation_expiry` (BR-7.2 — T−1 day before `valid_until`), `recurring_expense_due` (BR-9.5 — T−1 day before recurring `next_run_at`; default email **on**), `purchase_received`, `expense_approval` (BR-9.3 — default email **on**; role-targeted when expense notify passes `roles`), `credit_limit`, `shift_variance`, `new_order` (BR-15.1 — emitted on sales order create/confirm), `transfer`, `billing`, `security`, `system`. Each maps to dashboard/email/sms preference channels.
 
 ```json
 {

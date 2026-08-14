@@ -677,7 +677,7 @@ For regular payments like rent or subscriptions:
 4. Use **Generate due now** to run the same job immediately (generated expenses use EXP numbering)
 5. **Deactivate** / **Activate** a schedule from the list when you need to pause it
 
-> Per-occurrence skip/edit and advance notification before generation are not yet available.
+> Advance notifications (category `recurring_expense_due`) fire about one day before `next_run_at` via Notifications → Scan due / Celery. Per-occurrence skip/edit is not yet available.
 
 ### 7.4 Expense Reports
 

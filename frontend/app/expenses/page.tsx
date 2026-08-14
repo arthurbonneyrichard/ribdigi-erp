@@ -685,7 +685,8 @@ export default function Page() {
         <h3>Recurring expenses</h3>
         <p className="muted">
           Schedules auto-generate due expenses (Celery + manual Generate). Generated entries use the
-          EXP-YYYY-NNNN series when reference is blank. Advance notify and per-occurrence skip remain
+          EXP-YYYY-NNNN series when reference is blank. Advance notify (T−1) uses category
+          `recurring_expense_due` via Notifications scan-due / Celery. Per-occurrence skip remains
           out of scope for MVP.
         </p>
         <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>

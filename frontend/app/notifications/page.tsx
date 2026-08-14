@@ -61,8 +61,9 @@ export default function Page() {
       const r = await api('/notifications/scan-due', { method: 'POST' });
       const payment = r.data?.payment_due ?? 0;
       const quotes = r.data?.quotation_expiry ?? 0;
+      const recurring = r.data?.recurring_expense_due ?? 0;
       setMessage(
-        `Due alerts created: ${r.data?.created ?? 0} (payment ${payment}, quotations ${quotes})`,
+        `Due alerts created: ${r.data?.created ?? 0} (payment ${payment}, quotations ${quotes}, recurring ${recurring})`,
       );
       setStatus('unread');
       await refresh();
@@ -96,7 +97,9 @@ export default function Page() {
   return (
     <Shell>
       <h1>Notifications</h1>
-      <p className="muted">In-app alerts, preferences, payment-due and quotation-expiry scan</p>
+      <p className="muted">
+        In-app alerts, preferences, payment-due, quotation-expiry, and recurring-expense-due scan
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 

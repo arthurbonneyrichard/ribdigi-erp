@@ -99,6 +99,16 @@ async def job_scan_quotation_expiry() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_scan_recurring_expense_due() -> dict:
+    from app import notifications as notifications_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        created = await notifications_svc.scan_recurring_expense_due(db, tenant_id)
+        return {"created": created}
+
+    return await _for_each_tenant(work)
+
+
 async def job_generate_recurring_expenses() -> dict:
     from app import expenses as expenses_svc
 
@@ -221,6 +231,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
     "scan_quotation_expiry": job_scan_quotation_expiry,
+    "scan_recurring_expense_due": job_scan_recurring_expense_due,
     "generate_recurring_expenses": job_generate_recurring_expenses,
     "run_due_backups": job_run_due_backups,
     "scan_trial_lifecycle": job_scan_trial_lifecycle,
