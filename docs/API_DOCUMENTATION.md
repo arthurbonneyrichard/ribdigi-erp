@@ -560,6 +560,22 @@ Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update
 ```
 
 `reference_type` required ∈ `{sale, transfer, adjustment, damage, internal, other}`. Optional `reference_id`, `warehouse_id`, `variant_id`, `unit_id`, `batch_id` (otherwise FEFO). Persists `stock_movements.reference_type` / `reference_id` with `movement_type=stock_out`. Inventory UI **Stock Out** tab.
+
+**Warehouse Stock (BR-5.4):** `GET /inventory/warehouse-stock?warehouse_id=&include_zero=false` — per-warehouse on-hand + reorder policy (`inventory:read`). Response `items[]` include `quantity`, `reorder_level`, `reorder_qty`, `below_reorder`, `suggested_order_qty`, `consolidated_stock`. Inventory **Warehouse stock** tab.
+
+**Warehouse reorder:** `PUT /inventory/warehouse-stock/reorder`
+
+```json
+{
+  "warehouse_id": "wh_001",
+  "product_id": "prod_001",
+  "reorder_level": 10,
+  "reorder_qty": 25
+}
+```
+
+Creates/updates `warehouse_stocks` reorder fields for that warehouse (`inventory:write`). Store-scoped alias remains `PUT /stores/{store_id}/reorder-policy`.
+
 **Stock Adjustment:** `POST /inventory/adjust/{product_id}` (BR-5.2)
 
 ```json

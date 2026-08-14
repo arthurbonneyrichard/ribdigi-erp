@@ -370,3 +370,104 @@ async def apply_line_items_stock(
             if variant_id:
                 variant = await get_variant(db, tenant_id, variant_id)
                 variant.stock_qty = float(variant.stock_qty or 0) + stock_qty
+
+
+async def list_warehouse_stock(
+    db: AsyncSession,
+    tenant_id: str,
+    warehouse_id: str,
+    *,
+    include_zero: bool = False,
+) -> dict:
+    """BR-5.4 — per-warehouse on-hand + reorder policy (inventory:read)."""
+    from app.warehouses import get_warehouse
+
+    wh = await get_warehouse(db, tenant_id, warehouse_id)
+    stmt = (
+        select(m.WarehouseStock, m.Product)
+        .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+        .where(
+            m.WarehouseStock.tenant_id == tenant_id,
+            m.WarehouseStock.warehouse_id == wh.id,
+        )
+        .order_by(m.Product.name)
+    )
+    if not include_zero:
+        stmt = stmt.where(
+            (m.WarehouseStock.quantity > 0) | (m.WarehouseStock.reorder_level > 0)
+        )
+    rows = (await db.execute(stmt)).all()
+    items = []
+    for stock, product in rows:
+        qty = float(stock.quantity or 0)
+        reorder = float(stock.reorder_level or 0)
+        reorder_qty = float(stock.reorder_qty or 0)
+        items.append(
+            {
+                "product_id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "quantity": qty,
+                "reorder_level": reorder,
+                "reorder_qty": reorder_qty,
+                "below_reorder": reorder > 0 and qty <= reorder,
+                "suggested_order_qty": max(reorder_qty, round(reorder - qty, 3))
+                if reorder > 0 and qty <= reorder
+                else reorder_qty,
+                "warehouse_id": wh.id,
+                "consolidated_stock": float(product.stock_qty or 0),
+            }
+        )
+    return {
+        "warehouse_id": wh.id,
+        "warehouse_code": wh.code,
+        "warehouse_name": wh.name,
+        "store_id": wh.store_id,
+        "include_zero": include_zero,
+        "count": len(items),
+        "items": items,
+        "total_quantity": round(sum(i["quantity"] for i in items), 3),
+    }
+
+
+async def set_warehouse_reorder_policy(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    warehouse_id: str,
+    product_id: str,
+    reorder_level: float,
+    reorder_qty: float = 0,
+) -> dict:
+    """BR-5.4 — set per-warehouse reorder level/qty (inventory:write)."""
+    from app.warehouses import get_warehouse
+
+    wh = await get_warehouse(db, tenant_id, warehouse_id)
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id, m.Product.tenant_id == tenant_id
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    row = await get_or_create_warehouse_stock(
+        db, tenant_id=tenant_id, warehouse_id=wh.id, product_id=product_id
+    )
+    row.reorder_level = max(float(reorder_level or 0), 0)
+    row.reorder_qty = max(float(reorder_qty or 0), 0)
+    await db.flush()
+    qty = float(row.quantity or 0)
+    reorder = float(row.reorder_level or 0)
+    return {
+        "product_id": product.id,
+        "sku": product.sku,
+        "name": product.name,
+        "quantity": qty,
+        "reorder_level": reorder,
+        "reorder_qty": float(row.reorder_qty or 0),
+        "below_reorder": reorder > 0 and qty <= reorder,
+        "warehouse_id": wh.id,
+        "store_id": wh.store_id,
+    }

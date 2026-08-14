@@ -147,6 +147,7 @@ from app.schemas import (
     StoreUpdate,
     StoreDrawerSettingsUpdate,
     StoreReorderPolicyUpdate,
+    WarehouseReorderPolicyUpdate,
     InventoryFefoSettingsUpdate,
     SupplierPaymentCreate,
     TaxCalculateRequest,
@@ -3601,6 +3602,49 @@ async def stock_out(
     result["reference_id"] = ref_id
     await db.commit()
     return env(result, "Stock out recorded")
+
+
+@api.get("/inventory/warehouse-stock")
+async def inventory_warehouse_stock(
+    warehouse_id: str,
+    include_zero: bool = False,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-5.4 — view on-hand + reorder policy for one warehouse."""
+    from app import inventory as inventory_svc
+
+    if not (warehouse_id or "").strip():
+        raise HTTPException(status_code=400, detail="warehouse_id is required")
+    return env(
+        await inventory_svc.list_warehouse_stock(
+            db,
+            claims["tenant_id"],
+            warehouse_id.strip(),
+            include_zero=include_zero,
+        )
+    )
+
+
+@api.put("/inventory/warehouse-stock/reorder")
+async def inventory_warehouse_stock_reorder(
+    payload: WarehouseReorderPolicyUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-5.4 — set per-warehouse reorder level/qty."""
+    from app import inventory as inventory_svc
+
+    row = await inventory_svc.set_warehouse_reorder_policy(
+        db,
+        tenant_id=claims["tenant_id"],
+        warehouse_id=payload.warehouse_id,
+        product_id=payload.product_id,
+        reorder_level=payload.reorder_level,
+        reorder_qty=payload.reorder_qty,
+    )
+    await db.commit()
+    return env(row, "Warehouse reorder policy saved")
 
 
 @api.get("/products/{product_id}/variants")

@@ -15,7 +15,8 @@ type Tab =
   | 'counts'
   | 'movements'
   | 'adjust'
-  | 'stockout';
+  | 'stockout'
+  | 'whstock';
 
 type ImportReportRow = {
   line: number;
@@ -198,6 +199,17 @@ export default function Page() {
   const [outUnitId, setOutUnitId] = useState('');
   const [outBatchId, setOutBatchId] = useState('');
   const [outNotes, setOutNotes] = useState('');
+  const [whStockWarehouseId, setWhStockWarehouseId] = useState('');
+  const [whStockIncludeZero, setWhStockIncludeZero] = useState(false);
+  const [whStockRows, setWhStockRows] = useState<any[]>([]);
+  const [whStockMeta, setWhStockMeta] = useState<{
+    warehouse_name?: string;
+    total_quantity?: number;
+    count?: number;
+  }>({});
+  const [whReorderProductId, setWhReorderProductId] = useState('');
+  const [whReorderLevel, setWhReorderLevel] = useState('0');
+  const [whReorderQty, setWhReorderQty] = useState('0');
 
   async function refresh() {
     const [p, e, c, b, u, w, sc, os, rates] = await Promise.all([
@@ -224,6 +236,7 @@ export default function Page() {
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
     if (!stockWarehouseId && w.data?.length) setStockWarehouseId(w.data[0].id);
+    if (!whStockWarehouseId && w.data?.length) setWhStockWarehouseId(w.data[0].id);
   }
 
   async function refreshSelected(id: string) {
@@ -296,6 +309,71 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
+  async function loadWarehouseStock(overrides: {
+    warehouse_id?: string;
+    include_zero?: boolean;
+  } = {}) {
+    setError('');
+    const warehouse = overrides.warehouse_id ?? whStockWarehouseId;
+    const includeZero = overrides.include_zero ?? whStockIncludeZero;
+    if (!warehouse) {
+      setWhStockRows([]);
+      setWhStockMeta({});
+      return;
+    }
+    try {
+      const params = new URLSearchParams();
+      params.set('warehouse_id', warehouse);
+      if (includeZero) params.set('include_zero', 'true');
+      const r = await api(`/inventory/warehouse-stock?${params.toString()}`);
+      const data = r.data || {};
+      setWhStockRows(data.items || []);
+      setWhStockMeta({
+        warehouse_name: data.warehouse_name,
+        total_quantity: data.total_quantity,
+        count: data.count,
+      });
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  useEffect(() => {
+    if (tab === 'whstock') {
+      loadWarehouseStock().catch((err) => setError(err.message));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, whStockWarehouseId, whStockIncludeZero]);
+
+  async function saveWarehouseReorder() {
+    setError('');
+    setMessage('');
+    if (!whStockWarehouseId) {
+      setError('Select a warehouse');
+      return;
+    }
+    if (!whReorderProductId) {
+      setError('Select a product for reorder policy');
+      return;
+    }
+    try {
+      const r = await api('/inventory/warehouse-stock/reorder', {
+        method: 'PUT',
+        body: JSON.stringify({
+          warehouse_id: whStockWarehouseId,
+          product_id: whReorderProductId,
+          reorder_level: Number(whReorderLevel) || 0,
+          reorder_qty: Number(whReorderQty) || 0,
+        }),
+      });
+      setMessage(
+        `Reorder saved for ${r.data.sku || r.data.name}: level ${r.data.reorder_level} / qty ${r.data.reorder_qty}`
+      );
+      await loadWarehouseStock();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
   useEffect(() => {
     brands
       .filter((b) => b.has_logo)
@@ -996,8 +1074,8 @@ export default function Page() {
     <Shell>
       <h1>Inventory</h1>
       <p className="muted">
-        Products, catalog, variants, batches, stock out, expiry, stock counts, movements &amp;
-        adjustments
+        Products, catalog, variants, batches, stock out, warehouse stock, expiry, stock counts,
+        movements &amp; adjustments
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -1012,6 +1090,7 @@ export default function Page() {
             ['batches', 'Batches'],
             ['opening', 'Opening stock'],
             ['stockout', 'Stock Out'],
+            ['whstock', 'Warehouse stock'],
             ['expiry', 'Expiring'],
             ['counts', 'Stock counts'],
             ['movements', 'Movements'],
@@ -2314,6 +2393,126 @@ export default function Page() {
             Post stock out
           </button>
         </div>
+      )}
+
+      {tab === 'whstock' && (
+        <>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+            <h3>Warehouse stock (BR-5.4)</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              On-hand quantities and reorder policy per warehouse (not consolidated company stock).
+            </p>
+            <label className="muted">Warehouse</label>
+            <select
+              value={whStockWarehouseId}
+              onChange={(e) => setWhStockWarehouseId(e.target.value)}
+            >
+              <option value="">Select warehouse</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name || w.code || w.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={whStockIncludeZero}
+                onChange={(e) => setWhStockIncludeZero(e.target.checked)}
+              />
+              <span className="muted">Include zero-qty rows</span>
+            </label>
+            <button type="button" onClick={() => loadWarehouseStock()} disabled={!whStockWarehouseId}>
+              Refresh
+            </button>
+            <p className="muted" style={{ margin: 0 }}>
+              {whStockMeta.warehouse_name
+                ? `${whStockMeta.warehouse_name} — ${whStockMeta.count ?? 0} products · total qty ${whStockMeta.total_quantity ?? 0}`
+                : 'Pick a warehouse to load stock'}
+            </p>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 560 }}>
+            <h3>Set warehouse reorder</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Saves warehouse_stocks.reorder_level / reorder_qty for the selected warehouse.
+            </p>
+            <select
+              value={whReorderProductId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setWhReorderProductId(id);
+                const row = whStockRows.find((r) => r.product_id === id);
+                if (row) {
+                  setWhReorderLevel(String(row.reorder_level ?? 0));
+                  setWhReorderQty(String(row.reorder_qty ?? 0));
+                }
+              }}
+            >
+              <option value="">Product</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.sku})
+                </option>
+              ))}
+            </select>
+            <input
+              value={whReorderLevel}
+              onChange={(e) => setWhReorderLevel(e.target.value)}
+              placeholder="Reorder level"
+            />
+            <input
+              value={whReorderQty}
+              onChange={(e) => setWhReorderQty(e.target.value)}
+              placeholder="Reorder qty"
+            />
+            <button
+              type="button"
+              onClick={saveWarehouseReorder}
+              disabled={!whStockWarehouseId || !whReorderProductId}
+            >
+              Save reorder policy
+            </button>
+          </div>
+
+          <table className="table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Reorder</th>
+                <th>Suggest</th>
+                <th>Company</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {whStockRows.map((r) => (
+                <tr key={r.product_id}>
+                  <td>{r.sku}</td>
+                  <td>{r.name}</td>
+                  <td>{r.quantity}</td>
+                  <td>
+                    {r.reorder_level} / {r.reorder_qty}
+                  </td>
+                  <td>{r.suggested_order_qty ?? '—'}</td>
+                  <td>{r.consolidated_stock}</td>
+                  <td style={{ color: r.below_reorder ? '#b91c1c' : undefined }}>
+                    {r.below_reorder ? 'LOW' : 'ok'}
+                  </td>
+                </tr>
+              ))}
+              {whStockRows.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    No warehouse stock rows
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </>
       )}
     </Shell>
   );
