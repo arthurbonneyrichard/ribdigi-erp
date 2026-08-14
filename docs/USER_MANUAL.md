@@ -354,6 +354,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **AI use disclosure pack remaining-gate index (Stage 301):** Status index is `docs/AI_USE_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/AI_USE_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 42/300/293/42P1 pointers `docs/AI_USE_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. AI certification Complete and external LLM Complete remain MISSING (not claimed). Prefixed `AI_USE_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 42 A1 `AI_USE_DISCLOSURE_MVP.md`).
 
+**AI provider boundary pack remaining-gate index (Stage 302):** Status index is `docs/AI_PROVIDER_BOUNDARY_PACK_REMAINING_GATE_MVP.md` → blockers `docs/AI_PROVIDER_BOUNDARY_PACK_RG_BLOCKERS_MVP.md` → Stage 42/301/300/42A1 pointers `docs/AI_PROVIDER_BOUNDARY_PACK_RG_POINTERS_MVP.md`. External LLM Complete and Prophet Complete remain MISSING (not claimed). Prefixed `AI_PROVIDER_BOUNDARY_PACK_*` remaining-gate docs (≠ Stage 42 P1 `AI_PROVIDER_BOUNDARY_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

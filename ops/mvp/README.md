@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_302_EXIT_CRITERIA.md` / `docs/ADR_612_STAGE302_FREEZE.md` (`backend/tests/test_stage302_exit_h302x.py`) — Stage 302 H302x
+- `docs/STAGE_302_FIDELITY.md` (`backend/tests/test_stage302_fidelity_d1.py`) — Stage 302 D1
+- `docs/STAGE_302_PLAN.md` (`backend/tests/test_stage302_open.py`) — Stage 302 open (ADR-611)
+- `docs/AI_PROVIDER_BOUNDARY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/ai-provider-boundary-pack-remaining-gate.json` — Stage 302 I1
+- `docs/AI_PROVIDER_BOUNDARY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/ai-provider-boundary-pack-rg-blockers.json` — Stage 302 B1
+- `docs/AI_PROVIDER_BOUNDARY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/ai-provider-boundary-pack-rg-pointers.json` — Stage 302 P1
 - `docs/STAGE_301_EXIT_CRITERIA.md` / `docs/ADR_610_STAGE301_FREEZE.md` (`backend/tests/test_stage301_exit_h301x.py`) — Stage 301 H301x
 - `docs/STAGE_301_FIDELITY.md` (`backend/tests/test_stage301_fidelity_d1.py`) — Stage 301 D1
 - `docs/STAGE_301_PLAN.md` (`backend/tests/test_stage301_open.py`) — Stage 301 open (ADR-609)
@@ -5089,6 +5095,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 302 exit
+
+H302x met — `docs/STAGE_302_EXIT_CRITERIA.md`, ADR-612. Stages 1–302 frozen for Stage 302 feature scope.
+
+## Stage 302 D1 — Tenant MVP AI Provider Boundary Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_302_FIDELITY.md` (`test_stage302_fidelity_d1.py`). `AI_PROVIDER_BOUNDARY_PACK_*` remaining-gate index; external LLM / Prophet / go-live still MISSING.
+
+## Stage 302 open
+
+ADR-611 / `docs/STAGE_302_PLAN.md`.
 
 ## Stage 301 exit
 

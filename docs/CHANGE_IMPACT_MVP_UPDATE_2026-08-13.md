@@ -647,3 +647,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 301 decision (opened after Stage 300 freeze)
 
 **Tenant MVP AI Use Disclosure Pack Remaining-Gate Index Fidelity** — AI use disclosure pack remaining-gate hub (I1), blocker matrix (B1), Stage 42 A1 / Stage 300 / Stage 293 / Stage 42 P1 pointers with explicit non-claim (P1). Prefixed `AI_USE_DISCLOSURE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 42 A1 `AI_USE_DISCLOSURE_MVP.md`). AI certification / AI advice binding / external LLM / output-PII scanner / paid billing / go-live Completes remain deferred (Stage 302+; ADR-002 in force). Distinct from Stage 300 ToS/AUP pack remaining-gate, Stage 293 commercial terms pack remaining-gate, and Stage 42 A1 AI use disclosure packaging. Open ADR-609 / freeze ADR-610.
+
+## Stage 302 decision (opened after Stage 301 freeze)
+
+**Tenant MVP AI Provider Boundary Pack Remaining-Gate Index Fidelity** — AI provider boundary pack remaining-gate hub (I1), blocker matrix (B1), Stage 42 P1 / Stage 301 / Stage 300 / Stage 42 A1 pointers with explicit non-claim (P1). Prefixed `AI_PROVIDER_BOUNDARY_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 42 P1 `AI_PROVIDER_BOUNDARY_MVP.md`). External LLM / Prophet / paid model vendor / output-PII scanner / paid billing / go-live Completes remain deferred (Stage 303+; ADR-002 in force). Distinct from Stage 301 AI use disclosure pack remaining-gate, Stage 300 ToS/AUP pack remaining-gate, and Stage 42 P1 AI provider boundary packaging. Open ADR-611 / freeze ADR-612.

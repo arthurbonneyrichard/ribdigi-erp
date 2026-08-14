@@ -31,3 +31,9 @@ Stage 302 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for AI certification, AI advice binding, external LLM, output-PII scanner, paid billing, or go-live.
+
+## Amendment — Stage 302 opened
+
+Stage 302 opened under **ADR-611** after CONTINUE/NEXT (Tenant MVP AI Provider Boundary Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-612**. Stage 301 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 302 runner-up outline was approved and opened (ADR-611); freeze ADR-612. Do not reopen Stage 301 scope.

@@ -1762,6 +1762,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 301 P1** | Stage 42 A1 / Stage 300 / Stage 293 / Stage 42 P1 pointers (`test_stage301_pointers_p1.py`) |
 | **Stage 301 D1** | AI use disclosure pack remaining-gate fidelity — `docs/STAGE_301_FIDELITY.md` (`test_stage301_fidelity_d1.py`) |
 | **Stage 301 H301x** | Exit + freeze — `docs/STAGE_301_EXIT_CRITERIA.md`, ADR-610 (`test_stage301_exit_h301x.py`); Stages 1–301 frozen |
+| **Stage 302 open** | AI Provider Boundary Pack Remaining-Gate Index — `docs/STAGE_302_PLAN.md`, ADR-611 (`test_stage302_open.py`) |
+| **Stage 302 I1** | AI provider boundary pack remaining-gate index hub (`test_stage302_index_i1.py`) |
+| **Stage 302 B1** | AI provider boundary pack blocker matrix (`test_stage302_blockers_b1.py`) |
+| **Stage 302 P1** | Stage 42 P1 / Stage 301 / Stage 300 / Stage 42 A1 pointers (`test_stage302_pointers_p1.py`) |
+| **Stage 302 D1** | AI provider boundary pack remaining-gate fidelity — `docs/STAGE_302_FIDELITY.md` (`test_stage302_fidelity_d1.py`) |
+| **Stage 302 H302x** | Exit + freeze — `docs/STAGE_302_EXIT_CRITERIA.md`, ADR-612 (`test_stage302_exit_h302x.py`); Stages 1–302 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |
