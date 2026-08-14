@@ -1,0 +1,58 @@
+{
+  "id": "commercial-support-pack-remaining-gate",
+  "stage": 295,
+  "pack": "I1",
+  "doc": "docs/COMMERCIAL_SUPPORT_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/COMMERCIAL_SUPPORT_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/COMMERCIAL_SUPPORT_PACK_RG_POINTERS_MVP.md",
+    "commercial_support": "docs/COMMERCIAL_SUPPORT_MVP.md",
+    "commercial_security_contact_pack_remaining_gate": "docs/COMMERCIAL_SECURITY_CONTACT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_terms_pack_remaining_gate": "docs/COMMERCIAL_TERMS_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+  },
+  "packaging_complete": true,
+  "commercial_support_claimed": false,
+  "support_boundary_live_claimed": false,
+  "support_sla_claimed": false,
+  "status_page_live": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage74_commercial_support": true,
+  "distinct_from_stage294_commercial_security_contact_pack_remaining_gate": true,
+  "distinct_from_stage293_commercial_terms_pack_remaining_gate": true,
+  "distinct_from_stage36_support_sla_boundary": true,
+  "steps": [
+    {
+      "id": "cspr-read-blockers",
+      "title": "Read B1 commercial support pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspr-follow-pointers",
+      "title": "Follow P1 Stage 74 S1 / Stage 294 / Stage 293 / Stage 36 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspr-support-missing",
+      "title": "Reaffirm commercial support / support SLA MISSING until real support boundary ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspr-no-packaging-as-live",
+      "title": "Do not treat Stage 74 S1 / Stage 294 / Stage 293 as commercial support Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspr-support-remaining",
+      "title": "Commercial support / support boundary / SLA / status page / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 295 I1 commercial support pack remaining-gate index packaging only. Do not claim commercial support Complete."
+}

@@ -31,3 +31,9 @@ Stage 295 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for security contact live, breach drill, vuln disclosure live, commercial support, paid billing, or go-live.
+
+## Amendment — Stage 295 opened
+
+Stage 295 opened under **ADR-597** after CONTINUE/NEXT (Tenant MVP Commercial Support Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-598**. Stage 294 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 295 runner-up outline was approved and opened (ADR-597); freeze ADR-598. Do not reopen Stage 294 scope.

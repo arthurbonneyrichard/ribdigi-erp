@@ -1,0 +1,66 @@
+{
+  "id": "commercial-support-pack-rg-blockers",
+  "stage": 295,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_SUPPORT_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_SUPPORT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_support": "docs/COMMERCIAL_SUPPORT_MVP.md"
+  },
+  "packaging_complete": true,
+  "commercial_support_claimed": false,
+  "support_boundary_live_claimed": false,
+  "support_sla_claimed": false,
+  "status_page_live": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "commercial_support_claimed": "REMAINING",
+    "support_boundary_live_claimed": "REMAINING",
+    "support_sla_claimed": "REMAINING",
+    "status_page_live": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage74_as_commercial_support": "NON_CLAIM",
+    "stage294_as_security_contact_live": "NON_CLAIM",
+    "commercial_support_claimed_flag": "false",
+    "support_boundary_live_claimed_flag": "false",
+    "support_sla_claimed_flag": "false",
+    "status_page_live_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "csprb-support",
+      "title": "Mark commercial support Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csprb-boundary",
+      "title": "Mark support boundary live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csprb-sla",
+      "title": "Mark support SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csprb-stage74-nonclaim",
+      "title": "Mark Stage 74 S1 as non-claim for commercial support Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csprb-support-remaining",
+      "title": "Commercial support Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 295 B1 commercial support pack RG blocker matrix packaging only. Commercial support Completes remain MISSING."
+}

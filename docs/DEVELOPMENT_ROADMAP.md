@@ -4152,6 +4152,18 @@ Every feature in every phase must meet:
 
 **Stage 294 exit (2026-08-14):** I1, B1, P1, D1, H294x met — `docs/STAGE_294_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_596_STAGE294_FREEZE.md`. Fidelity: `docs/STAGE_294_FIDELITY.md`.
 
+**Stage 295 open (2026-08-14):** Tenant MVP Commercial Support Pack Remaining-Gate Index Fidelity — `docs/ADR_597_STAGE295_OPEN.md` + `docs/STAGE_295_PLAN.md` (I1 next).
+
+**Stage 295 I1 (2026-08-14):** Commercial support pack remaining-gate index hub (`test_stage295_index_i1.py`).
+
+**Stage 295 B1 (2026-08-14):** Commercial support pack blocker matrix (`test_stage295_blockers_b1.py`).
+
+**Stage 295 P1 (2026-08-14):** Stage 74 S1 / Stage 294 / Stage 293 / Stage 36 pointers (`test_stage295_pointers_p1.py`).
+
+**Stage 295 D1 (2026-08-14):** Commercial Support Pack Remaining-Gate Index fidelity sync — `docs/STAGE_295_FIDELITY.md` (`test_stage295_fidelity_d1.py`).
+
+**Stage 295 exit (2026-08-14):** I1, B1, P1, D1, H295x met — `docs/STAGE_295_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_598_STAGE295_FREEZE.md`. Fidelity: `docs/STAGE_295_FIDELITY.md`.
+
 
 
 

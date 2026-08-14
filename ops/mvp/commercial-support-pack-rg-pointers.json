@@ -1,0 +1,61 @@
+{
+  "id": "commercial-support-pack-rg-pointers",
+  "stage": 295,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_SUPPORT_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_SUPPORT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_support": "docs/COMMERCIAL_SUPPORT_MVP.md",
+    "commercial_security_contact_pack_remaining_gate": "docs/COMMERCIAL_SECURITY_CONTACT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_terms_pack_remaining_gate": "docs/COMMERCIAL_TERMS_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "commercial_support_claimed": false,
+  "support_boundary_live_claimed": false,
+  "support_sla_claimed": false,
+  "status_page_live": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_support_stage74",
+    "commercial_security_contact_pack_remaining_gate_stage294",
+    "commercial_terms_pack_remaining_gate_stage293",
+    "support_sla_boundary_stage36",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "csprp-stage74",
+      "title": "Point to Stage 74 S1 commercial support",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csprp-stage294",
+      "title": "Point to Stage 294 commercial security contact pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csprp-stage293",
+      "title": "Point to Stage 293 commercial terms pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csprp-stage36",
+      "title": "Point to Stage 36 support SLA boundary adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csprp-support-remaining",
+      "title": "Commercial support Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 295 P1 commercial support pack RG pointers packaging only. Do not claim commercial support Complete."
+}
