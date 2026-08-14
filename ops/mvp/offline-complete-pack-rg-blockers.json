@@ -1,0 +1,63 @@
+{
+  "id": "offline-complete-pack-rg-blockers",
+  "stage": 329,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_COMPLETE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_remaining_gate": "docs/OFFLINE_COMPLETE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "browser_e2e_claimed": false,
+  "attestation_claimed": false,
+  "product_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "browser_e2e_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "product_acceptance_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage179_as_live_offline_complete": "NON_CLAIM",
+    "stage168_as_live_offline_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "browser_e2e_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "product_acceptance_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ocprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocprb-browser",
+      "title": "Mark browser E2E Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocprb-stage179-nonclaim",
+      "title": "Mark Stage 179 / Stage 168 as non-claim for live Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocprb-offline-remaining",
+      "title": "Live Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 329 B1 Offline Complete pack RG blocker matrix packaging only. Live Offline Completes remain MISSING."
+}

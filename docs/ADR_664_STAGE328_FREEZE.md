@@ -31,3 +31,10 @@ Stage 329 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for certified load, live load capacity, operator 1000-VU, load cert, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 329 opened under **ADR-665** after CONTINUE/NEXT (Tenant MVP Offline Complete Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-666**. Stage 328 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 329 runner-up outline was approved and opened (ADR-665); freeze ADR-666. Do not reopen Stage 328 scope.
+

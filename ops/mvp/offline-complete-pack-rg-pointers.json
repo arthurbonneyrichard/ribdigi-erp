@@ -1,0 +1,60 @@
+{
+  "id": "offline-complete-pack-rg-pointers",
+  "stage": 329,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_COMPLETE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_remaining_gate": "docs/OFFLINE_COMPLETE_REMAINING_GATE_MVP.md",
+    "loadtest_baseline_pack_remaining_gate": "docs/LOADTEST_BASELINE_PACK_REMAINING_GATE_MVP.md",
+    "ops_monitoring_pack_remaining_gate": "docs/OPS_MONITORING_PACK_REMAINING_GATE_MVP.md",
+    "offline_materials_remaining_gate": "docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "browser_e2e_claimed": false,
+  "attestation_claimed": false,
+  "product_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "offline_complete_remaining_gate_stage179",
+    "loadtest_baseline_pack_remaining_gate_stage328",
+    "ops_monitoring_pack_remaining_gate_stage327",
+    "offline_materials_remaining_gate_stage190",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ocprp-stage179",
+      "title": "Point to Stage 179 Offline Complete remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocprp-stage328",
+      "title": "Point to Stage 328 loadtest baseline pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocprp-stage327",
+      "title": "Point to Stage 327 ops monitoring pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocprp-stage190",
+      "title": "Point to Stage 190 Offline materials remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocprp-offline-remaining",
+      "title": "Live Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 329 P1 Offline Complete pack RG pointers packaging only. Do not claim live Offline Complete."
+}
