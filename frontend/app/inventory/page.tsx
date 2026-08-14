@@ -1829,6 +1829,7 @@ export default function Page() {
               })}
             </ul>
           </div>
+          <div className="erp-split">
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Brand</h3>
             <p className="muted" style={{ margin: 0 }}>
@@ -2010,6 +2011,7 @@ export default function Page() {
                 </li>
               ))}
             </ul>
+          </div>
           </div>
         </div>
       )}

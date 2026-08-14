@@ -674,7 +674,10 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+      <div className="erp-split">
+        <div className="card">
+          <h3>Customer</h3>
+          <div className="erp-stack" style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <strong>Customer groups</strong>
           {groups.map((g) => (
@@ -829,6 +832,11 @@ export default function Page() {
             partyLabel={customers.find((c) => c.id === customerId)?.name || 'Selected customer'}
           />
         ) : null}
+          </div>
+        </div>
+        <div className="card">
+          <h3>Create sale</h3>
+          <div className="erp-stack" style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={productId} onChange={(e) => setProductId(e.target.value)}>
             <option value="">Product</option>
@@ -881,28 +889,7 @@ export default function Page() {
           <button onClick={createOrder}>Create order</button>
           <button onClick={createInvoice}>Create invoice</button>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)}>
-            <option value="">Return from invoice</option>
-            {invoices
-              .filter((i) => ['posted', 'sent', 'partial', 'overdue', 'paid'].includes(i.status))
-              .map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.invoice_number}
-                </option>
-              ))}
-          </select>
-          <select value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
-            {['damaged', 'wrong_item', 'defective', 'customer_change', 'other'].map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-          <label>
-            <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Restock
-          </label>
-          <button onClick={createReturn}>Create return</button>
+          </div>
         </div>
       </div>
 
@@ -1129,6 +1116,35 @@ export default function Page() {
       )}
 
       {tab === 'returns' && (
+        <>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3>Create return</h3>
+            <div className="erp-form-grid">
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <select value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)}>
+            <option value="">Return from invoice</option>
+            {invoices
+              .filter((i) => ['posted', 'sent', 'partial', 'overdue', 'paid'].includes(i.status))
+              .map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.invoice_number}
+                </option>
+              ))}
+          </select>
+          <select value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
+            {['damaged', 'wrong_item', 'defective', 'customer_change', 'other'].map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+          <label>
+            <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Restock
+          </label>
+          <button onClick={createReturn}>Create return</button>
+        </div>
+                  </div>
+          </div>
         <table className="table">
           <thead>
             <tr>
@@ -1183,6 +1199,7 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+        </>
       )}
 
       {selected && (
