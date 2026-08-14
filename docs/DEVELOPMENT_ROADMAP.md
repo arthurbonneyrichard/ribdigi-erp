@@ -3780,6 +3780,18 @@ Every feature in every phase must meet:
 
 **Stage 263 exit (2026-08-14):** I1, B1, P1, D1, H263x met — `docs/STAGE_263_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_534_STAGE263_FREEZE.md`. Fidelity: `docs/STAGE_263_FIDELITY.md`.
 
+**Stage 264 open (2026-08-14):** Tenant MVP Production Hypercare Pack Remaining-Gate Index Fidelity — `docs/ADR_535_STAGE264_OPEN.md` + `docs/STAGE_264_PLAN.md` (I1 next).
+
+**Stage 264 I1 (2026-08-14):** Production hypercare pack remaining-gate index hub (`test_stage264_index_i1.py`).
+
+**Stage 264 B1 (2026-08-14):** Production hypercare pack blocker matrix (`test_stage264_blockers_b1.py`).
+
+**Stage 264 P1 (2026-08-14):** Stage 67 / Stage 263 / Stage 262 / Stage 219 pointers (`test_stage264_pointers_p1.py`).
+
+**Stage 264 D1 (2026-08-14):** Production Hypercare Pack Remaining-Gate Index fidelity sync — `docs/STAGE_264_FIDELITY.md` (`test_stage264_fidelity_d1.py`).
+
+**Stage 264 exit (2026-08-14):** I1, B1, P1, D1, H264x met — `docs/STAGE_264_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_536_STAGE264_FREEZE.md`. Fidelity: `docs/STAGE_264_FIDELITY.md`.
+
 
 
 

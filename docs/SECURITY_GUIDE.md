@@ -1534,6 +1534,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 263 P1** | Stage 69 / Stage 262 / Stage 261 / Stage 187 pointers (`test_stage263_pointers_p1.py`) |
 | **Stage 263 D1** | Go-live attestation pack remaining-gate fidelity — `docs/STAGE_263_FIDELITY.md` (`test_stage263_fidelity_d1.py`) |
 | **Stage 263 H263x** | Exit + freeze — `docs/STAGE_263_EXIT_CRITERIA.md`, ADR-534 (`test_stage263_exit_h263x.py`); Stages 1–263 frozen |
+| **Stage 264 open** | Production Hypercare Pack Remaining-Gate Index — `docs/STAGE_264_PLAN.md`, ADR-535 (`test_stage264_open.py`) |
+| **Stage 264 I1** | Production hypercare pack remaining-gate index hub (`test_stage264_index_i1.py`) |
+| **Stage 264 B1** | Production hypercare pack blocker matrix (`test_stage264_blockers_b1.py`) |
+| **Stage 264 P1** | Stage 67 / Stage 263 / Stage 262 / Stage 219 pointers (`test_stage264_pointers_p1.py`) |
+| **Stage 264 D1** | Production hypercare pack remaining-gate fidelity — `docs/STAGE_264_FIDELITY.md` (`test_stage264_fidelity_d1.py`) |
+| **Stage 264 H264x** | Exit + freeze — `docs/STAGE_264_EXIT_CRITERIA.md`, ADR-536 (`test_stage264_exit_h264x.py`); Stages 1–264 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |

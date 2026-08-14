@@ -1,0 +1,57 @@
+{
+  "id": "production-hypercare-pack-remaining-gate",
+  "stage": 264,
+  "pack": "I1",
+  "doc": "docs/PRODUCTION_HYPERCARE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PRODUCTION_HYPERCARE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PRODUCTION_HYPERCARE_PACK_RG_POINTERS_MVP.md",
+    "production_hypercare": "docs/PRODUCTION_HYPERCARE_MVP.md",
+    "golive_attestation_pack_remaining_gate": "docs/GOLIVE_ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "production_launch_pack_remaining_gate": "docs/PRODUCTION_LAUNCH_PACK_REMAINING_GATE_MVP.md",
+    "production_hypercare_remaining_gate": "docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md",
+    "production_hypercare_register": "ops/mvp/production-hypercare.json"
+  },
+  "packaging_complete": true,
+  "production_hypercare_live_claimed": false,
+  "oncall_rota_live": false,
+  "go_live_claimed": false,
+  "support_sla_claimed": false,
+  "distinct_from_stage67_h1_production_hypercare": true,
+  "distinct_from_stage263_golive_attestation_pack_remaining_gate": true,
+  "distinct_from_stage262_production_launch_pack_remaining_gate": true,
+  "distinct_from_stage219_production_hypercare_remaining_gate": true,
+  "steps": [
+    {
+      "id": "phpr-read-blockers",
+      "title": "Read B1 production hypercare pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phpr-follow-pointers",
+      "title": "Follow P1 Stage 67 / Stage 263 / Stage 262 / Stage 219 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phpr-hypercare-missing",
+      "title": "Reaffirm live production hypercare MISSING until real commercial verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phpr-no-packaging-as-live",
+      "title": "Do not treat Stage 67 H1 / Stage 263 / Stage 219 as live production hypercare Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phpr-hypercare-remaining",
+      "title": "Live production hypercare / on-call rota / go-live / support SLA Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 264 I1 production hypercare pack remaining-gate index packaging only. Do not claim live production hypercare Complete."
+}

@@ -31,3 +31,9 @@ Stage 264 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for §7 signature, attestation, go-live attestation walk, or go-live.
+
+## Amendment — Stage 264 opened
+
+Stage 264 opened under **ADR-535** after CONTINUE/NEXT (Tenant MVP Production Hypercare Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-536**. Stage 263 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 264 runner-up outline was approved and opened (ADR-535); freeze ADR-536. Do not reopen Stage 263 scope.

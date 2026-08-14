@@ -1012,6 +1012,12 @@ Authoritative MVP docs:
 - `docs/GOLIVE_ATTESTATION_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/golive-attestation-pack-remaining-gate.json` — Stage 263 I1
 - `docs/GOLIVE_ATTESTATION_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/golive-attestation-pack-rg-blockers.json` — Stage 263 B1
 - `docs/GOLIVE_ATTESTATION_PACK_RG_POINTERS_MVP.md` / `ops/mvp/golive-attestation-pack-rg-pointers.json` — Stage 263 P1
+- `docs/STAGE_264_EXIT_CRITERIA.md` / `docs/ADR_536_STAGE264_FREEZE.md` (`backend/tests/test_stage264_exit_h264x.py`) — Stage 264 H264x
+- `docs/STAGE_264_FIDELITY.md` (`backend/tests/test_stage264_fidelity_d1.py`) — Stage 264 D1
+- `docs/STAGE_264_PLAN.md` (`backend/tests/test_stage264_open.py`) — Stage 264 open (ADR-535)
+- `docs/PRODUCTION_HYPERCARE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/production-hypercare-pack-remaining-gate.json` — Stage 264 I1
+- `docs/PRODUCTION_HYPERCARE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/production-hypercare-pack-rg-blockers.json` — Stage 264 B1
+- `docs/PRODUCTION_HYPERCARE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/production-hypercare-pack-rg-pointers.json` — Stage 264 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4633,4 +4639,16 @@ H263x met — `docs/STAGE_263_EXIT_CRITERIA.md`, ADR-534. Stages 1–263 frozen 
 ## Stage 263 open
 
 `docs/ADR_533_STAGE263_OPEN.md` + `docs/STAGE_263_PLAN.md` (`test_stage263_open.py`).
+
+## Stage 264 exit
+
+H264x met — `docs/STAGE_264_EXIT_CRITERIA.md`, ADR-536. Stages 1–264 frozen for Stage 264 feature scope.
+
+## Stage 264 D1 — Tenant MVP Production Hypercare Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_264_FIDELITY.md` (`test_stage264_fidelity_d1.py`). `PRODUCTION_HYPERCARE_PACK_*` remaining-gate index; live production hypercare / go-live still MISSING.
+
+## Stage 264 open
+
+`docs/ADR_535_STAGE264_OPEN.md` + `docs/STAGE_264_PLAN.md` (`test_stage264_open.py`).
 
