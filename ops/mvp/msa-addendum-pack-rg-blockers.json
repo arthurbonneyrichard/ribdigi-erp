@@ -1,0 +1,66 @@
+{
+  "id": "msa-addendum-pack-rg-blockers",
+  "stage": 299,
+  "pack": "B1",
+  "doc": "docs/MSA_ADDENDUM_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MSA_ADDENDUM_PACK_REMAINING_GATE_MVP.md",
+    "msa_addendum": "docs/MSA_ADDENDUM_MVP.md"
+  },
+  "packaging_complete": true,
+  "msa_signed_claimed": false,
+  "security_exhibit_signed": false,
+  "legal_counsel_claimed": false,
+  "contract_execution_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "msa_signed_claimed": "REMAINING",
+    "security_exhibit_signed": "REMAINING",
+    "legal_counsel_claimed": "REMAINING",
+    "contract_execution_claimed": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage39_as_signed_msa": "NON_CLAIM",
+    "stage298_as_signed_dpa": "NON_CLAIM",
+    "msa_signed_claimed_flag": "false",
+    "security_exhibit_signed_claimed": "false",
+    "legal_counsel_claimed_flag": "false",
+    "contract_execution_claimed_flag": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "maprb-msa",
+      "title": "Mark signed MSA Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "maprb-exhibit",
+      "title": "Mark security exhibit signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "maprb-contract",
+      "title": "Mark contract execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "maprb-stage39-nonclaim",
+      "title": "Mark Stage 39 A1 as non-claim for signed MSA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "maprb-msa-remaining",
+      "title": "Signed MSA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 299 B1 MSA addendum pack RG blocker matrix packaging only. Signed MSA Completes remain MISSING."
+}

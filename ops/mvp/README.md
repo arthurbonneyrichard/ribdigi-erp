@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_299_EXIT_CRITERIA.md` / `docs/ADR_606_STAGE299_FREEZE.md` (`backend/tests/test_stage299_exit_h299x.py`) — Stage 299 H299x
+- `docs/STAGE_299_FIDELITY.md` (`backend/tests/test_stage299_fidelity_d1.py`) — Stage 299 D1
+- `docs/STAGE_299_PLAN.md` (`backend/tests/test_stage299_open.py`) — Stage 299 open (ADR-605)
+- `docs/MSA_ADDENDUM_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/msa-addendum-pack-remaining-gate.json` — Stage 299 I1
+- `docs/MSA_ADDENDUM_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/msa-addendum-pack-rg-blockers.json` — Stage 299 B1
+- `docs/MSA_ADDENDUM_PACK_RG_POINTERS_MVP.md` / `ops/mvp/msa-addendum-pack-rg-pointers.json` — Stage 299 P1
 - `docs/STAGE_298_EXIT_CRITERIA.md` / `docs/ADR_604_STAGE298_FREEZE.md` (`backend/tests/test_stage298_exit_h298x.py`) — Stage 298 H298x
 - `docs/STAGE_298_FIDELITY.md` (`backend/tests/test_stage298_fidelity_d1.py`) — Stage 298 D1
 - `docs/STAGE_298_PLAN.md` (`backend/tests/test_stage298_open.py`) — Stage 298 open (ADR-603)
@@ -5071,6 +5077,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 299 exit
+
+H299x met — `docs/STAGE_299_EXIT_CRITERIA.md`, ADR-606. Stages 1–299 frozen for Stage 299 feature scope.
+
+## Stage 299 D1 — Tenant MVP MSA Addendum Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_299_FIDELITY.md` (`test_stage299_fidelity_d1.py`). `MSA_ADDENDUM_PACK_*` remaining-gate index; signed MSA / contract execution / go-live still MISSING.
+
+## Stage 299 open
+
+`docs/ADR_605_STAGE299_OPEN.md` + `docs/STAGE_299_PLAN.md` (`test_stage299_open.py`).
 
 ## Stage 298 exit
 

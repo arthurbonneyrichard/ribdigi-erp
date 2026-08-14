@@ -635,3 +635,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 298 decision (opened after Stage 297 freeze)
 
 **Tenant MVP DPA Subprocessor Pack Remaining-Gate Index Fidelity** — DPA subprocessor pack remaining-gate hub (I1), blocker matrix (B1), Stage 39 P1 / Stage 297 / Stage 292 / Stage 77 A1 pointers with explicit non-claim (P1). Prefixed `DPA_SUBPROCESSOR_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 39 P1 `DPA_SUBPROCESSOR_MVP.md`). Signed DPA / subprocessor register live / legal counsel / contract execution / paid billing / go-live Completes remain deferred (Stage 299+; ADR-002 in force). Distinct from Stage 297 commercial assurance pack remaining-gate, Stage 292 commercial DPA pack remaining-gate, and Stage 39 P1 DPA/subprocessor packaging. Open ADR-603 / freeze ADR-604.
+
+## Stage 299 decision (opened after Stage 298 freeze)
+
+**Tenant MVP MSA Addendum Pack Remaining-Gate Index Fidelity** — MSA addendum pack remaining-gate hub (I1), blocker matrix (B1), Stage 39 A1 / Stage 298 / Stage 293 / Stage 39 P1 pointers with explicit non-claim (P1). Prefixed `MSA_ADDENDUM_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 39 A1 `MSA_ADDENDUM_MVP.md`). Signed MSA / security exhibit signed / legal counsel / contract execution / paid billing / go-live Completes remain deferred (Stage 300+; ADR-002 in force). Distinct from Stage 298 DPA subprocessor pack remaining-gate, Stage 293 commercial terms pack remaining-gate, and Stage 39 A1 MSA addendum packaging. Open ADR-605 / freeze ADR-606.

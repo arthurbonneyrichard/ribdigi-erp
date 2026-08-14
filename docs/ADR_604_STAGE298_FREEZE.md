@@ -31,3 +31,9 @@ Stage 299 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for signed DPA, subprocessor register live, legal counsel, contract execution, paid billing, or go-live.
+
+## Amendment — Stage 299 opened
+
+Stage 299 opened under **ADR-605** after CONTINUE/NEXT (Tenant MVP MSA Addendum Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-606**. Stage 298 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 299 runner-up outline was approved and opened (ADR-605); freeze ADR-606. Do not reopen Stage 298 scope.
