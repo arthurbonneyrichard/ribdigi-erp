@@ -484,6 +484,9 @@ class StockMove(BaseModel):
     batch_number: str | None = None
     manufacturing_date: datetime | None = None
     expiry_date: datetime | None = None
+    # Stock-out (BR-5.2): sale | transfer | adjustment | damage | internal | other
+    reference_type: str | None = None
+    reference_id: str | None = None
 
 
 class OpeningStockLine(BaseModel):

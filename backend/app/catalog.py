@@ -668,4 +668,7 @@ async def stock_out_with_batch(
         "stock_unit_id": product.unit_id,
         "variant": serialize_variant(variant) if variant else None,
         "batches_consumed": consumed,
+        "warehouse_id": warehouse_id,
+        "reference_type": reference_type,
+        "reference_id": reference_id,
     }

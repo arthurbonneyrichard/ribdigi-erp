@@ -355,7 +355,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [x] **Stock In:** Record incoming stock with reference (purchase order, transfer, adjustment), quantity, batch, expiry, warehouse (`POST /inventory/stock-in` + Inventory Batches UI warehouse/variant/notes; Opening stock variant optional)
-  - [ ] **Stock Out:** Record outgoing stock with reference (sales, transfer, adjustment, damage), quantity, warehouse
+  - [x] **Stock Out:** Record outgoing stock with reference (sales, transfer, adjustment, damage), quantity, warehouse (`POST /inventory/stock-out` requires `reference_type` ∈ sale|transfer|adjustment|damage|internal|other + optional `reference_id`/`warehouse_id`/`variant_id`/`batch_id`; Inventory Stock Out tab; FEFO when batch omitted)
   - [x] **Stock Adjustment:** Correct stock discrepancies with reason (damage, theft, expiry, found, lost) (`POST /inventory/adjust/{product_id}` requires coded `reason`; `stock_movements.reason`; optional `warehouse_id`; Inventory Adjust tab; movements `reason=` filter)
   - [ ] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow
   - [x] **Opening Stock:** Initialize stock levels for new products or fiscal year start (`POST /inventory/opening-stock`, optional equity journal)

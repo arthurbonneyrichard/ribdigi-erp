@@ -14,7 +14,8 @@ type Tab =
   | 'expiry'
   | 'counts'
   | 'movements'
-  | 'adjust';
+  | 'adjust'
+  | 'stockout';
 
 type ImportReportRow = {
   line: number;
@@ -189,6 +190,14 @@ export default function Page() {
   const [adjReason, setAdjReason] = useState('damage');
   const [adjWarehouseId, setAdjWarehouseId] = useState('');
   const [adjNotes, setAdjNotes] = useState('');
+  const [outQty, setOutQty] = useState('1');
+  const [outRefType, setOutRefType] = useState('other');
+  const [outRefId, setOutRefId] = useState('');
+  const [outWarehouseId, setOutWarehouseId] = useState('');
+  const [outVariantId, setOutVariantId] = useState('');
+  const [outUnitId, setOutUnitId] = useState('');
+  const [outBatchId, setOutBatchId] = useState('');
+  const [outNotes, setOutNotes] = useState('');
 
   async function refresh() {
     const [p, e, c, b, u, w, sc, os, rates] = await Promise.all([
@@ -938,13 +947,57 @@ export default function Page() {
     }
   }
 
+  async function postStockOut() {
+    setError('');
+    setMessage('');
+    if (!selectedId) {
+      setError('Select a product');
+      return;
+    }
+    const qty = Number(outQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setError('Quantity must be a positive number');
+      return;
+    }
+    try {
+      const r = await api('/inventory/stock-out', {
+        method: 'POST',
+        body: JSON.stringify({
+          product_id: selectedId,
+          quantity: qty,
+          reference_type: outRefType,
+          reference_id: outRefId.trim() || null,
+          notes: outNotes.trim() || null,
+          warehouse_id: outWarehouseId || null,
+          variant_id: outVariantId || null,
+          unit_id: outUnitId || null,
+          batch_id: outBatchId || null,
+        }),
+      });
+      setMessage(
+        `Stock out (${r.data.reference_type}) — on-hand ${r.data.stock_qty}` +
+          (r.data.warehouse_id ? ` · warehouse ${String(r.data.warehouse_id).slice(0, 8)}…` : '')
+      );
+      setOutNotes('');
+      setOutRefId('');
+      await refresh();
+      setMvType('stock_out');
+      setMvReason('');
+      setTab('movements');
+      await loadMovements({ movement_type: 'stock_out' });
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   const selected = products.find((p) => p.id === selectedId);
 
   return (
     <Shell>
       <h1>Inventory</h1>
       <p className="muted">
-        Products, catalog, variants, batches, expiry, stock counts, movements &amp; adjustments
+        Products, catalog, variants, batches, stock out, expiry, stock counts, movements &amp;
+        adjustments
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -958,6 +1011,7 @@ export default function Page() {
             ['variants', 'Variants'],
             ['batches', 'Batches'],
             ['opening', 'Opening stock'],
+            ['stockout', 'Stock Out'],
             ['expiry', 'Expiring'],
             ['counts', 'Stock counts'],
             ['movements', 'Movements'],
@@ -2169,6 +2223,95 @@ export default function Page() {
           />
           <button type="button" onClick={postStockAdjust} disabled={!selectedId}>
             Post adjustment
+          </button>
+        </div>
+      )}
+
+      {tab === 'stockout' && (
+        <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+          <h3>Stock Out</h3>
+          <p className="muted">
+            Issue outgoing stock with a reference type (BR-5.2): sale, transfer, adjustment, damage,
+            internal, or other. Uses FEFO across batches when no batch is selected. Quantity must be
+            positive.
+          </p>
+          <p className="muted">
+            Selected:{' '}
+            {selected ? `${selected.name} (${selected.sku}) — on-hand ${selected.stock_qty}` : 'none'}
+          </p>
+          <label className="muted">Quantity</label>
+          <input
+            value={outQty}
+            onChange={(e) => setOutQty(e.target.value)}
+            placeholder="1"
+          />
+          <label className="muted">Reference type</label>
+          <select value={outRefType} onChange={(e) => setOutRefType(e.target.value)}>
+            <option value="sale">sale</option>
+            <option value="transfer">transfer</option>
+            <option value="adjustment">adjustment</option>
+            <option value="damage">damage</option>
+            <option value="internal">internal</option>
+            <option value="other">other</option>
+          </select>
+          <label className="muted">Reference id (optional)</label>
+          <input
+            value={outRefId}
+            onChange={(e) => setOutRefId(e.target.value)}
+            placeholder="Invoice / transfer / ticket id"
+          />
+          <label className="muted">Warehouse (optional)</label>
+          <select value={outWarehouseId} onChange={(e) => setOutWarehouseId(e.target.value)}>
+            <option value="">Company / product stock only</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name || w.code || w.id.slice(0, 8)}
+              </option>
+            ))}
+          </select>
+          <label className="muted">Variant (optional)</label>
+          <select value={outVariantId} onChange={(e) => setOutVariantId(e.target.value)}>
+            <option value="">None</option>
+            {variants
+              .filter((v) => v.is_active !== false)
+              .map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name} ({v.sku}) — {v.stock_qty}
+                </option>
+              ))}
+          </select>
+          <label className="muted">Unit (optional)</label>
+          <select value={outUnitId} onChange={(e) => setOutUnitId(e.target.value)}>
+            <option value="">Default = product stock unit</option>
+            {units
+              .filter((u) => u.is_active !== false)
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.code}
+                  {u.base_unit_code ? ` (= ${u.conversion_ratio} ${u.base_unit_code})` : ''}
+                </option>
+              ))}
+          </select>
+          <label className="muted">Batch (optional — otherwise FEFO)</label>
+          <select value={outBatchId} onChange={(e) => setOutBatchId(e.target.value)}>
+            <option value="">FEFO across open batches</option>
+            {batches
+              .filter((b) => Number(b.quantity) > 0)
+              .map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.batch_number} — qty {b.quantity}
+                  {b.expiry_date ? ` · exp ${String(b.expiry_date).slice(0, 10)}` : ''}
+                </option>
+              ))}
+          </select>
+          <label className="muted">Notes (optional)</label>
+          <input
+            value={outNotes}
+            onChange={(e) => setOutNotes(e.target.value)}
+            placeholder="Details"
+          />
+          <button type="button" onClick={postStockOut} disabled={!selectedId}>
+            Post stock out
           </button>
         </div>
       )}

@@ -9,6 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 
 STOCK_ADJUSTMENT_REASONS = frozenset({"damage", "theft", "expiry", "found", "lost"})
+# BR-5.2 Stock Out reference (sales / transfer / adjustment / damage + internal/other)
+STOCK_OUT_REFERENCE_TYPES = frozenset(
+    {"sale", "transfer", "adjustment", "damage", "internal", "other"}
+)
 
 
 async def get_or_create_warehouse_stock(

@@ -3574,6 +3574,15 @@ async def stock_out(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.inventory import STOCK_OUT_REFERENCE_TYPES
+
+    ref = (payload.reference_type or "").strip().lower()
+    if ref not in STOCK_OUT_REFERENCE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"reference_type must be one of {sorted(STOCK_OUT_REFERENCE_TYPES)}",
+        )
+    ref_id = (payload.reference_id or "").strip() or None
     result = await catalog_svc.stock_out_with_batch(
         db,
         tenant_id=claims["tenant_id"],
@@ -3585,7 +3594,11 @@ async def stock_out(
         warehouse_id=payload.warehouse_id,
         variant_id=payload.variant_id,
         batch_id=payload.batch_id,
+        reference_type=ref,
+        reference_id=ref_id,
     )
+    result["reference_type"] = ref
+    result["reference_id"] = ref_id
     await db.commit()
     return env(result, "Stock out recorded")
 
