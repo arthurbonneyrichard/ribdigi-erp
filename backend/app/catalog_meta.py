@@ -35,6 +35,67 @@ def serialize_category(row: m.ProductCategory) -> dict:
     }
 
 
+def serialize_categories_tree(rows: list[m.ProductCategory]) -> list[dict]:
+    """Serialize categories in tree order with depth + path (BR-5.1)."""
+    items = [serialize_category(r) for r in rows]
+    children: dict[str | None, list[dict]] = {}
+    for item in items:
+        children.setdefault(item.get("parent_id"), []).append(item)
+    for bucket in children.values():
+        bucket.sort(key=lambda x: ((x.get("name") or "").lower(), x.get("code") or ""))
+
+    ordered: list[dict] = []
+
+    def walk(parent_id: str | None, depth: int, ancestors: list[str]) -> None:
+        for item in children.get(parent_id, []):
+            path_names = ancestors + [item["name"]]
+            item["depth"] = depth
+            item["path"] = " › ".join(path_names)
+            ordered.append(item)
+            walk(item["id"], depth + 1, path_names)
+
+    walk(None, 0, [])
+    # Orphans whose parent is missing (inactive/deleted FK) still appear
+    seen = {i["id"] for i in ordered}
+    for item in items:
+        if item["id"] in seen:
+            continue
+        item["depth"] = 0
+        item["path"] = item["name"]
+        ordered.append(item)
+    return ordered
+
+
+async def _assert_category_parent_ok(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    category_id: str,
+    parent_id: str,
+) -> None:
+    """Reject self-parent and cycles (parent is self or a descendant)."""
+    if parent_id == category_id:
+        raise HTTPException(status_code=400, detail="Category cannot be its own parent")
+    parent = await db.get(m.ProductCategory, parent_id)
+    if not parent or parent.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Parent category not found")
+    seen: set[str] = set()
+    current_id: str | None = parent_id
+    while current_id:
+        if current_id == category_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Category parent would create a cycle",
+            )
+        if current_id in seen:
+            break
+        seen.add(current_id)
+        node = await db.get(m.ProductCategory, current_id)
+        if not node or node.tenant_id != tenant_id:
+            break
+        current_id = node.parent_id
+
+
 def serialize_brand(row: m.Brand) -> dict:
     logo = getattr(row, "logo_url", None)
     return {
@@ -267,11 +328,9 @@ async def update_category(
     if clear_parent:
         row.parent_id = None
     elif parent_id is not None:
-        if parent_id == row.id:
-            raise HTTPException(status_code=400, detail="Category cannot be its own parent")
-        parent = await db.get(m.ProductCategory, parent_id)
-        if not parent or parent.tenant_id != tenant_id:
-            raise HTTPException(status_code=404, detail="Parent category not found")
+        await _assert_category_parent_ok(
+            db, tenant_id=tenant_id, category_id=row.id, parent_id=parent_id
+        )
         row.parent_id = parent_id
     if clear_tax_rate:
         row.tax_rate_id = None

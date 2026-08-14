@@ -2746,7 +2746,7 @@ async def catalog_categories(
 ):
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
     rows = await catalog_meta_svc.list_categories(db, claims["tenant_id"])
-    return env([catalog_meta_svc.serialize_category(r) for r in rows])
+    return env(catalog_meta_svc.serialize_categories_tree(rows))
 
 
 @api.post("/catalog/categories")
@@ -2764,7 +2764,10 @@ async def catalog_create_category(
         tax_rate_id=payload.tax_rate_id,
     )
     await db.commit()
-    return env(catalog_meta_svc.serialize_category(row), "Category created")
+    rows = await catalog_meta_svc.list_categories(db, claims["tenant_id"])
+    tree = catalog_meta_svc.serialize_categories_tree(rows)
+    hit = next((c for c in tree if c["id"] == row.id), catalog_meta_svc.serialize_category(row))
+    return env(hit, "Category created")
 
 
 @api.patch("/catalog/categories/{category_id}")
@@ -2790,7 +2793,11 @@ async def catalog_patch_category(
         clear_tax_rate=clear_tax_rate,
     )
     await db.commit()
-    return env(catalog_meta_svc.serialize_category(row), "Category updated")
+    # Return enriched tree fields for the updated row
+    rows = await catalog_meta_svc.list_categories(db, claims["tenant_id"])
+    tree = catalog_meta_svc.serialize_categories_tree(rows)
+    hit = next((c for c in tree if c["id"] == row.id), catalog_meta_svc.serialize_category(row))
+    return env(hit, "Category updated")
 
 
 @api.delete("/catalog/categories/{category_id}")

@@ -41,6 +41,16 @@ const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1
 
 const STOCK_STATUS_YELLOW_FACTOR = 1.5;
 
+function categoryLabel(c: { path?: string; name?: string; code?: string; depth?: number }) {
+  if (c.path) return c.path;
+  return c.name || c.code || '';
+}
+
+function categoryIndent(depth?: number) {
+  const d = Math.max(0, Number(depth) || 0);
+  return '\u00A0\u00A0'.repeat(d);
+}
+
 function stockStatusOf(p: { stock_qty?: number; reorder_level?: number; stock_status?: string }) {
   if (p.stock_status === 'red' || p.stock_status === 'yellow' || p.stock_status === 'green') {
     return p.stock_status;
@@ -1441,11 +1451,14 @@ export default function Page() {
             </div>
             <select value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}>
               <option value="">Category</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {categories
+                .filter((c) => c.is_active !== false)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {categoryIndent(c.depth)}
+                    {categoryLabel(c)}
+                  </option>
+                ))}
             </select>
             <select value={productBrandId} onChange={(e) => setProductBrandId(e.target.value)}>
               <option value="">Brand</option>
@@ -1515,20 +1528,23 @@ export default function Page() {
       {tab === 'catalog' && (
         <div style={{ display: 'grid', gap: 16 }}>
           <div className="card" style={{ display: 'grid', gap: 8 }}>
-            <h3>Category</h3>
+            <h3>Category tree (BR-5.1)</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Optional category tax rate applies when a product has no product-level rate (nearest
-              parent wins). Product rate still overrides.
+              Hierarchical parent/child categories with codes. Optional category tax rate applies when
+              a product has no product-level rate (nearest parent wins). Product rate still overrides.
             </p>
             <input value={catCode} onChange={(e) => setCatCode(e.target.value)} placeholder="Code" />
             <input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="Name" />
             <select value={catParentId} onChange={(e) => setCatParentId(e.target.value)}>
-              <option value="">Parent (optional)</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              <option value="">Parent (optional — root)</option>
+              {categories
+                .filter((c) => c.is_active !== false)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {categoryIndent(c.depth)}
+                    {categoryLabel(c)}
+                  </option>
+                ))}
             </select>
             <select value={catTaxRateId} onChange={(e) => setCatTaxRateId(e.target.value)}>
               <option value="">Tax rate (optional — tenant default)</option>
@@ -1544,7 +1560,7 @@ export default function Page() {
               onClick={async () => {
                 setError('');
                 try {
-                  await api('/catalog/categories', {
+                  const r = await api('/catalog/categories', {
                     method: 'POST',
                     body: JSON.stringify({
                       code: catCode,
@@ -1557,7 +1573,7 @@ export default function Page() {
                   setCatName('');
                   setCatParentId('');
                   setCatTaxRateId('');
-                  setMessage('Category created');
+                  setMessage(`Category created: ${r.data?.path || r.data?.name || catName}`);
                   await refresh();
                 } catch (err: any) {
                   setError(err.message);
@@ -1567,14 +1583,27 @@ export default function Page() {
             >
               Add category
             </button>
-            <ul className="muted">
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
               {categories.map((c) => {
                 const rate = taxRates.find((r) => r.id === c.tax_rate_id);
+                const depth = Math.max(0, Number(c.depth) || 0);
                 return (
-                  <li key={c.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span>
-                      {c.code} — {c.name}
-                      {c.parent_id ? ' (child)' : ''}
+                  <li
+                    key={c.id}
+                    style={{
+                      display: 'flex',
+                      gap: 8,
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      paddingLeft: depth * 16,
+                      borderLeft: depth ? '2px solid #cbd5e1' : undefined,
+                    }}
+                  >
+                    <span className="muted" style={{ minWidth: 220 }}>
+                      <strong style={{ color: 'inherit' }}>
+                        {c.code} — {c.name}
+                      </strong>
+                      {depth > 0 ? ` · ${c.path || ''}` : ''}
                       {!c.is_active ? ' [inactive]' : ''}
                       {rate
                         ? ` · tax ${rate.name} (${rate.rate}%)`
@@ -1584,6 +1613,38 @@ export default function Page() {
                     </span>
                     {c.is_active && (
                       <>
+                        <select
+                          aria-label={`Parent for ${c.code}`}
+                          value={c.parent_id || ''}
+                          onChange={async (e) => {
+                            setError('');
+                            try {
+                              const value = e.target.value || null;
+                              await api(`/catalog/categories/${c.id}`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({ parent_id: value }),
+                              });
+                              setMessage(
+                                value
+                                  ? `Reparented ${c.code}`
+                                  : `${c.code} moved to root`,
+                              );
+                              await refresh();
+                            } catch (err: any) {
+                              setError(err.message);
+                            }
+                          }}
+                        >
+                          <option value="">Root (no parent)</option>
+                          {categories
+                            .filter((p) => p.id !== c.id && p.is_active !== false)
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {categoryIndent(p.depth)}
+                                {categoryLabel(p)}
+                              </option>
+                            ))}
+                        </select>
                         <select
                           value={c.tax_rate_id || ''}
                           onChange={async (e) => {

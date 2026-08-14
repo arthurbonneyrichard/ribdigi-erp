@@ -441,10 +441,12 @@ Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `cl
 ## 5. Inventory & Products
 
 ### 5.1 Product Categories
-**List:** `GET /catalog/categories`  
-**Create:** `POST /catalog/categories`  
-**Update:** `PATCH /catalog/categories/{category_id}`  
+**List:** `GET /catalog/categories` — tree order with `depth` and `path` (e.g. `Food › Soft Drinks › Colas`) (BR-5.1)  
+**Create:** `POST /catalog/categories` (`code`, `name`, optional `parent_id`, `tax_rate_id`)  
+**Update:** `PATCH /catalog/categories/{category_id}` — reparent via `parent_id` (null clears to root); rejects self-parent and cycles  
 **Delete:** `DELETE /catalog/categories/{category_id}` (soft deactivate)
+
+Inventory Catalog **Category tree** UI shows indented hierarchy + reparent picker; product create category select uses `path`.
 
 Optional `tax_rate_id` on create/update (BR-12.1 / BR-2.8). Clear with `"tax_rate_id": null`. Resolve order for product lines: product `tax_rate_id` → category (walk `parent_id`, nearest wins) → tenant default tax rate → 0%.
 
