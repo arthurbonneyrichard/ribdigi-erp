@@ -1363,9 +1363,12 @@ async def create_purchase_return(
     user_id: str,
     goods_receipt_id: str,
     items: list[dict],
-    reason: str = "other",
+    reason: str,
     notes: str | None = None,
 ) -> m.PurchaseReturn:
+    reason = (reason or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="reason is required")
     if reason not in PURCHASE_RETURN_REASONS:
         raise HTTPException(
             status_code=400,

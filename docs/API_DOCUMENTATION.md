@@ -810,6 +810,8 @@ Response lines include `line_subtotal`, `line_tax`, and optional `tax_components
 **Create:** `POST /purchases/returns`  
 **Get:** `GET /purchases/returns/{return_id}`
 
+**Create** requires `reason` ∈ `damaged` | `wrong_item` | `expiry` | `quality` | `other` (no silent default to `other`). Omit/blank → 422/400. Purchasing UI uses Select reason (BR-6.6).
+
 ---
 
 ## 7. Sales & Customers

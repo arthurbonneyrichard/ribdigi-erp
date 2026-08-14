@@ -451,7 +451,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [ ] Create return referencing original PO/GRN
-  - [ ] Record return reason (damaged, wrong item, expiry, quality issue)
+  - [x] Record return reason (damaged, wrong item, expiry, quality issue) (`reason` required on `POST /purchasing/returns` ∈ damaged|wrong_item|expiry|quality|other; no silent default; Purchasing Select reason UI)
   - [ ] Deduct returned quantity from inventory
   - [ ] Generate debit note
   - [ ] Update supplier balance
