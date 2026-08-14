@@ -268,16 +268,25 @@ async def unread_count(
 
 
 async def _get_owned_notification(
-    db: AsyncSession, *, tenant_id: str, notification_id: str, user_id: str | None = None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    notification_id: str,
+    user_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.Notification:
-    note = (
-        await db.execute(
-            select(m.Notification).where(
-                m.Notification.id == notification_id,
-                m.Notification.tenant_id == tenant_id,
+    stmt = select(m.Notification).where(
+        m.Notification.id == notification_id,
+        m.Notification.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(
+            or_(
+                m.Notification.company_id == company_id,
+                m.Notification.company_id.is_(None),
             )
         )
-    ).scalar_one_or_none()
+    note = (await db.execute(stmt)).scalar_one_or_none()
     if not note:
         raise HTTPException(status_code=404, detail="Notification not found")
     if user_id and note.user_id and note.user_id != user_id:
@@ -286,10 +295,19 @@ async def _get_owned_notification(
 
 
 async def mark_read(
-    db: AsyncSession, *, tenant_id: str, notification_id: str, user_id: str | None = None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    notification_id: str,
+    user_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.Notification:
     note = await _get_owned_notification(
-        db, tenant_id=tenant_id, notification_id=notification_id, user_id=user_id
+        db,
+        tenant_id=tenant_id,
+        notification_id=notification_id,
+        user_id=user_id,
+        company_id=company_id,
     )
     note.status = "read"
     await db.flush()
@@ -297,19 +315,39 @@ async def mark_read(
 
 
 async def mark_unread(
-    db: AsyncSession, *, tenant_id: str, notification_id: str, user_id: str | None = None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    notification_id: str,
+    user_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.Notification:
     note = await _get_owned_notification(
-        db, tenant_id=tenant_id, notification_id=notification_id, user_id=user_id
+        db,
+        tenant_id=tenant_id,
+        notification_id=notification_id,
+        user_id=user_id,
+        company_id=company_id,
     )
     note.status = "unread"
     await db.flush()
     return note
 
 
-async def mark_all_read(db: AsyncSession, *, tenant_id: str, user_id: str | None = None) -> int:
+async def mark_all_read(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None = None,
+    company_id: str | None = None,
+) -> int:
     rows = await list_notifications(
-        db, tenant_id=tenant_id, user_id=user_id, status="unread", limit=500
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        status="unread",
+        limit=500,
+        company_id=company_id,
     )
     for note in rows:
         note.status = "read"

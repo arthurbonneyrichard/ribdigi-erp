@@ -129,3 +129,11 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Branches and departments list/export/create/update stamp and filter by workspace `company_id`; creates require company workspace; serialize/export include `company_id`.
 - Backup APIs require **tenant workspace** (removed from company-operational modules); company workspace cannot create/list/restore full-tenant dumps. Frontend backup nav moved to tenant workspace and page switches context on load.
 - Remaining PARTIAL: branch/department unique keys remain `(tenant_id, code)` (not company-scoped); ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared.
+
+## Phase 15 follow-up (2026-08-14)
+
+- Company-scoped uniqueness (Alembic `20260814_0098` + models): branches, departments, stores, product variants (SKU), parties (`kind`+`code`).
+- App-level uniqueness checks filter by `company_id`; variant create stamps `company_id` from parent product.
+- Product GET/PATCH and variant create/patch reject cross-company IDs; product SKU clash checks are company-scoped; catalog meta FK resolve respects company.
+- Store create uniqueness + branch assignment verify company; notification mark-read / mark-unread / mark-all-read filter by company (null-company notes remain visible).
+- Remaining PARTIAL: document number series still tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.

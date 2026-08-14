@@ -167,7 +167,11 @@ async def create_branch(
     manager_id = await _assert_tenant_user(db, tenant_id, manager_id)
     exists = (
         await db.execute(
-            select(m.Branch).where(m.Branch.tenant_id == tenant_id, m.Branch.code == code)
+            select(m.Branch).where(
+                m.Branch.tenant_id == tenant_id,
+                m.Branch.code == code,
+                m.Branch.company_id == company_id,
+            )
         )
     ).scalar_one_or_none()
     if exists:
@@ -251,7 +255,11 @@ async def create_department(
     head_user_id = await _assert_tenant_user(db, tenant_id, head_user_id)
     exists = (
         await db.execute(
-            select(m.Department).where(m.Department.tenant_id == tenant_id, m.Department.code == code)
+            select(m.Department).where(
+                m.Department.tenant_id == tenant_id,
+                m.Department.code == code,
+                m.Department.company_id == company_id,
+            )
         )
     ).scalar_one_or_none()
     if exists:
@@ -310,16 +318,17 @@ async def assert_user_org_assignment(
     *,
     branch_id: str | None,
     department_id: str | None,
+    company_id: str | None = None,
 ) -> tuple[str | None, str | None]:
     resolved_branch = None
     resolved_dept = None
     if branch_id:
-        branch = await get_branch(db, tenant_id, branch_id)
+        branch = await get_branch(db, tenant_id, branch_id, company_id=company_id)
         if not branch.is_active:
             raise HTTPException(status_code=400, detail="Branch is inactive")
         resolved_branch = branch.id
     if department_id:
-        dept = await get_department(db, tenant_id, department_id)
+        dept = await get_department(db, tenant_id, department_id, company_id=company_id)
         if not dept.is_active:
             raise HTTPException(status_code=400, detail="Department is inactive")
         if dept.branch_id and resolved_branch and dept.branch_id != resolved_branch:

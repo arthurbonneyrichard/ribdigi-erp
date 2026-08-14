@@ -103,6 +103,7 @@ async def assert_supplier_code_available(
     tenant_id: str,
     code: str | None,
     exclude_id: str | None = None,
+    company_id: str | None = None,
 ) -> str | None:
     if code is None:
         return None
@@ -114,6 +115,8 @@ async def assert_supplier_code_available(
         m.Party.kind == "supplier",
         m.Party.code == code,
     )
+    if company_id:
+        stmt = stmt.where(m.Party.company_id == company_id)
     if exclude_id:
         stmt = stmt.where(m.Party.id != exclude_id)
     if (await db.execute(stmt.limit(1))).scalar_one_or_none():
@@ -143,7 +146,9 @@ async def create_supplier(
     name = (name or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="name is required")
-    code = await assert_supplier_code_available(db, tenant_id=tenant_id, code=code)
+    code = await assert_supplier_code_available(
+        db, tenant_id=tenant_id, code=code, company_id=company_id
+    )
     ep_pct, ep_days = _coerce_early_pay_override(early_pay_discount_pct, early_pay_discount_days)
     now = datetime.utcnow()
     row = m.Party(
@@ -199,7 +204,11 @@ async def update_supplier(
         row.name = name
     if "code" in fields:
         row.code = await assert_supplier_code_available(
-            db, tenant_id=tenant_id, code=fields["code"], exclude_id=row.id
+            db,
+            tenant_id=tenant_id,
+            code=fields["code"],
+            exclude_id=row.id,
+            company_id=getattr(row, "company_id", None),
         )
     for key in ("party_type", "category", "email", "phone", "address", "notes"):
         if key in fields:

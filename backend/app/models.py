@@ -172,7 +172,7 @@ class Branch(Base):
     """Tenant branch / region for org structure and record scopes."""
 
     __tablename__ = "branches"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -191,7 +191,7 @@ class Department(Base):
     """Tenant department; optional branch linkage for org structure."""
 
     __tablename__ = "departments"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -279,7 +279,7 @@ class AuthToken(Base):
 
 class Store(Base):
     __tablename__ = "stores"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -415,7 +415,7 @@ class Product(Base):
 
 class ProductVariant(Base):
     __tablename__ = "product_variants"
-    __table_args__ = (UniqueConstraint("tenant_id", "sku"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "sku"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -526,7 +526,7 @@ class CustomerGroup(Base):
 
 class Party(Base):
     __tablename__ = "parties"
-    __table_args__ = (UniqueConstraint("tenant_id", "kind", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "kind", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)

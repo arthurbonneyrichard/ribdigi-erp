@@ -1642,3 +1642,145 @@ async def test_audit_org_units_backup_company_scoped(client, db_session, tmp_pat
     tenant_h["X-Workspace-Kind"] = "tenant"
     listed = await ac.get("/api/v1/backup", headers=tenant_h)
     assert listed.status_code == 200, listed.text
+
+
+@pytest.mark.asyncio
+async def test_company_scoped_uniques_and_product_idor(client, db_session):
+    """Phase 15: company-scoped codes/SKUs; product/notification IDOR hardening."""
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="UQ15",
+        name="Alpha Unique B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Company B Product",
+        sku="SHARED-SKU-15",
+        cost_price=1,
+        selling_price=2,
+        stock_qty=3,
+        is_active=True,
+    )
+    note_b = m.Notification(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        user_id=seed["super"].id,
+        title="Company B Only Note",
+        body="secret",
+        category="system",
+        status="unread",
+    )
+    db_session.add_all([prod_b, note_b])
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    # Same branch/store/customer codes allowed in company A while B already has them via create path.
+    branch_a = await ac.post(
+        "/api/v1/branches",
+        headers=headers_a,
+        json={"code": "HQ15", "name": "Company A HQ"},
+    )
+    assert branch_a.status_code == 200, branch_a.text
+
+    headers_b = await _super_headers(ac, seed)
+    headers_b["X-Workspace-Kind"] = "company"
+    headers_b["X-Company-ID"] = c_b.id
+    branch_b = await ac.post(
+        "/api/v1/branches",
+        headers=headers_b,
+        json={"code": "HQ15", "name": "Company B HQ"},
+    )
+    assert branch_b.status_code == 200, branch_b.text
+
+    store_a = await ac.post(
+        "/api/v1/stores",
+        headers=headers_a,
+        json={"name": "Store A", "code": "MAIN15"},
+    )
+    assert store_a.status_code == 200, store_a.text
+    store_b = await ac.post(
+        "/api/v1/stores",
+        headers=headers_b,
+        json={"name": "Store B", "code": "MAIN15"},
+    )
+    assert store_b.status_code == 200, store_b.text
+
+    cust_a = await ac.post(
+        "/api/v1/customers",
+        headers=headers_a,
+        json={"name": "Cust A", "code": "C00115"},
+    )
+    assert cust_a.status_code == 200, cust_a.text
+    cust_b = await ac.post(
+        "/api/v1/customers",
+        headers=headers_b,
+        json={"name": "Cust B", "code": "C00115"},
+    )
+    assert cust_b.status_code == 200, cust_b.text
+
+    # Product IDOR
+    foreign = await ac.get(f"/api/v1/products/{prod_b.id}", headers=headers_a)
+    assert foreign.status_code == 404
+    hijack = await ac.patch(
+        f"/api/v1/products/{prod_b.id}",
+        headers=headers_a,
+        json={"name": "Hijacked"},
+    )
+    assert hijack.status_code == 404
+
+    # Variant SKU can match other company's product SKU within company A product.
+    products = await ac.get("/api/v1/products", headers=headers_a)
+    assert products.status_code == 200
+    alpha = next(p for p in products.json()["data"] if p["name"] == "Alpha Widget")
+    variant = await ac.post(
+        f"/api/v1/products/{alpha['id']}/variants",
+        headers=headers_a,
+        json={"name": "Size L", "sku": "SHARED-SKU-15"},
+    )
+    assert variant.status_code == 200, variant.text
+    assert variant.json()["data"]["company_id"] == seed["c1"].id
+
+    # Notification mark-all in A does not clear B's note; foreign mark-read → 404
+    mark_all = await ac.post("/api/v1/notifications/read-all", headers=headers_a)
+    assert mark_all.status_code == 200, mark_all.text
+    await db_session.refresh(note_b)
+    assert note_b.status == "unread"
+
+    foreign_note = await ac.patch(
+        f"/api/v1/notifications/{note_b.id}/read",
+        headers=headers_a,
+    )
+    assert foreign_note.status_code == 404
+
+    # Cross-company branch assignment rejected
+    bad_store = await ac.post(
+        "/api/v1/stores",
+        headers=headers_a,
+        json={
+            "name": "Bad Link",
+            "code": "BAD15",
+            "branch_id": branch_b.json()["data"]["id"],
+        },
+    )
+    assert bad_store.status_code == 404

@@ -4050,12 +4050,13 @@ async def get_product(
         await db.execute(
             select(m.Product).where(
                 m.Product.id == product_id,
-                m.Product.tenant_id == claims["tenant_id"],
+                *workspace_svc.company_scope_filter(m.Product, claims),
             )
         )
     ).scalar_one_or_none()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    workspace_svc.assert_record_company(claims, product)
     return env(catalog_meta_svc.serialize_product(product))
 
 
@@ -4070,12 +4071,13 @@ async def patch_product(
         await db.execute(
             select(m.Product).where(
                 m.Product.id == product_id,
-                m.Product.tenant_id == claims["tenant_id"],
+                *workspace_svc.company_scope_filter(m.Product, claims),
             )
         )
     ).scalar_one_or_none()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    workspace_svc.assert_record_company(claims, product)
 
     data = payload.model_dump(exclude_unset=True)
     if not data:
@@ -4092,6 +4094,7 @@ async def patch_product(
             brand_id=data.get("brand_id", product.brand_id),
             unit_id=data.get("unit_id", product.unit_id),
             category_name=data.get("category", product.category),
+            company_id=claims.get("company_id"),
         )
         product.category_id = category_id
         product.brand_id = brand_id
@@ -4104,15 +4107,14 @@ async def patch_product(
 
     if "sku" in data and data["sku"]:
         sku = str(data["sku"]).strip()
-        clash = (
-            await db.execute(
-                select(m.Product).where(
-                    m.Product.tenant_id == claims["tenant_id"],
-                    m.Product.sku == sku,
-                    m.Product.id != product.id,
-                )
-            )
-        ).scalar_one_or_none()
+        clash_stmt = select(m.Product).where(
+            m.Product.tenant_id == claims["tenant_id"],
+            m.Product.sku == sku,
+            m.Product.id != product.id,
+        )
+        if claims.get("company_id"):
+            clash_stmt = clash_stmt.where(m.Product.company_id == claims["company_id"])
+        clash = (await db.execute(clash_stmt)).scalar_one_or_none()
         if clash:
             raise HTTPException(status_code=409, detail="SKU already exists")
         product.sku = sku
@@ -5521,6 +5523,8 @@ async def create_product_variant(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     data = payload.model_dump()
     data["barcode"] = await barcode_svc.assert_barcode_available(
         db, tenant_id=claims["tenant_id"], barcode=data.get("barcode")
@@ -5543,6 +5547,8 @@ async def patch_product_variant(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     data = payload.model_dump(exclude_unset=True)
     if "barcode" in data and data["barcode"] is not None:
         data["barcode"] = await barcode_svc.assert_barcode_available(
@@ -12630,6 +12636,7 @@ async def add_store(
             claims["tenant_id"],
             branch_id=payload.branch_id,
             department_id=None,
+            company_id=claims.get("company_id"),
         )
     store = await stores_svc.create_store(
         db,
@@ -12665,6 +12672,7 @@ async def update_store(
             claims["tenant_id"],
             branch_id=payload.branch_id,
             department_id=None,
+            company_id=claims.get("company_id"),
         )
     store = await stores_svc.update_store(
         db,
@@ -13421,7 +13429,11 @@ async def notification_read(
     db: AsyncSession = Depends(get_db),
 ):
     note = await notifications_svc.mark_read(
-        db, tenant_id=claims["tenant_id"], notification_id=nid, user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        notification_id=nid,
+        user_id=claims["sub"],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(notifications_svc.serialize_notification(note), "Marked read")
@@ -13434,7 +13446,11 @@ async def notification_unread(
     db: AsyncSession = Depends(get_db),
 ):
     note = await notifications_svc.mark_unread(
-        db, tenant_id=claims["tenant_id"], notification_id=nid, user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        notification_id=nid,
+        user_id=claims["sub"],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(notifications_svc.serialize_notification(note), "Marked unread")
@@ -13446,7 +13462,10 @@ async def notifications_read_all(
     db: AsyncSession = Depends(get_db),
 ):
     count = await notifications_svc.mark_all_read(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env({"marked": count}, "All notifications marked read")

@@ -766,6 +766,7 @@ async def resolve_product_refs(
     brand_id: str | None,
     unit_id: str | None,
     category_name: str | None = None,
+    company_id: str | None = None,
 ) -> tuple[str | None, str | None, str | None, str]:
     """Validate FKs and return (category_id, brand_id, unit_id, category_label)."""
     label = (category_name or "General").strip() or "General"
@@ -774,14 +775,20 @@ async def resolve_product_refs(
         cat = await db.get(m.ProductCategory, category_id)
         if not cat or cat.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Category not found")
+        if company_id and getattr(cat, "company_id", None) and cat.company_id != company_id:
+            raise HTTPException(status_code=404, detail="Category not found")
         label = cat.name
         resolved_category_id = cat.id
     if brand_id:
         brand = await db.get(m.Brand, brand_id)
         if not brand or brand.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Brand not found")
+        if company_id and getattr(brand, "company_id", None) and brand.company_id != company_id:
+            raise HTTPException(status_code=404, detail="Brand not found")
     if unit_id:
         unit = await db.get(m.UnitOfMeasure, unit_id)
         if not unit or unit.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Unit not found")
+        if company_id and getattr(unit, "company_id", None) and unit.company_id != company_id:
             raise HTTPException(status_code=404, detail="Unit not found")
     return resolved_category_id, brand_id, unit_id, label

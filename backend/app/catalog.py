@@ -15,6 +15,7 @@ from app.inventory import apply_stock_change
 def serialize_variant(v: m.ProductVariant) -> dict:
     return {
         "id": v.id,
+        "company_id": getattr(v, "company_id", None),
         "product_id": v.product_id,
         "name": v.name,
         "sku": v.sku,
@@ -144,27 +145,26 @@ async def create_variant(
     name = (name or "").strip()
     if not sku or not name:
         raise HTTPException(status_code=400, detail="Variant name and sku are required")
-    exists = (
-        await db.execute(
-            select(m.ProductVariant).where(
-                m.ProductVariant.tenant_id == tenant_id,
-                m.ProductVariant.sku == sku,
-            )
-        )
-    ).scalar_one_or_none()
+    company_id = getattr(product, "company_id", None)
+    variant_stmt = select(m.ProductVariant).where(
+        m.ProductVariant.tenant_id == tenant_id,
+        m.ProductVariant.sku == sku,
+    )
+    product_stmt = select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
+    if company_id:
+        variant_stmt = variant_stmt.where(m.ProductVariant.company_id == company_id)
+        product_stmt = product_stmt.where(m.Product.company_id == company_id)
+    exists = (await db.execute(variant_stmt)).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="Variant SKU already exists")
     # Also block collision with parent product SKUs
-    prod_sku = (
-        await db.execute(
-            select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
-        )
-    ).scalar_one_or_none()
+    prod_sku = (await db.execute(product_stmt)).scalar_one_or_none()
     if prod_sku:
         raise HTTPException(status_code=409, detail="SKU already used by a product")
 
     variant = m.ProductVariant(
         tenant_id=tenant_id,
+        company_id=company_id,
         product_id=product.id,
         name=name,
         sku=sku,
@@ -218,22 +218,20 @@ async def update_variant(
         sku = sku.strip()
         if not sku:
             raise HTTPException(status_code=400, detail="Variant sku is required")
-        clash = (
-            await db.execute(
-                select(m.ProductVariant).where(
-                    m.ProductVariant.tenant_id == tenant_id,
-                    m.ProductVariant.sku == sku,
-                    m.ProductVariant.id != variant.id,
-                )
-            )
-        ).scalar_one_or_none()
+        company_id = getattr(variant, "company_id", None)
+        clash_stmt = select(m.ProductVariant).where(
+            m.ProductVariant.tenant_id == tenant_id,
+            m.ProductVariant.sku == sku,
+            m.ProductVariant.id != variant.id,
+        )
+        prod_stmt = select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
+        if company_id:
+            clash_stmt = clash_stmt.where(m.ProductVariant.company_id == company_id)
+            prod_stmt = prod_stmt.where(m.Product.company_id == company_id)
+        clash = (await db.execute(clash_stmt)).scalar_one_or_none()
         if clash:
             raise HTTPException(status_code=409, detail="Variant SKU already exists")
-        prod_sku = (
-            await db.execute(
-                select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
-            )
-        ).scalar_one_or_none()
+        prod_sku = (await db.execute(prod_stmt)).scalar_one_or_none()
         if prod_sku:
             raise HTTPException(status_code=409, detail="SKU already used by a product")
         variant.sku = sku

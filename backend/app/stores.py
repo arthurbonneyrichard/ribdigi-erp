@@ -88,11 +88,24 @@ async def create_store(
         ).scalar_one_or_none()
         if not manager:
             raise HTTPException(status_code=404, detail="Manager user not found")
+    code_clean = code.strip().upper()
+    if company_id:
+        clash = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.company_id == company_id,
+                    m.Store.code == code_clean,
+                )
+            )
+        ).scalar_one_or_none()
+        if clash:
+            raise HTTPException(status_code=409, detail="Store code already exists")
     store = m.Store(
         tenant_id=tenant_id,
         company_id=company_id,
         name=name,
-        code=code.strip().upper(),
+        code=code_clean,
         address=address,
         phone=phone,
         manager_id=manager_id,
@@ -120,6 +133,7 @@ async def create_store(
 def serialize_store(store: m.Store) -> dict:
     return {
         "id": store.id,
+        "company_id": getattr(store, "company_id", None),
         "name": store.name,
         "code": store.code,
         "address": store.address,
