@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 390 open** | Offline Catalog Snapshot Pack Remaining-Gate Index — `docs/STAGE_390_PLAN.md`, ADR-787 (`test_stage390_open.py`) |
+| **Stage 390 I1** | Offline catalog snapshot pack remaining-gate index hub (`test_stage390_index_i1.py`) |
+| **Stage 390 B1** | Offline catalog snapshot pack blocker matrix (`test_stage390_blockers_b1.py`) |
+| **Stage 390 P1** | Stage 389 / Stage 388 / Stage 377 / CHANGE_IMPACT pointers (`test_stage390_pointers_p1.py`) |
+| **Stage 390 D1** | Offline catalog snapshot pack remaining-gate fidelity — `docs/STAGE_390_FIDELITY.md` (`test_stage390_fidelity_d1.py`) |
+| **Stage 390 H390x** | Exit + freeze — `docs/STAGE_390_EXIT_CRITERIA.md`, ADR-788 (`test_stage390_exit_h390x.py`); Stages 1–390 frozen |
 | **Stage 389 open** | Offline Client Request Id Pack Remaining-Gate Index — `docs/STAGE_389_PLAN.md`, ADR-785 (`test_stage389_open.py`) |
 | **Stage 389 I1** | Offline client_request_id pack remaining-gate index hub (`test_stage389_index_i1.py`) |
 | **Stage 389 B1** | Offline client_request_id pack blocker matrix (`test_stage389_blockers_b1.py`) |

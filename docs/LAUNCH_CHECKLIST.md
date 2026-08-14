@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 390 track opened (ADR-787: `test_stage390_open.py`, `docs/STAGE_390_PLAN.md`) — Offline Catalog Snapshot Pack Remaining-Gate Index; closed under ADR-788
+- [x] Offline catalog snapshot pack remaining-gate hub (Stage 390 I1: `test_stage390_index_i1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline catalog snapshot pack blocker matrix (Stage 390 B1: `test_stage390_blockers_b1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 389 / Stage 388 / Stage 377 / CHANGE_IMPACT pointers (Stage 390 P1: `test_stage390_pointers_p1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 390 fidelity sync (D1: `test_stage390_fidelity_d1.py`, `docs/STAGE_390_FIDELITY.md`)
+- [x] Stage 390 exit + freeze (H390x: `test_stage390_exit_h390x.py`, `docs/STAGE_390_EXIT_CRITERIA.md`, ADR-788)
 - [x] Stage 389 track opened (ADR-785: `test_stage389_open.py`, `docs/STAGE_389_PLAN.md`) — Offline Client Request Id Pack Remaining-Gate Index; closed under ADR-786
 - [x] Offline client_request_id pack remaining-gate hub (Stage 389 I1: `test_stage389_index_i1.py`, `docs/OFFLINE_CLIENT_REQUEST_ID_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline client_request_id pack blocker matrix (Stage 389 B1: `test_stage389_blockers_b1.py`, `docs/OFFLINE_CLIENT_REQUEST_ID_PACK_RG_BLOCKERS_MVP.md`)

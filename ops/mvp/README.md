@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_390_EXIT_CRITERIA.md` / `docs/ADR_788_STAGE390_FREEZE.md` (`backend/tests/test_stage390_exit_h390x.py`) — Stage 390 H390x
+- `docs/STAGE_390_FIDELITY.md` (`backend/tests/test_stage390_fidelity_d1.py`) — Stage 390 D1
+- `docs/STAGE_390_PLAN.md` (`backend/tests/test_stage390_open.py`) — Stage 390 open (ADR-787)
+- `docs/OFFLINE_CATALOG_SNAPSHOT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-catalog-snapshot-pack-remaining-gate.json` — Stage 390 I1
+- `docs/OFFLINE_CATALOG_SNAPSHOT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-catalog-snapshot-pack-rg-blockers.json` — Stage 390 B1
+- `docs/OFFLINE_CATALOG_SNAPSHOT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-catalog-snapshot-pack-rg-pointers.json` — Stage 390 P1
 - `docs/STAGE_389_EXIT_CRITERIA.md` / `docs/ADR_786_STAGE389_FREEZE.md` (`backend/tests/test_stage389_exit_h389x.py`) — Stage 389 H389x
 - `docs/STAGE_389_FIDELITY.md` (`backend/tests/test_stage389_fidelity_d1.py`) — Stage 389 D1
 - `docs/STAGE_389_PLAN.md` (`backend/tests/test_stage389_open.py`) — Stage 389 open (ADR-785)
@@ -5617,6 +5623,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 390 exit
+
+H390x met — `docs/STAGE_390_EXIT_CRITERIA.md`, ADR-788. Stages 1–390 frozen for Stage 390 feature scope.
+
+## Stage 390 D1 — Tenant MVP Offline Catalog Snapshot Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_390_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 390 open
+
+Opened under ADR-787; plan `docs/STAGE_390_PLAN.md`.
 
 ## Stage 389 exit
 

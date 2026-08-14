@@ -31,3 +31,10 @@ Stage 390 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline client-request-id, client_request_id idempotency as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 390 opened under **ADR-787** after CONTINUE/NEXT (Tenant MVP Offline Catalog Snapshot Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-788**. Stage 389 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 389 runner-up outline was approved and opened (ADR-787); freeze ADR-788. Do not reopen Stage 389 scope.
+
