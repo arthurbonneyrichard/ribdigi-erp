@@ -6721,8 +6721,10 @@ async def patch_expense(
         payment_method=payload.payment_method,
         category_id=payload.category_id,
         category=payload.category,
+        store_id=payload.store_id,
         branch_id=payload.branch_id,
         department_id=payload.department_id,
+        clear_store=payload.clear_store,
         clear_branch=payload.clear_branch,
         clear_department=payload.clear_department,
     )
@@ -8424,6 +8426,7 @@ async def report_expenses_summary(
     category_id: str | None = None,
     branch_id: str | None = None,
     department_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8436,6 +8439,7 @@ async def report_expenses_summary(
             category_id=category_id or None,
             branch_id=branch_id or None,
             department_id=department_id or None,
+            store_id=store_id or None,
         )
     )
 
@@ -8447,6 +8451,7 @@ async def report_expenses_budget_vs_actual(
     category_id: str | None = None,
     branch_id: str | None = None,
     department_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8459,6 +8464,7 @@ async def report_expenses_budget_vs_actual(
             category_id=category_id or None,
             branch_id=branch_id or None,
             department_id=department_id or None,
+            store_id=store_id or None,
         )
     )
 

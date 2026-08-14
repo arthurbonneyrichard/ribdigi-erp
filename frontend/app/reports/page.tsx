@@ -495,18 +495,16 @@ export default function Page() {
                 ))}
               </select>
             )}
-            {tab !== 'expenses' && (
-              <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-                <option value="">All stores</option>
-                {stores
-                  .filter((s) => !branchId || s.branch_id === branchId)
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.code} — {s.name}
-                    </option>
-                  ))}
-              </select>
-            )}
+            <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+              <option value="">All stores</option>
+              {stores
+                .filter((s) => !branchId || s.branch_id === branchId)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+            </select>
           </>
         )}
         {(tab === 'salesperson' ||

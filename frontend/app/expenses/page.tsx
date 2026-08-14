@@ -30,6 +30,7 @@ type Expense = {
   approval_step?: number;
   approval_steps_required?: number;
   awaiting_level?: number | null;
+  store_id?: string | null;
   branch_id?: string | null;
   department_id?: string | null;
 };
@@ -49,8 +50,10 @@ export default function Page() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
+  const [storeId, setStoreId] = useState('');
   const [branchId, setBranchId] = useState('');
   const [departmentId, setDepartmentId] = useState('');
+  const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [reference, setReference] = useState('');
@@ -75,11 +78,12 @@ export default function Page() {
   const [budgetDrafts, setBudgetDrafts] = useState<Record<string, string>>({});
 
   async function refresh() {
-    const [exp, cats, settings, liquid, br, dep, accounts] = await Promise.all([
+    const [exp, cats, settings, liquid, st, br, dep, accounts] = await Promise.all([
       api('/expenses'),
       api('/expenses/categories'),
       api('/expenses/settings'),
       api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
+      api('/stores').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
       api('/accounting/accounts').catch(() => ({ data: [] })),
@@ -87,6 +91,7 @@ export default function Page() {
     setRows(exp.data || []);
     setCategories(cats.data || []);
     setLiquidAccounts(liquid.data || []);
+    setStores(st.data || []);
     setBranches(br.data || []);
     setDepartments(dep.data || []);
     const glExpense = (accounts.data || []).filter(
@@ -180,12 +185,14 @@ export default function Page() {
           reference: reference || undefined,
           branch_id: branchId || null,
           department_id: departmentId || null,
+          store_id: storeId || null,
         }),
       });
       setMessage(`Expense ${r.data.status}: ${r.data.amount}`);
       setDescription('');
       setPayee('');
       setReference('');
+      setStoreId('');
       setBranchId('');
       setDepartmentId('');
       await refresh();
@@ -585,6 +592,7 @@ export default function Page() {
             onChange={(e) => {
               setBranchId(e.target.value);
               setDepartmentId('');
+              setStoreId('');
             }}
             title="Branch (optional)"
           >
@@ -594,6 +602,21 @@ export default function Page() {
               .map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.code} — {b.name}
+                </option>
+              ))}
+          </select>
+          <select
+            value={storeId}
+            onChange={(e) => setStoreId(e.target.value)}
+            title="Store (optional)"
+          >
+            <option value="">No store</option>
+            {stores
+              .filter((s) => s.is_active !== false)
+              .filter((s) => !branchId || s.branch_id === branchId)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
                 </option>
               ))}
           </select>
@@ -680,6 +703,7 @@ export default function Page() {
           <tr>
             <th>Category</th>
             <th>Branch</th>
+            <th>Store</th>
             <th>Department</th>
             <th>Payee</th>
             <th>Description</th>
@@ -697,6 +721,10 @@ export default function Page() {
               <td>
                 {branches.find((b) => b.id === r.branch_id)?.code ||
                   (r.branch_id ? r.branch_id.slice(0, 8) : '—')}
+              </td>
+              <td>
+                {stores.find((s) => s.id === r.store_id)?.code ||
+                  (r.store_id ? r.store_id.slice(0, 8) : '—')}
               </td>
               <td>
                 {departments.find((d) => d.id === r.department_id)?.code ||

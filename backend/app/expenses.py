@@ -498,6 +498,27 @@ async def _record_action(
     )
 
 
+async def _resolve_expense_store(
+    db: AsyncSession,
+    tenant_id: str,
+    store_id: str | None,
+    *,
+    branch_id: str | None = None,
+) -> str | None:
+    """Validate optional store; optionally ensure it belongs to the selected branch."""
+    if not store_id:
+        return None
+    from app import stores as stores_svc
+
+    store = await stores_svc.get_store(db, tenant_id, store_id)
+    if branch_id and store.branch_id and store.branch_id != branch_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Store does not belong to the selected branch",
+        )
+    return store.id
+
+
 async def create_expense(
     db: AsyncSession,
     *,
@@ -528,6 +549,9 @@ async def create_expense(
         branch_id=branch_id,
         department_id=department_id,
     )
+    resolved_store = await _resolve_expense_store(
+        db, tenant_id, store_id, branch_id=resolved_branch
+    )
     settings = await get_approval_settings(db, tenant_id)
     levels = settings["levels"]
     auto_t = settings["expense_approval_threshold"]
@@ -556,7 +580,7 @@ async def create_expense(
         liquid_account_id=liquid_account_id,
         reference=reference,
         payee=payee,
-        store_id=store_id,
+        store_id=resolved_store,
         branch_id=resolved_branch,
         department_id=resolved_dept,
         status="pending" if needs_approval else "approved",
@@ -734,8 +758,10 @@ async def update_expense(
     payment_method: str | None = None,
     category_id: str | None = None,
     category: str | None = None,
+    store_id: str | None = None,
     branch_id: str | None = None,
     department_id: str | None = None,
+    clear_store: bool = False,
     clear_branch: bool = False,
     clear_department: bool = False,
 ) -> m.Expense:
@@ -747,8 +773,10 @@ async def update_expense(
         raise HTTPException(status_code=409, detail="Only pending or rejected expenses can be edited")
 
     org_touch = (
-        clear_branch
+        clear_store
+        or clear_branch
         or clear_department
+        or store_id is not None
         or branch_id is not None
         or department_id is not None
     )
@@ -802,6 +830,17 @@ async def update_expense(
         )
         expense.branch_id = resolved_branch
         expense.department_id = resolved_dept
+        if clear_store:
+            expense.store_id = None
+        elif store_id is not None:
+            expense.store_id = await _resolve_expense_store(
+                db, tenant_id, store_id, branch_id=resolved_branch
+            )
+        elif resolved_branch and expense.store_id:
+            # Re-validate existing store if branch changed
+            expense.store_id = await _resolve_expense_store(
+                db, tenant_id, expense.store_id, branch_id=resolved_branch
+            )
 
     if amount is not None:
         new_amount = round(float(amount), 2)
