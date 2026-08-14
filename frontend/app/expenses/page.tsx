@@ -70,6 +70,15 @@ export default function Page() {
     expense_date: string;
   } | null>(null);
   const [ocrMeta, setOcrMeta] = useState<any>(null);
+  const [editFor, setEditFor] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{
+    amount: string;
+    payee: string;
+    description: string;
+    reference: string;
+    payment_method: string;
+  } | null>(null);
+  const [editBusy, setEditBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
@@ -406,6 +415,8 @@ export default function Page() {
   async function suggestOcr(id: string) {
     setError('');
     setMessage('');
+    setEditFor(null);
+    setEditDraft(null);
     try {
       const r = await api(`/expenses/${id}/ocr-suggest`, { method: 'POST', body: '{}' });
       const s = r.data?.suggestions || {};
@@ -447,6 +458,57 @@ export default function Page() {
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    }
+  }
+
+  function startEdit(r: Expense) {
+    setError('');
+    setMessage('');
+    setOcrFor(null);
+    setOcrDraft(null);
+    setOcrMeta(null);
+    setEditFor(r.id);
+    setEditDraft({
+      amount: String(r.amount ?? ''),
+      payee: r.payee || '',
+      description: r.description || '',
+      reference: r.reference || '',
+      payment_method: r.payment_method || 'cash',
+    });
+  }
+
+  function cancelEdit() {
+    setEditFor(null);
+    setEditDraft(null);
+  }
+
+  async function saveEdit() {
+    if (!editFor || !editDraft) return;
+    setError('');
+    setMessage('');
+    setEditBusy(true);
+    try {
+      const amount = Number(editDraft.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error('Amount must be greater than 0');
+      }
+      const body: Record<string, unknown> = {
+        amount,
+        payee: editDraft.payee.trim() || null,
+        description: editDraft.description.trim() || '',
+        reference: editDraft.reference.trim() || null,
+        payment_method: editDraft.payment_method.trim() || 'cash',
+      };
+      const r = await api(`/expenses/${editFor}`, { method: 'PATCH', body: JSON.stringify(body) });
+      setMessage(
+        `Updated ${r.data?.reference || editFor.slice(0, 8)} — ${r.data?.payee || 'expense'} (${r.data?.amount})`
+      );
+      cancelEdit();
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setEditBusy(false);
     }
   }
 
@@ -999,6 +1061,61 @@ export default function Page() {
         </div>
       )}
 
+      {editDraft && editFor && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>Edit expense</h3>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Pending or rejected expenses only (BR-9.2). Use this to fix amount/payee before approve — including
+            expenses generated from recurring schedules.
+          </p>
+          <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+            <input
+              value={editDraft.amount}
+              onChange={(e) => setEditDraft({ ...editDraft, amount: e.target.value })}
+              placeholder="Amount"
+              aria-label="Edit amount"
+            />
+            <input
+              value={editDraft.payee}
+              onChange={(e) => setEditDraft({ ...editDraft, payee: e.target.value })}
+              placeholder="Payee"
+              aria-label="Edit payee"
+            />
+            <input
+              value={editDraft.description}
+              onChange={(e) => setEditDraft({ ...editDraft, description: e.target.value })}
+              placeholder="Description"
+              aria-label="Edit description"
+            />
+            <input
+              value={editDraft.reference}
+              onChange={(e) => setEditDraft({ ...editDraft, reference: e.target.value })}
+              placeholder="Reference"
+              aria-label="Edit reference"
+            />
+            <select
+              value={editDraft.payment_method}
+              onChange={(e) => setEditDraft({ ...editDraft, payment_method: e.target.value })}
+              aria-label="Edit payment method"
+            >
+              <option value="cash">Cash</option>
+              <option value="bank_transfer">Bank transfer</option>
+              <option value="card">Card</option>
+              <option value="cheque">Cheque</option>
+              <option value="mobile_money">Mobile money</option>
+            </select>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={saveEdit} disabled={editBusy}>
+                {editBusy ? 'Saving…' : 'Save changes'}
+              </button>
+              <button type="button" onClick={cancelEdit} disabled={editBusy}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <table className="table">
         <thead>
           <tr>
@@ -1076,6 +1193,11 @@ export default function Page() {
                 )}
               </td>
               <td>
+                {(r.status === 'pending' || r.status === 'rejected') && (
+                  <button type="button" onClick={() => startEdit(r)} style={{ marginRight: 8 }}>
+                    Edit
+                  </button>
+                )}
                 {r.status === 'pending' && (
                   <>
                     <button onClick={() => approve(r.id)} style={{ marginRight: 8 }}>

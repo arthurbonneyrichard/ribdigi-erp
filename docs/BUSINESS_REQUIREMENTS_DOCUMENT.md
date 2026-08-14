@@ -563,8 +563,8 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [x] Expense date, category, amount, payment method, reference number (`reference` auto-allocated via tenant series `GET|PATCH /expenses/settings` → `expense_numbering` when omitted; `{PREFIX}-{YYYY}-{NNNN}` default `EXP`; explicit vendor refs preserved; Expenses Document numbering UI)
-  - [ ] Payee name
-  - [ ] Description/notes
+  - [x] Payee name (`payee` on create + **Edit** / OCR apply via `PATCH /expenses/{id}` for pending/rejected)
+  - [x] Description/notes (`description` on create + **Edit** / OCR apply)
   - [x] Assign to branch/department (`branch_id` / `department_id` on expenses + recurring; Expenses UI; Alembic `20260813_0091`)
   - [x] Link to chart of accounts for auto-posting (`expense_categories.account_id`; debit linked GL or default `6000`; Expenses category GL picker; Alembic `20260813_0092`)
 
@@ -592,7 +592,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Set frequency (daily, weekly, monthly, yearly) — `POST /expenses/recurring`; Expenses → Recurring UI
   - [x] Auto-generate expense entries — Celery `generate_recurring_expenses` + `POST /expenses/recurring/generate`; allocates `EXP-YYYY-NNNN` via expense numbering when blank; Expenses UI Generate due
   - [x] Notification before auto-generation — category `recurring_expense_due` T−1 on `next_run_at` via Celery `scan_recurring_expense_due` + `POST /notifications/scan-due`; Notifications preferences
-  - [x] Skip next occurrence — `POST /expenses/recurring/{id}/skip-next` advances `next_run_at` by one frequency period without creating an expense; Expenses UI **Skip next** (per-occurrence amount/payee edit deferred)
+  - [x] Skip next occurrence — `POST /expenses/recurring/{id}/skip-next` advances `next_run_at` by one frequency period without creating an expense; Expenses UI **Skip next** (schedule template amount/payee PATCH still deferred; **per-occurrence** amount/payee via Expenses **Edit** on the generated pending expense — `PATCH /expenses/{id}`)
 
 ---
 

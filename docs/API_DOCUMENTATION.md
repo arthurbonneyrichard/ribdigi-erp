@@ -1051,23 +1051,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 **List:** `GET /expenses`  
 **Create:** `POST /expenses`  
 **Get:** `GET /expenses/{expense_id}`  
-**Update:** `PATCH /expenses/{expense_id}`  
-**Approve:** `POST /expenses/{expense_id}/approve`  
-**Delete:** `DELETE /expenses/{expense_id}`
-
-**Create Expense:**
-```json
-{
-  "category_id": "exp_cat_001",
-  "amount": 150.00,
-  "payment_method": "bank_transfer",
-  "reference": "UTIL-001",
-  "description": "Monthly electricity bill",
-  "payee": "Utility Co",
-  "branch_id": "br_001",
-  "department_id": "dept_001"
-}
-```
+**Update:** `PATCH /expenses/{expense_id}` — pending or rejected only (409 if approved). Body may include `amount`, `payee`, `description`, `reference`, `expense_date`, `payment_method`, `category_id` / `category`, org dims. Amount cannot change after a human approval step is recorded. Expenses UI **Edit** opens these fields (OCR **Apply to expense** uses the same PATCH).
 
 Optional org dims (`branch_id`, `department_id`; BR-9.2). Department must belong to the selected branch when both are set. `PATCH /expenses/{id}` accepts the same fields plus `clear_branch` / `clear_department`. Receipts use separate upload endpoints (not inline attachments on create).
 
