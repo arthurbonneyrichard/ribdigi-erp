@@ -1,0 +1,60 @@
+{
+  "id": "e2e-org-bootstrap-pack-rg-pointers",
+  "stage": 364,
+  "pack": "P1",
+  "doc": "docs/E2E_ORG_BOOTSTRAP_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/E2E_ORG_BOOTSTRAP_PACK_REMAINING_GATE_MVP.md",
+    "e2e_org_bootstrap": "docs/E2E_ORG_BOOTSTRAP_MVP.md",
+    "e2e_users_rbac_pack_remaining_gate": "docs/E2E_USERS_RBAC_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_bootstrap_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "e2e_org_bootstrap_stage35",
+    "e2e_users_rbac_pack_remaining_gate_stage363",
+    "e2e_backup_restore_pack_remaining_gate_stage320",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "eobprp-stage35",
+      "title": "Point to Stage 35 E2E org-bootstrap packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobprp-stage363",
+      "title": "Point to Stage 363 E2E users RBAC pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobprp-stage320",
+      "title": "Point to Stage 320 E2E backup restore pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobprp-checklist-remaining",
+      "title": "Live E2E org-bootstrap Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 364 P1 E2E org bootstrap pack RG pointers packaging only. Do not claim live E2E org-bootstrap Complete."
+}

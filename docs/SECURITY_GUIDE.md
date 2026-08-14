@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 364 open** | E2E Org Bootstrap Pack Remaining-Gate Index — `docs/STAGE_364_PLAN.md`, ADR-735 (`test_stage364_open.py`) |
+| **Stage 364 I1** | E2E org bootstrap pack remaining-gate index hub (`test_stage364_index_i1.py`) |
+| **Stage 364 B1** | E2E org bootstrap pack blocker matrix (`test_stage364_blockers_b1.py`) |
+| **Stage 364 P1** | Stage 35 / Stage 363 / Stage 320 / Stage 329 pointers (`test_stage364_pointers_p1.py`) |
+| **Stage 364 D1** | E2E org bootstrap pack remaining-gate fidelity — `docs/STAGE_364_FIDELITY.md` (`test_stage364_fidelity_d1.py`) |
+| **Stage 364 H364x** | Exit + freeze — `docs/STAGE_364_EXIT_CRITERIA.md`, ADR-736 (`test_stage364_exit_h364x.py`); Stages 1–364 frozen |
 | **Stage 363 open** | E2E Users RBAC Pack Remaining-Gate Index — `docs/STAGE_363_PLAN.md`, ADR-733 (`test_stage363_open.py`) |
 | **Stage 363 I1** | E2E users RBAC pack remaining-gate index hub (`test_stage363_index_i1.py`) |
 | **Stage 363 B1** | E2E users RBAC pack blocker matrix (`test_stage363_blockers_b1.py`) |

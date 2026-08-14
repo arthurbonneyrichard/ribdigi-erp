@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_364_EXIT_CRITERIA.md` / `docs/ADR_736_STAGE364_FREEZE.md` (`backend/tests/test_stage364_exit_h364x.py`) — Stage 364 H364x
+- `docs/STAGE_364_FIDELITY.md` (`backend/tests/test_stage364_fidelity_d1.py`) — Stage 364 D1
+- `docs/STAGE_364_PLAN.md` (`backend/tests/test_stage364_open.py`) — Stage 364 open (ADR-735)
+- `docs/E2E_ORG_BOOTSTRAP_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/e2e-org-bootstrap-pack-remaining-gate.json` — Stage 364 I1
+- `docs/E2E_ORG_BOOTSTRAP_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/e2e-org-bootstrap-pack-rg-blockers.json` — Stage 364 B1
+- `docs/E2E_ORG_BOOTSTRAP_PACK_RG_POINTERS_MVP.md` / `ops/mvp/e2e-org-bootstrap-pack-rg-pointers.json` — Stage 364 P1
 - `docs/STAGE_363_EXIT_CRITERIA.md` / `docs/ADR_734_STAGE363_FREEZE.md` (`backend/tests/test_stage363_exit_h363x.py`) — Stage 363 H363x
 - `docs/STAGE_363_FIDELITY.md` (`backend/tests/test_stage363_fidelity_d1.py`) — Stage 363 D1
 - `docs/STAGE_363_PLAN.md` (`backend/tests/test_stage363_open.py`) — Stage 363 open (ADR-733)
@@ -5461,6 +5467,16 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 364 exit
+
+H364x met — `docs/STAGE_364_EXIT_CRITERIA.md`, ADR-736. Stages 1–364 frozen for Stage 364 feature scope.
+
+## Stage 364 D1 — Tenant MVP E2E Org Bootstrap Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_364_FIDELITY.md` (`test_stage364_fidelity_d1.py`). `E2E_ORG_BOOTSTRAP_PACK_*` remaining-gate index; live bootstrap / E2E smoke / demo tenant / go-live / attestation still MISSING.
+
+## Stage 364 open
 
 ## Stage 363 exit
 

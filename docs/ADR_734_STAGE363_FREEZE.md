@@ -31,3 +31,9 @@ Stage 364 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live user provisioning, E2E smoke, demo tenant, store membership, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 364 opened under **ADR-735** after CONTINUE/NEXT (Tenant MVP E2E Org Bootstrap Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-736**. Stage 363 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 364 runner-up outline was approved and opened (ADR-735); freeze ADR-736. Do not reopen Stage 363 scope.

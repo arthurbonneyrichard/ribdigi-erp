@@ -1,0 +1,57 @@
+{
+  "id": "e2e-org-bootstrap-pack-remaining-gate",
+  "stage": 364,
+  "pack": "I1",
+  "doc": "docs/E2E_ORG_BOOTSTRAP_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/E2E_ORG_BOOTSTRAP_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/E2E_ORG_BOOTSTRAP_PACK_RG_POINTERS_MVP.md",
+    "e2e_org_bootstrap": "docs/E2E_ORG_BOOTSTRAP_MVP.md",
+    "e2e_users_rbac_pack_remaining_gate": "docs/E2E_USERS_RBAC_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_bootstrap_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage35_e2e_org_bootstrap": true,
+  "distinct_from_stage363_e2e_users_rbac_pack_remaining_gate": true,
+  "distinct_from_stage320_e2e_backup_restore_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "eobpr-read-blockers",
+      "title": "Read B1 E2E org bootstrap pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobpr-follow-pointers",
+      "title": "Follow P1 Stage 35 / Stage 363 / Stage 320 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobpr-checklist-missing",
+      "title": "Reaffirm live bootstrap / E2E smoke / demo tenant / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobpr-no-packaging-as-live",
+      "title": "Do not treat Stage 35 / Stage 363 / Stage 320 / Stage 329 as live E2E org-bootstrap Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobpr-checklist-remaining",
+      "title": "Live bootstrap / E2E smoke / demo tenant / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 364 I1 E2E org bootstrap pack remaining-gate index packaging only. Do not claim live E2E org-bootstrap Complete."
+}

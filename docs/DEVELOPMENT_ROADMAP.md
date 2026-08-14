@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 364 open (2026-08-14):** Tenant MVP E2E Org Bootstrap Pack Remaining-Gate Index Fidelity — `docs/ADR_735_STAGE364_OPEN.md` + `docs/STAGE_364_PLAN.md` (I1 next).
+
+**Stage 364 I1 (2026-08-14):** E2E org bootstrap pack remaining-gate index hub (`test_stage364_index_i1.py`).
+
+**Stage 364 B1 (2026-08-14):** E2E org bootstrap pack blocker matrix (`test_stage364_blockers_b1.py`).
+
+**Stage 364 P1 (2026-08-14):** Stage 35 / Stage 363 / Stage 320 / Stage 329 pointers (`test_stage364_pointers_p1.py`).
+
+**Stage 364 D1 (2026-08-14):** E2E Org Bootstrap Pack Remaining-Gate Index fidelity sync — `docs/STAGE_364_FIDELITY.md` (`test_stage364_fidelity_d1.py`).
+
+**Stage 364 exit (2026-08-14):** I1, B1, P1, D1, H364x met — `docs/STAGE_364_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_736_STAGE364_FREEZE.md`. Fidelity: `docs/STAGE_364_FIDELITY.md`.
+
 **Stage 363 open (2026-08-14):** Tenant MVP E2E Users RBAC Pack Remaining-Gate Index Fidelity — `docs/ADR_733_STAGE363_OPEN.md` + `docs/STAGE_363_PLAN.md` (I1 next).
 
 **Stage 363 I1 (2026-08-14):** E2E users RBAC pack remaining-gate index hub (`test_stage363_index_i1.py`).
