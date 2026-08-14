@@ -340,7 +340,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Comprehensive product information management.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Categories:** Hierarchical category tree (parent/child), category code
+  - [x] **Categories:** Hierarchical category tree (parent/child), category code (`GET /catalog/categories` returns tree order with `depth`/`path`; create/PATCH reparent; cycle guard; Inventory Catalog Category tree UI + product picker paths)
   - [x] **Brands:** Brand name, logo, description (`brands.logo_url` + description; `POST|GET|DELETE /catalog/brands/{id}/logo`; Inventory Catalog UI)
   - [x] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios
   - [x] **Product Variants:** Size, color, flavor, dosage (pharmacy) variants with unique SKUs (`product_variants` attrs + auto/manual SKU; Inventory Variants UI; `POST|PATCH /products/{id}/variants`)
