@@ -1,0 +1,60 @@
+{
+  "id": "live-training-pack-rg-pointers",
+  "stage": 241,
+  "pack": "P1",
+  "doc": "docs/LIVE_TRAINING_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_TRAINING_PACK_REMAINING_GATE_MVP.md",
+    "live_training_remaining_gate": "docs/LIVE_TRAINING_REMAINING_GATE_MVP.md",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+    "knowledge_transfer_pack_remaining_gate": "docs/KNOWLEDGE_TRANSFER_PACK_REMAINING_GATE_MVP.md",
+    "operator_handoff_pack_remaining_gate": "docs/OPERATOR_HANDOFF_PACK_REMAINING_GATE_MVP.md",
+    "customer_training_cert_register": "ops/mvp/customer-training-cert.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "training_certification_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "customer_training_cert_stage48_t1",
+    "live_training_remaining_gate_stage189",
+    "knowledge_transfer_pack_remaining_gate_stage240",
+    "operator_handoff_pack_remaining_gate_stage239",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ltprp-stage48",
+      "title": "Point to Stage 48 T1 customer training cert",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltprp-stage189",
+      "title": "Point to Stage 189 live-training remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltprp-stage240",
+      "title": "Point to Stage 240 knowledge transfer pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltprp-stage239",
+      "title": "Point to Stage 239 operator handoff pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltprp-training-remaining",
+      "title": "Live training Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 241 P1 live training pack RG pointers packaging only. Do not claim live training Complete."
+}

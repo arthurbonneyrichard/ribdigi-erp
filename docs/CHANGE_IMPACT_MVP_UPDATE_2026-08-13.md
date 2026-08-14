@@ -376,3 +376,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 240 decision (opened after Stage 239 freeze)
 
 **Tenant MVP Knowledge Transfer Pack Remaining-Gate Index Fidelity** — knowledge transfer pack remaining-gate hub (I1), blocker matrix (B1), Stage 33 / Stage 216 / Stage 239 pointers with explicit non-claim (P1). Prefixed `KNOWLEDGE_TRANSFER_PACK_*` (≠ Stage 216 `KNOWLEDGE_TRANSFER_*`). Live knowledge-transfer Completes remain deferred (Stage 241+). Distinct from Stage 216 knowledge transfer remaining-gate and Stage 239 operator handoff pack remaining-gate.
+
+## Stage 241 decision (opened after Stage 240 freeze)
+
+**Tenant MVP Live Training Pack Remaining-Gate Index Fidelity** — live training pack remaining-gate hub (I1), blocker matrix (B1), Stage 48 / Stage 189 / Stage 240 pointers with explicit non-claim (P1). Prefixed `LIVE_TRAINING_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 189 `LIVE_TRAINING_*` / Stage 189 P1 `LIVE_TRAINING_PACK_POINTERS`). Live training Completes remain deferred (Stage 242+). Distinct from Stage 189 live-training remaining-gate and Stage 240 knowledge transfer pack remaining-gate.

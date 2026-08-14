@@ -3503,3 +3503,15 @@ Every feature in every phase must meet:
 **Stage 240 D1 (2026-08-14):** Knowledge Transfer Pack Remaining-Gate Index fidelity sync — `docs/STAGE_240_FIDELITY.md` (`test_stage240_fidelity_d1.py`).
 
 **Stage 240 exit (2026-08-14):** I1, B1, P1, D1, H240x met — `docs/STAGE_240_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_487_STAGE240_FREEZE.md`. Fidelity: `docs/STAGE_240_FIDELITY.md`.
+
+**Stage 241 open (2026-08-14):** Tenant MVP Live Training Pack Remaining-Gate Index Fidelity — `docs/ADR_488_STAGE241_OPEN.md` + `docs/STAGE_241_PLAN.md` (I1 next).
+
+**Stage 241 I1 (2026-08-14):** Live training pack remaining-gate index hub (`test_stage241_index_i1.py`).
+
+**Stage 241 B1 (2026-08-14):** Live training pack blocker matrix (`test_stage241_blockers_b1.py`).
+
+**Stage 241 P1 (2026-08-14):** Stage 48 / Stage 189 / Stage 240 pointers (`test_stage241_pointers_p1.py`).
+
+**Stage 241 D1 (2026-08-14):** Live Training Pack Remaining-Gate Index fidelity sync — `docs/STAGE_241_FIDELITY.md` (`test_stage241_fidelity_d1.py`).
+
+**Stage 241 exit (2026-08-14):** I1, B1, P1, D1, H241x met — `docs/STAGE_241_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_489_STAGE241_FREEZE.md`. Fidelity: `docs/STAGE_241_FIDELITY.md`.

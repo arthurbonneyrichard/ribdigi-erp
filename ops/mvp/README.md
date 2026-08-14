@@ -873,6 +873,13 @@ Authoritative MVP docs:
 - `docs/KNOWLEDGE_TRANSFER_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/knowledge-transfer-pack-remaining-gate.json` — Stage 240 I1
 - `docs/KNOWLEDGE_TRANSFER_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/knowledge-transfer-pack-rg-blockers.json` — Stage 240 B1
 - `docs/KNOWLEDGE_TRANSFER_PACK_RG_POINTERS_MVP.md` / `ops/mvp/knowledge-transfer-pack-rg-pointers.json` — Stage 240 P1
+
+- `docs/STAGE_241_EXIT_CRITERIA.md` / `docs/ADR_489_STAGE241_FREEZE.md` (`backend/tests/test_stage241_exit_h241x.py`) — Stage 241 H241x
+- `docs/STAGE_241_FIDELITY.md` (`backend/tests/test_stage241_fidelity_d1.py`) — Stage 241 D1
+- `docs/STAGE_241_PLAN.md` (`backend/tests/test_stage241_open.py`) — Stage 241 open (ADR-488)
+- `docs/LIVE_TRAINING_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/live-training-pack-remaining-gate.json` — Stage 241 I1
+- `docs/LIVE_TRAINING_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/live-training-pack-rg-blockers.json` — Stage 241 B1
+- `docs/LIVE_TRAINING_PACK_RG_POINTERS_MVP.md` / `ops/mvp/live-training-pack-rg-pointers.json` — Stage 241 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4218,4 +4225,16 @@ H240x met — `docs/STAGE_240_EXIT_CRITERIA.md`, ADR-487. Stages 1–240 frozen 
 ## Stage 240 open
 
 `docs/ADR_486_STAGE240_OPEN.md` + `docs/STAGE_240_PLAN.md` (`test_stage240_open.py`).
+
+## Stage 241 exit
+
+H241x met — `docs/STAGE_241_EXIT_CRITERIA.md`, ADR-489. Stages 1–241 frozen for Stage 241 feature scope.
+
+## Stage 241 D1 — Tenant MVP Live Training Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_241_FIDELITY.md` (`test_stage241_fidelity_d1.py`). `LIVE_TRAINING_PACK_*` remaining-gate index; live training still MISSING.
+
+## Stage 241 open
+
+`docs/ADR_488_STAGE241_OPEN.md` + `docs/STAGE_241_PLAN.md` (`test_stage241_open.py`).
 

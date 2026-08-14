@@ -1,0 +1,58 @@
+{
+  "id": "live-training-pack-remaining-gate",
+  "stage": 241,
+  "pack": "I1",
+  "doc": "docs/LIVE_TRAINING_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LIVE_TRAINING_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LIVE_TRAINING_PACK_RG_POINTERS_MVP.md",
+    "live_training_remaining_gate": "docs/LIVE_TRAINING_REMAINING_GATE_MVP.md",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+    "knowledge_transfer_pack_remaining_gate": "docs/KNOWLEDGE_TRANSFER_PACK_REMAINING_GATE_MVP.md",
+    "operator_handoff_pack_remaining_gate": "docs/OPERATOR_HANDOFF_PACK_REMAINING_GATE_MVP.md",
+    "customer_training_cert_register": "ops/mvp/customer-training-cert.json"
+  },
+  "packaging_complete": true,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "training_certification_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage189_live_training_remaining_gate": true,
+  "distinct_from_stage48_t1_customer_training_cert": true,
+  "distinct_from_stage240_knowledge_transfer_pack_remaining_gate": true,
+  "distinct_from_stage239_operator_handoff_pack_remaining_gate": true,
+  "distinct_from_stage189_p1_live_training_pack_pointers": true,
+  "steps": [
+    {
+      "id": "ltpr-read-blockers",
+      "title": "Read B1 live training pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltpr-follow-pointers",
+      "title": "Follow P1 Stage 48 / Stage 189 / Stage 240 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltpr-training-missing",
+      "title": "Reaffirm live training MISSING until real customer training delivery ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltpr-no-packaging-as-live",
+      "title": "Do not treat Stage 189 / Stage 48 as live training Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltpr-training-remaining",
+      "title": "Live training / certification / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 241 I1 live training pack remaining-gate index packaging only. Do not claim live training Complete."
+}

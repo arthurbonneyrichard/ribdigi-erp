@@ -1,0 +1,51 @@
+{
+  "id": "live-training-pack-rg-blockers",
+  "stage": 241,
+  "pack": "B1",
+  "doc": "docs/LIVE_TRAINING_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_TRAINING_PACK_REMAINING_GATE_MVP.md",
+    "live_training_remaining_gate": "docs/LIVE_TRAINING_REMAINING_GATE_MVP.md",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+    "customer_training_cert_register": "ops/mvp/customer-training-cert.json"
+  },
+  "packaging_complete": true,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "training_certification_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_training_delivery_execution": "REMAINING",
+    "training_certification_complete": "REMAINING",
+    "stage189_i1_as_live_training": "NON_CLAIM",
+    "stage48_t1_as_live_training": "NON_CLAIM",
+    "live_training_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ltprb-delivery",
+      "title": "Mark live training delivery execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltprb-cert",
+      "title": "Mark training certification Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltprb-stage189-nonclaim",
+      "title": "Mark Stage 189 I1 as non-claim for live training",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltprb-training-remaining",
+      "title": "Live training Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 241 B1 live training pack RG blocker matrix packaging only. Live training Complete remains MISSING."
+}
