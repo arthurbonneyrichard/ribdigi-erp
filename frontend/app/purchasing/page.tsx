@@ -229,6 +229,9 @@ export default function Page() {
   const [grnPrefix, setGrnPrefix] = useState('GRN');
   const [grnNext, setGrnNext] = useState('1');
   const [grnPreview, setGrnPreview] = useState('');
+  const [piPrefix, setPiPrefix] = useState('PINV');
+  const [piNext, setPiNext] = useState('1');
+  const [piPreview, setPiPreview] = useState('');
 
   async function refresh() {
     const [poRes, prRes, settingsRes, numRes, supRes, prodRes, unitRes, grnRes, invRes, retRes] =
@@ -264,6 +267,12 @@ export default function Page() {
       setGrnPrefix(grnNum.prefix || 'GRN');
       setGrnNext(String(grnNum.next_number ?? 1));
       setGrnPreview(grnNum.preview || '');
+    }
+    const piNum = numRes.data?.purchase_invoice_numbering;
+    if (piNum) {
+      setPiPrefix(piNum.prefix || 'PINV');
+      setPiNext(String(piNum.next_number ?? 1));
+      setPiPreview(piNum.preview || '');
     }
   }
 
@@ -875,6 +884,10 @@ export default function Page() {
             prefix: grnPrefix.trim(),
             next_number: Math.max(1, Number(grnNext) || 1),
           },
+          purchase_invoice_numbering: {
+            prefix: piPrefix.trim(),
+            next_number: Math.max(1, Number(piNext) || 1),
+          },
         }),
       });
       const poNum = r.data?.purchase_order_numbering;
@@ -889,7 +902,15 @@ export default function Page() {
         setGrnNext(String(grnNum.next_number));
         setGrnPreview(grnNum.preview);
       }
-      setMessage(`Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''}`.trim());
+      const piNum = r.data?.purchase_invoice_numbering;
+      if (piNum) {
+        setPiPrefix(piNum.prefix);
+        setPiNext(String(piNum.next_number));
+        setPiPreview(piNum.preview);
+      }
+      setMessage(
+        `Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''} / PI ${piNum?.preview || ''}`.trim()
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -994,6 +1015,22 @@ export default function Page() {
                 style={{ width: 90 }}
               />
               <span className="muted">{grnPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+              <span className="muted">PI</span>
+              <input
+                value={piPrefix}
+                onChange={(e) => setPiPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+              />
+              <input
+                value={piNext}
+                onChange={(e) => setPiNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+              />
+              <span className="muted">{piPreview || '—'}</span>
               <button type="button" onClick={savePurchasingNumbering}>
                 Save numbering
               </button>

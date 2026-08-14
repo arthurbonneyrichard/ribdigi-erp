@@ -4736,6 +4736,7 @@ async def purchasing_settings(
         {
             "purchase_order_numbering": numbering_settings(tenant, "purchase_order"),
             "grn_numbering": numbering_settings(tenant, "grn"),
+            "purchase_invoice_numbering": numbering_settings(tenant, "purchase_invoice"),
         }
     )
 
@@ -4748,7 +4749,11 @@ async def update_purchasing_settings(
 ):
     from app.doc_numbers import apply_numbering_update, numbering_settings
 
-    if payload.purchase_order_numbering is None and payload.grn_numbering is None:
+    if (
+        payload.purchase_order_numbering is None
+        and payload.grn_numbering is None
+        and payload.purchase_invoice_numbering is None
+    ):
         raise HTTPException(status_code=400, detail="No numbering fields to update")
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     if payload.purchase_order_numbering is not None:
@@ -4765,11 +4770,19 @@ async def update_purchasing_settings(
             prefix=payload.grn_numbering.prefix,
             next_number=payload.grn_numbering.next_number,
         )
+    if payload.purchase_invoice_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "purchase_invoice",
+            prefix=payload.purchase_invoice_numbering.prefix,
+            next_number=payload.purchase_invoice_numbering.next_number,
+        )
     await db.commit()
     return env(
         {
             "purchase_order_numbering": numbering_settings(tenant, "purchase_order"),
             "grn_numbering": numbering_settings(tenant, "grn"),
+            "purchase_invoice_numbering": numbering_settings(tenant, "purchase_invoice"),
         },
         "Purchasing document numbering updated",
     )

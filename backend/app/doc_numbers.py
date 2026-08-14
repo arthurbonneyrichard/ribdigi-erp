@@ -42,6 +42,12 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.GoodsReceipt,
         "field": "grn_number",
     },
+    "purchase_invoice": {
+        "default_prefix": "PINV",
+        "storage": "json",
+        "model": m.PurchaseInvoice,
+        "field": "invoice_number",
+    },
 }
 
 # Back-compat aliases
@@ -249,6 +255,10 @@ async def next_purchase_order_number(db: AsyncSession, tenant_id: str) -> str:
 
 async def next_grn_number(db: AsyncSession, tenant_id: str) -> str:
     return await next_series_document_number(db, tenant_id, "grn")
+
+
+async def next_purchase_invoice_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "purchase_invoice")
 
 
 async def next_purchase_request_number(db: AsyncSession, tenant_id: str) -> str:
