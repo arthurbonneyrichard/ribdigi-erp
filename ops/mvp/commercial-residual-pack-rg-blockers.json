@@ -1,0 +1,62 @@
+{
+  "id": "commercial-residual-pack-rg-blockers",
+  "stage": 255,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_RESIDUAL_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_RESIDUAL_PACK_REMAINING_GATE_MVP.md",
+    "commercial_residual": "docs/COMMERCIAL_RESIDUAL_MVP.md",
+    "residual_risk_remaining_gate": "docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md",
+    "commercial_residual_register": "ops/mvp/commercial-residual.json"
+  },
+  "packaging_complete": true,
+  "residual_closed_claimed": false,
+  "packaging_archive_live_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "residual_closed_complete": "REMAINING",
+    "packaging_archive_live_complete": "REMAINING",
+    "commercial_acceptance_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage72_r1_as_residual_closed": "NON_CLAIM",
+    "stage196_as_residual_closed": "NON_CLAIM",
+    "residual_closed_claimed": "false",
+    "packaging_archive_live_claimed": "false",
+    "commercial_acceptance_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "crprb-residual",
+      "title": "Mark residual closed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crprb-archive",
+      "title": "Mark packaging archive live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crprb-acceptance",
+      "title": "Mark commercial acceptance Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crprb-stage72-nonclaim",
+      "title": "Mark Stage 72 R1 as non-claim for residual closed Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crprb-residual-remaining",
+      "title": "Residual closed Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 255 B1 commercial residual pack RG blocker matrix packaging only. Residual closed Completes remain MISSING."
+}
