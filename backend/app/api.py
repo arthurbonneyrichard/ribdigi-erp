@@ -6292,7 +6292,12 @@ async def pos_settings(
     from app.doc_numbers import numbering_settings
 
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    return env({"pos_sale_numbering": numbering_settings(tenant, "pos_sale")})
+    return env(
+        {
+            "pos_sale_numbering": numbering_settings(tenant, "pos_sale"),
+            "pos_session_numbering": numbering_settings(tenant, "pos_session"),
+        }
+    )
 
 
 @api.patch("/pos/settings")
@@ -6303,18 +6308,29 @@ async def update_pos_settings(
 ):
     from app.doc_numbers import apply_numbering_update, numbering_settings
 
-    if payload.pos_sale_numbering is None:
+    if payload.pos_sale_numbering is None and payload.pos_session_numbering is None:
         raise HTTPException(status_code=400, detail="No numbering fields to update")
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    apply_numbering_update(
-        tenant,
-        "pos_sale",
-        prefix=payload.pos_sale_numbering.prefix,
-        next_number=payload.pos_sale_numbering.next_number,
-    )
+    if payload.pos_sale_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "pos_sale",
+            prefix=payload.pos_sale_numbering.prefix,
+            next_number=payload.pos_sale_numbering.next_number,
+        )
+    if payload.pos_session_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "pos_session",
+            prefix=payload.pos_session_numbering.prefix,
+            next_number=payload.pos_session_numbering.next_number,
+        )
     await db.commit()
     return env(
-        {"pos_sale_numbering": numbering_settings(tenant, "pos_sale")},
+        {
+            "pos_sale_numbering": numbering_settings(tenant, "pos_sale"),
+            "pos_session_numbering": numbering_settings(tenant, "pos_session"),
+        },
         "POS document numbering updated",
     )
 

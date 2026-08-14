@@ -256,6 +256,9 @@ export default function Page() {
   const [posPrefix, setPosPrefix] = useState('POS');
   const [posNext, setPosNext] = useState('1');
   const [posPreview, setPosPreview] = useState('');
+  const [shiftPrefix, setShiftPrefix] = useState('SHIFT');
+  const [shiftNext, setShiftNext] = useState('1');
+  const [shiftPreview, setShiftPreview] = useState('');
 
   const groupDiscountPct = useMemo(() => {
     const match = customers.find((c) => c.id === customerId);
@@ -326,6 +329,12 @@ export default function Page() {
           setPosNext(String(num.next_number ?? 1));
           setPosPreview(num.preview || '');
         }
+        const shift = r.data?.pos_session_numbering;
+        if (shift) {
+          setShiftPrefix(shift.prefix || 'SHIFT');
+          setShiftNext(String(shift.next_number ?? 1));
+          setShiftPreview(shift.preview || '');
+        }
       })
       .catch(() => {});
     api('/pos/stores')
@@ -394,6 +403,10 @@ export default function Page() {
             prefix: posPrefix.trim(),
             next_number: Math.max(1, Number(posNext) || 1),
           },
+          pos_session_numbering: {
+            prefix: shiftPrefix.trim(),
+            next_number: Math.max(1, Number(shiftNext) || 1),
+          },
         }),
       });
       const num = r.data?.pos_sale_numbering;
@@ -402,7 +415,15 @@ export default function Page() {
         setPosNext(String(num.next_number ?? 1));
         setPosPreview(num.preview || '');
       }
-      setMessage(`Numbering saved — ${num?.preview || ''}`.trim());
+      const shift = r.data?.pos_session_numbering;
+      if (shift) {
+        setShiftPrefix(shift.prefix || 'SHIFT');
+        setShiftNext(String(shift.next_number ?? 1));
+        setShiftPreview(shift.preview || '');
+      }
+      setMessage(
+        `Numbering saved — Sale ${num?.preview || ''} / Shift ${shift?.preview || ''}`.trim()
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -820,7 +841,7 @@ export default function Page() {
         <div className="card" style={{ margin: '12px 0', display: 'grid', gap: 8 }}>
           <strong>Document numbering</strong>
           <p className="muted" style={{ margin: 0 }}>
-            Sale receipt references use PREFIX-YYYY-NNNN (default POS).
+            Sale receipts use POS-YYYY-NNNN; shift sessions use SHIFT-YYYY-NNNN.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <span className="muted">Sale</span>
@@ -839,6 +860,24 @@ export default function Page() {
               style={{ width: 90 }}
             />
             <span className="muted">{posPreview || '—'}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span className="muted">Shift</span>
+            <input
+              className="tpos-input"
+              value={shiftPrefix}
+              onChange={(e) => setShiftPrefix(e.target.value.toUpperCase())}
+              placeholder="Prefix"
+              style={{ width: 100 }}
+            />
+            <input
+              className="tpos-input"
+              value={shiftNext}
+              onChange={(e) => setShiftNext(e.target.value)}
+              placeholder="Next #"
+              style={{ width: 90 }}
+            />
+            <span className="muted">{shiftPreview || '—'}</span>
             <button type="button" className="tpos-btn" onClick={savePosNumbering}>
               Save numbering
             </button>
