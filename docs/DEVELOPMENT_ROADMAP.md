@@ -3864,6 +3864,18 @@ Every feature in every phase must meet:
 
 **Stage 270 exit (2026-08-14):** I1, B1, P1, D1, H270x met — `docs/STAGE_270_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_548_STAGE270_FREEZE.md`. Fidelity: `docs/STAGE_270_FIDELITY.md`.
 
+**Stage 271 open (2026-08-14):** Tenant MVP Billing Deferred Pack Remaining-Gate Index Fidelity — `docs/ADR_549_STAGE271_OPEN.md` + `docs/STAGE_271_PLAN.md` (I1 next).
+
+**Stage 271 I1 (2026-08-14):** Billing deferred pack remaining-gate index hub (`test_stage271_index_i1.py`).
+
+**Stage 271 B1 (2026-08-14):** Billing deferred pack blocker matrix (`test_stage271_blockers_b1.py`).
+
+**Stage 271 P1 (2026-08-14):** ADR-002 / Stage 36 / Stage 270 / Stage 269 / Stage 266 pointers (`test_stage271_pointers_p1.py`).
+
+**Stage 271 D1 (2026-08-14):** Billing Deferred Pack Remaining-Gate Index fidelity sync — `docs/STAGE_271_FIDELITY.md` (`test_stage271_fidelity_d1.py`).
+
+**Stage 271 exit (2026-08-14):** I1, B1, P1, D1, H271x met — `docs/STAGE_271_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_550_STAGE271_FREEZE.md`. Fidelity: `docs/STAGE_271_FIDELITY.md`.
+
 
 
 

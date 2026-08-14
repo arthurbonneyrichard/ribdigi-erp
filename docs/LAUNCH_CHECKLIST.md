@@ -1413,6 +1413,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] ADR-001 / Stage 269 / Stage 268 / Stage 185 pointers (Stage 270 P1: `test_stage270_pointers_p1.py`, `docs/SHARED_SCHEMA_TENANCY_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 270 fidelity sync (D1: `test_stage270_fidelity_d1.py`, `docs/STAGE_270_FIDELITY.md`)
 - [x] Stage 270 exit + freeze (H270x: `test_stage270_exit_h270x.py`, `docs/STAGE_270_EXIT_CRITERIA.md`, ADR-548)
+- [x] Stage 271 track opened (ADR-549: `test_stage271_open.py`, `docs/STAGE_271_PLAN.md`) — Billing Deferred Pack Remaining-Gate Index; closed under ADR-550
+- [x] Billing deferred pack remaining-gate hub (Stage 271 I1: `test_stage271_index_i1.py`, `docs/BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md`)
+- [x] Billing deferred pack blocker matrix (Stage 271 B1: `test_stage271_blockers_b1.py`, `docs/BILLING_DEFERRED_PACK_RG_BLOCKERS_MVP.md`)
+- [x] ADR-002 / Stage 36 / Stage 270 / Stage 269 / Stage 266 pointers (Stage 271 P1: `test_stage271_pointers_p1.py`, `docs/BILLING_DEFERRED_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 271 fidelity sync (D1: `test_stage271_fidelity_d1.py`, `docs/STAGE_271_FIDELITY.md`)
+- [x] Stage 271 exit + freeze (H271x: `test_stage271_exit_h271x.py`, `docs/STAGE_271_EXIT_CRITERIA.md`, ADR-550)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

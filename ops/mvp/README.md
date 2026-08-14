@@ -1054,6 +1054,12 @@ Authoritative MVP docs:
 - `docs/SHARED_SCHEMA_TENANCY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/shared-schema-tenancy-pack-remaining-gate.json` — Stage 270 I1
 - `docs/SHARED_SCHEMA_TENANCY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/shared-schema-tenancy-pack-rg-blockers.json` — Stage 270 B1
 - `docs/SHARED_SCHEMA_TENANCY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/shared-schema-tenancy-pack-rg-pointers.json` — Stage 270 P1
+- `docs/STAGE_271_EXIT_CRITERIA.md` / `docs/ADR_550_STAGE271_FREEZE.md` (`backend/tests/test_stage271_exit_h271x.py`) — Stage 271 H271x
+- `docs/STAGE_271_FIDELITY.md` (`backend/tests/test_stage271_fidelity_d1.py`) — Stage 271 D1
+- `docs/STAGE_271_PLAN.md` (`backend/tests/test_stage271_open.py`) — Stage 271 open (ADR-549)
+- `docs/BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/billing-deferred-pack-remaining-gate.json` — Stage 271 I1
+- `docs/BILLING_DEFERRED_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/billing-deferred-pack-rg-blockers.json` — Stage 271 B1
+- `docs/BILLING_DEFERRED_PACK_RG_POINTERS_MVP.md` / `ops/mvp/billing-deferred-pack-rg-pointers.json` — Stage 271 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4759,4 +4765,16 @@ H270x met — `docs/STAGE_270_EXIT_CRITERIA.md`, ADR-548. Stages 1–270 frozen 
 ## Stage 270 open
 
 `docs/ADR_547_STAGE270_OPEN.md` + `docs/STAGE_270_PLAN.md` (`test_stage270_open.py`).
+
+## Stage 271 exit
+
+H271x met — `docs/STAGE_271_EXIT_CRITERIA.md`, ADR-550. Stages 1–271 frozen for Stage 271 feature scope.
+
+## Stage 271 D1 — Tenant MVP Billing Deferred Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_271_FIDELITY.md` (`test_stage271_fidelity_d1.py`). `BILLING_DEFERRED_PACK_*` remaining-gate index; paid billing / payment provider / go-live still MISSING (ADR-002).
+
+## Stage 271 open
+
+`docs/ADR_549_STAGE271_OPEN.md` + `docs/STAGE_271_PLAN.md` (`test_stage271_open.py`).
 

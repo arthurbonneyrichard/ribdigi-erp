@@ -502,3 +502,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 270 decision (opened after Stage 269 freeze)
 
 **Tenant MVP Shared-Schema Tenancy Pack Remaining-Gate Index Fidelity** — shared-schema tenancy pack remaining-gate hub (I1), blocker matrix (B1), ADR-001 / Stage 269 / Stage 268 / Stage 185 pointers with explicit non-claim (P1). Prefixed `SHARED_SCHEMA_TENANCY_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ ADR-001 decision text / Stage 185 `SCHEMA_PER_TENANT_*`). Live paid billing / schema-per-tenant / live multi-tenant / go-live Completes remain deferred (Stage 271+; ADR-002 in force). Distinct from Stage 269 platform principal pack remaining-gate, Stage 268 dual console pack remaining-gate, Stage 266 Ribdigi House console pack remaining-gate, and Stage 185 schema-per-tenant remaining-gate. Open ADR-547 / freeze ADR-548.
+
+
+## Stage 271 decision (opened after Stage 270 freeze)
+
+**Tenant MVP Billing Deferred Pack Remaining-Gate Index Fidelity** — billing deferred pack remaining-gate hub (I1), blocker matrix (B1), ADR-002 / Stage 36 / Stage 270 / Stage 269 / Stage 266 pointers with explicit non-claim (P1). Prefixed `BILLING_DEFERRED_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 36 B1 / ADR-002 decision text). Live paid billing / payment provider / checkout success / go-live Completes remain deferred (Stage 272+; ADR-002 in force). Distinct from Stage 270 shared-schema tenancy pack remaining-gate, Stage 269 platform principal pack remaining-gate, and Stage 36 B1 packaging. Open ADR-549 / freeze ADR-550.

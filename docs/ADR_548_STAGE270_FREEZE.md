@@ -31,3 +31,10 @@ Stage 271 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for paid billing, schema-per-tenant, live multi-tenant, or go-live.
+
+
+## Amendment — Stage 271 opened
+
+Stage 271 opened under **ADR-549** after CONTINUE/NEXT (Tenant MVP Billing Deferred Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-550**. Stage 270 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 271 runner-up outline was approved and opened (ADR-549); freeze ADR-550. Do not reopen Stage 270 scope.
