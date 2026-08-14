@@ -526,6 +526,22 @@ class ExpenseCreate(BaseModel):
     expense_date: datetime | None = None
 
 
+class AiDocumentExpenseCreate(BaseModel):
+    """Explicit Create draft expense from reviewed OCR fields (BR-21.8)."""
+
+    amount: float = Field(gt=0)
+    payee: str | None = None
+    description: str | None = None
+    reference: str | None = None
+    category_id: str | None = None
+    category: str | None = None
+    payment_method: str = "cash"
+    expense_date: str | datetime | None = None
+    store_id: str | None = None
+    branch_id: str | None = None
+    department_id: str | None = None
+
+
 class ExpenseUpdate(BaseModel):
     category: str | None = None
     category_id: str | None = None

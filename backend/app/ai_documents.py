@@ -1,11 +1,13 @@
 """Rule-based AI Document Assistant (BR-21.8) — OCR extract, auto-match, discrepancies.
 
-Reuses expense_ocr (pypdf / Tesseract). No LLM. Suggest-only — never creates records.
+Reuses expense_ocr (pypdf / Tesseract). No LLM. Analyze is suggest-only; optional
+``create-expense`` creates a pending expense only after an explicit user action.
 """
 
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException, UploadFile
@@ -398,7 +400,117 @@ async def analyze_upload(
         "warnings": warnings,
         "raw_text_preview": raw[:2000],
         "apply_hint": (
-            "Suggest-only: review matches/discrepancies, then create or PATCH expense / "
-            "purchase invoice / PO manually — nothing was written to business records"
+            "Review matches/discrepancies, then use Create draft expense (or apply fields "
+            "manually on Expenses / Purchasing). Analyze itself writes no business records."
         ),
+    }
+
+
+def _parse_expense_date(value: Any) -> datetime | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(text[:10], fmt)
+        except ValueError:
+            continue
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid expense_date: {text}") from None
+
+
+async def create_expense_from_extract(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    amount: float | None,
+    payee: str | None = None,
+    description: str | None = None,
+    reference: str | None = None,
+    category_id: str | None = None,
+    category: str | None = None,
+    payment_method: str | None = None,
+    expense_date: Any = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    department_id: str | None = None,
+) -> dict:
+    """Create a pending/auto-approved expense from reviewed OCR fields (explicit action)."""
+    try:
+        amt = float(amount) if amount is not None else 0.0
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="amount is required") from exc
+    if amt <= 0:
+        raise HTTPException(status_code=400, detail="amount must be greater than 0")
+
+    method = (payment_method or "cash").strip().lower() or "cash"
+
+    parsed_date = _parse_expense_date(expense_date)
+    desc = (description or "").strip()
+    if not desc and payee:
+        desc = f"OCR receipt — {payee}"
+    if not desc:
+        desc = "OCR draft expense"
+
+    await expenses_svc.ensure_default_categories(db, tenant_id)
+    resolved_category_id = category_id
+    resolved_category = category
+    if not resolved_category_id and not (resolved_category or "").strip():
+        misc = (
+            await db.execute(
+                select(m.ExpenseCategory).where(
+                    m.ExpenseCategory.tenant_id == tenant_id,
+                    m.ExpenseCategory.code == "MISC",
+                    m.ExpenseCategory.is_active == True,  # noqa: E712
+                )
+            )
+        ).scalar_one_or_none()
+        if misc:
+            resolved_category_id = misc.id
+            resolved_category = misc.name
+        else:
+            resolved_category = "Miscellaneous"
+
+    expense = await expenses_svc.create_expense(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        amount=amt,
+        description=desc,
+        category_id=resolved_category_id,
+        category=resolved_category,
+        payment_method=method,
+        reference=(reference or "").strip() or None,
+        payee=(payee or "").strip() or None,
+        store_id=store_id,
+        branch_id=branch_id,
+        department_id=department_id,
+        expense_date=parsed_date,
+    )
+    await ai_svc.record_query(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        endpoint="documents_create_expense",
+        status="ok",
+        message=f"expense:{expense.id}",
+        details={
+            "expense_id": expense.id,
+            "amount": float(expense.amount),
+            "payee": expense.payee,
+            "reference": expense.reference,
+            "method": "rule_based_ocr_apply",
+        },
+    )
+    serialized = await expenses_svc.serialize_expense_full(db, expense)
+    return {
+        "expense": serialized,
+        "method": "rule_based_ocr_apply",
     }

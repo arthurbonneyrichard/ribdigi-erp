@@ -1099,6 +1099,8 @@ All modules listed in Section 4 are within MVP scope, including:
     - Complete (MVP): party name similarity + purchase-order number match; receipt category keyword suggest
   - [x] Data validation and discrepancy flagging
     - Complete (MVP): missing fields, low confidence, amount/PO mismatches, duplicate supplier/expense references
+  - [x] Save reviewed extract as draft expense
+    - Complete (MVP): `POST /ai/documents/create-expense` + AI **Create draft expense**; requires `expenses:write`; analyze remains suggest-only
 
 #### BR-21.9 AI Customer Assistant (Basic)
 - **Description:** Customer intelligence.

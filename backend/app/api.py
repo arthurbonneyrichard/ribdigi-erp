@@ -83,6 +83,7 @@ from app.schemas import (
     ExpenseCategoryCreate,
     ExpenseCategoryUpdate,
     ExpenseCreate,
+    AiDocumentExpenseCreate,
     ExpenseDecision,
     ExpenseThresholdUpdate,
     ExpenseUpdate,
@@ -11380,6 +11381,33 @@ async def ai_documents_analyze(
         expected_amount=expected_amount,
     )
     return env(data, "Document analyzed — review before applying")
+
+
+@api.post("/ai/documents/create-expense")
+async def ai_documents_create_expense(
+    payload: AiDocumentExpenseCreate,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a draft/pending expense from reviewed OCR fields (BR-21.8 Save as Expense)."""
+    data = await ai_documents_svc.create_expense_from_extract(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        amount=payload.amount,
+        payee=payload.payee,
+        description=payload.description,
+        reference=payload.reference,
+        category_id=payload.category_id,
+        category=payload.category,
+        payment_method=payload.payment_method,
+        expense_date=payload.expense_date,
+        store_id=payload.store_id,
+        branch_id=payload.branch_id,
+        department_id=payload.department_id,
+    )
+    await db.commit()
+    return env(data, "Draft expense created from document extract")
 
 
 @api.post("/ai/reports/generate")
