@@ -1233,6 +1233,11 @@ export default function Page() {
           <p className="muted">
             {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
             posted {data.returns?.posted_amount ?? 0} · qty {data.returns?.total_quantity ?? 0}
+            {data.returns?.store_name
+              ? ` · ${data.returns.store_name}`
+              : data.returns?.warehouse_name
+                ? ` · ${data.returns.warehouse_name}`
+                : ''}
           </p>
           <table className="table">
             <thead>

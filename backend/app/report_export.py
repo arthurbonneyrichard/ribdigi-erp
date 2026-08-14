@@ -648,7 +648,12 @@ async def build_report_payload(
         )
     if report_type == "purchases_returns":
         return await reports_svc.purchases_returns_summary(
-            db, tenant_id, from_date=fd, to_date=td
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     if report_type == "expenses_summary":
         return await reports_svc.expenses_summary(
