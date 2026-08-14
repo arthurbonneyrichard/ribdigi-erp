@@ -666,6 +666,8 @@ Store Manager reviews & approves/rejects
 4. Click **Submit**
 5. After upload, use **Preview** (image/PDF modal) or **Download**; **OCR** can suggest amount/date/payee
 
+> **Categories:** On Expenses → Category budgets, set monthly budgets / GL, and **Deactivate** obsolete categories (history kept). Inactive categories are hidden from new expense / recurring pickers until **Activate** again.
+
 > **OCR Tip:** The AI Document Assistant can auto-extract amount, date, and vendor from receipt images. Expenses also has per-row **OCR** + **Preview**.
 
 ### 7.2 Expense Approval

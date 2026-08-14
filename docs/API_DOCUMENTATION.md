@@ -1045,7 +1045,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 ### 9.1 Expense Categories
 **List:** `GET /expenses/categories`  
 **Create:** `POST /expenses/categories` — body `{ code, name, budget_amount?, account_id? }`; response includes `budget_amount` / `is_active` / `account_id` / `account_code` / `account_name`  
-**Update:** `PATCH /expenses/categories/{category_id}` — partial `{ name?, budget_amount?, is_active?, account_id?, clear_account? }` (monthly budget; optional expense-type GL for auto-post; BR-9.1 / BR-9.2). Approved expenses debit the category GL (else default `6000`).
+**Update:** `PATCH /expenses/categories/{category_id}` — partial `{ name?, budget_amount?, is_active?, account_id?, clear_account? }` (monthly budget; optional expense-type GL for auto-post; soft-deactivate via `is_active=false`; BR-9.1 / BR-9.2). Approved expenses debit the category GL (else default `6000`). Inactive categories remain listed for reactivation; creating expenses/recurring with an inactive `category_id` returns 400. Expenses UI **Activate** / **Deactivate**.
 
 ### 9.2 Expenses
 **List:** `GET /expenses`  

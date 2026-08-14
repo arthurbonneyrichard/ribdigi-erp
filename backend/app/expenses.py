@@ -480,6 +480,8 @@ async def resolve_category(
         ).scalar_one_or_none()
         if not cat:
             raise HTTPException(status_code=404, detail="Expense category not found")
+        if not bool(cat.is_active):
+            raise HTTPException(status_code=400, detail="Expense category is inactive")
         return cat.id, cat.name
     name = (category or "").strip()
     if not name:
