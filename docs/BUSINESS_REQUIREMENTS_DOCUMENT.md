@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 409 D1 Residual Risk Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_409_FIDELITY.md` (`test_stage409_fidelity_d1.py`); Offline Complete / residual-risk / go-live still MISSING.
 Stage 408 D1 Go-Live Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_408_FIDELITY.md` (`test_stage408_fidelity_d1.py`); Offline Complete / go-live still MISSING.
 Stage 407 D1 Offline Acceptance Path Pack Remaining-Gate Index Fidelity — `docs/STAGE_407_FIDELITY.md` (`test_stage407_fidelity_d1.py`); Offline Complete / Offline acceptance-path still MISSING.
 Stage 406 D1 ADR-001 Shared-Schema Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_406_FIDELITY.md` (`test_stage406_fidelity_d1.py`); Offline Complete / ADR-001 still MISSING.

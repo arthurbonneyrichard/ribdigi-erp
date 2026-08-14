@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_409_EXIT_CRITERIA.md` / `docs/ADR_826_STAGE409_FREEZE.md` (`backend/tests/test_stage409_exit_h409x.py`) — Stage 409 H409x
+- `docs/STAGE_409_FIDELITY.md` (`backend/tests/test_stage409_fidelity_d1.py`) — Stage 409 D1
+- `docs/STAGE_409_PLAN.md` (`backend/tests/test_stage409_open.py`) — Stage 409 open (ADR-825)
+- `docs/RESIDUAL_RISK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/residual-risk-honesty-pack-remaining-gate.json` — Stage 409 I1
+- `docs/RESIDUAL_RISK_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/residual-risk-honesty-pack-rg-blockers.json` — Stage 409 B1
+- `docs/RESIDUAL_RISK_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/residual-risk-honesty-pack-rg-pointers.json` — Stage 409 P1
 - `docs/STAGE_408_EXIT_CRITERIA.md` / `docs/ADR_824_STAGE408_FREEZE.md` (`backend/tests/test_stage408_exit_h408x.py`) — Stage 408 H408x
 - `docs/STAGE_408_FIDELITY.md` (`backend/tests/test_stage408_fidelity_d1.py`) — Stage 408 D1
 - `docs/STAGE_408_PLAN.md` (`backend/tests/test_stage408_open.py`) — Stage 408 open (ADR-823)
@@ -5731,6 +5737,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 409 exit
+
+H409x met — `docs/STAGE_409_EXIT_CRITERIA.md`, ADR-826. Stages 1–409 frozen for Stage 409 feature scope.
+
+## Stage 409 D1 — Tenant MVP Residual Risk Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / residual-risk / go-live Completes remain MISSING. See `docs/STAGE_409_FIDELITY.md`.
+
+## Stage 409 open
+
+Opened under ADR-825; plan `docs/STAGE_409_PLAN.md`.
 
 ## Stage 408 exit
 

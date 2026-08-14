@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 409 Residual Risk Honesty Pack remaining-gate — `docs/RESIDUAL_RISK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/RESIDUAL_RISK_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; prior `RESIDUAL_RISK_PACK_*` ≠ residual-risk / go-live Completes).
 Stage 408 Go-Live Honesty Pack remaining-gate — `docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/GOLIVE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; prior `GOLIVE_PACK_*` ≠ go-live Completes).
 Stage 407 Offline Acceptance Path Pack remaining-gate — `docs/OFFLINE_ACCEPTANCE_PATH_PACK_REMAINING_GATE_MVP.md` / `docs/OFFLINE_ACCEPTANCE_PATH_PACK_RG_BLOCKERS_MVP.md` (packaging only; §41 acceptance path ≠ Offline Completes).
 Stage 406 ADR-001 Shared-Schema Honesty Pack remaining-gate — `docs/ADR001_SHARED_SCHEMA_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/ADR001_SHARED_SCHEMA_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; schema-per-tenant ≠ ADR-001 Completes).

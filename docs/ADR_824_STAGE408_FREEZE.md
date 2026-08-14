@@ -31,3 +31,9 @@ Stage 409 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, go-live, Go-Live honesty, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 409 opened under **ADR-825** after CONTINUE/NEXT (Tenant MVP Residual Risk Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-826**. Stage 408 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 408 runner-up outline was approved and opened (ADR-825); freeze ADR-826. Do not reopen Stage 408 scope.
