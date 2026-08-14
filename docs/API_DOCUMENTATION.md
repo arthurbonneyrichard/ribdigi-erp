@@ -559,6 +559,7 @@ Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update
 }
 ```
 
+`reference_type` required ∈ `{sale, transfer, adjustment, damage, internal, other}`. Optional `reference_id`, `warehouse_id`, `variant_id`, `unit_id`, `batch_id` (otherwise FEFO). Persists `stock_movements.reference_type` / `reference_id` with `movement_type=stock_out`. Inventory UI **Stock Out** tab.
 **Stock Adjustment:** `POST /inventory/adjust/{product_id}` (BR-5.2)
 
 ```json
