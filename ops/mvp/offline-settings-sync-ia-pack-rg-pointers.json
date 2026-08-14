@@ -1,0 +1,67 @@
+{
+  "id": "offline-settings-sync-ia-pack-rg-pointers",
+  "stage": 393,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_device_auth_token_pack": "docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_REMAINING_GATE_MVP.md",
+    "stage367_fidelity": "docs/STAGE_367_FIDELITY.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_settings_sync_ia_complete_claimed": false,
+  "settings_offline_sync_ia_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section6_offline_settings_sync_ia": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_device_auth_token_pack_remaining_gate_stage391": "docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_REMAINING_GATE_MVP.md",
+    "stage367_offline_sync_chrome_fidelity": "docs/STAGE_367_FIDELITY.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_settings_sync_ia / settings_offline_sync_ia / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "ossiprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a76 offline Settings Sync IA",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprp-stage391",
+      "title": "Point to Stage 391 offline device auth token pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprp-stage367",
+      "title": "Point to Stage 367 offline-sync chrome fidelity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprp-checklist-remaining",
+      "title": "Offline Complete / offline settings-sync-IA Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 393 P1 offline Settings Sync IA pack RG pointers packaging only."
+}

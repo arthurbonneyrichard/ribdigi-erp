@@ -1,0 +1,58 @@
+{
+  "id": "offline-settings-sync-ia-pack-remaining-gate",
+  "stage": 393,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage367_fidelity": "docs/STAGE_367_FIDELITY.md",
+    "offline_connectivity_badge_pack_remaining_gate": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_device_auth_token_pack_remaining_gate": "docs/OFFLINE_DEVICE_AUTH_TOKEN_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_settings_sync_ia_complete_claimed": false,
+  "settings_offline_sync_ia_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage392_offline_connectivity_badge_pack_remaining_gate": true,
+  "distinct_from_stage391_offline_device_auth_token_pack_remaining_gate": true,
+  "distinct_from_stage367_company_offline_sync_chrome": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ossipr-read-blockers",
+      "title": "Read B1 offline Settings Sync IA pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossipr-follow-pointers",
+      "title": "Follow P1 Stage 392 / Stage 391 / Stage 367 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossipr-checklist-missing",
+      "title": "Reaffirm Offline Complete / offline settings-sync-IA / Settings Offline & Sync IA / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossipr-no-packaging-as-live",
+      "title": "Do not treat Stage 367 / Stage 392 / Stage 391 as Offline Complete or offline settings-sync-IA Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossipr-checklist-remaining",
+      "title": "Offline Complete / offline settings-sync-IA / Settings Offline & Sync IA / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 393 I1 offline Settings Sync IA pack remaining-gate index packaging only. Do not claim Offline Complete."
+}

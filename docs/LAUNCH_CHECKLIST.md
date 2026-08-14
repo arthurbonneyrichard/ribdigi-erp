@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 393 track opened (ADR-793: `test_stage393_open.py`, `docs/STAGE_393_PLAN.md`) — Offline Settings Sync IA Pack Remaining-Gate Index; closed under ADR-794
+- [x] Offline Settings Sync IA pack remaining-gate hub (Stage 393 I1: `test_stage393_index_i1.py`, `docs/OFFLINE_SETTINGS_SYNC_IA_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline Settings Sync IA pack blocker matrix (Stage 393 B1: `test_stage393_blockers_b1.py`, `docs/OFFLINE_SETTINGS_SYNC_IA_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 392 / Stage 391 / Stage 367 / CHANGE_IMPACT pointers (Stage 393 P1: `test_stage393_pointers_p1.py`, `docs/OFFLINE_SETTINGS_SYNC_IA_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 393 fidelity sync (D1: `test_stage393_fidelity_d1.py`, `docs/STAGE_393_FIDELITY.md`)
+- [x] Stage 393 exit + freeze (H393x: `test_stage393_exit_h393x.py`, `docs/STAGE_393_EXIT_CRITERIA.md`, ADR-794)
 - [x] Stage 392 track opened (ADR-791: `test_stage392_open.py`, `docs/STAGE_392_PLAN.md`) — Offline Connectivity Badge Pack Remaining-Gate Index; closed under ADR-792
 - [x] Offline connectivity badge pack remaining-gate hub (Stage 392 I1: `test_stage392_index_i1.py`, `docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline connectivity badge pack blocker matrix (Stage 392 B1: `test_stage392_blockers_b1.py`, `docs/OFFLINE_CONNECTIVITY_BADGE_PACK_RG_BLOCKERS_MVP.md`)

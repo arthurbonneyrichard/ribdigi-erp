@@ -31,3 +31,10 @@ Stage 393 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline connectivity-badge, ONLINE/OFFLINE/SYNC badge as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 393 opened under **ADR-793** after CONTINUE/NEXT (Tenant MVP Offline Settings Sync IA Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-794**. Stage 392 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 392 runner-up outline was approved and opened (ADR-793); freeze ADR-794. Do not reopen Stage 392 scope.
+

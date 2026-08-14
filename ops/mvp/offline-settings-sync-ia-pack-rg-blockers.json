@@ -1,0 +1,69 @@
+{
+  "id": "offline-settings-sync-ia-pack-rg-blockers",
+  "stage": 393,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage367_fidelity": "docs/STAGE_367_FIDELITY.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_settings_sync_ia_complete_claimed": false,
+  "settings_offline_sync_ia_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_settings_sync_ia_complete_claimed": "REMAINING",
+    "settings_offline_sync_ia_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage367_as_offline_settings_sync_ia": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_settings_sync_ia_complete_claimed_flag": "false",
+    "settings_offline_sync_ia_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ossiprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprb-settings-sync-ia",
+      "title": "Mark offline settings-sync-IA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprb-settings-ia",
+      "title": "Mark Settings Offline & Sync IA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprb-stage367-nonclaim",
+      "title": "Mark Stage 367 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ossiprb-checklist-remaining",
+      "title": "Offline Complete / offline settings-sync-IA Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 393 B1 offline Settings Sync IA pack RG blocker matrix packaging only."
+}
